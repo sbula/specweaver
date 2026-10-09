@@ -225,7 +225,7 @@ def check(
         _run_lineage_scan(project)
         return
 
-    target_path = Path(target)
+    target_path = Path(target).resolve()
     if not target or not target_path.exists():
         _core.console.print(f"[red]Error:[/red] File not found: {target}")
         raise typer.Exit(code=1)

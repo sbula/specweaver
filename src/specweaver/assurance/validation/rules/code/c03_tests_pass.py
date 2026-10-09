@@ -33,26 +33,9 @@ class TestsPassRule(Rule):
         if spec_path is None:
             return self._skip("No file path provided")
 
-        # Derive test file
-        test_name = f"test_{spec_path.stem}.py"
-
-        # Find project root (look for pyproject.toml)
-        project_root = spec_path.parent
-        while project_root != project_root.parent:
-            if (project_root / "pyproject.toml").exists():
-                break
-            project_root = project_root.parent
-
-        # Find test file
-        tests_dir = project_root / "tests"
-        if not tests_dir.is_dir():
-            return self._skip("No tests/ directory found")
-
-        matches = list(tests_dir.rglob(test_name))
-        if not matches:
-            return self._skip(f"No test file '{test_name}' found")
-
-        test_file = matches[0]
+        test_file = _test_file(spec_path)
+        if isinstance(test_file, str):
+            return self._skip(test_file)
 
         # Read pre-hydrated QA results from context
         result_data = self.context.get("qa_tests_result")
@@ -73,6 +56,12 @@ class TestsPassRule(Rule):
             )
 
         exports = result_data.get("exports") or {}
+        if "failed" not in exports:
+            reason = result_data.get("message") or "no test results"
+            return self._fail(
+                f"Tests could not run: {reason}",
+                [Finding(message=f"Tests could not run: {reason}", severity=Severity.ERROR)],
+            )
         failed = exports.get("failed", 0)
         errors = exports.get("errors", 0)
 
@@ -99,3 +88,18 @@ class TestsPassRule(Rule):
                 )
             ],
         )
+
+
+def _test_file(spec_path: Path) -> Path | str:
+    """The file's `tests/**/test_<stem>.py` under the nearest `pyproject.toml`, or why there is none."""
+    test_name = f"test_{spec_path.stem}.py"
+    project_root = spec_path.parent
+    while project_root != project_root.parent:
+        if (project_root / "pyproject.toml").exists():
+            break
+        project_root = project_root.parent
+    tests_dir = project_root / "tests"
+    if not tests_dir.is_dir():
+        return "No tests/ directory found"
+    matches = list(tests_dir.rglob(test_name))
+    return matches[0] if matches else f"No test file '{test_name}' found"

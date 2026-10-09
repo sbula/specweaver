@@ -85,6 +85,7 @@ class QARunnerInterface(ABC):
         timeout: int = 120,
         coverage: bool = False,
         coverage_threshold: int = 70,
+        coverage_source: str = "",
     ) -> TestRunResult:
         """Run tests and return structured results.
 

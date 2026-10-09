@@ -14,6 +14,7 @@ import re
 import shlex
 import shutil
 import sys
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
@@ -55,11 +56,25 @@ logger = logging.getLogger(__name__)
 
 from specweaver.sandbox.language.core.python.pytest_output import (  # noqa: E402
     _parse_pytest_output,
+    file_coverage,
 )
 
 # ---------------------------------------------------------------------------
 # PythonQARunner
 # ---------------------------------------------------------------------------
+
+
+def _did_not_run(nodeid: str, message: str, duration: float) -> TestRunResult:
+    """A test run that never got to run its tests: one error, naming why."""
+    return TestRunResult(
+        passed=0,
+        failed=0,
+        errors=1,
+        skipped=0,
+        total=1,
+        failures=[TestFailure(nodeid=nodeid, message=message)],
+        duration_seconds=duration,
+    )
 
 
 class PythonQARunner(QARunnerInterface):
@@ -95,6 +110,7 @@ class PythonQARunner(QARunnerInterface):
         timeout: int = 120,
         coverage: bool = False,
         coverage_threshold: int = 70,
+        coverage_source: str = "",
     ) -> TestRunResult:
         """Run pytest with the given parameters."""
         logger.debug(
@@ -117,7 +133,9 @@ class PythonQARunner(QARunnerInterface):
 
         # Add coverage
         if coverage:
-            cmd.extend(["--cov", target, "--cov-report", "term"])
+            # Coverage measures a folder; one file's figure is read from its own report row.
+            measured = str(PurePosixPath(coverage_source).parent) if coverage_source else target
+            cmd.extend(["--cov", measured, "--cov-report", "term"])
 
         try:
             result = self._executor.execute(cmd, timeout_seconds=timeout)
@@ -125,48 +143,21 @@ class PythonQARunner(QARunnerInterface):
             logger.warning(
                 "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
             )
-            return TestRunResult(
-                passed=0,
-                failed=0,
-                errors=1,
-                skipped=0,
-                total=1,
-                failures=[TestFailure(nodeid="<sandbox>", message=str(exc))],
-                duration_seconds=0.0,
-            )
+            return _did_not_run("<sandbox>", str(exc), 0.0)
 
         if result.timed_out:
             logger.warning(
                 "PythonQARunner: pytest timed out after %ds (target=%s)", timeout, target
             )
-            return TestRunResult(
-                passed=0,
-                failed=0,
-                errors=1,
-                skipped=0,
-                total=1,
-                failures=[
-                    TestFailure(
-                        nodeid="<timeout>",
-                        message=f"Test execution timed out after {timeout}s",
-                    )
-                ],
-                duration_seconds=result.duration_seconds,
+            return _did_not_run(
+                "<timeout>", f"Test execution timed out after {timeout}s", result.duration_seconds
             )
 
         parsed = _parse_pytest_output(result.stdout)
 
         reason = why_it_did_not_run(result, "pytest")
         if reason:
-            return TestRunResult(
-                passed=0,
-                failed=0,
-                errors=1,
-                skipped=0,
-                total=1,
-                failures=[TestFailure(nodeid="<toolchain>", message=reason)],
-                duration_seconds=result.duration_seconds,
-            )
+            return _did_not_run("<toolchain>", reason, result.duration_seconds)
 
         logger.info(
             "PythonQARunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",
@@ -184,7 +175,11 @@ class PythonQARunner(QARunnerInterface):
             skipped=parsed["skipped"],
             total=parsed["total"],
             failures=parsed["failures"],
-            coverage_pct=parsed["coverage_pct"],
+            coverage_pct=(
+                file_coverage(result.stdout, coverage_source)
+                if coverage_source
+                else parsed["coverage_pct"]
+            ),
             duration_seconds=parsed.get("duration", result.duration_seconds),
             toolchain_note=_supplied_note(self._executor),
         )

@@ -39,6 +39,17 @@ class ImportDirectionRule(Rule):
             return self._skip("Architecture check results not available (QA context not hydrated)")
 
         exports = result_data.get("exports") or {}
+        if "violation_count" not in exports:
+            reason = result_data.get("message") or "no architecture results"
+            return self._fail(
+                f"Architecture check could not run: {reason}",
+                [
+                    Finding(
+                        message=f"Architecture check could not run: {reason}",
+                        severity=Severity.ERROR,
+                    )
+                ],
+            )
         violation_count = exports.get("violation_count", 0)
 
         if violation_count == 0:

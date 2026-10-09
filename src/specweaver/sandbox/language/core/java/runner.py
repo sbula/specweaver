@@ -132,6 +132,7 @@ class JavaRunner(QARunnerInterface):
         timeout: int = 120,
         coverage: bool = False,
         coverage_threshold: int = 70,
+        coverage_source: str = "",
     ) -> TestRunResult:
         tool = self._get_build_tool()
         passed = 0

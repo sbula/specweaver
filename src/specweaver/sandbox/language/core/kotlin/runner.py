@@ -76,6 +76,7 @@ class KotlinRunner(QARunnerInterface):
         timeout: int = 120,
         coverage: bool = False,
         coverage_threshold: int = 70,
+        coverage_source: str = "",
     ) -> TestRunResult:
         cmd, search_path = self._test_command()
         result = self._executor.execute(cmd, timeout_seconds=timeout)

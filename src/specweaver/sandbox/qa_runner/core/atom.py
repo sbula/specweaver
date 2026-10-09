@@ -222,6 +222,7 @@ class QARunnerAtom(Atom):
                     timeout=context.get("timeout", 120),
                     coverage=context.get("coverage", False),
                     coverage_threshold=context.get("coverage_threshold", 70),
+                    coverage_source=context.get("coverage_source", ""),
                 )
             except TimeoutError as exc:
                 return AtomResult(

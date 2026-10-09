@@ -89,6 +89,8 @@ def hydrate_code_validation_context(
         Dict mapping context keys to serialized AtomResult dicts.
         Each value has shape: {"status": str, "message": str, "exports": dict}
     """
+    code_path = code_path.resolve()
+    project_root = project_root.resolve()
     active_rules = {step.rule for step in pipeline.steps}
     qa_rules_active = active_rules & _QA_RULE_IDS
 
@@ -212,23 +214,23 @@ def discover_protocol_endpoints(project_root: Path) -> list[Any]:
     return endpoints
 
 
+def _test_file_for(code_path: Path, project_root: Path) -> Path | None:
+    """The first `tests/**/test_<stem>.py`, as C03 finds it."""
+    tests_dir = project_root / "tests"
+    if not tests_dir.is_dir():
+        return None
+    return next(iter(sorted(tests_dir.rglob(f"test_{code_path.stem}.py"))), None)
+
+
 def _hydrate_tests(
     atom: Any,
     code_path: Path,
     project_root: Path,
 ) -> dict[str, Any] | None:
     """Execute tests atom for C03 and return serialized result."""
-    # Derive test file path (same logic as in C03 rule)
-    test_name = f"test_{code_path.stem}.py"
-    tests_dir = project_root / "tests"
-    if not tests_dir.is_dir():
+    test_file = _test_file_for(code_path, project_root)
+    if test_file is None:
         return None
-
-    matches = list(tests_dir.rglob(test_name))
-    if not matches:
-        return None
-
-    test_file = matches[0]
     try:
         result = atom.run(
             {
@@ -249,15 +251,19 @@ def _hydrate_coverage(
     code_path: Path,
     project_root: Path,
 ) -> dict[str, Any] | None:
-    """Execute coverage atom for C04 and return serialized result."""
+    """Run the file's tests with coverage measured on the file itself, for C04."""
+    test_file = _test_file_for(code_path, project_root)
+    if test_file is None:
+        return {"status": "FAILED", "message": f"No test file for {code_path.name}", "exports": {}}
     try:
         result = atom.run(
             {
                 "intent": "run_tests",
-                "target": str(code_path.relative_to(project_root)),
+                "target": test_file.relative_to(project_root).as_posix(),
                 "kind": "",
                 "timeout": 120,
                 "coverage": True,
+                "coverage_source": code_path.relative_to(project_root).as_posix(),
             }
         )
         return _serialize_atom_result(result)

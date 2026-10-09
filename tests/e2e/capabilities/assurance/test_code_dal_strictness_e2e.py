@@ -54,6 +54,8 @@ operational:
 
 SOURCE = '''"""A widget."""
 
+# TODO: name the widget's units (the warning both runs share)
+
 
 def add(a: int, b: int) -> int:
     """Add two numbers."""
@@ -77,7 +79,13 @@ def _project(tmp_path: Path, dal: str) -> Path:
     tests_dir = project / "tests"
     tests_dir.mkdir(exist_ok=True)
     (tests_dir / "test_widget.py").write_text(
-        "def test_add():\n    assert True\n", encoding="utf-8"
+        "from widget import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n",
+        encoding="utf-8",
+    )
+    (project / "pyproject.toml").write_text(
+        '[project]\nname = "widget"\nversion = "0.1"\n\n'
+        '[tool.pytest.ini_options]\npythonpath = ["src"]\n',
+        encoding="utf-8",
     )
 
     pipelines = project / ".specweaver" / "pipelines"

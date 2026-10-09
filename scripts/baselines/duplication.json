@@ -46,7 +46,7 @@
   },
   "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py <-> src/specweaver/assurance/validation/rules/code/c04_coverage.py @a536cb106114": {
     "lines": 11,
-    "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:61",
+    "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:44",
     "second": "src/specweaver/assurance/validation/rules/code/c04_coverage.py:49"
   },
   "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @9fb4379f35ac": {
@@ -117,12 +117,12 @@
   "src/specweaver/core/flow/store.py <-> src/specweaver/infrastructure/llm/store.py @066b17a9cd13": {
     "lines": 13,
     "first": "src/specweaver/core/flow/store.py:5",
-    "second": "src/specweaver/infrastructure/llm/store.py:8"
+    "second": "src/specweaver/infrastructure/llm/store.py:9"
   },
   "src/specweaver/infrastructure/llm/adapters/_rate_limit.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @d1e4b04c872c": {
     "lines": 11,
-    "first": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py:76",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
+    "first": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py:86",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:220"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @8e39de85bc6d": {
     "lines": 31,
@@ -132,27 +132,27 @@
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
     "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:198",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:154"
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:155"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @288f0451cd08": {
     "lines": 17,
     "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:207",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:220"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
     "lines": 12,
     "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:269",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:277"
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:275"
   },
   "src/specweaver/infrastructure/llm/adapters/base.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @c19c8fbcd910": {
     "lines": 16,
-    "first": "src/specweaver/infrastructure/llm/adapters/base.py:158",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:224"
+    "first": "src/specweaver/infrastructure/llm/adapters/base.py:160",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
   },
   "src/specweaver/infrastructure/llm/adapters/gemini.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @fccde4636f0a": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/gemini.py:269",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
+    "first": "src/specweaver/infrastructure/llm/adapters/gemini.py:266",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:220"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @4998873b8200": {
     "lines": 28,
@@ -161,18 +161,18 @@
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @aabfcc2d4963": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:166",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:122"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:167",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:120"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @d3fd4acd3676": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:202",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:222"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:203",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:220"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
     "lines": 12,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:252",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:277"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:253",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:275"
   },
   "src/specweaver/infrastructure/llm/prompt/adders.py <-> src/specweaver/infrastructure/llm/prompt/adders.py @1cf4d76d07d0": {
     "lines": 12,
@@ -201,18 +201,18 @@
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
     "lines": 15,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:266",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:211"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:282",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:227"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @605f0236a621": {
     "lines": 16,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:242",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:210"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:258",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:226"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @c138b76e8941": {
     "lines": 22,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:306",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:211"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:322",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:227"
   },
   "src/specweaver/interfaces/api/v1/projects.py <-> src/specweaver/interfaces/api/v1/projects.py @f89fbec0af3a": {
     "lines": 12,
@@ -281,23 +281,28 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/java/runner.py @1672fe6890f5": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:226",
-    "second": "src/specweaver/sandbox/language/core/java/runner.py:188"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:227",
+    "second": "src/specweaver/sandbox/language/core/java/runner.py:189"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @2717682f93a7": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:260",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:231"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:261",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:232"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @75aa9f6cbc6c": {
     "lines": 13,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:217",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:184"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:218",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:185"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @c9747b237b21": {
     "lines": 8,
     "first": "src/specweaver/sandbox/language/core/java/runner.py:96",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:76"
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:91"
+  },
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @5f1660ba7654": {
+    "lines": 11,
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:127",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
     "lines": 10,
@@ -316,28 +321,48 @@
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @d5b65f7d896b": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:193",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:154"
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:194",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:155"
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @639e7b0d7a99": {
     "lines": 10,
     "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:53",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:79"
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:94"
+  },
+  "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @a8b713459f8d": {
+    "lines": 11,
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:71",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
   "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @38e6c7900e69": {
     "lines": 16,
     "first": "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"
   },
+  "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2db82b71cb5e": {
+    "lines": 11,
+    "first": "src/specweaver/sandbox/language/core/python/runner.py:105",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+  },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @215e96f23a4f": {
     "lines": 8,
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:86",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:66"
   },
+  "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @39a8ceffc263": {
+    "lines": 11,
+    "first": "src/specweaver/sandbox/language/core/rust/runner.py:95",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+  },
   "src/specweaver/sandbox/language/core/sarif.py <-> src/specweaver/workspace/ast/parsers/_sarif_complexity.py @e4763546208a": {
     "lines": 7,
     "first": "src/specweaver/sandbox/language/core/sarif.py:28",
     "second": "src/specweaver/workspace/ast/parsers/_sarif_complexity.py:35"
+  },
+  "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @cc955ff7f21c": {
+    "lines": 23,
+    "first": "src/specweaver/sandbox/qa_runner/core/interface.py:80",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
   "src/specweaver/sandbox/qa_runner/interfaces/facades.py <-> src/specweaver/sandbox/qa_runner/interfaces/facades.py @57b45a6ebd49": {
     "lines": 24,
@@ -556,12 +581,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:430",
-    "second": "src/specweaver/workspace/store.py:398"
+    "first": "src/specweaver/workspace/store.py:441",
+    "second": "src/specweaver/workspace/store.py:409"
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @85457edb6a09": {
     "lines": 17,
-    "first": "src/specweaver/workspace/store.py:134",
-    "second": "src/specweaver/workspace/store.py:112"
+    "first": "src/specweaver/workspace/store.py:151",
+    "second": "src/specweaver/workspace/store.py:129"
   }
 }

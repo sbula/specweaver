@@ -14,6 +14,7 @@ Proves: TECH-002 FR-5.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -26,7 +27,7 @@ from specweaver.core.flow.handlers.validation_hydrator import (
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    import pytest
 
 # Patch targets: QARunnerAtom and execute_validation_pipeline are lazy-imported
 # inside functions, so we must patch at the SOURCE module, not the hydrator.
@@ -107,14 +108,32 @@ class TestHydrateCodeValidationContext:
         code_file = tmp_path / "src" / "module.py"
         code_file.parent.mkdir(parents=True, exist_ok=True)
         code_file.write_text("pass\n", encoding="utf-8")
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "tests" / "test_module.py").write_text("def test(): pass\n", encoding="utf-8")
 
         mock_result = _make_atom_result(exports={"coverage_pct": 95.0})
         with patch(_PATCH_ATOM) as mock_atom_cls:
             mock_atom_cls.return_value.run.return_value = mock_result
             ctx = hydrate_code_validation_context(pipeline, code_file, tmp_path)
 
-        assert "qa_coverage_result" in ctx
         assert ctx["qa_coverage_result"]["exports"]["coverage_pct"] == 95.0
+        sent = mock_atom_cls.return_value.run.call_args.args[0]
+        assert (sent["target"], sent["coverage_source"]) == (
+            "tests/test_module.py",
+            "src/module.py",
+        )
+
+    def test_coverage_without_a_test_file_fails_naming_it(self, tmp_path: Path) -> None:
+        code_file = tmp_path / "src" / "module.py"
+        code_file.parent.mkdir(parents=True, exist_ok=True)
+        code_file.write_text("pass\n", encoding="utf-8")
+
+        with patch(_PATCH_ATOM) as mock_atom_cls:
+            ctx = hydrate_code_validation_context(_make_pipeline(["C04"]), code_file, tmp_path)
+
+        assert ctx["qa_coverage_result"]["status"] == "FAILED"
+        assert "No test file" in ctx["qa_coverage_result"]["message"]
+        mock_atom_cls.return_value.run.assert_not_called()
 
     def test_hydrates_architecture_result_when_c05_active(self, tmp_path: Path) -> None:
         """Pipeline with C05 step → qa_architecture_result key populated."""
@@ -164,6 +183,8 @@ class TestHydrateCodeValidationContext:
         code_file = tmp_path / "src" / "module.py"
         code_file.parent.mkdir(parents=True, exist_ok=True)
         code_file.write_text("pass\n", encoding="utf-8")
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "tests" / "test_module.py").write_text("def test(): pass\n", encoding="utf-8")
 
         with patch(_PATCH_ATOM) as mock_atom_cls:
             mock_atom_cls.return_value.run.side_effect = RuntimeError("boom")
@@ -288,3 +309,21 @@ class TestExecuteValidationFlow:
         # Verify atom.run was called with dal_level
         run_call = mock_atom_cls.return_value.run.call_args
         assert run_call[0][0]["dal_level"] == "strict"
+
+
+def test_a_relative_code_path_reaches_the_atom_as_a_project_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D-VAL-05: a relative path made C04 and C05 hydration raise and report FAILED."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "module.py").write_text("pass\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    with patch(_PATCH_ATOM) as mock_atom_cls:
+        mock_atom_cls.return_value.run.return_value = _make_atom_result(exports={})
+        ctx = hydrate_code_validation_context(
+            _make_pipeline(["C05"]), Path("src/module.py"), tmp_path
+        )
+
+    assert ctx["qa_architecture_result"]["status"] == "SUCCESS"
+    assert mock_atom_cls.return_value.run.call_args.args[0]["target"] == "src/module.py"

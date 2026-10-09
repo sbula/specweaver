@@ -27,6 +27,12 @@ _FAILURE_RE = re.compile(r"FAILED\s+(\S+)(?:\s*-\s*(.*))?")
 _COVERAGE_RE = re.compile(r"TOTAL\s+\d+\s+\d+\s+(\d+)%")
 
 
+def file_coverage(stdout: str, path: str) -> float | None:
+    """One file's percentage from a coverage term report, or None when it has no row."""
+    row = re.search(rf"^{re.escape(path)}\s+\d+\s+\d+\s+(\d+)%", stdout, re.MULTILINE)
+    return float(row.group(1)) if row else None
+
+
 class _ParsedOutput(TypedDict):
     passed: int
     failed: int

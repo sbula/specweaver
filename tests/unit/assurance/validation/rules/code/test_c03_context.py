@@ -172,3 +172,33 @@ class TestC03Context:
         )
         result = rule.check("", spec_path=code_file)
         assert result.status == Status.FAIL
+
+
+class TestACheckThatNeverRanFails:
+    """D-VAL-05: a tool that could not run is never read as zero failures."""
+
+    def test_c03_fails_naming_the_reason(self, tmp_path: Path) -> None:
+        code_file = _setup_test_file(tmp_path)
+        rule = _make_rule(
+            {"qa_tests_result": {"status": "FAILED", "message": "boom", "exports": {}}}
+        )
+
+        result = rule.check("", spec_path=code_file)
+
+        assert result.status == Status.FAIL
+        assert "boom" in result.message
+
+    def test_c05_fails_naming_the_reason(self, tmp_path: Path) -> None:
+        from specweaver.assurance.validation.rules.code.c05_import_direction import (
+            ImportDirectionRule,
+        )
+
+        rule = ImportDirectionRule()
+        rule.context = {
+            "qa_architecture_result": {"status": "FAILED", "message": "no tach.toml", "exports": {}}
+        }
+
+        result = rule.check("", spec_path=tmp_path / "x.py")
+
+        assert result.status == Status.FAIL
+        assert "no tach.toml" in result.message

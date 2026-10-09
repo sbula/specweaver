@@ -100,6 +100,7 @@ class RustRunner(QARunnerInterface):
         timeout: int = 120,
         coverage: bool = False,
         coverage_threshold: int = 70,
+        coverage_source: str = "",
     ) -> TestRunResult:
         import time
 
