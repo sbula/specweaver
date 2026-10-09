@@ -94,7 +94,7 @@ proven through `/review`, not `/implement`).
 | E-INTL-01 FR-3 | No secret redaction before prompts. **Fixed** 2026-10-08: known secret values are masked in every prompt and tool result | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash | `handlers/validation.py:228` |
-| B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks | `register_fk_pragma_listener` test-only |
+| B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks. **Partly fixed** 2026-10-09: every engine from `create_async_engine` enforces foreign keys (the real databases had no orphan rows); who creates memory tasks is open — user's decision | `register_fk_pragma_listener` test-only |
 | C-FLOW-06 FR-1/2 | `stale_nodes` never written; skeletons dropped | `run_context.py:114` |
 | B-FLOW-01 FR-1/9/10 | S07 warns not rejects; no stack trace to the coder; ambiguity park not resumable | `s07_test_first.py:122`; `arbiter.py` |
 | C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR. **Fixed** 2026-10-09: one check runs at load and before each run; a wrong type is a result, not an exception; a step that never ran is ERROR | `models.py:380`; `atom.py:128` |

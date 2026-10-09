@@ -243,3 +243,28 @@ class TestFKPragmaListener:
 
         with pytest.raises(InvalidRequestError):
             register_fk_pragma_listener("not-an-engine")
+
+
+class TestLiveSessionsEnforceForeignKeys:
+    """Proves B-INTL-09 FR-6: the sessions the product uses enforce foreign keys, not only tests."""
+
+    @pytest.mark.asyncio
+    async def test_a_database_session_has_foreign_keys_on(self, tmp_path) -> None:
+        import sqlalchemy as sa
+
+        from specweaver.core.config.database import Database
+
+        async with Database(tmp_path / "x.db").async_session_scope() as session:
+            result = await session.execute(sa.text("PRAGMA foreign_keys"))
+            assert result.scalar() == 1
+
+    @pytest.mark.asyncio
+    async def test_the_engine_factory_turns_them_on(self) -> None:
+        import sqlalchemy as sa
+
+        from specweaver.core.config.database import create_async_engine
+
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+        async with engine.begin() as conn:
+            assert (await conn.execute(sa.text("PRAGMA foreign_keys"))).scalar() == 1
+        await engine.dispose()

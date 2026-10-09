@@ -174,7 +174,7 @@ def get_db_semaphore(max_connections: int = 500) -> asyncio.Semaphore:
 
 def create_async_engine(url: str, **kwargs: Any) -> AsyncEngine:
     """
-    Create a new asynchronous SQLAlchemy engine.
+    Create a new asynchronous SQLAlchemy engine, with foreign keys enforced on every connection.
     Mandates NullPool by default to prevent SQLite lock contention under massive parallelism.
     """
     from sqlalchemy.ext.asyncio import create_async_engine as sa_create_async_engine
@@ -184,7 +184,9 @@ def create_async_engine(url: str, **kwargs: Any) -> AsyncEngine:
     if "poolclass" not in kwargs:
         kwargs["poolclass"] = NullPool
 
-    return sa_create_async_engine(url, **kwargs)
+    engine = sa_create_async_engine(url, **kwargs)
+    register_fk_pragma_listener(engine.sync_engine)
+    return engine
 
 
 @asynccontextmanager
