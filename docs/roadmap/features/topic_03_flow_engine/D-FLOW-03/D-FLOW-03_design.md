@@ -1,6 +1,8 @@
 # D-FLOW-03 — Static Model Routing (Config-Driven)
 
-**Status**: APPROVED. **COMPLETE** — SF-01 and SF-02 committed (SF-02: `27b03522`). · **Phase**: 3
+**Status**: **SUPERSEDED by `C-FLOW-13`** (2026-10-05): models come from the settings files through one
+resolver; `create_llm_adapter`, `load_settings` and `project_llm_links` are gone. Was: APPROVED,
+SF-01 and SF-02 committed (SF-02: `27b03522`). · **Phase**: 3
 · **Feature ID**: feature_3_14 (legacy numbering; the code comments call it 3.12b)
 
 | | |

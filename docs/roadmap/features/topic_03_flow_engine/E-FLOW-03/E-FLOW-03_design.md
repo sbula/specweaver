@@ -1,6 +1,8 @@
 # E-FLOW-03 — Multi-Provider Adapter Registry
 
-**Status**: APPROVED · **COMPLETE** — SF-01 committed · **DAL**: E (Prototyping)
+**Status**: **SUPERSEDED by `C-FLOW-13`** (2026-10-05): adapters are built from `[servers]` in the
+settings files; `factory.py` and `sw config set-provider` are gone. Was: APPROVED, SF-01 committed ·
+**DAL**: E (Prototyping)
 
 | | |
 |---|---|

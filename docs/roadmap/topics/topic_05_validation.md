@@ -114,7 +114,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Trigger:** When a project's profile is set
   > - **Precondition:** `E-FLOW-01` → the config DB
   > - **Reads:** the chosen profile — web-app, data-pipeline, library, microservice, ml-model
-  > - **Produces:** db → bulk-written config overrides
+  > - **Produces:** db → the profile's name, which selects `validation_spec_<profile>.yaml`; no overrides are written
   > - **Enables:** five preset bundles · five CLI commands
   > - **Done when:** choosing a profile sets the whole bundle in one act
 

@@ -9,7 +9,7 @@ purpose: >
 description: |
   SpecWeaver spans the full development lifecycle — from business requirements
   through spec drafting, validation, review, code generation, and quality assurance.
-  It enforces spec quality through a 10-test battery and manages AI agents via
+  It enforces spec quality through a 12-test battery and manages AI agents via
   role-restricted tool interfaces.
 
 archetype: orchestrator
@@ -17,19 +17,15 @@ archetype: orchestrator
 consumes: []
 
 exposes:
-  - cli
-  - loom
-  - drafting
-  - review
-  - validation
-  - config
-  - llm
+  - assurance
+  - commons
+  - core
   - graph
-  - project
-  - implementation
-  - context
-  - flow
-  - pipelines
+  - infrastructure
+  - interfaces
+  - sandbox
+  - workflows
+  - workspace
 
 owner: sbula
 

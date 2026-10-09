@@ -105,9 +105,9 @@ proven through `/review`, not `/implement`).
 | D-VAL-05 | C04 never yields coverage; relative paths break C02/C04/C05. **Fixed** 2026-10-09: C04 runs the file's test with coverage on the file itself; paths are resolved once; C03 and C05 fail, naming why, when their tool could not run (they passed). Not fixed: C02/C03 still find the project root their own way; the Kotlin runner reports 0% coverage always | `validation_hydrator.py:257` |
 | D-INTL-03 | No shipped pipeline, CLI or API has a plan step | `new_feature.yaml` |
 | D-FLOW-04 FR-6 | Logger rollout incomplete (107 of 360 modules) | grep |
-| D-FLOW-03, E-FLOW-03 | Superseded by C-FLOW-13; designs still say COMPLETE | removed tables/commands |
-| D-SENS-02 FR-3, TECH-003 FR-3 | Stale `loom/` layout consumed by 3 `context.yaml` | workspace `context.yaml` |
-| C-VAL-02 | "Produces bulk-written overrides" is false | `core/config/profiles.py:7` |
+| D-FLOW-03, E-FLOW-03 | Superseded by C-FLOW-13; designs still say COMPLETE. **Fixed** 2026-10-09: both designs say SUPERSEDED; their status flags are the user's call | removed tables/commands |
+| D-SENS-02 FR-3, TECH-003 FR-3 | Stale `loom/` layout consumed by 3 `context.yaml`. **Fixed** 2026-10-09: the root `context.yaml` exposes the real top-level packages; D-SENS-02 FR-3 names `sandbox/language/core/<name>` | workspace `context.yaml` |
+| C-VAL-02 | "Produces bulk-written overrides" is false. **Fixed** 2026-10-09: the topic entry says a profile stores its name, which selects the pipeline | `core/config/profiles.py:7` |
 | TECH-004 FR-6 | `resolve_service_name` unused and always "default" | `assurance/graph/loader.py:62` |
 | C-FLOW-01 (REST) | `POST /review`, `/implement` crashed on every call until `67f51443`; now works, still weakly tested | `test_telemetry_wiring.py` mocks |
 | C-FLOW-01 (REST pipelines), found 2026-10-08 | `POST /pipelines/{name}/run` and `/runs/{id}/resume` build their run with no model router and no database: a step that needs a model fails, no cost history or outcome is written; the returned run id was never the run's. **Fixed** 2026-10-08 | `interfaces/api/v1/pipelines.py:56,148` |
