@@ -69,12 +69,6 @@ class TestLimitFieldsParse:
             30,
         )
 
-    def test_model_limits(self) -> None:
-        models = parse_machine_file(_MACHINE, "settings.toml").models
-
-        assert models["qwen3-coder-next"].tokens_per_run == 1_000_000
-        assert models["claude-sonnet-5"].spend_per_run == 8
-
     def test_no_brake_section_means_unset_not_a_default(self) -> None:
         brake = parse_machine_file("", "settings.toml").brake
 

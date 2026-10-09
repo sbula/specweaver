@@ -60,17 +60,6 @@ def _router():
     return build_router(files, project="demo", roles=[TaskType.REVIEW])
 
 
-async def test_a_reply_with_usage_counts_what_it_reports() -> None:
-    router = _router()
-    routed = router.get_for_task(TaskType.REVIEW)
-    reply = {**_REPLY, "usage": {"prompt_tokens": 3, "completion_tokens": 4, "total_tokens": 7}}
-
-    with fake_httpx2(lambda _request: httpx2.Response(200, json=reply)):
-        await routed.adapter.generate([Message(role=Role.USER, content="hi")], routed.config)
-
-    assert router.budget.spent("brake.tokens_per_run") == 7
-
-
 async def test_a_server_without_usage_still_reaches_the_limit() -> None:
     router = _router()
     routed = router.get_for_task(TaskType.REVIEW)

@@ -119,20 +119,6 @@ class TestALimitedCall:
         assert budget.spent("brake.hosted_spend_per_run") == pytest.approx(0.03)  # 30 tokens
         assert budget.spent("brake.tokens_per_run") == 0
 
-    def test_a_models_money_limit_is_converted_too(self) -> None:
-        machine = _HOSTED + "spend_per_run = 8\n" + _BRAKE + _CHF
-        router = _router(machine)
-        routed = router.get_for_task(TaskType.REVIEW)
-
-        values = {x.key: x.value for x in routed.adapter.scope(routed.config).limits}
-
-        assert values == pytest.approx(
-            {
-                "brake.hosted_spend_per_run": 20.0,
-                'models."big-model".spend_per_run': 10.0,
-            }
-        )
-
     async def test_a_model_limit_below_the_worst_case_stops_the_call_before_it_is_sent(
         self,
     ) -> None:

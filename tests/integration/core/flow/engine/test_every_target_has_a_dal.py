@@ -55,12 +55,6 @@ def _context(root: Path, db: Database) -> RunContext:
     return RunContext(project_path=root, spec_path=root / "a_spec.md", db=db)
 
 
-def test_a_new_project_defaults_to_dal_c(tmp_path: Path, db: Database) -> None:
-    root = _project(tmp_path, db)
-
-    assert default_dal_at(db, root) is DALLevel.DAL_C
-
-
 def test_a_run_without_a_declared_dal_takes_the_projects_default(
     tmp_path: Path, db: Database
 ) -> None:

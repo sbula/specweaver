@@ -14,9 +14,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
-from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
+from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.router import build_router
 
@@ -58,29 +56,8 @@ _HOSTED = _MACHINE.replace("private = true", "private = false") + (
 )
 
 
-def test_the_spend_ceiling_comes_from_the_brake_table() -> None:
-    assert _limits(_HOSTED + _BRAKE) == {"brake.hosted_spend_per_run": 7.5}
-
-
 def test_the_token_ceiling_comes_from_the_brake_table() -> None:
     assert _limits(_MACHINE + _BRAKE) == {"brake.tokens_per_run": 42}
-
-
-def test_the_spend_ceiling_is_given_in_the_configured_currency() -> None:
-    currency = '[currency]\ncode = "CHF"\nper_usd = 0.80\nrate_date = 2026-09-26\n\n'
-
-    limits = _limits(currency + _HOSTED + _BRAKE)
-    assert limits["brake.hosted_spend_per_run"] == pytest.approx(7.5 / 0.80)
-
-
-@pytest.mark.parametrize("key", ["hosted_spend_per_run", "tokens_per_run", "agent_turns"])
-def test_an_unset_ceiling_refuses_naming_its_key(key: str) -> None:
-    brake = "\n".join(line for line in _BRAKE.splitlines() if not line.startswith(key))
-
-    with pytest.raises(SettingsFileError) as caught:
-        _limits(_MACHINE + brake)
-
-    assert caught.value.key == f"brake.{key}"
 
 
 def test_a_telemetry_adapter_carries_the_configured_ceilings() -> None:

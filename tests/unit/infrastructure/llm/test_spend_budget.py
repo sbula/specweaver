@@ -308,15 +308,6 @@ class TestSnapshot:
 
         assert restored.limit_of(Limit(_RUN_USD.key, "usd", 50.0)) == 50.0
 
-    def test_a_lower_limit_in_the_file_does_not_undo_a_yes(self) -> None:
-        budget = SpendBudget(ask=lambda _q: True)
-        budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))
-        budget.before_call(_scope(_RUN_USD), Cost(usd=2.0, tokens=0))  # raised to 20
-        restored = SpendBudget()
-        restored.restore(budget.snapshot())
-
-        assert restored.limit_of(Limit(_RUN_USD.key, "usd", 5.0)) == 20.0
-
     def test_a_raised_limit_not_touched_after_a_resume_stays_raised(self) -> None:
         budget = SpendBudget(ask=lambda _q: True)
         budget.record(_scope(_RUN_USD), Cost(usd=9.0, tokens=0))

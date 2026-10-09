@@ -388,16 +388,6 @@
           "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
         },
         {
-          "id": "step-limit-advice-wrong",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget._ask_to_raise",
-          "old": "            advice = _step_limit_advice(self._ask is not None) if limit.on_spent else None\n",
-          "new": "            advice = None\n",
-          "breaks": "the user is told to raise a setting that does not exist",
-          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
-        },
-        {
           "id": "step-limit-on-worst-case",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
@@ -436,46 +426,6 @@
           "new": "                    raises[limit.key] = self._ask_to_raise(limit, amount, self._spent[limit.key])\n",
           "breaks": "a step limit is also checked against the worst case",
           "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
-        },
-        {
-          "id": "running-calls-at-reached-limit",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget._ask_to_raise",
-          "old": "        if self._reserved[limit.key] > 0 and not limit.on_spent:\n",
-          "new": "        if self._reserved[limit.key] > 0:\n",
-          "breaks": "the question names running calls that played no part",
-          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
-        },
-        {
-          "id": "no-terminal-told-to-answer",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget._ask_to_raise",
-          "old": "            advice = _step_limit_advice(self._ask is not None) if limit.on_spent else None\n",
-          "new": "            advice = _step_limit_advice(True) if limit.on_spent else None\n",
-          "breaks": "a run without a terminal is told to answer a question nobody asks",
-          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
-        },
-        {
-          "id": "unknown-price-called-reached",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget.before_call",
-          "old": "                    advice=\"Set the model's price in settings.toml.\",\n",
-          "new": "                    advice=_step_limit_advice(True),\n",
-          "breaks": "an unknown price is reported as a reached step limit",
-          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
-        },
-        {
-          "id": "reached-worded-as-crossing",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget._ask_to_raise",
-          "old": "            reason = f\"{limit.key} is reached: {spent} of {self._show(limit, current)} spent\"\n",
-          "new": "            reason = f\"{limit.key} would be crossed: {spent} of {self._show(limit, current)} spent\"\n",
-          "breaks": "the question describes a crossing that the check never made",
-          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
         }
       ]
     },

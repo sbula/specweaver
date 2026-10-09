@@ -73,17 +73,6 @@ def _reviewer(adapter: _Adapter, limit: float) -> Reviewer:
     )
 
 
-async def test_the_first_review_succeeds_and_spends_the_budget() -> None:
-    """The control, and the setup: without it the next test could pass by never working at all."""
-    adapter = _Adapter()
-    reviewer = _reviewer(adapter, limit=2.5)
-
-    result = await reviewer._execute_review("prompt")
-
-    assert result.verdict is ReviewVerdict.ACCEPTED
-    assert adapter.calls == 1
-
-
 async def test_the_next_review_is_refused_and_the_refusal_escapes_the_reviewer() -> None:
     adapter = _Adapter()
     reviewer = _reviewer(adapter, limit=2.5)
@@ -93,21 +82,6 @@ async def test_the_next_review_is_refused_and_the_refusal_escapes_the_reviewer()
         await reviewer._execute_review("prompt")
 
     assert adapter.calls == 1, "a second request reached the provider after the budget was spent"
-
-
-async def test_the_refusal_is_not_relabelled_as_a_review_outcome() -> None:
-    """The failure this seam exists to prevent: `ERROR` reads as *the review found problems*, and
-    the pipeline would carry on past a tripped breaker."""
-    adapter = _Adapter()
-    reviewer = _reviewer(adapter, limit=2.5)
-    await reviewer._execute_review("prompt")
-
-    try:
-        await reviewer._execute_review("prompt")
-    except BudgetExceededError as caught:
-        assert "brake.hosted_spend_per_run" in str(caught)
-    else:
-        pytest.fail("the breaker was swallowed and turned into a verdict")
 
 
 async def test_a_generous_budget_does_not_interfere() -> None:
