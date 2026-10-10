@@ -91,8 +91,10 @@ class TestTimerUnits:
         interpreter before anyone noticed it lacked xdist. A timer would never notice at all.
         """
         service = mutation.timer_units()["service"]
-        exec_line = next(line for line in service.splitlines() if line.startswith("ExecStart="))
-        assert exec_line.split("=", 1)[1].startswith("/"), exec_line
+        exec_lines = [line for line in service.splitlines() if line.startswith("ExecStart=")]
+        assert exec_lines
+        for line in exec_lines:  # `-` is systemd's "a failure does not stop the unit"
+            assert line.split("=", 1)[1].removeprefix("-").startswith("/"), line
 
 
 class TestInstallTimer:

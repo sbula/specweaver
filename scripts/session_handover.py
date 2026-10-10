@@ -286,6 +286,13 @@ def _git_state() -> list[str]:
     return [f"- **Git** `{branch}`, {unpushed}, working tree {tree}"]
 
 
+def _live_state() -> list[str]:
+    """The last nightly real-model run; anything but a recent pass is bold."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    ok, line = __import__("live").status()
+    return [f"- **Live** {line}" if ok else f"- **Live** **{line}**"]
+
+
 def _sweeps() -> list[str]:
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
     out = []
@@ -352,7 +359,7 @@ def render_state(*, gates: bool = False, suite: bool = False) -> str:
         f"*Generated {stamp}. Everything in this section is derived; edit above or below it.*",
         "",
     ]
-    body += _git_state() + _optional(gates, suite) + _registries() + _sweeps()
+    body += _git_state() + _live_state() + _optional(gates, suite) + _registries() + _sweeps()
 
     existing = HANDOVER.read_text(encoding="utf-8") if HANDOVER.is_file() else ""
     _, ahead = _run("git", "rev-list", "--count", "@{u}..HEAD")

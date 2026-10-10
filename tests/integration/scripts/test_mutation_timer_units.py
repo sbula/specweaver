@@ -62,6 +62,7 @@ class TestSystemdAcceptsTheUnits:
     def test_the_exec_start_binary_exists(self, mutation: ModuleType) -> None:
         """A unit that names an interpreter which is not there fails only at 03:00."""
         service = mutation.timer_units()["service"]
-        exec_line = next(line for line in service.splitlines() if line.startswith("ExecStart="))
-        binary = exec_line.split("=", 1)[1].split()[0]
-        assert Path(binary).is_file(), binary
+        for line in (x for x in service.splitlines() if x.startswith("ExecStart=")):
+            binary, script = line.split("=", 1)[1].removeprefix("-").split()[:2]
+            assert Path(binary).is_file(), binary
+            assert Path(script).is_file(), script

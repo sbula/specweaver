@@ -103,6 +103,17 @@ or by the e2e paths in `US-04.md`.
 | NFR-1 | Fail closed | Unknown is never a pass: an unknown price refuses (FR-9); an unknown thinking cap warns; a limit must be `> 0`; an unset `[brake]` value refuses the command (`C-FLOW-13`) |
 | NFR-2 | Scope | One brake per run, covering the whole call tree and surviving `sw resume` `[agreed 2026-09-26]` |
 | NFR-3 | No limit in code | No number or default for any limit in `src/` `[agreed 2026-10-03]` |
+| NFR-4 | Proven live, nightly | Against real Gemini each night: a review under its limit goes through, one below a call's worst case is stopped before sending; under USD 0.10 a night `[agreed 2026-10-10]` |
+
+## Live demo
+
+With a `[servers.gemini]` server, a role on `gemini-3.8-flash` and `GEMINI_API_KEY` set:
+
+- `[brake] hosted_spend_per_run = 0.10`, then `sw review <spec>` → a verdict; `sw costs` shows the spend.
+- `hosted_spend_per_run = 0.001`, then the same → "`brake.hosted_spend_per_run` would be crossed",
+  and nothing is sent.
+
+Nightly: `python scripts/live.py` (in the nightly session); last result: `python scripts/live.py --status`.
 
 ## External Dependencies
 

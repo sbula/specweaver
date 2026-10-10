@@ -10,7 +10,8 @@ have nothing to do with the change under test.
 Three things keep it opt-in, and each is one edit away from being lost:
 
 1. `addopts` deselects the marker, so a bare `pytest` skips them.
-2. No gate script re-enables it, so no commit boundary can start paying.
+2. No gate script re-enables it, so no commit boundary can start paying. The one script that runs
+   them is `scripts/live.py`, the nightly run `[agreed 2026-10-10]`, and no gate script calls it.
 3. The tests carry the marker, so the deselection actually catches them.
 
 Delete any one and the protection is gone silently — every run still passes, and the bill is the
@@ -27,6 +28,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 SCRIPTS = REPO_ROOT / "scripts"
 LIVE_TESTS = REPO_ROOT / "tests" / "manual" / "test_llm_live.py"
+NIGHTLY_RUNNER = SCRIPTS / "live.py"
+#: The scripts a commit boundary runs; none may start the nightly runner.
+GATE_SCRIPTS = ("quality.py", "tests.py")
 
 #: `-m 'not live'` written as one shell string.
 _MARKER_FLAG = re.compile(r"""-m\s*(?:'([^']*)'|"([^"]*)"|(\S+))""")
@@ -78,7 +82,7 @@ def test_no_gate_script_re_enables_the_live_marker() -> None:
     offenders = [
         path.relative_to(REPO_ROOT)
         for path in SCRIPTS.rglob("*.py")
-        if _enables_live(path.read_text(encoding="utf-8"))
+        if path != NIGHTLY_RUNNER and _enables_live(path.read_text(encoding="utf-8"))
     ]
 
     assert offenders == [], (
@@ -101,3 +105,13 @@ def test_the_live_tests_actually_carry_the_marker() -> None:
         f"{LIVE_TESTS.name} has {len(tests)} test(s) but "
         f"{source.count('@pytest.mark.live')} `live` marker(s) — an unmarked one runs everywhere"
     )
+
+
+def test_no_gate_script_starts_the_nightly_live_run() -> None:
+    for name in GATE_SCRIPTS:
+        assert "live.py" not in (SCRIPTS / name).read_text(encoding="utf-8"), name
+
+
+def test_the_nightly_live_tests_carry_the_marker() -> None:
+    for path in (REPO_ROOT / "tests" / "e2e").rglob("*live*_e2e.py"):
+        assert "pytest.mark.live" in path.read_text(encoding="utf-8"), path.name
