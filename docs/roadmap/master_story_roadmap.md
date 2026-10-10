@@ -35,13 +35,12 @@ settles them. Pick one; do not start another until it is done.*
 
 | # | Item | Gain | Cost | Next step |
 |---|---|---|---|---|
-| 1 | `B-FLOW-05` brake | high — the model limits and the unpriced-model refusal now act on every call | none — built, proven nightly | the user's sign-off |
-| 2 | `B-FLOW-07` spend-limit matrix | high — a step limit from the history of the same model, kind of task and DAL | medium-high — a new settings shape; ties to `A-FLOW-01` | built 2026-10-08 (lean); awaiting sign-off |
-| 3 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user; it removes the `RLIMIT_NPROC` backstop | medium — Linux-only, cgroups v2 delegation | design (stub) |
-| 4 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
-| 5 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted: since `INT-US-24`, LLM-written scenario tests run over LLM-generated code | medium-high — allow-list derivation for any pipeline | design (stub) |
-| 6 | `B-FLOW-06` loop detection | medium — stops a repeating agent early; money and token limits catch it late | unknown — loops can span several steps; weigh effort against result first | design |
-| 7 | `E-VAL-04` multi-stage reviews | medium — separate review questions, each a rubric file | low once `C-VAL-05` is approved; blocked until then | approve `C-VAL-05` |
+| 1 | `B-FLOW-07` spend-limit matrix | high — a step limit from the history of the same model, kind of task and DAL | medium-high — a new settings shape; ties to `A-FLOW-01` | built 2026-10-08 (lean); awaiting sign-off |
+| 2 | `B-EXEC-04` cgroups process cap | high — a fork bomb is capped per sandbox, not per user; it removes the `RLIMIT_NPROC` backstop | medium — Linux-only, cgroups v2 delegation | design (stub) |
+| 3 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
+| 4 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted: since `INT-US-24`, LLM-written scenario tests run over LLM-generated code | medium-high — allow-list derivation for any pipeline | design (stub) |
+| 5 | `B-FLOW-06` loop detection | medium — stops a repeating agent early; money and token limits catch it late | unknown — loops can span several steps; weigh effort against result first | design |
+| 6 | `E-VAL-04` multi-stage reviews | medium — separate review questions, each a rubric file | low once `C-VAL-05` is approved; blocked until then | approve `C-VAL-05` |
 
 Not on the list: items whose main effect is closing a story (`D-UI-01`, `B-VAL-05`, `A-INTL-01`
 and the rest of the former "one item from green" table). `A-SENS-02` (GraphRAG) pays only on very
@@ -164,8 +163,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `🔧` **D-FLOW-04:** Unified Runner Architecture
     *   `🔧` **E-FLOW-03:** Multi-Provider Registry
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Security Defenses:**
-        *   `🔧` **B-FLOW-05:** Spend Brake
+    *   🟢 **Security Defenses:**
+        *   `✅` **B-FLOW-05:** Spend Brake
         *   `🔜` **B-FLOW-07:** Spend Limit Matrix (Model × Task × DAL)
     *   🟢 **Parallel Multi-Spec Execution:**
         *   `✅` **C-FLOW-03:** Multi-Spec Pipeline Fan-Out

@@ -4,13 +4,13 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**Four capabilities are `🔧`, not `✅`, awaiting approval.**
+**Three capabilities are `🔧`, not `✅`, awaiting approval.**
 
-`C-VAL-05` · `B-FLOW-05` · `C-FLOW-11` · `D-UI-01`
+`C-VAL-05` · `C-FLOW-11` · `D-UI-01`
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
 They are built and tested; the `specweaver-design` **Phase 6 approval gate has never run for any
-of them**. `B-FLOW-05` has no open defects; it waits on the user's sign-off.
+of them**.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
 `TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Each one's evidence is in
@@ -35,19 +35,13 @@ false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
-## One of them is wrong
-
-Read the design before touching it. It says so in its own first section.
-
-| Capability | What is wrong |
-|---|---|
-| `B-FLOW-05` | Built and proven against real Gemini every night (NFR-4); awaiting the user's sign-off, so still `🔧` |
+## Settings and limits
 
 `C-FLOW-13` (all five sub-features committed 2026-10-05): every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
 `--model` sets one run's model. `B-FLOW-05` applies every limit, including model limits.
-Both status flips (`C-FLOW-13` 🔜 → ✅, `B-FLOW-05` 🔧 → ✅) await the user's sign-off.
+`C-FLOW-13` 🔜 → ✅ awaits the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
@@ -63,6 +57,7 @@ set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot b
 
 | What | Result |
 |---|---|
+| `B-FLOW-05` Spend Brake | Finished, signed off 2026-10-10: every call checked before it is sent, asks or parks at a limit, proven against real Gemini every night |
 | `D-INTL-04` retired into `D-INTL-07` | Folded 2026-08-27 as the **bootstrap rubric**. Both were an adaptive interview over different rubrics rendering different files — one machine described twice. Tombstoned in topic 04 (ID dead, gap to `D-INTL-05` intentional), out of the capability matrix, `US-8` re-pointed, `C-VAL-05`'s `Enables` updated. Its Legacy-3.52 architecture note is kept unedited and marked superseded in mechanism only: the goal, the localized `context.yaml` and the *Monolith* mitigation came across; the fixed `Typer` wizard did not. A misfiled `US-18` line went with it, and the pre-commit gate caught that this orphaned an add-on group — 72 groups in the roadmap, exactly one empty, so it was a hole this change made; the group's only member had ever been that questionnaire. `US-8` renamed *Wizard* → *Interview*, the mechanic being the retired half. Record: `D-INTL-07_absorption_walkthrough.md`. **The load-bearing requirement moved into the design**: the harness must make an unanswered question un-passable — a model told not to guess guesses, and `TECH-069` proved a keyword check cannot tell asking from typing |
 | `E-VAL-03` retired, executed | Detector + 3 test files + mutants deleted, `FilePromptAdapter` unwired, `escaping.py` kept (`E-INTL-01`); registry tombstoned everywhere; US-04's *sanitized* clause closed by decision |
 | Graph/vector wiring (ADR-006) | `TECH-068` + `B-SENS-08`/`B-SENS-09`/`B-VAL-07` minted; locate→contextualize→verify recorded with the no-gates-on-vectors invariant; readers sequenced behind edge truth |

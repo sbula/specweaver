@@ -239,7 +239,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Note:** its output never feeds a gate or a blast radius. No correctness decision consumes vector output (`ADR-006` decision 3)
 
-* **`B-FLOW-05` 🔧: Spend Brake**
+* **`B-FLOW-05` ✅: Spend Brake**
   > - **Purpose:** No run spends past the user's limits unasked: it pauses and asks, or parks
   > - **Trigger:** Before every LLM request, each tool round included, and after every completed call
   > - **Precondition:** `C-FLOW-01` → token and cost data · `C-FLOW-13` → `[brake]` and model limits in `settings.toml`

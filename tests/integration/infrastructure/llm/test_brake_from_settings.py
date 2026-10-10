@@ -3,7 +3,7 @@
 
 """The run's limits come from the settings file and stop a real call before it is sent.
 
-Proves: C-FLOW-13 FR-17
+Proves: C-FLOW-13 FR-17, B-FLOW-05 NFR-3
 
 Settings file → `build_router` → a real adapter → its collector → the brake. Only HTTP is faked.
 

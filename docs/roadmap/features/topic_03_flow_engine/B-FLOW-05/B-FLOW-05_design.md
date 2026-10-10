@@ -2,7 +2,7 @@
 
 - **Feature ID**: B-FLOW-05
 - **Phase**: Topic 03 (Flow Engine) · DAL-B (High-Assurance)
-- **Status**: APPROVED `[agreed 2026-10-06]`. Built; proven live every night. `🔧` until the user signs off.
+- **Status**: ✅ Finished — signed off by the user 2026-10-10. Proven live every night.
 - **Story**: `US-4` add-on *Security Defenses* — paths in [US-04.md](../../../stories/US-04.md#spend-brake-b-flow-05)
 - **Decisions**: [spend_brake_grilling_2026-10-06.md](../../../../analysis/spend_brake_grilling_2026-10-06.md),
   building on [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md)
