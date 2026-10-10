@@ -1,5 +1,7 @@
 # What it takes to close something
 
+The rule for "finished" is `.agents/PRINCIPLES.md` §6. This file adds the FR-coverage check.
+
 A `🟢` or a `✅` is a claim that the implementation stands up to the ticket's promise. It is not a
 claim that work happened, that a commit landed, or that a follow-up was filed.
 

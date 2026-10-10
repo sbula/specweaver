@@ -112,6 +112,25 @@ Do not open new work while set-back work is open. Do not file a ticket instead o
 **Filing is not resolving.** Before filing, answer out loud: can I check this now? Can I fix it now?
 Does this need a decision I cannot take? Only the third is a reason to file.
 
+### When a feature is finished `[agreed 2026-10-10]`
+
+All six hold. Only the user says "finished"; until then the agent says "ready for your check".
+
+1. **Works for real.** It ran on a real project with the real tools (a real model, real git, real
+   files). One live demo command, kept in the design, shows it.
+2. **Promise matches code.** Every SHALL is built and shown working, or removed from the design
+   with why and who decided. An accepted gap is a written limit with the user's decision and date.
+3. **Stays working.** The live demo runs in the nightly real-model run (USD 0.10 a night). Few tests
+   that prove the real path beat many that mock it; there is no target count.
+4. **Docs say what the code does.** Find every related document with `grep -rl <ID> docs .agents
+   src` and check each one; miss none. Short, no filler, state not history. The user guide holds
+   the demo command; `STATE.md` holds one line.
+5. **One finished message**, at most 10 lines: promise; the demo and what it shows; limits with
+   decision and date; what was removed; "Sign off?".
+6. **Signed off, pushed, then new work.** After sign-off: status and `STATE.md` in one commit; the
+   user pushes. No new feature while `git rev-list --count origin/main..HEAD` is above 0. Fixes to
+   the same feature may go on.
+
 ## 7. Before you touch a file
 
 - **Re-read it first.** Always read a file immediately before changing it.
