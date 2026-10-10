@@ -4,8 +4,8 @@
 """Reads the LLM settings files. The only module that does.
 
 The machine file lives beside the data (`SPECWEAVER_DATA_DIR`, else `~/.specweaver`); the project
-section is `[llm]` in the project's `specweaver.toml`. A missing file is not an error — it means
-built-in defaults or an empty choice. A broken one is: it refuses, naming its path and line.
+section is `[llm]` in the project's `specweaver.toml`. A missing file is not an error — it is an
+empty one, and a command that needs a model then refuses. A broken one refuses, naming its line.
 """
 
 from __future__ import annotations

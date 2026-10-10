@@ -1,8 +1,8 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""CLI commands for config management: set/get/list/reset, log level,
-constitution max size, and domain profiles, plus model routing."""
+"""CLI commands for config management: log level, constitution size, domain profiles, and the
+LLM settings commands (`set-role`, `show`)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 config_app = typer.Typer(
     name="config",
-    help="Manage per-project configuration and routing.",
+    help="Manage per-project configuration and the LLM settings.",
     no_args_is_help=True,
 )
 

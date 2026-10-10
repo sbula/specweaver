@@ -23,13 +23,11 @@ to `✅`. Do not.** Only the user can give the sign-off.
 ## Audit of "done", 2026-10-07
 
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
-`B-FLOW-05` and `C-FLOW-13` are not done either. The audit marks each fixed row **Fixed**;
+`C-FLOW-13` waits on the user's sign-off. The audit marks each fixed row **Fixed**;
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
-Decided 2026-10-08: queued calls keep reserving before their slot (B-FLOW-05 #12); the brake
-uses the highest tier price (C-FLOW-13 #22; the hand-kept price list holds it); `sw config
-show` moved into the LLM module and shows what a call sends (C-FLOW-13 #12/#13, done). Next: `B-FLOW-07` — SF-01 and SF-02 built 2026-10-08, waiting on the user's sign-off; decisions in
+Next: `B-FLOW-07` — SF-01 and SF-02 built 2026-10-08, waiting on the user's sign-off; decisions in
 `docs/analysis/limits_matrix_grilling_2026-10-08.md`, then the other
 false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
@@ -37,7 +35,7 @@ status; which statuses to reopen is the user's decision.
 
 ## Settings and limits
 
-`C-FLOW-13` (all five sub-features committed 2026-10-05): every LLM call takes its model from the
+`C-FLOW-13` (all four live sub-features committed): every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
 `--model` sets one run's model. `B-FLOW-05` applies every limit, including model limits.

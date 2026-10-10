@@ -77,3 +77,28 @@ def test_the_local_model_is_not_priced_from_a_hosted_namesake() -> None:
         0.95,
         40,
     )
+
+
+def test_a_20_kb_settings_file_resolves_within_the_budget() -> None:
+    """NFR-1: read, validate and layer the settings once, under 50 ms for a file under 20 KB."""
+    from specweaver.core.config.llm_settings import LlmSettingsFiles, resolve_roles
+
+    models = "".join(
+        f'[models."m{i}"]\nusd_per_million_input = 1.0\nusd_per_million_output = 2.0\n'
+        f"max_output = 4000\n\n"
+        for i in range(210)
+    )
+    machine = (
+        '[servers.gb10]\nkind = "openai-compatible"\nbase_url = "http://gb10:8000/v1"\n'
+        'private = true\nmax_parallel = 4\n\n[roles]\ndefault = "m1@gb10"\nreview = "m2@gb10"\n\n'
+        "[brake]\nhosted_spend_per_run = 1\ntokens_per_run = 1000\nagent_turns = 5\n\n" + models
+    )
+    assert 15_000 < len(machine.encode()) < 20_480
+
+    start = time.perf_counter()
+    files = LlmSettingsFiles.from_texts(
+        machine_text=machine, machine_source="settings.toml", project_text="", project_source="-"
+    )
+    resolve_roles(files)
+
+    assert time.perf_counter() - start < 0.05

@@ -29,11 +29,11 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Purpose:** Add an LLM provider by dropping in one file, with no other change anywhere
   > - **Trigger:** At import, when adapters are scanned
   > - **Precondition:** —
-  > - **Reads:** `llm/adapters/` — each adapter self-describes its name, key variable and costs
+  > - **Reads:** `llm/adapters/` — each adapter self-describes its name and key variable
   > - **Produces:** memory → a provider registry
-  > - **Enables:** the adapter factory · `sw config set-provider` · `D-FLOW-03` routing
+  > - **Enables:** `C-FLOW-13` servers, which build every adapter
   > - **Done when:** adding a provider is one file and zero other changes
-  > - **Note:** registers PROVIDERS only. Nothing registers MODELS — that gap is `C-FLOW-13`
+  > - **Note:** superseded by `C-FLOW-13`, whose model list registers models and whose servers register providers
 
 ## DAL-D: Internal Tooling
 

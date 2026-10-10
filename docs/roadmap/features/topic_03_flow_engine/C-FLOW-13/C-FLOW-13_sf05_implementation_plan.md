@@ -6,6 +6,8 @@
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/C-FLOW-13/C-FLOW-13_sf05_implementation_plan.md
 - **Status**: APPROVED `[agreed 2026-10-04]`
 
+**Superseded in part** 2026-10-09: roles carry no limit. The design states what is built.
+
 ## Goal
 
 FR-16: `sw implement` and `sw run` take `--model <model@server>` for this run only.

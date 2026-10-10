@@ -3,6 +3,8 @@
 **Status**: APPROVED — approved by Steve Bula `[agreed 2026-09-27]` · **FRs owned**: FR-6, FR-7, FR-8, FR-9, FR-18 · **Depends on**: SF-01 (committed) ·
 Design: [C-FLOW-13_design.md](C-FLOW-13_design.md) §Sub-features → SF-02
 
+**Superseded in part** 2026-10-09: the catalogue is one hand-kept `models.toml`; `models_dev.json`, `local.toml` and the update script are gone. The design states what is built.
+
 ## Goal
 
 Give every model its facts from one shipped catalogue, build every adapter client from a server

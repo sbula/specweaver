@@ -3,7 +3,7 @@
 
 """One resolved setting per role, and each value says where it came from.
 
-Proves: C-FLOW-13 FR-3, FR-9
+Proves: C-FLOW-13 FR-3, FR-9, NFR-2
 
 | Bucket | Case |
 |---|---|

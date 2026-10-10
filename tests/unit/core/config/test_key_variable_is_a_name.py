@@ -3,7 +3,7 @@
 
 """`api_key_env` names a variable; a key pasted there is refused and never shown back.
 
-Proves: C-FLOW-13 FR-4
+Proves: C-FLOW-13 FR-4, NFR-2
 
 | Bucket | Case |
 |---|---|
