@@ -98,7 +98,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Produces:** HTTP endpoints carrying ledger content
   > - **Enables:** `A-UI-01` → the remote operator it names as its consumer
   > - **Done when:** 🔴
-  > - **Note:** same purpose as `C-UI-03` and `B-FLOW-05` — three capabilities, one benefit
+  > - **Note:** same purpose as `C-UI-03` and `A-FLOW-01` — three capabilities, one benefit
 
 * **`D-UI-07` 🔜: REST API — Systems Integration**
   > - **Purpose:** 🟡 Keep the REST surface complete, so a UI client is never blocked on a missing endpoint
@@ -140,7 +140,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Produces:** 🟡 a cost breakdown by task type across models
   > - **Enables:** model choice per task
   > - **Done when:** 🔴
-  > - **Note:** same purpose as `D-UI-06` and `B-FLOW-05`
+  > - **Note:** same purpose as `D-UI-06` and `A-FLOW-01`
 
 ## DAL-B: High-Assurance
 

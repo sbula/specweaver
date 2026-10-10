@@ -83,7 +83,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-13 | One currency | `sw costs`, `sw usage`, brake values | SHALL show and take every amount in the one currency `[currency] code` sets, at `per_usd` with `rate_date`; without `[currency]` it SHALL use USD `[agreed 2026-09-27]` | one currency everywhere, the user's own, and they know how old the rate is |
 | FR-15 | Commands write the files | `sw config set-role`, `sw costs set`, `sw costs reset` | SHALL write the machine or project file with `tomlkit`, keeping comments; `set-provider`, `routing` and the DB's LLM tables go `[agreed 2026-09-27]` | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
-| FR-17 | Brake values handed over | Resolver → brake | SHALL provide `[brake]` values (CHF and GPU-hour check-in intervals, agent turns) to the brake — **seam with `B-FLOW-05`**, test written as `xfail(strict=True)` until its redesign | the values live here; the behaviour lives there |
+| FR-17 | Brake values handed over | Resolver → brake | SHALL provide the `[brake]` values (`hosted_spend_per_run`, `tokens_per_run`, `agent_turns`) to the brake — **seam with `B-FLOW-05`** | the values live here; the behaviour lives there |
 | FR-18 | Catalogue upkeep | `catalogue_data/models.toml` | SHALL ship a short list kept by hand: every hosted model on it has both prices, at the highest tier, and an output limit, and the list states the date its prices were checked `[agreed 2026-10-09]` | a price change is a one-line, reviewable edit, never a runtime fetch |
 
 ## Non-Functional Requirements
@@ -109,7 +109,7 @@ a cloned repo must not be able to send code to its own server.
 | FR-8 | current limiter | `AsyncRateLimiterAdapter(wrapped, limit=3, timeout=30.0)`, semaphore keyed by `provider_name` | read `adapters/_rate_limit.py:15-39` |
 | FR-12 | current pricing | `estimate_cost(model, usage, overrides)` returns 0.0 for unknown | read `infrastructure/llm/telemetry.py:61-90` |
 | FR-15 | writer precedent | `tomlkit.parse` / `tomlkit.dumps` | read `workspace/project/tach_sync.py:86,116` |
-| FR-17 | brake input | `SpendBudget(limit_usd, token_limit)` | read `infrastructure/llm/budget.py:49` — to be redesigned by `B-FLOW-05` |
+| FR-17 | brake input | `brake_limits(files)`; `SpendBudget(currency, ask)`, `before_call(scope, worst)` | read `infrastructure/llm/budget.py` |
 
 ## Risks
 

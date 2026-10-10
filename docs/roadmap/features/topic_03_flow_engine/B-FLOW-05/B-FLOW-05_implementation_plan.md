@@ -1,5 +1,9 @@
 # B-FLOW-05 — Token-Burn Circuit Breakers (implementation plan)
 
+**Superseded** by the 2026-10-06 redesign (Spend Brake): the built plans are
+[SF-01](B-FLOW-05_sf01_implementation_plan.md) and [SF-02](B-FLOW-05_sf02_implementation_plan.md).
+Kept as the record of the first version.
+
 **FRs owned: FR-1, FR-2, FR-3, FR-4, FR-5.** · Design: [B-FLOW-05_design.md](B-FLOW-05_design.md),
 which also tabulates proof and mutants.
 

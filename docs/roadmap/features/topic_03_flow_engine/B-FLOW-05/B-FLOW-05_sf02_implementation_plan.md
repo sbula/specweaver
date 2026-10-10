@@ -2,7 +2,7 @@
 - **Feature ID**: B-FLOW-05
 - **Sub-Feature**: SF-02 — Pause, park and resume
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-02
+- **Design Section**: §Sub-Features → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf02_implementation_plan.md
 - **Status**: APPROVED `[agreed 2026-10-07]`
 

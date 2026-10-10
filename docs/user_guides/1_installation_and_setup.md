@@ -83,6 +83,8 @@ rate_date = 2026-09-26
   then continue with `sw run --resume <id>`: the run keeps what it already spent, and a limit is
   the higher of the file's value and the one you raised. Over the REST API a request at a limit
   gets HTTP 402 with `error_code` `SPEND_LIMIT`.
+- **See it work:** set `hosted_spend_per_run = 0.001` and run `sw review <spec>`. The run names
+  `brake.hosted_spend_per_run`, sends nothing, and `sw costs` shows no new spend.
 - A model (`[models."<id>"]`) may carry `spend_per_run` or `tokens_per_run` too; the lowest
   limit that applies wins. Only the machine file may set limits. A tool loop that reaches
   `agent_turns` stops with an error naming it.

@@ -41,6 +41,12 @@ Paths: `src/specweaver/infrastructure/llm/`; discovery lives in `adapters/regist
 
 - **No telemetry in the adapter.** Cost routing, token counting and database lineage are not its
   job; do not intercept payload counts inside generation.
+- **Every tool round is checked before it is sent.** `generate_with_tools` takes a
+  `before_request(round_num, prompt_chars)` hook and calls it before each request, with the size of
+  everything the round sends (system prompt, tool schemas, messages). The collector checks the
+  spend brake there; skipping the call lets a long tool loop spend unchecked.
+- **Name errors by status code.** Map a provider error to `AuthenticationError`, `RateLimitError`,
+  `ModelNotFoundError` or `GenerationError` by its HTTP status, never by words in the message.
 - **Adapters are built in one place.** `RoleResolver` (`infrastructure/llm/resolve.py`) builds each
   from its server entry (`servers.py`), wraps it in the server's parallel limit and a
   `TelemetryCollector` that prices calls from the catalogue. Nothing else constructs an adapter.

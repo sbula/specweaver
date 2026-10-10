@@ -45,7 +45,8 @@ that handler.
 
 A handler need not do anything about the spend brake. When the brake stops a call, the runner parks
 the step after it returns, whatever the handler did with the error (`_parked_by_brake` in
-`step_execution.py`).
+`step_execution.py`). A handler that catches broad exceptions logs them with `log_step_failure`
+(`handlers/results.py`): a crash keeps its traceback, a brake stop is one quiet line.
 
 A handler gets its model through `llm_for(context, task_type)`. It stamps the call with the run, the
 step and the run's DAL, which the cost history and the step limits need; a handler that builds a

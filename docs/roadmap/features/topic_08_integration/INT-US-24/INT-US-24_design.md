@@ -132,7 +132,7 @@ References:
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Backward compatibility | Zero behavior change for `mode != dual_pipeline`, `kind != scenario`, and absent feedback keys; full existing suite stays green (5437+ tests at design time) |
-| NFR-2 | Bounded cost | No new LLM call sites; the happy path performs **zero** arbitration LLM calls (FR-2 short-circuit); loop bounded by the existing `max_retries: 3` gate in `scenario_integration.yaml` (token-burn breakers remain `B-FLOW-05`, queue Candidate 5) |
+| NFR-2 | Bounded cost | No new LLM call sites; the happy path performs **zero** arbitration LLM calls (FR-2 short-circuit); loop bounded by the existing `max_retries: 3` gate in `scenario_integration.yaml` (spend limits are `B-FLOW-05`, the Spend Brake) |
 | NFR-3 | Isolation posture | Scenario test execution (LLM-derived tests over LLM-generated code) keeps the INT-US-03/C-EXEC-06 wiring: `execution_root` binding in `ValidateTestsHandler._get_atom` untouched and asserted in the proof when session isolation is on |
 | NFR-4 | Observability | Dual fan-out start/JOIN result, arbiter verdict + spec clause, and the false-green guard each emit `logger.info`/`warning` (extends B-FLOW-01 NFR-3) |
 | NFR-5 | Graceful degradation | A parked/failed sub-pipeline yields a FAILED dual step with the sub-pipeline's error message (no hangs — `ALL_COMPLETED` wait); LLM verdict JSON that fails to parse yields an ERROR StepResult (existing behavior, kept); arbiter-loop exhaustion → loud FAILED stop + non-zero exit (INT-US-02 E4 parity — `max_retries_hitl` is engine-dead, see AD-7) |

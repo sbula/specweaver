@@ -10,7 +10,7 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
 They are built and tested; the `specweaver-design` **Phase 6 approval gate has never run for any
-of them**. `B-FLOW-05` also has open defects (the 2026-10-07 audit).
+of them**. `B-FLOW-05` has no open defects; it waits on the user's sign-off.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
 `TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Each one's evidence is in
@@ -28,7 +28,7 @@ the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EX
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
 Decided 2026-10-08: queued calls keep reserving before their slot (B-FLOW-05 #12); the brake
-uses the highest tier price (C-FLOW-13 #22 — regenerate the catalogue to apply it); `sw config
+uses the highest tier price (C-FLOW-13 #22; the hand-kept price list holds it); `sw config
 show` moved into the LLM module and shows what a call sends (C-FLOW-13 #12/#13, done). Next: `B-FLOW-07` — SF-01 and SF-02 built 2026-10-08, waiting on the user's sign-off; decisions in
 `docs/analysis/limits_matrix_grilling_2026-10-08.md`, then the other
 false items.
@@ -41,7 +41,7 @@ Read the design before touching it. It says so in its own first section.
 
 | Capability | What is wrong |
 |---|---|
-| `B-FLOW-05` | Redesigned and rebuilt 2026-10-07 (Spend Brake: pause and ask, park, resume with totals, model limits, REST 402); awaiting the user's approval, so still `🔧`. Loop detection moved to `B-FLOW-06` |
+| `B-FLOW-05` | Built and proven against real Gemini every night (NFR-4); awaiting the user's sign-off, so still `🔧` |
 
 `C-FLOW-13` (all five sub-features committed 2026-10-05): every LLM call takes its model from the
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
@@ -213,10 +213,8 @@ set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot b
   `B-FLOW-03` was **stopped at its Phase 1 gate** — the grilling showed the scope is not settled.
   The document splits the problem three ways (the record · the quality axis · the post-mortem),
   maps six delivered and nine undesigned capabilities onto them, and leaves **six questions open
-  with no defaults**, including what `B-FLOW-05` is — contested since 2026-08-19 and still
-  unanswered. It also re-took the price census the earlier one asked for: **Anthropic prices at
-  `$0.00` because the table's model ids reverse the real ones**, and Gemini Flash is ~10–19× too
-  cheap. **Read it before designing anything in this area; do not re-derive it.**
+  with no defaults** (what `B-FLOW-05` is was settled 2026-10-06: the brake; measurement is
+  `A-FLOW-01`). **Read it before designing anything in this area; do not re-derive it.**
 
 - **A scoped mutation run withdrew every finding it never looked at.** Found and closed
   2026-08-27. `fold_session` read absence from the run's `declared` set as *somebody deleted this

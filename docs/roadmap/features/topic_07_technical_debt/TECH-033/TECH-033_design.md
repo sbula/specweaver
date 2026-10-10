@@ -81,7 +81,7 @@ code does not honour it.
 
 - **Not** a change to `gate.max_retries`' default or to any pipeline YAML. The number is right;
   the counter's lifetime is wrong.
-- **Not** token-spend budgeting — that is `B-FLOW-05` (Token-Burn Circuit Breakers). This ticket
+- **Not** token-spend budgeting — that is `B-FLOW-05` (Spend Brake). This ticket
   bounds *attempts*; a spend cap is a different mechanism and neither substitutes for the other.
 - **Not** a rework of gate evaluation, which lives in `gates.py` and is out of scope beyond the
   two counter sites.

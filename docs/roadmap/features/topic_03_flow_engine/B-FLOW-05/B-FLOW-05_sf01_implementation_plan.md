@@ -2,9 +2,10 @@
 - **Feature ID**: B-FLOW-05
 - **Sub-Feature**: SF-01 — Accounting and limits
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_design.md
-- **Design Section**: §Sub-Feature Breakdown → SF-01
+- **Design Section**: §Sub-Features → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-05/B-FLOW-05_sf01_implementation_plan.md
 - **Status**: APPROVED `[agreed 2026-10-06]`
+- **Superseded in part** 2026-10-09: roles carry no limit, and an unknown thinking cap warns instead of refusing. The design states what is built.
 
 ## Goal
 

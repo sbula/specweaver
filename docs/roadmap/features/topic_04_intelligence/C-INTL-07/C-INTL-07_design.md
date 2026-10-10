@@ -7,7 +7,7 @@
 |---|---|
 | Extends | `C-INTL-01` — the single-pass planner. Its `AD-2`, its *multi-level* title and its agent-sized heuristic are the promise; its `FR-3` was descoped to `C-FLOW-12` (`TECH-046`) |
 | Used by | `C-FLOW-12` — executes the plan and consumes the persisted artifact. It owns fan-out; this owns depth. Its `FR-1..FR-4` were written on 2026-08-13 so the descope had a stated home |
-| Builds on | `B-FLOW-05` — token-burn circuit breakers, the natural substrate for the per-level cost cap |
+| Builds on | `B-FLOW-05` — the Spend Brake (per-run and per-model limits), the natural substrate for the per-level cost cap |
 | Integrated by | `INT-US-21-SF03` (minted 2026-08-13) |
 
 `C-INTL-01` was designed as *"Automated iterative decomposition (multi-level)"* and shipped
