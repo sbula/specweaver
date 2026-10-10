@@ -217,21 +217,7 @@ class ReviewSpecHandler:
             # 3.11: Scan LLM response for file mentions
             _scan_and_store_mentions(result.raw_response, context)
 
-            return StepResult(
-                status=StepStatus.PASSED
-                if result.verdict.value == "accepted"
-                else StepStatus.FAILED,
-                output={
-                    "verdict": result.verdict.value,
-                    "summary": result.summary,
-                    "findings_count": len(result.findings),
-                    # The finding TEXTS, not just a count: the inline report and the loop_back
-                    # feedback to the re-draft both need them.
-                    "findings": [f.model_dump() for f in result.findings],
-                },
-                started_at=started,
-                completed_at=_now_iso(),
-            )
+            return _review_step_result(result, started)
         except Exception as exc:
             logger.exception("ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
@@ -302,21 +288,7 @@ class ReviewCodeHandler:
             # 3.11: Scan LLM response for file mentions
             _scan_and_store_mentions(result.raw_response, context)
 
-            return StepResult(
-                status=StepStatus.PASSED
-                if result.verdict.value == "accepted"
-                else StepStatus.FAILED,
-                output={
-                    "verdict": result.verdict.value,
-                    "summary": result.summary,
-                    "findings_count": len(result.findings),
-                    # The finding TEXTS, not just a count: the inline report and the loop_back
-                    # feedback to the re-draft both need them.
-                    "findings": [f.model_dump() for f in result.findings],
-                },
-                started_at=started,
-                completed_at=_now_iso(),
-            )
+            return _review_step_result(result, started)
         except Exception as exc:
             logger.exception("ReviewCodeHandler: unhandled exception during code review")
             return _error_result(str(exc), started)
@@ -438,3 +410,27 @@ def _is_within(path: Path, root: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _review_step_result(result: Any, started: str) -> StepResult:
+    """Accepted passes, denied fails; a review that could not run is an error that says why."""
+    verdict = result.verdict.value
+    status = {"accepted": StepStatus.PASSED, "error": StepStatus.ERROR}.get(
+        verdict, StepStatus.FAILED
+    )
+    return StepResult(
+        status=status,
+        output={
+            "verdict": verdict,
+            "summary": result.summary,
+            "findings_count": len(result.findings),
+            # The finding TEXTS, not just a count: the inline report and the loop_back
+            # feedback to the re-draft both need them.
+            "findings": [f.model_dump() for f in result.findings],
+        },
+        error_message=(result.summary or "the review could not run")
+        if status is StepStatus.ERROR
+        else "",
+        started_at=started,
+        completed_at=_now_iso(),
+    )

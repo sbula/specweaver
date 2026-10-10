@@ -150,6 +150,35 @@ class TestReviewSpecOutputContract:
         assert result.output["findings"] == [f.model_dump() for f in findings]
         assert result.output["findings"][0]["message"] == "Off-by-one in loop"
 
+    @pytest.mark.asyncio
+    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
+    @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
+    async def test_a_review_that_could_not_run_is_an_error_naming_why(
+        self, mock_fetch_mcp, mock_review_spec, tmp_path: Path
+    ) -> None:
+        """Found on a real Gemini call, 2026-10-10: a 503 reached the run as 'no error message'."""
+        spec = tmp_path / "test_spec.md"
+        spec.write_text("# Test\n")
+        ctx = RunContext(
+            project_path=tmp_path,
+            spec_path=spec,
+            model=ModelAccess(llm_router=FixedRouter(MagicMock())),
+        )
+        ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
+        step = PipelineStep(name="rev", action=StepAction.REVIEW, target=StepTarget.SPEC)
+
+        from specweaver.workflows.review.reviewer import ReviewResult, ReviewVerdict
+
+        mock_review_spec.return_value = ReviewResult(
+            verdict=ReviewVerdict.ERROR, summary="503 UNAVAILABLE: high demand"
+        )
+        mock_fetch_mcp.return_value = None
+
+        result = await ReviewSpecHandler().execute(step, ctx)
+
+        assert result.status == StepStatus.ERROR
+        assert "503 UNAVAILABLE" in (result.error_message or "")
+
 
 class TestReviewCodeHandler:
     """Tests for the review+code handler."""

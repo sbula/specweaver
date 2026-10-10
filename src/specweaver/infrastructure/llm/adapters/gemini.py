@@ -403,26 +403,23 @@ class GeminiAdapter(LLMAdapter):
             return self.estimate_tokens(text)  # pragma: no cover
 
     def _handle_error(self, exc: Exception) -> LLMResponse:
-        """Convert Gemini SDK exceptions to SpecWeaver LLM errors."""
-        exc_str = str(exc).lower()
-
-        if "401" in exc_str or "api key" in exc_str or "unauthorized" in exc_str:
+        """Convert Gemini SDK exceptions to SpecWeaver LLM errors, by status code when there is one."""
+        code = getattr(exc, "code", None)
+        text = str(exc).lower()
+        if code in (401, 403) or (code is None and ("api key" in text or "unauthorized" in text)):
             logger.error("GeminiAdapter: authentication failed — check GEMINI_API_KEY")
             raise AuthenticationError(str(exc), provider="gemini") from exc
-
-        if "429" in exc_str or "rate limit" in exc_str or "quota" in exc_str:
+        if code == 429 or (code is None and ("rate limit" in text or "quota" in text)):
             logger.warning("GeminiAdapter: rate limit / quota exceeded")
             raise RateLimitError(str(exc), provider="gemini") from exc
-
-        if "404" in exc_str or "not found" in exc_str or "model" in exc_str:
+        if code == 404 or (code is None and "not found" in text):
             logger.error("GeminiAdapter: model not found")
             raise ModelNotFoundError(str(exc), provider="gemini") from exc
-
-        if "safety" in exc_str or "blocked" in exc_str:
+        if "safety" in text or "blocked" in text:
             logger.warning("GeminiAdapter: content blocked by safety filter")
             raise ContentFilterError(str(exc), provider="gemini") from exc
 
-        logger.error("GeminiAdapter: unclassified generation error — %s", exc)
+        logger.error("GeminiAdapter: generation failed — %s", exc)
         raise GenerationError(str(exc), provider="gemini") from exc
 
 
