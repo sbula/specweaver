@@ -300,7 +300,6 @@ def review(
     )
 
     _core.console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
-    _core.console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
     if spec:
         spec_path = Path(spec)
@@ -326,6 +325,7 @@ def review(
         params=params,
     )
     router = command_router(project, roles_of(pipeline), project_root=project_path)
+    _core.console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),

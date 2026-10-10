@@ -58,3 +58,21 @@ def test_a_key_nobody_set_names_its_table() -> None:
 
 def test_a_line_inside_a_multiline_string_is_never_named() -> None:
     assert line_of(_TEXT, "max_parallel") == 1
+
+
+class TestATableOnlyItsChildrenOpen:
+    """Found on a real run, 2026-10-10: `[llm.servers.evil]` was reported at line 1 for `llm.servers`."""
+
+    def test_the_first_child_table_names_the_line(self) -> None:
+        from specweaver.core.config.toml_lines import path_line
+
+        text = '\n\n[llm]\nprivate_only = true\n\n[llm.servers.evil]\nkind = "x"\n'
+
+        assert path_line(text, ("llm", "servers")) == 6
+
+    def test_an_assignment_still_wins_over_a_child_table(self) -> None:
+        from specweaver.core.config.toml_lines import path_line
+
+        text = "[llm]\nservers = 1\n\n[llm.servers.evil]\n"
+
+        assert path_line(text, ("llm", "servers")) == 2

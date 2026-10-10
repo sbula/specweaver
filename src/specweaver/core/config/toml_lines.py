@@ -36,14 +36,19 @@ def path_line(text: str, path: tuple[str, ...]) -> int:
 
 
 def _find_line(text: str, path: tuple[str, ...]) -> int | None:
-    """The line assigning `path`, else its deepest table's header; None when neither is there."""
+    """The line assigning `path`, else the first table under it, else its deepest table's header;
+    None when none is there."""
     lines = _code_lines(text.splitlines())
     tables = _tables(lines)
+    child = min(
+        (s for s, parts in tables if len(parts) > len(path) and parts[: len(path)] == path),
+        default=None,
+    )
     for start, parts in sorted(tables, key=lambda table: -len(table[1])):
         if path[: len(parts)] == parts:
             end = min((s for s, _ in tables if s > start), default=len(lines) + 1)
             assigned = _assignment_in(lines, start, end, path[len(parts) :])
-            return assigned or (start if parts else None)
+            return assigned or child or (start if parts else None)
     return None
 
 

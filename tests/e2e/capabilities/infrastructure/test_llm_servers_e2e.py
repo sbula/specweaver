@@ -160,3 +160,4 @@ def test_the_target_projects_private_rule_holds_while_another_project_is_active(
     assert seen == [], [str(request.url) for request in seen]
     assert result.exit_code != 0
     assert shows(result.output, "private servers only")
+    assert "Sending to LLM" not in result.output  # nothing is sent, so nothing says so
