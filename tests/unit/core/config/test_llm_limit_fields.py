@@ -131,3 +131,16 @@ class TestLimitsInTheReport:
             "settings.toml:17",
         )
         assert report["models.claude-sonnet-5.spend_per_run"][0] == "8"
+
+
+class TestSmallAmountsAreShown:
+    """Found on a real run, 2026-10-10: a USD 0.001 limit was shown as "USD 0.00"."""
+
+    @pytest.mark.parametrize(
+        ("usd", "shown"),
+        [(0.001, "USD 0.001"), (0.0042, "USD 0.004"), (0.0, "USD 0.00"), (12.5, "USD 12.50")],
+    )
+    def test_an_amount_below_a_cent_keeps_its_digit(self, usd: float, shown: str) -> None:
+        from specweaver.core.config.llm_settings import format_money
+
+        assert format_money(usd, None) == shown

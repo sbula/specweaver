@@ -67,12 +67,17 @@
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
     "lines": 10,
     "first": "src/specweaver/interfaces/api/event_bridge.py:105",
-    "second": "src/specweaver/core/flow/engine/display.py:366"
+    "second": "src/specweaver/core/flow/engine/display.py:369"
   },
   "src/specweaver/core/flow/engine/store.py <-> src/specweaver/graph/core/store/repository.py @521d1386da74": {
     "lines": 14,
     "first": "src/specweaver/core/flow/engine/store.py:148",
     "second": "src/specweaver/graph/core/store/repository.py:67"
+  },
+  "src/specweaver/core/flow/handlers/arbiter.py <-> src/specweaver/core/flow/handlers/dual_pipeline.py @1ba107def696": {
+    "lines": 11,
+    "first": "src/specweaver/core/flow/handlers/arbiter.py:21",
+    "second": "src/specweaver/core/flow/handlers/dual_pipeline.py:17"
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
     "lines": 7,
@@ -88,16 +93,6 @@
     "lines": 7,
     "first": "src/specweaver/core/flow/handlers/contract_renderers.py:250",
     "second": "src/specweaver/core/flow/handlers/contract_renderers.py:129"
-  },
-  "src/specweaver/core/flow/handlers/dual_pipeline.py <-> src/specweaver/core/flow/handlers/standards.py @65e736dc9f10": {
-    "lines": 11,
-    "first": "src/specweaver/core/flow/handlers/dual_pipeline.py:16",
-    "second": "src/specweaver/core/flow/handlers/standards.py:11"
-  },
-  "src/specweaver/core/flow/handlers/review.py <-> src/specweaver/core/flow/handlers/review.py @bc2b01ec85a3": {
-    "lines": 25,
-    "first": "src/specweaver/core/flow/handlers/review.py:297",
-    "second": "src/specweaver/core/flow/handlers/review.py:212"
   },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,

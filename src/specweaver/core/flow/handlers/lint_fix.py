@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _now_iso
+from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -176,8 +177,8 @@ class LintFixHandler:
                     context=context,
                 )
             except Exception as exc:
-                logger.exception(
-                    "LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1
+                log_step_failure(
+                    logger, "LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1
                 )
                 return _lint_outcome(
                     started,

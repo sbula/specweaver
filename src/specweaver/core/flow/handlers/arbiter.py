@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
+from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -312,5 +313,5 @@ class ArbitrateVerdictHandler(StepHandler):
             return _error_result(f"Unknown verdict type {result.verdict}", started)
 
         except Exception as exc:
-            logger.exception("ArbitrateVerdictHandler: unhandled error")
+            log_step_failure(logger, "ArbitrateVerdictHandler: unhandled error")
             return _error_result(str(exc), started)

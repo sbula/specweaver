@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.generation import _resolve_generation_routing
+from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -113,7 +114,7 @@ class GenerateScenarioHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
-            logger.exception("GenerateScenarioHandler: unhandled exception")
+            log_step_failure(logger, "GenerateScenarioHandler: unhandled exception")
             return _error_result(str(exc), started)
 
 
@@ -184,5 +185,5 @@ class ConvertScenarioHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
-            logger.exception("ConvertScenarioHandler: unhandled exception")
+            log_step_failure(logger, "ConvertScenarioHandler: unhandled exception")
             return _error_result(str(exc), started)

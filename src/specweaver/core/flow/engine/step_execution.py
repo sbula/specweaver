@@ -39,6 +39,7 @@ from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
 
 if TYPE_CHECKING:
@@ -210,8 +211,8 @@ async def execute_step(
         else:
             result = cast("StepResult", await handler.execute(step_def, runner._context))
     except Exception as exc:
-        logger.exception(
-            "[run_id=%s] Step '%s' raised unhandled exception", run.run_id, step_def.name
+        log_step_failure(
+            logger, "[run_id=%s] Step '%s' raised unhandled exception", run.run_id, step_def.name
         )
         result = StepResult(
             status=StepStatus.ERROR,

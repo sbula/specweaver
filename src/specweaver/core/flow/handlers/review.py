@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
+from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -219,7 +220,7 @@ class ReviewSpecHandler:
 
             return _review_step_result(result, started)
         except Exception as exc:
-            logger.exception("ReviewSpecHandler: unhandled exception during spec review")
+            log_step_failure(logger, "ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
 
     @staticmethod
@@ -290,7 +291,7 @@ class ReviewCodeHandler:
 
             return _review_step_result(result, started)
         except Exception as exc:
-            logger.exception("ReviewCodeHandler: unhandled exception during code review")
+            log_step_failure(logger, "ReviewCodeHandler: unhandled exception during code review")
             return _error_result(str(exc), started)
 
     def _find_code_path(self, context: RunContext) -> Path | None:
@@ -428,9 +429,13 @@ def _review_step_result(result: Any, started: str) -> StepResult:
             # feedback to the re-draft both need them.
             "findings": [f.model_dump() for f in result.findings],
         },
-        error_message=(result.summary or "the review could not run")
-        if status is StepStatus.ERROR
-        else "",
+        error_message="" if status is StepStatus.PASSED else _failure_reason(verdict, result),
         started_at=started,
         completed_at=_now_iso(),
     )
+
+
+def _failure_reason(verdict: str, result: Any) -> str:
+    if verdict == "error":
+        return result.summary or "the review could not run"
+    return f"review {verdict}: {result.summary}" if result.summary else f"review {verdict}"

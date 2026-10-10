@@ -222,9 +222,10 @@ def format_money(usd: float | None, currency: Currency | None, *, places: int = 
     """A USD amount in the configured currency; `unknown` stays unknown, never 0."""
     if usd is None:
         return "unknown"
-    if currency is None:
-        return f"USD {usd:.{places}f}"
-    return f"{currency.code} {usd * currency.per_usd:.{places}f}"
+    code, value = ("USD", usd) if currency is None else (currency.code, usd * currency.per_usd)
+    while value and abs(value) < 10**-places and places < 6:  # never show a real amount as 0
+        places += 1
+    return f"{code} {value:.{places}f}"
 
 
 def to_usd(amount: float, currency: Currency | None) -> float:

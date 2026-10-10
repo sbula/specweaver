@@ -286,6 +286,9 @@ class RichPipelineDisplay:
             self._console.print(
                 f"\n[yellow bold]Pipeline parked[/yellow bold] at step [cyan]{step_name}[/cyan]",
             )
+            reason = _park_reason(run, step_name)
+            if reason:
+                self._console.print(reason, markup=False, highlight=False)
             self._console.print(
                 f"[dim]Resume with:[/dim] sw run --resume {run.run_id}",
             )
@@ -393,3 +396,11 @@ class JsonPipelineDisplay:
         """Write a single JSON line."""
         self._output.write(json.dumps(data, default=str) + "\n")
         self._output.flush()
+
+
+def _park_reason(run: PipelineRun, step_name: str | None) -> str:
+    """Why the step waits, e.g. the spend limit that stopped it."""
+    for record in run.step_records:
+        if record.step_name == step_name and record.result is not None:
+            return record.result.error_message
+    return ""

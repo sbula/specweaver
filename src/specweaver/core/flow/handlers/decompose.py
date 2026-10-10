@@ -19,6 +19,7 @@ from specweaver.core.flow.handlers.decomposition_artifacts import (
     persist_decomposition,
     write_component_stubs,
 )
+from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
@@ -129,7 +130,7 @@ class DecomposeFeatureHandler(StepHandler):
             )
 
         except Exception as e:
-            logger.exception("Failed to decompose feature")
+            log_step_failure(logger, "Failed to decompose feature")
             return StepResult(
                 status=StepStatus.ERROR,
                 error_message=str(e),
@@ -387,7 +388,7 @@ class OrchestrateComponentsHandler(StepHandler):
         except _OrchestrationRefusedError as refusal:
             return _failed(str(refusal))
         except Exception as exc:
-            logger.exception("Failed to orchestrate components")
+            log_step_failure(logger, "Failed to orchestrate components")
             return StepResult(
                 status=StepStatus.ERROR, error_message=str(exc), started_at="", completed_at=""
             )

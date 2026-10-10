@@ -15,6 +15,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
+from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -86,7 +87,9 @@ class ArbitrateDualPipelineHandler:
             )
 
         except Exception as exc:
-            logger.exception("ArbitrateDualPipelineHandler: unhandled exception in dual pipeline")
+            log_step_failure(
+                logger, "ArbitrateDualPipelineHandler: unhandled exception in dual pipeline"
+            )
             return _error_result(str(exc), started)
 
     def _build_runner(self, pipe_file: str, component: str, context: RunContext) -> Any:

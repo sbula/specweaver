@@ -17,6 +17,7 @@ from specweaver.core.flow.handlers.artifact_lineage import (
 )
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
+from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 
 if TYPE_CHECKING:
@@ -182,7 +183,9 @@ class _GenerationHandler:
                 artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
-            logger.exception("%s: unhandled exception during %s generation", name, self.ARTEFACT)
+            log_step_failure(
+                logger, "%s: unhandled exception during %s generation", name, self.ARTEFACT
+            )
             detail = str(exc)
             if self.INCLUDE_TRACEBACK:
                 import traceback
@@ -411,7 +414,7 @@ class PlanSpecHandler:
                 artifact_uuid=artifact_uuid,
             )
         except Exception as exc:
-            logger.exception("PlanSpecHandler: unhandled exception during plan generation")
+            log_step_failure(logger, "PlanSpecHandler: unhandled exception during plan generation")
             return _error_result(str(exc), started)
 
 
@@ -486,7 +489,7 @@ class GenerateContractHandler:
                 completed_at=_now_iso(),
             )
         except Exception as exc:
-            logger.exception("GenerateContractHandler: unhandled exception")
+            log_step_failure(logger, "GenerateContractHandler: unhandled exception")
             return _error_result(str(exc), started)
 
     @staticmethod
