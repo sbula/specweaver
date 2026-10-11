@@ -79,7 +79,6 @@ def test_settings_that_would_send_the_openai_key_elsewhere_are_refused(monkeypat
 
 async def test_its_own_key_variable_is_what_another_host_gets(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", _SECRET)
-    monkeypatch.setenv("PROXY_KEY", "proxy-key-0123456789")
     files = LlmSettingsFiles.from_texts(
         machine_text=_MACHINE.replace(
             "private = true", 'private = true\napi_key_env = "PROXY_KEY"'
@@ -87,6 +86,7 @@ async def test_its_own_key_variable_is_what_another_host_gets(monkeypatch) -> No
         machine_source="settings.toml",
         project_text="",
         project_source="-",
+        keys={"OPENAI_API_KEY": _SECRET, "PROXY_KEY": "proxy-key-0123456789"},
     )
     routed = build_router(files, project="demo", roles=[TaskType.REVIEW]).get_for_task(
         TaskType.REVIEW

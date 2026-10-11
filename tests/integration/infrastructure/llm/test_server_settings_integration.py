@@ -30,6 +30,7 @@ from specweaver.infrastructure.llm.adapters._rate_limit import _SEMAPHORES
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
 from specweaver.infrastructure.llm.servers import adapter_for_server
 from tests.fake_http import fake_httpx2
+from tests.keys_file import write_keys
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -63,10 +64,11 @@ def gb10_role(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
+    write_keys(tmp_path, OPENAI_API_KEY="sk-real-openai-key")
     _SEMAPHORES.clear()
     files = load_llm_settings(None)
     role = resolve_roles(files)["draft"]
-    return role, adapter_for_server(role.server, files.machine.servers[role.server])
+    return role, adapter_for_server(role.server, files.machine.servers[role.server], files.keys)
 
 
 def _ask(adapter, model: str):

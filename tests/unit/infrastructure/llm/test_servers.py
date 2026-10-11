@@ -31,12 +31,11 @@ _GB10 = ServerEntry(
 
 
 def test_a_hosted_server_reads_the_key_variable_it_names(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("WORK_ANTHROPIC_KEY", "sk-work")
     server = ServerEntry(
         kind="anthropic", api_key_env="WORK_ANTHROPIC_KEY", private=False, max_parallel=3
     )
 
-    adapter = adapter_for_server("work", server)
+    adapter = adapter_for_server("work", server, {"WORK_ANTHROPIC_KEY": "sk-work"})
 
     assert isinstance(adapter._wrapped, AnthropicAdapter)
     assert adapter._wrapped._api_key == "sk-work"
@@ -44,7 +43,7 @@ def test_a_hosted_server_reads_the_key_variable_it_names(monkeypatch: pytest.Mon
 
 
 def test_the_limit_is_the_servers_own(monkeypatch: pytest.MonkeyPatch) -> None:
-    adapter = adapter_for_server("gb10", _GB10)
+    adapter = adapter_for_server("gb10", _GB10, {})
 
     assert (adapter._key, adapter._limit) == ("gb10", 4)
     assert isinstance(adapter._wrapped, OpenAICompatibleAdapter)
@@ -54,13 +53,12 @@ def test_the_limit_is_the_servers_own(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_an_unset_key_variable_leaves_the_server_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("WORK_ANTHROPIC_KEY", raising=False)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-personal")
+    monkeypatch.setenv("WORK_ANTHROPIC_KEY", "sk-in-the-shell")
     server = ServerEntry(
         kind="anthropic", api_key_env="WORK_ANTHROPIC_KEY", private=False, max_parallel=3
     )
 
-    adapter = adapter_for_server("work", server)
+    adapter = adapter_for_server("work", server, {"ANTHROPIC_API_KEY": "sk-personal"})
 
     assert adapter.available() is False
 
@@ -68,7 +66,7 @@ def test_an_unset_key_variable_leaves_the_server_unavailable(
 def test_a_keyless_local_server_never_gets_the_openai_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "sk-real-openai-key")
 
-    adapter = adapter_for_server("gb10", _GB10)
+    adapter = adapter_for_server("gb10", _GB10, {"OPENAI_API_KEY": "sk-real-openai-key"})
 
     assert adapter.available() is True
     assert adapter._wrapped._api_key != "sk-real-openai-key"

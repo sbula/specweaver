@@ -23,19 +23,18 @@ uv sync
 
 ## 3. Providing Credentials
 
-Keys stay in the environment, under any variable name you choose; each server in `settings.toml`
-names its variable in `api_key_env`. SpecWeaver reads no other variable.
+Keys live in one file, `~/.specweaver/keys.env`, outside every repository. Each server in
+`settings.toml` names its key's variable in `api_key_env`; the key itself is only in `keys.env`.
+SpecWeaver reads keys from nowhere else — not from the shell, not from a project.
 
-```powershell
-# Windows PowerShell
-$env:GEMINI_API_KEY = "your-gemini-key"
-$env:OPENAI_API_KEY = "your-openai-key"
-$env:ANTHROPIC_API_KEY = "your-anthropic-key"
-$env:MISTRAL_API_KEY = "your-mistral-key"
-$env:DASHSCOPE_API_KEY = "your-qwen-key"
+```bash
+# ~/.specweaver/keys.env — only you may read it: chmod 600 ~/.specweaver/keys.env
+GEMINI_API_KEY=your-gemini-key
+ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-Everything else about models lives in one file.
+SpecWeaver refuses `keys.env` if other users can read it. Everything else about models lives in
+`settings.toml`.
 
 ## 3a. Choosing models: `~/.specweaver/settings.toml`
 

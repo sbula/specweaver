@@ -17,7 +17,6 @@ FR-4's mutant is the one worth naming: the router still evaluates, still logs, s
 no-op and proved nothing.
 """
 
-import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -49,7 +48,11 @@ def tmp_db(tmp_path: Path) -> Database:
 def _router(machine: str, roles: list[TaskType]) -> ModelRouter:
     """The router a command builds, from a machine settings file and no project file."""
     files = LlmSettingsFiles.from_texts(
-        machine_text=machine + _BRAKE, machine_source="-", project_text="", project_source="-"
+        machine_text=machine + _BRAKE,
+        machine_source="-",
+        project_text="",
+        project_source="-",
+        keys=_KEYS,
     )
     return build_router(files, project="test-proj", roles=roles)
 
@@ -94,24 +97,20 @@ _KEYS = {"ANTHROPIC_API_KEY": "dummy1", "GEMINI_API_KEY": "dummy2"}
 
 def test_routed_calls_are_priced_from_the_catalogue() -> None:
     """T8: a routed collector prices its server's models from the shipped catalogue."""
-    with patch.dict(os.environ, _KEYS):
-        res = _router(_HOSTED, [TaskType.IMPLEMENT]).get_for_task(TaskType.IMPLEMENT)
+    res = _router(_HOSTED, [TaskType.IMPLEMENT]).get_for_task(TaskType.IMPLEMENT)
 
-        assert isinstance(res.adapter, TelemetryCollector)
-        facts = res.adapter._prices("claude-sonnet-5")
-        assert facts is not None and facts.usd_per_million_input > 0
+    assert isinstance(res.adapter, TelemetryCollector)
+    facts = res.adapter._prices("claude-sonnet-5")
+    assert facts is not None and facts.usd_per_million_input > 0
 
 
 def test_memory_leak_check_caching() -> None:
     """T16: the router must bound its adapters by server, not by task type or call count."""
     tasks = [TaskType.IMPLEMENT, TaskType.PLAN, TaskType.DRAFT, TaskType.REVIEW, TaskType.VALIDATE]
 
-    with (
-        patch.dict(os.environ, _KEYS),
-        patch(
-            "specweaver.infrastructure.llm.resolve.adapter_for_server",
-            side_effect=lambda _name, _server: MagicMock(),
-        ),
+    with patch(
+        "specweaver.infrastructure.llm.resolve.adapter_for_server",
+        side_effect=lambda _name, _server, _keys: MagicMock(),
     ):
         router = _router(_HOSTED, tasks)
         for _ in range(50):

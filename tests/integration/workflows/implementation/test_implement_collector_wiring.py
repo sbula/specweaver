@@ -38,6 +38,7 @@ from typer.testing import CliRunner
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import LLMResponse, TaskType, TokenUsage
 from specweaver.interfaces.cli.main import app
+from tests.keys_file import write_keys
 from tests.rendering import shows
 
 if TYPE_CHECKING:
@@ -166,12 +167,10 @@ def _fake_server() -> Iterator[None]:
     """The role is set in a real settings file; only the provider adapter behind it is faked."""
     data_dir = Path(os.environ["SPECWEAVER_DATA_DIR"])
     (data_dir / "settings.toml").write_text(_SETTINGS, encoding="utf-8")
-    with (
-        patch.dict(os.environ, {"GEMINI_API_KEY": "integration-key"}),
-        patch(
-            "specweaver.infrastructure.llm.resolve.adapter_for_server",
-            side_effect=lambda _name, _server: _FakeGeminiAdapter(),
-        ),
+    write_keys(data_dir, GEMINI_API_KEY="integration-key")
+    with patch(
+        "specweaver.infrastructure.llm.resolve.adapter_for_server",
+        side_effect=lambda _name, _server, _keys: _FakeGeminiAdapter(),
     ):
         yield
 

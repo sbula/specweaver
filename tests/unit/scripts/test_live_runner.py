@@ -8,9 +8,9 @@ Proves: B-FLOW-05 NFR-4
 | Bucket | Case |
 |---|---|
 | Happy | a fresh passing result is OK; the nightly session runs the live tests before the mutants |
-| Boundary | `KEY=value`, `export KEY=value` and quoted values are read; comments and blanks are not |
+| Boundary | a result exactly at the age limit still counts |
 | Degradation | no result, a failed one, or one older than two days is NOT OK, and says which |
-| Hostile | a key already set in the environment is not overwritten; a value is never printed |
+| Hostile | not applicable — the runner reads no key; SpecWeaver reads `keys.env` itself |
 """
 
 from __future__ import annotations
@@ -55,24 +55,6 @@ def test_the_nightly_session_runs_the_live_tests_first() -> None:
     )
     assert live_line.startswith("ExecStart=-") and live_line.endswith("scripts/live.py")
     assert "scripts/mutation.py" in mutation_line
-
-
-def test_env_lines_are_read_without_overwriting(
-    live: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    env = tmp_path / ".env"
-    env.write_text(
-        '# a comment\n\nGEMINI_API_KEY="abc"\nexport OTHER=x y\nALREADY=file\n', encoding="utf-8"
-    )
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    monkeypatch.delenv("OTHER", raising=False)
-    monkeypatch.setenv("ALREADY", "shell")
-
-    names = live.load_env(env)
-
-    assert names == ["GEMINI_API_KEY", "OTHER"]
-    assert (live.os.environ["GEMINI_API_KEY"], live.os.environ["OTHER"]) == ("abc", "x y")
-    assert live.os.environ["ALREADY"] == "shell"
 
 
 def _result(path: Path, *, passed: bool, age_hours: float = 0) -> Path:

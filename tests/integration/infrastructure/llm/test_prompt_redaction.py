@@ -29,6 +29,7 @@ from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.infrastructure.llm.models import Message, Role, TaskType, ToolDefinition
 from specweaver.infrastructure.llm.router import build_router
 from tests.fake_http import fake_httpx2
+from tests.keys_file import write_keys
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,13 +69,13 @@ _REPLY = {
 
 
 def _routed(project: Path, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("GB10_KEY", _KEY)
     files = LlmSettingsFiles.from_texts(
         machine_text=_MACHINE,
         machine_source="settings.toml",
         project_text="",
         project_source=str(project / "specweaver.toml"),
         project_root=project,
+        keys={"GB10_KEY": _KEY},
     )
     return build_router(files, project="demo", roles=[TaskType.REVIEW]).get_for_task(
         TaskType.REVIEW
@@ -163,7 +164,7 @@ async def test_the_loaded_settings_find_the_projects_vault(tmp_path: Path, monke
     data.mkdir()
     (data / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
-    monkeypatch.setenv("GB10_KEY", _KEY)
+    write_keys(data, GB10_KEY=_KEY)
     (tmp_path / ".specweaver").mkdir()
     (tmp_path / ".specweaver" / "vault.env").write_text(f"TOKEN={_VAULT_TOKEN}\n")
     routed = build_router(

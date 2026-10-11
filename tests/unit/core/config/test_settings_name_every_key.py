@@ -41,14 +41,13 @@ def test_a_local_server_needs_no_key_variable() -> None:
     assert parse_machine_file(text, "settings.toml").servers["s"].api_key_env is None
 
 
-def test_the_named_variable_is_the_one_read(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MY_GEMINI", "mine")
-    monkeypatch.setenv("GEMINI_API_KEY", "not-mine")
+def test_the_named_variable_is_the_one_read() -> None:
     server = parse_machine_file(
         _server("gemini", 'api_key_env = "MY_GEMINI"\n'), "settings.toml"
     ).servers["s"]
+    keys = {"MY_GEMINI": "mine", "GEMINI_API_KEY": "not-mine"}
 
-    assert adapter_for_server("s", server)._wrapped._api_key == "mine"
+    assert adapter_for_server("s", server, keys)._wrapped._api_key == "mine"
 
 
 @pytest.mark.parametrize(

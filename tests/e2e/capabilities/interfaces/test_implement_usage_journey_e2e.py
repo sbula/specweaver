@@ -28,7 +28,8 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -36,10 +37,8 @@ from typer.testing import CliRunner
 
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.interfaces.cli.main import app
+from tests.keys_file import write_keys
 from tests.rendering import shows
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 runner = CliRunner()
 pytestmark = pytest.mark.e2e
@@ -91,12 +90,10 @@ def _write_settings() -> None:
 
 def _implement(spec: Path, project: Path) -> None:
     """`sw implement` with the provider doubled at its adapter class and nothing above it."""
-    with (
-        patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-journey-key"}),
-        patch(
-            "specweaver.infrastructure.llm.servers.get_adapter_class",
-            return_value=_FakeGeminiAdapter,
-        ),
+    write_keys(Path(os.environ["SPECWEAVER_DATA_DIR"]), GEMINI_API_KEY="e2e-journey-key")
+    with patch(
+        "specweaver.infrastructure.llm.servers.get_adapter_class",
+        return_value=_FakeGeminiAdapter,
     ):
         runner.invoke(app, ["implement", str(spec), "--project", str(project)])
 

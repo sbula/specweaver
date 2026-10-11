@@ -12,7 +12,6 @@ parallel limit, and every role of the run shares one spend budget.
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from specweaver.core.config.llm_settings import (
@@ -26,7 +25,7 @@ from specweaver.infrastructure.llm.budget import STEP_LIMIT_PREFIX, CallScope, L
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig
-from specweaver.infrastructure.llm.redaction import Redactor, env_values, vault_values
+from specweaver.infrastructure.llm.redaction import Redactor, vault_values
 from specweaver.infrastructure.llm.servers import adapter_for_server
 from specweaver.infrastructure.llm.store import step_history_limit
 
@@ -153,10 +152,11 @@ class RoleResolver:
 
     def _check_key(self, server_name: str) -> None:
         variable = self._files.machine.servers[server_name].api_key_env
-        if variable and not os.environ.get(variable):
+        if variable and not self._files.keys.get(variable):
             self._refuse(
                 f"servers.{server_name}.api_key_env",
-                f"server '{server_name}' reads its key from {variable}, which is not set",
+                f"server '{server_name}' reads its key from {variable}, which "
+                f"{self._files.keys_source} does not set",
                 f"servers.{server_name}",
             )
 
@@ -176,8 +176,8 @@ class RoleResolver:
         if server_name not in self._by_server:
             server = self._files.machine.servers[server_name]
             corrections = self._files.machine.models
-            adapter = adapter_for_server(server_name, server)
-            keys = env_values([server.api_key_env])
+            adapter = adapter_for_server(server_name, server, self._files.keys)
+            keys = list(self._files.keys.values())
             self._by_server[server_name] = TelemetryCollector(
                 adapter,
                 self._project,

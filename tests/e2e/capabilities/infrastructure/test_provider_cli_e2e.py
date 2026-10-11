@@ -3,7 +3,6 @@
 
 """End-to-End user journey test for multi-provider CLI interaction."""
 
-import os
 import typing
 from pathlib import Path
 from typing import Any
@@ -13,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app  # type: ignore[attr-defined]
+from tests.keys_file import write_keys
 
 runner = CliRunner()
 
@@ -54,17 +54,11 @@ def mock_openai_response() -> typing.Generator[list[Any], None, None]:
 @pytest.fixture
 def test_project(tmp_path: Path) -> typing.Generator[Path, None, None]:
     """Sets up a test project and initializes it."""
-    # Ensure OPENAI_API_KEY is set so 'available()' passes
-    os.environ["OPENAI_API_KEY"] = "sk-test-key-123"
-
     # We need to initialize the project first
     result = runner.invoke(app, ["init", "e2e-test-project", "--path", str(tmp_path)])
     assert result.exit_code == 0, f"Failed to init project: {result.stdout}"
 
     yield tmp_path
-
-    # Teardown
-    os.environ.pop("OPENAI_API_KEY", None)
 
 
 def test_openai_draft_telemetry_journey(
@@ -88,6 +82,7 @@ def test_openai_draft_telemetry_journey(
         "[brake]\nhosted_spend_per_run = 1000\ntokens_per_run = 100000000\nagent_turns = 10\n",
         encoding="utf-8",
     )
+    write_keys(machine.parent, OPENAI_API_KEY="sk-test-key-123")
     result = runner.invoke(app, ["config", "set-role", "default", "gpt-5.6@oai"])
     assert result.exit_code == 0, f"Failed to set the default role: {result.stdout}"
 

@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from specweaver.core.config.toml_lines import path_line
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
     from pathlib import Path
 
 _M = TypeVar("_M", bound=BaseModel)
@@ -333,6 +333,10 @@ class LlmSettingsFiles:
     project_source: str
     project_text: str
     project_root: Path | None = None
+    #: API keys by variable name, from `keys.env`; never printed.
+    keys: Mapping[str, str] = field(default_factory=dict, repr=False, compare=False)
+    #: Where the keys came from, for messages.
+    keys_source: str = "keys.env"
 
     @classmethod
     def from_texts(
@@ -343,6 +347,8 @@ class LlmSettingsFiles:
         project_text: str,
         project_source: str,
         project_root: Path | None = None,
+        keys: Mapping[str, str] | None = None,
+        keys_source: str = "keys.env",
     ) -> LlmSettingsFiles:
         return cls(
             machine=parse_machine_file(machine_text, machine_source),
@@ -352,6 +358,8 @@ class LlmSettingsFiles:
             project_source=project_source,
             project_text=project_text,
             project_root=project_root,
+            keys=dict(keys or {}),
+            keys_source=keys_source,
         )
 
 

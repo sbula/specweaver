@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -60,11 +59,6 @@ class _RedactingTools:
 
     async def execute(self, name: str, args: dict[str, Any]) -> Any:
         return self._redactor.payload(await self._inner.execute(name, args))
-
-
-def env_values(names: Iterable[object]) -> list[str]:
-    """The values of the named environment variables that are set."""
-    return [os.environ[n] for n in names if isinstance(n, str) and n and os.environ.get(n)]
 
 
 def vault_values(project_root: Path | None) -> list[str]:

@@ -13,7 +13,7 @@ The multi-provider LLM adapter base: the `LLMAdapter` interface and the first co
 |---|-----|-------|--------|---------|
 | FR-1 | LLM Provider Interface | Engine | Request completion | Standard abstraction `generate(prompt, config)`, independent of provider APIs. |
 | FR-2 | Gemini Integration | Engine | Request completion | Gemini adapter fulfills request. |
-| FR-3 | Security Redaction | Engine | Send prompt | Credential and secret redaction applied before transmission: every known secret — the API keys the settings file names and the values in `.specweaver/vault.env` — is masked in messages and tool results `[agreed 2026-10-08]`. |
+| FR-3 | Security Redaction | Engine | Send prompt | Credential and secret redaction applied before transmission: every known secret — the API keys in `~/.specweaver/keys.env` and the values in `.specweaver/vault.env` — is masked in messages and tool results `[agreed 2026-10-08]`. |
 
 ## Progress Tracker
 

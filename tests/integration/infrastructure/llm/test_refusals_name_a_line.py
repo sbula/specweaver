@@ -42,12 +42,12 @@ agent_turns = 5
 
 
 def _refusal(monkeypatch, *, key_set: bool) -> SettingsFileError:
-    if key_set:
-        monkeypatch.setenv("CLOUD_KEY", "set-0123456789")
-    else:
-        monkeypatch.delenv("CLOUD_KEY", raising=False)
     files = LlmSettingsFiles.from_texts(
-        machine_text=_HOSTED, machine_source="settings.toml", project_text="", project_source="-"
+        machine_text=_HOSTED,
+        machine_source="settings.toml",
+        project_text="",
+        project_source="-",
+        keys={"CLOUD_KEY": "set-0123456789"} if key_set else {},
     )
     with pytest.raises(SettingsFileError) as caught:
         build_router(files, project="demo", roles=[TaskType.REVIEW]).get_for_task(TaskType.REVIEW)

@@ -5,8 +5,9 @@
 
 Proves: B-FLOW-05 NFR-4
 
-Run nightly by `scripts/live.py`, with `GEMINI_API_KEY` from the repository's `.env`. A missing key
-fails rather than skips: a live run that skips proves nothing and looks green. A provider that is
+Run nightly by `scripts/live.py`. The key is `GEMINI_API_KEY` in the real `~/.specweaver/keys.env`,
+copied into the test's data directory; its value is never printed. A missing key fails rather than
+skips: a live run that skips proves nothing and looks green. A provider that is
 busy (503) or throttled (429) is retried up to five times, a minute apart; the brake caps each.
 
 | Bucket | Case |
@@ -19,7 +20,7 @@ busy (503) or throttled (429) is retried up to five times, a minute apart; the b
 
 from __future__ import annotations
 
-import os
+import shutil
 import sqlite3
 import time
 from typing import TYPE_CHECKING
@@ -27,6 +28,8 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
+from specweaver.core.config.bootstrap.llm_settings_loader import load_keys
+from specweaver.core.config.paths import specweaver_root
 from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:
@@ -35,6 +38,9 @@ if TYPE_CHECKING:
 pytestmark = [pytest.mark.live, pytest.mark.e2e]
 
 runner = CliRunner()
+
+#: Read before any test points SPECWEAVER_DATA_DIR at its own directory.
+_REAL_KEYS = specweaver_root() / "keys.env"
 
 _MODEL = "gemini-3.8-flash"
 _TRANSIENT = ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")
@@ -62,8 +68,9 @@ agent_turns = 5
 
 @pytest.fixture
 def project(tmp_path: Path, _isolate_env: Path) -> Path:
-    if not os.environ.get("GEMINI_API_KEY"):
-        pytest.fail("GEMINI_API_KEY is not set; run through scripts/live.py, which reads .env")
+    if not load_keys(_REAL_KEYS).get("GEMINI_API_KEY"):
+        pytest.fail(f"GEMINI_API_KEY is not in {_REAL_KEYS}")
+    shutil.copy2(_REAL_KEYS, _isolate_env / "keys.env")
     root = tmp_path / "proj"
     root.mkdir()
     (root / "greeter_spec.md").write_text(_SPEC, encoding="utf-8")

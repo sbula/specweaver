@@ -7,7 +7,8 @@
     python scripts/live.py                  # run the live tests now
     python scripts/live.py --status         # the last night's verdict; exit 1 unless it passed
 
-The nightly session (`scripts/_mutation_timer.py`) runs it before the mutation corpus. Keys come from the repository's `.env` (gitignored) into this process only; no value is printed.
+The nightly session (`scripts/_mutation_timer.py`) runs it before the mutation corpus. The live
+tests read their keys from `~/.specweaver/keys.env`, as SpecWeaver does; no value is printed.
 Each live test sets its own spend limit; together they stay under USD 0.10 a night.
 """
 
@@ -15,38 +16,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ENV_FILE = REPO_ROOT / ".env"
 RESULT = REPO_ROOT / ".tmp" / "live" / "last.json"
 #: A result older than this means a night was missed.
 MAX_AGE_HOURS = 48
 
 
-def load_env(path: Path) -> list[str]:
-    """Put the file's variables into this process, never over one already set; the names read."""
-    names = []
-    if not path.is_file():
-        return names
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip().removeprefix("export ").strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        name, value = name.strip(), value.strip().strip("'\"")
-        if name and name not in os.environ:
-            os.environ[name] = value
-            names.append(name)
-    return names
-
-
 def run() -> int:
-    load_env(ENV_FILE)
     started = time.time()
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-m", "live", "-q", "-p", "no:randomly", "tests/e2e"],

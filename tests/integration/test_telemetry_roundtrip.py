@@ -13,7 +13,7 @@ Verifies that the full telemetry pipeline works end-to-end:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -120,15 +120,14 @@ class TestTelemetryRoundtrip:
         from specweaver.infrastructure.llm.router import build_router
 
         files = LlmSettingsFiles.from_texts(
-            machine_text=_MACHINE, machine_source="-", project_text="", project_source="-"
+            machine_text=_MACHINE,
+            machine_source="-",
+            project_text="",
+            project_source="-",
+            keys={"GEMINI_API_KEY": "test-key"},
         )
-        with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
-            router = build_router(
-                files,
-                project="testproj",
-                roles=[TaskType.DRAFT],
-            )
-            adapter = router.get_for_task(TaskType.DRAFT).adapter
+        router = build_router(files, project="testproj", roles=[TaskType.DRAFT])
+        adapter = router.get_for_task(TaskType.DRAFT).adapter
 
         assert isinstance(adapter, TelemetryCollector)
         assert adapter._project == "testproj"

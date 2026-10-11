@@ -291,7 +291,7 @@ async def test_two_server_names_on_one_address_share_one_limit() -> None:
             kind="openai-compatible", base_url="http://gb10:8000/v1", private=True, max_parallel=1
         )
 
-    first = adapter_for_server("gb10", entry())
-    second = adapter_for_server("gb10-again", entry())
+    first = adapter_for_server("gb10", entry(), {})
+    second = adapter_for_server("gb10-again", entry(), {})
 
     assert first._get_semaphore() is second._get_semaphore()

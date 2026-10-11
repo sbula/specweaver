@@ -8,7 +8,7 @@
 | Absorbs | `D-FLOW-05` Model Catalogue Adoption (retired 2026-09-26) · replaces `D-FLOW-03` and the cost and factory parts of `E-FLOW-03` |
 | Enables | `B-FLOW-05` brake values · `A-FLOW-01` model choice |
 | Consumes | `C-FLOW-01` telemetry · `E-FLOW-01` config DB (its LLM tables are removed) |
-| Not touched | brake behaviour (`B-FLOW-05`) · measuring and choosing models (`A-FLOW-01`) · API keys' storage (env vars stay) |
+| Not touched | brake behaviour (`B-FLOW-05`) · measuring and choosing models (`A-FLOW-01`) |
 
 ## What it does
 
@@ -69,7 +69,7 @@ FR-14 (migration) was dropped `[agreed 2026-09-27]`.
 | FR-4 | Broken file refuses | Loader | SHALL refuse any command that resolves LLM settings on invalid TOML, an unknown key or a wrong type, naming the file, the key and the line; commands that call no LLM (e.g. `sw check`) are unaffected | a typo never becomes a silent default |
 | FR-5 | Project cannot redirect | Loader | SHALL refuse a project file that sets a server, a `base_url` or an `api_key_env` | a cloned repo cannot send code elsewhere |
 | FR-6 | Model facts | Resolver | SHALL read per-model facts — price per 1M input/output tokens (USD), context size, max output, tool calling, whether output can be capped including thinking, sampling defaults — from the shipped list, overridable by `[models."<id>"]` in the machine file (`"<kind>/<id>"` for one kind only) | a new model is a data change, not a release |
-| FR-7 | Servers | Adapters | SHALL build each client from its server entry — `base_url`, `api_key_env`, `max_parallel`; a cloud server SHALL name its key variable in `api_key_env`, and no adapter reads a variable itself `[agreed 2026-10-11]`; a local `openai-compatible` server needs no key | the GB10 can be configured; keyless local servers work |
+| FR-7 | Servers | Adapters | SHALL build each client from its server entry — `base_url`, `api_key_env`, `max_parallel`; a cloud server SHALL name its key variable in `api_key_env`, whose value SHALL come only from `~/.specweaver/keys.env` — never the shell, never a project — and no adapter reads a variable itself `[agreed 2026-10-11]`; a local `openai-compatible` server needs no key | the GB10 can be configured; keyless local servers work |
 | FR-8 | Parallel limit per address | Adapter path | SHALL limit concurrent requests per server **address** to its `max_parallel`; two entries at one address share it | the GB10 and a cloud provider do not share one semaphore |
 | FR-9 | Privacy rule | Resolver | SHALL refuse, before any call, a role that points at a server with `private = false` when the project sets `private_only = true`, naming the rule and the role | no silent fallback to the cloud |
 | FR-10 | One adapter path | `build_router`, `RoleResolver` | SHALL obtain every adapter through the same resolver and wrapper — CLI, REST and pipeline runs alike | every call passes the brake, the limit and the usage flush |
@@ -86,7 +86,7 @@ FR-14 (migration) was dropped `[agreed 2026-09-27]`.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | Load cost | Settings resolved once per command, under 50 ms for files under 20 KB `[agreed 2026-09-26]` |
-| NFR-2 | No secrets written | No API key value appears in any settings file, log line or error message |
+| NFR-2 | No secrets written | No API key value appears in any settings file, log line or error message; `keys.env` is refused unless only its owner can read it `[agreed 2026-10-11]` |
 | NFR-3 | Offline | No network access to read settings or the model list |
 | NFR-4 | One reader | Only `core.config.bootstrap` reads or writes the settings files; `tach` limits the imports |
 | NFR-5 | Versioned files | Both files and the model list carry `schema_version`; an unknown version refuses with an upgrade message |

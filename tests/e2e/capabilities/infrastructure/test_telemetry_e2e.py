@@ -10,7 +10,6 @@ Only the provider adapter class is faked; the settings file, the resolver and th
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -22,6 +21,7 @@ from specweaver.infrastructure.llm.models import (
     TaskType,
     TokenUsage,
 )
+from tests.keys_file import write_keys
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -116,6 +116,7 @@ def _router(extra: str = ""):
     path = machine_settings_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(_SETTINGS + extra, encoding="utf-8")
+    write_keys(path.parent, GEMINI_API_KEY="e2e-key")
     with patch(
         "specweaver.infrastructure.llm.servers.get_adapter_class",
         return_value=FakeGeminiAdapter,
@@ -179,7 +180,6 @@ class TestFullPipelineE2E:
     """Settings file → wrapped adapter → generate → flush → query."""
 
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_full_telemetry_pipeline(self, db):
         """Story 29: full vertical slice — settings, resolver, collector, generate, flush, query."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
@@ -233,7 +233,6 @@ class TestCostOverrideLifecycleE2E:
     """A machine-file price → resolver → generate → flush → the stored cost uses it."""
 
     @pytest.mark.asyncio
-    @patch.dict(os.environ, {"GEMINI_API_KEY": "e2e-key"})
     async def test_cost_override_affects_persisted_cost(self, db):
         """Story 30: the machine file's price flows through the whole pipeline to the DB."""
         # A very high price in the machine file, so it is plainly the one used
