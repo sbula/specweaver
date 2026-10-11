@@ -2,7 +2,7 @@
 
 - **Feature ID**: B-FLOW-07
 - **Phase**: Topic 03 (Flow Engine) · DAL-B (High-Assurance)
-- **Status**: APPROVED `[agreed 2026-10-08]`. Built; proven live every night. `🔜` until the user signs off.
+- **Status**: ✅ Finished — signed off by the user 2026-10-11. Proven live every night.
 - **Story**: `US-4` add-on *Security Defenses* — paths in [US-04.md](../../../stories/US-04.md#step-limits-b-flow-07)
 - **Decisions**: [limits_matrix_grilling_2026-10-08.md](../../../../analysis/limits_matrix_grilling_2026-10-08.md);
   research: [effort_indicators_2026-10-08.md](../../../../analysis/effort_indicators_2026-10-08.md)

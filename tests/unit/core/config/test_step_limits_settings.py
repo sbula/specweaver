@@ -3,7 +3,7 @@
 
 """`[step_limits]` lives in the machine file, with no value in code, and is checked when read.
 
-Proves: B-FLOW-07 FR-8
+Proves: B-FLOW-07 FR-8, B-FLOW-07 NFR-2
 
 | Bucket | Case |
 |---|---|

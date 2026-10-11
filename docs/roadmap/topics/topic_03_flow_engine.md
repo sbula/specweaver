@@ -251,7 +251,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a run that repeats a cycle of steps stops with the cycle named, and a run that follows a chain of different files does not
   > - **Note:** weigh detection effort against what it saves before building `[agreed 2026-10-06]` · origin: `B-FLOW-05` redesign and `C-FLOW-13` SF-05
 
-* **`B-FLOW-07` 🔜: Step Limits from History**
+* **`B-FLOW-07` ✅: Step Limits from History**
   > - **Purpose:** A step limit from the history of passed steps of the same task, model and DAL
   > - **Trigger:** Before every LLM request, through the brake
   > - **Precondition:** `B-FLOW-05` → the brake · `C-VAL-03` → a target's DAL

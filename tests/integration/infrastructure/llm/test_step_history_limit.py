@@ -3,7 +3,7 @@
 
 """A step's limit is the chosen percentile of the newest passed steps of its group.
 
-Proves: B-FLOW-07 FR-4, B-FLOW-07 FR-5
+Proves: B-FLOW-07 FR-4, B-FLOW-07 FR-5, B-FLOW-07 NFR-3
 
 A real database, filled as SF-01 fills it: calls in `llm_usage_log`, outcomes in
 `llm_step_outcome`.
@@ -137,3 +137,14 @@ def test_a_runs_outcomes_are_replaced_whole(db: Database) -> None:
     with db.connect() as conn:
         rows = conn.execute("SELECT step_name FROM llm_step_outcome WHERE run_id = 'r1'").fetchall()
     assert [tuple(row) for row in rows] == [("a",)]
+
+
+def test_nothing_from_the_task_text_reaches_the_limit() -> None:
+    """B-FLOW-07 NFR-3: the limit is looked up by task kind, model, DAL and the settings only."""
+    import inspect
+
+    from specweaver.infrastructure.llm.store import step_history_limit
+
+    params = set(inspect.signature(step_history_limit).parameters)
+
+    assert params == {"db", "task_type", "model", "dal_level", "unit", "steps", "percentile"}

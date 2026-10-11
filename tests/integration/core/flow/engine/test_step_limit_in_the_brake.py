@@ -3,7 +3,7 @@
 
 """A step's call that would cross its step limit is refused like any limit; sub-runs keep their own.
 
-Proves: B-FLOW-07 FR-6, B-FLOW-07 FR-7, B-FLOW-07 FR-9
+Proves: B-FLOW-07 FR-6, B-FLOW-07 FR-7, B-FLOW-07 FR-9, B-FLOW-07 NFR-1
 
 The seam: the history (`infrastructure.llm` store) becomes a limit in the brake for a step the
 runner (`core.flow`) runs. Real database; only HTTP is faked.

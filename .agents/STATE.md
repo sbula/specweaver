@@ -27,9 +27,7 @@ The audit marks each fixed row **Fixed**;
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
-Next: `B-FLOW-07` — SF-01 and SF-02 built 2026-10-08, waiting on the user's sign-off; decisions in
-`docs/analysis/limits_matrix_grilling_2026-10-08.md`, then the other
-false items.
+Next: the other false items.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
@@ -54,6 +52,7 @@ set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot b
 
 | What | Result |
 |---|---|
+| `B-FLOW-07` Step Limits from History | Finished, signed off 2026-10-11: a step limit from the history of passed steps of the same task, model and DAL; proven nightly |
 | `C-FLOW-13` LLM settings · `E-FLOW-03` Provider Adapters | Finished, signed off 2026-10-11: settings name every key, keys only in `~/.specweaver/keys.env`; `D-FLOW-03` retired into `C-FLOW-13` |
 | `B-FLOW-05` Spend Brake | Finished, signed off 2026-10-10: every call checked before it is sent, asks or parks at a limit, proven against real Gemini every night |
 | `D-INTL-04` retired into `D-INTL-07` | Folded 2026-08-27 as the **bootstrap rubric**. Both were an adaptive interview over different rubrics rendering different files — one machine described twice. Tombstoned in topic 04 (ID dead, gap to `D-INTL-05` intentional), out of the capability matrix, `US-8` re-pointed, `C-VAL-05`'s `Enables` updated. Its Legacy-3.52 architecture note is kept unedited and marked superseded in mechanism only: the goal, the localized `context.yaml` and the *Monolith* mitigation came across; the fixed `Typer` wizard did not. A misfiled `US-18` line went with it, and the pre-commit gate caught that this orphaned an add-on group — 72 groups in the roadmap, exactly one empty, so it was a hole this change made; the group's only member had ever been that questionnaire. `US-8` renamed *Wizard* → *Interview*, the mechanic being the retired half. Record: `D-INTL-07_absorption_walkthrough.md`. **The load-bearing requirement moved into the design**: the harness must make an unanswered question un-passable — a model told not to guess guesses, and `TECH-069` proved a keyword check cannot tell asking from typing |
