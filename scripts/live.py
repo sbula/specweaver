@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -28,13 +29,18 @@ MAX_AGE_HOURS = 48
 
 
 def run() -> int:
+    from specweaver.core.config.paths import specweaver_root
+
     started = time.time()
+    # The test session moves the data directory; the live tests need the real key file.
+    env = {**os.environ, "SPECWEAVER_LIVE_KEYS": str(specweaver_root() / "keys.env")}
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-m", "live", "-q", "-p", "no:randomly", "tests/e2e"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     lines = proc.stdout.strip().splitlines()
     summary = lines[-1] if lines else proc.stderr.strip()[-300:]
