@@ -23,7 +23,7 @@ to `✅`. Do not.** Only the user can give the sign-off.
 ## Audit of "done", 2026-10-07
 
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
-`C-FLOW-13` waits on the user's sign-off. The audit marks each fixed row **Fixed**;
+The audit marks each fixed row **Fixed**;
 the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
 accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
@@ -39,7 +39,6 @@ status; which statuses to reopen is the user's decision.
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
 `--model` sets one run's model. `B-FLOW-05` applies every limit, including model limits.
-`C-FLOW-13` 🔜 → ✅ awaits the user's sign-off.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
@@ -55,6 +54,7 @@ set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot b
 
 | What | Result |
 |---|---|
+| `C-FLOW-13` LLM settings · `E-FLOW-03` Provider Adapters | Finished, signed off 2026-10-11: settings name every key, keys only in `~/.specweaver/keys.env`; `D-FLOW-03` retired into `C-FLOW-13` |
 | `B-FLOW-05` Spend Brake | Finished, signed off 2026-10-10: every call checked before it is sent, asks or parks at a limit, proven against real Gemini every night |
 | `D-INTL-04` retired into `D-INTL-07` | Folded 2026-08-27 as the **bootstrap rubric**. Both were an adaptive interview over different rubrics rendering different files — one machine described twice. Tombstoned in topic 04 (ID dead, gap to `D-INTL-05` intentional), out of the capability matrix, `US-8` re-pointed, `C-VAL-05`'s `Enables` updated. Its Legacy-3.52 architecture note is kept unedited and marked superseded in mechanism only: the goal, the localized `context.yaml` and the *Monolith* mitigation came across; the fixed `Typer` wizard did not. A misfiled `US-18` line went with it, and the pre-commit gate caught that this orphaned an add-on group — 72 groups in the roadmap, exactly one empty, so it was a hole this change made; the group's only member had ever been that questionnaire. `US-8` renamed *Wizard* → *Interview*, the mechanic being the retired half. Record: `D-INTL-07_absorption_walkthrough.md`. **The load-bearing requirement moved into the design**: the harness must make an unanswered question un-passable — a model told not to guess guesses, and `TECH-069` proved a keyword check cannot tell asking from typing |
 | `E-VAL-03` retired, executed | Detector + 3 test files + mutants deleted, `FilePromptAdapter` unwired, `escaping.py` kept (`E-INTL-01`); registry tombstoned everywhere; US-04's *sanitized* clause closed by decision |

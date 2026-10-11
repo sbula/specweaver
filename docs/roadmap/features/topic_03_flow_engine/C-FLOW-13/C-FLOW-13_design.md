@@ -1,6 +1,6 @@
 # C-FLOW-13 — Model Catalogue: One Central Place for LLM Settings
 
-**Status**: APPROVED `[agreed 2026-09-26]`. Built; `🔜` until the user signs off. · **DAL**: C · **Story**: US-16 add-on "Centralized Model Table"
+**Status**: ✅ Finished — signed off by the user 2026-10-11. · **DAL**: C · **Story**: US-16 add-on "Centralized Model Table"
 ([paths](../../../stories/US-16.md)) · Decisions: [llm_settings_grilling_2026-09-26.md](../../../../analysis/llm_settings_grilling_2026-09-26.md)
 
 | | |

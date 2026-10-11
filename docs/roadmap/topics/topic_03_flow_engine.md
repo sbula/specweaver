@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `D-FLOW-01` → the runner that executes it
   > - **Done when:** a pipeline file parses to a step model. No execution — that is the runner's job
 
-* **`E-FLOW-03` 🔧: Provider Adapters** (Legacy: 3.13)
+* **`E-FLOW-03` ✅: Provider Adapters** (Legacy: 3.13)
   > - **Purpose:** Add an LLM provider by dropping in one file, with no other change anywhere
   > - **Trigger:** At import, when adapters are scanned
   > - **Precondition:** —
@@ -183,7 +183,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Note:** writes its own seam pin as its first commit; the base ships none, `FR-9(a)` having been descoped
 
-* **`C-FLOW-13` 🔜: Model Catalogue**
+* **`C-FLOW-13` ✅: Model Catalogue**
   > - **Purpose:** One central place for every LLM setting — machine `settings.toml` + project `[llm]` `[agreed 2026-09-26]`
   > - **Trigger:** When an LLM call needs its model, server, sampling or price
   > - **Precondition:** —

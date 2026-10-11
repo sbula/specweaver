@@ -161,7 +161,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
     *   `🔧` **D-FLOW-04:** Unified Runner Architecture
-    *   `🔧` **E-FLOW-03:** Provider Adapters
+    *   `✅` **E-FLOW-03:** Provider Adapters
 *   **Sub-Story Add-Ons:**
     *   🟢 **Security Defenses:**
         *   `✅` **B-FLOW-05:** Spend Brake
@@ -373,8 +373,8 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   `✅` **C-FLOW-01:** Telemetry DB
     *   ⚰️ **D-FLOW-03:** *(retired 2026-10-11 — replaced by `C-FLOW-13`)*
 *   **Sub-Story Add-Ons:**
-    *   🔴 **Centralized Model Table:**
-        *   `[ ]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
+    *   🟢 **Centralized Model Table:**
+        *   `[x]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations — needs `C-FLOW-13`
         *   `[ ]` **B-INTL-04:** Dynamic AI Arbiter — needs `C-FLOW-13`

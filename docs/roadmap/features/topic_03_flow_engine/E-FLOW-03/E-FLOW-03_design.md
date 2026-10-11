@@ -1,6 +1,6 @@
 # E-FLOW-03 — Provider Adapters
 
-**Status**: APPROVED. Built; `🔧` until the user signs off. Scope reduced 2026-10-11 to what lives:
+**Status**: ✅ Finished — signed off by the user 2026-10-11. Scope reduced 2026-10-11 to what lives:
 prices, the factory and the database `provider` field moved to `C-FLOW-13` (FR-3, FR-4, FR-5 removed). ·
 **DAL**: E (Prototyping)
 
