@@ -15,7 +15,6 @@ class QwenAdapter(OpenAIAdapter):
     """Adapter for Alibaba Qwen models using OpenAI compatible API."""
 
     provider_name = "qwen"
-    api_key_env_var = "DASHSCOPE_API_KEY"
 
     # No default address: DashScope's current addresses carry the account's workspace, and the
     # one address without it is the legacy domain.

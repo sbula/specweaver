@@ -55,7 +55,6 @@ class AnthropicAdapter(LLMAdapter):
     """Adapter for Anthropic Claude models."""
 
     provider_name = "anthropic"
-    api_key_env_var = "ANTHROPIC_API_KEY"
 
     default_base_url: ClassVar[str | None] = "https://api.anthropic.com"
 

@@ -18,7 +18,6 @@ class TestOpenAIAdapter:
     def test_provider_metadata(self) -> None:
         adapter = OpenAIAdapter(api_key="test-key")
         assert adapter.provider_name == "openai"
-        assert adapter.api_key_env_var == "OPENAI_API_KEY"
 
     def test_available_with_key(self) -> None:
         adapter = OpenAIAdapter(api_key="test")

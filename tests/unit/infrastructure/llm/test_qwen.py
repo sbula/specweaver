@@ -16,13 +16,15 @@ class TestQwenAdapter:
     def test_provider_metadata(self) -> None:
         adapter = QwenAdapter(api_key="test", base_url=_ADDRESS)
         assert adapter.provider_name == "qwen"
-        assert adapter.api_key_env_var == "DASHSCOPE_API_KEY"
 
     def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DASHSCOPE_API_KEY", "test")
-        assert QwenAdapter(base_url=_ADDRESS).available() is True
-        monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
-        assert QwenAdapter(api_key="", base_url=_ADDRESS).available() is False
+        monkeypatch.setenv("DASHSCOPE_API_KEY", "from-the-shell")
+        assert (
+            QwenAdapter(api_key="test", base_url="https://dashscope.example/v1").available() is True
+        )
+        assert (
+            QwenAdapter(base_url="https://dashscope.example/v1").available() is False
+        )  # the shell's key is never read
 
     def test_client_init(self) -> None:
         pytest.importorskip("openai")

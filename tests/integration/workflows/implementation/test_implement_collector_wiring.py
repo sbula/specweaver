@@ -143,6 +143,7 @@ def _scaffold(tmp_path: Path, *, project: str | None) -> Path:
 _SETTINGS = """\
 [servers.fake]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 4
 

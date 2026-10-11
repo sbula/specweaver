@@ -78,12 +78,20 @@ def test_a_server_without_an_official_address_needs_one(adapter_cls: type) -> No
 
 
 @pytest.mark.parametrize("adapter_cls", [*(cls for cls, _ in _OFFICIAL), QwenAdapter])
-def test_an_empty_key_reads_no_variable(adapter_cls: type, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(adapter_cls.api_key_env_var, "sk-from-the-environment")
+def test_no_key_reads_no_variable(adapter_cls: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    for variable in (
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "MISTRAL_API_KEY",
+        "DASHSCOPE_API_KEY",
+    ):
+        monkeypatch.setenv(variable, "sk-from-the-environment")
     address = {"base_url": "https://proxy.local/v1"}
 
     assert adapter_cls(api_key="", **address).available() is False
-    assert adapter_cls(api_key=None, **address).available() is True
+    assert adapter_cls(api_key=None, **address).available() is False
 
 
 def test_gemini_is_never_rerouted_to_vertex(monkeypatch: pytest.MonkeyPatch) -> None:

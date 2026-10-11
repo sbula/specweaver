@@ -66,11 +66,13 @@ agent_turns = 10
 _HOSTED = """\
 [servers.anthropic]
 kind = "anthropic"
+api_key_env = "ANTHROPIC_API_KEY"
 private = false
 max_parallel = 2
 
 [servers.gemini]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 2
 

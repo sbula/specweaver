@@ -23,9 +23,7 @@ if TYPE_CHECKING:
 def adapter_for_server(name: str, server: ServerEntry) -> AsyncRateLimiterAdapter:
     """The adapter for server `name`, limited to its `max_parallel` calls at once."""
     adapter_cls = get_adapter_class(server.kind)
-    # No key variable means the server needs no key (`None`); a named but unset one is a missing
-    # key (`""`), which leaves the adapter unavailable rather than reading any other variable.
-    api_key = None if server.api_key_env is None else os.environ.get(server.api_key_env, "")
+    api_key = os.environ.get(server.api_key_env, "") if server.api_key_env else None
     adapter = adapter_cls(api_key=api_key, base_url=server.base_url)
     address = server.base_url or getattr(adapter_cls, "default_base_url", None) or name
     return AsyncRateLimiterAdapter(adapter, limit=server.max_parallel, key=name, address=address)

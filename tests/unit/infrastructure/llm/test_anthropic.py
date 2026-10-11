@@ -17,13 +17,11 @@ class TestAnthropicAdapter:
     def test_provider_metadata(self) -> None:
         adapter = AnthropicAdapter(api_key="test")
         assert adapter.provider_name == "anthropic"
-        assert adapter.api_key_env_var == "ANTHROPIC_API_KEY"
 
     def test_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
-        assert AnthropicAdapter().available() is True
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        assert AnthropicAdapter(api_key="").available() is False
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "from-the-shell")
+        assert AnthropicAdapter(api_key="test").available() is True
+        assert AnthropicAdapter().available() is False  # the shell's key is never read
 
     @pytest.mark.asyncio
     async def test_generate_delegates(self) -> None:

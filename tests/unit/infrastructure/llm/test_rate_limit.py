@@ -79,7 +79,6 @@ async def test_rate_limiter_translates_metadata():
     stub = StubAdapter()
     adapter = AsyncRateLimiterAdapter(stub, limit=2)
     assert adapter.provider_name == "stub_provider"
-    assert adapter.api_key_env_var == "STUB_API"
     assert adapter.available() is True
     assert adapter.estimate_tokens("hi") == 21
     assert await adapter.count_tokens("hi", "test") == 42

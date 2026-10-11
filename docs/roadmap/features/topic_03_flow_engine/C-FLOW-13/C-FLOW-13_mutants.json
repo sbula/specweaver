@@ -308,8 +308,8 @@
         "tests/unit/infrastructure/llm/test_servers.py",
         "tests/unit/infrastructure/llm/test_adapter_output_limit.py",
         "tests/integration/infrastructure/llm/test_server_settings_integration.py",
-        "tests/unit/core/config/test_provider_key_stays_with_provider.py",
-        "tests/integration/infrastructure/llm/test_provider_key_leak.py"
+        "tests/integration/infrastructure/llm/test_provider_key_leak.py",
+        "tests/unit/core/config/test_settings_name_every_key.py"
       ],
       "mutants": [
         {
@@ -321,16 +321,6 @@
           "new": "            self._client = openai.AsyncOpenAI(api_key=self._api_key)\n",
           "breaks": "OPENAI_BASE_URL decides where calls go, and a local server's address is ignored",
           "symbol_sha": "sha256:37b14a99355f2dcb9194c9363439b60792a2ee700d60b737a2f5337af9b9fcc1"
-        },
-        {
-          "id": "empty-key-reads-environment",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/adapters/base.py",
-          "symbol": "LLMAdapter._resolve_key",
-          "old": "        return api_key if api_key is not None else os.environ.get(self.api_key_env_var, \"\")\n",
-          "new": "        return api_key or os.environ.get(self.api_key_env_var, \"\")\n",
-          "breaks": "a server whose named key is unset silently uses another key from the environment",
-          "symbol_sha": "sha256:074f27b68cb849832abf9a004cbb1fe5dc8229872f95cccf7df1c8e55cfc1c96"
         },
         {
           "id": "keyless-server-unavailable",
@@ -373,24 +363,24 @@
           "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
         },
         {
-          "id": "provider-key-to-any-host",
+          "id": "cloud-server-without-key-variable",
           "origin": "authored",
           "file": "src/specweaver/core/config/llm_settings.py",
           "symbol": "ServerEntry._key_variable_and_address",
-          "old": "            if not _is_providers_own(self.kind, self.base_url):\n",
-          "new": "            if False:\n",
-          "breaks": "OPENAI_API_KEY is sent to whatever host base_url names",
-          "symbol_sha": "sha256:b64517d89d772a3ae8c932c44654f868e02ef16ff9c4b8abc68b26fb6dcf034c"
+          "old": "        if self.api_key_env is None and self.kind != \"openai-compatible\":\n",
+          "new": "        if False:\n",
+          "breaks": "a cloud server that names no key variable loads, and its key comes from nowhere the user chose",
+          "symbol_sha": "sha256:f8bc92a39630c97dc720665b71eb90ee0b592f495406036f37d4e453cf16f97a"
         },
         {
-          "id": "lookalike-host-trusted",
+          "id": "adapter-reads-the-shell-key",
           "origin": "authored",
-          "file": "src/specweaver/core/config/llm_settings.py",
-          "symbol": "_is_providers_own",
-          "old": "    return domain is not None and (host == domain or host.endswith(f\".{domain}\"))\n",
-          "new": "    return domain is not None and domain in host\n",
-          "breaks": "openai.com.evil.example gets the OpenAI key",
-          "symbol_sha": "sha256:351d02e27847cf605085699c1b182eaf4043c03f6b1281e56e9350ba074ccd2e"
+          "file": "src/specweaver/infrastructure/llm/adapters/base.py",
+          "symbol": "LLMAdapter._resolve_key",
+          "old": "        return api_key or \"\"\n",
+          "new": "        return api_key or __import__(\"os\").environ.get(f\"{self.provider_name.upper()}_API_KEY\", \"\")\n",
+          "breaks": "an adapter takes a key from the shell that no setting named",
+          "symbol_sha": "sha256:bfdc02fbf9443fe5cf4a4c53d75fdc5111d71d8a6a8efbba4d916e47610590bf"
         }
       ]
     },

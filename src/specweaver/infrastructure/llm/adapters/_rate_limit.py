@@ -41,7 +41,6 @@ class AsyncRateLimiterAdapter(LLMAdapter):
 
         # Dynamically mirror metadata interfaces required by upstream integrations
         self.provider_name = wrapped.provider_name
-        self.api_key_env_var = wrapped.api_key_env_var
 
     def _get_semaphore(self) -> asyncio.Semaphore:
         """The semaphore for this key and limit on the running event loop."""

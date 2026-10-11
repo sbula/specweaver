@@ -152,7 +152,8 @@ def test_a_private_project_with_a_hosted_role_is_refused(
     tmp_path: Path, _mock_db: Database, _isolate_env: Path
 ) -> None:
     machine = (
-        _MACHINE + '\n[servers.anthropic]\nkind = "anthropic"\nprivate = false\nmax_parallel = 3\n'
+        _MACHINE
+        + '\n[servers.anthropic]\nkind = "anthropic"\napi_key_env = "ANTHROPIC_API_KEY"\nprivate = false\nmax_parallel = 3\n'
     )
     (_isolate_env / "settings.toml").write_text(machine, encoding="utf-8")
     _project(
@@ -185,7 +186,7 @@ def test_a_value_the_server_never_receives_says_so(
 ) -> None:
     machine = (
         _MACHINE
-        + '\n[servers.openai]\nkind = "openai"\nprivate = false\nmax_parallel = 2\n'
+        + '\n[servers.openai]\nkind = "openai"\napi_key_env = "OPENAI_API_KEY"\nprivate = false\nmax_parallel = 2\n'
         + '\n[roles.review]\nmodel = "gpt-5.4@openai"\nmax_output_tokens = 2000\ntemperature = 0.3\n'
     )
     (_isolate_env / "settings.toml").write_text(machine, encoding="utf-8")

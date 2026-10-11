@@ -177,7 +177,7 @@ class RoleResolver:
             server = self._files.machine.servers[server_name]
             corrections = self._files.machine.models
             adapter = adapter_for_server(server_name, server)
-            keys = env_values([server.api_key_env, getattr(adapter, "api_key_env_var", None)])
+            keys = env_values([server.api_key_env])
             self._by_server[server_name] = TelemetryCollector(
                 adapter,
                 self._project,

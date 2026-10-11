@@ -62,7 +62,6 @@ class OpenAIAdapter(LLMAdapter):
     """Adapter for OpenAI models."""
 
     provider_name = "openai"
-    api_key_env_var = "OPENAI_API_KEY"
 
     default_base_url: ClassVar[str | None] = "https://api.openai.com/v1"
     #: The request field that caps output. OpenAI's also caps reasoning tokens; `max_tokens` is
@@ -297,7 +296,6 @@ class OpenAICompatibleAdapter(OpenAIAdapter):
     """
 
     provider_name = "openai-compatible"
-    api_key_env_var = ""
     default_base_url: ClassVar[str | None] = None
     sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
 

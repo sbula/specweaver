@@ -84,7 +84,7 @@ def test_openai_draft_telemetry_journey(
     machine = machine_settings_path()
     machine.parent.mkdir(parents=True, exist_ok=True)
     machine.write_text(
-        '[servers.oai]\nkind = "openai"\nprivate = false\nmax_parallel = 2\n'
+        '[servers.oai]\nkind = "openai"\napi_key_env = "OPENAI_API_KEY"\nprivate = false\nmax_parallel = 2\n'
         "[brake]\nhosted_spend_per_run = 1000\ntokens_per_run = 100000000\nagent_turns = 10\n",
         encoding="utf-8",
     )

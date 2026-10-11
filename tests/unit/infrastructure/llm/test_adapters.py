@@ -39,18 +39,6 @@ class TestLLMAdapterMetadata:
         assert hasattr(LLMAdapter, "provider_name")
         assert LLMAdapter.provider_name == ""
 
-    def test_abc_has_api_key_env_var_default(self) -> None:
-        """ABC declares api_key_env_var with empty default."""
-        from specweaver.infrastructure.llm.adapters.base import LLMAdapter
-
-        assert hasattr(LLMAdapter, "api_key_env_var")
-        assert LLMAdapter.api_key_env_var == ""
-
-    def test_gemini_adapter_has_api_key_env_var(self) -> None:
-        """GeminiAdapter declares api_key_env_var."""
-        adapter = GeminiAdapter(api_key="test")
-        assert adapter.api_key_env_var == "GEMINI_API_KEY"
-
     def test_gemini_adapter_provider_name_is_class_attr(self) -> None:
         """provider_name is a class attribute, not just a property."""
         # Access as class attribute (not instance)
@@ -114,15 +102,16 @@ class TestGeminiAdapter:
         adapter = GeminiAdapter(api_key="")
         assert adapter.available() is False
 
-    def test_available_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_the_shell_key_is_never_read(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("GEMINI_API_KEY", "env-key")
+        monkeypatch.setenv("GOOGLE_API_KEY", "env-key")
         adapter = GeminiAdapter()
-        assert adapter.available() is True
+        assert adapter.available() is False
 
     def test_no_key_raises_auth_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         adapter = GeminiAdapter(api_key="")
-        with pytest.raises(AuthenticationError, match="GEMINI_API_KEY"):
+        with pytest.raises(AuthenticationError, match="no key"):
             adapter._get_client()
 
     @pytest.mark.asyncio

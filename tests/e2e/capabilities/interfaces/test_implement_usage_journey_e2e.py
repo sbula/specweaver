@@ -62,6 +62,7 @@ _COLLECTABLE = "def greet():\n    pass\n\n\ndef test_greet_is_callable() -> None
 _SETTINGS = f"""\
 [servers.gem]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 2
 

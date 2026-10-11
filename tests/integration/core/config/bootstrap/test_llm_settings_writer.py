@@ -148,7 +148,7 @@ class TestSetRole:
     ) -> None:
         machine_file.write_text(
             _EXISTING
-            + '\n[servers.anthropic]\nkind = "anthropic"\nprivate = false\nmax_parallel = 2\n',
+            + '\n[servers.anthropic]\nkind = "anthropic"\napi_key_env = "ANTHROPIC_API_KEY"\nprivate = false\nmax_parallel = 2\n',
             encoding="utf-8",
         )
         project = tmp_path / "proj"

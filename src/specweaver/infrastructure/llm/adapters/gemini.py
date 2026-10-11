@@ -79,7 +79,6 @@ class GeminiAdapter(LLMAdapter):
 
     provider_name = "gemini"
     sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
-    api_key_env_var = "GEMINI_API_KEY"
 
     default_base_url: ClassVar[str | None] = "https://generativelanguage.googleapis.com/"
 
@@ -87,7 +86,7 @@ class GeminiAdapter(LLMAdapter):
         """Lazy-initialize the Gemini client."""
         if self._client is None:
             if not self._api_key:
-                msg = "GEMINI_API_KEY is not set"
+                msg = "this gemini server has no key: its api_key_env variable is not set"
                 raise AuthenticationError(msg, provider="gemini")
             # `vertexai=False` explicitly: `GOOGLE_GENAI_USE_VERTEXAI` must not reroute the call.
             self._client = genai.Client(

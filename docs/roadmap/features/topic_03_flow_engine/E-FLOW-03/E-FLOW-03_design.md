@@ -23,7 +23,7 @@ required; the others install as extras.
 
 | # | FR | Outcome |
 |---|-----|---------|
-| FR-1 | Self-describing adapter | Each adapter declares its `provider_name`, which a server's `kind` names |
+| FR-1 | Self-describing adapter | Each adapter declares its `provider_name`, which a server's `kind` names; it declares no key variable — the server entry names it (`C-FLOW-13` FR-7) |
 | FR-2 | Auto-discovery registry | A new provider is one file in `adapters/`; the registry finds it at first use |
 | FR-6 | Optional SDKs | Only `google-genai` is required; `openai`, `anthropic`, `mistralai` are `pyproject.toml` extras |
 | FR-7 | Error mapping | Each adapter maps the provider's errors to `AuthenticationError`, `RateLimitError`, `ModelNotFoundError`, else `GenerationError` — by status code or SDK error type, never by words in the message |

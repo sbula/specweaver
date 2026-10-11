@@ -40,6 +40,7 @@ max_parallel = 2
 
 [servers.anthropic]
 kind = "anthropic"
+api_key_env = "ANTHROPIC_API_KEY"
 private = false
 max_parallel = 3
 

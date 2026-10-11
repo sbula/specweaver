@@ -23,7 +23,8 @@ uv sync
 
 ## 3. Providing Credentials
 
-SpecWeaver reads provider keys from the environment.
+Keys stay in the environment, under any variable name you choose; each server in `settings.toml`
+names its variable in `api_key_env`. SpecWeaver reads no other variable.
 
 ```powershell
 # Windows PowerShell
@@ -34,7 +35,7 @@ $env:MISTRAL_API_KEY = "your-mistral-key"
 $env:DASHSCOPE_API_KEY = "your-qwen-key"
 ```
 
-Keys stay in the environment; everything else about models lives in one file.
+Everything else about models lives in one file.
 
 ## 3a. Choosing models: `~/.specweaver/settings.toml`
 
@@ -44,6 +45,7 @@ naming the missing key, until a server, a role and the three `[brake]` values ar
 ```toml
 [servers.anthropic]
 kind = "anthropic"            # gemini, openai, anthropic, mistral, qwen, openai-compatible
+api_key_env = "ANTHROPIC_API_KEY"   # the variable that holds this server's key; required for cloud servers
 private = false               # true for a server you run yourself
 max_parallel = 3              # calls at once on this server
 
@@ -105,9 +107,8 @@ rate_date = 2026-09-26
   `sw costs set <kind>/<model> ...` (e.g. `anthropic/claude-sonnet-5`) prices it on one kind of
   server only; a bare model name prices it on every kind.
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
-- A provider's own key (`OPENAI_API_KEY` and the like) is sent only to that provider's own
-  address. Point `kind = "openai"` at another host and you must name that host's key in
-  `api_key_env`; a server that needs no key is `kind = "openai-compatible"`.
+- Every cloud server names its key variable in `api_key_env`; a key goes only to the server that
+  names it. A server that needs no key is `kind = "openai-compatible"`.
 
 ## 4. Initializing your First Project
 

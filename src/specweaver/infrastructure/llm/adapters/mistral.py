@@ -87,7 +87,6 @@ class MistralAdapter(LLMAdapter):
     """Adapter for Mistral models."""
 
     provider_name = "mistral"
-    api_key_env_var = "MISTRAL_API_KEY"
     sent_sampling: ClassVar[frozenset[str]] = _SENT
 
     default_base_url: ClassVar[str | None] = "https://api.mistral.ai"

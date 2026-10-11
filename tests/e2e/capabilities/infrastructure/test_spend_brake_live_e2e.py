@@ -46,6 +46,7 @@ _SPEC = "# Greeter\n\n## 1. Purpose\n\nReturn the text 'hello'.\n"
 def _settings(limit_usd: float) -> str:
     return f"""[servers.gemini]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 1
 

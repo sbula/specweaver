@@ -5,13 +5,12 @@
 
 All LLM interactions go through this interface.
 Concrete adapters are self-describing: each declares its own
-provider_name and api_key_env_var as class attributes.
+provider_name as a class attribute.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -32,12 +31,10 @@ class LLMAdapter(ABC):
 
     Subclasses MUST override the metadata class attributes:
     - ``provider_name``: registry key (e.g. ``"gemini"``, ``"openai"``)
-    - ``api_key_env_var``: environment variable name for the API key
     """
 
     # --- Metadata (subclasses MUST override) ---
     provider_name: str = ""
-    api_key_env_var: str = ""
     #: The provider's official address, used when none is given. Written out so that no SDK
     #: environment variable (`OPENAI_BASE_URL`, ...) can redirect a call.
     default_base_url: ClassVar[str | None] = None
@@ -47,7 +44,8 @@ class LLMAdapter(ABC):
     def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
         """Every adapter is built from a key and an address.
 
-        `api_key=None` reads the adapter's own variable; `""` means no key. `base_url=None` means the
+        The key comes from the server entry's `api_key_env`; an adapter reads no variable itself, and
+        `None` or `""` means no key. `base_url=None` means the
         provider's official address, and an adapter without one refuses. The client itself is
         created on first use, so building an adapter never touches the network.
         """
@@ -56,8 +54,8 @@ class LLMAdapter(ABC):
         self._client: Any = None
 
     def _resolve_key(self, api_key: str | None) -> str:
-        """The key given; `None` reads this adapter's variable; `""` means no key and reads nothing."""
-        return api_key if api_key is not None else os.environ.get(self.api_key_env_var, "")
+        """The key given, else none; nothing is read from the environment."""
+        return api_key or ""
 
     def _resolve_base_url(self, base_url: str | None) -> str:
         address = base_url or self.default_base_url

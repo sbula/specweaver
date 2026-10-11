@@ -26,7 +26,8 @@ Paths: `src/specweaver/infrastructure/llm/`; discovery lives in `adapters/regist
       a settings file names.
    4. `default_base_url`: the provider's official address, written out, so no SDK environment
       variable can redirect a call; `None` for a server the user must name.
-   5. `api_key_env_var`: the variable the key is read from when the server entry names none.
+   5. No key variable. The key comes from the server entry's `api_key_env`; an adapter never reads
+      the environment itself.
 3. **Send only the sampling values that are set.** `GenerationConfig.temperature`, `top_p` and
    `top_k` are `None` unless a role or the catalogue sets them; many current models refuse any value
    but their default.

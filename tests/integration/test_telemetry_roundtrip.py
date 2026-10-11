@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 _MACHINE = """\
 [servers.gemini]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 1
 

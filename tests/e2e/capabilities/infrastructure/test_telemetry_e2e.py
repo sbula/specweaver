@@ -91,6 +91,7 @@ class FakeGeminiAdapter:
 _SETTINGS = """\
 [servers.gem]
 kind = "gemini"
+api_key_env = "GEMINI_API_KEY"
 private = false
 max_parallel = 2
 

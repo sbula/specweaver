@@ -17,7 +17,6 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeVar
-from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -34,26 +33,6 @@ SCHEMA_VERSION = 1
 
 ServerKind = Literal["gemini", "openai", "anthropic", "mistral", "qwen", "openai-compatible"]
 RoleName = Literal["draft", "review", "plan", "implement", "validate", "check", "default"]
-
-#: The variable each hosted provider's adapter reads when a server entry names none.
-_DEFAULT_KEY_ENV: dict[str, str] = {
-    "gemini": "GEMINI_API_KEY",
-    "openai": "OPENAI_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
-    "mistral": "MISTRAL_API_KEY",
-    "qwen": "DASHSCOPE_API_KEY",
-}
-
-#: Kinds with no single official address: a local server, and DashScope, whose current addresses
-#: carry the account's workspace.
-#: Each provider's own domain: its default key is sent there and nowhere else.
-_PROVIDER_DOMAIN: dict[str, str] = {
-    "gemini": "googleapis.com",
-    "openai": "openai.com",
-    "anthropic": "anthropic.com",
-    "mistral": "api.mistral.ai",
-    "qwen": "aliyuncs.com",
-}
 
 _NEEDS_ADDRESS = frozenset({"openai-compatible", "qwen"})
 
@@ -98,27 +77,16 @@ class ServerEntry(_Strict):
         if self.api_key_env is not None and not _VARIABLE_NAME.fullmatch(self.api_key_env):
             msg = "api_key_env names the environment variable that holds the key, not the key"
             raise ValueError(msg)
-        if self.api_key_env is None and self.kind in _DEFAULT_KEY_ENV:
-            if not _is_providers_own(self.kind, self.base_url):
-                msg = (
-                    f"a {self.kind} server at another host needs its own api_key_env, so the "
-                    f"{_DEFAULT_KEY_ENV[self.kind]} key is never sent there; a server that needs no "
-                    'key is kind = "openai-compatible"'
-                )
-                raise ValueError(msg)
-            self.api_key_env = _DEFAULT_KEY_ENV[self.kind]
+        if self.api_key_env is None and self.kind != "openai-compatible":
+            msg = (
+                f"a {self.kind} server needs api_key_env, the environment variable that holds its "
+                'key; a server that needs no key is kind = "openai-compatible"'
+            )
+            raise ValueError(msg)
         if self.kind in _NEEDS_ADDRESS and not self.base_url:
             msg = f"a {self.kind} server needs a base_url"
             raise ValueError(msg)
         return self
-
-
-def _is_providers_own(kind: str, base_url: str | None) -> bool:
-    if not base_url:
-        return True
-    domain = _PROVIDER_DOMAIN.get(kind)
-    host = urlparse(base_url).hostname or ""
-    return domain is not None and (host == domain or host.endswith(f".{domain}"))
 
 
 class Sampling(_Strict):
