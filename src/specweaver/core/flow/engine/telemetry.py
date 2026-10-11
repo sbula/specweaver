@@ -46,6 +46,16 @@ def flush_telemetry(
 
 
 def step_outcomes(run: PipelineRun) -> dict[str, str]:
-    """`passed` or `failed` for each step that ended; a step still waiting or not run has none."""
+    """`passed` or `failed` for each step that ended; a step still waiting or not run has none.
+
+    A review that returned its verdict did its work, so a denied one counts as passed.
+    """
     ended = {StepStatus.PASSED: "passed", StepStatus.FAILED: "failed", StepStatus.ERROR: "failed"}
-    return {r.step_name: ended[r.status] for r in run.step_records if r.status in ended}
+    outcomes = {}
+    for record in run.step_records:
+        if record.status not in ended:
+            continue
+        verdict = (record.result.output or {}).get("verdict") if record.result else None
+        reviewed = record.status is StepStatus.FAILED and verdict == "denied"
+        outcomes[record.step_name] = "passed" if reviewed else ended[record.status]
+    return outcomes
