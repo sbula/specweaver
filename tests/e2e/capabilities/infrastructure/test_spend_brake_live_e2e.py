@@ -4,6 +4,7 @@
 """The spend brake against real Gemini: one review goes through, one is stopped before sending.
 
 Proves: B-FLOW-05 NFR-4
+Proves: B-FLOW-07 FR-1, FR-2, FR-4
 
 Run nightly by `scripts/live.py`. The key is `GEMINI_API_KEY` in the real `~/.specweaver/keys.env`,
 copied into the test's data directory (`scripts/live.py` names it in `SPECWEAVER_LIVE_KEYS`); its value is never printed. A missing key fails rather than
@@ -13,7 +14,7 @@ busy (503) or throttled (429) is retried up to five times, a minute apart; the b
 | Bucket | Case |
 |---|---|
 | Happy | a review under its limit reaches Gemini, gets a verdict, and its spend is recorded |
-| Boundary | a limit below one call's worst case stops the call; nothing is sent or recorded |
+| Boundary | a limit below one call's worst case stops the call; nothing is sent or recorded; two finished reviews give the next one a step limit |
 | Degradation | a busy or throttled provider is retried, then fails naming the reason |
 | Hostile | no key: the run fails and says so |
 """
@@ -44,8 +45,10 @@ _ATTEMPTS = 5
 _SPEC = "# Greeter\n\n## 1. Purpose\n\nReturn the text 'hello'.\n"
 
 
-def _settings(limit_usd: float) -> str:
-    return f"""[servers.gemini]
+def _settings(limit_usd: float, extra: str = "") -> str:
+    return (
+        extra
+        + f"""[servers.gemini]
 kind = "gemini"
 api_key_env = "GEMINI_API_KEY"
 private = false
@@ -59,6 +62,7 @@ hosted_spend_per_run = {limit_usd}
 tokens_per_run = 100000
 agent_turns = 5
 """
+    )
 
 
 @pytest.fixture
@@ -82,8 +86,8 @@ def _calls(data_dir: Path) -> int:
         return conn.execute("SELECT COUNT(*) FROM llm_usage_log").fetchone()[0]
 
 
-def _review(project: Path, data_dir: Path, limit_usd: float):
-    (data_dir / "settings.toml").write_text(_settings(limit_usd), encoding="utf-8")
+def _review(project: Path, data_dir: Path, limit_usd: float, extra: str = ""):
+    (data_dir / "settings.toml").write_text(_settings(limit_usd, extra), encoding="utf-8")
     for attempt in range(_ATTEMPTS):
         result = runner.invoke(
             app, ["review", str(project / "greeter_spec.md"), "--project", str(project)]
@@ -108,3 +112,27 @@ def test_a_limit_below_one_call_stops_it_before_sending(project: Path, _isolate_
 
     assert "brake.hosted_spend_per_run" in " ".join(result.output.split()), result.output
     assert _calls(_isolate_env) == before
+
+
+def test_finished_reviews_give_the_next_one_a_step_limit(project: Path, _isolate_env: Path) -> None:
+    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.llm.store import step_history_limit
+
+    steps = "[step_limits]\npercentile = 90\nmin_steps = 2\n\n"
+    for _ in range(2):
+        result = _review(project, _isolate_env, 0.03, steps)
+        assert "VERDICT: ACCEPTED" in result.output or "VERDICT: DENIED" in result.output, (
+            result.output
+        )
+
+    limit = step_history_limit(
+        Database(_isolate_env / "specweaver.db"),
+        task_type="review",
+        model=_MODEL,
+        dal_level="DAL_C",
+        unit="usd",
+        steps=2,
+        percentile=90,
+    )
+
+    assert limit is not None and 0 < limit < 0.03
