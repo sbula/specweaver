@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for LLM Adapter auto-discovery registry."""
+"""Tests for LLM Adapter auto-discovery registry.
+
+Proves: E-FLOW-03 FR-1, FR-2, FR-6, NFR-2, NFR-3
+"""
 
 from unittest.mock import patch
 
@@ -120,3 +123,20 @@ def test_no_adapter_carries_a_price_table():
     """Prices live in the model catalogue only (C-FLOW-13 FR-12); a per-adapter table must not return."""
     for provider, adapter_cls in get_all_adapters().items():
         assert not hasattr(adapter_cls, "default_costs"), provider
+
+
+def test_only_gemini_is_a_required_sdk() -> None:
+    """FR-6: the other providers' SDKs are optional packages, installed per extra."""
+    import tomllib
+    from pathlib import Path
+
+    project = tomllib.loads(
+        (Path(__file__).resolve().parents[4] / "pyproject.toml").read_text(encoding="utf-8")
+    )["project"]
+    required = " ".join(project["dependencies"])
+    extras = project["optional-dependencies"]
+
+    assert "google-genai" in required
+    for sdk in ("openai", "anthropic", "mistralai"):
+        assert sdk not in required
+        assert any(sdk in dep for deps in extras.values() for dep in deps), sdk

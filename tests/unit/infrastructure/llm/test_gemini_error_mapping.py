@@ -6,6 +6,8 @@
 Found on a real call, 2026-10-10: Google's 503 "This model is currently experiencing high demand"
 was reported as "model not found", because the mapping matched the word "model".
 
+Proves: E-FLOW-03 FR-7
+
 | Bucket | Case |
 |---|---|
 | Happy | 401/403 → authentication, 429 → rate limit, 404 → model not found |

@@ -3,6 +3,8 @@
 **Status**: APPROVED · **FRs owned**: FR-6 · **Depends on**: none · Design:
 [E-FLOW-03_design.md](E-FLOW-03_design.md) §Sub-features → SF-01
 
+**Owns today** (2026-10-11): FR-1, FR-2, FR-6, FR-7 — built before this plan or by it; FR-3, FR-4, FR-5 moved to `C-FLOW-13`.
+
 ## Goal
 
 The registry, adapters, factory and config already work. SF-01 makes the feature shippable: optional

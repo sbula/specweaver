@@ -5,7 +5,7 @@
 
 | | |
 |---|---|
-| Absorbs | `D-FLOW-05` Model Catalogue Adoption (retired 2026-09-26) · supersedes `D-FLOW-03`, `E-FLOW-03` |
+| Absorbs | `D-FLOW-05` Model Catalogue Adoption (retired 2026-09-26) · replaces `D-FLOW-03` and the cost and factory parts of `E-FLOW-03` |
 | Enables | `B-FLOW-05` brake values · `A-FLOW-01` model choice |
 | Consumes | `C-FLOW-01` telemetry · `E-FLOW-01` config DB (its LLM tables are removed) |
 | Not touched | brake behaviour (`B-FLOW-05`) · measuring and choosing models (`A-FLOW-01`) · API keys' storage (env vars stay) |

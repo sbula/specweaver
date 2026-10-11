@@ -25,15 +25,15 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `D-FLOW-01` → the runner that executes it
   > - **Done when:** a pipeline file parses to a step model. No execution — that is the runner's job
 
-* **`E-FLOW-03` 🔧: Multi-Provider Registry** (Legacy: 3.13)
+* **`E-FLOW-03` 🔧: Provider Adapters** (Legacy: 3.13)
   > - **Purpose:** Add an LLM provider by dropping in one file, with no other change anywhere
   > - **Trigger:** At import, when adapters are scanned
   > - **Precondition:** —
-  > - **Reads:** `llm/adapters/` — each adapter self-describes its name and key variable
+  > - **Reads:** `llm/adapters/` — each adapter declares its provider name
   > - **Produces:** memory → a provider registry
   > - **Enables:** `C-FLOW-13` servers, which build every adapter
   > - **Done when:** adding a provider is one file and zero other changes
-  > - **Note:** superseded by `C-FLOW-13`, whose model list registers models and whose servers register providers
+  > - **Note:** prices, the factory and the database `provider` field moved to `C-FLOW-13` (2026-10-11)
 
 ## DAL-D: Internal Tooling
 
@@ -55,14 +55,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every user-driven pipeline run
   > - **Done when:** a failing run prints a friendly one-liner rather than a trace
 
-* **`D-FLOW-03` 🔧: Static Model Routing** (Legacy: 3.14)
-  > - **Purpose:** Send each kind of task to the model the user chose for it — review to one, implement to another
-  > - **Trigger:** When a task needs a model
-  > - **Precondition:** `E-FLOW-03` → the provider registry
-  > - **Reads:** the task type and the user's config
-  > - **Produces:** memory → a resolved provider and model
-  > - **Enables:** every LLM call
-  > - **Done when:** a task type maps to a model by configuration alone — no learning, no inference
+* **`D-FLOW-03` ⚰️ RETIRED:** *(Static Model Routing — replaced by `C-FLOW-13`, 2026-10-11: each role names its model in `settings.toml`)*
 
 * **`D-FLOW-04` 🔧: Unified Runner Architecture** (Legacy: 3.16)
   > - **Purpose:** Make every command run through the same machinery, so telemetry and state work identically whether it is one step or twenty
@@ -82,7 +75,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`C-FLOW-01` ✅: Cost Telemetry** (Legacy: 3.12)
   > - **Purpose:** Record what every LLM call cost and which task it served, so spend can be seen rather than guessed
   > - **Trigger:** On every LLM call
-  > - **Precondition:** `E-FLOW-03` → provider and cost data
+  > - **Precondition:** `C-FLOW-13` → prices · `E-FLOW-03` → the adapters
   > - **Reads:** each request's model, prompt tokens and completion tokens
   > - **Produces:** db → usage records with estimated cost and task type
   > - **Enables:** `sw usage` · `sw costs` · `D-UI-06` · `B-FLOW-03` · `A-FLOW-01`

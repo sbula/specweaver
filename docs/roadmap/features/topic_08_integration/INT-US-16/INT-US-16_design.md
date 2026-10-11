@@ -6,7 +6,7 @@ into FR-1/FR-4 during CB-2 per `A.1c`. CB-1 `c8be134c`, CB-2 `f7a98a4c`. · **Ph
 
 | | |
 |---|---|
-| Joins | `C-FLOW-01` (Telemetry DB) · `D-FLOW-03` (Static Routing) · token tracking · the Config DB |
+| Joins | `C-FLOW-01` (Telemetry DB) · `C-FLOW-13` (LLM settings) · token tracking · the Config DB |
 | Touches | the implement CLI's adapter construction · `TelemetryCollector` · `PipelineRunner._flush_telemetry` · `LlmRepository.get_usage_summary` · the `sw usage` renderer |
 | Not touched | the unbuilt US-16 add-ons: dynamic routing, friction analytics, OpenTelemetry tracing, REST telemetry API |
 | Minted from this work | `C-FLOW-13` (absorbed `D-FLOW-05`) — whether the recorded number is *right* |
