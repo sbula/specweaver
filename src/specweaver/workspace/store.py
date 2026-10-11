@@ -28,6 +28,10 @@ def _validate_project_name(name: str) -> None:
         raise ValueError(f"Invalid project name '{name}'")
 
 
+#: The DAL of a project nobody set one for, and of a folder outside every project `[agreed 2026-10-08]`.
+DEFAULT_DAL = DALLevel.DAL_C
+
+
 class Base(DeclarativeBase):
     @declared_attr.directive
     def __tablename__(cls) -> str:  # noqa: N805
@@ -48,7 +52,7 @@ class Project(Base):
         String, default="prompt", nullable=False
     )
     stitch_mode: Mapped[str] = mapped_column(String, default="off", nullable=False)
-    default_dal: Mapped[str] = mapped_column(String, default="DAL_C", nullable=False)
+    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)
 
 
 class ActiveState(Base):

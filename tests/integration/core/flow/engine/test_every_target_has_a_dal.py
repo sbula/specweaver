@@ -72,12 +72,13 @@ def test_a_declared_dal_wins(tmp_path: Path, db: Database) -> None:
     assert seed_dal_level(_context(root, db)) is DALLevel.DAL_A
 
 
-def test_an_unregistered_folder_has_no_dal(tmp_path: Path, db: Database) -> None:
+def test_a_folder_outside_every_project_gets_dal_c(tmp_path: Path, db: Database) -> None:
+    """Agreed 2026-10-11: no project means the same default a new project gets."""
     loose = tmp_path / "loose"
     loose.mkdir()
 
     assert default_dal_at(db, loose) is None
-    assert seed_dal_level(_context(loose, db)) is None
+    assert seed_dal_level(_context(loose, db)) is DALLevel.DAL_C
 
 
 def test_validation_uses_the_same_dal(tmp_path: Path, db: Database) -> None:

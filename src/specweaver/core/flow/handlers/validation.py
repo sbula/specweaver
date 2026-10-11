@@ -24,10 +24,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def target_dal(context: RunContext, target_path: Path) -> DALLevel | None:
-    """The target's DAL: its nearest `context.yaml`, else its project's default."""
+def target_dal(context: RunContext, target_path: Path) -> DALLevel:
+    """The target's DAL: its nearest `context.yaml`, else its project's default, else `DAL_C`."""
     from specweaver.core.config.dal_resolver import DALResolver
-    from specweaver.workspace.store import default_dal_at
+    from specweaver.workspace.store import DEFAULT_DAL, default_dal_at
 
     dal = DALResolver(context.project_path).resolve(target_path)
     db = getattr(context, "db", None)
@@ -36,7 +36,7 @@ def target_dal(context: RunContext, target_path: Path) -> DALLevel | None:
             dal = default_dal_at(db, context.project_path)
         except Exception:
             logger.warning("Could not read the project's default DAL", exc_info=True)
-    return dal
+    return dal or DEFAULT_DAL
 
 
 async def _resolve_merged_settings(context: RunContext, target_path: Path) -> Any:

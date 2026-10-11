@@ -1,4 +1,4 @@
-# Implementation Plan: Spend Limit Matrix (Model × Task × DAL) [SF-02: Step limits]
+# Implementation Plan: Step Limits from History [SF-02: Step limits]
 - **Feature ID**: B-FLOW-07
 - **Sub-Feature**: SF-02 — Step limits
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/B-FLOW-07/B-FLOW-07_design.md
