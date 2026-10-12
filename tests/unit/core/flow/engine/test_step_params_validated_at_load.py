@@ -142,3 +142,34 @@ def test_an_env_that_is_not_a_mapping_is_refused_at_load() -> None:
 
 def test_a_well_formed_bash_step_loads_clean() -> None:
     assert _bash({"script": "x.sh", "env": {"MODE": "ci"}, "args": ["-v"]}) == []
+
+
+def test_the_loader_refuses_a_pipeline_that_does_not_validate(tmp_path) -> None:
+    """Found on a real `sw run`, 2026-10-12: nothing in SpecWeaver called `validate_flow`."""
+    import pytest
+
+    from specweaver.core.flow.engine.parser import load_pipeline
+
+    path = tmp_path / "evil.yaml"
+    path.write_text(
+        "name: evil\nsteps:\n  - name: s\n    action: bash\n    target: script\n"
+        "    params:\n      script: ../evil.sh\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="bare filename"):
+        load_pipeline(path)
+
+
+def test_every_shipped_pipeline_still_loads() -> None:
+    from pathlib import Path
+
+    from specweaver.core.flow.engine.parser import list_bundled_pipelines, load_pipeline
+
+    names = list_bundled_pipelines()
+
+    assert names
+    assert "context" not in names
+    assert not [name for name in names if name.startswith("validation_")]
+    for name in names:
+        load_pipeline(Path(name))

@@ -51,24 +51,29 @@ def load_pipeline(path: Path) -> PipelineDefinition:
         raise ValueError(msg)
 
     try:
-        return PipelineDefinition.model_validate(data)
+        pipeline = PipelineDefinition.model_validate(data)
     except ValidationError as exc:
         msg = f"Invalid pipeline definition in {resolved}: {exc}"
         raise ValueError(msg) from exc
+    errors = pipeline.validate_flow()
+    if errors:
+        msg = f"Invalid pipeline {resolved}: " + "; ".join(errors)
+        raise ValueError(msg)
+    return pipeline
 
 
 def list_bundled_pipelines() -> list[str]:
-    """List all bundled pipeline template names.
+    """The names of the bundled pipelines `sw run` can run.
 
-    Returns:
-        List of pipeline names (without .yaml extension).
+    The same folder also holds the validation rule lists (`validation_*`) and the module's own
+    `context.yaml`; neither is a pipeline to run.
     """
     names: list[str] = []
     pipelines_pkg = importlib.resources.files("specweaver.workflows.pipelines")
     for item in pipelines_pkg.iterdir():
-        name = item.name
-        if name.endswith(".yaml"):
-            names.append(name.removesuffix(".yaml"))
+        name = item.name.removesuffix(".yaml")
+        if item.name.endswith(".yaml") and name != "context" and not name.startswith("validation_"):
+            names.append(name)
     return sorted(names)
 
 
