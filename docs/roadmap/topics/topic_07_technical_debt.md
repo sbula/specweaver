@@ -56,7 +56,7 @@ critical for long-term project viability.
   > threshold, with `_execute_loop` spanning ~60% of the file behind a `# noqa: C901` — a suppression admitting the method was past the project's own bar. **DELIVERED 2026-08-12:** 599 → 292 lines,
   > `_execute_loop` 365 → 21, the `noqa` deleted.
 
-* **`TECH-003` ✅: Structural Refactoring of Workspace AST Module**
+* **`TECH-003` 🟢: Structural Refactoring of Workspace AST Module**
   > [Description](../features/topic_07_technical_debt/TECH-003/TECH-003_design.md) | To make the bounded context crystal clear, we want to introduce a dedicated `ast` boundary inside the workspace
   > module. This separates mechanical Tree-Sitter extraction (`parsers`) from output mapping (`adapters`).
 * **`TECH-004` 🔧: Architectural Refactoring of `graph/` Bounded Context**
