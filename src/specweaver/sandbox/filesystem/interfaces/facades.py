@@ -42,8 +42,7 @@ class ImplementerFileInterface(BaseTool):
     """Filesystem interface for the Implementer role.
 
     Allowed intents: read_file, write_file, edit_file, create_file,
-                     delete_file, list_directory, search_content, find_placement,
-                     grep, find_files.
+                     delete_file, list_directory, grep, find_files.
     """
 
     def __init__(self, tool: FileSystemTool) -> None:
@@ -80,14 +79,6 @@ class ImplementerFileInterface(BaseTool):
         """List directory contents."""
         return self._tool.list_directory(path)
 
-    def search_content(self, path: str, regex: str) -> ToolResult:
-        """Search for regex pattern in files."""
-        return self._tool.search_content(path, regex)
-
-    def find_placement(self, description: str) -> ToolResult:
-        """Find where new code should go based on context.yaml purposes."""
-        return self._tool.find_placement(description)
-
     def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""
         return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
@@ -100,7 +91,7 @@ class ImplementerFileInterface(BaseTool):
 class ReviewerFileInterface(BaseTool):
     """Filesystem interface for the Reviewer role.
 
-    Allowed intents: read_file, list_directory, search_content, grep, find_files.
+    Allowed intents: read_file, list_directory, grep, find_files.
     All read-only.
     """
 
@@ -122,10 +113,6 @@ class ReviewerFileInterface(BaseTool):
         """List directory contents."""
         return self._tool.list_directory(path)
 
-    def search_content(self, path: str, regex: str) -> ToolResult:
-        """Search for regex pattern in files."""
-        return self._tool.search_content(path, regex)
-
     def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""
         return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
@@ -139,8 +126,7 @@ class DrafterFileInterface(BaseTool):
     """Filesystem interface for the Drafter role.
 
     Allowed intents: read_file, write_file, create_file, delete_file,
-                     list_directory, search_content, find_placement,
-                     grep, find_files.
+                     list_directory, grep, find_files.
     """
 
     def __init__(self, tool: FileSystemTool) -> None:
@@ -172,14 +158,6 @@ class DrafterFileInterface(BaseTool):
     def list_directory(self, path: str) -> ToolResult:
         """List directory contents."""
         return self._tool.list_directory(path)
-
-    def search_content(self, path: str, regex: str) -> ToolResult:
-        """Search for regex pattern in files."""
-        return self._tool.search_content(path, regex)
-
-    def find_placement(self, description: str) -> ToolResult:
-        """Find where new code should go based on context.yaml purposes."""
-        return self._tool.find_placement(description)
 
     def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""

@@ -444,8 +444,8 @@ boundary allows and is itself protected by the system it defines.
 
 | Component | Responsibility | Built (2026-09-25) |
 |---|---|---|
-| **Filesystem Tool** (`sandbox/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements | yes — `interfaces/tool.py` |
-| **Filesystem Atom** (`sandbox/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation | yes — `scaffold` / `validate_boundaries` intents in `core/atom.py` |
+| **Filesystem Tool** (`sandbox/filesystem/`) | `find_placement(description)` — scans `context.yaml` files and returns ranked placements | no — removed 2026-10-12, it had no caller |
+| **Filesystem Atom** (`sandbox/filesystem/`) | `scaffold()` — creates directories + `context.yaml` from boundary defs; `validate_boundaries()` — pre-code validation | no — removed 2026-10-12, they had no caller |
 | **Validation Rules** (`specweaver/validation/`) | `context_yaml_lint(path)` — structural validation of the YAML file itself | no |
 | **CLI** | `sw context validate` — check all `context.yaml` files in a project for consistency | no |
 

@@ -221,33 +221,28 @@
   },
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @a91f7b2f86aa": {
     "lines": 23,
-    "first": "src/specweaver/sandbox/filesystem/core/atom.py:70",
+    "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
     "second": "src/specweaver/sandbox/qa_runner/core/atom.py:114"
   },
   "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @0e2565ddcf37": {
     "lines": 15,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:107",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:49"
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:98",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:48"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @428bd8b56bed": {
-    "lines": 11,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:119",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:77"
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @63d70a46a223": {
+    "lines": 24,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:148",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:68"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @b996c623a088": {
-    "lines": 12,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:127",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:89"
-  },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @f84f110e5018": {
-    "lines": 32,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:162",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:69"
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @7859140ebcf3": {
+    "lines": 16,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:110",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:76"
   },
   "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @fedef1567758": {
     "lines": 19,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:146",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:49"
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:132",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:48"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,

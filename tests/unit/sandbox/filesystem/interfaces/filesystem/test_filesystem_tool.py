@@ -155,15 +155,13 @@ class TestRoleIntentMapping:
             "create_file",
             "delete_file",
             "list_directory",
-            "search_content",
-            "find_placement",
             "grep",
             "find_files",
         }
         assert ROLE_INTENTS["implementer"] == frozenset(expected)
 
     def test_reviewer_intents(self) -> None:
-        expected = {"read_file", "list_directory", "search_content", "grep", "find_files"}
+        expected = {"read_file", "list_directory", "grep", "find_files"}
         assert ROLE_INTENTS["reviewer"] == frozenset(expected)
 
     def test_drafter_intents(self) -> None:
@@ -173,8 +171,6 @@ class TestRoleIntentMapping:
             "create_file",
             "delete_file",
             "list_directory",
-            "search_content",
-            "find_placement",
             "grep",
             "find_files",
         }
@@ -187,8 +183,6 @@ class TestRoleIntentMapping:
             "create_file",
             "delete_file",
             "list_directory",
-            "search_content",
-            "find_placement",
             "grep",
             "find_files",
         }
@@ -256,11 +250,6 @@ class TestImplementerIntents:
         result = implementer.list_directory("src/domain/billing")
         assert result.status == "success"
         assert "calc.py" in result.data
-
-    def test_search_content_in_boundary(self, implementer: FileSystemTool) -> None:
-        result = implementer.search_content("src/domain/billing", r"def \w+")
-        assert result.status == "success"
-        assert len(result.data) > 0
 
     def test_edit_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
         result = implementer.edit_file(
@@ -345,7 +334,7 @@ class TestNoGrantBlocked:
 
     def test_search_outside_grants(self, implementer: FileSystemTool) -> None:
         """Cannot search in directories outside any grant."""
-        result = implementer.search_content("specs", r".*")
+        result = implementer.grep("specs", ".*")
         assert result.status == "error"
 
 
@@ -441,7 +430,7 @@ class TestRoleGating:
         assert result.status == "success"
 
     def test_reviewer_can_search(self, reviewer: FileSystemTool) -> None:
-        result = reviewer.search_content("src/domain/billing", r"def")
+        result = reviewer.grep("src/domain/billing", "def")
         assert result.status == "success"
 
 
@@ -615,100 +604,6 @@ class TestGrantBypassAttempts:
 
 
 # ===========================================================================
-# find_placement MVP (keyword matching)
-# ===========================================================================
-
-
-class TestFindPlacement:
-    """find_placement uses keyword matching on context.yaml purpose fields."""
-
-    def test_finds_matching_boundary(self, implementer: FileSystemTool) -> None:
-        """Keywords in description match purpose field."""
-        result = implementer.find_placement("billing calculation")
-        assert result.status == "success"
-        assert len(result.data) > 0
-        paths = [m["path"] for m in result.data]
-        assert any("billing" in p for p in paths)
-
-    def test_no_match(self, implementer: FileSystemTool) -> None:
-        """No keywords match any purpose field."""
-        result = implementer.find_placement("quantum teleportation flux")
-        assert result.status == "success"
-        assert len(result.data) == 0
-
-    def test_returns_purpose_and_path(self, implementer: FileSystemTool) -> None:
-        """Each match includes path, name, and purpose."""
-        result = implementer.find_placement("currency")
-        assert result.status == "success"
-        assert len(result.data) > 0
-        for match in result.data:
-            assert "path" in match
-            assert "name" in match
-            assert "purpose" in match
-
-    def test_case_insensitive(self, implementer: FileSystemTool) -> None:
-        """Matching is case-insensitive."""
-        result = implementer.find_placement("BILLING")
-        assert result.status == "success"
-        assert len(result.data) > 0
-
-    def test_partial_word_match(self, implementer: FileSystemTool) -> None:
-        """Partial words still match (substring matching)."""
-        result = implementer.find_placement("exchang")  # partial 'exchange'
-        assert result.status == "success"
-        assert len(result.data) > 0
-
-    def test_multiple_keywords_ranked(self, implementer: FileSystemTool) -> None:
-        """More keyword matches = higher score."""
-        result = implementer.find_placement("currency exchange rates conversion")
-        assert result.status == "success"
-        # currency module should score highest (all keywords match)
-        if len(result.data) > 0:
-            assert "currency" in result.data[0]["name"] or "currency" in result.data[0]["path"]
-
-
-# ===========================================================================
-# search_content recursive
-# ===========================================================================
-
-
-class TestSearchContentRecursive:
-    """search_content should support recursive subdirectory search."""
-
-    def test_recursive_search_finds_nested_files(
-        self,
-        executor: FileExecutor,
-        project: Path,
-    ) -> None:
-        """Recursive search finds matches in subdirectories."""
-        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
-        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
-        result = tool.search_content("src", r"def \w+", recursive=True)
-        assert result.status == "success"
-        # Should find 'def total' in src/domain/billing/calc.py
-        found_files = [m["file"] for m in result.data]
-        assert any("calc.py" in f for f in found_files)
-
-    def test_non_recursive_search_direct_children_only(
-        self,
-        executor: FileExecutor,
-    ) -> None:
-        """Non-recursive search only searches direct children."""
-        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
-        tool = FileSystemTool(executor=executor, role="reviewer", grants=grants)
-        result = tool.search_content("src", r"def \w+", recursive=False)
-        assert result.status == "success"
-        # Direct children of src/ are directories, no .py files
-        assert len(result.data) == 0
-
-    def test_default_is_non_recursive(self, implementer: FileSystemTool) -> None:
-        """Default behavior is non-recursive (backward compatible)."""
-        result = implementer.search_content("src/domain/billing", r"def \w+")
-        assert result.status == "success"
-        assert len(result.data) > 0  # finds calc.py (direct child)
-
-
-# ===========================================================================
 # Path Traversal Attack Surface (edge cases)
 # ===========================================================================
 
@@ -782,10 +677,7 @@ class TestPathTraversalEdgeCases:
 
     def test_dotdot_escape_with_search(self, implementer: FileSystemTool) -> None:
         """Agent tries to search in a directory outside grants via .. traversal."""
-        result = implementer.search_content(
-            "src/domain/billing/../../../specs",
-            r".*",
-        )
+        result = implementer.grep("src/domain/billing/../../../specs", ".*")
         assert result.status == "error"
 
     def test_multiple_slashes_normalized(self, implementer: FileSystemTool) -> None:
@@ -811,59 +703,3 @@ class TestPathTraversalEdgeCases:
         """
         with pytest.raises(ValueError, match="empty"):
             FolderGrant("", AccessMode.READ, recursive=True)
-
-
-# ===========================================================================
-# search_content edge cases
-# ===========================================================================
-
-
-class TestSearchContentEdgeCases:
-    """Edge cases for the search_content intent."""
-
-    def test_invalid_regex_returns_error(self, implementer: FileSystemTool) -> None:
-        """Invalid regex pattern should return an ToolResult error, not crash."""
-        result = implementer.search_content("src/domain/billing", r"[invalid")
-        assert result.status == "error"
-        assert "Invalid regex" in result.message
-
-    def test_search_empty_pattern_matches_everything(
-        self,
-        implementer: FileSystemTool,
-    ) -> None:
-        """Empty regex matches every line."""
-        result = implementer.search_content("src/domain/billing", r"")
-        assert result.status == "success"
-        assert len(result.data) > 0
-
-
-# ===========================================================================
-# find_placement edge cases
-# ===========================================================================
-
-
-class TestFindPlacementEdgeCases:
-    """Edge cases for the find_placement intent."""
-
-    def test_empty_description(self, implementer: FileSystemTool) -> None:
-        """Empty description has no keywords → empty results."""
-        result = implementer.find_placement("")
-        assert result.status == "success"
-        assert result.data == []
-
-    def test_short_words_filtered(self, implementer: FileSystemTool) -> None:
-        """Words shorter than 3 chars are filtered out as noise."""
-        result = implementer.find_placement("a to of")
-        assert result.status == "success"
-        assert result.data == []
-
-    def test_find_placement_no_context_yaml(self, tmp_path: Path) -> None:
-        """find_placement in a project with no context.yaml returns empty."""
-        (tmp_path / "src").mkdir()
-        (tmp_path / "src" / "code.py").write_text("x=1", encoding="utf-8")
-        executor = FileExecutor(cwd=tmp_path)
-        grants = [FolderGrant("src", AccessMode.READ, recursive=True)]
-        tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
-        result = tool.find_placement("some feature")
-        assert result.status == "success"
-        assert result.data == []

@@ -78,8 +78,6 @@ _ALL_METHODS = {
     "create_file",
     "delete_file",
     "list_directory",
-    "search_content",
-    "find_placement",
     "grep",
     "find_files",
 }
@@ -91,20 +89,16 @@ _IMPLEMENTER_METHODS = {
     "create_file",
     "delete_file",
     "list_directory",
-    "search_content",
-    "find_placement",
     "grep",
     "find_files",
 }
-_REVIEWER_METHODS = {"read_file", "list_directory", "search_content", "grep", "find_files"}
+_REVIEWER_METHODS = {"read_file", "list_directory", "grep", "find_files"}
 _DRAFTER_METHODS = {
     "read_file",
     "write_file",
     "create_file",
     "delete_file",
     "list_directory",
-    "search_content",
-    "find_placement",
     "grep",
     "find_files",
 }
@@ -141,7 +135,7 @@ class TestReviewerMethodVisibility:
 
 
 class TestDrafterMethodVisibility:
-    """DrafterFileInterface exposes read/write/create/delete/list/search/find_placement."""
+    """DrafterFileInterface exposes read/write/create/delete/list/grep/find_files."""
 
     @pytest.mark.parametrize("method", sorted(_DRAFTER_METHODS))
     def test_has_method(self, method: str, project: Path) -> None:
@@ -192,9 +186,9 @@ class TestImplementerFunctional:
         result = iface.list_directory("src/domain/billing")
         assert result.status == "success"
 
-    def test_search_content(self, project: Path) -> None:
+    def test_grep(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        result = iface.search_content("src/domain/billing", r"def")
+        result = iface.grep("src/domain/billing", "def")
         assert result.status == "success"
 
     def test_edit_file(self, project: Path) -> None:
@@ -221,9 +215,9 @@ class TestReviewerFunctional:
         result = iface.list_directory("src/domain/billing")
         assert result.status == "success"
 
-    def test_search_content(self, project: Path) -> None:
+    def test_grep(self, project: Path) -> None:
         iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        result = iface.search_content("src/domain/billing", r"def")
+        result = iface.grep("src/domain/billing", "def")
         assert result.status == "success"
 
 

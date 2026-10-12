@@ -102,6 +102,9 @@ the JOIN gate and Wave N deferred execution, `AsyncRateLimiterAdapter`, `FolderG
 }),
 ```
 
+Today no model is offered a write tool (`E-SENS-01` FR-3). Offering `write_file` and
+`create_file` to the scenario agent is this feature's work `[agreed 2026-10-12]`.
+
 ### Boundary per agent
 
 | Agent | `WorkspaceBoundary.roots` (R/W) | `api_paths` (Read-Only) | Prompt Includes |

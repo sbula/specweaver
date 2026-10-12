@@ -3,6 +3,8 @@
 
 """Tests for specweaver.sandbox.filesystem.core.executor — TDD (tests first).
 
+Proves: E-SENS-01 FR-4
+
 Test structure:
 - Happy-path: every operation works correctly
 - Protected patterns: context.yaml, .env, .git/ blocked for write/delete/move
@@ -370,9 +372,12 @@ class TestPathTraversal:
         result = executor.read("C:\\Windows\\System32\\config")
         assert result.status == "error"
 
-    @pytest.mark.skipif(os.name != "nt", reason="Windows-only")
-    def test_windows_ads_blocked(self, executor: FileExecutor) -> None:
-        """Windows Alternate Data Streams are blocked."""
+    def test_windows_ads_blocked(self, executor: FileExecutor, project: Path) -> None:
+        """Windows Alternate Data Streams are blocked, and the same `:` form on every OS.
+
+        The stream (a plain file elsewhere) exists, so only the guard can refuse it.
+        """
+        (project / "src" / "main.py:hidden").write_text("HIDDEN", encoding="utf-8")
         result = executor.read("src/main.py:hidden")
         assert result.status == "error"
 

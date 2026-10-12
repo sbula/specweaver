@@ -11,10 +11,12 @@ in `specweaver.sandbox.security`, `create_git_interface` in
 ## FileSystemTool
 
 Grant-based file access. Each agent gets `FolderGrant` objects naming the directories it may read,
-write, or execute.
+write, or execute. A model is offered only the four read tools (`read_file`, `list_directory`,
+`grep`, `find_files`); the write intents are built and offered to no model yet (`E-SENS-01`).
 
 ```python
-from specweaver.sandbox.filesystem.tool import FileSystemTool, FolderGrant, AccessMode
+from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
+from specweaver.sandbox.security import AccessMode, FolderGrant
 
 grants = [FolderGrant("src/billing", AccessMode.WRITE, recursive=True)]
 tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
@@ -32,11 +34,12 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 | `edit_file` | Replace a specific section of a file |
 | `delete_file` | Remove a file |
 | `list_directory` | List directory contents |
-| `search_content` | Regex search across files |
-| `find_placement` | Suggest where to place new code (uses `context.yaml`) |
+| `grep` | Regex search across files |
+| `find_files` | Find files by glob |
 
 **Security:** paths are normalized via `posixpath.normpath`; absolute paths are rejected; `..`
-traversal beyond the project root returns an error, for `search_content` and file search too.
+traversal beyond the project root returns an error, for `grep` and `find_files` too. A path through
+a symlink, or with `:` in a segment, is refused.
 Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
 ## GitTool (agents)
