@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.workspace.project.scaffold — TDD (tests first)."""
+"""Tests for specweaver.workspace.project.scaffold — TDD (tests first).
+
+Proves: C-EXEC-02 FR-10
+"""
 
 from __future__ import annotations
 

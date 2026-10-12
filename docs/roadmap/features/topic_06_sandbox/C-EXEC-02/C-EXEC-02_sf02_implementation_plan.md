@@ -128,6 +128,7 @@ opaque until a handler runs. The `params:`-nesting footgun (silently ignored top
 documented in the new guide section. **TECH-011**
 ([`docs/roadmap/features/topic_07_technical_debt/TECH-011/TECH-011_design.md`](../../topic_07_technical_debt/TECH-011/TECH-011_design.md))
 tracks load-time `params` validation for **all** step types; registered in `master_story_roadmap.md`.
+Superseded: `TECH-011` (delivered 2026-08-19) checks every step's `params` at load.
 
 Red/Blue review (2 cycles, converged, no plan changes):
 

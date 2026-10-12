@@ -98,7 +98,7 @@ script from `.specweaver/scripts/` (C-EXEC-02's "Native CLI Action Node"). On to
 - `env` only by explicit opt-in, never passed through;
 - a resolved absolute `bash` path, never the bare string `"bash"`.
 
-It never raises; every failure is a `FAILED` `AtomResult`.
+It never raises; every failure is a `FAILED` `AtomResult`, and a timeout says "timed out after N s".
 
 > [!NOTE]
 > **Resolve `bash` to an absolute path.** On Windows, `Popen(["bash", ...])` goes through
@@ -107,7 +107,7 @@ It never raises; every failure is a `FAILED` `AtomResult`.
 > use the returned path as `argv[0]`. Details: `special_patterns_and_adaptations.md` §22.
 
 Pipeline `action: bash` / `target: script` steps (C-EXEC-02 SF-02) reach it through
-`BashActionHandler` — YAML shape and the `params:`-nesting trap: `docs/dev_guides/pipeline_engine_guide.md` §12.
+`BashActionHandler` — YAML shape and the load-time checks: `docs/dev_guides/pipeline_engine_guide.md` §12.
 
 `sw init` creates `.specweaver/scripts/` (C-EXEC-02 SF-03) with a placeholder `README.md` explaining
 the containment rule.

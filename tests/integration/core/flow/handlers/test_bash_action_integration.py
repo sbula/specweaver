@@ -3,6 +3,11 @@
 
 """Integration tests for `action: bash` pipeline steps (C-EXEC-02 SF-2).
 
+Proves: C-EXEC-02 FR-1
+Proves: C-EXEC-02 FR-4
+Proves: C-EXEC-02 FR-6
+Proves: C-EXEC-02 FR-7
+
 Runs BashActionHandler through the real PipelineRunner + StepHandlerRegistry,
 executing a real script under `.specweaver/scripts/` — no mocks on the
 handler/atom/executor chain.

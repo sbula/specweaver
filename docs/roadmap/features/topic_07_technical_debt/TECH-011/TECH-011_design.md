@@ -65,29 +65,8 @@ one, and adding another is one line.
 | FR-1 | `tests/unit/core/flow/engine/test_step_params_validated_at_load.py` — removing the call, or emptying the registry, each fail 3 |
 | FR-2 | the same file — dropping the misplacement branch fails 1, and reverting to `extra="ignore"` fails 1, because the key vanishes before anything can see it |
 
-## Candidate Approaches (as filed)
+## Live demo
 
-1. **Per-action `params` schema registry** — each `StepAction` maps to a Pydantic model describing
-   its expected `params` shape (e.g. `BashStepParams(script: str, args: list[str] = [], ...)`);
-   `validate_flow()` looks up the schema by `step.action` and validates `step.params` against it,
-   collecting errors the same way it already collects `(action, target)` combination errors.
-2. **Per-handler `validate_params(params) -> list[str]` hook** — extend the `StepHandler` protocol
-   with an optional classmethod/staticmethod handlers can implement for load-time checks, called by
-   `validate_flow()` for every step whose action has a registered handler with that hook. Handlers
-   without the hook are silently skipped (backward compatible, opt-in).
-3. **Do nothing globally, keep it per-handler at runtime** — explicitly reject this ticket's
-   premise; document the footgun instead. (The status quo — not a "do nothing" ticket by definition,
-   but worth stating as the baseline being evaluated against.)
-
-## Non-Goals
-
-- Retrofitting every existing step type's params validation in one PR — likely warrants its own phased sub-feature breakdown (start with a couple of the most typo-prone step types, expand from there).
-- Changing `PipelineStep`'s `extra="ignore"` Pydantic config globally — that's a separate, more
-  invasive decision with its own blast radius (could break existing pipeline YAMLs that rely on
-  being tolerant of extra/legacy keys).
-
-## Next Step
-
-Run this through the `specweaver-design` skill properly (Research → Feature Detail → Decompose →
-Document → Consistency Check) before implementation — this stub only captures the problem statement
-and candidate approaches, not a reviewed design.
+`sw run` of a pipeline whose bash step has `script:` beside `params:` stops before any step runs
+and says it belongs under `params:`; one with no `script` at all says it is missing.
+`tests/e2e/capabilities/sandbox/test_bash_step_journey_e2e.py` does exactly this.

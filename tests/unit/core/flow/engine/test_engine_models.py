@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for pipeline models — enums, Pydantic models, flow validation."""
+"""Tests for pipeline models — enums, Pydantic models, flow validation.
+
+Proves: C-EXEC-02 NFR-10
+"""
 
 from __future__ import annotations
 

@@ -3,7 +3,21 @@
 
 """Tests for BashActionAtom (C-EXEC-02 SF-1).
 
+Proves: C-EXEC-02 FR-2
+Proves: C-EXEC-02 FR-3
+Proves: C-EXEC-02 FR-4
+Proves: C-EXEC-02 FR-8
+Proves: C-EXEC-02 FR-9
+Proves: C-EXEC-02 FR-11
+Proves: C-EXEC-02 FR-12
 Proves: C-EXEC-02 FR-13
+Proves: C-EXEC-02 NFR-1
+Proves: C-EXEC-02 NFR-2
+Proves: C-EXEC-02 NFR-3
+Proves: C-EXEC-02 NFR-4
+Proves: C-EXEC-02 NFR-5
+Proves: C-EXEC-02 NFR-8
+Proves: C-EXEC-02 NFR-9
 """
 
 from __future__ import annotations
@@ -359,6 +373,8 @@ class TestTimeoutAndExceptionContainment:
 
         assert result.status == AtomStatus.FAILED
         assert "done" not in result.exports["stdout"]
+        assert result.message == "bash script 'sleep.sh' timed out after 1 s.", result.message
+        assert result.exports["timed_out"] is True
 
     def test_crashing_executor_never_propagates(
         self,
@@ -451,3 +467,30 @@ class TestMalformedParams:
         assert result.status == AtomStatus.FAILED
         assert named in result.message
         assert "exit_code" not in result.exports
+
+
+@pytest.mark.skipif(_BASH_UNAVAILABLE, reason="bash not on PATH")
+class TestObservabilityAndCredentials:
+    def test_every_run_is_logged_with_what_ran(self, tmp_path: Path, caplog) -> None:
+        """NFR-8: one DEBUG line names the script, its args, the folder, the timeout and the end."""
+        scripts_dir = tmp_path / ".specweaver" / "scripts"
+        _write_script(scripts_dir, "ok.sh", "#!/usr/bin/env bash\nexit 0\n")
+
+        with caplog.at_level("DEBUG", logger="specweaver.sandbox.execution.executor"):
+            BashActionAtom(cwd=tmp_path).run({"script": "ok.sh", "args": ["--flag"]})
+
+        line = next(
+            r.getMessage() for r in caplog.records if "subprocess_execute" in r.getMessage()
+        )
+        assert "ok.sh" in line and "--flag" in line
+        assert "timeout=120" in line and "exit_code=0" in line and "duration_seconds=" in line
+
+    def test_a_script_never_sees_an_api_key(self, tmp_path: Path, monkeypatch) -> None:
+        """NFR-3: the provider keys of the shell are stripped from the script's environment."""
+        monkeypatch.setenv("GEMINI_API_KEY", "leak-me-0123456789")
+        scripts_dir = tmp_path / ".specweaver" / "scripts"
+        _write_script(scripts_dir, "env.sh", '#!/usr/bin/env bash\necho "key=${GEMINI_API_KEY}"\n')
+
+        result = BashActionAtom(cwd=tmp_path).run({"script": "env.sh"})
+
+        assert result.exports["stdout"].strip() == "key="

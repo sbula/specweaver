@@ -396,29 +396,21 @@ steps:
       default_target: on_failure
       rules:
         - field: exit_code
-          operator: eq
+          operator: "=="
           value: 0
           target: on_success
 ```
 
-### Trap: inputs must sit under `params:`
+A router jumps; the steps after the target still run in order, and there is no end-of-run target.
+Put the success path last, and end the failure path with a step that fails.
 
-`script`, `args`, `working_dir`, `timeout_seconds`, `env` — all **must** be under `params:`.
-`PipelineStep` silently ignores unknown top-level keys (`extra="ignore"`):
+### Inputs sit under `params:`
 
-```yaml
-- name: run_custom_check
-  action: bash
-  target: script
-  script: check_licenses.sh   # WRONG — silently dropped, params ends up {}
-```
-
-This parses to `params={}` and fails at runtime with `BashActionAtom`'s
-`"Missing 'script' in context."` — far from the real mistake.
-
-`BashActionHandler` passes `step.params` through untouched. All validation (bare filename, path
-containment, timeout ceiling, `PATH`-override rejection) is in `BashActionAtom.run()`. Load-time
-`params` validation for all step types: `TECH-011`.
+`script`, `args`, `working_dir`, `timeout_seconds`, `env` all go under `params:`. The pipeline is
+checked when it loads (`TECH-011`): a key beside `params:` is named ("it belongs under
+'params:'"), and a path in the script name, a `PATH` key in `env`, or a timeout over 3600 s is
+refused before any step runs. The full containment check (symlinks followed) runs again before
+each script starts.
 
 ### Output shape
 
@@ -430,6 +422,7 @@ On success or failure, `StepResult.output` is `BashActionAtom`'s `exports` dict,
     "stdout": "...",       # truncated to 1 MiB
     "stderr": "...",       # truncated to 1 MiB
     "duration_seconds": 0.42,
+    "timed_out": False,
 }
 ```
 

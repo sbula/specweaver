@@ -4,6 +4,7 @@
 
 """Tests for BashActionHandler — runs a bash script via BashActionAtom.
 
+Proves: C-EXEC-02 FR-5
 Proves: C-EXEC-02 FR-13
 """
 

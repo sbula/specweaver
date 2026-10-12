@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.execution.models import ResourceLimits
+from specweaver.sandbox.execution.models import ResourceLimits, SubprocessResult
 from specweaver.sandbox.security import WorkspaceBoundary, WorkspaceBoundaryError
 
 if TYPE_CHECKING:
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 _MAX_OUTPUT_BYTES = 1_048_576  # 1 MiB, FR-8
+_DEFAULT_TIMEOUT_SECONDS = 120  # NFR-4
 _MAX_TIMEOUT_SECONDS = 3600  # NFR-4 ceiling
 _DEFAULT_RESOURCE_LIMITS = ResourceLimits(
     max_memory_bytes=2_147_483_648,  # 2 GiB, FR-11
@@ -90,7 +91,7 @@ class BashActionAtom(Atom):
         errors = bash_param_errors(context)
         if errors:
             return AtomResult(status=AtomStatus.FAILED, message=" ".join(errors))
-        timeout_seconds = context.get("timeout_seconds")
+        timeout_seconds = context.get("timeout_seconds") or _DEFAULT_TIMEOUT_SECONDS
         env: dict[str, str] = context.get("env") or {}
 
         try:
@@ -137,21 +138,31 @@ class BashActionAtom(Atom):
                 message=f"bash script '{script}' crashed: {type(exc).__name__}: {exc}",
             )
 
-        status = AtomStatus.SUCCESS if result.exit_code == 0 else AtomStatus.FAILED
-        # The exit code alone names nothing. `exports` has always carried stderr, but the message is
-        # what reaches a step's `error_message` and the operator's terminal — so a script that died
-        # for an environmental reason read as an ordinary script failure.
-        detail = _first_line(result.stderr)
-        message = f"bash script '{script}' exited {result.exit_code}."
-        if status is AtomStatus.FAILED and detail:
-            message = f"{message} stderr: {detail}"
-        return AtomResult(
-            status=status,
-            message=message,
-            exports={
-                "exit_code": result.exit_code,
-                "stdout": _truncate(result.stdout),
-                "stderr": _truncate(result.stderr),
-                "duration_seconds": result.duration_seconds,
-            },
-        )
+        return _result(script, result, timeout_seconds)
+
+
+def _result(script: str, result: SubprocessResult, timeout_seconds: int) -> AtomResult:
+    """A finished run as an `AtomResult`: passed on exit 0, else failed with its cause named."""
+    status = (
+        AtomStatus.SUCCESS if result.exit_code == 0 and not result.timed_out else AtomStatus.FAILED
+    )
+    # The exit code alone names nothing. `exports` has always carried stderr, but the message is
+    # what reaches a step's `error_message` and the operator's terminal — so a script that died
+    # for an environmental reason read as an ordinary script failure.
+    detail = _first_line(result.stderr)
+    message = f"bash script '{script}' exited {result.exit_code}."
+    if result.timed_out:
+        message = f"bash script '{script}' timed out after {timeout_seconds} s."
+    elif status is AtomStatus.FAILED and detail:
+        message = f"{message} stderr: {detail}"
+    return AtomResult(
+        status=status,
+        message=message,
+        exports={
+            "exit_code": result.exit_code,
+            "stdout": _truncate(result.stdout),
+            "stderr": _truncate(result.stderr),
+            "duration_seconds": result.duration_seconds,
+            "timed_out": result.timed_out,
+        },
+    )
