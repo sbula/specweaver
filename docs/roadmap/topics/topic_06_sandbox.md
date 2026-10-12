@@ -56,7 +56,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** DDD layering that cannot quietly erode
   > - **Done when:** an L3 capability importing an L1 CLI dependency fails the check
 
-* **`C-EXEC-02` 🔧: Native CLI Nodes** (Legacy: 3.40)
+* **`C-EXEC-02` ✅: Native CLI Nodes** (Legacy: 3.40)
   > - **Purpose:** Let a pipeline run a shell step — while making agent-authored commands impossible, since the script must already exist in a protected directory
   > - **Trigger:** When a pipeline step declares `action: bash`
   > - **Precondition:** `E-SENS-03` → the `FolderGrant` that protects the script directory

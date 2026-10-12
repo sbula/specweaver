@@ -254,7 +254,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides Git Worktree Bouncer)*
     *   `🔧` **E-EXEC-01:** [Standard Local Execution](features/topic_06_sandbox/E-EXEC-01/E-EXEC-01_design.md)
-    *   `🔧` **C-EXEC-02:** Native CLI Action Nodes
+    *   `✅` **C-EXEC-02:** Native CLI Action Nodes
 *   **Sub-Story Add-Ons:**
     *   🟢 **Containerized Isolation:**
         *   `✅` **D-EXEC-01:** Podman/Docker Integration

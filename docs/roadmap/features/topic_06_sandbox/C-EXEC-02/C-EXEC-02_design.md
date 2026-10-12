@@ -1,6 +1,6 @@
 # C-EXEC-02 — Native CLI Action Nodes
 
-**Status**: Built; `🔧` until the user signs off. · **Feature ID**: C-EXEC-02
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Feature ID**: C-EXEC-02
 
 | | |
 |---|---|
