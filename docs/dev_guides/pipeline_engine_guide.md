@@ -215,15 +215,17 @@ collides on the branch name (`TECH-012`). Use per-run mode for that.
 
 - **Caches (FR-2)**: `setup_sandbox_caches` symlinks `.pytest_cache`, `__pycache__`, `node_modules`,
   `.gradle`, `target`, `build`, `.venv`, `venv` and `.specweaver` into the worktree, so nothing is
-  rebuilt or copied.
+  rebuilt or copied; a folder git already put there (a tracked `.specweaver/scripts/`) stays.
 - **Strip-merge (FR-4)**: `strip_merge` (`sandbox/git/core/worktree_ops.py`) runs
   `git merge --no-commit --no-ff <branch> -X ours`, then restores or deletes every changed file that
-  is not in `allowed_paths` (exact repo-relative match). `README.md` and `docs/` are hard-blocked even
-  when allow-listed. `doc_updates.md` always survives. A merge that fails (e.g. a dirty real working
+  is not in `allowed_paths` (a repo-relative path, or a glob: `*` inside one folder, `**` across
+  folders), and removes the folders a deleted file leaves empty. `README.md` and `docs/` are
+  hard-blocked even when allow-listed. `doc_updates.md` always survives. A merge that fails (e.g. a dirty real working
   tree) is `git merge --abort`ed and reported with "commit or stash them first".
 - **Teardown**: `_intent_worktree_teardown` runs `git worktree remove --force`; if that fails (Windows
   file locks, e.g. Defender), it retries `shutil.rmtree` with a 5-step backoff (0.05 → 0.75 s, under
-  2 s total), then `git worktree prune`. Given a `branch`, it also deletes it (`branch -D`).
+  2 s total), then `git worktree prune`. Given a `branch`, it also deletes it (`branch -D`). With no
+  worktree on disk it only prunes and drops a leftover branch, without a warning.
 
 ### 7.2 Per-step mode (`INT-US-09`, the US-9 zero-trust contract)
 

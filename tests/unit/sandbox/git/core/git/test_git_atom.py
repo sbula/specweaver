@@ -701,6 +701,7 @@ class TestWorktreeTeardown:
     """worktree_teardown removes the worktree resiliently."""
 
     def test_success_clean_removal(self, tmp_path: Path) -> None:
+        (tmp_path / ".worktrees" / "agent").mkdir(parents=True)
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0

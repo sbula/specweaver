@@ -20,6 +20,11 @@ single authorized reconcile lands ONLY `allowed_paths` back into the real repo:
                        skipped).
 
 Requires only git + bash; skips cleanly otherwise (NFR-7).
+
+Proves: C-EXEC-06 FR-3
+Proves: C-EXEC-06 FR-6
+Proves: C-EXEC-06 FR-8
+Proves: C-EXEC-06 NFR-1
 """
 
 from __future__ import annotations

@@ -8,7 +8,11 @@ At span end (COMPLETED runs only), the session worktree's changes are committed 
 strip-merged back to the real repo — writing back ONLY paths in ``allowed_paths``. This
 is the DAL-C authorization gate: a file outside the allow-list must never reach the real repo.
 
-Proves: C-EXEC-06 FR-4, FR-5
+Proves: C-EXEC-06 FR-3
+Proves: C-EXEC-06 FR-4
+Proves: C-EXEC-06 FR-5
+Proves: C-EXEC-06 NFR-4
+Proves: C-EXEC-06 NFR-6
 """
 
 from __future__ import annotations
@@ -334,3 +338,34 @@ def test_a_glob_in_allowed_paths_lands_its_files(tmp_path: Path, pattern: str) -
 
     assert (tmp_path / "src" / "foo.py").exists()
     assert not (tmp_path / "secret.py").exists()
+
+
+def test_a_stripped_file_leaves_no_empty_folder_behind(tmp_path: Path) -> None:
+    """The merge writes a new file's folder; stripping the file must take the folder with it."""
+    gen = 'mkdir -p src docs/deep\necho "def foo(): pass" > src/foo.py\necho "x" > docs/deep/x.md\n'
+    _commit_project(tmp_path, ("gx.sh", gen))
+    (tmp_path / "keep").mkdir()
+
+    run_state = _run(
+        PipelineDefinition(name="p", steps=[_bash("g", "gx.sh")]),
+        _ctx(tmp_path, allowed=["src/foo.py"]),
+    )
+
+    assert run_state.status == RunStatus.COMPLETED
+    assert (tmp_path / "src" / "foo.py").exists()
+    assert not (tmp_path / "docs").exists()
+    assert (tmp_path / "keep").is_dir()
+
+
+def test_a_clean_session_run_warns_about_nothing(tmp_path: Path, caplog) -> None:
+    """No stale worktree to prune and a tracked `.specweaver/`: nothing is wrong, nothing warns."""
+    _commit_project(tmp_path, ("gen.sh", _GEN))
+
+    with caplog.at_level("WARNING"):
+        run_state = _run(
+            PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+            _ctx(tmp_path, allowed=["src/foo.py"]),
+        )
+
+    assert run_state.status == RunStatus.COMPLETED
+    assert [r.getMessage() for r in caplog.records if r.levelname == "WARNING"] == []

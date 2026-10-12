@@ -1,15 +1,14 @@
 # C-EXEC-06 — Per-Run (Session) Worktree Isolation
 
-**Status**: APPROVED — approved by Steve Bula on 2026-07-19 (AD-1..5 confirmed, incl. the AD-5
-architectural switch). **COMPLETE** — SF-01, SF-02, SF-03 committed to `main` (SF-03: `bd5cedd2`,
-2026-07-21). · **DAL**: C (Enterprise Standard) · **Phase**: 6 · **Feature ID**: C-EXEC-06
+**Status**: Built; `🔧` until the user signs off. · **DAL**: C (Enterprise Standard) · **Phase**: 6 ·
+**Feature ID**: C-EXEC-06
 
 | | |
 |---|---|
 | Extends | `D-EXEC-02` (Git Worktree Bouncer, per-step isolation) |
 | Resolves | `TECH-012` |
 | Used by | `INT-US-09-SF05` (US-9 policy) · `INT-US-03 SF-03` (runs `sw implement` sandboxed), which unblocks US-3 and, through it, US-17/19/22/24 |
-| Deferred | API composition-root wiring → `TECH-013` |
+| API runs | the same policy, resolved by `apply_isolation_policy` (`TECH-013`) |
 | Not touched | container isolation (`B-EXEC-01` / `D-EXEC-01`); per-step single-step isolation |
 
 ## What it does
@@ -99,25 +98,22 @@ git, any version, already used by `D-EXEC-02` — `worktree add/remove`, `branch
 | NFR-6 | Fail-loud reconcile | A commit/sync/merge failure MUST fail the run (surfaced), never be logged-and-ignored. |
 | NFR-7 | Architecture compliance | Lifecycle in `core.flow.engine`; git primitive in `sandbox.git.core`; `allowed_paths` on `RunContext`; `tach`/`ruff`/`mypy --strict` green; ADR-002 (config frozen at composition root) respected. |
 
-## Risks
+## Accepted limits
 
-From the design review and the Red/Blue review:
+- A hard kill skips the `finally` teardown; the next run with the same id prunes the orphan first.
+- A dirty real working tree that the merge would touch fails the run: "commit or stash them first".
+- A stripped file's folder is removed only when the strip leaves it empty.
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Reconcile authorizes an out-of-bounds write | Low | High | AD-2 tight default + NFR-4 adversarial tests + hard-block |
-| Rebinding `project_path` breaks `.specweaver`/DB/cache resolution | Medium | Medium | Reuse `setup_sandbox_caches` symlinks; SF-01 tests cover it and verify DB access |
-| Orphaned worktrees/branches on crash | Medium | Medium | Guaranteed `finally` teardown + branch delete (FR-1/NFR-3) |
-| Silent data loss (the old swallowed failure) | — | — | FR-4/NFR-6 surface failures |
-| A hard crash (kill -9) skips `finally`; the orphan collides on a same-`run_id` retry | Low | Medium | **[impl note, SF-01]** make create idempotent — prune a stale same-named worktree+branch before `worktree_add`, or add a per-attempt suffix |
-| Reconcile runs against a **dirty real working tree** → `git merge` blocks/conflicts | Medium | Medium | **[impl note, SF-02]** fail loud (NFR-6) with a clear "commit/stash your changes first" message, or auto-stash; never silently drop |
+## Live demo
 
-`run_tests` **loop-back** re-runs steps *inside* the same session worktree. That is in-session
-iteration, not a park/resume, so it is compatible with AD-4.
-
-Follow-up: per-step `execute_in_sandbox` could be deprecated for multi-step runs; keep it for
-single-step. Guide owed: `pipeline_engine_guide.md §7` documents only per-step isolation — add the
-session model and `allowed_paths`.
+A git project with `[sandbox] enforce_session_isolation = true` and `specs/greet_spec.md`; `sw run`
+of two bash steps: the first, run inside `.worktrees/session-<run id>`, writes `src/greet.py`,
+`src/stray.py`, `README.md` and `docs/x.md`; the second imports `src/greet.py` there and prints
+`ran: hi`. After the run only `src/greet.py` is in the real repo, as a commit; `README.md` is
+unchanged; no `docs/`, no `stray.py`, no worktree and no `sf-session-*` branch are left, and nothing
+warned. Without git the run refuses: "Ensure <folder> is a git repository, or disable session
+isolation". `tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py` and
+`tests/integration/core/flow/engine/test_session_reconcile.py` check this.
 
 ## Sub-features
 
@@ -126,12 +122,3 @@ session model and `allowed_paths`.
 | SF-01 | Session lifecycle + context rebind: one worktree per span, workspace rebound, teardown (worktree + branch) in `finally`, fail-closed, `allowed_paths` field added unpopulated. No reconcile yet. | FR-1, FR-2, FR-5 (field), FR-6, FR-7 (park-guard) | — | [sf01](C-EXEC-06_sf01_implementation_plan.md) |
 | SF-02 | `worktree_commit` + one `strip_merge` at span end, respecting `allowed_paths` and the README/docs hard-block; any failure fails the run. | FR-3, FR-4 | SF-01 | [sf02](C-EXEC-06_sf02_implementation_plan.md) |
 | SF-03 | Opt-in policy (default-off); `allowed_paths` populated from generation targets (AD-2, config override, via `SandboxSettings`); per-step path unchanged; FR-8 e2e + NFR-4 adversarial tests. | FR-5 (populate), FR-7 (policy/default-off), FR-8 | SF-01, SF-02 | [sf03](C-EXEC-06_sf03_implementation_plan.md) |
-
-## Progress Tracker
-| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
-|----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Session Worktree Lifecycle + Context Rebind | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Commit-Before-Reconcile + Authorized Strip-Merge | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Composition-Root Policy + Allow-List + Verifiable Proof | SF-01, SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-**Next**: `INT-US-09-SF05` (wire C-EXEC-06 into the US-9 policy) → `INT-US-03 SF-03` → US-3 closes.

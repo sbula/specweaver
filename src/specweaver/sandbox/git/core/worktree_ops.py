@@ -29,6 +29,12 @@ def handle_worktree_teardown(
             message="Missing 'path' in context for worktree_teardown intent.",
         )
 
+    if not (cwd / path).exists():
+        # Nothing on disk: forget any stale registration, drop a stale branch, say nothing.
+        executor.run("worktree", "prune")
+        _delete_branch_if_present(executor, context)
+        return AtomResult(status=AtomStatus.SUCCESS, message=f"No worktree at {path}.")
+
     # Primary vector
     result = executor.run("worktree", "remove", "--force", str(path))
     if result.exit_code == 0:
@@ -75,6 +81,9 @@ def _delete_branch_if_present(executor: "EngineGitExecutor", context: dict[str, 
     """
     branch = context.get("branch")
     if not branch:
+        return
+    listed = executor.run("branch", "--list", branch)
+    if getattr(listed, "exit_code", 1) == 0 and not getattr(listed, "stdout", "").strip():
         return
     try:
         res = executor.run("branch", "-D", branch)
@@ -151,7 +160,18 @@ def _strip_forbidden_files(
                 fpath = cwd / file
                 if fpath.exists():
                     fpath.unlink()
+                _remove_empty_parents(fpath.parent, cwd)
     return stripped
+
+
+def _remove_empty_parents(folder: Path, root: Path) -> None:
+    """Remove `folder` and its parents below `root` while they are empty.
+
+    The merge created them for a file that was then stripped; git keeps no empty folders.
+    """
+    while folder != root and folder.is_dir() and not any(folder.iterdir()):
+        folder.rmdir()
+        folder = folder.parent
 
 
 def handle_strip_merge(

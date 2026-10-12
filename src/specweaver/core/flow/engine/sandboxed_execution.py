@@ -40,7 +40,8 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
     atom = FileSystemAtom(cwd=context.project_path)
     for cache in cache_dirs:
         src = context.project_path / cache
-        if src.exists() and src.is_dir():
+        # A tracked folder (`.specweaver/scripts/`) is already in the worktree; nothing to link.
+        if src.is_dir() and not (context.project_path / wt_dir / cache).exists():
             link_name = f"{wt_dir}/{cache}"
             res = atom.run(
                 {

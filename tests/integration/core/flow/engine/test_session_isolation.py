@@ -9,7 +9,13 @@ worktree, so a file written by step 1 survives for step 2 to read — while the 
 source root stays unmutated (no reconcile in SF-01) and the worktree + branch are
 cleaned up. Needs git + bash; skips cleanly otherwise.
 
-Proves: C-EXEC-06 FR-7, B-FLOW-05 FR-7
+Proves: C-EXEC-06 FR-1
+Proves: C-EXEC-06 FR-2
+Proves: C-EXEC-06 FR-6
+Proves: C-EXEC-06 FR-7
+Proves: C-EXEC-06 NFR-2
+Proves: C-EXEC-06 NFR-3
+Proves: B-FLOW-05 FR-7
 """
 
 from __future__ import annotations

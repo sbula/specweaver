@@ -6,6 +6,7 @@
       "requirement": "FR-4",
       "title": "A failed reconcile is a failed run, in the store too",
       "scope": [
+        "tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py",
         "tests/integration/core/flow/engine/test_session_reconcile.py"
       ],
       "mutants": [
@@ -18,6 +19,26 @@
           "new": "    pass\n",
           "breaks": "a run whose work never landed is stored as COMPLETED",
           "symbol_sha": "sha256:4f111e3533ab68e3743d2aba00945b1d3526e7a78e86caedcbaa3d515a44d17b"
+        },
+        {
+          "id": "strip-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_strip_forbidden_files",
+          "old": "        if file == \"README.md\" or file.startswith(\"docs/\") or not path_allowed(file, allowed_paths):\n",
+          "new": "        if False:\n",
+          "breaks": "every file the run wrote lands in the real repo",
+          "symbol_sha": "sha256:0173606d0dc5540c56b23f73a1b41e5d90daa41c59d6cedac8eebd4be5477625"
+        },
+        {
+          "id": "empty-folder-kept",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_strip_forbidden_files",
+          "old": "                _remove_empty_parents(fpath.parent, cwd)\n",
+          "new": "                pass\n",
+          "breaks": "a stripped file's folder stays behind, empty",
+          "symbol_sha": "sha256:0173606d0dc5540c56b23f73a1b41e5d90daa41c59d6cedac8eebd4be5477625"
         }
       ]
     },
@@ -38,6 +59,86 @@
           "new": "    return any(fnmatchcase(path, pattern) for pattern in patterns)\n",
           "breaks": "src/*.py lets a file deep under src/ reach the real repo",
           "symbol_sha": "sha256:2ad4132d4e827237ba532d23af9e00e29a31b9d1f84f819f7555887edb1e4352"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "One worktree per run, torn down at the end",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_isolation.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-teardown",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
+          "new": "        if False:\n",
+          "breaks": "every run leaves its worktree and branch behind",
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Every step of the run works in the worktree",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_isolation.py",
+        "tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "steps-at-real-root",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "    runner._context = isolated\n",
+          "new": "    runner._context = original\n",
+          "breaks": "steps write the real repo directly",
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The worktree is committed before the reconcile",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_reconcile.py",
+        "tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-commit",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "handle_worktree_commit",
+          "old": "    commit = executor.run(\"commit\", \"-m\", \"chore(sandbox): session snapshot\")\n",
+          "new": "    commit = executor.run(\"status\")\n",
+          "breaks": "the run's work is never merged back",
+          "symbol_sha": "sha256:38a46a4c9ddc2812705724974e5019b7f4214441c809785009de39ec1fe0a2e1"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "No git: the run refuses",
+      "scope": [
+        "tests/integration/core/flow/engine/test_session_isolation.py",
+        "tests/e2e/capabilities/sandbox/test_session_worktree_isolation_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "fail-open",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "        if add_res.status != AtomStatus.SUCCESS:\n",
+          "new": "        if False:\n",
+          "breaks": "a run without a worktree goes on, at the real root",
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
         }
       ]
     }
