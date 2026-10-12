@@ -3,7 +3,7 @@
 
 """A step in its own worktree lands its target files in the project, and nothing else.
 
-Proves: D-EXEC-02 FR-3, D-EXEC-02 FR-4
+Proves: D-EXEC-02 FR-3, D-EXEC-02 FR-4, D-EXEC-02 FR-5, D-EXEC-02 NFR-3, D-EXEC-02 NFR-4
 
 Real git and bash; skips cleanly without them. The allow-list is the session rule: the spec's
 generation targets, `src/<stem>.py` and `tests/test_<stem>.py`.
@@ -142,3 +142,69 @@ def test_a_step_writing_through_its_project_path_stays_in_the_worktree(tmp_path:
     assert run.status == RunStatus.COMPLETED, run
     assert (project / "src" / "greet.py").exists()
     assert not (project / "other.txt").exists()
+
+
+def test_a_shared_docs_file_never_lands(tmp_path: Path) -> None:
+    """D-EXEC-02 NFR-4: `docs/` is never merged back, like `README.md`."""
+    project = _project(tmp_path)
+    (project / "docs").mkdir()
+    (project / "docs" / "guide.md").write_text("ours\n", encoding="utf-8")
+    _git(project, "add", ".")
+    _git(project, "commit", "-m", "docs")
+    script = project / ".specweaver" / "scripts" / "docs.sh"
+    script.write_text(
+        'mkdir -p src docs\necho "def greet(): return 1" > src/greet.py\n'
+        'echo "agent" > docs/guide.md\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    _git(project, "add", ".")
+    _git(project, "commit", "-m", "script")
+
+    run = _run(project, script="docs.sh")
+
+    assert run.status == RunStatus.COMPLETED, run
+    assert (project / "docs" / "guide.md").read_text(encoding="utf-8") == "ours\n"
+
+
+def test_on_a_conflict_the_main_branch_wins(tmp_path: Path) -> None:
+    """D-EXEC-02 FR-5: a change committed on main while the step ran beats the step's own."""
+    project = _project(tmp_path)
+    (project / "src").mkdir()
+    (project / "src" / "greet.py").write_text("x = 1\n", encoding="utf-8")
+    _git(project, "add", ".")
+    _git(project, "commit", "-m", "seed")
+    script = project / ".specweaver" / "scripts" / "clash.sh"
+    script.write_text(
+        f'printf "x = 100  # human\\n" > {project}/src/greet.py\n'
+        f'git -C {project} commit -qam "human change on main"\n'
+        'printf "x = 999  # agent\\n" > src/greet.py\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    _git(project, "add", ".")
+    _git(project, "commit", "-m", "script")
+
+    run = _run(project, script="clash.sh")
+
+    assert run.status == RunStatus.COMPLETED, run
+    assert (project / "src" / "greet.py").read_text(encoding="utf-8") == "x = 100  # human\n"
+
+
+def test_setup_and_cleanup_take_under_two_seconds(tmp_path: Path) -> None:
+    """D-EXEC-02 NFR-3, with real git."""
+    import time
+
+    from specweaver.sandbox.base import AtomStatus
+    from specweaver.sandbox.git.core.atom import GitAtom
+
+    project = _project(tmp_path)
+    atom = GitAtom(cwd=project)
+
+    start = time.perf_counter()
+    added = atom.run({"intent": "worktree_add", "path": ".worktrees/t", "branch": "sf-t"})
+    removed = atom.run({"intent": "worktree_teardown", "path": ".worktrees/t", "branch": "sf-t"})
+
+    assert (added.status, removed.status) == (AtomStatus.SUCCESS, AtomStatus.SUCCESS)
+    assert time.perf_counter() - start < 2.0
+    assert not (project / ".worktrees" / "t").exists()

@@ -56,7 +56,6 @@ graph LR
 | Primitive | Does |
 |---|---|
 | `worktree_add` | `git worktree add -b <branch> <path> HEAD` |
-| `worktree_sync` | fetch + rebase — *not* a commit; per-run does not use it |
 | `strip_merge` (→ `worktree_ops.handle_strip_merge`) | `git merge -X ours`, strip non-`allowed_paths` + hard-block `README.md`/`docs/`, commit surviving hunks |
 | `worktree_teardown` | resilient remove, Windows `shutil.rmtree` backoff — **does not delete the branch** |
 | `setup_sandbox_caches` | symlinks `.specweaver`/caches into the worktree |

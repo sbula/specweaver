@@ -199,8 +199,8 @@ mutually exclusive at runtime:
 | Code | `execute_in_sandbox` (`core/flow/engine/sandboxed_execution.py`) | `execute_run` (`core/flow/engine/session.py`) |
 | Worktree / branch | `.worktrees/<task_id>` / `sf-<pipeline>-<task_id>` | `.worktrees/session-<run_id>` / `sf-session-<run_id>` |
 | Rebinds | `output_dir` + `isolation.execution_root` | `project_path` + `execution_root`, `output_dir=None` |
-| Reconcile | `worktree_sync`, then `strip_merge` after every step | `worktree_commit` + one `strip_merge` at run end |
-| Reconcile failure | logged as a warning | fails the run |
+| Reconcile | `worktree_commit` + `strip_merge` after the step, if it passed | `worktree_commit` + one `strip_merge` at run end |
+| Reconcile failure | fails the step | fails the run |
 | Enable | `use_worktree`, or `[sandbox] enforce_worktree_isolation` | `[sandbox] enforce_session_isolation`, or DAL auto-escalation |
 
 Both modes: container-free (git only); **fail closed** — if `git worktree add` fails (e.g. not a git
@@ -240,8 +240,14 @@ collides on the branch name (`TECH-012`). Use per-run mode for that.
   inside the worktree.
 - **Static QA stays on the project root**: `lint_fix`/ruff, complexity and `tach` parse code but never
   execute it.
-- **Allow-list**: per-step reads the same `allowed_paths`. With the session policy off it is empty, so
-  per-step write-back is limited to `doc_updates.md`.
+- **What comes back**: the step's work is committed in the worktree, then only a **passed** step's
+  generation targets (`src/<stem>.py`, `tests/test_<stem>.py`) and `doc_updates.md` merge into the
+  current branch; `README.md` and `docs/` never do. On a conflict the branch's own version wins.
+- **What the user sees**: `.worktrees/` is added to `.gitignore`; the merge leaves a "session
+  snapshot" and a "diff strip merge" commit on the current branch. A worktree holds committed files
+  only, so a script must be committed to run there.
+- **A worktree left behind** (a lock that outlived the retries): `git worktree remove --force
+  .worktrees/<task id>`, then `git worktree prune` and `git branch -D sf-<pipeline>-<task id>`.
 
 ### 7.3 Per-run (session) mode (`C-EXEC-06`)
 

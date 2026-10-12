@@ -5,6 +5,7 @@
 """Tests for GitAtom — Flow-level git operations for the Engine.
 
 Proves: D-EXEC-02 FR-8 — `doc_updates.md` preserved regardless of `allowed_paths` (`TECH-017`).
+Proves: D-EXEC-02 NFR-1 — a locked worktree delete is retried 5 times with growing waits.
 """
 
 from __future__ import annotations
@@ -70,7 +71,6 @@ class TestDispatch:
             "tag",
             "worktree_add",
             "worktree_teardown",
-            "worktree_sync",
             "worktree_commit",  # C-EXEC-06 SF-02
             "strip_merge",
             "is_tracked",
@@ -568,7 +568,6 @@ class TestEdgeCases:
             "merge",
             "fetch",
             "pull",
-            "rebase",
             "tag",
             "worktree",
             "ls-files",
@@ -773,36 +772,6 @@ class TestWorktreeTeardown:
         assert "Fallback rmtree failed" in result.message
         assert mock_rmtree.call_count == 5
         assert mock_sleep.call_count == 4
-
-
-# ---------------------------------------------------------------------------
-# worktree_sync
-# ---------------------------------------------------------------------------
-
-
-class TestWorktreeSync:
-    """worktree_sync pulls and rebases main into the active worktree."""
-
-    def test_success_sync(self, tmp_path: Path) -> None:
-        wt_dir = tmp_path / ".worktrees" / "agent"
-        wt_dir.mkdir(parents=True)
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
-            mock.return_value = SubprocessResult(
-                exit_code=0, stdout="", stderr="", duration_seconds=0.0
-            )
-            atom = GitAtom(cwd=tmp_path)
-            result = atom.run(
-                {
-                    "intent": "worktree_sync",
-                    "path": ".worktrees/agent",
-                }
-            )
-        assert result.status == AtomStatus.SUCCESS
-
-    def test_missing_path_fails(self, tmp_path: Path) -> None:
-        atom = GitAtom(cwd=tmp_path)
-        result = atom.run({"intent": "worktree_sync"})
-        assert result.status == AtomStatus.FAILED
 
 
 # ---------------------------------------------------------------------------

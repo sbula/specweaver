@@ -95,5 +95,5 @@ result = atom.run({"intent": "integrate", "source": "feat/login", "target": "mai
 | **worktree_add** | Create isolated parallel worktree branch | worktree add |
 | **worktree_teardown** | Force removal with Windows retry resilience | worktree remove, prune |
 
-The atom also has `worktree_sync`, `strip_merge`, `worktree_commit` and `is_tracked`
+The atom also has `strip_merge`, `worktree_commit` and `is_tracked`
 (`sandbox/git/core/atom.py`).

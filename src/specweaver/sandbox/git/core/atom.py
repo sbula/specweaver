@@ -53,7 +53,6 @@ class GitAtom(Atom):
             "merge",  # integrate
             "fetch",
             "pull",  # sync
-            "rebase",
             "tag",  # tag
             "worktree",
             "ls-files",  # is_tracked
@@ -424,56 +423,6 @@ class GitAtom(Atom):
         from specweaver.sandbox.git.core.worktree_ops import handle_worktree_teardown
 
         return handle_worktree_teardown(self._executor, self._cwd, context)
-
-    def _intent_worktree_sync(self, context: dict[str, Any]) -> AtomResult:
-        """Pulls latest main and rebases the worktree on top.
-
-        Context keys:
-            path: str - relative path for the active worktree.
-        """
-        path = context.get("path")
-        if not path:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Missing 'path' in context for worktree_sync intent.",
-            )
-
-        fetch_result = self._executor.run("fetch", "origin", "main")
-        if fetch_result.exit_code != 0:
-            logger.warning(
-                "git fetch origin main failed: %s, falling back to local main", fetch_result.stderr
-            )
-
-        # Execute rebase exactly constrained inside the worktree via -C
-        worktree_path = self._cwd / path
-        if not worktree_path.exists():
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"Worktree path does not exist for syncing: {worktree_path}",
-            )
-
-        # we use C flag inside EngineGitExecutor via cwd override natively,
-        # but EngineGitExecutor doesn't support C flags natively unless we pass it.
-        # Wait, EngineGitExecutor sets its own cwd! So we can't just pass -C.
-        # We must instantiate a temporary executor for the worktree?
-        # Actually, EngineGitExecutor(cwd=worktree_path)
-        from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
-
-        wt_executor = EngineGitExecutor(cwd=worktree_path, whitelist=set(self._ENGINE_WHITELIST))
-
-        rebase_result = wt_executor.run("rebase", "main")
-        if rebase_result.exit_code != 0:
-            # We must abort immediately if it fails to automatically resolve!
-            wt_executor.run("rebase", "--abort")
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"git rebase main failed (aborted): {rebase_result.stderr}",
-            )
-
-        return AtomResult(
-            status=AtomStatus.SUCCESS,
-            message=f"Successfully rebased worktree {path} onto main.",
-        )
 
     def _intent_strip_merge(self, context: dict[str, Any]) -> AtomResult:
         """Merges a worktree branch mathematically stripping forbidden diff hunks.
