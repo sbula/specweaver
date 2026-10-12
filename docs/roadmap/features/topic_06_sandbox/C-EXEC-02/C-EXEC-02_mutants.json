@@ -64,8 +64,8 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/core/atom.py",
           "symbol": "_result",
-          "old": "        if result.exit_code == 0 and not result.timed_out\n",
-          "new": "        if True\n",
+          "old": "AtomStatus.SUCCESS if result.exit_code == 0 and not result.timed_out else AtomStatus.FAILED",
+          "new": "AtomStatus.SUCCESS",
           "breaks": "a failing script passes the run",
           "symbol_sha": "sha256:a4d90bf7519ef53eeb8703dea53b6be12ada3f6d8d73898de7ef0bdaa7e6d332"
         }
