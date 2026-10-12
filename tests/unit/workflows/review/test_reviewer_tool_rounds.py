@@ -3,6 +3,8 @@
 
 """A review's tool-round callback reaches the tool loop.
 
+Proves: E-INTL-03 FR-4
+
 The handlers pass `on_tool_round` to add mentioned files between rounds; the reviewer must hand it
 to `generate_with_tools`, for a spec review and a code review alike.
 

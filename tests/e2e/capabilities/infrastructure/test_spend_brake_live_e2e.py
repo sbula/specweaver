@@ -9,6 +9,8 @@ Proves: B-FLOW-05 NFR-4
 Proves: B-FLOW-07 FR-1, FR-2, FR-4
 Proves: E-INTL-01 FR-2
 Proves: E-INTL-01 FR-3
+Proves: E-INTL-03 FR-1
+Proves: E-INTL-03 FR-2
 
 Run nightly by `scripts/live.py`. The key is `GEMINI_API_KEY` in the real `~/.specweaver/keys.env`,
 copied into the test's data directory (`scripts/live.py` names it in `SPECWEAVER_LIVE_KEYS`); its value is never printed. A missing key fails rather than
@@ -19,6 +21,7 @@ busy (503) or throttled (429) is retried up to five times, a minute apart; the b
 |---|---|
 | Happy | a review under its limit reaches Gemini, gets a verdict, and its spend is recorded |
 | Happy | a spec holding a vault secret: what is sent to Gemini holds only the mask |
+| Happy | a code review sends the spec and the code to Gemini and gets a verdict |
 | Boundary | a limit below one call's worst case stops the call; nothing is sent or recorded; two finished reviews give the next one a step limit |
 | Degradation | a busy or throttled provider is retried, then fails naming the reason |
 | Hostile | no key: the run fails and says so |
@@ -146,10 +149,8 @@ def test_finished_reviews_give_the_next_one_a_step_limit(project: Path, _isolate
 _VAULT_TOKEN = "vault-tok-8f3k2m9q7z"
 
 
-def test_a_vault_secret_reaches_gemini_masked(
-    project: Path, _isolate_env: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The real SDK calls are wrapped to record what leaves; every call still goes to Gemini."""
+def _record_sent(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Wrap the real SDK calls to record what they send; each call still reaches Gemini."""
     from google.genai.models import AsyncModels
 
     sent: list[str] = []
@@ -161,6 +162,14 @@ def test_a_vault_secret_reaches_gemini_masked(
             return await _real(self, *args, **kwargs)
 
         monkeypatch.setattr(AsyncModels, name, spy)
+    return sent
+
+
+def test_a_vault_secret_reaches_gemini_masked(
+    project: Path, _isolate_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """What leaves is recorded at the SDK; every call still goes to Gemini."""
+    sent = _record_sent(monkeypatch)
     (project / ".specweaver" / "vault.env").write_text(f"DEPLOY_TOKEN={_VAULT_TOKEN}\n")
     (project / "greeter_spec.md").write_text(
         f"{_SPEC}\nThe service authenticates with the token {_VAULT_TOKEN}.\n", encoding="utf-8"
@@ -172,3 +181,31 @@ def test_a_vault_secret_reaches_gemini_masked(
     assert sent, "nothing was sent to Gemini"
     assert not [s for s in sent if _VAULT_TOKEN in s], "the vault secret left unmasked"
     assert any("***RESTRICTED***" in s for s in sent)
+
+
+def test_a_code_review_reaches_gemini_with_spec_and_code(
+    project: Path, _isolate_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sent = _record_sent(monkeypatch)
+    code = project / "greeter.py"
+    code.write_text("def greet() -> str:\n    return 'hello'\n", encoding="utf-8")
+    (_isolate_env / "settings.toml").write_text(_settings(0.03), encoding="utf-8")
+
+    for attempt in range(_ATTEMPTS):
+        result = runner.invoke(
+            app,
+            [
+                "review",
+                str(code),
+                "--spec",
+                str(project / "greeter_spec.md"),
+                "--project",
+                str(project),
+            ],
+        )
+        if not any(mark in result.output for mark in _TRANSIENT) or attempt == _ATTEMPTS - 1:
+            break
+        time.sleep(60)
+
+    assert "VERDICT: ACCEPTED" in result.output or "VERDICT: DENIED" in result.output, result.output
+    assert any("return 'hello'" in s and "Return the text" in s for s in sent)

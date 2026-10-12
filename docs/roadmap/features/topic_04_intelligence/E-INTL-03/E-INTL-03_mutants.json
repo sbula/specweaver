@@ -1,0 +1,84 @@
+{
+  "schema": 2,
+  "feature": "E-INTL-03",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "A code review sends the spec and the code",
+      "scope": [
+        "tests/e2e/capabilities/workflows/test_review_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "code-not-sent",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/reviewer.py",
+          "symbol": "Reviewer.review_code",
+          "old": "        builder.add_file(code_path, priority=2, label=\"generated_code\", role=\"target\")\n",
+          "new": "        pass\n",
+          "breaks": "the code is reviewed without the model seeing it",
+          "symbol_sha": "sha256:fc3ee55103e29be16eeb9d095d0aca7d49b12da3b92188a534a3ffeb0716e71b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Only a verdict line decides; a failure is ERROR",
+      "scope": [
+        "tests/e2e/capabilities/workflows/test_review_journey_e2e.py",
+        "tests/unit/workflows/review/test_review_verdict_line.py"
+      ],
+      "mutants": [
+        {
+          "id": "any-mention-accepts",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/reviewer.py",
+          "symbol": "_verdict_of",
+          "old": "    if match and match.group(1).upper() == \"ACCEPTED\":\n",
+          "new": "    if \"ACCEPTED\" in text.upper():\n",
+          "breaks": "a denial that mentions acceptance is accepted",
+          "symbol_sha": "sha256:0da08ecfd51666c7b66e3d0e36ce7bc1c5439679d217ed0a676d6ef1aee72a2d"
+        },
+        {
+          "id": "error-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/reviewer.py",
+          "symbol": "Reviewer._execute_review",
+          "old": "                verdict=ReviewVerdict.ERROR,\n",
+          "new": "                verdict=ReviewVerdict.ACCEPTED,\n",
+          "breaks": "a review that never reached the model passes",
+          "symbol_sha": "sha256:07766e56c14118f0399efcabb0cd4724eb59735386c56eeaf12c4006c9a1199e"
+        },
+        {
+          "id": "denied-exits-0",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/interfaces/cli.py",
+          "symbol": "_display_review_result",
+          "old": "    if result.verdict in (ReviewVerdict.DENIED, ReviewVerdict.ERROR):\n",
+          "new": "    if result.verdict == ReviewVerdict.ERROR:\n",
+          "breaks": "a script calling sw review cannot tell a denial from an acceptance",
+          "symbol_sha": "sha256:b31e26053a8c7d4f11724da17cdc5546319621d8e41726f4f76954821b0e3f5a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The tool-round callback reaches the tool loop",
+      "scope": [
+        "tests/unit/workflows/review/test_reviewer_tool_rounds.py"
+      ],
+      "mutants": [
+        {
+          "id": "callback-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/reviewer.py",
+          "symbol": "Reviewer.review_spec",
+          "old": "        return await self._execute_review(prompt, on_tool_round)\n",
+          "new": "        return await self._execute_review(prompt)\n",
+          "breaks": "files the model mentions are never added between rounds",
+          "symbol_sha": "sha256:5f0c681ed8e166e027f43b94cbeade11a7c4267d5e23630bf02ffacfecc1e3fc"
+        }
+      ]
+    }
+  ]
+}
