@@ -7,7 +7,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-INTL-01` 🔧: LLM Adapter** (Legacy: Step 3)
+* **`E-INTL-01` ✅: LLM Adapter** (Legacy: Step 3)
   > - **Purpose:** Talk to a language model through one interface, so the rest of the system never knows which provider it is
   > - **Trigger:** When any capability needs a model
   > - **Precondition:** —

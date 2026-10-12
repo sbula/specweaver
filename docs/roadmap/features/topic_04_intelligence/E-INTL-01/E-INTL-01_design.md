@@ -1,6 +1,6 @@
 # E-INTL-01 — LLM Adapter
 
-**Status**: Built; `🔧` until the user signs off. · **Phase**: 1 · **Feature ID**: E-INTL-01
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Phase**: 1 · **Feature ID**: E-INTL-01
 
 ## What it does
 

@@ -94,9 +94,9 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `✅` **US-5 Core** *(provides AST extraction for C13 drift rules)*
     *   `✅` **E-UI-01:** CLI Scaffold
-    *   `🔧` **E-SENS-01:** Loom Filesystem Tools
+    *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-VAL-01:** Validation Engine (Foundation)
-    *   `🔧` **E-INTL-01:** LLM Adapter (Gemini)
+    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
 *   **Sub-Story Add-Ons:**
     *   ⚰️ **Security Defenses:** *(retired 2026-08-21 — `E-VAL-03` ruled nonsense, [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md) §8; `escaping.py` stays, `B-SENS-09` succeeds)*
     *   🟡 **Enforce Internal Architecture:**
@@ -115,8 +115,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **User Benefit:** I can have the LLM co-author a spec with me section-by-section.
 *   **Core Required (MVS):**
     *   `✅` **E-UI-01:** CLI Scaffold
-    *   `🔧` **E-SENS-01:** Loom Filesystem Tools
-    *   `🔧` **E-INTL-01:** LLM Adapter (Gemini)
+    *   `✅` **E-SENS-01:** Loom Filesystem Tools
+    *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
     *   `🔧` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
     *   `🔧` **E-INTL-03:** Spec Review Engine
     *   `✅` **D-INTL-05:** Project Metadata Injection

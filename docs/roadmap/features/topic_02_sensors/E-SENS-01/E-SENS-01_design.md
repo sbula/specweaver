@@ -1,6 +1,6 @@
 # E-SENS-01 — Loom FS Tools
 
-**Status**: Built; `🔧` until the user signs off. · **Phase**: 1 (Step 1b)
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Phase**: 1 (Step 1b)
 
 | | |
 |---|---|

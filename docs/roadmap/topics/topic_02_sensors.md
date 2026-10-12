@@ -7,7 +7,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-SENS-01` 🔧: Loom FS Tools** (Legacy: Step 1b)
+* **`E-SENS-01` ✅: Loom FS Tools** (Legacy: Step 1b)
   > - **Purpose:** Give agents filesystem access that is role-gated, so an agent sees only the files its task allows
   > - **Trigger:** When an agent or the engine reads or writes a file
   > - **Precondition:** —
