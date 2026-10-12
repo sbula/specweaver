@@ -46,10 +46,11 @@ This component bounded safely.
 
     skeleton = res.exports["structure"]
     assert "# Main Title" in skeleton
-    assert "S ... " in skeleton
     assert "## 1. Purpose" in skeleton
-    assert "T ... " in skeleton
     assert "## 2. Boundaries" in skeleton
+    # The text under a heading is gone entirely; it once left its first letter behind.
+    assert "Some description" not in skeleton and "S ... " not in skeleton
+    assert "The purpose" not in skeleton and "T ... " not in skeleton
 
 
 def test_markdown_symbol_extraction() -> None:

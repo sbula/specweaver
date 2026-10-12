@@ -2,6 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Replacing, adding and deleting a symbol in Python source, by its AST node.
+
+Proves: D-SENS-02 FR-5
+"""
+
 import pytest
 
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError

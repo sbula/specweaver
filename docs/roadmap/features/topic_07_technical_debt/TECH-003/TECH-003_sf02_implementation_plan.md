@@ -4,12 +4,12 @@
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-02
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_sf02_implementation_plan.md
-- **Status**: APPROVED
+- **Status**: APPROVED · **FRs owned**: FR-3
 
 ## Context
 This sub-feature executes the mass search-and-replace to update all import paths across the codebase
-from `specweaver.workspace.ast.parsers` to `specweaver.workspace.ast.parsers`, and
-`specweaver.workspace.ast.adapters` to `specweaver.workspace.ast.adapters`.
+from `specweaver.workspace.parsers` to `specweaver.workspace.ast.parsers`, and
+`specweaver.workspace.adapters` to `specweaver.workspace.ast.adapters`.
 It also fixes any test files that might be referencing these paths.
 
 ## Proposed Changes

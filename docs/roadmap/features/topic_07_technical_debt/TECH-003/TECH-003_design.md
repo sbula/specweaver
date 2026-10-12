@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-003
 - **Phase**: 3
-- **Status**: APPROVED
+- **Status**: Built; `🔧` until the user signs off
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_design.md
 
 ## Feature Overview
@@ -37,8 +37,8 @@ None.
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Relocate Parsers | System | relocates `src/specweaver/workspace/ast/parsers` to `src/specweaver/workspace/ast/parsers` | Tree-Sitter logic moves without functional changes. |
-| FR-2 | Relocate Adapters | System | relocates `src/specweaver/workspace/ast/adapters` to `src/specweaver/workspace/ast/adapters` | Mapping logic moves without functional changes. |
+| FR-1 | Relocate Parsers | System | relocates `src/specweaver/workspace/parsers` to `src/specweaver/workspace/ast/parsers` | Tree-Sitter logic moves without functional changes. |
+| FR-2 | Relocate Adapters | System | relocates `src/specweaver/workspace/adapters` to `src/specweaver/workspace/ast/adapters` | Mapping logic moves without functional changes. |
 | FR-3 | Global Import Harmonization | System | refactors all namespace imports and `context.yaml` boundaries across the codebase | All ~85 files accurately reference `specweaver.workspace.ast`. |
 
 ## Non-Functional Requirements

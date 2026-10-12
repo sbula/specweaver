@@ -17,7 +17,7 @@ description: |
 archetype: adapter
 
 consumes:
-  - specweaver/config
+  - specweaver/core/config
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.

@@ -1,0 +1,65 @@
+{
+  "schema": 2,
+  "feature": "D-SENS-02",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "A skeleton keeps signatures and docstrings, no body text",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_skeleton_keeps_no_body_text.py",
+        "tests/integration/sandbox/test_code_structure_tools_for_a_reviewer.py"
+      ],
+      "mutants": [
+        {
+          "id": "first-letter-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "_blankable_span",
+          "old": "    start_cut = node.start_byte + 1 if opens else node.start_byte\n",
+          "new": "    start_cut = node.start_byte + 1\n",
+          "breaks": "a Python body leaves its first letter in the skeleton",
+          "symbol_sha": "sha256:f9debd4134dbab1f0f97b910221bd099f31d9b684440c9f0fcbafc79ac17fae8"
+        },
+        {
+          "id": "last-letter-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "_blankable_span",
+          "old": "    end_cut = node.end_byte - 1 if closes else node.end_byte\n",
+          "new": "    end_cut = node.end_byte - 1\n",
+          "breaks": "a Python body leaves its last letter in the skeleton",
+          "symbol_sha": "sha256:f9debd4134dbab1f0f97b910221bd099f31d9b684440c9f0fcbafc79ac17fae8"
+        },
+        {
+          "id": "docstring-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "_blankable_span",
+          "old": "        start_cut = first_child.end_byte\n",
+          "new": "        pass\n",
+          "breaks": "the docstring, the part of a body worth keeping, is cut",
+          "symbol_sha": "sha256:f9debd4134dbab1f0f97b910221bd099f31d9b684440c9f0fcbafc79ac17fae8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A listing filters by visibility",
+      "scope": [
+        "tests/integration/sandbox/test_code_structure_tools_for_a_reviewer.py"
+      ],
+      "mutants": [
+        {
+          "id": "visibility-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin._is_symbol_valid",
+          "old": "            if not matched:\n",
+          "new": "            if False:\n",
+          "breaks": "a model asking for public symbols gets private ones too",
+          "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+        }
+      ]
+    }
+  ]
+}

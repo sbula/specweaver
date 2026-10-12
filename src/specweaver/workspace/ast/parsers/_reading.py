@@ -38,16 +38,25 @@ def _trace_tags(comment_text: str) -> set[str]:
     return {part.strip() for part in match.group(1).split(",")} if match else set()
 
 
+_OPENERS = frozenset({"{", "(", "["})
+_CLOSERS = frozenset({"}", ")", "]"})
+
+
 def _blankable_span(node: typing.Any) -> tuple[int, int] | None:
     """The byte range of a block's body, or None when there is nothing to blank.
 
     A leading docstring is kept: the skeleton is what a reader (or an LLM) sees instead of the
     body, and the docstring is the part of a body worth keeping.
     """
-    start_cut = node.start_byte + 1
-    end_cut = node.end_byte - 1
-
     first_child = node.children[0] if node.children else None
+    last_child = node.children[-1] if node.children else None
+    # A bracketed block keeps its brackets (`{ }`, SQL's `( )`); an indented one (Python,
+    # Markdown) has none to keep.
+    opens = first_child is not None and first_child.type in _OPENERS
+    closes = last_child is not None and last_child.type in _CLOSERS
+    start_cut = node.start_byte + 1 if opens else node.start_byte
+    end_cut = node.end_byte - 1 if closes else node.end_byte
+
     if (
         first_child is not None
         and first_child.type == "expression_statement"

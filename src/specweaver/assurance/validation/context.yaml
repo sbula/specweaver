@@ -15,12 +15,12 @@ description: |
 archetype: pure-logic
 
 consumes:
-  - specweaver/config
+  - specweaver/core/config
   - specweaver/workspace/context
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
 
 # CORRECTED 2026-08-15 (`INT-US-04` SF-01 CB-4). This field previously read
 # `[ValidationRunner, ValidationResult, RuleSeverity]` -- three names with ZERO occurrences in

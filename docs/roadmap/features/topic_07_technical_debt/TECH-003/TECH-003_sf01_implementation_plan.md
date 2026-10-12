@@ -4,11 +4,11 @@
 - **Design Document**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_design.md
 - **Design Section**: §Sub-Feature Breakdown → SF-01
 - **Implementation Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_sf01_implementation_plan.md
-- **Status**: APPROVED
+- **Status**: APPROVED · **FRs owned**: FR-1, FR-2
 
 ## Context
-This sub-feature executes the physical directory migration of `workspace/ast/parsers` and
-`workspace/ast/adapters` into a unified `workspace/ast` boundary to enforce Domain-Driven Design. It
+This sub-feature executes the physical directory migration of `workspace/parsers` and
+`workspace/adapters` into a unified `workspace/ast` boundary to enforce Domain-Driven Design. It
 also updates the manifest files (`context.yaml`) and exacts the explicit boundaries in `tach.toml`. 
 
 > [!CAUTION]

@@ -9,7 +9,7 @@ purpose: >
 archetype: contract
 
 consumes:
-  - specweaver/workspace/parsers
+  - specweaver/workspace/ast/parsers
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.

@@ -10,8 +10,8 @@ purpose: >
 archetype: orchestrator
 
 consumes:
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
-  - specweaver/config
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/core/config
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.

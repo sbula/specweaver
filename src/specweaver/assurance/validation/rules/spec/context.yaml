@@ -15,12 +15,12 @@ description: |
 archetype: pure-logic
 
 consumes:
-  - specweaver/validation
+  - specweaver/assurance/validation
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
-  - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/workflows/drafting  # Rules and adapters must remain isolated from interactive drafts.
 
 exposes:
   - OneSentenceRule

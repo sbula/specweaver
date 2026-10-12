@@ -16,13 +16,13 @@ description: |
 archetype: orchestrator
 
 consumes:
-  - specweaver/config
+  - specweaver/core/config
   - specweaver/workspace/memory
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
-  - specweaver/review
-  - specweaver/implementation
-  - specweaver/planning
-  - specweaver/validation
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/workflows/review
+  - specweaver/workflows/implementation
+  - specweaver/workflows/planning
+  - specweaver/assurance/validation
   - specweaver/sandbox/git/core
   - specweaver/sandbox/qa_runner/core
   - specweaver/sandbox/code_structure/core
@@ -36,8 +36,8 @@ forbids:
     # NB: this refers to sandbox/commons (loom-internal — only atoms/tools may consume it),
     # NOT the top-level specweaver/commons, which is an L0 `raw-data` foundation leaf
     # (consumes: [], forbids: specweaver/*) that every layer may legally depend on.
-  - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
-  - specweaver/context
+  - specweaver/workflows/drafting  # Rules and adapters must remain isolated from interactive drafts.
+  - specweaver/workspace/context
 
 exposes:
   - PipelineDefinition

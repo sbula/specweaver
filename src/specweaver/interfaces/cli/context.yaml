@@ -33,18 +33,18 @@ description: |
 archetype: orchestrator
 
 consumes:
-  - specweaver/config
-  - specweaver/validation
-  - specweaver/review
-  - specweaver/drafting  # Rules and adapters must remain isolated from interactive drafts.
-  - specweaver/implementation
-  - specweaver/flow
+  - specweaver/core/config
+  - specweaver/assurance/validation
+  - specweaver/workflows/review
+  - specweaver/workflows/drafting  # Rules and adapters must remain isolated from interactive drafts.
+  - specweaver/workflows/implementation
+  - specweaver/core/flow
   - specweaver/graph
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
-  - specweaver/project
-  - specweaver/standards
-  - specweaver/context
-  - specweaver/logging
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/workspace/project
+  - specweaver/assurance/standards
+  - specweaver/workspace/context
+  - specweaver/telemetry_logger
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.

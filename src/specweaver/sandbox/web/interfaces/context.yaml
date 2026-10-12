@@ -1,3 +1,2 @@
 archetype: orchestrator
 consumes:
-  - specweaver/sandbox/web/core

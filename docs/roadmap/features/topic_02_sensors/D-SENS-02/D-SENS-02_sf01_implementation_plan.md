@@ -1,6 +1,6 @@
 # D-SENS-02 SF-01 — Polyglot AST Extractor
 
-**Status**: COMPLETE · **FRs owned**: FR-1, FR-2, FR-3, FR-4 · **Depends on**: none · Design:
+**Status**: COMPLETE · **FRs owned**: FR-1, FR-2, FR-3, FR-4, FR-6, FR-7 · **Depends on**: none · Design:
 [D-SENS-02_design.md](D-SENS-02_design.md) §Sub-features → SF-01
 
 ## Goal

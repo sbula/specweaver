@@ -15,7 +15,7 @@ archetype: adapter
 
 consumes:
   - specweaver/workspace/context
-  - specweaver/workspace/parsers
+  - specweaver/workspace/ast/parsers
 
 exposes:
   - factory

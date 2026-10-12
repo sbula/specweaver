@@ -10,18 +10,18 @@ purpose: >
 archetype: adapter
 
 consumes:
-  - specweaver/config
-  - specweaver/validation
-  - specweaver/review
-  - specweaver/implementation
-  - specweaver/flow
+  - specweaver/core/config
+  - specweaver/assurance/validation
+  - specweaver/workflows/review
+  - specweaver/workflows/implementation
+  - specweaver/core/flow
   - specweaver/graph
-  - specweaver/llm  # Pure logic modules must not depend on LLMs or prompt generation.
-  - specweaver/project
-  - specweaver/standards
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/workspace/project
+  - specweaver/assurance/standards
 
 forbids:
-  - specweaver/cli
+  - specweaver/interfaces/cli
   - specweaver/sandbox/*
 
 exposes:
