@@ -1,6 +1,6 @@
 # B-INTL-01 — Archetype-Based Rule Sets
 
-**Status**: Built; `🔧` until the user signs off. · **Feature ID**: 3.29 · **Phase**: 3
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Feature ID**: 3.29 · **Phase**: 3
 
 | | |
 |---|---|

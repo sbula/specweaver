@@ -178,7 +178,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-B: High-Assurance
 
-* **`B-INTL-01` 🔧: Archetype Rule Sets** (Legacy: 3.29)
+* **`B-INTL-01` ✅: Archetype Rule Sets** (Legacy: 3.29)
   > - **Purpose:** Apply the standards a given kind of project actually has, without the user configuring them by hand
   > - **Trigger:** When a project's archetype is known
   > - **Precondition:** `E-FLOW-01` → project config
