@@ -151,6 +151,7 @@ class TelemetryCollector:
         """Proxy ``generate_with_tools()``; every round is checked before its request."""
         messages = self._redactor.messages(messages)
         tool_executor = self._redactor.tools(tool_executor)
+        on_tool_round = self._redactor.rounds(on_tool_round)
         scope, first = self._reserve(messages, config)
         held = [first]
 

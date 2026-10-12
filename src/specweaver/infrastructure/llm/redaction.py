@@ -49,6 +49,18 @@ class Redactor:
     def tools(self, tool_executor: Any) -> Any:
         return _RedactingTools(tool_executor, self) if self._secrets else tool_executor
 
+    def rounds(self, on_tool_round: Any) -> Any:
+        """`on_tool_round`, with what it adds to the messages masked."""
+        if on_tool_round is None or not self._secrets:
+            return on_tool_round
+
+        def masked(round_num: int, messages: list[Message]) -> None:
+            before = len(messages)
+            on_tool_round(round_num, messages)
+            messages[before:] = self.messages(messages[before:])
+
+        return masked
+
 
 class _RedactingTools:
     """A tool executor whose results reach the model with secrets masked."""

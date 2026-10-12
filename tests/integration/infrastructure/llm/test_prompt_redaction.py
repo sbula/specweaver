@@ -157,6 +157,54 @@ async def test_a_tool_result_reaches_the_model_masked(tmp_path: Path, monkeypatc
     assert _VAULT_TOKEN not in _sent(seen)
 
 
+async def test_text_added_between_tool_rounds_reaches_the_model_masked(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A review adds mentioned files between rounds; a mentioned vault is sent masked."""
+    (tmp_path / ".specweaver").mkdir()
+    (tmp_path / ".specweaver" / "vault.env").write_text(f"TOKEN={_VAULT_TOKEN}\n")
+    routed = _routed(tmp_path, monkeypatch)
+    call = {
+        **_REPLY,
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "see .specweaver/vault.env",
+                    "tool_calls": [
+                        {
+                            "id": "t1",
+                            "type": "function",
+                            "function": {"name": "read_file", "arguments": json.dumps({})},
+                        }
+                    ],
+                },
+                "finish_reason": "tool_calls",
+            }
+        ],
+    }
+    replies = iter([call, _REPLY])
+    config = routed.config.model_copy(
+        update={"tools": [ToolDefinition(name="read_file", description="read a file")]}
+    )
+
+    def adds_the_vault(_round: int, messages: list[Message]) -> None:
+        messages.append(Message(role=Role.USER, content=f"vault.env:\nTOKEN={_VAULT_TOKEN}"))
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=next(replies))) as seen:
+        await routed.adapter.generate_with_tools(
+            [Message(role=Role.USER, content="read it")],
+            config,
+            _ReadsTheVault(),
+            on_tool_round=adds_the_vault,
+        )
+
+    assert len(seen) == 2
+    assert "vault.env:\\nTOKEN=***RESTRICTED***" in _sent(seen[1:])
+    assert _VAULT_TOKEN not in _sent(seen)
+
+
 async def test_the_loaded_settings_find_the_projects_vault(tmp_path: Path, monkeypatch) -> None:
     from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
 

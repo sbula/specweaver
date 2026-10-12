@@ -98,6 +98,16 @@
           "new": "        project_source=str(project_path) if project_path else \"(no project)\",\n",
           "breaks": "a real command never finds the project's vault",
           "symbol_sha": "sha256:6d198c4fe3636fec83dcae7d50026c56a61359dc3133a1a0c3ff2d439e24ab95"
+        },
+        {
+          "id": "round-text-raw",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "        on_tool_round = self._redactor.rounds(on_tool_round)\n",
+          "new": "        on_tool_round = on_tool_round\n",
+          "breaks": "a file a review adds between tool rounds reaches the model unmasked",
+          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
         }
       ]
     }
