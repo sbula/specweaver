@@ -27,7 +27,7 @@ critical findings were re-run by hand. Repro scripts are in `.tmp/` (gitignored)
 | 8 | MED | After a "no", every further call asks again; a later "yes" spends, but the step is parked anyway. **Fixed** 2026-10-08: after a no, nothing more is asked or spent | `budget.py:136-153`; `.tmp/repro_budget.py` |
 | 9 | MED | A parked step re-runs from the start on resume, repeating paid calls. **Accepted 2026-10-08, B-FLOW-05 AD-6:** revisit when real runs show the cost | `approval.py` |
 | 10 | MED | A response without `usage` counts as 0, so `tokens_per_run` never fills on such servers. **Fixed** 2026-10-08: it counts its worst case | `openai.py:160-164`; `.tmp/repro_no_usage.py` |
-| 11 | MED | `--model` drops role limits (maybe intended — user's call). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is `B-FLOW-07` | `resolve.py:209-217` |
+| 11 | MED | `--model` drops role limits (maybe intended — user's call). **Resolved** 2026-10-09: roles carry no limit any more (user's decision), so `--model` drops none | `resolve.py:209-217` |
 | 12 | MED | Queued calls hold reservations before the parallel limit; the question then reads "0 of X spent" with no visible reason; overshoot not shown (FR-6). **Partly fixed** 2026-10-08: the question names what running calls may add; queued calls still reserve before their slot — **kept on purpose, user's decision 2026-10-08** | `collector.py:128`; `_rate_limit.py:51` |
 | 13 | MED-LOW | Round 1+ checks leave out tool schemas (and Gemini's system instruction). **Fixed** 2026-10-08, and the first check counts the system instruction | adapters' `before_request` |
 | 14 | LOW-MED | `sw run --json \| jq`: the question goes into the NDJSON stream; the run hangs. **Fixed** 2026-10-08: asked on stderr | `_core.py:131-141` |
@@ -55,7 +55,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 11 | MED | Project file has no `schema_version` gate. **Fixed** 2026-10-08: the same gate as the machine file | `ProjectLlmSection` |
 | 12 | MED | `config show` omits catalogue output limit and sampling actually used, and `default` fallbacks. **Fixed** 2026-10-08 (user chose to move it): `sw config show` now lives in the LLM module and shows each role's output limit and sampling with their origin, and an unset `default` | `settings_report` |
 | 13 | MED | Role `temperature` on openai/anthropic shown as in effect, never sent. **Fixed** 2026-10-08: each adapter declares what it sends; the report marks the rest "not sent" | adapters |
-| 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11). **Fixed** 2026-10-08: each task keeps its own limit in the run model's unit; the full model × task × DAL matrix is `B-FLOW-07` | `resolve.py` |
+| 14 | MED | `--model` drops role limits (same as B-FLOW-05 #11). **Resolved** 2026-10-09: roles carry no limit any more (user's decision), so `--model` drops none | `resolve.py` |
 | 15 | MED | `sw standards scan`: a server typo or private-only violation prints a dim "No model used" and goes on. **Fixed** 2026-10-08: only a model nobody set is skipped; a wrong setting stops the scan | `command.py:72-74` |
 | 16 | LOW-MED | `temperature = 50`, `top_p = -3` accepted; fail mid-run. **Fixed** 2026-10-08: refused when the file is read | `RoleEntry` |
 | 17 | LOW | Unset-role refusal does not name `sw config set-role` (FR-11). **Fixed** 2026-10-08 | `resolve.py:214` |
@@ -63,7 +63,7 @@ Also: the same model on two servers shares one model limit (`resolve.py:183`) �
 | 19 | LOW | `sw usage` refused on a broken machine file. **Fixed** 2026-10-08: it reports in USD and names the broken line | infra `cli.py:309` |
 | 20 | LOW | Writer: CRLF→LF, mode 600→664, float noise, `inf` accepted, future `rate_date` accepted. **Fixed** 2026-10-08 | writer |
 | 21 | LOW | Parallel limit per (loop, name): stale after edits, two names on one address. **Fixed** 2026-10-08: an edited limit applies at once; names on one address share its limit | `_rate_limit.py` (confirmed) |
-| 22 | LOW | Catalogue drops tiered/reasoning/cache prices — **confirmed 2026-10-08**: only base input/output are kept, so a long prompt on a tiered model is under-counted. **Fixed** 2026-10-08 (user chose A): the brake gets the highest price a call can be billed; the shipped catalogue must be regenerated (`python scripts/update_model_catalogue.py`); exact tiers belong to `B-FLOW-07` | `update_model_catalogue.py:64-72` |
+| 22 | LOW | Catalogue drops tiered/reasoning/cache prices — **confirmed 2026-10-08**: only base input/output are kept, so a long prompt on a tiered model is under-counted. **Fixed** 2026-10-08 (user chose A): the brake gets the highest price a call can be billed; the hand-kept `models.toml` (2026-10-09) holds it | `update_model_catalogue.py:64-72` |
 | 23 | Info | `max_output_tokens = 4096`, `AutonomySettings.max_turns = 10` still in code (dead). **Partly fixed** 2026-10-08: the output limit has no default; `max_turns` waits for `C-FLOW-11`, which wires it | `models.py:73`; `settings.py:118` |
 
 ## User paths (US-16 P1–P8, US-04 S1–S7)
@@ -120,5 +120,13 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 ## What happens next
 
-The user decides: which statuses to reopen, and the order of fixes. Recommendation recorded in the
-reply of 2026-10-07: security and silent-wrong-result findings first.
+Fixed or decided rows are marked in the tables. Waiting on the user (2026-10-09):
+
+- `B-INTL-09` / `D-INTL-06`: who creates memory tasks; nothing does, so agents get no memory.
+- `E-SENS-02`: which web search service, and where its key lives; Google's Custom Search is closed
+  to new users.
+- `C-FLOW-06`: switch staleness on (runs skip unchanged steps) or remove the half-built code.
+- `B-FLOW-01` FR-1: S07 rejects a spec without `## Scenarios` only if the drafter writes one.
+
+Not yet looked at: `B-FLOW-01` FR-9/10, `E-EXEC-01`, `E-INTL-02`, `D-INTL-03`, `D-FLOW-04`,
+`TECH-004` FR-6, `C-FLOW-01` REST tests, `E-SENS-03` task-scoped roots.

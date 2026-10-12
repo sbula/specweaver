@@ -13,9 +13,9 @@ They are built and tested; the `specweaver-design` **Phase 6 approval gate has n
 of them**.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
-`TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Each one's evidence is in
-[done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) §Census. Fix order agreed:
-privacy, security and silently-wrong results first.
+`TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03` was
+signed off and `D-FLOW-03` retired; the rest stay `🔧` until each is closed by the rule in
+`PRINCIPLES.md` §6. Evidence: [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
@@ -23,11 +23,12 @@ to `✅`. Do not.** Only the user can give the sign-off.
 ## Audit of "done", 2026-10-07
 
 Of 141 items marked done, **26 are false** (a promised behaviour missing or broken) and 73 weak.
-The audit marks each fixed row **Fixed**;
-the security items (E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02) are fixed.
-**Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 #6/#9),
-accepted 2026-10-08 as B-FLOW-05 AD-6 — reuse paid answers once real runs show the cost.
-Next: the other false items.
+The audit marks each fixed row **Fixed**. Fixed and seen working for real: the security items
+(E-SENS-01, E-SENS-03 grants, E-INTL-01 FR-3, E-INTL-03, D-EXEC-02), REST `/review`, C-EXEC-02
+(pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
+D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
+**Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
+**Waiting on the user:** four decisions, listed in the audit's *What happens next*.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
@@ -37,6 +38,8 @@ status; which statuses to reopen is the user's decision.
 settings files, through one resolver; there is no built-in model and no built-in limit. A command
 that calls a model needs a `default` role and the three `[brake]` values in `settings.toml`;
 `--model` sets one run's model. `B-FLOW-05` applies every limit, including model limits.
+**API keys live only in `~/.specweaver/keys.env`** (chmod 600) `[agreed 2026-10-11]`; each server
+names its key's variable in `api_key_env`. Nothing reads a key from the shell or a project.
 
 **Current models and SDK majors only** `[agreed 2026-09-27]`: openai 3.x, anthropic 1.x,
 google-genai 2.x, mistralai 2.x. openai and anthropic send through `httpx2`, which `respx` cannot
@@ -47,6 +50,10 @@ see — tests use `tests/fake_http.py`, and a non-`live` test cannot reach a rea
 The run's limits are `[brake] hosted_spend_per_run`, `tokens_per_run` and `agent_turns` in
 `settings.toml`, with **no defaults**: a command that calls a model refuses until all three are
 set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot be switched off.
+
+**The nightly session** (`specweaver-mutation.timer`, 03:00) first runs `scripts/live.py`: the live
+tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover shows its verdict;
+`python scripts/live.py --status` gives the last one.
 
 ## Recently done
 
