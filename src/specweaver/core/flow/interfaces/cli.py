@@ -273,7 +273,7 @@ def _build_run_context(
     # the delivery-layer factory decides interactivity (returns None when headless, so
     # DraftSpecHandler's parking contract is untouched without a TTY).
     _maybe_attach_provider(context)
-    _apply_isolation_policy(context, db, project_path)
+    _apply_isolation_policy(context, db, active or project_path.name)
 
     _wire_models(context, pipeline, active or project_path.name, run_model=run_model)
     return context
@@ -302,7 +302,7 @@ def _wire_models(
     context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
 
-def _apply_isolation_policy(context: RunContext, db: Database, project_path: Path) -> None:
+def _apply_isolation_policy(context: RunContext, db: Database, project: str) -> None:
     """Resolve the worktree-isolation policies at the composition root (ADR-002).
 
     Both the per-step policy (``enforce_isolation``) and the per-run one (``session_isolation`` +
@@ -316,12 +316,12 @@ def _apply_isolation_policy(context: RunContext, db: Database, project_path: Pat
     from specweaver.core.flow.engine.isolation import apply_isolation_policy
 
     try:
-        settings = load_settings(db, project_path.name)
+        settings = load_settings(db, project)
     except Exception:  # settings resolution is best-effort here — never crash a run
         logger.debug(
             "Could not resolve settings for project '%s'; worktree isolation "
             "policy will use its default (off).",
-            project_path.name,
+            project,
         )
         return
     apply_isolation_policy(context, settings, logger)

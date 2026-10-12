@@ -3,6 +3,25 @@
   "feature": "D-EXEC-02",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "A run reads the project's isolation setting",
+      "scope": [
+        "tests/integration/core/flow/test_run_isolation_by_project_name.py"
+      ],
+      "mutants": [
+        {
+          "id": "folder-name-lookup",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_build_run_context",
+          "old": "    _apply_isolation_policy(context, db, active or project_path.name)\n",
+          "new": "    _apply_isolation_policy(context, db, project_path.name)\n",
+          "breaks": "a project named unlike its folder runs without the worktree isolation it asked for",
+          "symbol_sha": "sha256:67cf5c3522fa63f73cd9c7ffbb1ba915ab1eee185fcedde7b7eec6c33d3d0e00"
+        }
+      ]
+    },
+    {
       "requirement": "FR-3",
       "title": "The step's work is committed in its worktree",
       "scope": [
