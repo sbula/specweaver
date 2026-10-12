@@ -3,6 +3,25 @@
   "feature": "E-INTL-01",
   "campaigns": [
     {
+      "requirement": "FR-2",
+      "title": "Gemini receives the system prompt",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_adapters.py"
+      ],
+      "mutants": [
+        {
+          "id": "system-prompt-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate",
+          "old": "            system_instruction=system_instruction,\n",
+          "new": "            system_instruction=None,\n",
+          "breaks": "Gemini answers without the role's system prompt",
+          "symbol_sha": "sha256:6820d51cd00c4ffef6c133c4b24f8e3abe136c7a391b47da7ca281ec00d8c08a"
+        }
+      ]
+    },
+    {
       "requirement": "FR-3",
       "title": "Known secrets never leave in a prompt",
       "scope": [

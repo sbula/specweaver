@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for Gemini LLM adapter — message conversion, generation, errors."""
+"""Tests for Gemini LLM adapter — message conversion, generation, errors.
+
+Proves: E-INTL-01 FR-2
+"""
 
 from __future__ import annotations
 

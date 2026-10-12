@@ -4,6 +4,7 @@
 """A real command follows the settings file: to the GB10, or not at all (US-16 P2, P3).
 
 Proves: C-FLOW-13 FR-7, FR-9
+Proves: E-INTL-01 FR-1
 
 | Bucket | Case |
 |---|---|

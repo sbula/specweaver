@@ -3,8 +3,12 @@
 
 """The spend brake against real Gemini: one review goes through, one is stopped before sending.
 
+Also: a secret in the project vault reaches Gemini masked.
+
 Proves: B-FLOW-05 NFR-4
 Proves: B-FLOW-07 FR-1, FR-2, FR-4
+Proves: E-INTL-01 FR-2
+Proves: E-INTL-01 FR-3
 
 Run nightly by `scripts/live.py`. The key is `GEMINI_API_KEY` in the real `~/.specweaver/keys.env`,
 copied into the test's data directory (`scripts/live.py` names it in `SPECWEAVER_LIVE_KEYS`); its value is never printed. A missing key fails rather than
@@ -14,6 +18,7 @@ busy (503) or throttled (429) is retried up to five times, a minute apart; the b
 | Bucket | Case |
 |---|---|
 | Happy | a review under its limit reaches Gemini, gets a verdict, and its spend is recorded |
+| Happy | a spec holding a vault secret: what is sent to Gemini holds only the mask |
 | Boundary | a limit below one call's worst case stops the call; nothing is sent or recorded; two finished reviews give the next one a step limit |
 | Degradation | a busy or throttled provider is retried, then fails naming the reason |
 | Hostile | no key: the run fails and says so |
@@ -136,3 +141,34 @@ def test_finished_reviews_give_the_next_one_a_step_limit(project: Path, _isolate
     )
 
     assert limit is not None and 0 < limit < 0.03
+
+
+_VAULT_TOKEN = "vault-tok-8f3k2m9q7z"
+
+
+def test_a_vault_secret_reaches_gemini_masked(
+    project: Path, _isolate_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real SDK calls are wrapped to record what leaves; every call still goes to Gemini."""
+    from google.genai.models import AsyncModels
+
+    sent: list[str] = []
+    for name in ("generate_content", "count_tokens"):
+        real = getattr(AsyncModels, name)
+
+        async def spy(self, *args, _real=real, **kwargs):
+            sent.append(repr(kwargs.get("contents")) + repr(kwargs.get("config")))
+            return await _real(self, *args, **kwargs)
+
+        monkeypatch.setattr(AsyncModels, name, spy)
+    (project / ".specweaver" / "vault.env").write_text(f"DEPLOY_TOKEN={_VAULT_TOKEN}\n")
+    (project / "greeter_spec.md").write_text(
+        f"{_SPEC}\nThe service authenticates with the token {_VAULT_TOKEN}.\n", encoding="utf-8"
+    )
+
+    result = _review(project, _isolate_env, 0.03)
+
+    assert "VERDICT" in result.output, result.output
+    assert sent, "nothing was sent to Gemini"
+    assert not [s for s in sent if _VAULT_TOKEN in s], "the vault secret left unmasked"
+    assert any("***RESTRICTED***" in s for s in sent)

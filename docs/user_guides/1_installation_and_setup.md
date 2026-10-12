@@ -188,6 +188,9 @@ credentials. Keep them in `.specweaver/vault.env`, never in the codebase.
 Rule: if `.specweaver/vault.env` is tracked by Git, the pipeline aborts before running, to prevent
 credential leakage.
 
+Nothing secret reaches a model: every value of 8 or more characters in `vault.env` and in
+`~/.specweaver/keys.env` is replaced with `***RESTRICTED***` in prompts and tool results.
+
 ## 8. Telemetry & Logs
 
 | Output | Where |
