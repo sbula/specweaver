@@ -187,7 +187,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Purpose:** One central place for every LLM setting — machine `settings.toml` + project `[llm]` `[agreed 2026-09-26]`
   > - **Trigger:** When an LLM call needs its model, server, sampling or price
   > - **Precondition:** —
-  > - **Reads:** the machine and project settings files · the shipped model catalogue
+  > - **Reads:** the machine and project settings files · `~/.specweaver/keys.env` (the API keys) · the shipped model list
   > - **Produces:** one resolved setting per call · prices in one configurable currency · server addresses · the privacy rule
   > - **Enables:** `B-FLOW-05` brake values · `A-FLOW-01` model choice
   > - **Done when:** every LLM call's settings come from one place and no `default_costs` dict remains in any adapter
