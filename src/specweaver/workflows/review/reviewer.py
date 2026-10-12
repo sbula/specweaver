@@ -142,7 +142,7 @@ class Reviewer:
             logger.debug("review_spec: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
         logger.info("review_spec: reviewing %s", spec_path)
-        return await self._execute_review(prompt)
+        return await self._execute_review(prompt, on_tool_round)
 
     async def review_code(
         self,
@@ -180,7 +180,7 @@ class Reviewer:
             logger.debug("review_code: MCP env injected (%d chars)", len(environment_context))
         prompt = builder.build()
         logger.info("review_code: reviewing %s against %s", code_path, spec_path)
-        return await self._execute_review(prompt)
+        return await self._execute_review(prompt, on_tool_round)
 
     async def _execute_review(
         self,
