@@ -42,10 +42,7 @@ class SqlCodeStructure(DeclarativeParser):
 
     @property
     def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
-        return """
-        (comment) @comment
-        (marginalia) @comment
-        """
+        return ""
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
         """SQL has no scoping, so the name is matched exactly as reported.
@@ -81,7 +78,6 @@ class SqlCodeStructure(DeclarativeParser):
             "replace_body",
             "add",
             "delete",
-            "traceability",
         ]
 
     def supported_parameters(self) -> list[str]:

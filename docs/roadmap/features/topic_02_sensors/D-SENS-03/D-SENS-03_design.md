@@ -40,8 +40,9 @@ a language class defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, etc. and its 
 *   **FR-3:** The system SHALL parse Go source files (`.go`) using `tree-sitter-go` to extract skeletons, symbols, imports, and traceability tags.
 *   **FR-4:** The system SHALL parse Standard SQL source files (`.sql`) using `tree-sitter-sql` to extract structural schemas (tables/views) and symbols (functions/procedures).
 *   **FR-5:** The system SHALL complete the existing `MarkdownCodeStructure` stub, ensuring it
-    implements the full `CodeStructureInterface` (including traceability tag extraction and symbol
-    mutation) using the new `BaseTreeSitterParser`.
+    implements the `CodeStructureInterface` (skeleton, symbols and symbol mutation) using the new
+    `BaseTreeSitterParser`. Markdown and SQL give no traceability tags: nothing reads tags from them
+    (C09 reads test files only) `[agreed 2026-10-12]`.
 *   **FR-6:** The system SHALL register all new file extensions in `specweaver.workspace.ast.parsers.factory.get_default_parsers()`.
 *   **FR-7:** The system SHALL dynamically prune `ToolDefinition` schemas (e.g. hiding
     `decorator_filter` or `extract_framework_markers`) if no active language parser supports them,
