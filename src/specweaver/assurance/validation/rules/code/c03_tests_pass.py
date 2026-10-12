@@ -10,12 +10,9 @@ No sandbox imports — this rule is pure logic.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TestsPassRule(Rule):
@@ -33,7 +30,7 @@ class TestsPassRule(Rule):
         if spec_path is None:
             return self._skip("No file path provided")
 
-        test_file = _test_file(spec_path)
+        test_file = self._located_test_file(spec_path)
         if isinstance(test_file, str):
             return self._skip(test_file)
 
@@ -88,6 +85,13 @@ class TestsPassRule(Rule):
                 )
             ],
         )
+
+    def _located_test_file(self, spec_path: Path) -> Path | str:
+        """The test file the hydrator ran, from the real project root; else a search of our own."""
+        if "qa_test_file" not in self.context:
+            return _test_file(spec_path)
+        located = self.context["qa_test_file"]
+        return Path(located) if located else f"No test file 'test_{spec_path.stem}.py' found"
 
 
 def _test_file(spec_path: Path) -> Path | str:

@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 # Context keys used to pass QA results to rules
 _KEY_TESTS = "qa_tests_result"
 _KEY_COVERAGE = "qa_coverage_result"
+#: The test file the QA results come from, so C03 names the same one; None when there is none.
+_KEY_TEST_FILE = "qa_test_file"
 _KEY_ARCHITECTURE = "qa_architecture_result"
 
 # Rule IDs that require QA atom execution
@@ -125,6 +127,8 @@ def hydrate_code_validation_context(
 
     # --- C03: Tests Pass ---
     if "C03" in qa_rules_active:
+        test_file = _test_file_for(code_path, project_root)
+        context[_KEY_TEST_FILE] = str(test_file) if test_file else None
         context[_KEY_TESTS] = _hydrate_tests(atom, code_path, project_root)
 
     # --- C04: Coverage ---
@@ -238,6 +242,7 @@ def _hydrate_tests(
                 "target": str(test_file.relative_to(project_root)),
                 "kind": "",
                 "timeout": 60,
+                "source": code_path.relative_to(project_root).as_posix(),
             }
         )
         return _serialize_atom_result(result)
@@ -264,6 +269,7 @@ def _hydrate_coverage(
                 "timeout": 120,
                 "coverage": True,
                 "coverage_source": code_path.relative_to(project_root).as_posix(),
+                "source": code_path.relative_to(project_root).as_posix(),
             }
         )
         return _serialize_atom_result(result)

@@ -27,6 +27,7 @@ from specweaver.sandbox.language.core.python.toolchain_absence import (
     supplied_note as _supplied_note,
 )
 from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
+from specweaver.sandbox.language.core.toolchain import failed_architecture
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -111,6 +112,7 @@ class PythonQARunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
         coverage_source: str = "",
+        source: str = "",
     ) -> TestRunResult:
         """Run pytest with the given parameters."""
         logger.debug(
@@ -138,7 +140,9 @@ class PythonQARunner(QARunnerInterface):
             cmd.extend(["--cov", measured, "--cov-report", "term"])
 
         try:
-            result = self._executor.execute(cmd, timeout_seconds=timeout)
+            # A test imports its module by name (`from greet import hi`): make its folder importable.
+            env = {"PYTHONPATH": str(PurePosixPath(source).parent)} if source else None
+            result = self._executor.execute(cmd, timeout_seconds=timeout, extra_env=env)
         except ContainerEngineUnavailableError as exc:
             logger.warning(
                 "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
@@ -391,10 +395,7 @@ class PythonQARunner(QARunnerInterface):
         entrypoint: str,
     ) -> DebugRunResult:
         """Execute a process and stream runtime outputs using DAP OutputEvents."""
-        # sys.executable is the HOST interpreter path
-        # (e.g. a Windows .exe path), meaningless inside a Linux container — use the
-        # bare "python" name there instead, resolved fresh inside whatever env runs it
-        # (matches run_tests/run_linter/run_complexity, which already use "python").
+        # sys.executable is the HOST interpreter, meaningless in a container: use bare "python" there.
         python_bin = (
             "python" if isinstance(self._executor, ContainerSubprocessExecutor) else sys.executable
         )
@@ -466,9 +467,7 @@ class PythonQARunner(QARunnerInterface):
 
     def _run_tach_check(self) -> ArchitectureRunResult:
         """Run global tach boundary check (extracted from original method)."""
-        # H-1 / RED-1.2: Pre-check tool existence before calling executor.
-        # Skipped in container mode — this checks HOST
-        # tooling presence, which is irrelevant when tach runs inside the sandbox image.
+        # Checks the HOST PATH, so container mode skips it: tach runs inside the sandbox image there.
         is_container = isinstance(self._executor, ContainerSubprocessExecutor)
         if not is_container and not shutil.which("tach"):
             logger.warning("PythonQARunner: tach not found")
@@ -481,6 +480,11 @@ class PythonQARunner(QARunnerInterface):
                         message="Tach architectural linter is not installed or not found in PATH.",
                     )
                 ],
+            )
+
+        if not (self._cwd / "tach.toml").is_file():
+            return failed_architecture(
+                "No tach.toml: run `sw scan` to create it from the project's context.yaml files."
             )
 
         try:

@@ -77,6 +77,7 @@ class KotlinRunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
         coverage_source: str = "",
+        source: str = "",
     ) -> TestRunResult:
         cmd, search_path = self._test_command()
         result = self._executor.execute(cmd, timeout_seconds=timeout)
@@ -98,7 +99,7 @@ class KotlinRunner(QARunnerInterface):
             skipped=harvest.skipped,
             total=harvest.total,
             failures=harvest.failures,
-            coverage_pct=0.0,
+            coverage_pct=None,
             duration_seconds=0.0,
         )
 

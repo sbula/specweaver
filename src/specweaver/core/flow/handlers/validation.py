@@ -405,6 +405,7 @@ class ValidateTestsHandler:
                 "intent": "run_tests",
                 "target": target,
                 "targets": targets,
+                "source": _generated_code(context),
                 "kind": atom_kind,
                 "scope": step.params.get("scope", ""),
                 "timeout": step.params.get("timeout", 120),
@@ -507,3 +508,13 @@ class ValidateTestsHandler:
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]
+
+
+def _generated_code(context: RunContext) -> str:
+    """The run's generated module, relative to where its tests run; "" when there is none."""
+    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
+
+    stem = context.spec_path.stem.replace("_spec", "")
+    code = (context.output_dir or context.project_path / "src") / f"{stem}.py"
+    root = context.isolation.execution_root or context.project_path
+    return relative_to_root(code, root) if code.is_file() else ""

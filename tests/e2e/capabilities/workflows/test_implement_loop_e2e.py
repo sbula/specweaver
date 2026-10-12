@@ -77,10 +77,8 @@ _UNCOLLECTABLE_TESTS = (
     "def test_greet_uses_the_specified_salutation() -> None:\n"
     '    assert _mod.greet("Ada") == "Hello Ada"\n'
 )
+#: As `generate_tests` writes it: the module by name, no path set-up of its own.
 _TESTS = (
-    "import sys\n"
-    "from pathlib import Path\n"
-    "sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))\n"
     "from greeter import greet\n\n\n"
     "def test_greet_uses_the_specified_salutation() -> None:\n"
     '    assert greet("Ada") == "Hello Ada"\n'

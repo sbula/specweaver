@@ -133,6 +133,7 @@ class JavaRunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
         coverage_source: str = "",
+        source: str = "",
     ) -> TestRunResult:
         tool = self._get_build_tool()
         passed = 0

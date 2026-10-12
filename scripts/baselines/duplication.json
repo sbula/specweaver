@@ -46,7 +46,7 @@
   },
   "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py <-> src/specweaver/assurance/validation/rules/code/c04_coverage.py @a536cb106114": {
     "lines": 11,
-    "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:44",
+    "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:41",
     "second": "src/specweaver/assurance/validation/rules/code/c04_coverage.py:49"
   },
   "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @9fb4379f35ac": {
@@ -271,26 +271,26 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/java/runner.py @1672fe6890f5": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:227",
-    "second": "src/specweaver/sandbox/language/core/java/runner.py:189"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:228",
+    "second": "src/specweaver/sandbox/language/core/java/runner.py:190"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @2717682f93a7": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:261",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:232"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:262",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:233"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @75aa9f6cbc6c": {
     "lines": 13,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:218",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:185"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:219",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:186"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @c9747b237b21": {
     "lines": 8,
     "first": "src/specweaver/sandbox/language/core/java/runner.py:96",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:91"
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:92"
   },
-  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @5f1660ba7654": {
-    "lines": 11,
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @8734432514bf": {
+    "lines": 12,
     "first": "src/specweaver/sandbox/language/core/java/runner.py:127",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
@@ -311,16 +311,16 @@
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @d5b65f7d896b": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:194",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:155"
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:195",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:156"
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @639e7b0d7a99": {
     "lines": 10,
     "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:53",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:94"
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:95"
   },
-  "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @a8b713459f8d": {
-    "lines": 11,
+  "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4f23ce91d1f6": {
+    "lines": 12,
     "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:71",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
@@ -329,9 +329,9 @@
     "first": "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"
   },
-  "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2db82b71cb5e": {
-    "lines": 11,
-    "first": "src/specweaver/sandbox/language/core/python/runner.py:105",
+  "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2f393c255cf8": {
+    "lines": 12,
+    "first": "src/specweaver/sandbox/language/core/python/runner.py:106",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @215e96f23a4f": {
@@ -339,8 +339,8 @@
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:86",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:66"
   },
-  "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @39a8ceffc263": {
-    "lines": 11,
+  "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4264be866118": {
+    "lines": 12,
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:95",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
@@ -349,8 +349,8 @@
     "first": "src/specweaver/sandbox/language/core/sarif.py:28",
     "second": "src/specweaver/workspace/ast/parsers/_sarif_complexity.py:35"
   },
-  "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @cc955ff7f21c": {
-    "lines": 23,
+  "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @8cf753d0a6a4": {
+    "lines": 26,
     "first": "src/specweaver/sandbox/qa_runner/core/interface.py:80",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
   },
@@ -396,8 +396,8 @@
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
     "lines": 22,
-    "first": "src/specweaver/workflows/review/reviewer.py:149",
-    "second": "src/specweaver/workflows/review/reviewer.py:114"
+    "first": "src/specweaver/workflows/review/reviewer.py:139",
+    "second": "src/specweaver/workflows/review/reviewer.py:104"
   },
   "src/specweaver/workspace/analyzers/factory.py <-> src/specweaver/workspace/analyzers/factory.py @b5b1be179b0c": {
     "lines": 11,

@@ -1,0 +1,104 @@
+{
+  "schema": 2,
+  "feature": "D-VAL-05",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "C02 fails a file without a test",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_code_rules_on_a_fresh_project_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "missing-test-passes",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c02_tests_exist.py",
+          "symbol": "TestsExistRule.check",
+          "old": "                matches = list(tests_dir.rglob(test_name))\n",
+          "new": "                matches = [tests_dir]\n",
+          "breaks": "a file with no test passes C02",
+          "symbol_sha": "sha256:d30c124ee94f308f522af1fd97e3cf460ce33bb75313983223cdd8030d80b0f3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "C03 runs the file's own test, its module importable",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_code_rules_on_a_fresh_project_e2e.py",
+        "tests/integration/core/flow/handlers/test_run_tests_imports_the_generated_code.py"
+      ],
+      "mutants": [
+        {
+          "id": "pythonpath-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_tests",
+          "old": "            env = {\"PYTHONPATH\": str(PurePosixPath(source).parent)} if source else None\n",
+          "new": "            env = None\n",
+          "breaks": "a generated test cannot import its module",
+          "symbol_sha": "sha256:52cfd431613d3cde219b9b7686ad188e241a00d369237add53377fac93b04d96"
+        },
+        {
+          "id": "step-source-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler.execute",
+          "old": "                \"source\": _generated_code(context),\n",
+          "new": "                \"source\": \"\",\n",
+          "breaks": "sw implement's test step cannot import the generated code",
+          "symbol_sha": "sha256:801d299622321f839af21d56741cc6e16fbb8ac0aa584e00102991e745959d7b"
+        },
+        {
+          "id": "c03-own-search",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py",
+          "symbol": "TestsPassRule._located_test_file",
+          "old": "        if \"qa_test_file\" not in self.context:\n",
+          "new": "        if True:\n",
+          "breaks": "C03 looks for tests/ above a pyproject.toml a project may not have",
+          "symbol_sha": "sha256:220b6d8c5be5ccf3f7677a024c384e1aa0495e3c76a0904be17ddfa2fd5597b4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "C04 fails coverage below the threshold",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_code_rules_on_a_fresh_project_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "threshold-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c04_coverage.py",
+          "symbol": "CoverageRule.check",
+          "old": "        if coverage_int < self._threshold:\n",
+          "new": "        if False:\n",
+          "breaks": "low coverage passes",
+          "symbol_sha": "sha256:7012f5e4233554b828eb79902d03d49d3a32a7b89059845e473e513af92b2581"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "C05 without tach.toml says to run sw scan",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_code_rules_on_a_fresh_project_e2e.py",
+        "tests/unit/sandbox/language/core/language/python/test_python_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-scan-hint",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner._run_tach_check",
+          "old": "        if not (self._cwd / \"tach.toml\").is_file():\n",
+          "new": "        if False:\n",
+          "breaks": "a missing tach.toml reads as tach's own 'run tach init'",
+          "symbol_sha": "sha256:63e56193e1d1c2089f4b01c11c8d30ded8b8d9f606710a2001def3b3a4638d1d"
+        }
+      ]
+    }
+  ]
+}

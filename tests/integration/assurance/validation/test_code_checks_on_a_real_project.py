@@ -3,7 +3,9 @@
 
 """`sw check --level code` on a real project: real pytest, real coverage, any path form.
 
-Proves: D-VAL-05
+Proves: D-VAL-05 FR-3
+Proves: D-VAL-05 FR-4
+Proves: D-VAL-05 FR-5
 
 The audit of 2026-10-07 found C04 never reported coverage, a relative path broke C02, C04 and
 C05, and C03 and C05 passed when their check never ran. Only the test runner's own subprocess is

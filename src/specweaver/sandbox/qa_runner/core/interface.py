@@ -86,6 +86,7 @@ class QARunnerInterface(ABC):
         coverage: bool = False,
         coverage_threshold: int = 70,
         coverage_source: str = "",
+        source: str = "",
     ) -> TestRunResult:
         """Run tests and return structured results.
 
@@ -96,6 +97,8 @@ class QARunnerInterface(ABC):
             timeout: Max seconds before aborting.
             coverage: Whether to measure code coverage.
             coverage_threshold: Minimum acceptable coverage %.
+            coverage_source: The file whose coverage is read.
+            source: The code file under test; a runner may put its folder on the import path.
 
         Returns:
             TestRunResult with pass/fail counts and failure details.

@@ -81,6 +81,28 @@ class TestKotlinRunner:
         assert res.total >= 0
         mock_executor.execute.assert_called_once()
 
+    def test_coverage_is_reported_as_not_measured(self, tmp_path: Path) -> None:
+        """No coverage tool runs, so the figure is unknown — never a measured 0% (D-VAL-05)."""
+        (tmp_path / "build.gradle").touch()
+        results = tmp_path / "build" / "test-results"
+
+        def run_and_report(*_args, **_kwargs):
+            results.mkdir(parents=True, exist_ok=True)
+            (results / "TEST-a.xml").write_text(
+                '<testsuite tests="1" failures="0" skipped="0"><testcase name="t"/></testsuite>',
+                encoding="utf-8",
+            )
+            return _make_result(exit_code=0, stdout="BUILD SUCCESSFUL")
+
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.side_effect = run_and_report
+        runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
+
+        res = runner.run_tests(target="", coverage=True)
+
+        assert res.passed == 1
+        assert res.coverage_pct is None
+
     def test_run_linter_detekt_sarif(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").touch()
 

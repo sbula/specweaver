@@ -17,9 +17,17 @@ a container concern, and `INT-US-09-SF01-MIG` holds it.
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.execution.models import SubprocessResult
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
+
+
+@pytest.fixture(autouse=True)
+def _tach_config(tmp_path: Path) -> None:
+    """Every runner here works in a project that has a tach.toml, unless a test removes it."""
+    (tmp_path / "tach.toml").write_text("", encoding="utf-8")
 
 
 def _make_result(
@@ -131,15 +139,17 @@ class TestPythonQARunner:
         assert "specweaver.assurance.validation" in v.message
 
     def test_run_architecture_check_no_config(self, tmp_path: Path) -> None:
+        """No tach.toml: tach is not run, and the finding says how to make one (D-VAL-05 FR-5)."""
+        (tmp_path / "tach.toml").unlink()
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(stdout="[]")
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
 
         with patch("shutil.which", return_value="/usr/bin/tach"):
             result = runner.run_architecture_check(target=".")
 
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 0
+        mock_executor.execute.assert_not_called()
+        assert result.violation_count == 1
+        assert "sw scan" in result.violations[0].message
 
     def test_run_architecture_check_timeout(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)

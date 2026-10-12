@@ -101,6 +101,7 @@ class RustRunner(QARunnerInterface):
         coverage: bool = False,
         coverage_threshold: int = 70,
         coverage_source: str = "",
+        source: str = "",
     ) -> TestRunResult:
         import time
 

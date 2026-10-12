@@ -103,7 +103,7 @@ def add_payload(
         active_archetype=archetype or "generic",
         parsers=parsers,
     )
-    relative = _inside(path, cwd)
+    relative = relative_to_root(path, cwd)
     payload: dict[str, Any] = {}
     structure = atom.run({"intent": "read_file_structure", "path": relative})
     if structure.status.value == "SUCCESS":
@@ -162,7 +162,7 @@ def _load(name: str, project_path: Path | None) -> ValidationPipeline:
     return load_pipeline_yaml(name, project_dir=project_path)
 
 
-def _inside(path: Path, root: Path) -> str:
+def relative_to_root(path: Path, root: Path) -> str:
     """`path` relative to `root`, as the sandboxed atoms take it; unchanged when it lies outside."""
     try:
         return path.resolve().relative_to(root.resolve()).as_posix()

@@ -14,10 +14,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
           "symbol": "add_payload",
-          "old": "    relative = _inside(path, cwd)\n",
+          "old": "    relative = relative_to_root(path, cwd)\n",
           "new": "    relative = str(path)\n",
           "breaks": "the structure reader refuses the path and every code rule gets no markers",
-          "symbol_sha": "sha256:084f7db263e85003e5927750fea86cb49a755f4d98b1426554dea398085c54de"
+          "symbol_sha": "sha256:de685ff22aa87a24c2aa625e477c944ea1fb8e03230dc6fcf9ace3b925e59a1b"
         }
       ]
     },
