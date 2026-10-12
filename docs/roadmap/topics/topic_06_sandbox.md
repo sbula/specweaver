@@ -87,7 +87,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`C-EXEC-05` ⚰️ RETIRED:** *(Issue Tracker Atoms — absorbed into `B-INTL-09` Agent Memory Bank;
   see topic 04. ID is dead — do NOT reuse; the gap to `C-EXEC-06` is intentional.)*
 
-* **`C-EXEC-06` 🔧: Per-Run (Session) Worktree Isolation**
+* **`C-EXEC-06` ✅: Per-Run (Session) Worktree Isolation**
   > - **Purpose:** Isolate a whole untrusted run behind one authorization gate, instead of paying the per-step worktree cycle
   > - **Trigger:** When a run contains untrusted execution
   > - **Precondition:** `D-EXEC-02` → the worktree machinery

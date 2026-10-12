@@ -1,6 +1,6 @@
 # C-EXEC-06 — Per-Run (Session) Worktree Isolation
 
-**Status**: Built; `🔧` until the user signs off. · **DAL**: C (Enterprise Standard) · **Phase**: 6 ·
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **DAL**: C (Enterprise Standard) · **Phase**: 6 ·
 **Feature ID**: C-EXEC-06
 
 | | |
@@ -96,7 +96,7 @@ git, any version, already used by `D-EXEC-02` — `worktree add/remove`, `branch
 | NFR-4 | DAL-C authorization rigor | The reconcile allow-list is adversarially tested: out-of-`allowed_paths` writes, traversal paths, `README.md`/`docs/` hard-block, and empty allow-list = write-back nothing (never everything). |
 | NFR-5 | Windows-safe teardown | Reuse the existing resilient `shutil.rmtree` backoff; branch delete must also succeed cross-platform. |
 | NFR-6 | Fail-loud reconcile | A commit/sync/merge failure MUST fail the run (surfaced), never be logged-and-ignored. |
-| NFR-7 | Architecture compliance | Lifecycle in `core.flow.engine`; git primitive in `sandbox.git.core`; `allowed_paths` on `RunContext`; `tach`/`ruff`/`mypy --strict` green; ADR-002 (config frozen at composition root) respected. |
+| NFR-7 | Architecture compliance | Lifecycle in `core.flow.engine`; git primitive in `sandbox.git.core`; `allowed_paths` on `RunContext`; `tach`/`ruff`/`mypy --strict` green; ADR-002 (config frozen at composition root) respected. **[proof: arch — `tach check`, `ruff`, `mypy --strict` in `quality.py cb`]** |
 
 ## Accepted limits
 

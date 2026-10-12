@@ -266,9 +266,9 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
         *   `[ ]` **A-EXEC-01:** Functional Agent Sandboxing (Black Box Ledgers)
     *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-EXEC-03`; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
     *   🟢 **Per-Run (Session) Worktree Isolation:**
-        *   `🔧` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
+        *   `✅` **C-EXEC-06:** Per-Run (Session) Worktree Isolation
     *   🔴 **DAL-Escalated Isolation for Pipeline Runs:**
-        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` 🔧
+        *   `[ ]` **C-EXEC-07:** DAL-Escalated Isolation for Pipeline Runs — needs `C-EXEC-06` ✅
 
 ### 🟡 US-10: The Monolith Dependency Visualizer
 **Benefit:** *I can instantly see a visual map of my entire 20-year-old C++ monolith's God Nodes and dependencies.*
@@ -348,7 +348,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   🔴 **Architectural Sandboxing:**
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
-        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` 🔧
+        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` ✅
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
