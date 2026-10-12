@@ -1,12 +1,16 @@
 # B-INTL-01 SF-01 — Injection & Orchestrator
 
-**Status**: APPROVED. Implemented. · **FRs owned**: FR-1 · **Depends on**: none · Design:
+**Status**: APPROVED. Implemented. · **FRs owned**: FR-1, FR-2, FR-5, FR-6 · **Depends on**: none · Design:
 [B-INTL-01_design.md](B-INTL-01_design.md) §Sub-features → SF-01
 
 ## Goal
 
 The `flow` handlers read the target component's `archetype`, load the matching validation YAML, and
 inject the AST payload into the validation layer without breaking its `forbids: loom/*` boundary.
+
+**As built**: `core/flow/handlers/archetype_pipelines.py` picks the pipeline (archetype, then the
+file's language from the archetype's evaluator schema) and adds the payload; the validate steps and
+`sw check` both call it.
 
 ## Where it plugs in
 

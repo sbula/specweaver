@@ -1,10 +1,14 @@
 name: validation_code_spring-boot
-extends: validation_code_default
-description: "Spring Boot archetype code logic bounds"
+description: "Spring Boot code: framework markers and the rules that hold in any language"
 version: "1.0"
-add:
+steps:
+  - name: c09_traceability
+    rule: C09
+  - name: c07_no_orphan_todo
+    rule: C07
+  - name: c13_contract_drift
+    rule: C13
   - name: c12_archetype_code_bounds
     rule: C12
     params:
       required_markers: ["@RestController"]
-    position: end

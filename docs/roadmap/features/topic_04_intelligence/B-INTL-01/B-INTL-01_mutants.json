@@ -12,12 +12,12 @@
         {
           "id": "absolute-path",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation.py",
-          "symbol": "ValidateCodeHandler._run_validation",
-          "old": "        relative = _inside(code_path, cwd_path)\n",
-          "new": "        relative = str(code_path)\n",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "add_payload",
+          "old": "    relative = _inside(path, cwd)\n",
+          "new": "    relative = str(path)\n",
           "breaks": "the structure reader refuses the path and every code rule gets no markers",
-          "symbol_sha": "sha256:50678b3f4ebed9fc865c97a8a11fcc78747c5372ede549ea572098bcc9ca0fe3"
+          "symbol_sha": "sha256:084f7db263e85003e5927750fea86cb49a755f4d98b1426554dea398085c54de"
         }
       ]
     },
@@ -48,6 +48,65 @@
           "new": "            for key in (\"extends\",):\n",
           "breaks": "annotations are not markers",
           "symbol_sha": "sha256:c6bc6cf03f1da1748648590f04890ccf7ef4e13f11b02ac8aea61fbcade13f08"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "An archetype's code rules judge only its schema's languages",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_archetype_languages.py",
+        "tests/integration/core/flow/handlers/test_archetype_code_pipeline.py"
+      ],
+      "mutants": [
+        {
+          "id": "covers-every-file",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "covers",
+          "old": "    return not languages or any(suffix in LANGUAGE_SUFFIXES[name] for name in languages)\n",
+          "new": "    return True\n",
+          "breaks": "a Python file in a Spring folder gets the Spring rules",
+          "symbol_sha": "sha256:a99c022f0b3a56903e24296513734cc6d200f6976532b3816d037eeec639ded2"
+        },
+        {
+          "id": "unknown-language-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "languages_of",
+          "old": "    if unknown:\n",
+          "new": "    if False:\n",
+          "breaks": "a misspelt language makes the archetype judge no file, silently",
+          "symbol_sha": "sha256:adf07e1fa0fc83877a96f2313b1f99cdf1658bcb63c56f62c27be53a7846ee85"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "sw check applies the archetype; --pipeline wins",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_check_uses_archetype_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "check-ignores-archetype",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "check",
+          "old": "    if pipeline is None and level != \"feature\":\n",
+          "new": "    if False:\n",
+          "breaks": "sw check judges a Spring file by the default rules",
+          "symbol_sha": "sha256:613ebb6e4a6e46e776ffddaadf88723e5b54e73a9e4ed9186f8e508d033a8d71"
+        },
+        {
+          "id": "pipeline-flag-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "check",
+          "old": "    if pipeline is None and level != \"feature\":\n",
+          "new": "    if level != \"feature\":\n",
+          "breaks": "--pipeline is overruled by the archetype",
+          "symbol_sha": "sha256:613ebb6e4a6e46e776ffddaadf88723e5b54e73a9e4ed9186f8e508d033a8d71"
         }
       ]
     }

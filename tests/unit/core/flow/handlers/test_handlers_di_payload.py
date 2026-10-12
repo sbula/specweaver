@@ -22,8 +22,8 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
     context_file = project_root / "context.yaml"
     context_file.write_text("archetype: spring-boot")
 
-    code_file = project_root / "foo.py"
-    code_file.write_text("print('hello')")
+    code_file = project_root / "Foo.java"
+    code_file.write_text("class Foo {}")
 
     spec_file = project_root / "foo_spec.md"
     spec_file.write_text("spec")
@@ -36,7 +36,10 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
     )
 
     step = PipelineStep(
-        name="test_step", action=StepAction.VALIDATE, target=StepTarget.CODE, params={}
+        name="test_step",
+        action=StepAction.VALIDATE,
+        target=StepTarget.CODE,
+        params={"target": "Foo.java"},
     )
 
     handler = ValidateCodeHandler()
@@ -73,6 +76,7 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
         # Setup Pipeline
         mock_pipeline = MagicMock()
+        mock_pipeline.languages = []
         mock_step = MagicMock()
         mock_step.params = {}
         mock_pipeline.steps = [mock_step]
@@ -98,8 +102,8 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
         # 3. CodeStructureAtom was executed twice
         assert mock_atom.run.call_count == 2
-        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": "foo.py"})
-        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": "foo.py"})
+        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": "Foo.java"})
+        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": "Foo.java"})
 
 
 @pytest.mark.asyncio
@@ -135,6 +139,8 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
         mock_resolver_cls.return_value = mock_resolver
 
         mock_pipeline = MagicMock()
+
+        mock_pipeline.languages = []
         mock_pipeline.steps = []
         mock_load.return_value = mock_pipeline
 
@@ -196,6 +202,8 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
         mock_atom_cls.return_value = mock_atom
 
         mock_pipeline = MagicMock()
+
+        mock_pipeline.languages = []
         mock_step = MagicMock()
         mock_step.params = {}
         mock_pipeline.steps = [mock_step]
@@ -246,6 +254,8 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
         mock_resolver_cls.return_value = mock_resolver
 
         mock_pipeline = MagicMock()
+
+        mock_pipeline.languages = []
         mock_pipeline.steps = []
         mock_load.return_value = mock_pipeline
 
@@ -296,6 +306,8 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
         mock_atom_cls.return_value = mock_atom
 
         mock_pipeline = MagicMock()
+
+        mock_pipeline.languages = []
         mock_step = MagicMock()
         mock_step.params = {}
         mock_pipeline.steps = [mock_step]
@@ -348,6 +360,8 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
         mock_atom_cls.return_value = mock_atom
 
         mock_pipeline = MagicMock()
+
+        mock_pipeline.languages = []
         mock_step = MagicMock()
         mock_step.params = {}
         mock_pipeline.steps = [mock_step]
@@ -390,6 +404,7 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
             if name == "validation_spec_unrecognized_archetype":
                 raise FileNotFoundError(name)
             mock_pipeline = MagicMock()
+            mock_pipeline.languages = []
             mock_pipeline.steps = []
             return mock_pipeline
 
@@ -447,8 +462,9 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
 
         def mock_load_side_effect(name, **kwargs):
             if name == "validation_code_unrecognized_archetype":
-                raise ValueError("File not found")
+                raise FileNotFoundError(name)
             mock_pipeline = MagicMock()
+            mock_pipeline.languages = []
             mock_step = MagicMock()
             mock_step.params = {}
             mock_pipeline.steps = [mock_step]

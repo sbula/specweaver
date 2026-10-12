@@ -17,6 +17,7 @@ from specweaver.workspace.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
+    from specweaver.assurance.validation.pipeline import ValidationPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +124,20 @@ def _resolve_pipeline_name(
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
+
+
+def _archetype_pipeline(
+    level: str, target_path: Path, project_root: Path, fallback: ValidationPipeline
+) -> tuple[ValidationPipeline, str]:
+    """The pipeline the target's archetype brings, with its payload; `fallback` without one."""
+    from specweaver.core.flow.handlers.archetype_pipelines import add_payload, own_pipeline
+
+    code = level == "code"
+    picked, archetype = own_pipeline("code" if code else "spec", target_path, project_root)
+    if picked is None:
+        return fallback, fallback.name
+    add_payload(picked, target_path, project_root, archetype, markers=code)
+    return picked, picked.name
 
 
 def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) -> str:
@@ -259,6 +274,8 @@ def check(
     from specweaver.core.config.dal_resolver import DALResolver
 
     project_root = project_dir or Path.cwd()
+    if pipeline is None and level != "feature":
+        resolved, pipeline_name = _archetype_pipeline(level, target_path, project_root, resolved)
     dal_resolver = DALResolver(project_root)
     dal_level = dal_resolver.resolve(target_path)
     effective_strict = strict or (dal_level.is_strict if dal_level else False)

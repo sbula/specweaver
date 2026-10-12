@@ -347,8 +347,13 @@ class TestDomainProfileCLI:
         assert result.exit_code in (0, 1), f"Crashed: {result.output}"
         # The assertion that carries the claim: the web-app profile chose the web-app pipeline,
         # which then pulled in its `extends:` base. Exit code alone cannot tell that apart from
-        # the profile being ignored.
-        assert loaded == ["validation_spec_web_app", "validation_spec_default"], loaded
+        # the profile being ignored. `sw init` declares `archetype: orchestrator`, which ships no
+        # spec pipeline, so the archetype lookup finds nothing and the profile's pipeline stands.
+        assert loaded == [
+            "validation_spec_web_app",
+            "validation_spec_default",
+            "validation_spec_orchestrator",
+        ], loaded
 
     def test_set_profile_no_active_project(self, _mock_db) -> None:
         """sw config set-profile without active project shows error."""

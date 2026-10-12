@@ -32,21 +32,17 @@ Every new archetype **must** ship a flat YAML in
 
 ```yaml
 metadata:
-  # This mathematically ensures if an LLM hallucinates a node.js syntax into Java, it automatically drops the evaluation
-  supported_languages: ["java", "kotlin"] 
+  framework: spring-boot
+  # Which files get this archetype's code rules and annotation expansions
+  supported_languages: ["java", "kotlin"]
 
-evaluate:
-  annotations:
-    RestController:
-      type: "class"
-      unroll: "Provides HTTP JSON Response APIs routing automatically without explicit ResponseBody bindings."
-    GetMapping:
-      type: "method"
-      unroll: "HTTP GET Request Boundary endpoint bound to >>{0}<<"
+decorators:
+  RestController: "@Controller\n@ResponseBody"
+  GetMapping: "@RequestMapping(method = RequestMethod.GET)"
 ```
 
-Note (2026-09-25): the shipped `spring-boot.yaml` uses a flat `decorators:` map
-(e.g. `RestController: "@Controller\n@ResponseBody"`). Copy the shipped file's shape.
+A language name must be one of `LANGUAGE_SUFFIXES` in `core/flow/handlers/archetype_pipelines.py`;
+an unknown one is refused.
 
 Evaluation is recursive with depth protection (Max Depth 5). Agents calling
 `CodeStructureTool.read_unrolled_symbol` get the runtime behavior deterministically in about 5
@@ -78,39 +74,39 @@ orchestrator's Python classes.
 
 ## 4. Write the rule
 
-**Do not** parse the framework AST inside the rule. `ValidateCodeHandler`:
+**Do not** parse the framework AST inside the rule. The validate steps and `sw check` both call
+`core/flow/handlers/archetype_pipelines.py`, which:
 
-1. discovers the `archetype` (`spring-boot`);
-2. calls **CodeStructureAtom** inside the sandbox to turn the syntax tree into a plain dictionary
-   (`dict[str, Any]`);
-3. injects it into `step.params["ast_payload"]` for the current pipeline.
+1. finds the `archetype` in the nearest `context.yaml` (`spring-boot`);
+2. takes `validation_code_<archetype>` when the file is in one of the schema's
+   `supported_languages` (none named: any), else `validation_code_default`;
+3. has **CodeStructureAtom** read the file's structure and framework markers, and puts them in each
+   step's `params["ast_payload"]`.
 
 ### 4a. Simple markers: use C12, no Python
 
 `C12ArchetypeCodeBoundsRule`
-(`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`) reads
-`self.context.get("framework_markers")` for arrays of symbols. Bind it in the pipeline extender,
-`.specweaver/pipelines/frameworks/java/validation_code_spring-boot.yaml` (or your project-local
-pipelines config):
+(`src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py`) reads the markers
+per symbol — its annotations (`decorators`) and supertypes (`extends`). A required marker matches
+with or without `@`. Ship the pipeline in
+`src/specweaver/workflows/pipelines/frameworks/<language>/validation_code_<archetype>.yaml`, or put a
+project's own in `.specweaver/pipelines/validation_code_<archetype>.yaml`:
 
 ```yaml
+name: validation_code_spring-boot
 version: "1.0"
-extends: validation_code_default
 steps:
-  - id: analyze_framework_bounds
-    type: rule
-    rule_id: C12
+  - name: c07_no_orphan_todo
+    rule: C07
+  - name: c12_archetype_code_bounds
+    rule: C12
     params:
-      required_markers: ["RestController", "GetMapping"]
-      forbidden_markers: ["Entity"]
+      required_markers: ["@RestController"]
+      forbidden_markers: ["@Entity"]
 ```
 
-Note (2026-09-25): the shipped extender
-`src/specweaver/workflows/pipelines/frameworks/java/validation_code_spring-boot.yaml` uses an `add:`
-list with `rule: C12` and `position: end`. Copy the shipped file's shape.
-
-The orchestrator computes the AST and binds the `ast_payload` markers into
-`C12ArchetypeCodeBoundsRule.context`.
+Do not `extends: validation_code_default` for a language other than Python: most default code
+rules read Python.
 
 ### 4b. Proprietary/Advanced rules: subclass `Rule`
 

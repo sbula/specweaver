@@ -1,90 +1,67 @@
 # B-INTL-01 — Archetype-Based Rule Sets
 
-**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03 committed. · **Feature ID**: 3.29 · **Phase**: 3
+**Status**: Built; `🔧` until the user signs off. · **Feature ID**: 3.29 · **Phase**: 3
 
 | | |
 |---|---|
-| Reads | `context.yaml` `archetype` field (e.g. `spring-boot`, `rust-axum`) |
-| Touches | `flow` handlers · `loom/atoms` (`CodeStructureAtom`) · `assurance/validation` |
-| Leaves to 3.30 | macro/annotation unrolling in `CodeStructure` |
-| Blueprints | ArchUnit (Java); linter profiles (ESLint cascade) |
+| Reads | the nearest `context.yaml` `archetype` (e.g. `spring-boot`) · the archetype's evaluator schema |
+| Touches | `core/flow/handlers/archetype_pipelines.py` · `sw check` · `assurance/validation` (C12, S12) |
+| Uses | `B-INTL-02` (the annotations a schema expands) |
+| Not here | the edges an IoC container adds at runtime — `B-SENS-08` |
 
 ## What it does
 
-Checks framework rules per component in a multi-language monorepo. The component's `archetype`
-picks the validation profile for both the Spec and the code (AST), with no custom Python wrapper
-per framework.
-
-## Why this way
-
-`docs/dev_guides/layer_isolation_and_di.md` forbids `assurance/` from using C-bindings
-(`tree-sitter`) directly. So the `flow` engine runs `loom/atoms` for the OS/C-binding AST extraction and injects
-the parsed, pure-data payload into `assurance/`. Validation stays pure logic; side effects stay in
-`flow`.
-
-Framework AST `.scm` extraction lives only in `loom/commons/language/<lang>/codestructure.py`.
-
-## Architecture
-
-```mermaid
-graph LR
-    CY["context.yaml<br/>archetype"] --> AR["ArchetypeResolver<br/>core/config"]
-    AR --> H["Validate handlers<br/>flow"]
-    H -->|"extract"| CSA["CodeStructureAtom<br/>loom/atoms"]
-    CSA --> H
-    H -->|"ast_payload dict"| V["C12 / S12 rules<br/>assurance/validation"]
-    H -->|"archetype pipeline YAML"| V
-```
-
-| Part | Lives in |
-|---|---|
-| Archetype lookup + profile selection + payload injection | `flow` validation handlers (SF-01) |
-| Framework marker queries (`.scm`) | `loom/commons/language/` (SF-02) |
-| `C12` / `S12` pure-logic rules | `assurance/validation/rules/` (SF-03) |
+A folder's archetype picks the rules its specs and its code are checked by, in `sw check` and in a
+pipeline's validate steps alike. A spec gets `validation_spec_<archetype>`. Code gets
+`validation_code_<archetype>` when the file is in one of the archetype's languages — the
+`supported_languages` of its evaluator schema — and the default rules otherwise, so a Python script
+in a Spring folder is not judged as Spring code. The code rules see the file's framework markers
+(annotations, supertypes), read by the code-structure parser.
 
 ## Decisions
 
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Dependency Injected AST | Violating `pure-logic` constraints causes cyclic dependency crashes. The `flow` orchestration layer extracts via Loom and injects payloads to Validation. | No |
-| AD-2 | Rule Agnosticism | A unified `C12` rule prevents the codebase from scaling out to hundreds of framework-specific wrapper scripts. | No |
+| # | Decision | Rationale |
+|---|----------|-----------|
+| AD-1 | The flow layer reads the file's structure and markers and hands them to the rules as data | `assurance/` stays free of parsers (`layer_isolation_and_di.md`) |
+| AD-2 | One marker rule, `C12`, configured per archetype | no Python wrapper per framework |
+| AD-3 | An archetype's languages live in its evaluator schema only `[agreed 2026-10-12]` | one place to say it; the pipeline does not repeat it |
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Profile Orchestration | PipelineRunner | Parses the `context.yaml` archetype | Sets `validation_[spec|code]_[archetype].yaml` implicitly, defaulting on failure. |
-| FR-2 | Framework AST Querying | Loom Commons / Atoms | Expands polyglot schemas | Extracts node markers (macros, annotations, inheritance) from frameworks into Dict/Json payloads. |
-| FR-3 | Code Archetype Bounds | Validation Engine | Executes `C12_ArchetypeCodeBounds` via DI payload | Evaluates generated code framework mechanics against YAML `PARAM_MAP` configs. |
-| FR-4 | Spec Archetype Bounds | Validation Engine | Executes `S12_ArchetypeSpecBounds` via text | Evaluates generated `Spec.md` schemas against required architecture (e.g., Ports, Adapters). |
+| FR-1 | Profile by archetype | `sw check`, validate steps | SHALL check a file by its archetype's pipeline, and by the default one when the archetype has none | rules fit the component without configuration |
+| FR-2 | Markers reach the rules | flow layer | SHALL give the code rules the file's framework markers: per symbol, its annotations and supertypes | a rule can see `@RestController` |
+| FR-3 | Code bounds | `C12` | SHALL fail a file that lacks a required marker or has a forbidden one, naming the marker; a marker matches with or without `@` | the code has the framework parts its archetype needs |
+| FR-4 | Spec bounds | `S12` | SHALL fail a spec that lacks a required section, naming it | the spec has the sections its archetype needs |
+| FR-5 | Languages | flow layer | SHALL apply an archetype's code pipeline only to files in its schema's `supported_languages` (none named: any), and refuse an unknown language name `[agreed 2026-10-12]` | Java and Kotlin get the Spring rules; a Python file there gets the default ones |
+| FR-6 | `sw check` too | `sw check` | SHALL apply the archetype unless `--pipeline` names a pipeline `[agreed 2026-10-12]` | the command people check with uses the same rules as a run |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Architectural Purity | `assurance/` MUST NOT import `tree_sitter` or `loom/*`. AST logic executes as pure matching against injected payloads. |
-| NFR-2 | Open Source Lineage | Baseline Framework profiles (Spring, Django) are maintained inside SpecWeaver yaml templates; Proprietary profiles reside in user sub-folders. |
+| NFR-1 | Architectural purity | `assurance/` imports no parser and no `sandbox/` module |
+| NFR-2 | Own archetypes | an archetype SpecWeaver does not ship works from the project's `.specweaver/pipelines/` and `.specweaver/evaluators/` |
 
-External dependencies: none — a pure architectural extension of internal engines.
+## Accepted limits
 
-## Guides owed
+- Spring Boot code is checked by `C07`, `C09`, `C12` and `C13` only: the other default code rules
+  read Python. Java and Kotlin syntax, tests and coverage rules are `D-VAL-03` / `D-VAL-05` work.
+- `nestjs` names JavaScript, which has no parser yet.
 
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| adding_framework_guide.md | Where native OS tooling (QARunner) ends and SpecWeaver archetype configs begin; how users define parameter structures. | ⬜ To be written during Pre-commit |
+## Live demo
+
+A project with `svc/context.yaml` saying `archetype: spring-boot`: `sw check
+svc/src/Hello.java --level code` passes when `Hello` is annotated `@RestController` and fails
+naming the marker when it is not; no Python rule runs. The same with `Hello.kt`. A spec in `svc/`
+without `## 2. Boundaries` fails S12 naming it. `--pipeline validation_spec_default` skips the
+archetype.
 
 ## Sub-features
 
-| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
-|----|------|-----|------------------|-----------|------|
-| SF-01 | Route YAML archetypes in `flow/runner.py` + `flow/_validation.py`; inject `CodeStructureAtom` payloads into rule params. | FR-1 | `context.yaml` topology → active pipelines + DI AST variables | none | [sf01](B-INTL-01_sf01_implementation_plan.md) |
-| SF-02 | Framework `.scm` queries (annotations, decorators, traits) in `loom/commons/language/`. | FR-2 | file handles → serialized pure-data payloads | SF-01 | [sf02](B-INTL-01_sf02_implementation_plan.md) |
-| SF-03 | `C12` + `S12` pure-logic rules in `assurance/validation/rules/`, matching parameters to DI payloads. | FR-3, FR-4 | payload dicts, YAML `PARAM_MAP` overrides → gate `RuleResult` findings | SF-01, SF-02 | [sf03](B-INTL-01_sf03_implementation_plan.md) |
-
-## Progress Tracker
-
-| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
-|----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Injection & Orchestrator | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Commons Framework Schema | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Archetype Validators     | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF | Does | FRs | Plan |
+|----|------|-----|------|
+| SF-01 | Archetype lookup, pipeline choice, payload | FR-1, FR-2, FR-5, FR-6 | [sf01](B-INTL-01_sf01_implementation_plan.md) |
+| SF-02 | Framework marker queries per language | FR-2 | [sf02](B-INTL-01_sf02_implementation_plan.md) |
+| SF-03 | `C12` and `S12` | FR-3, FR-4 | [sf03](B-INTL-01_sf03_implementation_plan.md) |

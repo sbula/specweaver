@@ -201,61 +201,14 @@ class ValidateSpecHandler:
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
-        from specweaver.core.config.archetype_resolver import ArchetypeResolver
-        from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+        from specweaver.core.flow.handlers.archetype_pipelines import add_payload, spec_pipeline
 
-        archetype = None
-        if project_path:
-            resolver = ArchetypeResolver(project_path)
-            archetype = resolver.resolve(spec_path)
-
-        # Map kind to pipeline name
-        pipeline_name = "validation_spec_default"
-        if kind_str == "feature":
-            pipeline_name = "validation_spec_feature"
-
-        # Pass project_dir so the documented project-local override
-        # ({project}/.specweaver/pipelines/) applies on the flow-handler path; without it the
-        # loader searches packaged pipelines only and the override is silently ignored.
-        # An archetype's spec pipeline is `validation_spec_<archetype>`; one it lacks falls back.
-        pipeline = None
-        if archetype and kind_str != "feature":
-            try:
-                pipeline = load_pipeline_yaml(
-                    f"validation_spec_{archetype}", project_dir=project_path
-                )
-            except FileNotFoundError:
-                logger.debug("No spec pipeline for archetype %r; using the default", archetype)
-        if pipeline is None:
-            pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
-
+        pipeline, archetype = spec_pipeline(spec_path, project_path, feature=kind_str == "feature")
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
             )
-
-        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
-
-        cwd_path = project_path or spec_path.parent
-        schemas = load_evaluator_schemas(project_dir=project_path)
-        active_archetype = archetype if archetype else "generic"
-        atom = CodeStructureAtom(
-            cwd=cwd_path,
-            evaluator_schemas=schemas,
-            active_archetype=active_archetype,
-            parsers=parsers,
-        )
-        payload_res = atom.run(
-            {"intent": "read_file_structure", "path": _inside(spec_path, cwd_path)}
-        )
-
-        ast_payload: dict[str, Any] = {}
-        if payload_res.status.value == "SUCCESS":
-            ast_payload = payload_res.exports
-
-        for step in pipeline.steps:
-            step.params["ast_payload"] = ast_payload
+        add_payload(pipeline, spec_path, project_path, archetype, parsers=parsers)
 
         content = spec_path.read_text(encoding="utf-8")
         return execute_validation_pipeline(
@@ -362,51 +315,15 @@ class ValidateCodeHandler:
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
-        from specweaver.core.config.archetype_resolver import ArchetypeResolver
+        from specweaver.core.flow.handlers.archetype_pipelines import add_payload, code_pipeline
         from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
-        from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
-        archetype = None
-        if project_path:
-            resolver = ArchetypeResolver(project_path)
-            archetype = resolver.resolve(code_path)
-
-        pipeline_name = f"validation_code_{archetype}" if archetype else "validation_code_default"
-        # Pass project_dir so project-local pipeline overrides resolve, as on the spec-validation
-        # path above; without it the loader silently uses packaged defaults.
-        try:
-            pipeline = load_pipeline_yaml(pipeline_name, project_dir=project_path)
-        except Exception:
-            pipeline = load_pipeline_yaml("validation_code_default", project_dir=project_path)
-
+        pipeline, archetype = code_pipeline(code_path, project_path)
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
             )
-
-        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
-
-        cwd_path = project_path or code_path.parent
-        schemas = load_evaluator_schemas(project_dir=project_path)
-
-        active_arch = archetype if archetype else "generic"
-        atom = CodeStructureAtom(
-            cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_arch, parsers=parsers
-        )
-        relative = _inside(code_path, cwd_path)
-        payload_res = atom.run({"intent": "read_file_structure", "path": relative})
-
-        ast_payload: dict[str, Any] = {}
-        if payload_res.status.value == "SUCCESS":
-            ast_payload = payload_res.exports
-
-        markers_res = atom.run({"intent": "extract_framework_markers", "path": relative})
-        if markers_res.status.value == "SUCCESS" and "markers" in markers_res.exports:
-            ast_payload["framework_markers"] = markers_res.exports["markers"]
-
-        for step in pipeline.steps:
-            step.params["ast_payload"] = ast_payload
+        add_payload(pipeline, code_path, project_path, archetype, parsers=parsers, markers=True)
 
         content = code_path.read_text(encoding="utf-8")
         return execute_validation_flow(
@@ -590,11 +507,3 @@ class ValidateTestsHandler:
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]
-
-
-def _inside(path: Path, root: Path) -> str:
-    """`path` relative to `root`, as the sandboxed atoms take it; unchanged when it lies outside."""
-    try:
-        return path.resolve().relative_to(root.resolve()).as_posix()
-    except ValueError:
-        return str(path)
