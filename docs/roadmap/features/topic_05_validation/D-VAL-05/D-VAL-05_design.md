@@ -1,6 +1,6 @@
 # D-VAL-05 — Code Validation Rules (C01–C08)
 
-**Status**: Built; `🔧` until the user signs off. · **Phase**: 1 (Step 5)
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Phase**: 1 (Step 5)
 
 | | |
 |---|---|

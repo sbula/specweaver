@@ -14,7 +14,7 @@ of them**.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
 `TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03`,
-`D-EXEC-02`, `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02` and `C-EXEC-06` were signed off and `D-FLOW-03` retired; the rest stay
+`D-EXEC-02`, `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06` and `D-VAL-05` were signed off and `D-FLOW-03` retired; the rest stay
 `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence: [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
@@ -59,6 +59,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `D-VAL-05` Code Validation Rules | Finished, signed off 2026-10-12: C01–C08 work on a project as `sw init` leaves it; a generated test imports its module by name, also in `sw implement` |
 | `C-EXEC-06` Per-Run Worktree Isolation | Finished, signed off 2026-10-12: a whole run works in one worktree; only its allowed paths land, as one commit; nothing is left behind |
 | `C-EXEC-02` Native CLI Nodes · `TECH-011` | Finished, signed off 2026-10-12: `action: bash` steps run contained scripts, route on the exit code, and say why they fail; wrong steps are refused at load |
 | `B-INTL-01` Archetype Rule Sets | Finished, signed off 2026-10-12: a folder's archetype picks the rules in `sw check` and in runs; code rules follow the archetype's languages |

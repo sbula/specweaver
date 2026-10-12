@@ -89,7 +89,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** greenfield builds without a context vacuum
   > - **Done when:** an empty repo yields idiomatic standards rather than none
 
-* **`D-VAL-05` 🔧: Code Validation Rules (C01–C08)** (Legacy: Step 5)
+* **`D-VAL-05` ✅: Code Validation Rules (C01–C08)** (Legacy: Step 5)
   > - **Purpose:** Check generated code mechanically — syntax, type hints, coverage — before anything semantic is asked of a model
   > - **Trigger:** When `sw check code` runs
   > - **Precondition:** `E-VAL-01` → the engine

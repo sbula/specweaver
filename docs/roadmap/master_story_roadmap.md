@@ -135,7 +135,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **US-9 Core** *(provides Zero-Trust Sandbox)*
     *   `✅` **US-28 Core** *(provides Agent State Ledger)*
     *   `✅` **D-INTL-01:** Implementation Generator
-    *   `🔧` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
+    *   `✅` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
     *   🟡 **Multi-Language Test Support:**
