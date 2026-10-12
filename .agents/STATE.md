@@ -14,7 +14,7 @@ of them**.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
 `TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03` was
-signed off and `D-FLOW-03` retired; the rest stay `🔧` until each is closed by the rule in
+and `D-EXEC-02` signed off and `D-FLOW-03` retired; the rest stay `🔧` until each is closed by the rule in
 `PRINCIPLES.md` §6. Evidence: [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
@@ -59,6 +59,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `D-EXEC-02` Git Worktree Bouncer | Finished, signed off 2026-10-12: a step runs in its own worktree; only its target files merge back, the branch wins a conflict; proven with real git |
 | `B-FLOW-07` Step Limits from History | Finished, signed off 2026-10-11: a step limit from the history of passed steps of the same task, model and DAL; proven nightly |
 | `C-FLOW-13` LLM settings · `E-FLOW-03` Provider Adapters | Finished, signed off 2026-10-11: settings name every key, keys only in `~/.specweaver/keys.env`; `D-FLOW-03` retired into `C-FLOW-13` |
 | `B-FLOW-05` Spend Brake | Finished, signed off 2026-10-10: every call checked before it is sent, asks or parks at a limit, proven against real Gemini every night |

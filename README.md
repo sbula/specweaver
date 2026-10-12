@@ -72,16 +72,17 @@ sw check specs/greeter_spec.md
 
 The LLM commands — `sw draft`, `sw review`, `sw implement` — need a model chosen in
 `~/.specweaver/settings.toml` (a server, a role and the `[brake]` limits; there is no built-in model
-and no built-in limit) and the provider's key in the environment. `--model <model@server>` picks a
+and no built-in limit) and the provider's key in `~/.specweaver/keys.env` (mode 600; the settings name only the variable). `--model <model@server>` picks a
 different model for one run. Optional `[step_limits]` stop a step that would cost far more than
 similar steps usually do. Other providers: `uv sync --extra all-llm`. See the
 [installation guide](docs/user_guides/1_installation_and_setup.md).
 
 ## Testing
 
-**9,291 tests** (pytest, parametrized cases counted; 2026-10-05): 8,013 unit, 986 integration,
-276 e2e and 16 manual. 31 of them call real LLM APIs and are skipped by default, so a plain
-`pytest` run collects 9,260.
+**9,592 tests** (pytest, parametrized cases counted; 2026-10-12): 8,204 unit, 1,067 integration,
+305 e2e and 16 manual. 34 of them call real LLM APIs and are skipped by default, so a plain
+`pytest` run collects 9,558. `scripts/live.py` runs 3 of them (the spend brake) against real
+Gemini every night.
 
 | Tier | Scope | Mocks |
 |---|---|---|
@@ -93,7 +94,7 @@ Static checks: **ruff** (lint), **mypy** in strict mode, **tach** (module-bounda
 complexity, coupling, file-size and duplication checks. `scripts/quality.py` bundles them into gates
 that run before every commit.
 
-**Mutation testing.** `scripts/mutation.py` runs every night over 15 corpora with 285 hand-written
+**Mutation testing.** `scripts/mutation.py` runs every night over 20 corpora with 416 hand-written
 mutants. Each mutant breaks one line that a requirement depends on — for example, it changes the
 API server's bind address from `127.0.0.1` to `0.0.0.0` — and at least one test must fail. Each
 mutant ends as `PROTECTED`, `UNPROTECTED` or `UNMEASURED` (a hang is never counted as a pass).

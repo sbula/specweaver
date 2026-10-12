@@ -36,7 +36,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** remote dashboard access · CI/CD publishing to GHCR
   > - **Done when:** `podman run … ghcr.io/sbula/specweaver` serves a mounted project
 
-* **`D-EXEC-02` 🔧: Git Worktree Bouncer** (Legacy: 3.26)
+* **`D-EXEC-02` ✅: Git Worktree Bouncer** (Legacy: 3.26)
   > - **Purpose:** Let an agent write freely without letting it write anywhere — work happens in a throwaway worktree, and only permitted paths come back
   > - **Trigger:** Per step, when an agent may modify files
   > - **Precondition:** —
