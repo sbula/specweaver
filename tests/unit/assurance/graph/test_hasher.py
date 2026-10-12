@@ -5,6 +5,7 @@
 """Merkle-root hashing across a dependency boundary.
 
 Proves: A-SENS-01 FR-1
+Proves: A-SENS-01 FR-2
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-11-SF01-MIG`. `A-SENS-01` is `✅` with all three FRs
 planned and **none cited** — a capability that scores as perfect because there is nothing to be
@@ -20,18 +21,17 @@ from pathlib import Path
 from specweaver.assurance.graph.hasher import _ensure_gitignore
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
+_CACHE_LINE = "/.specweaver/topology.cache.json\n"
+
 
 def test_ensure_gitignore_creates_file_if_not_exists(tmp_path: Path):
     git_dir = tmp_path / ".git"
     git_dir.mkdir()
 
-    # We pass the project root to `_ensure_gitignore`
-    # It should look for .git and append /.specweaver/ to the .gitignore next to it.
     _ensure_gitignore(tmp_path)
 
     gitignore = tmp_path / ".gitignore"
-    assert gitignore.exists()
-    assert "/.specweaver/\n" in gitignore.read_text(encoding="utf-8")
+    assert gitignore.read_text(encoding="utf-8") == _CACHE_LINE
 
 
 def test_ensure_gitignore_appends_only_if_not_present(tmp_path: Path):
@@ -44,14 +44,11 @@ def test_ensure_gitignore_appends_only_if_not_present(tmp_path: Path):
     _ensure_gitignore(tmp_path)
 
     content = gitignore.read_text(encoding="utf-8")
-    assert "node_modules/\n" in content
-    assert "/.specweaver/\n" in content
+    assert content == "node_modules/\n" + _CACHE_LINE
 
     # Calling it again shouldn't duplicate
     _ensure_gitignore(tmp_path)
-    lines = gitignore.read_text(encoding="utf-8").splitlines()
-    specweaver_entries = [line for line in lines if line == "/.specweaver/"]
-    assert len(specweaver_entries) == 1
+    assert gitignore.read_text(encoding="utf-8") == content
 
 
 def test_ensure_gitignore_finds_git_in_parent(tmp_path: Path):
@@ -64,8 +61,29 @@ def test_ensure_gitignore_finds_git_in_parent(tmp_path: Path):
     _ensure_gitignore(nested_dir)
 
     gitignore = tmp_path / ".gitignore"
-    assert gitignore.exists()
-    assert "/.specweaver/\n" in gitignore.read_text(encoding="utf-8")
+    assert gitignore.read_text(encoding="utf-8") == (
+        "/src/deeply/nested/.specweaver/topology.cache.json\n"
+    )
+
+
+def test_the_project_folder_itself_stays_tracked(tmp_path: Path):
+    """Only the cache is ignored; scripts, pipelines and evaluators in `.specweaver/` stay in git."""
+    import shutil
+    import subprocess
+
+    git = shutil.which("git")
+    assert git, "git is required to develop SpecWeaver"
+    subprocess.run([git, "init", "-q"], cwd=tmp_path, check=True)
+
+    _ensure_gitignore(tmp_path)
+
+    def ignored(rel: str) -> bool:
+        res = subprocess.run([git, "check-ignore", "-q", rel], cwd=tmp_path, check=False)
+        return res.returncode == 0
+
+    assert ignored(".specweaver/topology.cache.json")
+    assert not ignored(".specweaver/scripts/seed.sh")
+    assert not ignored(".specweaver/pipelines/validation_code_x.yaml")
 
 
 def test_ensure_gitignore_no_git_dir(tmp_path: Path):

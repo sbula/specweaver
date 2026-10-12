@@ -241,8 +241,9 @@ Feature 3.32. The `TopologyGraph` (the project's structural map) needs tree-sitt
 `context.yaml` boundary.
 
 **How:** `DependencyHasher` hashes source files into Merkle roots and stores them in
-`<project_root>/.specweaver/topology.cache.json`. It adds `/.specweaver/` to the repo's root
-`.gitignore`.
+`<project_root>/.specweaver/topology.cache.json`. It adds that file, relative to the git root, to
+the repo's root `.gitignore` — the file only: `.specweaver/` also holds scripts, pipelines and
+evaluators, which belong in git.
 
 **Why:**
 

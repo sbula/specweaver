@@ -98,8 +98,8 @@ SF-02 later added `orjson` (see its plan).
   `workspace`.
 - **SF-02**: compute and persist shallow and structural Merkle dependencies in
   `<project_root>/.specweaver/topology.cache.json` (pure-data map with versions and mtime
-  signatures, for NFR-1). **MUST** inject `/.specweaver/` into `.gitignore` inside a tracked comment
-  block.
+  signatures, for NFR-1). **MUST** add the cache file itself, relative to the git root, to
+  `.gitignore` — not `/.specweaver/`, which holds tracked scripts and pipelines `[agreed 2026-10-12]`.
 - **SF-03**: `topology.py` `TopologyGraph.from_project()` diffs against the Semantic Cache and
   invalidates subtrees via Tarjan's SCC cycle-loop breaking, instead of global recursive parsing.
 - **SF-04**: `QARunner`, `PipelineRunner` and `EngineFileExecutor` consume `graph.stale_nodes`;

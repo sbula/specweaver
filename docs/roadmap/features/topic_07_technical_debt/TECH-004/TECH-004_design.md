@@ -108,7 +108,7 @@ CLI passes `InMemoryGraphEngine` to `flush_to_db(nx_graph: Any)`. Would crash wi
 
 #### AP-6: Duplicate `_ensure_gitignore` — NOT a DRY violation
 
-Two versions append **different entries** (`*.graphml` vs `/.specweaver/`). No consolidation needed.
+Two versions append **different entries** (`*.graphml` vs the topology cache file). No consolidation needed.
 
 ---
 
