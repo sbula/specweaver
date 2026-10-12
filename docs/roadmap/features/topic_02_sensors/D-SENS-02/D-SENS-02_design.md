@@ -1,6 +1,6 @@
 # D-SENS-02 — Polyglot AST Skeleton Extractor & Context Ledger
 
-**Status**: Built; `🔧` until the user signs off. · **Feature ID**: 3.22 · **Phase**: 3
+**Status**: ✅ Finished — signed off by the user 2026-10-12. · **Feature ID**: 3.22 · **Phase**: 3
 
 | | |
 |---|---|

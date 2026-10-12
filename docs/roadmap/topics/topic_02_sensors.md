@@ -45,7 +45,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** impact analysis · context-enriched prompts
   > - **Done when:** 🟡 a missing `context.yaml` can be generated from the code
 
-* **`D-SENS-02` 🔧: Polyglot AST Extractor** (Legacy: 3.22)
+* **`D-SENS-02` ✅: Polyglot AST Extractor** (Legacy: 3.22)
   > - **Purpose:** Read and edit code by symbol rather than by line, so an agent never has to hold a whole file
   > - **Trigger:** When a caller asks for a skeleton, a symbol, or a symbol edit
   > - **Precondition:** —

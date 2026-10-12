@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-003
 - **Phase**: 3
-- **Status**: Built; `🔧` until the user signs off
+- **Status**: ✅ Finished — signed off by the user 2026-10-12
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-003/TECH-003_design.md
 
 ## Feature Overview
