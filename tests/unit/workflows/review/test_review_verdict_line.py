@@ -21,7 +21,6 @@ from specweaver.workflows.review.reviewer import Reviewer, ReviewVerdict
 @pytest.fixture
 def reviewer() -> Reviewer:
     r = Reviewer.__new__(Reviewer)
-    r._confidence_threshold = 80
     return r
 
 
@@ -29,7 +28,7 @@ def reviewer() -> Reviewer:
     ("text", "verdict"),
     [
         ("VERDICT: ACCEPTED\nAll good.", ReviewVerdict.ACCEPTED),
-        ("VERDICT: DENIED\n- missing tests [confidence: 90]", ReviewVerdict.DENIED),
+        ("VERDICT: DENIED\n- missing tests", ReviewVerdict.DENIED),
         ("**VERDICT: ACCEPTED**\nFine.", ReviewVerdict.ACCEPTED),
         ("## Verdict: accepted\nFine.", ReviewVerdict.ACCEPTED),
         ("VERDICT: ACCEPTED — a solid spec.\nFine.", ReviewVerdict.ACCEPTED),

@@ -46,8 +46,6 @@ class ReviewFinding(BaseModel):
     message: str = ""
     severity: str = "info"
     suggestion: str = ""
-    confidence: int = 0
-    below_threshold: bool = False
 
 
 class ReviewResult(BaseModel):
@@ -58,11 +56,6 @@ class ReviewResult(BaseModel):
     findings: list[ReviewFinding] = Field(default_factory=list)
     raw_response: str = ""
 
-    @property
-    def above_threshold_findings(self) -> list[ReviewFinding]:
-        """Return only findings that are at or above the confidence threshold."""
-        return [f for f in self.findings if not f.below_threshold]
-
 
 #: How the response must be shaped for `_parse` to read it. This is engine contract, not
 #: judgment: a project that could edit it would break the parser, and the failure would surface
@@ -72,7 +65,6 @@ REVIEW_OUTPUT_CONTRACT = """\
 ## Output Format:
 Start your response with either "VERDICT: ACCEPTED" or "VERDICT: DENIED".
 Then list your findings, each on a new line starting with "- ".
-For each finding, append a confidence score: [confidence: N] where N is 0-100.
 End with a one-line summary."""
 
 
@@ -102,12 +94,10 @@ class Reviewer:
         self,
         llm: LLMAdapter,
         config: GenerationConfig,
-        confidence_threshold: int = 80,
         tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
         self._config = config
-        self._confidence_threshold = confidence_threshold
         self._tool_dispatcher = tool_dispatcher
 
     async def review_spec(
@@ -244,17 +234,7 @@ class Reviewer:
         for line in lines:
             line = line.strip()
             if line.startswith("- "):
-                message = line[2:].strip()
-                confidence = self._extract_confidence(message)
-                # Strip the confidence tag from the message
-                message = _re.sub(r"\s*\[confidence:\s*\d+\]", "", message).strip()
-                findings.append(
-                    ReviewFinding(
-                        message=message,
-                        confidence=confidence,
-                        below_threshold=confidence < self._confidence_threshold,
-                    )
-                )
+                findings.append(ReviewFinding(message=line[2:].strip()))
             elif line and not line.startswith("VERDICT"):
                 summary_line = line  # Last non-empty, non-finding line = summary
 
@@ -264,12 +244,6 @@ class Reviewer:
             findings=findings,
             raw_response=raw,
         )
-
-    @staticmethod
-    def _extract_confidence(text: str) -> int:
-        """Extract confidence score from [confidence: N] tag in text."""
-        match = _re.search(r"\[confidence:\s*(\d+)\]", text)
-        return int(match.group(1)) if match else 0
 
 
 def result_from_run(run_state: Any) -> ReviewResult:

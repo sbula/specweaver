@@ -61,7 +61,7 @@ def test_the_output_contract_survives_a_project_rubric(tmp_path: Path) -> None:
     instructions = resolve_review_instructions(_context(tmp_path), "spec_review")
 
     assert "VERDICT: ACCEPTED" in instructions
-    assert "[confidence: N]" in instructions
+    assert 'starting with "- "' in instructions
 
 
 def test_the_output_contract_is_present_without_any_override(tmp_path: Path) -> None:

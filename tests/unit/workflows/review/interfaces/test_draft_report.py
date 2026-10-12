@@ -99,8 +99,6 @@ class TestReportDraftChain:
                                 "message": "Section 2 is ambiguous",
                                 "severity": "major",
                                 "suggestion": "",
-                                "confidence": 80,
-                                "below_threshold": False,
                             }
                         ],
                     },
