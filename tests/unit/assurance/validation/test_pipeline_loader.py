@@ -198,11 +198,11 @@ class TestFrameworksPluginLoading:
         """Loads validation_spec_spring-boot correctly."""
         pipeline = load_pipeline_yaml("validation_spec_spring-boot")
         assert pipeline.name == "validation_spec_spring-boot"
-        # Should have extended default (+1 rule = 13 steps if default is 12)
-        assert len(pipeline.steps) > 0  # Depends on default
+        default = load_pipeline_yaml("validation_spec_default")
+        assert len(pipeline.steps) == len(default.steps)
 
-        # Verify the S12 boundary exists
-        s12_step = pipeline.get_step("s12_archetype_spec_bounds")
+        # The archetype bounds the default's one S12 step
+        s12_step = pipeline.get_step("s12_archetype_bounds")
         assert s12_step is not None
         assert s12_step.params["required_headers"] == {"h2": ["1. Purpose", "2. Boundaries"]}
 

@@ -1,0 +1,55 @@
+{
+  "schema": 2,
+  "feature": "B-INTL-01",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "The code's framework markers reach the rules",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_archetype_code_pipeline.py"
+      ],
+      "mutants": [
+        {
+          "id": "absolute-path",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateCodeHandler._run_validation",
+          "old": "        relative = _inside(code_path, cwd_path)\n",
+          "new": "        relative = str(code_path)\n",
+          "breaks": "the structure reader refuses the path and every code rule gets no markers",
+          "symbol_sha": "sha256:50678b3f4ebed9fc865c97a8a11fcc78747c5372ede549ea572098bcc9ca0fe3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "C12 matches the markers the parsers give",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_archetype_code_pipeline.py",
+        "tests/unit/assurance/validation/rules/code/test_c12_archetype_code_bounds.py"
+      ],
+      "mutants": [
+        {
+          "id": "at-sign-kept",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py",
+          "symbol": "C12ArchetypeCodeBoundsRule.check",
+          "old": "            if marker.lstrip(\"@\") not in markers:\n",
+          "new": "            if marker not in markers:\n",
+          "breaks": "a required @annotation is never found",
+          "symbol_sha": "sha256:8fd836f69030aa26a6ca38ba713549d3c502c77000d247af77c684265e7fd6eb"
+        },
+        {
+          "id": "decorators-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c12_archetype_code_bounds.py",
+          "symbol": "_marker_names",
+          "old": "            for key in (\"decorators\", \"extends\"):\n",
+          "new": "            for key in (\"extends\",):\n",
+          "breaks": "annotations are not markers",
+          "symbol_sha": "sha256:c6bc6cf03f1da1748648590f04890ccf7ef4e13f11b02ac8aea61fbcade13f08"
+        }
+      ]
+    }
+  ]
+}

@@ -390,18 +390,18 @@ class ValidateCodeHandler:
         cwd_path = project_path or code_path.parent
         schemas = load_evaluator_schemas(project_dir=project_path)
 
-        # If the pipeline runner natively resolved to an archetype via folder context early out, use it.
         active_arch = archetype if archetype else "generic"
         atom = CodeStructureAtom(
             cwd=cwd_path, evaluator_schemas=schemas, active_archetype=active_arch, parsers=parsers
         )
-        payload_res = atom.run({"intent": "read_file_structure", "path": str(code_path)})
+        relative = _inside(code_path, cwd_path)
+        payload_res = atom.run({"intent": "read_file_structure", "path": relative})
 
         ast_payload: dict[str, Any] = {}
         if payload_res.status.value == "SUCCESS":
             ast_payload = payload_res.exports
 
-        markers_res = atom.run({"intent": "extract_framework_markers", "path": str(code_path)})
+        markers_res = atom.run({"intent": "extract_framework_markers", "path": relative})
         if markers_res.status.value == "SUCCESS" and "markers" in markers_res.exports:
             ast_payload["framework_markers"] = markers_res.exports["markers"]
 

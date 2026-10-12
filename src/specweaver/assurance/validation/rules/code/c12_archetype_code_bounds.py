@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 class C12ArchetypeCodeBoundsRule(Rule):
     """Enforce architectural constraints mapped by Pipeline framework templates.
 
-    Expects `framework_markers` inside the execution context parameters.
+    Expects `framework_markers` in the context, as the parsers give it: per symbol, its
+    `decorators` (annotations) and `extends`. A marker matches with or without a leading `@`.
     """
 
     PARAM_MAP: ClassVar[dict[str, str]] = {
@@ -45,13 +46,10 @@ class C12ArchetypeCodeBoundsRule(Rule):
         """Check the validation context for necessary architectural keys."""
         findings: list[Finding] = []
 
-        # Extract mapped indicators from parsed tree-sitter bindings.
-        # Ensure we always fallback to a dict safely.
-        markers = self.context.get("framework_markers") or {}
+        markers = _marker_names(self.context.get("framework_markers"))
 
-        # 1. Require Markers
         for marker in self.required_markers:
-            if marker not in markers:
+            if marker.lstrip("@") not in markers:
                 findings.append(
                     Finding(
                         message=f"Missing required framework marker: '{marker}'. Ensure module implements the correct bindings.",
@@ -60,9 +58,8 @@ class C12ArchetypeCodeBoundsRule(Rule):
                     )
                 )
 
-        # 2. Forbid Markers
         for marker in self.forbidden_markers:
-            if marker in markers:
+            if marker.lstrip("@") in markers:
                 findings.append(
                     Finding(
                         message=f"Found forbidden framework boundary: '{marker}'. Artifact breaches bounded boundaries.",
@@ -77,3 +74,13 @@ class C12ArchetypeCodeBoundsRule(Rule):
             )
 
         return self._pass("Code safely aligns to archetype bounded constraints")
+
+
+def _marker_names(markers: object) -> set[str]:
+    """Every decorator and supertype any symbol carries, without a leading `@`."""
+    names: set[str] = set()
+    for symbol in markers.values() if isinstance(markers, dict) else ():
+        if isinstance(symbol, dict):
+            for key in ("decorators", "extends"):
+                names.update(str(m).lstrip("@") for m in symbol.get(key) or [])
+    return names

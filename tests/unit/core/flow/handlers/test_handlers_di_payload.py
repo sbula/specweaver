@@ -98,10 +98,8 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
 
         # 3. CodeStructureAtom was executed twice
         assert mock_atom.run.call_count == 2
-        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": str(code_file)})
-        mock_atom.run.assert_any_call(
-            {"intent": "extract_framework_markers", "path": str(code_file)}
-        )
+        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": "foo.py"})
+        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": "foo.py"})
 
 
 @pytest.mark.asyncio
@@ -211,10 +209,8 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
 
         mock_load.assert_called_once_with("validation_code_default", project_dir=project_root)
         assert mock_atom.run.call_count == 2
-        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": str(code_file)})
-        mock_atom.run.assert_any_call(
-            {"intent": "extract_framework_markers", "path": str(code_file)}
-        )
+        mock_atom.run.assert_any_call({"intent": "read_file_structure", "path": "foo.py"})
+        mock_atom.run.assert_any_call({"intent": "extract_framework_markers", "path": "foo.py"})
 
 
 @pytest.mark.asyncio

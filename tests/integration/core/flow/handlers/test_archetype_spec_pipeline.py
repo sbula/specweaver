@@ -84,3 +84,14 @@ def test_the_structure_reader_gets_a_project_relative_path(tmp_path: Path) -> No
     assert _inside(tmp_path.parent / "elsewhere.md", tmp_path) == str(
         tmp_path.parent / "elsewhere.md"
     )
+
+
+def test_the_archetype_bounds_the_one_s12_step(tmp_path: Path) -> None:
+    """The archetype sets the default pipeline's S12 step; it does not add a second one."""
+    (tmp_path / "context.yaml").write_text("archetype: spring-boot\n", encoding="utf-8")
+    spec_path = tmp_path / "orders_spec.md"
+    spec_path.write_text(_HALF, encoding="utf-8")
+
+    results = ValidateSpecHandler()._run_validation(spec_path, None, project_path=tmp_path)
+
+    assert [r.status for r in results if r.rule_id == "S12"] == [Status.FAIL]
