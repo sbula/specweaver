@@ -227,12 +227,14 @@ class PythonCodeStructure(ClassBasedParser):
 
         end_byte = typing.cast("int", node.end_byte)
         margin = typing.cast("int", node.start_point[1])
-        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+        block = self._find_target_block(node)
+        member = self._member_margin(code_bytes, block, margin) if block else margin + 4
+        indented_code = self._auto_indent(new_code, member).encode("utf-8")
 
         mutated = (
             code_bytes[:end_byte]
             + b"\n"
-            + (b" " * (margin + 4))
+            + (b" " * member)
             + indented_code
             + b"\n"
             + code_bytes[end_byte:]

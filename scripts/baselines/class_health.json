@@ -9,5 +9,10 @@
     "src/specweaver/workspace/ast/parsers/sql/codestructure.py::SqlCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/typescript/codestructure.py::TypeScriptCodeStructure": 3
   },
-  "attributes": {}
+  "attributes": {
+    "src/specweaver/workspace/ast/parsers/cpp/codestructure.py::CppCodeStructure": 16,
+    "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure": 16,
+    "src/specweaver/workspace/ast/parsers/python/codestructure.py::PythonCodeStructure": 16,
+    "src/specweaver/workspace/ast/parsers/typescript/codestructure.py::TypeScriptCodeStructure": 16
+  }
 }

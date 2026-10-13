@@ -211,12 +211,14 @@ class KotlinCodeStructure(ClassBasedParser):
             raise CodeStructureError(f"Body block for parent symbol '{target_parent}' not found.")
 
         margin = typing.cast("int", node.start_point[1])
-        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
+
+        member = self._member_margin(code_bytes, target_block, margin)
+        indented_code = self._auto_indent(new_code, member).encode("utf-8")
 
         insert_point = target_block.end_byte - 1
         mutated = (
             code_bytes[:insert_point]
-            + (b" " * (margin + 4))
+            + (b" " * (member))
             + indented_code
             + b"\n"
             + (b" " * margin)

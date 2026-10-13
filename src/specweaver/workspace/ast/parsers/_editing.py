@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import typing
 
-from specweaver.workspace.ast.parsers._body import body_span, write_body
+from specweaver.workspace.ast.parsers._body import _indent_of, body_span, write_body
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
 logger = logging.getLogger(__name__)
@@ -112,9 +112,21 @@ class SymbolEditingMixin:
         return mutated.decode("utf-8")
 
     def _delete_span(self, code_bytes: bytes, node: typing.Any) -> tuple[int, int]:
-        """The bytes deleting `node` removes: the node itself."""
-        del code_bytes
-        return typing.cast("int", node.start_byte), typing.cast("int", node.end_byte)
+        """The bytes deleting `node` removes: its whole lines when it has them to itself."""
+        start = typing.cast("int", node.start_byte)
+        end = typing.cast("int", node.end_byte)
+        line_start = code_bytes.rfind(b"\n", 0, start) + 1
+        line_end = code_bytes.find(b"\n", end)
+        line_end = len(code_bytes) if line_end == -1 else line_end + 1
+        if code_bytes[line_start:start].strip() or code_bytes[end:line_end].strip():
+            return start, end
+        return line_start, line_end
+
+    def _member_margin(self, code_bytes: bytes, target_block: typing.Any, margin: int) -> int:
+        """The column of the members already in `target_block`; one level in when it has none."""
+        start, end = body_span(code_bytes, target_block)
+        indent = _indent_of(code_bytes[start:end].decode("utf-8"))
+        return len(indent) if indent and not indent.strip(" ") else margin + 4
 
     def _auto_indent(self, new_code: str, margin: int) -> str:
         if not new_code:

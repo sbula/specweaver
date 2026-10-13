@@ -158,3 +158,19 @@ def test_found_paths_are_from_the_project_root_and_readable(project: Path) -> No
     assert "src/pkg/b.py" in listed
     for path in {*found, *matched, *listed}:
         assert tool.read_file(path).status == "success", path
+
+
+def test_an_edit_whose_text_appears_twice_is_refused(project: Path) -> None:
+    # Proves: E-SENS-01 FR-5
+    (project / "src" / "twice.py").write_text("q = 1\nq = 1\n", encoding="utf-8")
+    tool = FileSystemTool(
+        executor=FileExecutor(cwd=project),
+        role="implementer",
+        grants=[FolderGrant(path="src", mode=AccessMode.FULL, recursive=True)],
+    )
+
+    result = tool.edit_file("src/twice.py", old="q = 1", new="q = 2")
+
+    assert result.status == "error"
+    assert "2 times" in result.message
+    assert (project / "src" / "twice.py").read_text(encoding="utf-8") == "q = 1\nq = 1\n"

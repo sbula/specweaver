@@ -204,3 +204,51 @@ def test_a_symbol_without_a_body_refuses() -> None:
     code = "CREATE TABLE orders (id INT);\n"
     with pytest.raises(CodeStructureError):
         parser.replace_symbol_body(code, "orders", "id BIGINT")
+
+
+_MEMBERS = {
+    "python": ("Greeter", 'def wave(self) -> str:\n    return "wave"', "    def wave"),
+    "python2": ("Greeter", 'def wave(self) -> str:\n    return "wave"', "  def wave"),
+    "java": ("Greeter", 'public String wave() {\n    return "wave";\n}', "    public String wave"),
+    "kotlin": ("Greeter", 'fun wave(): String {\n    return "wave"\n}', "    fun wave"),
+    "typescript": ("Greeter", 'wave(): string {\n  return "wave";\n}', "  wave(): string"),
+}
+
+
+@pytest.mark.parametrize("language", sorted(_MEMBERS))
+def test_a_new_member_is_indented_like_the_others(language: str) -> None:
+    # Proves: D-SENS-02 FR-8
+    parent, new, expected_first_line = _MEMBERS[language]
+    _, _, code = _SOURCES[language.rstrip("2")]
+    if language == "python2":  # a class indented by 2 spaces gets a member at 2
+        code = code.replace("\n    ", "\n  ").replace("\n        ", "\n    ")
+    parser = _parser(language.rstrip("2"))
+
+    out = parser.add_symbol(code, parent, new)
+
+    added = [
+        line[1:]
+        for line in difflib.unified_diff(code.splitlines(), out.splitlines(), n=0, lineterm="")
+        if line.startswith("+") and not line.startswith("+++")
+    ]
+    removed = [
+        line
+        for line in difflib.unified_diff(code.splitlines(), out.splitlines(), n=0, lineterm="")
+        if line.startswith("-") and not line.startswith("---")
+    ]
+    assert not removed, removed
+    assert any(line.startswith(expected_first_line) for line in added), added
+    assert not parser.parser.parse(out.encode()).root_node.has_error
+
+
+@pytest.mark.parametrize("language", sorted(_SOURCES))
+def test_a_deleted_symbol_leaves_no_line_of_spaces(language: str) -> None:
+    # Proves: D-SENS-02 FR-8
+    _, symbol, code = _SOURCES[language]
+    parser = _parser(language)
+
+    out = parser.delete_symbol(code, symbol)
+
+    assert symbol.rsplit(".", 1)[-1] not in out.replace("greeting", "")
+    assert not any(line and not line.strip() for line in out.splitlines()), out
+    assert not parser.parser.parse(out.encode()).root_node.has_error

@@ -368,7 +368,8 @@ class CppCodeStructure(ClassBasedParser):
 
         end_byte = typing.cast("int", target_block.end_byte) - 1
         margin = typing.cast("int", parent_node.start_point[1])
-        indented_code = self._auto_indent(new_code, margin + 4)
+        member = self._member_margin(code_bytes, target_block, margin)
+        indented_code = self._auto_indent(new_code, member)
 
         return (
             code_bytes[:end_byte]

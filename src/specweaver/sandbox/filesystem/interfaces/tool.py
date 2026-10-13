@@ -173,6 +173,11 @@ class FileSystemTool(BaseTool):
                 message=f"Target content not found in {path}",
             )
 
+        if (count := content.count(old)) > 1:
+            return ToolResult(
+                status="error",
+                message=f"The text appears {count} times in {path}; include more around it",
+            )
         patched = content.replace(old, new, 1)
         write_result = self._executor.write(path, patched)
         return self._wrap(write_result)

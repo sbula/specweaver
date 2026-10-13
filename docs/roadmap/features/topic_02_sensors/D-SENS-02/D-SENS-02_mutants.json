@@ -151,6 +151,26 @@
           "new": "        if False:\n",
           "breaks": "a deleted SQL statement leaves its ; behind",
           "symbol_sha": "sha256:801af833ad9ac1003cdd1bcce0ba916d76b32ca140478ba609643fb689a37921"
+        },
+        {
+          "id": "member-at-plus-four",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_editing.py",
+          "symbol": "SymbolEditingMixin._member_margin",
+          "old": "        return len(indent) if indent and not indent.strip(\" \") else margin + 4\n",
+          "new": "        return margin + 4\n",
+          "breaks": "a new member ignores the file's own indentation",
+          "symbol_sha": "sha256:346d17a21242bb506f9fec3fb551a48cb127c626505958fe706251c265b6b3e3"
+        },
+        {
+          "id": "delete-leaves-spaces",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_editing.py",
+          "symbol": "SymbolEditingMixin._delete_span",
+          "old": "        return line_start, line_end\n",
+          "new": "        return start, end\n",
+          "breaks": "a deleted symbol leaves a line of spaces",
+          "symbol_sha": "sha256:a4db5435f42cb5426ad38c9f38961851f8934f47237b5b6d100ce5d0e0120fc8"
         }
       ]
     }
