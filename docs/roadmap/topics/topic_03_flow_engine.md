@@ -117,7 +117,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** loop-back generation that acts on the human's reason first
   > - **Done when:** a human rejection outranks a linter error in the next prompt
 
-* **`C-FLOW-06` 🔧: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)
+* **`C-FLOW-06` ✅: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)
   > - **Purpose:** Cut token and time cost on the paths that were measurably expensive — contract outlines in prompts, tests of what changed
   > - **Trigger:** Various — per optimisation
   > - **Precondition:** `D-SENS-02` → AST skeletons · `A-SENS-01` → hash cache

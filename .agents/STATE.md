@@ -15,7 +15,7 @@ of them**.
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with `TECH-003`
 and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03`, `D-EXEC-02`,
 `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06`, `D-VAL-05`, `D-SENS-02`,
-`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06` and `E-SENS-02` were signed off and `D-FLOW-03`
+`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06`, `E-SENS-02` and `C-FLOW-06` were signed off and `D-FLOW-03`
 retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence:
 [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
@@ -30,7 +30,7 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 (pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
-**Waiting on the user:** two decisions, listed in the audit's *What happens next*.
+**Waiting on the user:** one decision, listed in the audit's *What happens next*.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
@@ -61,6 +61,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `C-FLOW-06` Phase 3 Optimizations | Finished, signed off 2026-10-13: a test step runs the tests of what changed since the last green run; contracts reach the prompt as outlines |
 | `E-SENS-02` Agentic Research Tools | Finished, signed off 2026-10-13: agents search the web through Tavily; `read_url` reads only public pages |
 | `D-INTL-06` Context Hydration | Finished, signed off 2026-10-13: runs work their spec's memory task; the next run reads why the last failed |
 | `D-SENS-03` Polyglot Expansion | Finished, signed off 2026-10-13: C, C++, Go, SQL and Markdown give skeletons and symbols that read back; a `static` C function is private |

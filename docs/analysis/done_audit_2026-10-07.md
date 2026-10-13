@@ -95,7 +95,7 @@ proven through `/review`, not `/implement`).
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash. **Fixed** 2026-10-09: the handler loads `validation_spec_<archetype>`; the spring-boot bounds are a map of header levels; S12 reads the Markdown headings the reader really gives (it expected JSON, so it never worked), and fails on a wrong shape | `handlers/validation.py:228` |
 | B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks. **Partly fixed** 2026-10-09: every engine from `create_async_engine` enforces foreign keys (the real databases had no orphan rows); 2026-10-13: each run opens its spec's task and gives it its end state `[agreed 2026-10-13]` | `register_fk_pragma_listener` test-only |
-| C-FLOW-06 FR-1/2 | `stale_nodes` never written; skeletons dropped | `run_context.py:114` |
+| C-FLOW-06 FR-1/2 | `stale_nodes` never written; skeletons dropped | `run_context.py:114`. **Fixed** 2026-10-13: a test step runs the tests of what changed, compared per file; step skipping removed `[agreed 2026-10-13]`; contracts reach the prompt as outlines |
 | B-FLOW-01 FR-1/9/10 | S07 warns not rejects; no stack trace to the coder; ambiguity park not resumable | `s07_test_first.py:122`; `arbiter.py` |
 | C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR. **Fixed** 2026-10-09: one check runs at load and before each run; a wrong type is a result, not an exception; a step that never ran is ERROR | `models.py:380`; `atom.py:128` |
 | C-EXEC-06 FR-4/5 | Reconcile failure leaves COMPLETED; glob allow-lists exact-match. **Fixed** 2026-10-09: a failed reconcile stores the run FAILED; an allow-list entry may be a glob (`*` in one folder, `**` across folders) | `runner.py:276`; `worktree_ops.py:128` |
@@ -122,7 +122,6 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Waiting on the user (2026-10-09):
 
-- `C-FLOW-06`: switch staleness on (runs skip unchanged steps) or remove the half-built code.
 - `B-FLOW-01` FR-1: S07 rejects a spec without `## Scenarios` only if the drafter writes one.
 
 Not yet looked at: `B-FLOW-01` FR-9/10, `E-EXEC-01`, `E-INTL-02`, `D-INTL-03`, `D-FLOW-04`,
