@@ -128,6 +128,36 @@ class FileExecutor:
 
         return ExecutorResult(status="success", data=content)
 
+    def read_lines(
+        self, path: str, start: int, end: int | None, *, max_bytes: int = 100 * 1024
+    ) -> ExecutorResult:
+        """Lines `start` to `end` (1-based, inclusive) of a file of any size, read line by line.
+
+        `max_bytes` bounds what is returned, not the file. Data is `(text, line_count)`.
+        """
+        resolved = self._validate_path(path)
+        if resolved is None or not resolved.is_file():
+            return ExecutorResult(status="error", error=f"File not found: {path}")
+        kept: list[str] = []
+        size = 0
+        count = 0
+        try:
+            with resolved.open(encoding="utf-8") as handle:
+                for count, line in enumerate(handle, start=1):
+                    if count >= start and (end is None or count <= end):
+                        kept.append(line)
+                        size += len(line.encode("utf-8"))
+                        if size > max_bytes:
+                            return ExecutorResult(
+                                status="error",
+                                error=f"those lines exceed {max_bytes} bytes; read a smaller range",
+                            )
+        except UnicodeDecodeError:
+            return ExecutorResult(status="error", error=f"File is not valid UTF-8: {path}")
+        except OSError as exc:
+            return ExecutorResult(status="error", error=f"Read failed: {exc}")
+        return ExecutorResult(status="success", data=("".join(kept), count))
+
     def write(self, path: str, content: str) -> ExecutorResult:
         """Write content to a file (atomic).
 

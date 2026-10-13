@@ -102,10 +102,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
           "symbol": "FileSystemTool.read_file",
-          "old": "        if result.status != \"success\" or (start_line is None and end_line is None):\n",
-          "new": "        if True:\n",
+          "old": "        if start_line is None and end_line is None:\n            return self._wrap(self._executor.read(path))\n",
+          "new": "        if True:\n            return self._wrap(self._executor.read(path))\n",
           "breaks": "a line range returns the whole file",
-          "symbol_sha": "sha256:b8604ca6865390e99c67f8fb3eb5b87cd54886a4899a87e1bf0165746ec94083"
+          "symbol_sha": "sha256:a1e6f1345436e8d32236eedf150e2edbb7da50f51adb988669f3c3557cf1cb89"
         },
         {
           "id": "tree-enters-links",
@@ -125,7 +125,7 @@
           "old": "            if self._check_grant(full, MODE_ALLOWS_READ) is not None:\n                continue\n",
           "new": "            if False:\n                continue\n",
           "breaks": "the tree shows files no grant covers",
-          "symbol_sha": "sha256:73193f591a11175343e356aeb2b01ed796a7fb9db0d5463395b51b536503d87a"
+          "symbol_sha": "sha256:0d368a726716c121792aa43eecac808377ceecea720488c1e36dc44f10779359"
         },
         {
           "id": "tree-uncapped",
@@ -135,7 +135,27 @@
           "old": "            if len(entries) == cap:\n",
           "new": "            if False:\n",
           "breaks": "a big tree floods the model's context",
-          "symbol_sha": "sha256:73193f591a11175343e356aeb2b01ed796a7fb9db0d5463395b51b536503d87a"
+          "symbol_sha": "sha256:0d368a726716c121792aa43eecac808377ceecea720488c1e36dc44f10779359"
+        },
+        {
+          "id": "paths-from-the-folder",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "_rooted",
+          "old": "    return [{**r, key: _joined(base, r[key])} if key in r else r for r in results]\n",
+          "new": "    return results\n",
+          "breaks": "a found path cannot be read back with read_file",
+          "symbol_sha": "sha256:b3aef278ce693ff0de972f38b961df4f29a83eef94892f857bed7e4bc4c63ad8"
+        },
+        {
+          "id": "range-uncapped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor.read_lines",
+          "old": "                        if size > max_bytes:\n",
+          "new": "                        if False:\n",
+          "breaks": "one range pulls a whole huge file into the model's context",
+          "symbol_sha": "sha256:fa63a760eecfadac4a9709d9ec9732e2cd13785b6f8a0124c40d5ccaabd759d1"
         }
       ]
     }

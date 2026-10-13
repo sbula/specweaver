@@ -14,7 +14,7 @@ Each intent method checks:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.filesystem.interfaces.models import (
@@ -88,16 +88,30 @@ class FileSystemTool(BaseTool):
     def read_file(
         self, path: str, start_line: int | None = None, end_line: int | None = None
     ) -> ToolResult:
-        """A file's contents, or only lines `start_line` to `end_line` (1-based, inclusive)."""
+        """A file's contents, or only lines `start_line` to `end_line` (1-based, inclusive).
+
+        A range reads a file of any size; the size limit applies to the lines returned.
+        """
         self._require_intent("read_file")
         err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
-        result = self._wrap(self._executor.read(path))
-        if result.status != "success" or (start_line is None and end_line is None):
-            return result
+        if start_line is None and end_line is None:
+            return self._wrap(self._executor.read(path))
         start = 1 if start_line is None else start_line
-        return _line_range(path, str(result.data), start, end_line)
+        if start < 1 or (end_line is not None and end_line < start):
+            return ToolResult(
+                status="error", message=f"lines {start} to {end_line} are not a range"
+            )
+        read = self._executor.read_lines(path, start, end_line)
+        if read.status != "success":
+            return self._wrap(read)
+        text, count = read.data
+        if start > count:
+            return ToolResult(
+                status="error", message=f"{path} has {count} lines; line {start} does not exist"
+            )
+        return ToolResult(status="success", data=text)
 
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
@@ -166,7 +180,7 @@ class FileSystemTool(BaseTool):
     def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
         """The tree under `path`, `depth` levels deep, at most `max_entries` entries.
 
-        Entries are relative to `path`; a directory ends in `/`. A symlink, an excluded folder or a
+        Entries are paths from the project root; a directory ends in `/`. A symlink, an excluded folder or a
         folder no grant covers is listed but never entered; an entry no grant covers is left out.
         """
         self._require_intent("list_directory")
@@ -177,7 +191,9 @@ class FileSystemTool(BaseTool):
         if listed.status != "success":
             return self._wrap(listed)
         entries: list[str] = []
-        self._walk(path, "", listed.data, max(depth, 1), entries, max(max_entries, 1))
+        self._walk(
+            self._from_root(path), "", listed.data, max(depth, 1), entries, max(max_entries, 1)
+        )
         return ToolResult(status="success", data=entries)
 
     def _walk(
@@ -197,7 +213,7 @@ class FileSystemTool(BaseTool):
             if len(entries) == cap:
                 entries.append(f"… more entries; list a subfolder or raise max_entries ({cap})")
                 return False
-            entries.append(prefix + name + ("/" if kind == "dir" else ""))
+            entries.append(full + ("/" if kind == "dir" else ""))
             if self._enters(kind, name, depth) and not self._descend(
                 root, f"{prefix}{name}/", full, depth, entries, cap
             ):
@@ -247,7 +263,7 @@ class FileSystemTool(BaseTool):
             max_results=max_results,
             exclude_dirs=self._exclude_dirs,
         )
-        return ToolResult(status="success", data=results)
+        return ToolResult(status="success", data=_rooted(results, self._from_root(path), "file"))
 
     def find_files(
         self,
@@ -277,7 +293,7 @@ class FileSystemTool(BaseTool):
             max_results=max_results,
             exclude_dirs=self._exclude_dirs,
         )
-        return ToolResult(status="success", data=results)
+        return ToolResult(status="success", data=_rooted(results, self._from_root(path), "path"))
 
     # Internal: role gating
 
@@ -296,6 +312,14 @@ class FileSystemTool(BaseTool):
     def _normalize_path(path: str) -> str:
         """Normalise a path for grant matching (see `normalize_grant_path`)."""
         return normalize_grant_path(path)
+
+    def _from_root(self, path: str) -> str:
+        """`path` as the executor resolves it, from the project root; "" for the root."""
+        resolved = self._executor.contained(path)
+        if resolved is None:
+            return path.strip("/")
+        rel = resolved.relative_to(self._executor.cwd).as_posix()
+        return "" if rel == "." else rel
 
     def _search_root(self, intent: str, path: str) -> Path | ToolResult:
         """The folder a search starts from, or the error that refuses it."""
@@ -347,17 +371,11 @@ class FileSystemTool(BaseTool):
         return ToolResult(status="error", message=result.error)
 
 
-def _line_range(path: str, content: str, start: int, end: int | None) -> ToolResult:
-    """Lines `start` to `end` of `content`, the end cut to the file's last line."""
-    lines = content.splitlines(keepends=True)
-    if start < 1 or start > len(lines) or (end is not None and end < start):
-        return ToolResult(
-            status="error",
-            message=f"{path} has {len(lines)} lines; lines {start} to {end} do not exist",
-        )
-    return ToolResult(status="success", data="".join(lines[start - 1 : end]))
-
-
 def _joined(root: str, relative: str) -> str:
     """`relative` under the listed `root`, as a path from the project root."""
     return relative if root in ("", ".") else f"{root.rstrip('/')}/{relative}"
+
+
+def _rooted(results: list[dict[str, Any]], base: str, key: str) -> list[dict[str, Any]]:
+    """Search results with `key` turned into a path from the project root."""
+    return [{**r, key: _joined(base, r[key])} if key in r else r for r in results]

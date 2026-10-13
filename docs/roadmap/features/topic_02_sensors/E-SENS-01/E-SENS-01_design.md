@@ -26,7 +26,7 @@ they refuse (`context.yaml`, `.env`, `.git`, `.specweaver`) are built but offere
 | FR-2 | No symlinks | File executor | SHALL refuse a path that passes a symlink, and skip symlinks in a search | a link cannot lead out of the project or around a grant |
 | FR-3 | Read tools only | Dispatcher | SHALL offer a model the four read tools and no write tool, whatever its role | no model changes a file through a file tool |
 | FR-4 | No streams | File executor | SHALL refuse a path with `:` in a segment, on every OS | a model cannot read a Windows alternate data stream |
-| FR-5 | Tools do what they say | File tool, role interfaces | SHALL accept every parameter a tool's definition offers: `path` optional (`.`) for `grep`, `find_files`, `list_directory`; `read_file` lines `start_line` to `end_line`; `list_directory` `depth` levels and at most `max_entries`, never entering a symlink, an excluded folder or an ungranted one `[agreed 2026-10-13]` | a model that follows the definition gets a result, not an error |
+| FR-5 | Tools do what they say | File tool, role interfaces | SHALL accept every parameter a tool's definition offers: `path` optional (`.`) for `grep`, `find_files`, `list_directory`; `read_file` lines `start_line` to `end_line` of a file of any size, the 100 KB limit on the lines returned; search and list results named from the project root, so `read_file` takes them; `list_directory` `depth` levels and at most `max_entries`, never entering a symlink, an excluded folder or an ungranted one `[agreed 2026-10-13]` | a model that follows the definition gets a result, not an error |
 
 ## Live demo
 

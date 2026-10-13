@@ -249,7 +249,7 @@ class TestImplementerIntents:
     def test_list_directory_in_boundary(self, implementer: FileSystemTool) -> None:
         result = implementer.list_directory("src/domain/billing")
         assert result.status == "success"
-        assert "calc.py" in result.data
+        assert "src/domain/billing/calc.py" in result.data
 
     def test_edit_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
         result = implementer.edit_file(

@@ -54,7 +54,7 @@ def test_grep_finds_the_projects_own_file(reviewer: FileSystemTool) -> None:
     result = reviewer.grep("src", "own")
 
     assert result.status == "success"
-    assert [m["file"] for m in result.data if "file" in m] == ["own.txt"]
+    assert [m["file"] for m in result.data if "file" in m] == ["src/own.txt"]
 
 
 def test_grep_skips_a_symlinked_file(reviewer: FileSystemTool) -> None:
@@ -76,4 +76,4 @@ def test_a_symlinked_folder_is_refused_as_the_search_path(
 def test_find_files_lists_no_symlink(reviewer: FileSystemTool) -> None:
     result = reviewer.find_files("src", "*")
 
-    assert sorted(entry["path"] for entry in result.data) == ["own.txt"]
+    assert sorted(entry["path"] for entry in result.data) == ["src/own.txt"]
