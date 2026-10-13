@@ -109,7 +109,8 @@ def _load_raw_yaml(
     msg = f"Validation pipeline '{name}' not found. Searched in: packaged defaults, frameworks"
     if project_dir:
         msg += f", {project_dir / '.specweaver' / 'pipelines'}"
-    logger.error(msg)
+    # A probe for an optional pipeline (an archetype's) is normal; the caller decides if it is an error.
+    logger.debug(msg)
     raise FileNotFoundError(msg)
 
 

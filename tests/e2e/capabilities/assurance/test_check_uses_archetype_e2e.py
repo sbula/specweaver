@@ -83,3 +83,14 @@ def test_a_projects_own_archetype_is_used(svc: Path) -> None:
 
     assert result.exit_code == 1, result.output
     assert shows(result.output, "'@Service'"), result.output
+
+
+def test_an_archetype_without_its_own_pipeline_prints_no_error(tmp_path: Path) -> None:
+    """`sw init` declares `orchestrator`, which ships no pipeline: the default applies, silently."""
+    assert runner.invoke(app, ["init", "plain", "--path", str(tmp_path)]).exit_code == 0
+    spec = tmp_path / "specs" / "a_spec.md"
+    spec.write_text("# A\n\n## 1. Purpose\n\nGreets.\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["check", str(spec), "--project", str(tmp_path)])
+
+    assert "not found" not in result.output and "ERROR" not in result.output, result.output
