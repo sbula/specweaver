@@ -59,10 +59,10 @@
     "first": "src/specweaver/assurance/validation/rules/spec/s03_stranger.py:183",
     "second": "src/specweaver/assurance/validation/rules/spec/s04_dependency_dir.py:156"
   },
-  "src/specweaver/assurance/validation/rules/spec/s07_test_first.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @de258081baaa": {
-    "lines": 14,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:367",
-    "second": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py:249"
+  "src/specweaver/assurance/validation/rules/spec/s07_test_first.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @4717db3c6e5f": {
+    "lines": 11,
+    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:370",
+    "second": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py:254"
   },
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
     "lines": 10,
@@ -196,18 +196,18 @@
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
     "lines": 15,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:282",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:227"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:284",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:229"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @605f0236a621": {
     "lines": 16,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:258",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:226"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:260",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:228"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @c138b76e8941": {
     "lines": 22,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:322",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:227"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:324",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:229"
   },
   "src/specweaver/interfaces/api/v1/projects.py <-> src/specweaver/interfaces/api/v1/projects.py @f89fbec0af3a": {
     "lines": 12,
@@ -367,7 +367,7 @@
   "src/specweaver/sandbox/qa_runner/interfaces/tool.py <-> src/specweaver/sandbox/web/interfaces/tool.py @8de33b7eecc9": {
     "lines": 12,
     "first": "src/specweaver/sandbox/qa_runner/interfaces/tool.py:165",
-    "second": "src/specweaver/sandbox/web/interfaces/tool.py:199"
+    "second": "src/specweaver/sandbox/web/interfaces/tool.py:149"
   },
   "src/specweaver/sandbox/web/interfaces/facades.py <-> src/specweaver/sandbox/web/interfaces/facades.py @984592b77aa7": {
     "lines": 16,
@@ -407,31 +407,31 @@
   "src/specweaver/workspace/ast/parsers/_editing.py <-> src/specweaver/workspace/ast/parsers/_reading.py @a2f865a2cb54": {
     "lines": 6,
     "first": "src/specweaver/workspace/ast/parsers/_editing.py:29",
-    "second": "src/specweaver/workspace/ast/parsers/_reading.py:79"
+    "second": "src/specweaver/workspace/ast/parsers/_reading.py:88"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @6fe30dfa822b": {
     "lines": 22,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:70",
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:92",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:146"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @8cb7e87444a0": {
     "lines": 16,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:122",
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:144",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:255"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @ad200c9e3c55": {
     "lines": 12,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:93",
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:115",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:221"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @c893c7a91c18": {
     "lines": 53,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:149",
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:171",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:352"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @fe6b5ecf7277": {
     "lines": 15,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:104",
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:126",
     "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:237"
   },
   "src/specweaver/workspace/ast/parsers/cpp/codestructure.py <-> src/specweaver/workspace/ast/parsers/go/codestructure.py @1039e76f7618": {
@@ -571,12 +571,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:445",
-    "second": "src/specweaver/workspace/store.py:413"
+    "first": "src/specweaver/workspace/store.py:461",
+    "second": "src/specweaver/workspace/store.py:429"
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @85457edb6a09": {
     "lines": 17,
-    "first": "src/specweaver/workspace/store.py:155",
-    "second": "src/specweaver/workspace/store.py:133"
+    "first": "src/specweaver/workspace/store.py:171",
+    "second": "src/specweaver/workspace/store.py:149"
   }
 }

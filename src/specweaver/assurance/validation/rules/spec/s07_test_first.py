@@ -117,27 +117,24 @@ class TestFirstRule(Rule):
                 findings,
             )
 
-        # ── Scenario section validation (Feature 3.28 SF-A) ──
+        # A Scenarios section is optional hints for scenario generation; one that is there must
+        # hold valid scenario YAML.
         scenarios = _extract_scenarios(spec_text)
-        if scenarios is None:
-            return self._warn(
+        line = _scenarios_line(spec_text)
+        scenario_findings = [
+            f.model_copy(update={"line": line})
+            for f in (_validate_scenario_yaml(scenarios) if scenarios is not None else [])
+        ]
+        if any(f.severity == Severity.ERROR for f in scenario_findings):
+            return self._fail(
                 f"Contract testability score: {testability_score}/12. "
-                "No Scenarios section found — scenario generation will be skipped.",
-                [
-                    *findings,
-                    Finding(
-                        message="Missing '## Scenarios' section",
-                        severity=Severity.WARNING,
-                        suggestion="Add a '## Scenarios' section with YAML scenario definitions.",
-                    ),
-                ],
+                "The Scenarios section is broken.",
+                findings + scenario_findings,
             )
-
-        scenario_findings = _validate_scenario_yaml(scenarios)
         if scenario_findings:
             return self._warn(
                 f"Contract testability score: {testability_score}/12. "
-                "Scenarios section has structural issues.",
+                "The Scenarios section has a questionable entry.",
                 findings + scenario_findings,
             )
 
@@ -243,13 +240,18 @@ def _extract_contract(text: str) -> str | None:
     return text[start:]
 
 
+_SCENARIOS_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Scenarios\s*$", re.MULTILINE | re.IGNORECASE)
+
+
+def _scenarios_line(text: str) -> int | None:
+    """The 1-based line of the Scenarios heading."""
+    match = _SCENARIOS_HEADING.search(text)
+    return text.count("\n", 0, match.start()) + 1 if match else None
+
+
 def _extract_scenarios(text: str) -> str | None:
     """Extract the Scenarios section content from a spec."""
-    pattern = re.compile(
-        r"^##\s+(?:\d+\.\s+)?Scenarios\s*$",
-        re.MULTILINE | re.IGNORECASE,
-    )
-    match = pattern.search(text)
+    match = _SCENARIOS_HEADING.search(text)
     if not match:
         return None
 
@@ -327,7 +329,7 @@ def _validate_scenario_item(item: Any, index: int) -> list[Finding]:
         findings.append(
             Finding(
                 message=f"Scenario item {index} must be a mapping, got: {type(item).__name__}",
-                severity=Severity.ERROR,
+                severity=Severity.WARNING,
             )
         )
         return findings
@@ -337,7 +339,7 @@ def _validate_scenario_item(item: Any, index: int) -> list[Finding]:
         findings.append(
             Finding(
                 message=f"Scenario item {index} missing required keys: {sorted(missing)}",
-                severity=Severity.ERROR,
+                severity=Severity.WARNING,
                 suggestion=f"Each scenario must have: {sorted(_SCENARIO_REQUIRED_KEYS)}",
             )
         )

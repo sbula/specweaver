@@ -2,7 +2,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for S07 TestFirstRule — Contract section testability scoring."""
+"""Unit tests for S07 TestFirstRule — Contract section testability scoring.
+
+Proves: B-FLOW-01 FR-1
+
+A `## Scenarios` section is optional hints for scenario generation `[agreed 2026-10-13]`: no
+section is fine; a section that is there must hold valid scenario YAML.
+"""
 
 from __future__ import annotations
 
@@ -166,11 +172,8 @@ class TestTestabilityScore:
 
 class TestTestFirstRuleCheck:
     def test_good_contract_passes(self) -> None:
-        # _GOOD_CONTRACT has no ## Scenarios section, so S07 now warns (3.28 SF-A).
-        # This is backward-compatible — WARN is not FAIL (NFR-7).
-        rule = TestFirstRule()
-        result = rule.check(_GOOD_CONTRACT)
-        assert result.status == Status.WARN
+        result = TestFirstRule().check(_GOOD_CONTRACT)
+        assert result.status == Status.PASS
 
     def test_no_contract_fails(self) -> None:
         rule = TestFirstRule()
@@ -267,7 +270,7 @@ class TestScenarioYamlValidation:
         findings = _validate_scenario_yaml(text)
         assert len(findings) == 1
         assert "missing required keys" in findings[0].message
-        assert findings[0].severity == Severity.ERROR
+        assert findings[0].severity == Severity.WARNING
 
     def test_all_required_keys_present(self) -> None:
         item = {
@@ -339,21 +342,44 @@ class TestScenarioIntegration:
         result = rule.check(_GOOD_SPEC_WITH_SCENARIOS)
         assert result.status == Status.PASS
 
-    def test_good_spec_without_scenarios_warns(self) -> None:
-        rule = TestFirstRule()
-        result = rule.check(_GOOD_CONTRACT)
-        # Should still warn (not fail) because scenarios are missing
-        assert result.status == Status.WARN
-        assert any("Scenarios" in f.message for f in result.findings)
+    def test_a_spec_without_scenarios_passes(self) -> None:
+        # Proves: B-FLOW-01 FR-1
+        result = TestFirstRule().check(_GOOD_CONTRACT)
+        assert result.status == Status.PASS
+        assert not any("Scenarios" in f.message for f in result.findings)
 
-    def test_good_spec_with_malformed_scenarios_warns(self) -> None:
-        rule = TestFirstRule()
-        result = rule.check(_GOOD_SPEC_WITH_BAD_SCENARIOS)
-        assert result.status == Status.WARN
+    def test_malformed_scenarios_fail_naming_the_problem(self) -> None:
+        # Proves: B-FLOW-01 FR-1
+        result = TestFirstRule().check(_GOOD_SPEC_WITH_BAD_SCENARIOS)
+        assert result.status == Status.FAIL
         assert any("Invalid YAML" in f.message for f in result.findings)
+
+    def test_scenarios_without_yaml_fail(self) -> None:
+        result = TestFirstRule().check(_GOOD_CONTRACT + "\n## Scenarios\n\nJust prose.\n")
+        assert result.status == Status.FAIL
+
+    def test_a_scenario_in_another_shape_only_warns(self) -> None:
+        # The section is hints the generator reads as text; no key is read by anything.
+        spec = _GOOD_SPEC_WITH_SCENARIOS.replace('  input_summary: "valid name"\n', "")
+        result = TestFirstRule().check(spec)
+        assert result.status == Status.WARN
+        assert any("input_summary" in f.message for f in result.findings)
+
+    def test_an_unknown_category_only_warns(self) -> None:
+        spec = _GOOD_SPEC_WITH_SCENARIOS.replace('category: "happy"', 'category: "odd"')
+        assert TestFirstRule().check(spec).status == Status.WARN
 
     def test_existing_spec_fixture_backward_compat(self) -> None:
         """Existing _GOOD_CONTRACT fixture must still not FAIL S07 (NFR-7)."""
         rule = TestFirstRule()
         result = rule.check(_GOOD_CONTRACT)
         assert result.status != Status.FAIL
+
+
+def test_a_scenario_finding_names_the_line_of_its_section() -> None:
+    # Proves: B-FLOW-01 FR-1
+    result = TestFirstRule().check(_GOOD_SPEC_WITH_BAD_SCENARIOS)
+    heading = _GOOD_SPEC_WITH_BAD_SCENARIOS.splitlines().index("## 3. Scenarios") + 1
+    yaml_findings = [f for f in result.findings if "YAML" in f.message]
+    assert yaml_findings
+    assert {f.line for f in yaml_findings} == {heading}

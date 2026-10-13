@@ -7,8 +7,8 @@
 
 The two inputs the scenario pipeline needs:
 
-1. **FR-1 (Spec Template Enforcement)**: S07 `TestFirstRule` also checks that the spec has a
-   `## Scenarios` section with structured YAML.
+1. **FR-1 (Scenario hints checked)**: S07 `TestFirstRule` checks an optional `## Scenarios`
+   section: YAML that cannot be read fails, a missing key warns, naming the section's line.
 2. **FR-2 (API Contract Generation)**: new `GenerateContractHandler` extracts a Python `Protocol`
    class from the spec's `## Contract` section and writes it to `contracts/api_contract.py`.
 

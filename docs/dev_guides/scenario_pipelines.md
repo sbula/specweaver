@@ -48,6 +48,8 @@ The coding agent has zero access to `scenarios/`.
    section.
 2. **Generate Scenarios** (`generate+scenario`): reads contract + Spec, emits
    `scenarios/definitions/<name>.yaml` via declarative structured output.
+   A Spec's `## Scenarios` section is optional hints, passed to the model as text. S07 fails it
+   only when it has no YAML block or YAML that cannot be read; a scenario missing a key warns.
 3. **Convert to Tests** (`convert+scenario`): pure logic, zero LLM. Translates the YAML into
    parameterized `pytest` tests tagged `# @trace(FR-X)` for Rule `C09_traceability`.
 

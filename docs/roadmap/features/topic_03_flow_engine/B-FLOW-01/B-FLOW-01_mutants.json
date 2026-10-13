@@ -1,0 +1,56 @@
+{
+  "schema": 2,
+  "feature": "B-FLOW-01",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "An optional Scenarios section; a broken one fails S07, naming its line",
+      "scope": [
+        "tests/unit/assurance/validation/rules/test_s07_test_first.py",
+        "tests/e2e/capabilities/assurance/test_scenarios_section_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "broken-only-warns",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py",
+          "symbol": "TestFirstRule.check",
+          "old": "        if any(f.severity == Severity.ERROR for f in scenario_findings):\n",
+          "new": "        if False:\n",
+          "breaks": "broken scenario YAML reads as a warning and the spec passes the check",
+          "symbol_sha": "sha256:ddfb841903ea9741479fdf80313073ddeaf9db921778d8f1764a417717248de3"
+        },
+        {
+          "id": "missing-warns-again",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py",
+          "symbol": "TestFirstRule.check",
+          "old": "            for f in (_validate_scenario_yaml(scenarios) if scenarios is not None else [])\n",
+          "new": "            for f in (\n                _validate_scenario_yaml(scenarios)\n                if scenarios is not None\n                else [Finding(message=\"Missing '## Scenarios' section\", severity=Severity.WARNING)]\n            )\n",
+          "breaks": "every drafted spec warns about a section it does not need",
+          "symbol_sha": "sha256:ddfb841903ea9741479fdf80313073ddeaf9db921778d8f1764a417717248de3"
+        },
+        {
+          "id": "scenarios-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py",
+          "symbol": "TestFirstRule.check",
+          "old": "            for f in (_validate_scenario_yaml(scenarios) if scenarios is not None else [])\n",
+          "new": "            for f in []\n",
+          "breaks": "a broken Scenarios section is never looked at",
+          "symbol_sha": "sha256:ddfb841903ea9741479fdf80313073ddeaf9db921778d8f1764a417717248de3"
+        },
+        {
+          "id": "no-line",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py",
+          "symbol": "TestFirstRule.check",
+          "old": "            f.model_copy(update={\"line\": line})\n",
+          "new": "            f\n",
+          "breaks": "a finding does not say where the section is",
+          "symbol_sha": "sha256:ddfb841903ea9741479fdf80313073ddeaf9db921778d8f1764a417717248de3"
+        }
+      ]
+    }
+  ]
+}
