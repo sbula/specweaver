@@ -79,7 +79,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM call
   > - **Done when:** the model is told its project rather than inferring it
 
-* **`D-INTL-06` 🔧: Context Hydration & Handover Engine**
+* **`D-INTL-06` ✅: Context Hydration & Handover Engine**
   > - **Purpose:** Carry task state and blockers between agents without the next one inheriting the previous one's hallucinations
   > - **Trigger:** When an agent's prompt is built, or work passes between agents
   > - **Precondition:** `B-INTL-09` → the Memory Bank
