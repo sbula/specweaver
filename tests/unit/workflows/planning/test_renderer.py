@@ -12,7 +12,6 @@ from specweaver.workflows.planning.models import (
     ConstraintNote,
     FileChange,
     ImplementationTask,
-    MockupReference,
     PlanArtifact,
     TechStackChoice,
     TestExpectation,
@@ -77,13 +76,6 @@ def full_plan() -> PlanArtifact:
                 function_under_test="login()",
                 input_summary="valid email+pass",
                 expected_behavior="JWT string",
-            ),
-        ],
-        mockups=[
-            MockupReference(
-                screen_name="Login Page",
-                description="OAuth2 login form",
-                preview_url="https://stitch.dev/preview/abc123",
             ),
         ],
         reasoning="Adapter pattern for provider flexibility.",
@@ -256,12 +248,6 @@ class TestRenderOptionalSections:
         md = render_plan_markdown(full_plan)
         assert "## Test Expectations" in md
         assert "happy_login" in md
-
-    def test_mockups_rendered(self, full_plan: PlanArtifact) -> None:
-        md = render_plan_markdown(full_plan)
-        assert "## UI Mockups" in md
-        assert "Login Page" in md
-        assert "https://stitch.dev/preview/abc123" in md
 
 
 # ---------------------------------------------------------------------------

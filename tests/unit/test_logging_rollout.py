@@ -198,9 +198,9 @@ class TestBatch2LoggingRollout:
     def test_graph_and_planning_modules_have_loggers(self):
         """graph/ and workflows/planning modules should declare loggers."""
         from specweaver.assurance.graph import selectors, topology
-        from specweaver.workflows.planning import planner, renderer, stitch, ui_extractor
+        from specweaver.workflows.planning import planner, renderer
 
-        for mod in (selectors, topology, planner, renderer, stitch, ui_extractor):
+        for mod in (selectors, topology, planner, renderer):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__

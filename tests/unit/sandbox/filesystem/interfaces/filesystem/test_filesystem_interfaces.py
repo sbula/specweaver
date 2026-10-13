@@ -188,7 +188,7 @@ class TestImplementerFunctional:
 
     def test_grep(self, project: Path) -> None:
         iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        result = iface.grep("src/domain/billing", "def")
+        result = iface.grep(path="src/domain/billing", pattern="def")
         assert result.status == "success"
 
     def test_edit_file(self, project: Path) -> None:
@@ -217,7 +217,7 @@ class TestReviewerFunctional:
 
     def test_grep(self, project: Path) -> None:
         iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        result = iface.grep("src/domain/billing", "def")
+        result = iface.grep(path="src/domain/billing", pattern="def")
         assert result.status == "success"
 
 

@@ -256,7 +256,6 @@ without secrets.
 | Files | What |
 |---|---|
 | `tests/manual/test_llm_live.py` | Gemini API connectivity |
-| `tests/manual/test_stitch_live.py` | Stitch/MCP integration |
 | `tests/manual/test_api_live.py` | live API tests |
 | `tests/integration/sandbox/{atoms,tools}/qa_runner/<lang>/` | QA runners against real Java, Kotlin, Python, Rust, TypeScript toolchains |
 

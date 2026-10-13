@@ -79,11 +79,11 @@ similar steps usually do. Other providers: `uv sync --extra all-llm`. See the
 
 ## Testing
 
-**9,739 tests** (pytest, parametrized cases counted; 2026-10-13): 8,227 unit, 1,140 integration,
-356 e2e and 16 manual. 38 of them call real services and are skipped by default, so a plain
-`pytest` run collects 9,701. `scripts/live.py` runs 7 of them every night: against real Gemini
-the spend brake, secret masking, and spec and code review; against the real web, Tavily search
-and the `read_url` guard.
+**9,734 tests** (pytest, parametrized cases counted; 2026-10-13): 8,218 unit, 1,141 integration,
+360 e2e and 15 manual. 38 of them call real services and are skipped by default, so a plain
+`pytest` run collects 9,696. `scripts/live.py` runs 8 of them every night: against real Gemini
+the spend brake, secret masking, spec and code review, and the plan step; against the real web,
+Tavily search and the `read_url` guard.
 
 | Tier | Scope | Mocks |
 |---|---|---|
@@ -95,7 +95,7 @@ Static checks: **ruff** (lint), **mypy** in strict mode, **tach** (module-bounda
 complexity, coupling, file-size and duplication checks. `scripts/quality.py` bundles them into gates
 that run before every commit.
 
-**Mutation testing.** `scripts/mutation.py` runs every night over 33 corpora with 524 hand-written
+**Mutation testing.** `scripts/mutation.py` runs every night over 34 corpora with 531 hand-written
 mutants. Each mutant breaks one line that a requirement depends on — for example, it changes the
 API server's bind address from `127.0.0.1` to `0.0.0.0` — and at least one test must fail. Each
 mutant ends as `PROTECTED`, `UNPROTECTED` or `UNMEASURED` (a hang is never counted as a pass).

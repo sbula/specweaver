@@ -7,7 +7,7 @@
       "title": "A path outside the project or its grants is refused",
       "scope": [
         "tests/integration/sandbox/test_agent_file_tools_stay_inside.py",
-        "tests/unit/sandbox/filesystem"
+        "tests/unit/sandbox/filesystem/core/filesystem/test_filesystem_executor.py"
       ],
       "mutants": [
         {
@@ -36,8 +36,7 @@
       "requirement": "FR-2",
       "title": "No path through a symlink is used",
       "scope": [
-        "tests/integration/sandbox/test_agent_file_tools_stay_inside.py",
-        "tests/unit/sandbox/filesystem"
+        "tests/integration/sandbox/test_agent_file_tools_stay_inside.py"
       ],
       "mutants": [
         {
@@ -87,6 +86,56 @@
           "new": "                if \":\" in segment:\n                    pass\n",
           "breaks": "an agent reads a hidden stream of a file",
           "symbol_sha": "sha256:67f164615e072394d1e5578304e84d4565f4900f44a4d97e3df34c6807967319"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The read tools accept every parameter their definitions offer",
+      "scope": [
+        "tests/unit/sandbox/filesystem/interfaces/filesystem/test_read_range_and_tree.py",
+        "tests/integration/sandbox/test_tool_signatures_match_definitions.py"
+      ],
+      "mutants": [
+        {
+          "id": "range-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "FileSystemTool.read_file",
+          "old": "        if result.status != \"success\" or (start_line is None and end_line is None):\n",
+          "new": "        if True:\n",
+          "breaks": "a line range returns the whole file",
+          "symbol_sha": "sha256:b8604ca6865390e99c67f8fb3eb5b87cd54886a4899a87e1bf0165746ec94083"
+        },
+        {
+          "id": "tree-enters-links",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "FileSystemTool._enters",
+          "old": "        return kind == \"dir\" and depth > 1 and name not in self._exclude_dirs\n",
+          "new": "        return kind in (\"dir\", \"link\") and depth > 1\n",
+          "breaks": "the tree follows a link out of the project and into node_modules",
+          "symbol_sha": "sha256:17d02e52e20c57d41ff19753a1414ab542a2695291486a41506b0421d80d43e9"
+        },
+        {
+          "id": "tree-ignores-grants",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "FileSystemTool._walk",
+          "old": "            if self._check_grant(full, MODE_ALLOWS_READ) is not None:\n                continue\n",
+          "new": "            if False:\n                continue\n",
+          "breaks": "the tree shows files no grant covers",
+          "symbol_sha": "sha256:73193f591a11175343e356aeb2b01ed796a7fb9db0d5463395b51b536503d87a"
+        },
+        {
+          "id": "tree-uncapped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "FileSystemTool._walk",
+          "old": "            if len(entries) == cap:\n",
+          "new": "            if False:\n",
+          "breaks": "a big tree floods the model's context",
+          "symbol_sha": "sha256:73193f591a11175343e356aeb2b01ed796a7fb9db0d5463395b51b536503d87a"
         }
       ]
     }

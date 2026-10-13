@@ -1,0 +1,54 @@
+{
+  "schema": 2,
+  "feature": "D-INTL-03",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "The plan is saved beside the spec and reaches the code prompt",
+      "scope": [
+        "tests/e2e/capabilities/workflows/test_plan_before_code_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "plan-not-saved",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "PlanSpecHandler._generate_plan_artifact",
+          "old": "        plan_path.write_text(content, encoding=\"utf-8\")\n",
+          "new": "        pass\n",
+          "breaks": "the plan is never on the record",
+          "symbol_sha": "sha256:fce3f1bc77a342cd8e063bfd0bca61e2350a649db52f806f9e337197d57bc319"
+        },
+        {
+          "id": "plan-not-used",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_generation_prompt",
+          "old": "    if context.plan_context.plan:\n        base_prompt.add_plan(context.plan_context.plan)\n",
+          "new": "    if False:\n        base_prompt.add_plan(context.plan_context.plan)\n",
+          "breaks": "the code ignores the decided plan",
+          "symbol_sha": "sha256:f76115141827d8f690e858b17269cf870c51dcb74be6f5880d8ce1cbcb58cc75"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "No valid plan: the step fails and no code is written",
+      "scope": [
+        "tests/e2e/capabilities/workflows/test_plan_before_code_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "guess-a-plan",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/planning/planner.py",
+          "symbol": "Planner.generate_plan",
+          "old": "        raise ValueError(msg)\n",
+          "new": "        return PlanArtifact(spec_path=spec_path, spec_name=spec_name, spec_hash=spec_hash, file_layout=[], timestamp='')\n",
+          "breaks": "an empty plan is invented and code is written against it",
+          "symbol_sha": "sha256:65c6be0293d6f28c8d7756a788895f1b42641778fbc965394ec5658e3bbfbaf9"
+        }
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 # New Feature Pipeline — Full Core Loop
-# draft spec → validate spec → review spec → generate code → generate tests
+# draft spec → validate spec → review spec → plan → generate code → generate tests
 # → validate code → review code
 
 name: new_feature
 description: >
   Full spec-first workflow: draft a spec, validate and review it,
-  then generate code and tests, validate and review the code.
+  plan, then generate code and tests, validate and review the code.
 version: "1.0"
 
 steps:
@@ -36,6 +36,15 @@ steps:
       on_fail: loop_back
       loop_target: draft_spec
       max_retries: 2  # INT-US-02 FR-7: was 3; tightened for parity with INT-US-03's QA loop
+
+  - name: plan_spec
+    action: plan
+    target: spec
+    description: "Decide file layout, stack and constraints before any code is written"
+    gate:
+      type: auto
+      condition: completed
+      on_fail: abort
 
   - name: generate_code
     action: generate

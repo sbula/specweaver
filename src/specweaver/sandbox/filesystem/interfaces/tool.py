@@ -85,14 +85,19 @@ class FileSystemTool(BaseTool):
 
     # Intent methods
 
-    def read_file(self, path: str) -> ToolResult:
-        """Read a file's contents."""
+    def read_file(
+        self, path: str, start_line: int | None = None, end_line: int | None = None
+    ) -> ToolResult:
+        """A file's contents, or only lines `start_line` to `end_line` (1-based, inclusive)."""
         self._require_intent("read_file")
         err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
-        result = self._executor.read(path)
-        return self._wrap(result)
+        result = self._wrap(self._executor.read(path))
+        if result.status != "success" or (start_line is None and end_line is None):
+            return result
+        start = 1 if start_line is None else start_line
+        return _line_range(path, str(result.data), start, end_line)
 
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
@@ -158,14 +163,58 @@ class FileSystemTool(BaseTool):
         write_result = self._executor.write(path, patched)
         return self._wrap(write_result)
 
-    def list_directory(self, path: str) -> ToolResult:
-        """List directory contents."""
+    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
+        """The tree under `path`, `depth` levels deep, at most `max_entries` entries.
+
+        Entries are relative to `path`; a directory ends in `/`. A symlink, an excluded folder or a
+        folder no grant covers is listed but never entered; an entry no grant covers is left out.
+        """
         self._require_intent("list_directory")
         err = self._check_grant(path, MODE_ALLOWS_READ)
         if err:
             return err
-        result = self._executor.list_dir(path)
-        return self._wrap(result)
+        listed = self._executor.dir_kinds(path)
+        if listed.status != "success":
+            return self._wrap(listed)
+        entries: list[str] = []
+        self._walk(path, "", listed.data, max(depth, 1), entries, max(max_entries, 1))
+        return ToolResult(status="success", data=entries)
+
+    def _walk(
+        self,
+        root: str,
+        prefix: str,
+        kinds: list[tuple[str, str]],
+        depth: int,
+        entries: list[str],
+        cap: int,
+    ) -> bool:
+        """Add `kinds` under `prefix` to `entries`; False once `cap` is reached."""
+        for name, kind in kinds:
+            full = _joined(root, prefix + name)
+            if self._check_grant(full, MODE_ALLOWS_READ) is not None:
+                continue
+            if len(entries) == cap:
+                entries.append(f"… more entries; list a subfolder or raise max_entries ({cap})")
+                return False
+            entries.append(prefix + name + ("/" if kind == "dir" else ""))
+            if self._enters(kind, name, depth) and not self._descend(
+                root, f"{prefix}{name}/", full, depth, entries, cap
+            ):
+                return False
+        return True
+
+    def _enters(self, kind: str, name: str, depth: int) -> bool:
+        """A real folder, not excluded, with levels left; never a link."""
+        return kind == "dir" and depth > 1 and name not in self._exclude_dirs
+
+    def _descend(
+        self, root: str, prefix: str, full: str, depth: int, entries: list[str], cap: int
+    ) -> bool:
+        inner = self._executor.dir_kinds(full)
+        return inner.status != "success" or self._walk(
+            root, prefix, inner.data, depth - 1, entries, cap
+        )
 
     def grep(
         self,
@@ -296,3 +345,19 @@ class FileSystemTool(BaseTool):
         if result.status == "success":
             return ToolResult(status="success", data=result.data)
         return ToolResult(status="error", message=result.error)
+
+
+def _line_range(path: str, content: str, start: int, end: int | None) -> ToolResult:
+    """Lines `start` to `end` of `content`, the end cut to the file's last line."""
+    lines = content.splitlines(keepends=True)
+    if start < 1 or start > len(lines) or (end is not None and end < start):
+        return ToolResult(
+            status="error",
+            message=f"{path} has {len(lines)} lines; lines {start} to {end} do not exist",
+        )
+    return ToolResult(status="success", data="".join(lines[start - 1 : end]))
+
+
+def _joined(root: str, relative: str) -> str:
+    """`relative` under the listed `root`, as a path from the project root."""
+    return relative if root in ("", ".") else f"{root.rstrip('/')}/{relative}"

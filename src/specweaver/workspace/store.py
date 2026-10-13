@@ -51,6 +51,7 @@ class Project(Base):
     auto_bootstrap_constitution: Mapped[str] = mapped_column(
         String, default="prompt", nullable=False
     )
+    #: Unused; a database that has this NOT NULL column needs a value on every insert.
     stitch_mode: Mapped[str] = mapped_column(String, default="off", nullable=False)
     default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)
 
@@ -159,7 +160,6 @@ class WorkspaceRepository:
                 "constitution_max_size": project.constitution_max_size,
                 "domain_profile": project.domain_profile,
                 "auto_bootstrap_constitution": project.auto_bootstrap_constitution,
-                "stitch_mode": project.stitch_mode,
                 "default_dal": project.default_dal,
             }
         return None
@@ -181,7 +181,6 @@ class WorkspaceRepository:
                 "constitution_max_size": project.constitution_max_size,
                 "domain_profile": project.domain_profile,
                 "auto_bootstrap_constitution": project.auto_bootstrap_constitution,
-                "stitch_mode": project.stitch_mode,
                 "default_dal": project.default_dal,
             }
             for project in result.scalars()
@@ -247,7 +246,6 @@ class WorkspaceRepository:
 
     _VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
     _VALID_BOOTSTRAP_MODES = frozenset({"off", "prompt", "auto"})
-    _VALID_STITCH_MODES = frozenset({"off", "prompt", "auto"})
 
     async def get_log_level(self, project_name: str) -> str:
         project = await self.session.get(Project, project_name)
@@ -304,26 +302,6 @@ class WorkspaceRepository:
             raise ValueError(f"Project '{project_name}' not found")
 
         project.auto_bootstrap_constitution = mode_lower
-        await self.session.flush()
-
-    async def get_stitch_mode(self, project_name: str) -> str:
-        project = await self.session.get(Project, project_name)
-        if not project:
-            raise ValueError(f"Project '{project_name}' not found")
-        return project.stitch_mode
-
-    async def set_stitch_mode(self, project_name: str, mode: str) -> None:
-        mode_lower = mode.lower()
-        if mode_lower not in self._VALID_STITCH_MODES:
-            raise ValueError(
-                f"Invalid stitch mode '{mode}'. Must be one of: {', '.join(sorted(self._VALID_STITCH_MODES))}"
-            )
-
-        project = await self.session.get(Project, project_name)
-        if not project:
-            raise ValueError(f"Project '{project_name}' not found")
-
-        project.stitch_mode = mode_lower
         await self.session.flush()
 
     async def set_default_dal(self, project_name: str, dal: str) -> None:

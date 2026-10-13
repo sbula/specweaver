@@ -19,8 +19,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -42,6 +41,9 @@ from tests.scripted_llm import TEST_CONFIG, FixedRouter
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass
@@ -283,174 +285,6 @@ class TestPlanSpecHandlerFileSystem:
         restored = PlanArtifact.model_validate(loaded)
         assert restored.confidence == 80
         assert len(restored.file_layout) >= 1
-
-    @pytest.mark.asyncio()
-    async def test_handler_passes_stitch_mode_from_settings(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        """I8b: Handler accurately passes extracted mode & api key to Planner."""
-        spec = tmp_path / "spec.md"
-        spec.write_text("## Protocol\n\nUI content", encoding="utf-8")
-
-        mock_planner_called_with = {}
-
-        from specweaver.workflows.planning.models import PlanArtifact
-        from specweaver.workflows.planning.planner import Planner
-
-        async def mock_generate_plan(self, **kwargs):
-            mock_planner_called_with.update(kwargs)
-            return PlanArtifact(
-                spec_path="x",
-                spec_name="y",
-                spec_hash="z",
-                file_layout=[],
-                timestamp="t",
-                confidence=0,
-            )
-
-        monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
-
-        class MockLlmSettings:
-            model = "mock-model"
-            max_output_tokens = 4096
-
-        class MockStitchSettings:
-            mode = "auto"
-            api_key = "fake_key"
-
-        class MockSettings:
-            stitch = MockStitchSettings()
-            llm = MockLlmSettings()
-
-        ctx = RunContext(
-            project_path=tmp_path,
-            spec_path=spec,
-            model=ModelAccess(llm_router=FixedRouter(FakeLLM([])), config=MockSettings()),
-        )
-        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
-
-        handler = PlanSpecHandler()
-        await handler.execute(step, ctx)
-
-        assert mock_planner_called_with.get("stitch_mode") == "auto"
-        assert mock_planner_called_with.get("stitch_api_key") == "fake_key"
-
-    @pytest.mark.asyncio()
-    async def test_handler_valueerror_fallback(self, tmp_path: Path, monkeypatch) -> None:
-        """I8c: Handler gracefully falls back if load_settings raises ValueError."""
-        spec = tmp_path / "spec.md"
-        spec.write_text("## Protocol\n\nUI content", encoding="utf-8")
-
-        mock_planner_called_with = {}
-
-        from specweaver.workflows.planning.models import PlanArtifact
-        from specweaver.workflows.planning.planner import Planner
-
-        async def mock_generate_plan(self, **kwargs):
-            mock_planner_called_with.update(kwargs)
-            return PlanArtifact(
-                spec_path="x",
-                spec_name="y",
-                spec_hash="z",
-                file_layout=[],
-                timestamp="t",
-                confidence=0,
-            )
-
-        monkeypatch.setattr(Planner, "generate_plan", mock_generate_plan)
-
-        # Just test the fallback case: config is missing or lacks stitch
-        ctx = RunContext(
-            project_path=tmp_path,
-            spec_path=spec,
-            model=ModelAccess(llm_router=FixedRouter(FakeLLM([])), config=None),
-        )
-        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
-
-        handler = PlanSpecHandler()
-        await handler.execute(step, ctx)
-
-        assert mock_planner_called_with.get("stitch_mode") == "off"
-        assert mock_planner_called_with.get("stitch_api_key") == ""
-
-    @pytest.mark.asyncio()
-    async def test_handler_saves_mockup_to_yaml_when_stitch_auto(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        """I8d: E2E Pipeline (Stitch Auto) saving YAML to disk with mockups."""
-        spec = tmp_path / "spec.md"
-        spec.write_text("## Protocol\n\nUI component with a button", encoding="utf-8")
-
-        class MockLlmSettings:
-            model = "mock-model"
-            max_output_tokens = 4096
-
-        class MockStitchSettings:
-            mode = "auto"
-            api_key = "fake_key"
-
-        class MockSettings:
-            stitch = MockStitchSettings()
-            llm = MockLlmSettings()
-
-        llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(
-            project_path=tmp_path,
-            spec_path=spec,
-            model=ModelAccess(llm_router=FixedRouter(llm), config=MockSettings()),
-        )
-        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
-
-        handler = PlanSpecHandler()
-        result = await handler.execute(step, ctx)
-
-        plan_path = Path(result.output["plan_path"])
-        yaml_content = plan_path.read_text(encoding="utf-8")
-
-        assert "mockups" in yaml_content
-        assert "placeholder" in yaml_content
-        assert "Generated UI" in yaml_content
-
-    @pytest.mark.asyncio()
-    async def test_handler_saves_no_mockup_to_yaml_when_stitch_off(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        """I8e: E2E Pipeline (Stitch Off) saving YAML to disk omits mockups."""
-        spec = tmp_path / "spec.md"
-        spec.write_text("## Protocol\n\nUI component", encoding="utf-8")
-
-        class MockLlmSettings:
-            model = "mock-model"
-            max_output_tokens = 4096
-
-        class MockStitchSettings:
-            mode = "off"
-            api_key = ""
-
-        class MockSettings:
-            stitch = MockStitchSettings()
-            llm = MockLlmSettings()
-
-        llm = FakeLLM([_valid_plan_json()])
-        ctx = RunContext(
-            project_path=tmp_path,
-            spec_path=spec,
-            model=ModelAccess(llm_router=FixedRouter(llm), config=MockSettings()),
-        )
-        step = PipelineStep(name="plan", action=StepAction.PLAN, target=StepTarget.SPEC)
-
-        handler = PlanSpecHandler()
-        result = await handler.execute(step, ctx)
-
-        plan_path = Path(result.output["plan_path"])
-        yaml_content = plan_path.read_text(encoding="utf-8")
-
-        assert "mockups: []" in yaml_content
-
-
-# ---------------------------------------------------------------------------
-# I9-I10: RunContext.plan → GenerateCodeHandler/GenerateTestsHandler
-# ---------------------------------------------------------------------------
 
 
 class TestRunContextPlanFlowsToGenerator:

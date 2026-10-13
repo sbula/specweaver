@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,7 +12,6 @@ from specweaver.core.config.settings import (
     SandboxSettings,
     SpecWeaverSettings,
     StandardsSettings,
-    StitchSettings,
     deep_merge_dict,
 )
 from specweaver.workspace.store import WorkspaceRepository
@@ -124,32 +122,22 @@ def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
 async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSettings:
     logger.debug("load_settings_async called for project=%s", project_name)
 
-    async def _get_data() -> tuple[dict[str, object] | None, str | None]:
+    async def _get_data() -> dict[str, object] | None:
         async with db.async_session_scope() as session:
-            ws_repo = WorkspaceRepository(session)
-            proj = await ws_repo.get_project(project_name)
-            if not proj:
-                return None, None
-            return proj, await ws_repo.get_stitch_mode(project_name)
+            return await WorkspaceRepository(session).get_project(project_name)
 
-    proj, stitch_mode = await _get_data()
+    proj = await _get_data()
 
     if not proj:
         logger.error("Project '%s' not found in database", project_name)
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    stitch = StitchSettings(
-        mode=stitch_mode or "off",  # type: ignore[arg-type]
-        api_key=os.environ.get("STITCH_API_KEY", ""),
-    )
-
     root_path = proj.get("root_path")
     standards = _load_toml_standards(str(root_path) if root_path else None)
     sandbox = _load_toml_sandbox(str(root_path) if root_path else None)
 
     return SpecWeaverSettings(
-        stitch=stitch,
         dal_matrix=_load_dal_matrix(root_path),
         standards=standards,
         sandbox=sandbox,

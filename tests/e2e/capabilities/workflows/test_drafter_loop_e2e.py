@@ -128,6 +128,7 @@ async def _ok_execute(self, step, context) -> StepResult:
 
 # Handlers beyond review_spec in new_feature.yaml — US-3 territory, out of this contract.
 _POST_REVIEW_STUBS = [
+    "specweaver.core.flow.handlers.generation.PlanSpecHandler.execute",
     "specweaver.core.flow.handlers.generation.GenerateCodeHandler.execute",
     "specweaver.core.flow.handlers.generation.GenerateTestsHandler.execute",
     "specweaver.core.flow.handlers.lint_fix.LintFixHandler.execute",

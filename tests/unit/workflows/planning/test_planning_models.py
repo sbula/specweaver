@@ -18,7 +18,6 @@ from specweaver.workflows.planning.models import (
     FileChange,
     ImplementationTask,
     MethodSignature,
-    MockupReference,
     PlanArtifact,
     TechStackChoice,
     TestExpectation,
@@ -337,24 +336,6 @@ class TestTestExpectation:
 
 
 # ---------------------------------------------------------------------------
-# MockupReference
-# ---------------------------------------------------------------------------
-
-
-class TestMockupReference:
-    """MockupReference stores Stitch preview URL for a UI screen."""
-
-    def test_construction(self) -> None:
-        m = MockupReference(
-            screen_name="Login Page",
-            description="OAuth2 login form",
-            preview_url="https://stitch.withgoogle.com/preview/abc123",
-        )
-        assert m.screen_name == "Login Page"
-        assert m.preview_url.startswith("https://")
-
-
-# ---------------------------------------------------------------------------
 # PlanArtifact
 # ---------------------------------------------------------------------------
 
@@ -455,7 +436,6 @@ class TestPlanArtifact:
         assert plan.constraints == []
         assert plan.tasks == []
         assert plan.test_expectations == []
-        assert plan.mockups == []
         assert plan.reasoning == ""
         assert plan.confidence == 0
 
@@ -545,25 +525,6 @@ class TestPlanArtifactEdgeCases:
         assert plan.architecture is not None
         assert plan.architecture.archetype == "event-sourcing"
         assert plan.architecture.archetype not in KNOWN_ARCHETYPES
-
-    def test_mockups_populated(self) -> None:
-        """Mockups can be populated (3.6b readiness)."""
-        plan = PlanArtifact(
-            spec_path="test.md",
-            spec_name="test",
-            spec_hash="x",
-            file_layout=[],
-            timestamp="2026-03-22T00:00:00Z",
-            mockups=[
-                MockupReference(
-                    screen_name="Dashboard",
-                    description="Main dashboard",
-                    preview_url="https://stitch.dev/preview/123",
-                ),
-            ],
-        )
-        assert len(plan.mockups) == 1
-        assert plan.mockups[0].screen_name == "Dashboard"
 
     def test_large_file_layout(self) -> None:
         """Plan with many files works (tests file count warning threshold)."""

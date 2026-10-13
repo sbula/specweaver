@@ -74,11 +74,6 @@
     "first": "src/specweaver/core/flow/engine/store.py:148",
     "second": "src/specweaver/graph/core/store/repository.py:67"
   },
-  "src/specweaver/core/flow/handlers/arbiter.py <-> src/specweaver/core/flow/handlers/dual_pipeline.py @1ba107def696": {
-    "lines": 11,
-    "first": "src/specweaver/core/flow/handlers/arbiter.py:21",
-    "second": "src/specweaver/core/flow/handlers/dual_pipeline.py:17"
-  },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
     "lines": 7,
     "first": "src/specweaver/core/flow/handlers/contract_renderers.py:308",
@@ -217,32 +212,32 @@
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
     "first": "src/specweaver/sandbox/execution/container_executor.py:566",
-    "second": "src/specweaver/sandbox/execution/executor.py:163"
+    "second": "src/specweaver/sandbox/execution/executor.py:71"
   },
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @a91f7b2f86aa": {
     "lines": 23,
     "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
     "second": "src/specweaver/sandbox/qa_runner/core/atom.py:114"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @0e2565ddcf37": {
-    "lines": 15,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:98",
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @2a54bb079869": {
+    "lines": 21,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:140",
     "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:48"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @63d70a46a223": {
-    "lines": 24,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:148",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:68"
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @78b64b823be2": {
+    "lines": 26,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:158",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:70"
   },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @7859140ebcf3": {
-    "lines": 16,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:110",
-    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:76"
-  },
-  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @fedef1567758": {
-    "lines": 19,
-    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:132",
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @9e194316a43d": {
+    "lines": 17,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:102",
     "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:48"
+  },
+  "src/specweaver/sandbox/filesystem/interfaces/facades.py <-> src/specweaver/sandbox/filesystem/interfaces/facades.py @df094f56561b": {
+    "lines": 18,
+    "first": "src/specweaver/sandbox/filesystem/interfaces/facades.py:116",
+    "second": "src/specweaver/sandbox/filesystem/interfaces/facades.py:78"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
@@ -571,12 +566,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:461",
-    "second": "src/specweaver/workspace/store.py:429"
+    "first": "src/specweaver/workspace/store.py:439",
+    "second": "src/specweaver/workspace/store.py:407"
   },
-  "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @85457edb6a09": {
-    "lines": 17,
+  "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @9b9e6b544999": {
+    "lines": 16,
     "first": "src/specweaver/workspace/store.py:171",
-    "second": "src/specweaver/workspace/store.py:149"
+    "second": "src/specweaver/workspace/store.py:150"
   }
 }

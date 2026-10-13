@@ -135,17 +135,6 @@ def _render_test_expectations(plan: PlanArtifact) -> list[str]:
     return parts
 
 
-def _render_mockups(plan: PlanArtifact) -> list[str]:
-    """Render the UI mockups section (if present)."""
-    if not plan.mockups:
-        return []
-    parts = ["\n## UI Mockups\n"]
-    for m in plan.mockups:
-        parts.append(f"- **{m.screen_name}**: {m.description}")
-        parts.append(f"  [Preview]({m.preview_url})")
-    return parts
-
-
 # ---------------------------------------------------------------------------
 # Main renderer
 # ---------------------------------------------------------------------------
@@ -155,7 +144,7 @@ def render_plan_markdown(plan: PlanArtifact, *, verbose: bool = False) -> str:
     """Render a ``PlanArtifact`` as human-readable Markdown.
 
     Sections: Architecture, Tech Stack, File Layout, Constraints,
-    Implementation Tasks, Test Expectations, UI Mockups (if any).
+    Implementation Tasks, Test Expectations.
 
     Args:
         plan: The plan to render.
@@ -175,7 +164,6 @@ def render_plan_markdown(plan: PlanArtifact, *, verbose: bool = False) -> str:
     parts.extend(_render_constraints(plan))
     parts.extend(_render_tasks(plan))
     parts.extend(_render_test_expectations(plan))
-    parts.extend(_render_mockups(plan))
 
     if verbose and plan.reasoning:
         parts.append("\n## Reasoning\n")

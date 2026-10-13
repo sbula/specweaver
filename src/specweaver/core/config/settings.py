@@ -83,13 +83,6 @@ class DALImpactMatrix(BaseModel):
     matrix: dict[DALLevel, ValidationSettings] = {}
 
 
-class StitchSettings(BaseModel):
-    """Stitch UI mockup generation configuration."""
-
-    mode: Literal["auto", "prompt", "off"] = "off"
-    api_key: str = ""
-
-
 class StandardsSettings(BaseModel):
     """Standards auto-discovery behavioral configurations."""
 
@@ -170,7 +163,6 @@ class SandboxSettings(BaseModel):
 class SpecWeaverSettings(BaseModel):
     """Root configuration object spanning all domains."""
 
-    stitch: StitchSettings = StitchSettings()
     validation: ValidationSettings = ValidationSettings()
     dal_matrix: DALImpactMatrix = DALImpactMatrix()
     standards: StandardsSettings = StandardsSettings()

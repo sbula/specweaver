@@ -55,9 +55,11 @@ class ImplementerFileInterface(BaseTool):
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
 
-    def read_file(self, path: str) -> ToolResult:
-        """Read a file's contents."""
-        return self._tool.read_file(path)
+    def read_file(
+        self, path: str, start_line: int | None = None, end_line: int | None = None
+    ) -> ToolResult:
+        """Read a file, or lines `start_line` to `end_line` of it."""
+        return self._tool.read_file(path, start_line, end_line)
 
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
@@ -75,17 +77,19 @@ class ImplementerFileInterface(BaseTool):
         """Delete a file."""
         return self._tool.delete_file(path)
 
-    def list_directory(self, path: str) -> ToolResult:
-        """List directory contents."""
-        return self._tool.list_directory(path)
+    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
+        """The tree under `path`, `depth` levels deep, at most `max_entries` entries."""
+        return self._tool.list_directory(path, depth, max_entries)
 
-    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+    def grep(self, pattern: str, path: str = ".", **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""
         return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
 
-    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
-        """Find files matching a glob pattern."""
-        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
+    def find_files(
+        self, pattern: str, path: str = ".", type: str = "any", **kwargs: object
+    ) -> ToolResult:
+        """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
+        return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
 
 
 class ReviewerFileInterface(BaseTool):
@@ -105,21 +109,25 @@ class ReviewerFileInterface(BaseTool):
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
 
-    def read_file(self, path: str) -> ToolResult:
-        """Read a file's contents."""
-        return self._tool.read_file(path)
+    def read_file(
+        self, path: str, start_line: int | None = None, end_line: int | None = None
+    ) -> ToolResult:
+        """Read a file, or lines `start_line` to `end_line` of it."""
+        return self._tool.read_file(path, start_line, end_line)
 
-    def list_directory(self, path: str) -> ToolResult:
-        """List directory contents."""
-        return self._tool.list_directory(path)
+    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
+        """The tree under `path`, `depth` levels deep, at most `max_entries` entries."""
+        return self._tool.list_directory(path, depth, max_entries)
 
-    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+    def grep(self, pattern: str, path: str = ".", **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""
         return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
 
-    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
-        """Find files matching a glob pattern."""
-        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
+    def find_files(
+        self, pattern: str, path: str = ".", type: str = "any", **kwargs: object
+    ) -> ToolResult:
+        """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
+        return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
 
 
 class DrafterFileInterface(BaseTool):
@@ -139,9 +147,11 @@ class DrafterFileInterface(BaseTool):
     def definitions(self) -> list[ToolDefinition]:
         return self._tool.definitions()
 
-    def read_file(self, path: str) -> ToolResult:
-        """Read a file's contents."""
-        return self._tool.read_file(path)
+    def read_file(
+        self, path: str, start_line: int | None = None, end_line: int | None = None
+    ) -> ToolResult:
+        """Read a file, or lines `start_line` to `end_line` of it."""
+        return self._tool.read_file(path, start_line, end_line)
 
     def write_file(self, path: str, content: str) -> ToolResult:
         """Overwrite a file's contents."""
@@ -155,17 +165,19 @@ class DrafterFileInterface(BaseTool):
         """Delete a file."""
         return self._tool.delete_file(path)
 
-    def list_directory(self, path: str) -> ToolResult:
-        """List directory contents."""
-        return self._tool.list_directory(path)
+    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
+        """The tree under `path`, `depth` levels deep, at most `max_entries` entries."""
+        return self._tool.list_directory(path, depth, max_entries)
 
-    def grep(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
+    def grep(self, pattern: str, path: str = ".", **kwargs: object) -> ToolResult:
         """Search for a pattern in file contents."""
         return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
 
-    def find_files(self, path: str, pattern: str, **kwargs: object) -> ToolResult:
-        """Find files matching a glob pattern."""
-        return self._tool.find_files(path, pattern, **kwargs)  # type: ignore[arg-type]
+    def find_files(
+        self, pattern: str, path: str = ".", type: str = "any", **kwargs: object
+    ) -> ToolResult:
+        """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
+        return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------

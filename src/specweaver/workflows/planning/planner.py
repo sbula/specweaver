@@ -81,9 +81,6 @@ class Planner:
         spec_path: str,
         spec_name: str,
         base_prompt: PromptBuilder,
-        *,
-        stitch_mode: str = "off",
-        stitch_api_key: str = "",
     ) -> PlanArtifact:
         """Generate an implementation plan from spec content.
 
@@ -92,8 +89,6 @@ class Planner:
             spec_path: Path to the spec file (stored in the plan).
             spec_name: Human-readable spec name.
             base_prompt: Base prompt builder initialized with context.
-            stitch_mode: Optional stitch UI mockup mode.
-            stitch_api_key: Optional stitch API key.
 
         Returns:
             A validated PlanArtifact.
@@ -144,18 +139,6 @@ class Planner:
             try:
                 data = json.loads(raw)
                 plan = PlanArtifact.model_validate(data)
-
-                # Check for UI mockups via Stitch if enabled
-                if stitch_mode != "off":
-                    from specweaver.workflows.planning.stitch import StitchClient
-                    from specweaver.workflows.planning.ui_extractor import extract_ui_requirements
-
-                    ui_reqs = extract_ui_requirements(spec_content)
-                    if ui_reqs:
-                        logger.info("Planner: UI requirements detected, requesting Stitch mockups")
-                        stitch_client = StitchClient(api_key=stitch_api_key)
-                        mockup_result = stitch_client.generate_mockup(ui_reqs.description)
-                        plan.mockups = mockup_result.references
 
                 # Ensure hash and path are correct (LLM may hallucinate)
                 plan.spec_hash = spec_hash

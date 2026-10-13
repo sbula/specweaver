@@ -292,24 +292,11 @@ class PlanSpecHandler:
             tag_content,
         )
 
-        try:
-            if context.model.config and hasattr(context.model.config, "stitch"):
-                stitch_mode = context.model.config.stitch.mode
-                stitch_api_key = context.model.config.stitch.api_key
-            else:
-                stitch_mode = "off"
-                stitch_api_key = ""
-        except Exception:
-            stitch_mode = "off"
-            stitch_api_key = ""
-
         plan_artifact = await planner.generate_plan(
             spec_content=spec_content,
             spec_path=str(context.spec_path),
             spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
             base_prompt=base_prompt,
-            stitch_mode=stitch_mode,
-            stitch_api_key=stitch_api_key,
         )
 
         plan_path = context.spec_path.with_name(context.spec_path.stem + "_plan.yaml")

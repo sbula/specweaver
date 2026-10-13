@@ -29,11 +29,11 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 
 | Intent | Description |
 |---|---|
-| `read_file` | Read file contents (with line range support) |
+| `read_file` | Read a file, or lines `start_line` to `end_line` of it |
 | `create_file` | Create a new file |
 | `edit_file` | Replace a specific section of a file |
 | `delete_file` | Remove a file |
-| `list_directory` | List directory contents |
+| `list_directory` | The tree `depth` levels deep (default 2), at most `max_entries` (50); folders end in `/`; links, excluded and ungranted folders are never entered |
 | `grep` | Regex search across files |
 | `find_files` | Find files by glob |
 

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import anyio
 import pytest
 
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
@@ -36,17 +35,6 @@ def db(db_path: Path):
     return Database(db_path)
 
 
-def _set_stitch_mode(db, project_name, mode):
-    from specweaver.workspace.store import WorkspaceRepository
-
-    async def _action():
-        async with db.async_session_scope() as session:
-            repo = WorkspaceRepository(session)
-            await repo.set_stitch_mode(project_name, mode)
-
-    anyio.run(_action)
-
-
 class TestLoadSettings:
     """Settings loading from the database."""
 
@@ -56,8 +44,8 @@ class TestLoadSettings:
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         settings = load_settings(db, "myapp")
 
-        assert settings.stitch.mode == "off"
         assert not hasattr(settings, "llm")
+        assert not hasattr(settings, "stitch")
 
     def test_load_nonexistent_project_raises(self, db):
         from specweaver.core.config.bootstrap.settings_loader import load_settings
@@ -74,39 +62,12 @@ class TestLoadActiveProject:
 
         register_test_project(db, "myapp", str(tmp_path / "proj"))
         set_test_active_project(db, "myapp")
-        _set_stitch_mode(db, "myapp", "auto")
         settings = load_settings_for_active(db)
 
-        assert settings.stitch.mode == "auto"
+        assert settings.dal_matrix is not None
 
     def test_load_no_active_raises(self, db):
         from specweaver.core.config.bootstrap.settings_loader import load_settings_for_active
 
         with pytest.raises(ValueError, match=r"[Nn]o active project"):
             load_settings_for_active(db)
-
-
-class TestStitchSettingsLoad:
-    """Verify stitch settings populate correctly."""
-
-    def test_stitch_api_key_from_env(self, db, monkeypatch, tmp_path: Path):
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
-
-        register_test_project(db, "myapp", str(tmp_path))
-        _set_stitch_mode(db, "myapp", "auto")
-
-        monkeypatch.setenv("STITCH_API_KEY", "real-key-123")
-        settings = load_settings(db, "myapp")
-
-        assert settings.stitch.mode == "auto"
-        assert settings.stitch.api_key == "real-key-123"
-
-    def test_stitch_api_key_whitespace_is_handled(self, db, monkeypatch, tmp_path: Path):
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
-
-        register_test_project(db, "myapp", str(tmp_path))
-
-        monkeypatch.setenv("STITCH_API_KEY", "   ")
-        settings = load_settings(db, "myapp")
-
-        assert settings.stitch.api_key == "   "

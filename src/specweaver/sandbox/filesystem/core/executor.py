@@ -247,6 +247,19 @@ class FileExecutor:
 
         return ExecutorResult(status="success", data=entries)
 
+    def dir_kinds(self, path: str) -> ExecutorResult:
+        """`list_dir`, but each entry as `(name, kind)`: `dir`, `file` or `link`."""
+        listed = self.list_dir(path)
+        if listed.status != "success":
+            return listed
+        base = self._cwd if path in ("", ".") else (self._cwd / path)
+        kinds = []
+        for name in listed.data:
+            entry = base / name
+            kind = "link" if entry.is_symlink() else "dir" if entry.is_dir() else "file"
+            kinds.append((name, kind))
+        return ExecutorResult(status="success", data=kinds)
+
     def exists(self, path: str) -> ExecutorResult:
         """Check if a path exists.
 

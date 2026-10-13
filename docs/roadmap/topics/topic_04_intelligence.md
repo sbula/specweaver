@@ -59,7 +59,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Trigger:** Between validate and implement
   > - **Precondition:** `E-INTL-01` → the model
   > - **Reads:** the validated spec
-  > - **Produces:** file → a structured plan artifact · 🟡 UI mockups via Google Stitch
+  > - **Produces:** file → a structured plan artifact (`<spec>_plan.yaml`)
   > - **Enables:** `D-INTL-01` → generation against a decided plan
   > - **Done when:** architecture decisions exist as an artifact before generation runs
 

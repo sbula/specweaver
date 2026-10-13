@@ -127,7 +127,7 @@ class TestToolExecutorExecute:
     async def test_list_directory(self, executor: ToolDispatcher, project: Path) -> None:
         result = await executor.execute("list_directory", {"path": "."})
         assert "results" in result
-        assert "src" in result["results"]
+        assert "src/" in result["results"]  # a directory ends in /
 
     @pytest.mark.asyncio()
     async def test_unknown_tool(self, executor: ToolDispatcher) -> None:
