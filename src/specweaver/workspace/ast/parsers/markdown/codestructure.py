@@ -110,23 +110,24 @@ class MarkdownCodeStructure(DeclarativeParser):
         return ".".join(scopes) if scopes else None
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:
-        """The section block a heading names. Scope splits on the LAST dot, unlike other parsers.
+        """The section block a dotted heading path names (`Spec.2. Scope`).
 
-        Markdown scopes nest arbitrarily deep (`A.B.C` is three heading levels), so the trailing
-        segment is the heading and everything before it is the path to it.
+        A heading may hold dots itself (`2. Scope`, as specs are numbered), so every dot is tried
+        as the split between the enclosing path and the heading, and the full path must match.
         """
-        target_scope = None
-        target_name = symbol_name
-        if "." in symbol_name:
-            target_scope, target_name = symbol_name.rsplit(".", 1)
-
-        for name_node, match_dict in self._named_matches(tree, target_name, strip=True):
-            if "block" not in match_dict or self._get_symbol_scope(name_node) != target_scope:
-                continue
-            index = list(match_dict["name"]).index(name_node)
-            blocks = list(match_dict["block"])
-            if index < len(blocks):
-                return blocks[index]
+        splits = [(None, symbol_name)] + [
+            (symbol_name[:i], symbol_name[i + 1 :])
+            for i, char in enumerate(symbol_name)
+            if char == "."
+        ]
+        for target_scope, target_name in splits:
+            for name_node, match_dict in self._named_matches(tree, target_name, strip=True):
+                if "block" not in match_dict or self._get_symbol_scope(name_node) != target_scope:
+                    continue
+                index = list(match_dict["name"]).index(name_node)
+                blocks = list(match_dict["block"])
+                if index < len(blocks):
+                    return blocks[index]
         return None
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:

@@ -1,5 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+"""The parser factory: one parser per file ending.
+
+Proves: D-SENS-03 FR-6
+"""
 
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure

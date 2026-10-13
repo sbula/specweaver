@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "feature": "D-SENS-03",
+  "campaigns": [
+    {
+      "requirement": "FR-5",
+      "title": "Every listed Markdown section reads back, numbered headings included",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_listed_symbols_can_be_read.py"
+      ],
+      "mutants": [
+        {
+          "id": "nested-sections-unreadable",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/markdown/codestructure.py",
+          "symbol": "MarkdownCodeStructure._find_symbol_node",
+          "old": "        splits = [(None, symbol_name)] + [\n",
+          "new": "        splits = [(None, symbol_name)] + [] and [\n",
+          "breaks": "a numbered spec section listed by list_symbols cannot be read or replaced",
+          "symbol_sha": "sha256:44ae1d8de5fd55d4d3ff249fffe88852d6dd63ad513ca43256edf4d012c34366"
+        }
+      ]
+    }
+  ]
+}

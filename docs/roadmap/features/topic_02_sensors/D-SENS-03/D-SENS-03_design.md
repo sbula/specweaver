@@ -1,6 +1,6 @@
 # D-SENS-03 — Polyglot Expansion
 
-**Status**: **COMPLETED** (SF-01..SF-05 implemented; tracker below) · **Feature ID**: 3.32e
+**Status**: Built; `🔧` until the user signs off. · **Feature ID**: 3.32e
 
 | | |
 |---|---|
@@ -64,6 +64,14 @@ a language class defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, etc. and its 
 - FR-7 pruning is global across all registered parsers, not per grant area — waits for the AST
   Knowledge Tree (SF-04).
 
+## Live demo
+
+Through the tools a review uses (`ToolDispatcher.create_standard_set`, `ast`), on a C, a C++, a Go,
+an SQL and a Markdown file: each gives a skeleton without body text, its symbol list, and every
+listed symbol reads back — `Spec.2. Scope` included, as SpecWeaver numbers its spec sections. C,
+C++ and Go report their `@trace(...)` tags and imports; SQL lists tables, views and functions.
+`tests/unit/workspace/ast/parsers/test_listed_symbols_can_be_read.py` checks this.
+
 ## Sub-features and Progress Tracker
 
 | Sub-Feature | ID | Dependencies | Impl Plan | Dev | Pre-Commit | Committed |
@@ -72,7 +80,7 @@ a language class defines `SCM_SKELETON_QUERY`, `SCM_SYMBOL_QUERY`, etc. and its 
 | **Markdown Parser Completion** | SF-02 | SF-01 | ✅ | ✅ | ✅ | ✅ |
 | **C/C++ Parser Implementation** | SF-03 | SF-01 | ✅ | ✅ | ✅ | ✅ |
 | **Go Parser Implementation** | SF-04 | SF-01 | ✅ | ✅ | ✅ | ✅ |
-| **SQL Parser Implementation** | SF-05 | SF-01 | ✅ | ✅ | ✅ | ⬜ |
+| **SQL Parser Implementation** | SF-05 | SF-01 | ✅ | ✅ | ✅ | ✅ |
 
 Plans: [sf01](D-SENS-03_sf01_implementation_plan.md) · [sf02](D-SENS-03_sf02_implementation_plan.md) ·
 [sf03](D-SENS-03_sf03_implementation_plan.md) · [sf04](D-SENS-03_sf04_implementation_plan.md) ·

@@ -1,6 +1,6 @@
 # D-SENS-03 SF-01 — AST Base Class Refactoring
 
-**Status**: APPROVED · **Feature ID**: 3.32e · **FRs owned**: FR-1 · **Depends on**: — ·
+**Status**: APPROVED · **Feature ID**: 3.32e · **FRs owned**: FR-1, FR-6 · **Depends on**: — ·
 Design: [D-SENS-03_design.md](D-SENS-03_design.md) §Why a shared base class first
 
 ## Goal
