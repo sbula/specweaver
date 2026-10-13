@@ -191,7 +191,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
     *   `✅` **C-FLOW-02:** Router-based flow control
     *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)
-    *   `🔧` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
+    *   `✅` **D-SENS-03:** Enterprise Polyglot Extraction (Go, Kotlin, C/C++, Rust, Java)
 *   **Sub-Story Add-Ons:**
     *   🔴 **Infrastructure Understanding:**
         *   `[ ]` **C-SENS-04:** Infrastructure-as-Code Extraction (HCL2)

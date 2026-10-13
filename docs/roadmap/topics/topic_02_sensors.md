@@ -54,7 +54,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `context_assembler` · every AST-editing tool · `B-SENS-02`
   > - **Done when:** read and write both work across five languages
 
-* **`D-SENS-03` 🔧: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)
+* **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)
   > - **Purpose:** Cover the languages enterprise targets actually use — systems, cloud, schemas, and spec documents
   > - **Trigger:** When a file of one of these types is parsed
   > - **Precondition:** `D-SENS-02` → the extractor to extend

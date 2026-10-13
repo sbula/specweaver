@@ -1,6 +1,6 @@
 # D-SENS-03 — Polyglot Expansion
 
-**Status**: Built; `🔧` until the user signs off. · **Feature ID**: 3.32e
+**Status**: ✅ Finished — signed off by the user 2026-10-13. · **Feature ID**: 3.32e
 
 | | |
 |---|---|

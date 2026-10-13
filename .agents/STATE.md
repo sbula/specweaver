@@ -14,7 +14,7 @@ of them**.
 
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with
 `TECH-003` and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03`,
-`D-EXEC-02`, `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06`, `D-VAL-05`, `D-SENS-02`, `TECH-003`, `E-INTL-03` and `C-VAL-02` were signed off and `D-FLOW-03` retired; the rest stay
+`D-EXEC-02`, `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06`, `D-VAL-05`, `D-SENS-02`, `TECH-003`, `E-INTL-03`, `C-VAL-02` and `D-SENS-03` were signed off and `D-FLOW-03` retired; the rest stay
 `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence: [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
@@ -59,6 +59,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `D-SENS-03` Polyglot Expansion | Finished, signed off 2026-10-13: C, C++, Go, SQL and Markdown give skeletons and symbols that read back; a `static` C function is private |
 | `C-VAL-02` Domain Profiles | Finished, signed off 2026-10-13: one name sets a project's spec limits, in `sw check` and in runs |
 | `E-INTL-03` Spec Review Engine | Finished, signed off 2026-10-13: `sw review` judges a spec or code against real Gemini every night; only a verdict line decides |
 | `D-SENS-02` AST Extractor · `TECH-003` | Finished, signed off 2026-10-12: a model reads skeletons, symbols and bodies of real code; every `context.yaml` boundary names a real path |
