@@ -54,7 +54,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `C-INTL-01` · `C-FLOW-03` fan-out · `C-FLOW-12` execution
   > - **Done when:** a feature spec yields component specs scored by confidence
 
-* **`D-INTL-03` 🔧: Explicit Plan Phase** (Legacy: 3.6)
+* **`D-INTL-03` ✅: Explicit Plan Phase** (Legacy: 3.6)
   > - **Purpose:** Decide architecture, stack and constraints on the record *before* code is generated, instead of discovering them in the output
   > - **Trigger:** Between validate and implement
   > - **Precondition:** `E-INTL-01` → the model

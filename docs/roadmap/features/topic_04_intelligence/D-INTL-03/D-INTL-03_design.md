@@ -1,6 +1,6 @@
 # D-INTL-03 — Explicit Plan Phase
 
-**Status**: 🔧 Built, waiting for sign-off. · **Phase**: 3 (Feature 3.6)
+**Status**: ✅ Finished — signed off by the user 2026-10-13. · **Phase**: 3 (Feature 3.6)
 
 | | |
 |---|---|

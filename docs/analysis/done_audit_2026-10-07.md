@@ -103,7 +103,7 @@ proven through `/review`, not `/implement`).
 | E-INTL-02 FR-2 | Draft accept/modify/reject step missing | `drafting/_base.py:136-200`. **Fixed** 2026-10-13: each section is shown; Enter keeps, a change rewrites, `skip` leaves a TODO `[agreed 2026-10-13]` |
 | D-SENS-03 FR-4/5 | Markdown/SQL traceability always empty. **Descoped** 2026-10-12 (user's decision): nothing reads tags from Markdown or SQL, so the promise is removed | `markdown/codestructure.py:70` |
 | D-VAL-05 | C04 never yields coverage; relative paths break C02/C04/C05. **Fixed** 2026-10-09: C04 runs the file's test with coverage on the file itself; paths are resolved once; C03 and C05 fail, naming why, when their tool could not run (they passed). 2026-10-12: C03 uses the test file the run found; a test imports its module by name in any project; C05 says to run `sw scan` without `tach.toml`; Kotlin coverage is "not measured", not 0% | `validation_hydrator.py:257` |
-| D-INTL-03 | No shipped pipeline, CLI or API has a plan step | `new_feature.yaml` |
+| D-INTL-03 | No shipped pipeline, CLI or API has a plan step | `new_feature.yaml`. **Fixed** 2026-10-13: `new_feature` plans after the spec review; the fake Stitch mockups are removed `[agreed 2026-10-13]` |
 | D-FLOW-04 FR-6 | Logger rollout incomplete (107 of 360 modules) | grep |
 | D-FLOW-03, E-FLOW-03 | Superseded by C-FLOW-13; designs still say COMPLETE. **Fixed** 2026-10-09: both designs say SUPERSEDED; their status flags are the user's call | removed tables/commands |
 | D-SENS-02 FR-3, TECH-003 FR-3 | Stale `loom/` layout consumed by 3 `context.yaml`. **Fixed** 2026-10-09: the root `context.yaml` exposes the real top-level packages; D-SENS-02 FR-3 names `sandbox/language/core/<name>` | workspace `context.yaml` |
@@ -122,5 +122,5 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
-Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-INTL-03`, `D-FLOW-04`,
+Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-FLOW-04`,
 `TECH-004` FR-6, `C-FLOW-01` REST tests, `E-SENS-03` task-scoped roots.
