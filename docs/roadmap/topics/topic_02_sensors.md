@@ -16,7 +16,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every agent tool that touches disk
   > - **Done when:** an agent cannot read a file outside its granted boundary
 
-* **`E-SENS-02` 🔧: Agentic Research Tools** (Legacy: 3.10)
+* **`E-SENS-02` ✅: Agentic Research Tools** (Legacy: 3.10)
   > - **Purpose:** Let the LLM look things up itself — read files, search the web — instead of guessing from what it was handed
   > - **Trigger:** When an LLM call is made with tools enabled
   > - **Precondition:** `E-SENS-01` → boundary enforcement

@@ -1,11 +1,11 @@
 # E-SENS-02 — Agentic Research Tools
 
-**Status**: 🔧 Built, waiting for sign-off. · **Phase**: 3 (Feature 3.10)
+**Status**: ✅ Finished — signed off by the user 2026-10-13. · **Phase**: 3 (Feature 3.10)
 
 | | |
 |---|---|
 | Touches | `sandbox/web/` · `core/config/llm_settings.py` (`[search]`) · `infrastructure/llm/resolve.py`, `router.py` · `core/flow/handlers/review.py` · `sandbox/dispatcher.py`, `registry.py` |
-| Plan | [as built, 2026-03](E-SENS-02_implementation_plan.md); its web part is replaced by this page |
+| Plan | [as built](E-SENS-02_implementation_plan.md) |
 
 ## What it does
 

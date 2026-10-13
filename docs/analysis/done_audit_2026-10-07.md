@@ -89,7 +89,7 @@ proven through `/review`, not `/implement`).
 |---|---|---|
 | D-EXEC-02, INT-US-09 FR-5 | Per-step worktree isolation discards all output (no commit before strip-merge, empty allow-list); run says COMPLETED. **Fixed** 2026-10-08 (user chose the session rule): commit, then merge only a passed step's targets; FR-7 micro-sync withdrawn | `sandboxed_execution.py:96-112` |
 | E-SENS-01 | grep/find follow symlinks out of the root. **Fixed** 2026-10-08: the search path is contained, symlinks are skipped | `sandbox/filesystem/interfaces/tool.py:189-234`; `core/search.py:223` |
-| E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87` |
+| E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87`. **Fixed** 2026-10-13: Tavily, its key named by `[search]`; `read_url` reads only public addresses |
 | E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access. **Partly fixed** 2026-10-08: reviewer and planner get read grants; task-scoped roots still unbuilt | `run_context.py:114-123`; `security.py:128` |
 | E-INTL-01 FR-3 | No secret redaction before prompts. **Fixed** 2026-10-08: known secret values are masked in every prompt and tool result | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
@@ -122,8 +122,6 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Waiting on the user (2026-10-09):
 
-- `E-SENS-02`: which web search service, and where its key lives; Google's Custom Search is closed
-  to new users.
 - `C-FLOW-06`: switch staleness on (runs skip unchanged steps) or remove the half-built code.
 - `B-FLOW-01` FR-1: S07 rejects a spec without `## Scenarios` only if the drafter writes one.
 
