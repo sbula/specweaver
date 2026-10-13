@@ -10,9 +10,10 @@ from the existence of the scenario testing engine.
 from __future__ import annotations
 
 import enum
+import hashlib
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -24,6 +25,7 @@ from specweaver.core.flow.handlers.results import log_step_failure
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,8 @@ class ArbitrateResult(BaseModel):
     spec_clause: str = ""
     coding_feedback: str = ""
     scenario_feedback: str = ""
+    #: The readings of an unclear clause, for the person who must settle it.
+    interpretations: list[str] = []
     raw_response: str = ""
 
 
@@ -98,9 +102,123 @@ in the spec below. Your job is to determine WHO is at fault.
   "reasoning": "<internal reasoning>",
   "spec_clause": "<e.g. FR-2 or missing>",
   "coding_feedback": "<spec-flavored feedback for the coding agent. MUST NOT contain the words: scenario, test, yaml, parametrize, convert, or any path. MUST read like a spec compliance behavioral review.>",
-  "scenario_feedback": "<behavioral delta report for scenario agent. MUST NOT contain source code or implementation details.>"
+  "scenario_feedback": "<behavioral delta report for scenario agent. MUST NOT contain source code or implementation details.>",
+  "interpretations": ["<for spec_ambiguity only: reading A of the clause>", "<reading B>"]
 }
 """
+
+
+#: A frame line: pytest's `path:line:` or a JVM `at ...` line.
+_FRAME = re.compile(r"^(?:\S[^\s:]*:\d+:|\s+at\s)")
+
+
+def code_trace(stacktrace: str, trace_filter: StackTraceFilterInterface) -> str:
+    """The lines of a failure's trace that belong to the coder's own code, else "".
+
+    Each line belongs to the frame above it (a header before the first frame belongs to that
+    frame); a check's frames and everything they own are dropped. A trace that would still
+    name the hidden check is dropped whole.
+    """
+    lines = stacktrace.splitlines()
+    frames = [i for i, line in enumerate(lines) if _FRAME.match(line)]
+    if not frames:
+        return ""
+    kept = []
+    for i, line in enumerate(lines):
+        owner = max((f for f in frames if f <= i), default=frames[0])
+        if not trace_filter.is_scenario_frame(lines[owner]):
+            kept.append(line)
+    text = "\n".join(kept).strip()
+    if not text or any(word.lower() in text.lower() for word in SCENARIO_VOCABULARY):
+        return ""
+    return text
+
+
+def _spec_sha(context: RunContext) -> str:
+    try:
+        return hashlib.sha256(context.spec_path.read_text(encoding="utf-8").encode()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _unclear_message(result: ArbitrateResult, context: RunContext) -> str:
+    readings = "\n".join(
+        f"  {letter}) {text}"
+        for letter, text in zip("abcdefgh", result.interpretations, strict=False)
+    )
+    return (
+        f"Spec clause {result.spec_clause or '(unnamed)'} is unclear. It can be read as:\n"
+        f"{readings or '  (the arbiter gave no readings) ' + result.reasoning}\n"
+        f"Edit that clause in {context.spec_path}, then resume the run."
+    )
+
+
+def _earlier_park(context: RunContext) -> dict[str, Any] | None:
+    """This step's own park, when the run was resumed from it."""
+    for record in context.run.step_records or []:
+        result = record.get("result") or {}
+        output = result.get("output") or {}
+        if record.get("step_name") == context.run.step_name and "spec_sha" in output:
+            return {"output": output, "message": result.get("error_message") or ""}
+    return None
+
+
+def _after_park(context: RunContext, started: str) -> StepResult | None:
+    """Resumed from an unclear-clause park: park again if the spec is unchanged, else rerun."""
+    park = _earlier_park(context)
+    if park is None or "scenario_test_failures" in context.feedback:
+        return None
+    if park["output"]["spec_sha"] == _spec_sha(context):
+        return StepResult(
+            status=StepStatus.WAITING_FOR_INPUT,
+            output=park["output"],
+            error_message="The spec is unchanged. " + park["message"],
+            started_at=started,
+            completed_at=_now_iso(),
+        )
+    return StepResult(
+        status=StepStatus.FAILED,
+        error_message="The spec was edited; the round runs again with it.",
+        started_at=started,
+        completed_at=_now_iso(),
+    )
+
+
+def _with_trace(
+    feedback: str, failures: list[dict[str, Any]], trace_filter: StackTraceFilterInterface
+) -> str:
+    """The coder's feedback, with the frames of its own code where it failed."""
+    trace = "\n\n".join(
+        t for f in failures if (t := code_trace(f.get("stacktrace", ""), trace_filter))
+    )
+    return f"{feedback}\n\nWhere your code failed:\n{trace}" if trace else feedback
+
+
+def _code_bug(context: RunContext, clause: str, feedback: str, started: str) -> StepResult:
+    """Send the coder back to work with its feedback; the evidence is used up."""
+    context.feedback.pop("scenario_test_failures", None)  # terminal verdict
+    context.feedback["generate_code"] = {
+        "from_step": "arbitrate_verdict",
+        "findings": {
+            "verdict": "code_bug",
+            "results": [{"status": "FAIL", "rule_id": clause, "message": feedback}],
+        },
+    }
+    return StepResult(
+        status=StepStatus.FAILED,
+        error_message=f"Arbiter assigned: {feedback}",
+        started_at=started,
+        completed_at=_now_iso(),
+    )
+
+
+def _not_arbitrable(context: RunContext, started: str) -> StepResult | None:
+    """The step's result when there is nothing to arbitrate: a resumed park, or no evidence."""
+    resumed = _after_park(context, started)
+    if resumed is not None:
+        return resumed
+    evidence_error = _evidence_error(context)
+    return _error_result(evidence_error, started) if evidence_error is not None else None
 
 
 def _evidence_error(context: RunContext) -> str | None:
@@ -148,9 +266,9 @@ class ArbitrateVerdictHandler(StepHandler):
         # means the wire is broken and must fail LOUD, never green. The key is
         # consumed ON VERDICT (popped only on terminal branches) so a spec_ambiguity
         # park can resume and re-arbitrate, and an ERROR retry re-reads it.
-        evidence_error = _evidence_error(context)
-        if evidence_error is not None:
-            return _error_result(evidence_error, started)
+        early = _not_arbitrable(context, started)
+        if early is not None:
+            return early
         evidence = context.feedback["scenario_test_failures"]
         # Shape already validated above, so this is a plain read rather than a second guard.
         failures = evidence.get("failures", [])
@@ -252,28 +370,10 @@ class ArbitrateVerdictHandler(StepHandler):
 
             safe_coding_feedback = _guard_coding_feedback(result.coding_feedback)
 
+            safe_coding_feedback = _with_trace(safe_coding_feedback, failures, filter_impl)
             if result.verdict == ArbitrateVerdict.CODE_BUG:
                 logger.info("Arbitrate Verdict: CODE_BUG (%s)", result.spec_clause)
-                context.feedback.pop("scenario_test_failures", None)  # terminal verdict
-                context.feedback["generate_code"] = {
-                    "from_step": "arbitrate_verdict",
-                    "findings": {
-                        "verdict": "code_bug",
-                        "results": [
-                            {
-                                "status": "FAIL",
-                                "rule_id": result.spec_clause,
-                                "message": safe_coding_feedback,
-                            }
-                        ],
-                    },
-                }
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=f"Arbiter assigned: {safe_coding_feedback}",
-                    started_at=started,
-                    completed_at=_now_iso(),
-                )
+                return _code_bug(context, result.spec_clause, safe_coding_feedback, started)
 
             elif result.verdict == ArbitrateVerdict.SCENARIO_ERROR:
                 logger.info("Arbitrate Verdict: SCENARIO_ERROR (%s)", result.spec_clause)
@@ -304,8 +404,8 @@ class ArbitrateVerdictHandler(StepHandler):
                 )
                 return StepResult(
                     status=StepStatus.WAITING_FOR_INPUT,
-                    output=result.model_dump(),
-                    error_message=f"Ambiguity detected on {result.spec_clause}",
+                    output={**result.model_dump(), "spec_sha": _spec_sha(context)},
+                    error_message=_unclear_message(result, context),
                     started_at=started,
                     completed_at=_now_iso(),
                 )

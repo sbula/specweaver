@@ -179,4 +179,4 @@ class TestArbiterIntegrationFlow:
         result = await handler.execute(step, run_context)
 
         assert result.status == StepStatus.WAITING_FOR_INPUT
-        assert "Ambiguity detected on FR-99" in result.error_message
+        assert "Spec clause FR-99 is unclear" in result.error_message

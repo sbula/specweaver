@@ -51,6 +51,85 @@
           "symbol_sha": "sha256:ddfb841903ea9741479fdf80313073ddeaf9db921778d8f1764a417717248de3"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "The coder gets the frames of its own code, never the check's",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_arbiter_tells_coder_and_human.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-trace",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_with_trace",
+          "old": "    return f\"{feedback}\\n\\nWhere your code failed:\\n{trace}\" if trace else feedback\n",
+          "new": "    return feedback\n",
+          "breaks": "the coder never sees where its code failed",
+          "symbol_sha": "sha256:0e4ac91e2391df6c7ead96b7232c3fd443fed51a79261f0f1160ad9a99954a3b"
+        },
+        {
+          "id": "check-frames-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "code_trace",
+          "old": "        if not trace_filter.is_scenario_frame(lines[owner]):\n",
+          "new": "        if True:\n",
+          "breaks": "the hidden check's file, test name and assertion reach the coder",
+          "symbol_sha": "sha256:30d0e09b0864ac86dff2a4675848d03bee9d930fc9edd5bc868b2974740defe1"
+        },
+        {
+          "id": "banned-words-pass",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "code_trace",
+          "old": "    if not text or any(word.lower() in text.lower() for word in SCENARIO_VOCABULARY):\n",
+          "new": "    if not text:\n",
+          "breaks": "a frame naming the check reaches the coder",
+          "symbol_sha": "sha256:30d0e09b0864ac86dff2a4675848d03bee9d930fc9edd5bc868b2974740defe1"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "An unclear clause parks naming its readings; only an edited spec reruns the round",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_arbiter_tells_coder_and_human.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-readings",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_unclear_message",
+          "old": "        f\"{readings or '  (the arbiter gave no readings) ' + result.reasoning}\\n\"\n",
+          "new": "        f\"\\n\"\n",
+          "breaks": "the person is not told the two readings",
+          "symbol_sha": "sha256:fb2f11bf38309da9e95ed651398b2186c1a20fec7207d111742844a385534731"
+        },
+        {
+          "id": "rerun-unchanged",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_after_park",
+          "old": "    if park[\"output\"][\"spec_sha\"] == _spec_sha(context):\n",
+          "new": "    if False:\n",
+          "breaks": "resuming an unsettled clause pays for a whole round again",
+          "symbol_sha": "sha256:c2c0b09984598e8c2f11dd2011cd30c77eac111d3d3a6e590829fbbe96846149"
+        },
+        {
+          "id": "park-forgotten",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_after_park",
+          "old": "    if park is None or \"scenario_test_failures\" in context.feedback:\n",
+          "new": "    if True:\n",
+          "breaks": "a resumed park is treated as a wiring error and loops on the old spec",
+          "symbol_sha": "sha256:c2c0b09984598e8c2f11dd2011cd30c77eac111d3d3a6e590829fbbe96846149"
+        }
+      ]
     }
   ]
 }

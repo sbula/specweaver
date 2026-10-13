@@ -152,7 +152,7 @@ class TestArbitrateVerdictHandler:
 
         result = await handler.execute(step, run_context)
         assert result.status == StepStatus.WAITING_FOR_INPUT
-        assert "Ambiguity detected on FR-2" in result.error_message
+        assert "Spec clause FR-2 is unclear" in result.error_message
         # Consume-on-verdict: spec_ambiguity PARKS — evidence must be RETAINED
         # so `sw run --resume` can re-arbitrate instead of ERRORing on absence.
         assert "scenario_test_failures" in run_context.feedback

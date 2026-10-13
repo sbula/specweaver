@@ -184,6 +184,7 @@ AMBIGUITY_VERDICT = json.dumps(
     {
         "verdict": "spec_ambiguity",
         "spec_clause": "FR-1",
+        "interpretations": ["the greeting is 'Hello, <name>'", "the greeting is 'Hi <name>'"],
         "coding_feedback": "",
         "scenario_feedback": "",
     }
@@ -496,6 +497,9 @@ def test_e4_spec_ambiguity_parks(tmp_path: Path, monkeypatch, _isolated_env) -> 
 
     assert result.exit_code == 0, result.output  # parked is NOT an error (NFR-5/6 parity)
     assert "resume" in result.output.lower()
+    # Proves: B-FLOW-01 FR-10 — the person sees the clause and both readings.
+    for part in ("FR-1", "'Hello, <name>'", "'Hi <name>'", "greet_spec.md"):
+        assert shows(result.output, part), result.output
     from specweaver.core.flow.engine.state import RunStatus
 
     run_state = _latest_run(_isolated_env, "us24_e4")
@@ -572,8 +576,12 @@ def test_e7_resume_after_park_heals_through_the_loop(
         result1 = _run_cli(project)
         assert result1.exit_code == 0, result1.output
 
-        # Session 2: resume — fresh RunContext, absent evidence -> honest
-        # arbiter ERROR -> loop_back -> full fresh verification round.
+        # The person settles the clause in the spec, then resumes: the round runs again.
+        spec = project / "specs" / "greet_spec.md"
+        spec.write_text(
+            spec.read_text(encoding="utf-8") + "\nFR-1 means: the greeting is 'Hello, <name>'.\n",
+            encoding="utf-8",
+        )
         result2 = CliRunner().invoke(app, ["resume"])
 
     assert result2.exit_code == 0, result2.output
@@ -588,6 +596,30 @@ def test_e7_resume_after_park_heals_through_the_loop(
     # Round 1 failed on real pytest, the healed round genuinely passed.
     assert record[0].output["failed"] == 2
     assert record[-1].output["passed"] == 3
+
+
+def test_e7c_resume_with_the_spec_unchanged_parks_again_for_free(
+    tmp_path: Path, monkeypatch, _isolated_env
+) -> None:
+    """Proves: B-FLOW-01 FR-10. Nothing was settled, so nothing is rerun and no model is asked."""
+    project = _init_project(tmp_path, "us24_e7c")
+    monkeypatch.setenv("SW_PROJECT", str(project))
+    adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[AMBIGUITY_VERDICT])
+    implementer = ImplementerState([WRONG_IMPL, CORRECT_IMPL])
+    record: list = []
+
+    with _scenario_world(adapter, implementer, record):
+        assert _run_cli(project).exit_code == 0
+        result2 = CliRunner().invoke(app, ["resume"])
+
+    assert result2.exit_code == 0, result2.output
+    assert shows(result2.output, "The spec is unchanged"), result2.output
+    from specweaver.core.flow.engine.state import RunStatus
+
+    run_state = _latest_run(_isolated_env, "us24_e7c")
+    assert run_state is not None and run_state.status == RunStatus.PARKED
+    assert adapter.arb_calls == 1
+    assert adapter.scen_calls == 1
 
 
 def test_e7b_resume_without_llm_warns_and_degrades_gracefully(
