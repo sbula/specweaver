@@ -1,0 +1,226 @@
+{
+  "schema": 2,
+  "feature": "E-EXEC-01",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "One executor runs every child process and reports how it ended",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py"
+      ],
+      "mutants": [
+        {
+          "id": "exit-code-lost",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor.execute",
+          "old": "            exit_code = proc.returncode\n",
+          "new": "            exit_code = 0\n",
+          "breaks": "a failing command reads as a success",
+          "symbol_sha": "sha256:fa854e15f29b95871980568c66fc90a46b33140b970c5326e38d88f3efe3f161"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A process past its timeout is stopped, SIGTERM then SIGKILL",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py",
+        "tests/integration/sandbox/execution/test_executor_integration.py",
+        "tests/integration/sandbox/execution/test_executor_stops_and_hides.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-kill",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor._kill_process",
+          "old": "            proc.terminate()\n            try:\n                proc.wait(timeout=2)\n            except subprocess.TimeoutExpired:\n                proc.kill()\n",
+          "new": "            pass\n",
+          "breaks": "a hung process keeps running after its timeout",
+          "symbol_sha": "sha256:8e98f16f8d1c70f392e2295a86de274da8c0dd0395c8cc136e0429ba6b98dae6"
+        },
+        {
+          "id": "no-sigkill",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor._kill_process",
+          "old": "            except subprocess.TimeoutExpired:\n                proc.kill()\n",
+          "new": "            except subprocess.TimeoutExpired:\n                pass\n",
+          "breaks": "a process that ignores SIGTERM is never killed",
+          "symbol_sha": "sha256:8e98f16f8d1c70f392e2295a86de274da8c0dd0395c8cc136e0429ba6b98dae6"
+        },
+        {
+          "id": "timeout-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor.execute",
+          "old": "                timeout=effective_timeout,\n",
+          "new": "                timeout=None,\n",
+          "breaks": "no process ever times out",
+          "symbol_sha": "sha256:fa854e15f29b95871980568c66fc90a46b33140b970c5326e38d88f3efe3f161"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A working directory outside the boundary is refused before any spawn",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py",
+        "tests/integration/sandbox/execution/test_executor_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-boundary",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor._validate_cwd",
+          "old": "            raise ValueError(msg) from None\n",
+          "new": "            pass\n",
+          "breaks": "a step runs in any directory, outside the project",
+          "symbol_sha": "sha256:757841d184025f1443a87cac16014d1603a78d6c7dcf10f573ca5e145536c9b5"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Each run returns exit code, output, time and timeout flag",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-duration",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor.execute",
+          "old": "        duration = time.monotonic() - start\n",
+          "new": "        duration = 0.0\n",
+          "breaks": "every run reports zero time",
+          "symbol_sha": "sha256:fa854e15f29b95871980568c66fc90a46b33140b970c5326e38d88f3efe3f161"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Output lines become stdout and stderr events",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-stderr-events",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor._build_events",
+          "old": "                events.append(OutputEvent(category=\"stderr\", output=line))\n",
+          "new": "                pass\n",
+          "breaks": "errors never reach the event stream",
+          "symbol_sha": "sha256:bb703ac44ac4b6ca08ed27f94e9531c9fc0536e06d35994e6e12cebbd2ba41a3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A child sees only allowed variables and never a key",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py",
+        "tests/integration/sandbox/execution/test_executor_integration.py",
+        "tests/e2e/capabilities/sandbox/test_executor_e2e.py",
+        "tests/integration/sandbox/execution/test_executor_stops_and_hides.py"
+      ],
+      "mutants": [
+        {
+          "id": "whole-environment",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/child_env.py",
+          "symbol": "build_child_env",
+          "old": "    env: dict[str, str] = {}\n",
+          "new": "    env: dict[str, str] = dict(os.environ)\n",
+          "breaks": "a child sees every parent variable",
+          "symbol_sha": "sha256:9fdbf88de3e37b970fb4f97835d2299bf55d463d1531ef31bf1961b5b21f1a5d"
+        },
+        {
+          "id": "keys-kept",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/child_env.py",
+          "symbol": "build_child_env",
+          "old": "    if strip_credentials:\n",
+          "new": "    if False:\n",
+          "breaks": "an API key reaches LLM-written code",
+          "symbol_sha": "sha256:9fdbf88de3e37b970fb4f97835d2299bf55d463d1531ef31bf1961b5b21f1a5d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "On interrupt the tracked children are stopped",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py",
+        "tests/integration/sandbox/execution/test_executor_integration.py",
+        "tests/integration/sandbox/execution/test_executor_stops_and_hides.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-cleanup",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/_signals.py",
+          "symbol": "_cleanup_active_processes",
+          "old": "    for proc in list(_active_processes):\n",
+          "new": "    for proc in []:\n",
+          "breaks": "an interrupt leaves children running",
+          "symbol_sha": "sha256:6993a9d48b84b5581e70a279623bf27bc895ec5661faf85acbfe74bd8da13659"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Each run is logged at DEBUG with command, exit code and time",
+      "scope": [
+        "tests/unit/sandbox/execution/test_execution_executor.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-log",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/executor.py",
+          "symbol": "SubprocessExecutor.execute",
+          "old": "        logger.debug(\n            \"subprocess_execute: cmd=%s cwd=%s timeout=%d exit_code=%d \"\n",
+          "new": "        (lambda *a: None)(\n            \"subprocess_execute: cmd=%s cwd=%s timeout=%d exit_code=%d \"\n",
+          "breaks": "no audit trail of what ran",
+          "symbol_sha": "sha256:fa854e15f29b95871980568c66fc90a46b33140b970c5326e38d88f3efe3f161"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "Memory, process and file-size limits hold in the child",
+      "scope": [
+        "tests/integration/sandbox/execution/test_executor_integration.py",
+        "tests/e2e/capabilities/sandbox/test_executor_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-memory-limit",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/platform_limiter.py",
+          "symbol": "UnixLimiter.make_preexec_fn",
+          "old": "                resource.setrlimit(resource.RLIMIT_AS, (mem, mem))\n",
+          "new": "                pass\n",
+          "breaks": "a memory bomb takes the machine",
+          "symbol_sha": "sha256:5d6fd3b7c1a06238dd1fe1cc0e49da62807ee96b3cbb71a5b23a6be6ca4edc2d"
+        },
+        {
+          "id": "no-file-limit",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/platform_limiter.py",
+          "symbol": "UnixLimiter.make_preexec_fn",
+          "old": "                resource.setrlimit(resource.RLIMIT_FSIZE, (fsize, fsize))\n",
+          "new": "                pass\n",
+          "breaks": "a child fills the disk",
+          "symbol_sha": "sha256:5d6fd3b7c1a06238dd1fe1cc0e49da62807ee96b3cbb71a5b23a6be6ca4edc2d"
+        }
+      ]
+    }
+  ]
+}

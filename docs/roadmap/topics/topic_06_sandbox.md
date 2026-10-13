@@ -7,14 +7,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-EXEC-01` 🔜: Standard Local Execution**
-  > - **Purpose:** 🔴 nothing anywhere says what this is for. The superseded entry was a title and no body
-  > - **Trigger:** 🔴
-  > - **Precondition:** 🔴
-  > - **Reads:** 🔴
-  > - **Produces:** 🔴
-  > - **Enables:** 🔴
-  > - **Done when:** 🔴
+* **`E-EXEC-01` 🔧: Standard Local Execution**
+  > - **Purpose:** One controlled way to run a child process: timeout, resource limits, a clean environment, a fixed working directory
+  > - **Trigger:** Any tool, runner or step that starts a process
+  > - **Precondition:** —
+  > - **Reads:** the command, its working directory, the allowed variables
+  > - **Produces:** a `SubprocessResult` — exit code, output, events, time, timeout flag
+  > - **Enables:** `C-EXEC-02` bash steps · every language runner · `B-EXEC-01` containers
+  > - **Done when:** a hung, forking or key-reading child is stopped or sees nothing, and no other code starts a process
 
 * **`E-EXEC-02` 🔜: Air-Gapped Network Egress Control**
   > - **Purpose:** Stop a malicious dependency phoning out while its code is being validated or run

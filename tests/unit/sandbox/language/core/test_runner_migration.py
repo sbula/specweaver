@@ -3,6 +3,8 @@
 
 """Migration verification tests for language runners → SubprocessExecutor.
 
+Proves: E-EXEC-01 FR-8
+
 Verifies each runner:
 1. Accepts an optional executor parameter (DI)
 2. Creates a default executor when none provided

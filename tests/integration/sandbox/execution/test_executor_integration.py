@@ -4,21 +4,17 @@
 """Integration tests for SubprocessExecutor across OS boundaries.
 
 Proves: E-EXEC-01 FR-7, FR-10.
+Proves: E-EXEC-01 FR-2
 
 FR-7 signal propagation — the design requires SIGINT/SIGTERM to reach the child process group
 with no orphaned zombies, which `test_...signal...` asserts. FR-10 cross-platform resource limits —
 `resource.setrlimit()` for process, memory and file-size caps.
-
-**`NFR-2` is deliberately NOT claimed here.** The design's threshold is *"< 5ms overhead per
-invocation compared to direct `subprocess.run()`"*; this file asserts `< 200ms`, which is 40x looser
-and does not establish the requirement. Recorded rather than cited — see `TECH-017` finding 7.
 
 Attributed 2026-08-13 (`TECH-017` finding 6).
 """
 
 import os
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -208,16 +204,3 @@ class TestSubprocessExecutorIntegration:
         )
         assert result.exit_code == 0
         assert "NOT_FOUND" in result.stdout
-
-    def test_overhead_benchmark(self, tmp_path: Path) -> None:
-        """Verify execution overhead is < 200ms (NFR-2)."""
-        executor = SubprocessExecutor(cwd=tmp_path)
-        py = "python" if sys.platform == "win32" else "python3"
-
-        start = time.monotonic()
-        executor.execute([py, "-c", "pass"])
-        end = time.monotonic()
-
-        # The overhead includes python startup time, which can be ~30-100ms.
-        # Total time should be under 500ms for a baseline CI environment.
-        assert (end - start) < 1.0

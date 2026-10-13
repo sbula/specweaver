@@ -31,7 +31,7 @@ class MCPExecutor:
 
     def __init__(self, command: list[str], env: dict[str, str] | None = None) -> None:
         """Initialize the MCP subprocess securely."""
-        from specweaver.sandbox.execution.executor import build_child_env
+        from specweaver.sandbox.execution.child_env import build_child_env
 
         self._command = command
 

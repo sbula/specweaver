@@ -2,7 +2,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for SubprocessExecutor and related data models."""
+"""Tests for SubprocessExecutor and related data models.
+
+Proves: E-EXEC-01 FR-1
+Proves: E-EXEC-01 FR-2
+Proves: E-EXEC-01 FR-3
+Proves: E-EXEC-01 FR-4
+Proves: E-EXEC-01 FR-5
+Proves: E-EXEC-01 FR-6
+Proves: E-EXEC-01 FR-9
+Proves: E-EXEC-01 NFR-5
+Proves: E-EXEC-01 NFR-8
+Proves: E-EXEC-01 NFR-9
+"""
 
 from __future__ import annotations
 

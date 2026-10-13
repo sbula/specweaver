@@ -1,8 +1,6 @@
 # E-EXEC-01 — Standard Local Execution
 
-**Status**: APPROVED. **COMPLETE** (2026-07-12) — SF-01 and SF-02 implemented, tested, reviewed
-(Red/Blue) and committed. Regression at close: Unit 4482 / Integration 424 / E2e 139 passed. ·
-**Feature ID**: E-EXEC-01
+**Status**: 🔧 Built, waiting for sign-off. · **Feature ID**: E-EXEC-01
 
 | | |
 |---|---|
@@ -20,37 +18,11 @@ subprocess" on the defense-in-depth ladder (MicroVMs > gVisor > Standard Contain
 Other industry practice (2025-2026; no `ORIGINS.md` blueprint): every execution disposable (the
 `git worktree` isolation of D-EXEC-02), and stdout/stderr captured as structured events.
 
-## Why
+## What it guards against
 
-Each runner called `subprocess.run()` itself, with its own timeout, capture, encoding and error
-handling:
-
-| File | Methods | Lines | Timeout? | Resource Limits? | Output Structured? |
-|------|---------|-------|----------|------------------|--------------------|
-| `language/core/python/runner.py` | `run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture_check` | 562 | ✅ (per-method, hardcoded) | ❌ | Partial (Regex + JSON) |
-| `language/core/typescript/runner.py` | `run_tests`, `run_linter`, `run_compiler`, `run_debugger` | ~200 | ✅ (inconsistent) | ❌ | Partial |
-| `language/core/rust/runner.py` | `run_tests`, `run_linter`, `run_compiler`, `run_debugger`, `run_complexity` | 292 | ❌ (missing!) | ❌ | JUnit/SARIF |
-| `language/core/java/runner.py` | `run_tests`, `run_linter`, `run_compiler`, `run_debugger` | ~280 | ❌ (missing!) | ❌ | JUnit/Checkstyle |
-| `language/core/kotlin/runner.py` | `run_tests`, `run_linter`, `run_compiler`, `run_debugger` | ~250 | ❌ (missing!) | ❌ | JUnit/Detekt |
-| `git/core/executor.py` | `_run_git()` | ~200 | ❌ | ❌ | Text |
-| `filesystem/core/search.py` | `_grep_search()` | ~60 | ❌ | ❌ | Text |
-
-- **7 files** duplicated subprocess handling (~400 lines).
-- **Timeouts**: Python used per-method values (120s tests, 300s debugger, 60s linting); Rust/Java/Kotlin
-  had **none** — a hanging `cargo test` or `mvn test` blocked the pipeline indefinitely.
-- **No CPU/memory/process-count limits**: a fork bomb in LLM-generated test code could crash the host.
-- **No telemetry**: Start/stop times, peak memory, exit signals were not captured.
-- **Path traversal**: only `QARunnerAtom._intent_run_tests` checked (`is_relative_to`); runners ran
-  whatever target they got. The check moves into the executor, where nothing can bypass it.
-
-Reused as is: the `QARunnerInterface` ABC (6 methods, covered by 4900+ tests), the `QARunnerAtom` intent
-dispatch, `BaseTool`/`ToolRegistry` from TECH-002, the result types (`TestRunResult`, `LintRunResult`,
-etc.) in `commons/qa.py`, the DAP `OutputEvent` pattern from `run_debugger`.
-
-Benefit per consumer: Rust/Java/Kotlin QARunners (D-VAL-03) gain timeouts and resource limits — a
-critical fix; the Git Worktree Bouncer (D-EXEC-02) could delegate its custom handling in executor.py
-for consistency; C-EXEC-02 uses the executor directly for `bash` from YAML; B-EXEC-01 swaps the
-subprocess target to a container at this one point.
+A hung `cargo test` or `mvn test` blocking the pipeline; a fork or memory bomb in LLM-written code;
+an API key read from the child's environment; a step run outside its project. `ruff` rule `TID251`
+bans `import subprocess` outside the executor, so a new caller cannot skip it.
 
 ## Architecture
 
@@ -69,7 +41,9 @@ graph LR
 
 | Piece | Lives in |
 |---|---|
-| `SubprocessExecutor`, `SubprocessResult`, `ResourceLimits` | `sandbox/execution/executor.py` (the two dataclasses since moved to `models.py`) |
+| `SubprocessExecutor` | `sandbox/execution/executor.py` |
+| `SubprocessResult`, `ResourceLimits` | `sandbox/execution/models.py` |
+| `build_child_env`: allowlist, credential stripping | `sandbox/execution/child_env.py` |
 | `PlatformLimiter` strategy | `sandbox/execution/platform_limiter.py` |
 | Runner migration | `sandbox/language/core/<lang>/runner.py` |
 
@@ -86,7 +60,7 @@ Job Objects via `ctypes` replaced it — no third-party package.
 |---|----------|-----------|----------------------|
 | AD-1 | Place `SubprocessExecutor` in `sandbox/execution/executor.py` (new module) | Subprocess execution is an L4 Side-Effect. It belongs inside the sandbox boundary, alongside git/filesystem executors. A new `execution/` subdomain keeps it distinct from language-specific runners. | No |
 | AD-2 | All language runners import `SubprocessExecutor` — no inheritance change | Runners remain concrete `QARunnerInterface` subclasses and replace internal `subprocess.run()` calls with `self._executor.execute()`. A pure DRY refactor with no public API change. | No |
-| AD-3 | Return `SubprocessResult` dataclass, not raw `CompletedProcess` | Domain-specific result that adds telemetry (duration, peak_memory) and strips OS-specific fields. Language parsers convert it to `TestRunResult`/`LintRunResult`. | No |
+| AD-3 | Return `SubprocessResult` dataclass, not raw `CompletedProcess` | Domain-specific result that adds telemetry (duration, timeout flag) and strips OS-specific fields. Language parsers convert it to `TestRunResult`/`LintRunResult`. | No |
 | AD-4 | Environment stripping via allowlist | Start from a **clean base env** and add known-safe variables (PATH, HOME, LANG, PYTHONPATH, NODE_PATH, CARGO_HOME, etc.). More secure than blocklisting. | No |
 | AD-5 | Timeout uses SIGTERM→SIGKILL escalation (2s grace) | On timeout: SIGTERM, wait 2s, then SIGKILL — lets processes clean up temp files. On Windows 11: `proc.terminate()` (TerminateProcess — immediate, no grace period; HITL-resolved H-1). | No |
 | AD-6 | Cross-platform resource limits via `PlatformLimiter` strategy | `sys.platform` selects: **Unix/macOS** → `resource.setrlimit()` via `preexec_fn`; **Windows** → Win32 Job Objects via `ctypes.windll.kernel32` (AssignProcessToJobObject + SetInformationJobObject). All stdlib. B-EXEC-01 (Podman) adds hard container-level limits as another layer. | No |
@@ -99,19 +73,16 @@ AD-7 as built: `archetype: adapter` with explicit `forbids` of `sandbox.qa_runne
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Unified subprocess execution | SubprocessExecutor | Wraps ALL subprocess.run() calls across ALL language runners | Single entry point with consistent behavior |
-| FR-2 | Configurable timeout enforcement | SubprocessExecutor | Accepts a `timeout_seconds` parameter (with per-DAL defaults) | Processes exceeding the timeout are killed with `SIGTERM→SIGKILL` escalation |
+| FR-1 | Unified subprocess execution | SubprocessExecutor | Wraps ALL subprocess.run() calls across ALL language runners | Single entry point with consistent behavior; `ruff` `TID251` refuses any other `import subprocess` |
+| FR-2 | Configurable timeout enforcement | SubprocessExecutor | Accepts a `timeout_seconds` parameter per call, 120 s when unset; no per-DAL defaults `[agreed 2026-10-13]` | Processes exceeding the timeout are killed with `SIGTERM→SIGKILL` escalation |
 | FR-3 | Path traversal prevention | SubprocessExecutor | Validates all target paths stay within the provided `cwd` boundary | Paths escaping the sandbox raise `WorkspaceBoundaryError` |
-| FR-4 | Structured output capture | SubprocessExecutor | Returns a `SubprocessResult` dataclass with exit_code, stdout, stderr, duration_seconds, peak_memory_bytes (optional) | All consumers get uniform structured results |
+| FR-4 | Structured output capture | SubprocessExecutor | Returns a `SubprocessResult` dataclass with exit_code, stdout, stderr, duration_seconds, timed_out; no peak memory `[agreed 2026-10-13]` | All consumers get uniform structured results |
 | FR-5 | DAP-compatible event streaming | SubprocessExecutor | Converts stdout/stderr into `OutputEvent` lists | Consistent with existing `run_debugger` pattern |
 | FR-6 | Environment isolation | SubprocessExecutor | Strips or allowlists environment variables (e.g., removes `GEMINI_API_KEY`, `OPENAI_API_KEY` from child env) | LLM-generated code cannot exfiltrate API keys via env inspection |
 | FR-7 | Signal propagation | SubprocessExecutor | On parent SIGINT/SIGTERM, propagates to child process group | No orphaned zombie processes |
 | FR-8 | Language runner migration | All language runners | Replace direct `subprocess.run()` calls with `SubprocessExecutor.execute()` | All 5 runners delegate to the unified executor |
 | FR-9 | Execution telemetry | SubprocessExecutor | Emits structured log entries (start, stop, exit_code, duration, command) at DEBUG level | Auditable execution trail for all subprocess calls |
 | FR-10 | Cross-platform resource limit enforcement | SubprocessExecutor | Detects OS at runtime. Unix/macOS: `resource.setrlimit()` via `preexec_fn`. Windows: Win32 Job Objects via `ctypes` (no third-party deps). All platforms: stdlib-only, zero user configuration | Memory/process-count bombs are caught and killed on all platforms |
-
-FR-2's per-DAL defaults: a DAL-aware structure replaces hardcoded per-method timeouts (e.g., DAL-E =
-300s max, DAL-B = 60s max).
 
 ### FR-10's process ceiling (2026-08-17)
 
@@ -144,7 +115,6 @@ failure).
 | # | NFR | Threshold / Constraint |
 |---|-----|------------------------|
 | NFR-1 | Backward compatibility | All 4900+ existing tests MUST pass unchanged after migration. No public API signature changes to `QARunnerInterface`. **[proof: meta — rule about tests, docs or the diff]** |
-| NFR-2 | Performance overhead | SubprocessExecutor wrapper adds < 5ms overhead per invocation compared to direct `subprocess.run()` |
 | NFR-3 | Cross-platform | Must work identically on Windows 11 (26H2+), Linux (kernel 7.1+), and macOS Tahoe (26+) without any code changes by the user. OS-specific internals are abstracted behind a `PlatformLimiter` strategy. **[proof: none — unfalsifiable as written]** |
 | NFR-4 | No new dependencies | All functionality uses Python stdlib only (`subprocess`, `resource`, `ctypes`, `sys.platform`). No third-party packages required. **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-5 | Logging | All executions logged at DEBUG level with command, cwd, timeout, exit_code, duration |
@@ -158,13 +128,20 @@ failure).
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
 | Subtle behavior change in Python runner migration | Low | Medium | Full 4900+ test suite regression |
-| Platform-specific resource limiter edge cases | Low | Low | PlatformLimiter tested on all 3 OS targets; graceful degradation if unsupported |
-| Performance regression from extra abstraction layer | Very Low | Low | Benchmarked at < 5ms overhead |
+| Platform-specific resource limiter edge cases | Low | Low | Tested on Linux; Windows and macOS paths unit-tested only; graceful degradation if unsupported |
+| Cost per call | Certain | Low | Measured 2026-10-13: 3–5 ms idle, 22–29 ms under the suite's parallel load, against plain `subprocess.run()`. The child-side limits need `fork` (no `posix_spawn`), which copies the parent. No time limit is promised `[agreed 2026-10-13]` |
 
 TOCTOU between cwd validation and `Popen` is a known limit; B-EXEC-01 closes it (SF-01 plan).
 
 Guide: `docs/dev_guides/subprocess_execution.md` — how to add subprocess calls via
 `SubprocessExecutor` (Guide-1, done).
+
+## Live demo
+
+`tests/integration/sandbox/execution/test_executor_stops_and_hides.py` and
+`tests/e2e/capabilities/sandbox/test_executor_e2e.py`, real processes: a process past its timeout no
+longer exists; an interrupt's cleanup stops a running child; a child sees no unlisted variable and no
+API key; a memory bomb is killed.
 
 ## Sub-features
 
