@@ -1,23 +1,29 @@
-# E-INTL-02 — Spec Drafting & Review
+# E-INTL-02 — Spec Drafting
 
-**Status**: COMPLETED · **Phase**: 1 · **Feature ID**: E-INTL-02
+**Status**: 🔧 Built, waiting for sign-off. · **Phase**: 1 · **Feature ID**: E-INTL-02
+
+| | |
+|---|---|
+| Touches | `workflows/drafting/_base.py` · `workspace/context/provider.py` · `interfaces/cli/hitl_provider.py` |
+| Plan | [as built](E-INTL-02_sf01_implementation_plan.md) |
 
 ## What it does
 
-- `sw draft` — the interactive Human-In-The-Loop spec drafting orchestrator: collaborative
-  component spec authoring.
-- `sw review` — the semantic LLM evaluation engine behind it.
+`sw draft <name>` (and `sw draft feature`) writes a spec with the person. For each section it asks
+one question, the model writes the section, and the person sees it: Enter keeps it, typed text is a
+change the model rewrites the section with, `skip` leaves a TODO `[agreed 2026-10-13]`. A provider
+with nobody to ask (the REST API) keeps every section. The spec then goes to validation and to the
+review that `E-INTL-03` owns.
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Interactive Drafting | Developer | Execute `sw draft` | Starts a conversational LLM session prompting for missing sections. |
-| FR-2 | Human-In-The-Loop | Developer | Prompt interaction | HITL can accept, modify, or reject agent suggestions. |
-| FR-3 | Spec Review Validation | Developer | Execute `sw review spec` | LLM evaluates the final spec semantically. |
+| FR-1 | Interactive drafting | `sw draft` | SHALL ask one question per section and have the model write that section from the answer; an unanswered question leaves a TODO | a spec from answers, not a blank page |
+| FR-2 | The person decides each section | Drafter, terminal provider | SHALL show each written section and keep it on Enter, rewrite it with a typed change (sending the change and the old text), or leave a TODO on `skip` | nothing the model writes reaches the spec unseen |
 
-## Progress Tracker
+## Live demo
 
-| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
-|----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Spec Drafting & Spec Review | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+`tests/e2e/capabilities/workflows/test_draft_section_review_e2e.py`: `sw draft greeter` at the real
+terminal prompt; the Purpose is changed once and kept, the Contract skipped; the saved spec holds the
+rewrite and a TODO, and the rewrite prompt carried the change and the first version.

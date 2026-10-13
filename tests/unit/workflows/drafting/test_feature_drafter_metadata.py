@@ -25,6 +25,8 @@ class TestFeatureDrafterProjectMetadata:
         mock_llm.generate.return_value = LLMResponse(text="```markdown\n# Doc\n```", model="test")
 
         mock_context = AsyncMock()
+
+        mock_context.review.return_value = ""  # keeps every section
         mock_context.ask.return_value = "yes"
 
         feature_drafter = FeatureDrafter(

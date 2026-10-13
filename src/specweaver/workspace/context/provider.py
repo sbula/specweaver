@@ -39,3 +39,10 @@ class ContextProvider(ABC):
             Answer string. Empty string means "skip this question."
         """
         ...
+
+    async def review(self, section: str, text: str) -> str:
+        """The person's verdict on a written section: "" keeps it, `skip` drops it, else a change.
+
+        A provider with nobody to ask keeps every section.
+        """
+        return ""

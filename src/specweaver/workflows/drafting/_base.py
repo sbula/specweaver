@@ -137,15 +137,26 @@ class BaseDrafter:
         if not user_input:
             return f"*TODO: Fill in {section_def['name']} section.*"
 
-        return await self._generate_section(
-            name=name,
-            section_name=section_def["name"],
-            section_prompt=section_def["prompt"],
-            user_input=user_input,
-            # Only the sections that ask for it pay the topology token cost.
-            topology_contexts=topology_contexts if section_def.get("inject_topology") else None,
-            project_metadata=project_metadata,
-        )
+        async def write(change: str | None = None, draft: str | None = None) -> str:
+            return await self._generate_section(
+                name=name,
+                section_name=section_def["name"],
+                section_prompt=section_def["prompt"],
+                user_input=user_input,
+                # Only the sections that ask for it pay the topology token cost.
+                topology_contexts=topology_contexts if section_def.get("inject_topology") else None,
+                project_metadata=project_metadata,
+                change=change,
+                draft=draft,
+            )
+
+        # The person keeps the section, asks for a change, or skips it.
+        content = await write()
+        while verdict := await self._context.review(section_def["name"], content):
+            if verdict.lower() == "skip":
+                return f"*TODO: Fill in {section_def['name']} section.*"
+            content = await write(change=verdict, draft=content)
+        return content
 
     async def _generate_section(
         self,
@@ -156,8 +167,10 @@ class BaseDrafter:
         *,
         topology_contexts: list[TopologyContext] | None = None,
         project_metadata: ProjectMetadata | None = None,
+        change: str | None = None,
+        draft: str | None = None,
     ) -> str:
-        """Generate content for a single spec section using the LLM."""
+        """Generate content for a single spec section; with `change`, rewrite `draft` by it."""
         builder = self._base_prompt.clone()
         builder.add_instructions(
             self.SECTION_INSTRUCTION.format(
@@ -171,6 +184,9 @@ class BaseDrafter:
             builder.add_project_metadata(project_metadata)
 
         builder.add_context(user_input, "user_context")
+        if change is not None and draft is not None:
+            builder.add_context(draft, "previous_draft")
+            builder.add_context(change, "requested_change")
 
         if topology_contexts:
             builder.add_topology(topology_contexts)

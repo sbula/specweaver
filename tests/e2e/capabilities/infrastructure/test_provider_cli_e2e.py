@@ -90,7 +90,12 @@ def test_openai_draft_telemetry_journey(
     # Mocking the interactive input
     with (
         patch("rich.prompt.Confirm.ask", return_value=True),
-        patch("rich.prompt.Prompt.ask", return_value="Draft looks good"),
+        patch(
+            "rich.prompt.Prompt.ask",
+            side_effect=lambda prompt, *a, **k: (
+                "" if "Enter keeps it" in str(prompt) else "Draft looks good"
+            ),
+        ),  # answers, then keeps each section
     ):
         # 'sw draft TestComponent' interacts with the flow engine.
         result = runner.invoke(app, ["draft", "TestComponent", "--project", str(test_project)])

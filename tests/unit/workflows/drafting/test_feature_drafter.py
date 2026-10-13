@@ -111,6 +111,7 @@ class TestFeatureDrafter:
     @pytest.fixture()
     def mock_context(self) -> AsyncMock:
         context = AsyncMock()
+        context.review.return_value = ""  # keeps every section
         context.ask = AsyncMock(return_value="User provided answer.")
         return context
 
@@ -193,6 +194,7 @@ class TestFeatureDrafter:
         self, mock_llm: AsyncMock, tmp_path: Path
     ) -> None:
         context = AsyncMock()
+        context.review.return_value = ""  # keeps every section
         # First question answered, rest skipped
         context.ask = AsyncMock(side_effect=["answer", "", "", "", "", ""])
         drafter = FeatureDrafter(
@@ -239,6 +241,7 @@ class TestFeatureDrafterEdgeCases:
     @pytest.fixture()
     def mock_context(self) -> AsyncMock:
         context = AsyncMock()
+        context.review.return_value = ""  # keeps every section
         context.ask = AsyncMock(return_value="User answer.")
         return context
 

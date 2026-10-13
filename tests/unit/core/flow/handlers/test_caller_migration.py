@@ -59,6 +59,7 @@ async def test_draft_handler_uses_interactive_profile(mock_drafter_class, mock_b
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     if run_context.spec_path.exists():
         run_context.spec_path.unlink()
@@ -90,6 +91,7 @@ async def test_generate_code_uses_full_profile(mock_generator_class, mock_build,
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
         name="gen",
@@ -123,6 +125,7 @@ async def test_generate_tests_uses_full_profile(mock_generator_class, mock_build
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
         name="gen",
@@ -156,6 +159,7 @@ async def test_plan_spec_uses_full_profile(mock_planner_class, mock_build, run_c
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
         name="plan", module="feature", action="plan", target="spec", handler="PlanSpecHandler"
@@ -184,6 +188,7 @@ async def test_review_spec_uses_full_profile(mock_reviewer_class, mock_build, ru
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
         name="rev", module="feature", action="review", target="spec", handler="ReviewSpecHandler"
@@ -214,6 +219,7 @@ async def test_review_code_uses_full_profile(
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.context_provider.review.return_value = ""  # keeps every section
 
     code_file = tmp_path / "code.py"
     code_file.write_text("print('hello')", encoding="utf-8")

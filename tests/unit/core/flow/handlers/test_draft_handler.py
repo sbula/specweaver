@@ -57,6 +57,7 @@ class TestDraftSpecHandler:
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
         ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
+        ctx.context_provider.review.return_value = ""  # keeps every section
 
         mock_repo = MagicMock()
         mock_repo.log_artifact_event = AsyncMock()
@@ -124,6 +125,7 @@ class TestDraftSpecHandlerFeedbackLoop:
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
         ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
+        ctx.context_provider.review.return_value = ""  # keeps every section
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         ctx.feedback = self._feedback()
 

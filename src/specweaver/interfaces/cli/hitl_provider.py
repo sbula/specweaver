@@ -48,3 +48,12 @@ class HITLProvider(ContextProvider):
         answer = Prompt.ask("[dim](press Enter to skip)[/dim]", default="", console=self._console)
         logger.debug("HITL response received, length=%d chars", len(answer.strip()))
         return answer.strip()
+
+    async def review(self, section: str, text: str) -> str:
+        """Show the written section; Enter keeps it, `skip` drops it, anything else is a change."""
+        self._console.print(f"\n[bold]{section}[/bold] as written:")
+        self._console.print(text, markup=False, highlight=False)
+        answer = Prompt.ask(
+            "[dim]Enter keeps it, type a change, or 'skip'[/dim]", default="", console=self._console
+        )
+        return answer.strip()

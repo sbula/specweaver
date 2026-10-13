@@ -244,6 +244,7 @@ class TestFullLifecycle:
         ):
             mock_hitl_instance = AsyncMock()
             mock_hitl_instance.ask = _mock_ask
+            mock_hitl_instance.review = AsyncMock(return_value="")  # keeps every section
             mock_hitl_instance.name = "mock_hitl"
             mock_hitl_cls.return_value = mock_hitl_instance
 

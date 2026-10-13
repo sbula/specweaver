@@ -124,6 +124,7 @@ async def test_lineage_tracking_flow_database(
         model=ModelAccess(llm_router=FixedRouter(mock_llm)),
     )
     ctx.context_provider = AsyncMock()
+    ctx.context_provider.review.return_value = ""  # keeps every section
     ctx.db = lineage_db
     store = StateStore(tmp_path / ".specweaver_state.db")
 
@@ -203,6 +204,7 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
         model=ModelAccess(llm_router=FixedRouter(mock_llm)),
     )
     ctx.context_provider = AsyncMock()
+    ctx.context_provider.review.return_value = ""  # keeps every section
     ctx.db = lineage_db
     store = StateStore(tmp_path / ".specweaver_state.db")
 

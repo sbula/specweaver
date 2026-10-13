@@ -25,7 +25,15 @@ Let SpecWeaver ask the questions instead of writing the spec by hand.
 sw draft greet_service --project ./my-app
 ```
 
-The agent asks about inputs and context until all 6 sections are filled.
+SpecWeaver asks one question per section, and the model writes the section. Then it shows you the
+section:
+
+- Enter keeps it.
+- Text you type is a change: the model rewrites the section with it, and shows it again.
+- `skip` leaves a TODO in that section.
+
+Each rewrite is one more model call, under the spend brake. Without a terminal, every section is
+kept as written.
 
 **One command, whole loop (INT-US-02):** after co-authoring, `sw draft` runs the S-rule validation
 battery and the LLM semantic review in the same command.

@@ -44,6 +44,7 @@ def _interactive_ctx(tmp_path: Path, spec: Path) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     ctx.context_provider = AsyncMock()
+    ctx.context_provider.review.return_value = ""  # keeps every section
     return ctx
 
 

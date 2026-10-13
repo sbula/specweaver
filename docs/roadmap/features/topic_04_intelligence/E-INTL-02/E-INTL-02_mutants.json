@@ -1,0 +1,86 @@
+{
+  "schema": 2,
+  "feature": "E-INTL-02",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "One question per section; the model writes it; no answer leaves a TODO",
+      "scope": [
+        "tests/unit/workflows/drafting/test_draft_review.py",
+        "tests/e2e/capabilities/workflows/test_draft_section_review_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "blank-answer-written",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/_base.py",
+          "symbol": "BaseDrafter._section_content",
+          "old": "        if not user_input:\n            return f\"*TODO: Fill in {section_def['name']} section.*\"\n",
+          "new": "        if False:\n            return \"\"\n",
+          "breaks": "the model invents a section the person never answered",
+          "symbol_sha": "sha256:21bf0dd7b9a59a013dc1f9903dd406cec68e7c139c7c6fd00d96e44ee7d7c827"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Each written section is shown; Enter keeps, a change rewrites, skip leaves a TODO",
+      "scope": [
+        "tests/unit/workflows/drafting/test_section_review.py",
+        "tests/e2e/capabilities/workflows/test_draft_section_review_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "never-shown",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/_base.py",
+          "symbol": "BaseDrafter._section_content",
+          "old": "        while verdict := await self._context.review(section_def[\"name\"], content):\n",
+          "new": "        while verdict := \"\":\n",
+          "breaks": "the person never sees what the model wrote",
+          "symbol_sha": "sha256:21bf0dd7b9a59a013dc1f9903dd406cec68e7c139c7c6fd00d96e44ee7d7c827"
+        },
+        {
+          "id": "skip-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/_base.py",
+          "symbol": "BaseDrafter._section_content",
+          "old": "            if verdict.lower() == \"skip\":\n",
+          "new": "            if verdict == \"skip\":\n",
+          "breaks": "SKIP in capitals is taken as a change",
+          "symbol_sha": "sha256:21bf0dd7b9a59a013dc1f9903dd406cec68e7c139c7c6fd00d96e44ee7d7c827"
+        },
+        {
+          "id": "change-without-draft",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/_base.py",
+          "symbol": "BaseDrafter._generate_section",
+          "old": "            builder.add_context(draft, \"previous_draft\")\n",
+          "new": "            pass\n",
+          "breaks": "the rewrite starts from nothing instead of the text the person saw",
+          "symbol_sha": "sha256:26396defc73a948510e656e0c403c01ab12be1d5f9258ffad7f39afa37a7e770"
+        },
+        {
+          "id": "change-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/_base.py",
+          "symbol": "BaseDrafter._generate_section",
+          "old": "            builder.add_context(change, \"requested_change\")\n",
+          "new": "            pass\n",
+          "breaks": "the person's change never reaches the model",
+          "symbol_sha": "sha256:26396defc73a948510e656e0c403c01ab12be1d5f9258ffad7f39afa37a7e770"
+        },
+        {
+          "id": "terminal-silent",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/hitl_provider.py",
+          "symbol": "HITLProvider.review",
+          "old": "        self._console.print(text, markup=False, highlight=False)\n",
+          "new": "        pass\n",
+          "breaks": "the terminal asks about a section it never showed",
+          "symbol_sha": "sha256:a29fb7f7bfaa0903ac394d3c8ed19cc8f2219b7aa1b1d91d4b98eb169f070eb0"
+        }
+      ]
+    }
+  ]
+}

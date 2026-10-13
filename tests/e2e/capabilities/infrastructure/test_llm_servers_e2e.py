@@ -80,7 +80,12 @@ def _project(tmp_path: Path, llm_section: str = "") -> Path:
 def _draft(project: Path):
     with (
         patch("rich.prompt.Confirm.ask", return_value=True),
-        patch("rich.prompt.Prompt.ask", return_value="looks good"),
+        patch(
+            "rich.prompt.Prompt.ask",
+            side_effect=lambda prompt, *a, **k: (
+                "" if "Enter keeps it" in str(prompt) else "looks good"
+            ),
+        ),  # answers, then keeps each section
     ):
         return runner.invoke(app, ["draft", "Greeter", "--project", str(project)])
 
