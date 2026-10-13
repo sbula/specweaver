@@ -54,7 +54,7 @@ Hub: [architecture/README.md](architecture/README.md).
 | [E-VAL-01: Validation Engine](roadmap/features/topic_05_validation/E-VAL-01/E-VAL-01_design.md) | 📜 | Legacy Step 2 MVP |
 | [E-INTL-01: LLM Adapter](roadmap/features/topic_04_intelligence/E-INTL-01/E-INTL-01_design.md) | ✅ | One adapter call for every provider; known secrets masked before sending |
 | [E-INTL-02: Spec Drafting](roadmap/features/topic_04_intelligence/E-INTL-02/E-INTL-02_design.md) | 📜 | Legacy Step 4 MVP |
-| [E-INTL-03: Spec Review Engine](roadmap/features/topic_04_intelligence/E-INTL-03/E-INTL-03_design.md) | 🔧 | `sw review`: a model judges a spec or code; only a verdict line decides |
+| [E-INTL-03: Spec Review Engine](roadmap/features/topic_04_intelligence/E-INTL-03/E-INTL-03_design.md) | ✅ | `sw review`: a model judges a spec or code; only a verdict line decides |
 | [D-INTL-01: Code Gen](roadmap/features/topic_04_intelligence/D-INTL-01/D-INTL-01_design.md) | 📜 | Legacy Step 5 MVP |
 | [D-VAL-01: QA Runner](roadmap/features/topic_05_validation/D-VAL-01/D-VAL-01_design.md) | 📜 | Legacy Step 5 MVP |
 | [D-VAL-05: Code Validation Rules](roadmap/features/topic_05_validation/D-VAL-05/D-VAL-05_design.md) | ✅ | C01–C08 on a code file, its own test and coverage included |

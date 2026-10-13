@@ -1,6 +1,6 @@
 # E-INTL-03 — Spec Review Engine
 
-**Status**: Built; `🔧` until the user signs off. · **Phase**: 1 (Step 4)
+**Status**: ✅ Finished — signed off by the user 2026-10-13. · **Phase**: 1 (Step 4)
 
 | | |
 |---|---|

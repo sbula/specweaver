@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** `E-INTL-03` → the review it hands off to
   > - **Done when:** a spec is produced through an interactive loop with HITL stops
 
-* **`E-INTL-03` 🔧: Spec Review Engine** (Legacy: Step 4)
+* **`E-INTL-03` ✅: Spec Review Engine** (Legacy: Step 4)
   > - **Purpose:** Judge a spec or a piece of code on meaning, not just on rules a regex can check
   > - **Trigger:** When `sw review` runs, or drafting hands off
   > - **Precondition:** `E-INTL-01` → the model · `C-VAL-05` → the criteria it judges against

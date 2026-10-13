@@ -118,7 +118,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
     *   `🔧` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
-    *   `🔧` **E-INTL-03:** Spec Review Engine
+    *   `✅` **E-INTL-03:** Spec Review Engine
     *   `✅` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
     *   🔴 **Surgical Spec Refactoring:**
