@@ -110,12 +110,21 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
             if status not in (None, "pending", "running", "not_started"):
                 break
             time.sleep(0.05)
+        # The usage is written as the run ends, a moment after its status reads completed.
+        for _ in range(100):
+            rows = _usage(db_path)
+            if rows:
+                break
+            time.sleep(0.05)
 
     assert status == "completed", status
     assert seen
-    with sqlite3.connect(db_path) as conn:
-        rows = conn.execute(
-            "SELECT l.step_name, l.dal_level, o.outcome FROM llm_usage_log l "
-            "LEFT JOIN llm_step_outcome o USING (run_id, step_name)"
-        ).fetchall()
     assert rows == [("review_spec", "DAL_C", "passed")]
+
+
+def _usage(db_path: Path) -> list[tuple[str, str, str]]:
+    with sqlite3.connect(db_path) as conn:
+        return conn.execute(
+            "SELECT l.step_name, l.dal_level, o.outcome FROM llm_usage_log l "
+            "JOIN llm_step_outcome o USING (run_id, step_name)"
+        ).fetchall()

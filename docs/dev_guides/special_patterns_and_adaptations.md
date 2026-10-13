@@ -253,11 +253,10 @@ evaluators, which belong in git.
 
 > [!CAUTION]
 > **Never flush the cache while building the graph.**
-> `TopologyGraph` computes `graph.stale_nodes` from the cache, so the cache is the baseline the diff
-> is measured against. If `TopologyGraph.from_project()` rewrote `topology.cache.json`, the next run
-> would see no changes and let broken code skip validation. Only the CLI orchestrator (`pipelines.py`; since moved (2026-09-25):
-> `core/flow/interfaces/cli.py`) saves it (`DependencyHasher.save_cache()`), and only after `PipelineRunner` returns
-> `RunStatus.COMPLETED`. Saving from inside `flow` would break the `flow`/`graph` boundary.
+> The cache is the baseline a test step measures change against. If anything else rewrote
+> `topology.cache.json`, the next run would see no changes and let broken code skip its tests. Only
+> `core/flow/interfaces/cli.py` saves it (`DependencyHasher.save_cache()`), and only after a
+> `COMPLETED` run whose whole-project test step passed.
 
 > [!CAUTION]
 > **Tombstones (deleted dependencies)**

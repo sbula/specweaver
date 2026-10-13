@@ -290,9 +290,8 @@ Execution".
 
 ## 8. Impact-aware validation
 
-- **Pristine bypass** ("Pristine Topology Bypass"): if a module's AST hash is unchanged, i.e. not in
-  `stale_nodes`, the test and lint atoms skip and return `SUCCESS`. Not yet live: `stale_nodes` is
-  never populated (`pipeline_engine_guide.md` §9).
+- **Tests of what changed**: a whole-project test step runs only the tests of modules changed since
+  the last green test run, never none (`pipeline_engine_guide.md` §9).
 - **DAL enforcement**: for `DAL_A` and `DAL_B` boundaries, soft warnings become `FAIL`.
 - **E2E realism**: tests of this run in temporary `git worktrees` with small purpose-built validation
   pipelines (e.g. `C06 - Bare Except`), not `unittest.mock`.

@@ -108,7 +108,6 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.llm_routing_enabled = False
     ctx.generation_config = None
     ctx.feedback = {}
-    ctx.graph = ctx.graph.model_copy(update={"stale_nodes": None})
 
     runner = PipelineRunner(definition, ctx)
     result = await runner.run()

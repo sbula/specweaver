@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Extends | `TopologyGraph` (`assurance/graph/topology.py`) |
-| Used by | flow engine staleness bypass (SF-04); CLI cache flush after a successful run |
+| Used by | `C-FLOW-06` (a test step runs the tests of what changed); the CLI saves the cache after green tests |
 | Deferred | "Rocket Mode" sidecar graph databases (Falkor/Neo4j) → Feature 3.48 (AD-3) |
 
 ## What it does
@@ -79,9 +79,8 @@ SF-02 later added `orjson` (see its plan).
 
 ## Risks
 
-- **Staleness bypass is inert in production** (noted 2026-09-25): `GraphContext.stale_nodes` in
-  `core/flow/handlers/run_context.py` is read but written by nothing, so it is always `None` and no
-  step is skipped. The cache save after a COMPLETED run does happen.
+- No step is skipped on `stale_nodes`; `C-FLOW-06` compares the cache per file instead, because a
+  module's hash covers the modules below it `[agreed 2026-10-13]`.
 
 ## Sub-features
 

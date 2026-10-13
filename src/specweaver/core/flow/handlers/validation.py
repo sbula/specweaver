@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
@@ -15,6 +14,8 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.flow.engine.models import PipelineStep
@@ -340,23 +341,8 @@ class ValidateCodeHandler:
         )
 
 
-def _test_dir_for(module_dir: Path, src_dir: Path, project_path: Path, kind: str) -> str:
-    """The test directory mirroring one source module, e.g. `specweaver/core/flow` ->
-    `tests/unit/core/flow`.
-
-    Falls back to the tier root (`tests/<kind>`) when the module sits directly under `src/`, when
-    the mirrored directory does not exist yet, or when the module is not under `src/` at all —
-    three distinct reasons that all mean "run the whole tier rather than nothing".
-    """
-    tier_root = str(Path("tests") / kind)
-    try:
-        parts = module_dir.relative_to(src_dir).parts
-    except ValueError:
-        return tier_root
-    if len(parts) <= 1:
-        return tier_root
-    mirrored = Path("tests") / kind / Path(*parts[1:])
-    return str(mirrored) if (project_path / mirrored).exists() else tier_root
+#: Test-step targets that mean the whole project; only these are narrowed to what changed.
+_WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 
 class ValidateTestsHandler:
@@ -453,7 +439,7 @@ class ValidateTestsHandler:
             logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)
             return StepResult(
                 status=StepStatus.PASSED,
-                output=result.exports,
+                output={**result.exports, "tests_cover_project": target in _WHOLE_PROJECT},
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -487,28 +473,21 @@ class ValidateTestsHandler:
         return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
-        """Resolve precise test directories from TopologyGraph stale nodes."""
-        stale_nodes = context.graph.stale_nodes
-        if stale_nodes is None or target not in {".", "", "src", "src/", "tests", "tests/"}:
+        """The test folders of the modules changed since the last green run; else `target`.
+
+        Only a step over the whole project narrows. Nothing changed, no green run yet, or any
+        error: every test runs, so a step never passes having run nothing.
+        """
+        if target not in _WHOLE_PROJECT:
             return [target]
-
-        if len(stale_nodes) == 0:
-            return []  # All nodes pristine, trigger short-circuit
-
+        code_root = context.isolation.execution_root or context.project_path
         try:
             from specweaver.assurance.graph.topology import TopologyGraph
+            from specweaver.core.flow.handlers.changed_code import folders_to_test
             from specweaver.graph.topology.engine import TopologyEngine
 
-            engine = TopologyEngine()
-            graph = TopologyGraph.from_project(context.project_path, engine, auto_infer=False)
-
-            src_dir = context.project_path / "src"
-            resolved = {
-                _test_dir_for(node.yaml_path.parent, src_dir, context.project_path, kind)
-                for node_name in stale_nodes
-                if (node := graph.nodes.get(node_name)) and node.yaml_path
-            }
-            return sorted(resolved) if resolved else [target]
+            graph = TopologyGraph.from_project(code_root, TopologyEngine(), auto_infer=False)
+            return folders_to_test(context.project_path, code_root, graph, kind) or [target]
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]

@@ -327,8 +327,20 @@ def _apply_isolation_policy(context: RunContext, db: Database, project: str) -> 
     apply_isolation_policy(context, settings, logger)
 
 
+def _tests_passed_over_project(final_run: Any) -> bool:
+    """Whether a test step over the whole project passed: the point the next run compares with."""
+    from specweaver.core.flow.engine.state import StepStatus
+
+    return any(
+        record.result is not None
+        and record.result.status == StepStatus.PASSED
+        and (record.result.output or {}).get("tests_cover_project") is True
+        for record in final_run.step_records
+    )
+
+
 def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) -> None:
-    """Save the staleness cache on success, then translate the run status into an exit code.
+    """Save the hash cache after green tests, then translate the run status into an exit code.
 
     Shared by `_execute_run` and `resume`, which differ in one respect that is preserved rather
     than smoothed over: `resume` logs a cache-save failure without printing it, so
@@ -339,7 +351,7 @@ def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) ->
     """
     from specweaver.core.flow.engine.state import RunStatus
 
-    if final_run.status == RunStatus.COMPLETED:
+    if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):
         from specweaver.assurance.graph.hasher import DependencyHasher
 
         try:

@@ -18,9 +18,24 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
+from specweaver.core.flow.engine.state import StepRecord, StepResult, StepStatus
 from specweaver.core.flow.interfaces.cli import _create_display
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli.main import app
+
+#: A run whose whole-project test step passed: the hash cache is saved after it.
+_GREEN_TESTS = [
+    StepRecord(
+        step_name="tests",
+        status=StepStatus.PASSED,
+        result=StepResult(
+            status=StepStatus.PASSED,
+            output={"tests_cover_project": True},
+            started_at="",
+            completed_at="",
+        ),
+    )
+]
 
 runner = CliRunner()
 
@@ -164,6 +179,7 @@ class TestRunPipelineMocked:
             class DummyRun:
                 def __init__(self, status: RunStatus) -> None:
                     self.status = status
+                    self.step_records = _GREEN_TESTS
 
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
 
@@ -202,6 +218,7 @@ class TestRunPipelineMocked:
             class DummyRun:
                 def __init__(self, status: RunStatus) -> None:
                     self.status = status
+                    self.step_records = _GREEN_TESTS
 
             mock_runner.run = AsyncMock(return_value=DummyRun(RunStatus.COMPLETED))
             mock_save_cache.side_effect = PermissionError("Cannot write")
@@ -249,6 +266,7 @@ class TestRunContextConfigWiring:
 
             class DummyRun:
                 status = RunStatus.COMPLETED
+                step_records = _GREEN_TESTS
 
             mock_runner.run = AsyncMock(return_value=DummyRun())
             result = runner.invoke(
@@ -298,6 +316,7 @@ class TestRunContextConfigWiring:
 
             class DummyRun:
                 status = RunStatus.COMPLETED
+                step_records = _GREEN_TESTS
 
             mock_runner.run = AsyncMock(return_value=DummyRun())
             result = runner.invoke(
@@ -362,6 +381,7 @@ class TestResumeContextConfigWiring:
 
             class DummyRun:
                 status = RunStatus.COMPLETED
+                step_records = _GREEN_TESTS
 
             mock_runner.resume = AsyncMock(return_value=DummyRun())
             # resume resolves the active project (no --project flag); init set it active.
@@ -455,7 +475,7 @@ class TestResumeMocked:
             mock_runner = mock_runner_class.return_value
 
             class DummyRun:
-                pass
+                step_records = _GREEN_TESTS
 
             mock_run = DummyRun()
             mock_run.status = RunStatus.COMPLETED

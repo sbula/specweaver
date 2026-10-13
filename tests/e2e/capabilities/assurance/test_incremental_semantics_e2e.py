@@ -103,6 +103,53 @@ def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:
     return project_dir
 
 
+_TEST = (
+    "import pytest\n\nfrom demo.{name}.{name} import {name}\n\n\n"
+    "@pytest.mark.unit\ndef test_{name}():\n    assert {name}() == {value}\n"
+)
+
+
+def _create_project_with_modules(tmp_path: Path, name: str) -> Path:
+    """A `sw init` project with two modules under `src/demo`, each with its own tests."""
+    project_dir = tmp_path / name
+    project_dir.mkdir()
+    assert runner.invoke(app, ["init", name, "--path", str(project_dir)]).exit_code == 0
+    (project_dir / "conftest.py").write_text(
+        "import sys, pathlib\nsys.path.insert(0, str(pathlib.Path(__file__).parent / 'src'))\n",
+        encoding="utf-8",
+    )
+    for module in ("alpha", "beta"):
+        code = project_dir / "src" / "demo" / module
+        code.mkdir(parents=True)
+        (code / "context.yaml").write_text(f"name: {module}\nlevel: module\n", encoding="utf-8")
+        (code / "__init__.py").write_text("", encoding="utf-8")
+        (code / f"{module}.py").write_text(
+            f"def {module}() -> int:\n    return 1\n", encoding="utf-8"
+        )
+        tests = project_dir / "tests" / "unit" / module
+        tests.mkdir(parents=True)
+        (tests / f"test_{module}.py").write_text(
+            _TEST.format(name=module, value=1), encoding="utf-8"
+        )
+    (project_dir / "src" / "demo" / "__init__.py").write_text("", encoding="utf-8")
+    (project_dir / "tests_only.yaml").write_text(
+        "name: tests_only\nsteps:\n"
+        "  - name: test\n    action: validate\n    target: tests\n    params:\n"
+        "      target: tests/\n",
+        encoding="utf-8",
+    )
+    return project_dir
+
+
+def _tests_run(project_dir: Path) -> int:
+    """How many tests the newest run's test step ran, from the run store."""
+    from specweaver.core.config.paths import state_db_path
+    from specweaver.core.flow.engine.store import StateStore
+
+    newest = StateStore(state_db_path()).list_runs(limit=1)[0]
+    return int(newest.step_records[-1].result.output["passed"])
+
+
 class TestIncrementalPipelineE2E:
     """Test full integration of topology hashing and pipeline execution."""
 
@@ -125,30 +172,38 @@ class TestIncrementalPipelineE2E:
         assert "." in data
         assert "src/math_ops.py" in data["."]["rendered_payload"]
 
-    def test_e2e_true_incremental_bypass(self, tmp_path: Path) -> None:
-        """Consecutive run with NO modifications skips execution natively via bypass."""
-        project_dir = _create_project_with_clean_code(tmp_path, "bypass-proj")
+    def test_the_next_run_tests_only_what_changed(self, tmp_path: Path) -> None:
+        """Proves: C-FLOW-06 FR-2. Two modules; after a green run, one changes; only its tests run."""
+        project_dir = _create_project_with_modules(tmp_path, "narrow-proj")
+        run = ["run", str(project_dir / "tests_only.yaml"), "src/", "--project", str(project_dir)]
 
-        # Seed the cache natively via first run
-        res1 = runner.invoke(
-            app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)]
-        )
-        assert res1.exit_code == 0
+        first = runner.invoke(app, run)
+        assert first.exit_code == 0, first.output
+        assert _tests_run(project_dir) == 2
 
-        # Observe execution output natively to verify bypass
-        res2 = runner.invoke(
-            app, ["run", str(project_dir / "e2e_code.yaml"), "src/", "--project", str(project_dir)]
+        (project_dir / "src" / "demo" / "beta" / "beta.py").write_text(
+            "def beta() -> int:\n    return 2\n", encoding="utf-8"
         )
-        assert res2.exit_code == 0
+        (project_dir / "tests" / "unit" / "beta" / "test_beta.py").write_text(
+            _TEST.format(name="beta", value=2), encoding="utf-8"
+        )
+        second = runner.invoke(app, run)
+        assert second.exit_code == 0, second.output
+        assert _tests_run(project_dir) == 1
 
-        # The result simply passes without error. Bypassed execution uses <1s typically.
-        # Check logs if possible, but assert exit 0 is the primary contract.
-        assert res2.exit_code == 0
-        assert (
-            "pristine" in res2.output.lower()
-            or "bypass" in res2.output.lower()
-            or "completed" in res2.output.lower()
+        third = runner.invoke(app, run)  # nothing changed since the green run: every test
+        assert third.exit_code == 0, third.output
+        assert _tests_run(project_dir) == 2
+
+    def test_a_run_without_tests_saves_no_cache(self, tmp_path: Path) -> None:
+        """Proves: C-FLOW-06 FR-2. A green run that tested nothing leaves no point to compare with."""
+        project_dir = _create_project_with_clean_code(tmp_path, "no-tests-proj")
+        result = runner.invoke(
+            app, ["run", "validate_only", "specs/math_spec.md", "--project", str(project_dir)]
         )
+
+        assert result.exit_code == 0, result.output
+        assert not (project_dir / ".specweaver" / "topology.cache.json").exists()
 
     def test_e2e_cache_resiliency_on_failure(self, tmp_path: Path) -> None:
         """Failed pipeline runs strictly DO NOT update the `.specweaver` staleness cache."""

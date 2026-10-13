@@ -57,6 +57,9 @@ async def _build_base_prompt(
         builder.add_constitution(context.guidance.constitution)
     if context.guidance.standards:
         builder.add_standards(context.guidance.standards)
+    for path in context.graph.api_contract_paths or []:
+        if outline := (skeleton_files or {}).get(path):
+            builder.add_context(f"{path} (signatures only)\n{outline}", "api_contract")
 
     # Memory Hydration — fail-safe
     if (

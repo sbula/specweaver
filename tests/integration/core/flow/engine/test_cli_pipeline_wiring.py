@@ -34,6 +34,7 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
             # Fake the return
             fake_pr = MagicMock(spec=PipelineRun)
             fake_pr.status = RunStatus.COMPLETED
+            fake_pr.step_records = []
             fake_pr.run_id = "fake-123"
             mock_run.return_value = fake_pr
 

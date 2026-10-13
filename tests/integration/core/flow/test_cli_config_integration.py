@@ -56,7 +56,7 @@ def _run_and_capture(project_dir: Path):
         patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
     ):
         mock_runner_class.return_value.run = AsyncMock(
-            return_value=type("R", (), {"status": RunStatus.COMPLETED})()
+            return_value=type("R", (), {"status": RunStatus.COMPLETED, "step_records": []})()
         )
         result = runner.invoke(
             app, ["run", "validate_only", str(spec), "--project", str(project_dir)]
@@ -213,7 +213,7 @@ def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, mo
     ):
         mock_get_store.return_value.load_run.return_value = parked
         mock_runner_class.return_value.resume = AsyncMock(
-            return_value=type("R", (), {"status": RunStatus.COMPLETED})()
+            return_value=type("R", (), {"status": RunStatus.COMPLETED, "step_records": []})()
         )
         result = runner.invoke(app, ["resume", "abc1234567890"])
         assert result.exit_code == 0, result.stdout
@@ -251,7 +251,7 @@ def test_toml_session_isolation_true_flows_onto_resume_context(tmp_path: Path, m
     ):
         mock_get_store.return_value.load_run.return_value = parked
         mock_runner_class.return_value.resume = AsyncMock(
-            return_value=type("R", (), {"status": RunStatus.COMPLETED})()
+            return_value=type("R", (), {"status": RunStatus.COMPLETED, "step_records": []})()
         )
         result = runner.invoke(app, ["resume", "def4567890123"])
         assert result.exit_code == 0, result.stdout
@@ -308,7 +308,7 @@ def test_tty_resume_gets_interactive_context_provider(tmp_path: Path, monkeypatc
     ):
         mock_get_store.return_value.load_run.return_value = parked
         mock_runner_class.return_value.resume = AsyncMock(
-            return_value=type("R", (), {"status": RunStatus.COMPLETED})()
+            return_value=type("R", (), {"status": RunStatus.COMPLETED, "step_records": []})()
         )
         result = runner.invoke(app, ["resume", "fff7890123456"])
         assert result.exit_code == 0, result.stdout

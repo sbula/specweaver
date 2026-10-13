@@ -22,33 +22,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _linter_kwargs(context: RunContext, target: str) -> dict[str, Any]:
-    """What to hand the linter: every stale file under `target`, or `target` itself.
-
-    A topology-aware run lints only what the staleness cache says changed; without a cache it
-    lints the whole target. Separate so `execute` reads as its four phases rather than opening with
-    a file walk.
-    """
-    if context.graph.stale_nodes is None:
-        return {"intent": "run_linter", "target": target}
-
-    target_path = (context.project_path / target).resolve()
-    if target_path.is_file():
-        candidates = [target_path]
-    elif target_path.is_dir():
-        candidates = list(target_path.rglob("*.py"))
-    else:
-        candidates = []
-
-    stale = context.graph.stale_nodes
-    targets = [
-        rel
-        for f in candidates
-        if (rel := f.relative_to(context.project_path).as_posix()) in stale or str(f) in stale
-    ]
-    return {"intent": "run_linter", "targets": targets}
-
-
 def _lint_outcome(
     started: str,
     *,
@@ -106,7 +79,7 @@ class LintFixHandler:
         reflections_used = 0
         last_error_count = 0
 
-        run_kwargs = _linter_kwargs(context, target)
+        run_kwargs: dict[str, Any] = {"intent": "run_linter", "target": target}
 
         # Initial lint
         lint_result = atom.run(run_kwargs)

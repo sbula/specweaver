@@ -112,14 +112,13 @@ class AnalysisContext(BaseModel):
 class GraphContext(BaseModel):
     """What this run knows about the project's dependency graph.
 
-    ``stale_nodes`` and ``workspace_roots`` are read by code but written by nothing, so they are
-    always ``None`` in production — a half-built feature, not dead code.
+    ``workspace_roots`` is read by code but written by nothing, so it is always ``None`` in
+    production.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     topology: Any = None
-    stale_nodes: set[str] | None = None
     workspace_roots: list[str] | None = None
     api_contract_paths: list[str] | None = None
 

@@ -62,6 +62,7 @@ def _resume(tmp_path: Path, *flags: str):
 
     class _Done:
         status = RunStatus.COMPLETED
+        step_records = ()
 
     with (
         patch("specweaver.core.flow.interfaces.cli._get_state_store") as store,

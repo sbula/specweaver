@@ -425,65 +425,6 @@ class TestPipelineRunnerEdgeCases:
         assert "Something exploded" in result.step_records[0].result.error_message
 
 
-class TestPipelineRunnerStalenessBypass:
-    """Tests for SF-4: Pipeline Execution Optimization bypass logic."""
-
-    @pytest.mark.asyncio
-    async def test_bypasses_clean_non_project_target(self, tmp_path: Path) -> None:
-        """Step targeting a specific module NOT in stale_nodes should be bypassed."""
-        steps = [
-            PipelineStep(name="test_clean", action=StepAction.VALIDATE, target=StepTarget.FEATURE),
-        ]
-        pipeline = PipelineDefinition(name="staleness_pipe", steps=steps)
-
-        ctx = _make_context(tmp_path)
-        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/specweaver/billing"}})
-        # Target is CODE, but the specific module target is 'src/specweaver/auth'
-        steps[0].target = StepTarget.CODE
-        steps[0].params = {"target": "src/specweaver/auth"}
-
-        registry = _make_registry(PassHandler())
-        runner = PipelineRunner(pipeline, ctx, registry=registry)
-
-        result = await runner.run()
-        assert result.status == RunStatus.COMPLETED
-        # The step should be SKIPPED immediately with NO output, bypassed
-        assert result.step_records[0].status == StepStatus.SKIPPED
-        assert result.step_records[0].result is not None
-        assert result.step_records[0].result.output is not None
-        assert result.step_records[0].result.output.get("mock") is None  # PassHandler not called
-
-    @pytest.mark.asyncio
-    async def test_does_not_bypass_global_target(self, tmp_path: Path) -> None:
-        """Step targeting a global path like '.' should NOT bypass for staleness."""
-        steps = [
-            PipelineStep(
-                name="test_global",
-                action=StepAction.VALIDATE,
-                target=StepTarget.TESTS,
-                params={"target": "."},
-            ),
-        ]
-        pipeline = PipelineDefinition(name="staleness_pipe_global", steps=steps)
-
-        ctx = _make_context(tmp_path)
-        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/specweaver/billing"}})
-
-        registry = StepHandlerRegistry()
-        registry.register(StepAction.VALIDATE, StepTarget.TESTS, ContextInjectionHandler())
-
-        runner = PipelineRunner(pipeline, ctx, registry=registry)
-
-        result = await runner.run()
-        assert result.status == RunStatus.COMPLETED
-
-        # Bypassing didn't happen - the step PASSED and the ContextInjectionHandler executed
-        assert result.step_records[0].status == StepStatus.PASSED
-        assert result.step_records[0].result is not None
-        assert result.step_records[0].result.output is not None
-        # In a real atom, it reads context.graph.stale_nodes
-
-
 class TestPipelineRunnerVaultSecurity:
     """Tests for SF-1: Vault Bindings Security Option D."""
 

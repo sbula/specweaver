@@ -1,88 +1,60 @@
-# C-FLOW-06 — Refactoring Phase 3 Optimizations
+# C-FLOW-06 — Phase 3 Optimizations
 
-**Status**: DRAFT · **Feature ID**: 3.32d · **Phase**: 3 · SF-01 committed; SF-02 halted — open
-items in [README_BEFORE_CONTINUE.md](README_BEFORE_CONTINUE.md).
+**Status**: 🔧 Built, waiting for sign-off. · **Phase**: 3 (Feature 3.32d)
 
 | | |
 |---|---|
-| Uses | `PromptBuilder`, `CodeStructureAtom` / `CodeStructureTool`, `QARunnerAtom` / `PolyglotQARunner`, `DALResolver`, `TopologyGraph` |
-| Not touched | git operations, front-ends, remote LLM server configuration |
+| Touches | `assurance/graph/changes.py` · `core/flow/handlers/` (`changed_code.py`, `validation.py`, `prompting.py`, `lint_fix.py`) · `core/flow/interfaces/cli.py` · `workspace/project/scaffold.py` |
+| Plan | [as built](C-FLOW-06_implementation_plan.md) |
 
 ## What it does
 
-Four optimizations against latency, token over-spend, "Blank Canvas" hallucination and slow full-suite
-test runs:
+Four things that make runs cheaper or safer:
 
-- **Context condensation** — non-target context files go to the LLM as AST skeletons.
-- **Impact-aware test limiting** — pytest runs only the tests of stale topology nodes.
-- **DAL enforcement** — validation respects DAL strictness and exits non-zero on a breach.
-- **Starter scaffolding** — `sw init` writes default `context.yaml` boundaries.
+- **Contract outlines.** The API contracts a run writes reach the code-writing and review prompts
+  as outlines (signatures, no bodies).
+- **Tests of what changed.** A test step over the whole project runs only the tests of the modules
+  changed since the last green test run, and of the modules that use them
+  `[agreed 2026-10-13]`.
+- **DAL gates.** Validation follows the target's DAL; on a strict DAL a warning fails the check.
+- **Starter boundaries.** `sw init` writes `context.yaml` for the root, `src` and `tests`.
 
-Constraints: condensation preserves the exact editing targets; DAL enforcement yields a non-zero
-exit without a CLI flag; `sw init` scaffolding runs no LLM (`loom` boundary compliance).
+Runs never skip a whole step because its target looks unchanged, and lint-fix always lints its whole
+target `[agreed 2026-10-13]`: a step that checked nothing must not read as green.
 
-## Where it plugs in
+## How "what changed" is found
 
-- **Condensation**: `PromptBuilder` (`src/specweaver/infrastructure/llm/prompt_builder.py`).
-  `CodeStructureTool` and `CodeStructureAtom` already extract AST per language; non-target context
-  files pass through `CodeStructureAtom` and are degraded to skeletons.
-- **Test limiting**: `QARunnerAtom` runs pytest locally. An orchestrator (`ValidationRunner` /
-  `PipelineRunner`, per AD-1 `ValidateTestsHandler`) queries `TopologyGraph.stale_nodes()` and
-  passes `--test-target` paths to `QARunnerAtom.run_tests()`.
-- **DAL**: `DALResolver` sits inside `PipelineRunner`, so all validation respects DAL strictness
-  thresholds and exits with `typer.Exit(code=1)` on a breach — no CLI-specific flag.
-- **Scaffolding**: `workspace/project/scaffold.py` handles `sw init`. It writes `context.yaml`
-  boundaries and rule templates statically, never touching the `loom` (Agent) boundary — that would
-  create cyclic LLM execution.
+`sw run` and `sw resume` save the hash cache (`.specweaver/topology.cache.json`, `A-SENS-01`) after a
+completed run whose whole-project test step passed — and only then. The next test step compares
+each file's hash with that cache:
 
-External: Pytest >7.0 (targeted runs via `--pyargs` or explicit paths; Test Impact Analysis
-patterns); tree-sitter 0.21.0 (language parsers, compat confirmed, shipped with Feature 3.22
-Polyglot Extractors). Prior art: CI patterns from PasteMax and Testmon; no blueprint.
+- a changed test file runs its own folder;
+- a changed code file runs the tests of its closest module (`tests/<kind>/<module path>`) and of every
+  module that uses it;
+- a changed file of the root or `src` module, or a module with no test folder, runs the whole tier;
+- nothing changed, no cache, or an unreadable cache: every test runs.
 
-## Decisions
-
-| # | Decision | Rationale | Architectural Switch? |
-|---|----------|-----------|----------------------|
-| AD-1 | Query TopologyGraph dynamically in ValidateTestsHandler (REJECTED QARunnerTool static query) | `loom/` (Execution Layer) must not import `graph/` (Pure Logic). `ValidateTestsHandler` may consume `graph/` and passes resolved paths into `QARunnerAtom`. | Yes |
-| AD-2 | Hardcode AST Skeleton truncation within PromptBuilder. | Token-saving logic in one place, instead of each Handler parsing file sizes. | No |
-
-AD-1 replaced "Query TopologyGraph statically in QARunnerTool": that made `loom` import `graph`.
+A file is compared per file, not per module hash, because a module's hash covers every module below
+it: comparing those would mark the root changed for any change. In a run's worktree, the code there
+is compared with the cache of the real project.
 
 ## Functional Requirements
 
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
-| FR-1 | Context Condensation | PromptBuilder | Process `context_files` | De-duplicate and condense contextual non-target files into strictly typed AST Skeletons via `CodeStructureAtom`, halving token usage. |
-| FR-2 | Test Limiting | QARunnerAtom | Limit Pytest scope | Execute tests explicitly scoped to `TopologyGraph.stale_nodes` and their direct dependents instead of the global `tests/` directory. |
-| FR-3 | Validation DAL Gates | Core Framework | DAL Enforcement | Integrate `DALResolver` into `PipelineRunner` and CLI commands so all validation respects DAL strictness thresholds, exiting 1 when breached (Fail-at-end). |
-| FR-4 | Starter Scaffolding | Project Scaffold | Initialize Project | Emit default standard topologies into `context.yaml` without importing `.loom` tools or querying an LLM in the initialization chain. |
+| FR-1 | Contract outlines | Generation and review steps | SHALL add each recorded API contract to the prompt as its outline, and leave out a contract that cannot be read | the model writes against the real signatures for a few tokens |
+| FR-2 | Tests of what changed | Test step; `sw run` | SHALL narrow a whole-project test step as described above, never to nothing, and SHALL save the hash cache only after a completed run whose whole-project test step passed | runs test what changed; untested code is never marked tested |
+| FR-3 | DAL gates | `sw check`, runner | SHALL resolve the target's DAL and, on a strict DAL (`DAL_A`, `DAL_B`), fail the check on a warning (exit 1) | critical code is held to a higher bar without a flag |
+| FR-4 | Starter boundaries | `sw init` | SHALL write `context.yaml` for the root, `src` and `tests`, with no model call, keeping a file that exists | the topology graph has modules from the first run |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Performance | Skeleton condensation must be <1.0s to avoid latency build-up per loop. |
-| NFR-2 | Architecture Compliance | Validation pipelines must execute cleanly under stateless execution mode (`operational.async_ready = false`). |
-| NFR-3 | Compatibility | Pytest targeting must not conflict with parameterized `[ ]` paths on Windows CMD consoles. |
+| NFR-1 | Performance | Outlining one file takes under 1.0 s. |
 
-## Guides owed
+## Live demo
 
-| Guide Topic | Description | Status |
-|-------------|-------------|--------|
-| Test Impact Testing | Using stale tracking to bypass full suite testing | ⬜ To be written during Pre-commit |
-
-## Sub-features
-
-| SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
-|----|------|-----|------------------|-----------|------|
-| SF-01 | AST skeletons in `PromptBuilder`; `context.yaml` profiles on `sw init` | FR-1, FR-4 | polyglot parsers, `PromptBuilder` context lists, CLI init paths → truncated XML payloads, initialized `.specweaver/` | — | [sf01](C-FLOW-06_sf01_implementation_plan.md) |
-| SF-02 | Test targets filtered via the Topology Graph; DAL boundaries fail validation | FR-2, FR-3 | DAG nodes, pytest targets, `DALResolver` thresholds → truncated pytest stdout, non-zero exit | SF-01 | [sf02](C-FLOW-06_sf02_implementation_plan.md) |
-
-## Progress Tracker
-
-| SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
-|----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Context Condensation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Impact-Aware Testing & DAL | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-
-**Next**: SF-02 Dev — see [README_BEFORE_CONTINUE.md](README_BEFORE_CONTINUE.md).
+`tests/e2e/capabilities/assurance/test_incremental_semantics_e2e.py`: in a `sw init` project with
+two modules, `sw run` runs both modules' tests; after one module and its test change, the next
+`sw run` runs 1 test; with nothing changed, both run again. A `validate_only` run saves no cache.

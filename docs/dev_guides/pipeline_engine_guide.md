@@ -328,19 +328,18 @@ parallel, one synthesis wave writes the result.
 
 ---
 
-## 9. Incremental bypass (topology crawler)
+## 9. Tests of what changed (C-FLOW-06)
 
-Feature 3.32. Skips QA on modules that did not change.
+A test step over the whole project (`target: tests/`, `.`, `src`) runs only the tests of what changed
+since the last green test run (`core/flow/handlers/changed_code.py`).
 
-- **Graph**: `TopologyGraph.from_project()` computes Merkle-tree hashes over the source directories.
-- **Stale nodes**: `ValidateTestsHandler` and `LintFixHandler` read `context.graph.stale_nodes`.
-- **Pristine short-circuit**: a module not in the stale set is skipped. If `stale_nodes` is an empty
-  list for a target, the handler skips `pytest`/`ruff` and returns `SUCCESS` at once.
-- **Tombstones**: if a dependency was deleted, `TopologyGraph` flags the consumer itself as stale, so
-  the failure surfaces.
-
-Current state: `GraphContext.stale_nodes` (`core/flow/handlers/run_context.py`) is read but written
-by nothing, so it is always `None` in production and the short-circuit never fires.
+- **Baseline**: `sw run` / `sw resume` save `.specweaver/topology.cache.json` only after a completed
+  run whose whole-project test step passed (`tests_cover_project` in its output).
+- **Per file**: a changed test file runs its folder; a changed code file runs its closest module's
+  test folder and those of every module that uses it. A module whose dependency is gone counts as
+  changed.
+- **Never nothing**: nothing changed, no cache, or an error — every test runs.
+- No step is ever skipped because its target looks unchanged, and lint-fix lints its whole target.
 
 ---
 

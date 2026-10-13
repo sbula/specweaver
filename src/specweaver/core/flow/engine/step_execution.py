@@ -10,7 +10,7 @@ suppression is a direct admission the method is past the project's own
 bar.
 
 The seams were already visible, because three modules had been carved out of this same loop before
-(`hydration.py`, `approval.py`, `staleness.py`) — each time under pressure from a feature that
+(`hydration.py`, `approval.py`) — each time under pressure from a feature that
 needed room. This split follows the same convention: free functions taking the runner first, so the
 loop keeps `self._persist` / `_log` / `_emit` as its own concern.
 
@@ -37,7 +37,6 @@ from specweaver.core.flow.engine.hydration import hydrate_plan_context
 from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
-from specweaver.core.flow.engine.staleness import try_staleness_bypass
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
@@ -519,11 +518,8 @@ async def run_one_step(
     `CONTINUE` and `PROCEED` both mean "next iteration" to the caller;
     the distinction is real only in here, where it decides whether `current_step` moves.
     """
-    # MUST stay at the very top. Two later blocks would otherwise destroy the evidence this
-    # decision reads:
-    #   * the staleness bypass below can complete the step as SKIPPED and continue, discarding the
-    #     human's approval and the stored result;
-    #   * mark_step_running() overwrites record.status WAITING_FOR_INPUT -> RUNNING.
+    # MUST stay at the very top: mark_step_running() overwrites record.status
+    # WAITING_FOR_INPUT -> RUNNING, destroying the evidence this decision reads.
     # One-shot: consumed on the first iteration whether or not it approves, so a stale
     # WAITING_FOR_INPUT record further down the pipeline can never be auto-approved.
     if state.approve_parked:
@@ -535,9 +531,6 @@ async def run_one_step(
     if handler is None:
         fail_missing_handler(runner, run, step_def, step_idx, total)
         return LoopAction.RETURN
-
-    if try_staleness_bypass(runner, run, step_def, step_idx, total):
-        return LoopAction.CONTINUE
 
     announce_step_start(runner, run, step_def, step_idx, total, handler)
     result = await execute_step(runner, handler, step_def, run)

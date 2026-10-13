@@ -81,18 +81,6 @@ def _auto() -> GateDefinition:
     return GateDefinition(type=GateType.AUTO, condition=GateCondition.ALL_PASSED)
 
 
-def _stale_target_step() -> PipelineStep:
-    """A HITL-gated step whose params carry a `target`, so the staleness bypass can consider it."""
-    step = PipelineStep(
-        name="decompose",
-        action=StepAction.DECOMPOSE,
-        target=StepTarget.FEATURE,
-        params={"target": "src/auth.py"},
-    )
-    step.gate = _hitl()
-    return step
-
-
 def _ctx(tmp_path: Path) -> RunContext:
     return RunContext(project_path=tmp_path, spec_path=tmp_path / "x_feature_spec.md")
 
@@ -491,47 +479,3 @@ class TestApprovalNegatives:
             ).resume(run1.run_id)
         )
         assert second.calls == 1
-
-
-# ---------------------------------------------------------------------------
-# Boundary — the insertion point
-# ---------------------------------------------------------------------------
-
-
-class TestApprovalInsertionPoint:
-    def test_approval_beats_the_staleness_bypass(self, tmp_path: Path) -> None:
-        """A parked step whose target is 'pristine' must be APPROVED, not skipped.
-
-        The staleness-bypass block also sits before mark_step_running and would otherwise
-        complete the step as SKIPPED, discarding the human's approval and the stored result.
-        """
-        pipeline = PipelineDefinition(
-            name="p",
-            steps=[_stale_target_step()],
-        )
-        store = StateStore(tmp_path / "state.db")
-        run1 = asyncio.run(
-            PipelineRunner(
-                pipeline,
-                _ctx(tmp_path),
-                registry=_registry(decompose__feature=_Counting(components=[{"n": "a"}])),
-                store=store,
-            ).run()
-        )
-        assert run1.status == RunStatus.PARKED
-
-        ctx2 = _ctx(tmp_path)
-        # nothing is stale -> the bypass would fire
-        ctx2.graph = ctx2.graph.model_copy(update={"stale_nodes": set()})
-        second = _Counting()
-        run2 = asyncio.run(
-            PipelineRunner(
-                pipeline, ctx2, registry=_registry(decompose__feature=second), store=store
-            ).resume(run1.run_id)
-        )
-
-        assert second.calls == 0
-        assert run2.step_records[0].status == StepStatus.PASSED, (
-            "the staleness bypass overwrote the approval with SKIPPED"
-        )
-        assert run2.status == RunStatus.COMPLETED

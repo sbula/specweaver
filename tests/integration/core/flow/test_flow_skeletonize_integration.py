@@ -1,6 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""Outlining a file runs through the code-structure atom in under a second.
+
+Proves: C-FLOW-06 NFR-1
+"""
+
 import time
 from pathlib import Path
 

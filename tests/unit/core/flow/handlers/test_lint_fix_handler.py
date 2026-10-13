@@ -283,33 +283,6 @@ class TestLintFixEdgeCases:
         )
         assert result.status == StepStatus.FAILED
 
-    @pytest.mark.asyncio
-    async def test_lint_fix_passes_stale_nodes(self, tmp_path: Path) -> None:
-        """SF-4: LintFixHandler natively injects context.graph.stale_nodes into Atom intent payloads."""
-        mock_atom = MagicMock()
-        mock_atom.run.return_value = _clean()
-
-        ctx = _make_context(tmp_path)
-        ctx.graph = ctx.graph.model_copy(update={"stale_nodes": {"src/foo.py", "tests/bar.py"}})
-
-        # Create the files so that LintFixHandler can resolve them
-        (tmp_path / "src").mkdir(exist_ok=True)
-        (tmp_path / "src" / "foo.py").touch()
-        (tmp_path / "tests").mkdir(exist_ok=True)
-        (tmp_path / "tests" / "bar.py").touch()
-
-        # Execute with target="." to cover all files
-        result = await _handler(mock_atom).execute(_make_step(target="."), ctx)
-
-        assert result.status == StepStatus.PASSED
-
-        # Verify it was called with the resolved targets list
-        mock_atom.run.assert_called_once()
-        args, _kwargs = mock_atom.run.call_args
-        called_intent = args[0]
-        assert called_intent["intent"] == "run_linter"
-        assert set(called_intent["targets"]) == {"src/foo.py", "tests/bar.py"}
-
 
 class TestLintFixInterface:
     """Verify standard interface: generate(messages, config)."""

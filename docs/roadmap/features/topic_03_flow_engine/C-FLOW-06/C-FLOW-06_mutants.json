@@ -1,0 +1,174 @@
+{
+  "schema": 2,
+  "feature": "C-FLOW-06",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Recorded API contracts reach the prompt as outlines",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_contract_outlines_reach_the_prompt.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-outline-block",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/prompting.py",
+          "symbol": "_build_base_prompt",
+          "old": "            builder.add_context(f\"{path} (signatures only)\\n{outline}\", \"api_contract\")\n",
+          "new": "            pass\n",
+          "breaks": "the contract outlines are built and thrown away again",
+          "symbol_sha": "sha256:cc5828bb6548c4ba63cfdb3296ec8ae56023d24377be442fa5215771b52b652d"
+        },
+        {
+          "id": "every-outline",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/prompting.py",
+          "symbol": "_build_base_prompt",
+          "old": "    for path in context.graph.api_contract_paths or []:\n",
+          "new": "    for path in skeleton_files or {}:\n",
+          "breaks": "the code under review is sent twice, once as an outline",
+          "symbol_sha": "sha256:cc5828bb6548c4ba63cfdb3296ec8ae56023d24377be442fa5215771b52b652d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A whole-project test step runs the tests of what changed, never none; the cache marks green tests",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_tests_run_for_what_changed.py",
+        "tests/unit/core/flow/interfaces/test_cache_saved_after_green_tests.py",
+        "tests/e2e/capabilities/assurance/test_incremental_semantics_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "never-narrow",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler._resolve_targets",
+          "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
+          "new": "            return [target]\n",
+          "breaks": "every run runs every test again",
+          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+        },
+        {
+          "id": "narrow-to-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler._resolve_targets",
+          "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
+          "new": "            return folders_to_test(context.project_path, code_root, graph, kind)\n",
+          "breaks": "nothing changed runs no test and passes",
+          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+        },
+        {
+          "id": "no-dependents",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/changed_code.py",
+          "symbol": "folders_to_test",
+          "old": "    for name in seeds.union(*(graph.impact_of(seed) for seed in seeds)):\n",
+          "new": "    for name in seeds:\n",
+          "breaks": "a module others use changes and their tests are not run",
+          "symbol_sha": "sha256:4ac10cd9e69c3bc2300131c41731dcae20cd1c485859059e6da07bc968d0128d"
+        },
+        {
+          "id": "test-files-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/changed_code.py",
+          "symbol": "folders_to_test",
+          "old": "        elif tier in posix.parents:\n",
+          "new": "        elif False:\n",
+          "breaks": "a changed test is not run",
+          "symbol_sha": "sha256:4ac10cd9e69c3bc2300131c41731dcae20cd1c485859059e6da07bc968d0128d"
+        },
+        {
+          "id": "overlap-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/changed_code.py",
+          "symbol": "folders_to_test",
+          "old": "    return _outermost(folders)\n",
+          "new": "    return sorted(folders)\n",
+          "breaks": "a folder inside another runs twice",
+          "symbol_sha": "sha256:4ac10cd9e69c3bc2300131c41731dcae20cd1c485859059e6da07bc968d0128d"
+        },
+        {
+          "id": "worktree-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler._resolve_targets",
+          "old": "        code_root = context.isolation.execution_root or context.project_path\n",
+          "new": "        code_root = context.project_path\n",
+          "breaks": "code a run wrote in its worktree is not seen as changed",
+          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+        },
+        {
+          "id": "save-always",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_finish_run",
+          "old": "    if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):\n",
+          "new": "    if final_run.status == RunStatus.COMPLETED:\n",
+          "breaks": "a run that tested nothing marks the code as tested",
+          "symbol_sha": "sha256:14b982aab88d66dbbefe4ddabb045b0f3e32edcf0717da69df1c84e21e8649df"
+        },
+        {
+          "id": "folder-step-covers-all",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler.execute",
+          "old": "\"tests_cover_project\": target in _WHOLE_PROJECT",
+          "new": "\"tests_cover_project\": True",
+          "breaks": "tests of one folder mark the whole project as tested",
+          "symbol_sha": "sha256:682f084a00257e201749eba59f12fa4ca42579de5ee871bc11b802e99d6c4e65"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "On a strict DAL a warning fails the check",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_validation_dal_enforcement.py"
+      ],
+      "mutants": [
+        {
+          "id": "dal-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "check",
+          "old": "    effective_strict = strict or (dal_level.is_strict if dal_level else False)\n",
+          "new": "    effective_strict = strict\n",
+          "breaks": "DAL_A code passes with warnings",
+          "symbol_sha": "sha256:768af9a8e948e291aee88c1d90b97fbe8d8976c611a994b7da5a28dfbe60e067"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "sw init writes the root, src and tests boundaries and keeps one that exists",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_init_writes_boundaries_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-root-boundary",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/scaffold.py",
+          "symbol": "_scaffold_context_yaml",
+          "old": "    if not context_file.exists():\n",
+          "new": "    if False:\n",
+          "breaks": "a new project has no root module",
+          "symbol_sha": "sha256:cc2e0d5e20903b3404a9a740f7fabdafe74d9db4ee28ec0beca35cd41a6a2415"
+        },
+        {
+          "id": "existing-boundary-overwritten",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/scaffold.py",
+          "symbol": "_scaffold_context_yaml",
+          "old": "    if src_dir.exists() and not src_ctx.exists():\n",
+          "new": "    if src_dir.exists():\n",
+          "breaks": "sw init throws away the src boundary the project already had",
+          "symbol_sha": "sha256:cc2e0d5e20903b3404a9a740f7fabdafe74d9db4ee28ec0beca35cd41a6a2415"
+        }
+      ]
+    }
+  ]
+}

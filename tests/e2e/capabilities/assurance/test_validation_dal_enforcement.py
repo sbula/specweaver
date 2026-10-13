@@ -5,6 +5,7 @@
 """The DAL journey: a module declares its criticality and the battery it gets changes.
 
 Proves: C-VAL-03 FR-1, C-VAL-03 FR-3
+Proves: C-FLOW-06 FR-3
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`.
 

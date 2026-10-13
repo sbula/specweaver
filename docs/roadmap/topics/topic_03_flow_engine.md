@@ -118,13 +118,13 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a human rejection outranks a linter error in the next prompt
 
 * **`C-FLOW-06` 🔧: Refactoring Phase 3 Optimizations** (Legacy: 3.32d)
-  > - **Purpose:** Cut token and time cost on the paths that were measurably expensive — condense context, limit tests by impact, route context dynamically
+  > - **Purpose:** Cut token and time cost on the paths that were measurably expensive — contract outlines in prompts, tests of what changed
   > - **Trigger:** Various — per optimisation
-  > - **Precondition:** `D-SENS-02` → AST skeletons · `D-SENS-01` → impact data
-  > - **Reads:** source files and the topology graph
-  > - **Produces:** condensed context · impact-limited test selection · DAL risk evaluation · standards scaffolding
+  > - **Precondition:** `D-SENS-02` → AST skeletons · `A-SENS-01` → hash cache
+  > - **Reads:** source files, the hash cache and the topology graph
+  > - **Produces:** contract outlines · tests of what changed · DAL gates · starter boundaries
   > - **Enables:** cheaper runs across the board
-  > - **Done when:** all five optimisations are in place with DI boundaries intact
+  > - **Done when:** a test step runs only the tests of what changed since the last green run, never none
 
 * **`C-FLOW-07` 🔜: HITL Root-Cause Tagging** (Legacy: 5.5a)
   > - **Purpose:** When a human has to step in, capture *why* — bad spec, hallucination — so failures can be attributed rather than merely counted
