@@ -30,7 +30,7 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 (pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
-**Waiting on the user:** one decision, listed in the audit's *What happens next*.
+**Waiting on the user:** nothing; the audit's *What happens next* lists what is not yet looked at.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
