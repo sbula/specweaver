@@ -282,9 +282,9 @@ PUBLIC_ONLY: dict[str, list[str]] = {
     # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a `public` request excludes it.
     "rust": ["Shape", "Shape.area", "Shape.name", "Circle", "Circle.area", "free"],
     "go": ["Circle", "Circle.Area", "Free"],
-    # WAS EMPTY for every request `[agreed 2026-08-26]`. C reports `unknown`, and `unknown` counts
-    # as visible, so a request for the visible set now gets an answer instead of silence.
-    "c": _C_ALL,
+    # `helper` LEFT: it is `static`, so private to its file `[agreed 2026-10-13]`. The types report
+    # `unknown`, which counts as visible.
+    "c": ["Point", "Colour", "public_fn"],
     "cpp": ["Widget", "Widget.visible", "Plain", "Plain.open", "free_fn"],
     "sql": _SQL_ALL,
     "markdown": _MD_ALL,

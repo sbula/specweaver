@@ -112,7 +112,8 @@ EXPECTED: dict[str, dict[str, str]] = {
     },
     # No access concept at all. `unknown` rather than `public`, so nothing downstream reads a
     # claim the language never made.
-    "c": {name: "unknown" for name in ["Point", "Colour", "helper", "public_fn"]},
+    # `static` keeps a function in its file; a type has no linkage, so C cannot say [agreed 2026-10-13].
+    "c": {"Point": "unknown", "Colour": "unknown", "helper": "private", "public_fn": "public"},
     "sql": {name: "unknown" for name in ["public.orders", "summary", "analytics.total"]},
     "markdown": {name: "unknown" for name in ["Title", "Title.Section", "Title.Section.Deep"]},
 }

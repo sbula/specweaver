@@ -84,15 +84,15 @@ class TestListSymbolsCombinesLevels:
         assert parsers[lang].list_symbols(FIXTURES[lang], visibility=every) == UNFILTERED[lang]
 
 
-@pytest.mark.parametrize("lang", ["c", "sql", "markdown"], ids=str)
+@pytest.mark.parametrize("lang", ["sql", "markdown"], ids=str)
 class TestListSymbolsWhereTheLanguageCannotSay:
     """A language with no access concept answers `unknown`, and `unknown` counts as visible."""
 
     def test_a_public_request_returns_everything(
         self, parsers: dict[str, typing.Any], lang: str
     ) -> None:
-        """[Graceful degradation] Hiding these would empty the index for two of the eight target
-        languages. C returned NOTHING for every request before this boundary."""
+        """[Graceful degradation] Hiding these would empty the index for two of the target
+        languages."""
         assert parsers[lang].list_symbols(FIXTURES[lang], visibility=["public"]) == UNFILTERED[lang]
 
     def test_a_private_request_returns_nothing(

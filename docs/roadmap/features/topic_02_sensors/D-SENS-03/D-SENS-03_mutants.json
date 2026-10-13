@@ -3,6 +3,26 @@
   "feature": "D-SENS-03",
   "campaigns": [
     {
+      "requirement": "FR-2",
+      "title": "A static C function is private",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_visibility_filter.py",
+        "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
+      ],
+      "mutants": [
+        {
+          "id": "static-is-public",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/c/codestructure.py",
+          "symbol": "_static_is_private",
+          "old": "    return \"private\" if any(c.text == b\"static\" for c in storage) else \"public\"\n",
+          "new": "    return \"public\"\n",
+          "breaks": "a request for public C symbols lists file-private helpers",
+          "symbol_sha": "sha256:04e48585aece571f25d6ede47a386b3838e9bbd7eaba7c058522ec0818df9cbe"
+        }
+      ]
+    },
+    {
       "requirement": "FR-5",
       "title": "Every listed Markdown section reads back, numbered headings included",
       "scope": [

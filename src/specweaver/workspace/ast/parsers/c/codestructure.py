@@ -9,7 +9,7 @@ import typing
 import tree_sitter_c
 from tree_sitter import Query
 
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
@@ -31,11 +31,33 @@ def _refuse_decorator_filter(
     raise CodeStructureError("Decorator filtering is not supported in C parsers")
 
 
+_TYPE_NODES = frozenset(
+    {"struct_specifier", "enum_specifier", "union_specifier", "type_definition"}
+)
+
+
+def _static_is_private(name_node: typing.Any) -> Visibility:
+    """`static` keeps a C function or variable inside its file: private; otherwise public.
+
+    A type has no linkage, so for a struct, enum or typedef C cannot say.
+    """
+    node = name_node
+    while node is not None and node.type not in ("function_definition", "declaration"):
+        if node.type in _TYPE_NODES:
+            return "unknown"
+        node = node.parent
+    if node is None:
+        return "unknown"
+    storage = (c for c in node.children if c.type == "storage_class_specifier")
+    return "private" if any(c.text == b"static" for c in storage) else "public"
+
+
 class CCodeStructure(FunctionBasedParser):
     """AST parser for C source files."""
 
     grammar = staticmethod(tree_sitter_c.language)
     _matches_decorator = staticmethod(_refuse_decorator_filter)
+    _get_symbol_visibility = staticmethod(_static_is_private)
 
     # Held here because this grammar ships no tags query. Original work, written from
     # the grammar by inspection rather than adapted from upstream.
