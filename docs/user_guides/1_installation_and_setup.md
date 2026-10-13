@@ -139,6 +139,12 @@ Run `sw scan` once after `sw init`, and again when a `context.yaml` changes: it 
 runs the code rules C01–C08, including the file's own test from `tests/test_x.py`, which may
 import `x` by name.
 
+Name what kind of project it is, and its specs get that kind's limits: `sw config profiles` lists
+`web-app`, `data-pipeline`, `library`, `microservice` and `ml-model`; `sw config show-profile
+library` shows the limits; `sw config set-profile library` applies them to `sw check` and to runs;
+`sw config reset-profile` goes back to the defaults. A folder whose archetype brings its own
+pipeline keeps that one.
+
 Switch between registered projects:
 
 ```bash

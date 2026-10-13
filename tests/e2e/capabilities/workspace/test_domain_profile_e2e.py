@@ -4,6 +4,13 @@
 
 """E2E tests — domain profile CLI commands (Feature 3.3).
 
+Proves: C-VAL-02 FR-1
+Proves: C-VAL-02 FR-2
+Proves: C-VAL-02 FR-3
+Proves: C-VAL-02 FR-4
+Proves: C-VAL-02 FR-5
+Proves: C-VAL-02 FR-6
+
 Exercises:
     sw config profiles / show-profile / set-profile / get-profile / reset-profile
     Profile + individual override layering
@@ -280,7 +287,7 @@ class TestDomainProfileCLI:
         assert "library" in result.output
 
     def test_reset_profile(self, tmp_path: Path, _mock_db) -> None:
-        """sw config reset-profile clears profile name only (overrides preserved)."""
+        """sw config reset-profile clears the profile; the default limits apply again."""
         name = _unique_name("profreset")
         runner.invoke(app, ["init", name, "--path", str(tmp_path)])
         set_test_active_project(_mock_db, name)
@@ -289,10 +296,8 @@ class TestDomainProfileCLI:
         result = runner.invoke(app, ["config", "reset-profile"])
         assert result.exit_code == 0, f"Failed: {result.output}"
 
-        # Profile name should be cleared
         assert _get_domain_profile_sync(_mock_db, name) is None
-        # Per-rule overrides are preserved (none were set in this test, so empty)
-        # assert _mock_db.get_validation_overrides(name) == []
+        assert "default limits apply again" in " ".join(result.output.split())
 
     def test_set_profile_then_check_spec(
         self,

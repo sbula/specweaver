@@ -46,9 +46,13 @@ def archetype_of(path: Path, project_path: Path | None) -> str | None:
 
 
 def spec_pipeline(
-    spec_path: Path, project_path: Path | None, *, feature: bool = False
+    spec_path: Path,
+    project_path: Path | None,
+    *,
+    feature: bool = False,
+    profile: str | None = None,
 ) -> tuple[ValidationPipeline, str | None]:
-    """The archetype's spec pipeline, else the default; and the archetype.
+    """The archetype's spec pipeline, else the profile's, else the default; and the archetype.
 
     A feature spec always gets the feature pipeline: an archetype bounds a component.
     """
@@ -56,7 +60,19 @@ def spec_pipeline(
     if feature:
         return _load("validation_spec_feature", project_path), archetype
     pipeline = _archetype_pipeline("spec", archetype, project_path, None)
-    return pipeline or _load(SPEC_DEFAULT, project_path), archetype
+    return pipeline or _profile_pipeline(profile, project_path), archetype
+
+
+def _profile_pipeline(profile: str | None, project_path: Path | None) -> ValidationPipeline:
+    """The profile's spec pipeline (`validation_spec_<profile>`), else the default."""
+    if profile:
+        from specweaver.core.config.profiles import profile_to_pipeline_name
+
+        try:
+            return _load(profile_to_pipeline_name(profile), project_path)
+        except FileNotFoundError:
+            logger.warning("Profile %r has no pipeline; using the default", profile)
+    return _load(SPEC_DEFAULT, project_path)
 
 
 def code_pipeline(

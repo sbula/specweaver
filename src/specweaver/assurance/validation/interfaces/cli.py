@@ -126,6 +126,12 @@ def _resolve_pipeline_name(
         raise typer.Exit(code=1) from exc
 
 
+def _profile_owner(project_dir: Path | None) -> str | None:
+    """The project whose profile applies: the one checked, else the active one."""
+    named = _core.registered_project_at(project_dir) if project_dir else None
+    return named or _core.run_repo_op(lambda r: r.get_active_project())
+
+
 def _archetype_pipeline(
     level: str, target_path: Path, project_root: Path, fallback: ValidationPipeline
 ) -> tuple[ValidationPipeline, str]:
@@ -261,9 +267,9 @@ def check(
         # Fallback to None if not inside a valid project
         project_dir = Path(project) if project else None
 
-    # Determine active project for profile-aware pipeline selection
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    pipeline_name = _resolve_pipeline_name(level, pipeline, active_project=active)
+    pipeline_name = _resolve_pipeline_name(
+        level, pipeline, active_project=_profile_owner(project_dir)
+    )
 
     try:
         resolved = load_pipeline_yaml(pipeline_name, project_dir=project_dir)

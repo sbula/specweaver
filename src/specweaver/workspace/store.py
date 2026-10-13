@@ -91,6 +91,14 @@ def default_dal_at(db: Any, root: Path) -> DALLevel | None:
     return None
 
 
+def domain_profile_at(db: Any, root: Path) -> str | None:
+    """The domain profile of the project registered at `root`; None when none is set or registered."""
+    target = root.resolve()
+    with db.connect() as conn:
+        rows = conn.execute("SELECT root_path, domain_profile FROM workspace_projects").fetchall()
+    return next((p for root_path, p in rows if Path(root_path).resolve() == target), None)
+
+
 class WorkspaceRepository:
     """Repository for managing workspace metadata, configuration, and standards."""
 

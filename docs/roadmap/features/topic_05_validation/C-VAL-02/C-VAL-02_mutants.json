@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "feature": "C-VAL-02",
+  "campaigns": [
+    {
+      "requirement": "FR-6",
+      "title": "A project's profile sets its spec limits in sw check and in runs",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_profile_applies_everywhere_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-ignores-profile",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateSpecHandler.execute",
+          "old": "                profile=_profile_of(context),\n",
+          "new": "                profile=None,\n",
+          "breaks": "a run judges a spec by the default limits while sw check uses the profile's",
+          "symbol_sha": "sha256:28bc5f3464a6c34b3f64bb3ffcfc61cca067f8c70121aaa1feb847ee0bb8679e"
+        },
+        {
+          "id": "active-not-named",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_profile_owner",
+          "old": "    return named or _core.run_repo_op(lambda r: r.get_active_project())\n",
+          "new": "    return _core.run_repo_op(lambda r: r.get_active_project())\n",
+          "breaks": "sw check --project B uses the active project's profile",
+          "symbol_sha": "sha256:6668c03cb56d226231a59b3c1a5da779e7f55abd26dd90397ce403ed7aefc69e"
+        },
+        {
+          "id": "profile-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "spec_pipeline",
+          "old": "    return pipeline or _profile_pipeline(profile, project_path), archetype\n",
+          "new": "    return pipeline or _load(SPEC_DEFAULT, project_path), archetype\n",
+          "breaks": "a profile changes nothing in a run",
+          "symbol_sha": "sha256:4b30f2f076a5841d5cb093d3e6792c3beed2323ea968343c489e6a6ec4077c48"
+        }
+      ]
+    }
+  ]
+}

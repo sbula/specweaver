@@ -250,7 +250,7 @@ def config_set_profile(
     _core.console.print(
         f"[green]\u2713[/green] Profile [bold]{profile_name}[/bold] activated for "
         f"project [bold]{name}[/bold]. "
-        "'sw check' will now use the matching pipeline YAML.",
+        "'sw check' and runs now use its limits.",
     )
 
 
@@ -286,7 +286,7 @@ def config_reset_profile() -> None:
 
     _core.console.print(
         f"[green]\u2713[/green] Profile deactivated for project [bold]{name}[/bold]. "
-        "Per-rule overrides are preserved.",
+        "The default limits apply again.",
     )
 
 

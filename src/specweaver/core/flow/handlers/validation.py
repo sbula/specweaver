@@ -162,6 +162,7 @@ class ValidateSpecHandler:
                 project_path=context.project_path,
                 analyzer_factory=context.analysis.analyzer_factory,
                 parsers=context.analysis.parsers,
+                profile=_profile_of(context),
             )
             output, failed = _validation_output(results)
             logger.info(
@@ -190,6 +191,7 @@ class ValidateSpecHandler:
         project_path: Path | None = None,
         analyzer_factory: Any | None = None,
         parsers: Any | None = None,
+        profile: str | None = None,
     ) -> list[RuleResult]:
         """Run spec validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -203,7 +205,9 @@ class ValidateSpecHandler:
         )
         from specweaver.core.flow.handlers.archetype_pipelines import add_payload, spec_pipeline
 
-        pipeline, archetype = spec_pipeline(spec_path, project_path, feature=kind_str == "feature")
+        pipeline, archetype = spec_pipeline(
+            spec_path, project_path, feature=kind_str == "feature", profile=profile
+        )
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
@@ -508,6 +512,20 @@ class ValidateTestsHandler:
         except Exception as exc:
             logger.warning("ValidateTestsHandler: failed to resolve topology targets: %s", exc)
             return [target]
+
+
+def _profile_of(context: RunContext) -> str | None:
+    """The domain profile of the run's project, read from its registration."""
+    from specweaver.workspace.store import domain_profile_at
+
+    db = getattr(context, "db", None)
+    if db is None or context.project_path is None:
+        return None
+    try:
+        return domain_profile_at(db, context.project_path)
+    except Exception:
+        logger.warning("Could not read the project's domain profile", exc_info=True)
+        return None
 
 
 def _generated_code(context: RunContext) -> str:
