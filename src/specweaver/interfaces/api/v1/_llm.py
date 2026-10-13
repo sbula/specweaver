@@ -49,6 +49,7 @@ async def run_steps(
     project: str,
     db: Database,
     roles: Iterable[TaskType],
+    memory_task: bool = False,
 ) -> PipelineRun:
     """Run an endpoint's steps through the same handlers as the CLI; a spend stop is a 402."""
     from specweaver.assurance.standards.loader import load_standards_content_async
@@ -71,7 +72,7 @@ async def run_steps(
         ),
     )
     try:
-        run = await PipelineRunner(pipeline, context).run()
+        run = await PipelineRunner(pipeline, context, memory_task=memory_task).run()
     finally:
         for collector in router.collectors():
             await collector.flush_async(db)

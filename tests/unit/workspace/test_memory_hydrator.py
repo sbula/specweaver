@@ -4,7 +4,11 @@
 
 """Unit tests for `MemoryHydrator` sanitisation, formatting and truncation.
 
-Proves: D-INTL-06 FR-4, FR-5.
+Proves: D-INTL-06 FR-1
+Proves: D-INTL-06 FR-2
+Proves: D-INTL-06 FR-3
+Proves: D-INTL-06 FR-4
+Proves: D-INTL-06 FR-5
 
 FR-4 token budget guard — `test_hydrate_truncation_stages`, `test_hydrate_iterative_truncation`,
 `test_sanitize_truncates`. FR-5 defect surfacing for BLOCKED tasks — `test_hydrate_blocked_no_defects`,
@@ -392,3 +396,23 @@ async def test_hydrate_iterative_truncation(session: AsyncSession, base_project:
     assert len(result_trunc.handover_notes) < 4
     # Ensure it didn't drop ALL of them, proving iterative logic
     assert len(result_trunc.handover_notes) > 0
+
+
+@pytest.mark.asyncio
+async def test_hydrate_leaves_out_other_projects_and_archived_tasks(
+    session: AsyncSession, base_project: Project
+):
+    """FR-3: another project's task and an archived one never reach this project's prompt."""
+    now = datetime.now(UTC)
+    session.add(
+        Project(name="other_proj", root_path="/tmp/other", created_at=now, last_used_at=now)
+    )
+    await session.flush()
+    await _create_task(session, "other_proj", "Other project", TaskStatus.IN_PROGRESS, 0)
+    await _create_task(session, base_project.name, "Archived", TaskStatus.ARCHIVED, 0)
+    await _create_task(session, base_project.name, "Mine", TaskStatus.IN_PROGRESS, 0)
+
+    result = await MemoryHydrator(session, base_project.name).hydrate()
+
+    assert [t.title for t in result.active_tasks] == ["Mine"]
+    assert result.blockers == []

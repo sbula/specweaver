@@ -62,6 +62,7 @@ async def implement_spec(
         project=body.project,
         db=db,
         roles=[TaskType.IMPLEMENT],
+        memory_task=True,
     )
     if run.status is not RunStatus.COMPLETED:
         failed = next((r for r in run.step_records if r.result and r.result.error_message), None)

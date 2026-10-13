@@ -17,7 +17,8 @@ Previously documented here:
 
 Unit tests for `_build_base_prompt()` assembly.
 
-Proves: D-INTL-06 FR-6.
+Proves: D-INTL-06 FR-6
+Proves: D-INTL-06 FR-7
 
 `test_build_base_prompt_happy_path`, `test_build_base_prompt_db_none`,
 `test_build_base_prompt_empty_memory`, `test_build_base_prompt_hydration_exception`.

@@ -1,6 +1,6 @@
 # D-INTL-06 SF-03 — Handover Protocols
 
-**Status**: COMPLETED · **FRs owned**: FR-8, FR-9 · **NFRs**: NFR-2 (arch placement), NFR-5
+**Status**: COMPLETED · **FRs owned**: FR-8, FR-9, FR-10 · **NFRs**: NFR-2 (arch placement), NFR-5
 (backward compat), NFR-6 (observability), NFR-7 (test coverage), NFR-8 (file size), NFR-9
 (fail-safe), NFR-11 (well-formedness) · **Depends on**: SF-01, SF-02 · Design:
 [D-INTL-06_design.md](D-INTL-06_design.md) §Sub-features → SF-03 · **RT/BT Audit**: 9 rounds, 27

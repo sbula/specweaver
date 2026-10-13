@@ -416,6 +416,7 @@ def _execute_run(
         context,
         store=store,
         on_event=display,
+        memory_task=True,
     )
 
     if resume_id is not None:
@@ -541,6 +542,7 @@ def resume(
         context,
         store=store,
         on_event=display,
+        memory_task=True,
     )
 
     step_info = [(step.name, step.description or "") for step in pipeline_def.steps]

@@ -118,7 +118,12 @@ def _handover_summary(task: Any) -> str | None:
             f"Failed to parse handover context for task {task.id}: {e} Schema validation failed"
         )
         return None
-    return _sanitize(ctx.summary, 500) if ctx.summary else None
+    # What went wrong is the part of a handover the next agent needs most.
+    parts = [ctx.summary or ""]
+    if ctx.errors_encountered:
+        parts.append("Errors: " + "; ".join(ctx.errors_encountered))
+    note = " ".join(parts).strip()
+    return _sanitize(note, 500) if note else None
 
 
 def _blocker_for(task_title: str, task_defects: list[Any]) -> HydratedBlocker:

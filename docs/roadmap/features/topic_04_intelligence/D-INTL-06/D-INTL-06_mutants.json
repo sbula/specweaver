@@ -1,0 +1,74 @@
+{
+  "schema": 2,
+  "feature": "D-INTL-06",
+  "campaigns": [
+    {
+      "requirement": "FR-10",
+      "title": "Every run works its spec's memory task",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-task-opened",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner._open_task",
+          "old": "        task_id = await open_task(self._context, run)\n",
+          "new": "        task_id = None\n",
+          "breaks": "runs leave no task, so the handover is lost and agents get no memory",
+          "symbol_sha": "sha256:8c8669db0c8a006c9631b5b980faf4edbcedd6af1543b846fcc84046e7bd4103"
+        },
+        {
+          "id": "no-end-state",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/run_task.py",
+          "symbol": "close_task",
+          "old": "    end = _END.get(run.status)\n",
+          "new": "    end = None\n",
+          "breaks": "a failed spec never shows as a blocker",
+          "symbol_sha": "sha256:4adc5590029757eaf83a0655c8db0585d71fb7f30120525e1af2b44e258c6772"
+        },
+        {
+          "id": "reuse-broken",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/run_task.py",
+          "symbol": "_find_or_create",
+          "old": "        if task[\"title\"] == title and task[\"status\"] != TaskStatus.ARCHIVED.value:\n",
+          "new": "        if False:\n",
+          "breaks": "every run opens a new task, so no run sees the last one's notes",
+          "symbol_sha": "sha256:1390c00983dab901ec646ef7fe4d15553b4e9cdf9ce01d169c2afb48fdeb7713"
+        },
+        {
+          "id": "every-run-works-a-task",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner._open_task",
+          "old": "        if not self._memory_task:\n",
+          "new": "        if False:\n",
+          "breaks": "a review marks a spec DONE over a failed implementation",
+          "symbol_sha": "sha256:8c8669db0c8a006c9631b5b980faf4edbcedd6af1543b846fcc84046e7bd4103"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A handover note says why the last run failed",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "errors-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/hydrator.py",
+          "symbol": "_handover_summary",
+          "old": "        parts.append(\"Errors: \" + \"; \".join(ctx.errors_encountered))\n",
+          "new": "        pass\n",
+          "breaks": "the next agent learns a run failed but not why",
+          "symbol_sha": "sha256:38634c19875129081ccd2cad7d9a925064b66e04a3083239490ef974c8164bbc"
+        }
+      ]
+    }
+  ]
+}

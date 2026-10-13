@@ -94,7 +94,7 @@ proven through `/review`, not `/implement`).
 | E-INTL-01 FR-3 | No secret redaction before prompts. **Fixed** 2026-10-08: known secret values are masked in every prompt and tool result | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash. **Fixed** 2026-10-09: the handler loads `validation_spec_<archetype>`; the spring-boot bounds are a map of header levels; S12 reads the Markdown headings the reader really gives (it expected JSON, so it never worked), and fails on a wrong shape | `handlers/validation.py:228` |
-| B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks. **Partly fixed** 2026-10-09: every engine from `create_async_engine` enforces foreign keys (the real databases had no orphan rows); who creates memory tasks is open — user's decision | `register_fk_pragma_listener` test-only |
+| B-INTL-09 FR-6, D-INTL-06 | Foreign keys off in production sessions; nothing creates memory tasks. **Partly fixed** 2026-10-09: every engine from `create_async_engine` enforces foreign keys (the real databases had no orphan rows); 2026-10-13: each run opens its spec's task and gives it its end state `[agreed 2026-10-13]` | `register_fk_pragma_listener` test-only |
 | C-FLOW-06 FR-1/2 | `stale_nodes` never written; skeletons dropped | `run_context.py:114` |
 | B-FLOW-01 FR-1/9/10 | S07 warns not rejects; no stack trace to the coder; ambiguity park not resumable | `s07_test_first.py:122`; `arbiter.py` |
 | C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR. **Fixed** 2026-10-09: one check runs at load and before each run; a wrong type is a result, not an exception; a step that never ran is ERROR | `models.py:380`; `atom.py:128` |
@@ -122,7 +122,6 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Waiting on the user (2026-10-09):
 
-- `B-INTL-09` / `D-INTL-06`: who creates memory tasks; nothing does, so agents get no memory.
 - `E-SENS-02`: which web search service, and where its key lives; Google's Custom Search is closed
   to new users.
 - `C-FLOW-06`: switch staleness on (runs skip unchanged steps) or remove the half-built code.

@@ -283,7 +283,7 @@ def implement(
     apply_session_policy(context, settings, logger, dal_auto_escalate=True)
 
     _core.console.print("[dim]Executing implementation pipeline...[/dim]")
-    runner = PipelineRunner(pipeline, context)
+    runner = PipelineRunner(pipeline, context, memory_task=True)
     run_state = asyncio.run(runner.run())
 
     _report_implementation(run_state)

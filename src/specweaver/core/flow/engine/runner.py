@@ -27,6 +27,7 @@ from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.hydration import rehydrate_from_records
 from specweaver.core.flow.engine.isolation import resolve_should_isolate, seed_dal_level
 from specweaver.core.flow.engine.naming import registered_name
+from specweaver.core.flow.engine.run_task import close_task, open_task
 from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 from specweaver.core.flow.engine.security import verify_vault_security
 from specweaver.core.flow.engine.session import execute_run
@@ -77,8 +78,13 @@ class PipelineRunner:
         registry: StepHandlerRegistry | None = None,
         store: StateStore | None = None,
         on_event: RunnerEventCallback | None = None,
+        memory_task: bool = False,
     ) -> None:
         self._pipeline = pipeline
+        # `sw run`, `sw resume` and `sw implement` work the spec's memory task; a review does not,
+        # or it would mark the spec DONE over a failed implementation [agreed 2026-10-13].
+        self._memory_task = memory_task
+        self._task_id: str | None = None
         self._context = context
         self._registry = registry or StepHandlerRegistry()
         self._store = store
@@ -167,6 +173,7 @@ class PipelineRunner:
             self._context.spec_path.name,
         )
         self._current_run_id = run.run_id
+        await self._open_task(run)
 
         from specweaver.core.config.database import cqrs_context
 
@@ -221,6 +228,7 @@ class PipelineRunner:
         # step records BEFORE the loop starts, so the first resumed handler sees the same context a
         # same-session handler would have.
         rehydrate_from_records(self._pipeline, run, self._context)
+        await self._open_task(run)
 
         from specweaver.core.config.database import cqrs_context
 
@@ -326,7 +334,17 @@ class PipelineRunner:
             run.status = RunStatus.ABORTED
             self._persist(run)
         await self._save_handover(run)
+        await close_task(self._context, run, self._task_id)
         self._flush_telemetry(run)
+
+    async def _open_task(self, run: PipelineRun) -> None:
+        """Put the spec's memory task on the run, so the handover and the end state land on it."""
+        if not self._memory_task:
+            return
+        task_id = await open_task(self._context, run)
+        self._task_id = task_id
+        if task_id is not None:
+            self._context.run = self._context.run.model_copy(update={"task_id": task_id})
 
     async def _save_handover(self, run: PipelineRun) -> None:
         try:

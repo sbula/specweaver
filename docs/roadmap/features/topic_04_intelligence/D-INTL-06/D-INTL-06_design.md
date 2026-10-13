@@ -1,7 +1,6 @@
 # D-INTL-06 — Context Hydration & Handover Engine
 
-**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03 committed. · **Phase**: 3 · **Feature ID**:
-D-INTL-06
+**Status**: Built; `🔧` until the user signs off. · **Phase**: 3 · **Feature ID**: D-INTL-06
 
 | | |
 |---|---|
@@ -181,7 +180,8 @@ total) — no cache; a TTL cache keyed by `project_name` only if profiling shows
 | FR-6 | Base Prompt Assembly | System | Extract the repeated assembly chain into `async _build_base_prompt(context, instructions, *, include_rules=True, skeleton_files=None) -> PromptBuilder` as a module-level function in `core.flow.handlers.base`. Reads `RunContext` fields directly. Internally calls `MemoryHydrator` (fail-safe) via `context.db.async_session_scope()` and injects result via `PromptBuilder.add_context(block, "agent_memory", priority=2)`. If `db` is None, hydration is skipped silently. The `include_rules` flag enforces 2-Tier Handover: `False` for drafting (skips constitution/standards). All handlers call this function. `ArbiterHandler` is explicitly excluded (uses minimal prompt). `ScenarioGenerator` is excluded (does not use `PromptBuilder`). Each call triggers a fresh hydration (~6 per pipeline run). At <50ms each, cumulative <300ms is negligible vs LLM latency. If profiling reveals a bottleneck, add a TTL cache keyed by `project_name`. | Single integration point for all context sources. Memory hydration is transparent. |
 | FR-7 | Handler Prompt Assembly Function | System | `_build_base_prompt()` is a module-level async function in `core.flow.handlers.base` (there is no `BaseHandler` class — `base.py` defines `RunContext` and `StepHandler` protocol). It accepts `context: RunContext`, `instructions: str`, and optional keyword args `include_rules: bool = True` and `skeleton_files: dict[str, str] | None = None`. No intermediate DTO is needed — all data is read directly from `RunContext` fields (`constitution`, `standards`, `db`, `project_path`, `project_metadata`). Workflow modules receive a pre-built `PromptBuilder` and add only domain-specific blocks (file content, dictator overrides, mentioned files, etc.). | Clean IoC separation: Application Layer assembles base prompt, Domain Layer adds domain-specific context. |
 | FR-8 | Handover Protocol: Save | System | The save protocol is implemented as an `on_pipeline_complete` callback injected into `PipelineRunner` (following the existing `on_event` callback pattern). The callback receives step results, collects `files_touched`, `errors_encountered`, `summary` (LLM-generated 1-sentence status), and `metadata` (step count, model). It calls `MemoryRepository.update_handover_context()`. The callback is wired at the entry point layer (`core/flow/interfaces/cli.py`), which captures the `task_id` obtained from `acquire_task()` via closure. The `PipelineRunner` itself does NOT import from `workspace` and does not know about tasks. Fires in a `finally` block to ensure save on `KeyboardInterrupt`. D-INTL-06 defines the protocol; B-INTL-09 executes the write. | Next agent inherits factual telemetry. No boundary violations. |
-| FR-9 | Handover Protocol: Bootstrap | System | When an agent acquires a task with non-null `handover_context`, the hydrator deserializes and validates it. It is formatted simply as a `<handover_notes>` sub-element under that specific task's entry within the standard `<active_tasks>` block, tagged with `trust="low"`. The LLM naturally correlates these notes with its current assignment. | Agents don't start from scratch on retried tasks. |
+| FR-9 | Handover Protocol: Bootstrap | System | When an agent acquires a task with non-null `handover_context`, the hydrator deserializes and validates it. It is formatted simply as a `<handover_notes>` sub-element under that specific task's entry within the standard `<active_tasks>` block, tagged with `trust="low"`. The LLM naturally correlates these notes with its current assignment. A note is the run's summary followed by its errors, at most 500 characters `[agreed 2026-10-13]`. | Agents don't start from scratch on retried tasks, and see why the last run failed. |
+| FR-10 | One task per spec | Runner | SHALL, at the start of a top-level `sw run`, `sw resume` or `sw implement` (CLI or REST; never a review), find or create the project's task named by the spec's path and move it to IN_PROGRESS; at the end, mark it DONE on completion, BLOCKED on failure or abort, and leave it open when parked. A memory error never fails the run `[agreed 2026-10-13]` | the handover has a task to land on, and the next run on that spec reads it |
 
 **Where the build differs from the FR wording** (intent unchanged; details in each plan's As built):
 
@@ -210,23 +210,19 @@ total) — no cache; a TTL cache keyed by `project_name` only if profiling shows
 | NFR-12 | Prompt Injection Defense: Field Truncation | Individual fields MUST be truncated before serialization: task titles ≤200 chars, handover summaries ≤500 chars, defect titles ≤200 chars, defect descriptions ≤500 chars. Limits payload size for injection attacks. |
 | NFR-13 | Prompt Injection Defense: Pattern Stripping | A configurable blocklist of known injection patterns (e.g., "ignore previous instructions", `<\|im_start\|>`, `[INST]`) MUST be stripped from all text fields before serialization. This is a defense-in-depth layer — not the primary defense. |
 
-## Findings still open
+## Accepted limits
 
-- **FR-1, FR-2, FR-3 and FR-7 carry no `Proves:` citation.** Tests were written under `INT-US-28`
-  and credited only there, so `check_fr_coverage.py D-INTL-06` reported `BLOCKED` with nothing
-  cited. Re-attributed 2026-08-13 (`TECH-017` SF-01): four unit files under `tests/unit/workspace/`
-  and `tests/unit/core/flow/` (49 tests), each read against each requirement; FR-4, FR-5, FR-6,
-  FR-8 and FR-9 now cite specific test functions. No requirement re-worded, no test changed.
-  Full finding: `docs/analysis/integration_contract_proof_matrix.md` → `INT-US-28`.
-- **"Uncited" is not "untested".** FR-3's filtering (ARCHIVED, cross-project, DONE older than 24h)
-  is not in the hydrator — it delegates, passing `max_age_hours=24` to the repository
-  (`hydrator.py:162`). Its proof, if any, sits in the repository's test file, which never names
-  `D-INTL-06`. Confirming that is `CB-2`'s work. The general shape (a citation in a file that names
-  no story is **invisible** to the ledger — a different defect from absent proof) is recorded
-  against `B-INTL-09`.
-- **RT-2 not done:** `GenerateCodeHandler` and `GenerateTestsHandler` share ~90% identical code;
-  the proposed `_generate_common()` in `generation.py` would shrink the blast radius of prompt
-  wiring.
+- Tasks come from runs only, one per spec; a feature's epic and its per-component tasks wait for
+  feature decomposition to create them (`B-INTL-09`).
+- RT-2 open: `GenerateCodeHandler` and `GenerateTestsHandler` share most of their code.
+
+## Live demo
+
+`sw init`, then `sw run one_step.yaml specs/a_spec.md` with a bash step that exits 3: the database
+holds one task `specs/a_spec.md`, BLOCKED, with the run's handover; the next run on the spec reopens
+it, and the memory block a prompt gets carries "failed … Errors: … exited 3"; a passing run marks it
+DONE; `specs/b_spec.md` gets its own task. `tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py`
+does exactly this.
 
 ## Developer guides
 

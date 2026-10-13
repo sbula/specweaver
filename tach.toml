@@ -207,5 +207,5 @@ expose = [ "cli", "cli.flow_cli", "cli.set_context_provider_factory",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.memory",]
-expose = [ "hydrator", "queries", "models", "store", "errors", "repository", "store.TaskStatus", "repository.MemoryRepository", "hydrator.MemoryHydrator", "models.HandoverContext",]
+expose = [ "hydrator", "queries", "models", "store", "errors", "repository", "store.TaskStatus", "store.TransitionReason", "repository.MemoryRepository", "hydrator.MemoryHydrator", "models.HandoverContext",]
 

@@ -70,6 +70,7 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
         context,
         store=store,
         on_event=bridge.make_event_callback(run_id),
+        memory_task=True,
     )
 
     try:
@@ -184,6 +185,7 @@ async def start_pipeline_run(
         context,
         store=store,
         on_event=event_cb,
+        memory_task=True,
     )
 
     # Start background run
