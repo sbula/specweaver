@@ -1,6 +1,6 @@
 # D-SENS-02 SF-02 — AST Symbol Writer (Write Side)
 
-**Status**: APPROVED · **FRs owned**: FR-5 · **Depends on**: SF-01 · Design:
+**Status**: APPROVED · **FRs owned**: FR-5, FR-8 · **Depends on**: SF-01 · Design:
 [D-SENS-02_design.md](D-SENS-02_design.md) §Sub-features → SF-02
 
 ## Goal

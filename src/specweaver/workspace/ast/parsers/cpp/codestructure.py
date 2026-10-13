@@ -245,31 +245,6 @@ class CppCodeStructure(ClassBasedParser):
         del node
         return new_code.encode("utf-8")
 
-    def _format_body_injection(
-        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
-    ) -> bytes:
-        if target_block.type == "compound_statement" or target_block.type in (
-            "field_declaration_list",
-            "enumerator_list",
-            "declaration_list",
-        ):
-            start_byte = typing.cast("int", target_block.start_byte) + 1
-            end_byte = typing.cast("int", target_block.end_byte) - 1
-        else:
-            start_byte = typing.cast("int", target_block.start_byte)
-            end_byte = typing.cast("int", target_block.end_byte)
-
-        indented_code = self._auto_indent(new_code, margin + 4)
-        if not indented_code.startswith("\n"):
-            indented_code = "\n" + indented_code
-        if not indented_code.endswith("\n"):
-            indented_code += "\n" + (" " * margin)
-
-        return code_bytes[:start_byte] + indented_code.encode("utf-8") + code_bytes[end_byte:]
-
-    #: The access keywords that sit inside a `base_class_clause` alongside the type names. A walk
-    #: that collects every child of the clause picks these up as bases, which is the obvious way to
-    #: get C++ inheritance wrong.
     _ACCESS_SPECIFIERS = ("public", "private", "protected")
 
     def _extract_bases(self, target_node: typing.Any) -> list[str]:

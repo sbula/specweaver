@@ -60,7 +60,10 @@ READ_UNROLLED_SYMBOL_SCHEMA = ToolDefinition(
 
 READ_SYMBOL_BODY_SCHEMA = ToolDefinition(
     name="read_symbol_body",
-    description="Returns ONLY the internal `{ ... }` curly brace execution block of a symbol, completely omitting its decorators and original signature.",
+    description=(
+        "Returns only the code inside a symbol's body, without its braces, decorators or "
+        "signature, at column 0. Pass it, edited, to replace_symbol_body."
+    ),
     parameters=[
         ToolParameter(
             name="path",
@@ -87,7 +90,10 @@ LIST_SYMBOLS_SCHEMA = ToolDefinition(
         ToolParameter(
             name="visibility",
             type="string",
-            description="Optional comma-separated list to filter extraction strictly by visibility boundaries (e.g. 'public').",
+            description=(
+                "Optional comma-separated visibilities to keep: public, protected, internal, "
+                "private (Python: `_name` is internal, `__name` private, a dunder public)."
+            ),
             required=False,
         ),
         ToolParameter(
@@ -141,7 +147,11 @@ ADD_SYMBOL_SCHEMA = ToolDefinition(
 
 REPLACE_SYMBOL_BODY_SCHEMA = ToolDefinition(
     name="replace_symbol_body",
-    description="Surgically overwrites ONLY the inner `{...}` or indented body block of a target symbol, protecting its decorators and signature.",
+    description=(
+        "Replaces only the code inside a symbol's body, keeping its braces, decorators and "
+        "signature. Give the code as read_symbol_body returns it, at any indentation; it is put at "
+        "the symbol's own. A body that would leave the file unparseable is refused."
+    ),
     parameters=[
         ToolParameter(
             name="path",

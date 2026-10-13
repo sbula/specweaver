@@ -23,6 +23,7 @@ import typing
 from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _docs
+from specweaver.workspace.ast.parsers._body import body_span, read_body
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 
 logger = logging.getLogger(__name__)
@@ -234,7 +235,18 @@ class SymbolReadingMixin:
         target_block = self._find_target_block(node)
         if not target_block:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
-        return typing.cast("bytes", target_block.text).decode("utf-8")
+        return self._read_body(code_bytes, target_block)
+
+    def _read_body(self, code_bytes: bytes, target_block: typing.Any) -> str:
+        """The body inside `target_block`, at column 0 (see `_body`)."""
+        return read_body(code_bytes, body_span(code_bytes, target_block))
+
+    def _raw_body(self, code: str, symbol_name: str) -> str:
+        """The body block's own text, braces included; "" when there is none."""
+        code_bytes = code.encode("utf-8")
+        node = self._find_symbol_node(self.parser.parse(code_bytes), symbol_name)
+        block = self._find_target_block(node) if node else None
+        return typing.cast("bytes", block.text).decode("utf-8") if block else ""
 
     def _scoped_name(self, name_node: typing.Any) -> str:
         """`Class.method` when the symbol has a scope, the bare name otherwise."""
@@ -304,10 +316,7 @@ class SymbolReadingMixin:
         except CodeStructureError:
             return ""
 
-        try:
-            body = self.extract_symbol_body(code, symbol_name)
-        except CodeStructureError:
-            body = ""
+        body = self._raw_body(code, symbol_name)
 
         signature = declaration
         if body and declaration.endswith(body):

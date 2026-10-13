@@ -10,6 +10,7 @@ import typing
 
 import tree_sitter_sql
 
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 from specweaver.workspace.ast.parsers.tiers import DeclarativeParser
 
 logger = logging.getLogger(__name__)
@@ -63,10 +64,26 @@ class SqlCodeStructure(DeclarativeParser):
             return name_node.parent
         return None
 
-    def _format_body_injection(
+    def _replacement_bytes(self, new_code: str, node: typing.Any) -> bytes:
+        """A statement's `;` sits outside its node and stays, so the new one brings none."""
+        trimmed = new_code.rstrip()
+        return super()._replacement_bytes(trimmed.removesuffix(";"), node)
+
+    def _delete_span(self, code_bytes: bytes, node: typing.Any) -> tuple[int, int]:
+        """The statement and the `;` that ends it, which sits outside its node."""
+        start = typing.cast("int", node.start_byte)
+        end = typing.cast("int", node.end_byte)
+        rest = code_bytes[end:]
+        if rest.lstrip().startswith(b";"):
+            end += len(rest) - len(rest.lstrip()) + 1
+        return start, end
+
+    def _replace_body(
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
     ) -> bytes:
-        return code_bytes
+        """A declaration has no body to replace; refusing beats writing nothing."""
+        del code_bytes, target_block, new_code, margin
+        raise CodeStructureError("A SQL declaration has no body; replace the whole symbol.")
 
     def supported_intents(self) -> list[str]:
         return [

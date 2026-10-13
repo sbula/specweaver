@@ -35,15 +35,18 @@ INDENTING = [
     KotlinCodeStructure,
     PythonCodeStructure,
     RustCodeStructure,
-    SqlCodeStructure,
     TypeScriptCodeStructure,
 ]
+
+#: SQL re-indents too, but a statement's `;` sits outside its node and stays, so a replacement
+#: that brings its own would leave `;;`.
+SQL = [SqlCodeStructure]
 
 #: Parsers that splice verbatim. C-family braces and Markdown sections carry their own layout, so
 #: re-indenting them would corrupt the block rather than align it.
 VERBATIM = [CCodeStructure, CppCodeStructure, MarkdownCodeStructure]
 
-ALL_PARSERS = INDENTING + VERBATIM
+ALL_PARSERS = INDENTING + VERBATIM + SQL
 
 
 class _Node:
@@ -112,3 +115,11 @@ def test_a_typing_cast_is_not_required_of_a_plain_int_node() -> None:
 
     assert out == b"aX"
     assert isinstance(out, bytes)
+
+
+def test_sql_drops_the_semicolon_the_statement_keeps() -> None:
+    node = _Node(start_byte=0, end_byte=0, column=4)
+
+    out = SqlCodeStructure()._format_replacement(b"", node, "CREATE VIEW v AS\nSELECT 1;")
+
+    assert out == b"CREATE VIEW v AS\n    SELECT 1"

@@ -63,6 +63,7 @@ graph LR
 | FR-5 | Symbol Replacement | CodeStructureTool | writes into a specific symbol | The system SHALL replace, add or delete a symbol by its AST node, never by regex or byte matching; offered to the implementer role only, which no run gives a model yet `[agreed 2026-10-12]`. |
 | FR-6 | Symbol Listing | CodeStructureTool | lists available symbols | The system SHALL return a flat array mapping of all targetable symbols within a file, filterable by a designated visibility constraint (e.g. `['public']`). |
 | FR-7 | Symbol Body Extraction | CodeStructureTool | reads only the inner block | The system SHALL return only the internal execution logic block (`{...}`) of a symbol without extracting its decorators or external class wrappers. |
+| FR-8 | Body round trip | CodeStructureTool | reads, edits and writes back one function | The system SHALL give a body as the code inside its block at column 0 and write one back at the function's own indentation, so an unchanged body changes no byte and an edit changes only its lines; SHALL resolve a bare name to the one `Class.name` it stands for and refuse one several classes share; SHALL refuse a write that leaves the file unparseable, and say what it wrote `[agreed 2026-10-13]` |
 
 ## Non-Functional Requirements
 

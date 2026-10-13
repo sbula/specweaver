@@ -39,7 +39,7 @@ def test_extract_symbol(parser: CCodeStructure) -> None:
 def test_extract_symbol_body(parser: CCodeStructure) -> None:
     code = """int add(int a, int b) { return a + b; }"""
     body = parser.extract_symbol_body(code, "add")
-    assert body.strip() == "{ return a + b; }"
+    assert body.strip() == "return a + b;"  # inside the braces
 
 
 def test_list_symbols(parser: CCodeStructure) -> None:
@@ -122,4 +122,4 @@ def test_c_parser_default_directory_ignores(parser: CCodeStructure) -> None:
 def test_c_parser_extracts_struct_body(parser: CCodeStructure) -> None:
     code = "struct Data { int id; };"
     body = parser.extract_symbol_body(code, "Data")
-    assert body.strip() == "{ int id; }"
+    assert body.strip() == "int id;"  # inside the braces

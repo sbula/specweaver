@@ -161,7 +161,12 @@ class MarkdownCodeStructure(DeclarativeParser):
         del node
         return new_code.encode("utf-8")
 
-    def _format_body_injection(
+    def _read_body(self, code_bytes: bytes, target_block: typing.Any) -> str:
+        """Verbatim: a section's body is its text."""
+        del code_bytes
+        return typing.cast("bytes", target_block.text).decode("utf-8")
+
+    def _replace_body(
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
     ) -> bytes:
         start_byte = typing.cast("int", target_block.start_byte)

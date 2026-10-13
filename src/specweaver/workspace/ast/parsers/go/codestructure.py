@@ -205,27 +205,6 @@ class GoCodeStructure(FunctionBasedParser):
 
         return next(self._children_of_type(node, "block"), None)
 
-    def _format_body_injection(
-        self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
-    ) -> bytes:
-        start_byte = typing.cast("int", target_block.start_byte) + 1
-        end_byte = typing.cast("int", target_block.end_byte) - 1
-
-        if target_block.type in ("struct_type", "interface_type"):
-            for child in target_block.children:
-                if child.type == "{":
-                    start_byte = typing.cast("int", child.end_byte)
-                elif child.type == "}":
-                    end_byte = typing.cast("int", child.start_byte)
-
-        indented_code = self._auto_indent(new_code, margin + 4)
-        if not indented_code.startswith("\n"):
-            indented_code = "\n" + indented_code
-        if not indented_code.endswith("\n"):
-            indented_code += "\n" + (" " * margin)
-
-        return code_bytes[:start_byte] + indented_code.encode("utf-8") + code_bytes[end_byte:]
-
     def _process_import_node(self, imp_node: typing.Any, imports: set[str]) -> None:
         """Record every quoted import path, whether grouped in a block or written singly."""
         specs: list[typing.Any] = list(self._children_of_type(imp_node, "import_spec"))

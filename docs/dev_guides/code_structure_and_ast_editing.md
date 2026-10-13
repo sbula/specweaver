@@ -27,15 +27,15 @@ AST skeletons give the agent a map of the code and let it edit one symbol at a t
 | `read_file_structure` | The file with every class/function body removed: decorators, imports, signatures, docstrings remain |
 | `list_symbols` | A flat list of targetable symbols, in dot-notation (e.g. `['Database', 'Database.connect']`) |
 | `read_symbol` | One symbol in full: decorators, signature, `{...}` block |
-| `read_symbol_body` | Only the symbol's `{ ... }` body — no decorators, no signature |
+| `read_symbol_body` | Only the code inside the body, at column 0 — no braces, decorators or signature |
 | `read_unrolled_symbol` | The symbol, prefixed with a comment explaining what its macros/annotations do at runtime (via `SchemaEvaluator`, e.g. Rust procedural macros, Spring Boot annotations) |
 
 `list_symbols` filters:
 
 - `decorator_filter` — only symbols carrying that annotation.
 - `visibility` — any of `public` · `protected` · `internal` · `private` · `unknown`; returns **only**
-  those levels. Until 2026-08-26 it understood only `'public'` and silently returned everything for any
-  other value. Purpose: **information hiding** — build against a module's interface so its internals
+  those levels, as a comma-separated list (`"public, internal"`). Python: `_name` is internal,
+  `__name` private, a dunder public. Purpose: **information hiding** — build against a module's interface so its internals
   can change. It is not a security boundary.
 
 ### Write
@@ -44,22 +44,21 @@ Prefer the narrowest edit.
 
 | Intent | Does |
 |---|---|
-| `replace_symbol_body` *(safest)* | Replaces only the `{...}` or indented `def:` body. Signature and decorators stay locked — e.g. Spring/Django decorators survive |
+| `replace_symbol_body` *(safest)* | Replaces only the code inside the body, at the symbol's own indentation; braces, signature and decorators stay. An unchanged `read_symbol_body` writes back byte for byte |
 | `replace_symbol` | Replaces decorators, signature and body |
 | `add_symbol` | Inserts a new symbol into `target_parent` (class, interface), or at the end of the module if omitted |
 | `delete_symbol` | Removes the class or function's byte range, and stray blank lines |
 
 ## Rule: dot-notation symbols
 
-Every symbol argument is the fully qualified scope path in all languages (Python, Java, Kotlin, C++,
-Rust, Go, JavaScript, TypeScript, SQL, Markdown, …): `Class.Method`, not `Method`.
+A symbol is named by its scope path in all languages: `Class.Method`. A bare `Method` that only one
+class has resolves to it; one that several classes share (`run`, `execute`) is refused, naming each.
+`list_symbols` returns full paths, so an agent copies the exact string.
 
-**Why:**
+## Rule: a write never breaks a file
 
-1. **No ambiguity**: classes and trait impls share names like `run`, `execute`, `start`. A bare
-   `"run"` either crashes the parser or edits the first match.
-2. **Copy, don't compose**: `list_symbols` always returns full paths. Agents run it first and pass the
-   exact string (e.g. `"Engine.run"`) to the next intent.
+A write whose result does not parse, where the file parsed before, is refused and nothing is
+written. Every write answers with the file and what it did.
 
 ## Rule: capabilities are filtered per language
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import typing
 
+from specweaver.workspace.ast.parsers._body import body_span, write_body
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
 logger = logging.getLogger(__name__)
@@ -41,29 +42,11 @@ class SymbolEditingMixin:
         margin = typing.cast("int", node.start_point[1])
         return self._auto_indent(new_code, margin).encode("utf-8")
 
-    def _format_body_injection(
+    def _replace_body(
         self, code_bytes: bytes, target_block: typing.Any, new_code: str, margin: int
     ) -> bytes:
-        """Insert `new_code` inside a brace-delimited block, indented one level in.
-
-        Shared by `java`, `kotlin`, `rust` and `typescript`. The `+1` and `-1` step over the
-        block's own braces, so this is the **brace-block** form; a language
-        whose block is not brace-delimited overrides it — `python` splices the whole suite, `go`,
-        `c` and `cpp` hunt for the brace children, `sql` and `markdown` have no executable body at
-        all. A default, never a prohibition.
-        """
-        indented_code = self._auto_indent(new_code, margin + 4).encode("utf-8")
-        insert_start = target_block.start_byte + 1
-        insert_end = target_block.end_byte - 1
-        return (
-            code_bytes[:insert_start]
-            + b"\n"
-            + (b" " * (margin + 4))
-            + indented_code
-            + b"\n"
-            + (b" " * margin)
-            + code_bytes[insert_end:]
-        )
+        """The body inside `target_block` replaced, at its own indentation (see `_body`)."""
+        return write_body(code_bytes, body_span(code_bytes, target_block), new_code, margin)
 
     def _format_replacement(self, code_bytes: bytes, node: typing.Any, new_code: str) -> bytes:
         """Replace the node's byte span with `new_code`.
@@ -110,7 +93,7 @@ class SymbolEditingMixin:
             raise CodeStructureError(f"Body block for symbol '{symbol_name}' not found.")
 
         margin = typing.cast("int", node.start_point[1])
-        mutated = self._format_body_injection(code_bytes, target_block, new_code, margin)
+        mutated = self._replace_body(code_bytes, target_block, new_code, margin)
         return mutated.decode("utf-8")
 
     def delete_symbol(self, code: str, symbol_name: str) -> str:
@@ -124,10 +107,14 @@ class SymbolEditingMixin:
         if not node:
             raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
 
-        start_byte = typing.cast("int", node.start_byte)
-        end_byte = typing.cast("int", node.end_byte)
+        start_byte, end_byte = self._delete_span(code_bytes, node)
         mutated = code_bytes[:start_byte] + code_bytes[end_byte:]
         return mutated.decode("utf-8")
+
+    def _delete_span(self, code_bytes: bytes, node: typing.Any) -> tuple[int, int]:
+        """The bytes deleting `node` removes: the node itself."""
+        del code_bytes
+        return typing.cast("int", node.start_byte), typing.cast("int", node.end_byte)
 
     def _auto_indent(self, new_code: str, margin: int) -> str:
         if not new_code:

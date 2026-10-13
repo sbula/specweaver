@@ -138,7 +138,7 @@ class CodeStructureAtom(Atom):
         self, parser: CodeStructureInterface, code: str, context: dict[str, Any], path: str
     ) -> AtomResult:
         try:
-            visibility = context.get("visibility")
+            visibility = _as_list(context.get("visibility"))
             decorator_filter = context.get("decorator_filter")
             symbols = parser.list_symbols(
                 code, visibility=visibility, decorator_filter=decorator_filter
@@ -159,9 +159,8 @@ class CodeStructureAtom(Atom):
         intent: str,
         path: str,
     ) -> AtomResult:
-        symbol_name = context.get("symbol_name")
-
         try:
+            symbol_name = _resolved(parser, code, context.get("symbol_name"))
             if intent in ("read_symbol", "read_symbol_body", "read_unrolled_symbol"):
                 if not symbol_name:
                     return AtomResult(
@@ -330,8 +329,47 @@ class CodeStructureAtom(Atom):
         else:
             return AtomResult(status=AtomStatus.FAILED, message="Invalid write intent")
 
+        if _breaks_parsing(parser, code, mutated):
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"{done[0].lower() + done[1:]} would leave {path} so it does not parse; "
+                "nothing was written",
+            )
         # The executor refuses protected paths; that refusal is the result, not a detail.
         written = self._executor.write(path, mutated)
         if written.status != "success":
             return AtomResult(status=AtomStatus.FAILED, message=f"Write refused: {written.error}")
-        return AtomResult(status=AtomStatus.SUCCESS, message=done)
+        return AtomResult(
+            status=AtomStatus.SUCCESS, message=done, exports={"written": path, "done": done}
+        )
+
+
+def _as_list(value: Any) -> list[str] | None:
+    """A visibility filter as the parsers take it; the tool definition sends comma-separated text."""
+    if value is None or isinstance(value, list):
+        return value
+    return [part.strip() for part in str(value).split(",") if part.strip()] or None
+
+
+def _resolved(parser: CodeStructureInterface, code: str, name: str | None) -> str | None:
+    """`name`, or the one `Class.name` it stands for; refused when several classes have it."""
+    if not name or "." in name:
+        return name
+    names = parser.list_symbols(code)
+    if name in names:
+        return name
+    matches = [n for n in names if n.rsplit(".", 1)[-1] == name]
+    if len(matches) > 1:
+        raise CodeStructureError(
+            f"'{name}' is ambiguous: {', '.join(matches)}; name it with its class"
+        )
+    return matches[0] if matches else name
+
+
+def _breaks_parsing(parser: CodeStructureInterface, before: str, after: str) -> bool:
+    """Whether `after` has a syntax error that `before` did not."""
+    grammar = getattr(parser, "parser", None)
+    if grammar is None:
+        return False
+    errors = [grammar.parse(text.encode("utf-8")).root_node.has_error for text in (before, after)]
+    return errors == [False, True]

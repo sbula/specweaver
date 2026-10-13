@@ -38,7 +38,7 @@ def test_extract_symbol(parser: CppCodeStructure) -> None:
 def test_extract_symbol_body(parser: CppCodeStructure) -> None:
     code = """class Point { public: int x; };"""
     body = parser.extract_symbol_body(code, "Point")
-    assert body.strip() == "{ public: int x; }"
+    assert body.strip() == "public: int x;"  # inside the braces
 
 
 def test_list_symbols(parser: CppCodeStructure) -> None:
@@ -174,7 +174,7 @@ def test_cpp_parser_default_directory_ignores(parser: CppCodeStructure) -> None:
 def test_cpp_parser_extracts_enum_body(parser: CppCodeStructure) -> None:
     code = "enum Color { RED, GREEN, BLUE };"
     body = parser.extract_symbol_body(code, "Color")
-    assert body.strip() == "{ RED, GREEN, BLUE }"
+    assert body.strip() == "RED, GREEN, BLUE"  # inside the braces
 
 
 def test_cpp_parser_visibility_deep_filter(parser: CppCodeStructure) -> None:

@@ -46,7 +46,8 @@
       "requirement": "FR-6",
       "title": "A listing filters by visibility",
       "scope": [
-        "tests/integration/sandbox/test_code_structure_tools_for_a_reviewer.py"
+        "tests/integration/sandbox/test_code_structure_tools_for_a_reviewer.py",
+        "tests/integration/sandbox/test_symbol_tools_through_the_dispatcher.py"
       ],
       "mutants": [
         {
@@ -58,6 +59,98 @@
           "new": "            if False:\n",
           "breaks": "a model asking for public symbols gets private ones too",
           "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+        },
+        {
+          "id": "visibility-as-letters",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "CodeStructureAtom._handle_list",
+          "old": "            visibility = _as_list(context.get(\"visibility\"))\n",
+          "new": "            visibility = context.get(\"visibility\")\n",
+          "breaks": "a visibility filter matches nothing, so a model sees no symbols",
+          "symbol_sha": "sha256:d8fae357d060be2242d2c7ed13b061b6870f5203098bc6354a750a4c001fb0d5"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A body reads at column 0 and writes back unchanged; short names; honest writes",
+      "scope": [
+        "tests/integration/sandbox/test_symbol_tools_through_the_dispatcher.py",
+        "tests/integration/workspace/ast/test_body_round_trip.py",
+        "tests/integration/sandbox/test_polyglot_ast_sql.py",
+        "tests/unit/workspace/ast/parsers/test_symbol_replacement.py"
+      ],
+      "mutants": [
+        {
+          "id": "body-not-dedented",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_body.py",
+          "symbol": "read_body",
+          "old": "    return textwrap.dedent(code_bytes[span[0] : span[1]].decode(\"utf-8\")).strip(\"\\n\").rstrip()\n",
+          "new": "    return code_bytes[span[0] : span[1]].decode(\"utf-8\")\n",
+          "breaks": "the body comes back indented and the write doubles it",
+          "symbol_sha": "sha256:a70c6613304e9bf7dfa2ecb662dc01cd3ed346d6b4445978bdacf76c113eebf2"
+        },
+        {
+          "id": "braces-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_body.py",
+          "symbol": "body_span",
+          "old": "        return typing.cast(\"int\", opens[0].end_byte), typing.cast(\"int\", closes[-1].start_byte)\n",
+          "new": "        return typing.cast(\"int\", block.start_byte), typing.cast(\"int\", block.end_byte)\n",
+          "breaks": "the body comes with its braces and the write nests a second block",
+          "symbol_sha": "sha256:c796f1c8c819a3c32eb82d610678e9dfff81a2f9d589434e198a3b9442596e9e"
+        },
+        {
+          "id": "no-parse-guard",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "_breaks_parsing",
+          "old": "    return errors == [False, True]\n",
+          "new": "    return False\n",
+          "breaks": "a broken body is written over working code",
+          "symbol_sha": "sha256:9371d8a11a9da68a8e792754dc0760ea75ac88f39d59e440bc67aada98a94b79"
+        },
+        {
+          "id": "ambiguity-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "_resolved",
+          "old": "    if len(matches) > 1:\n",
+          "new": "    if False:\n",
+          "breaks": "a bare name edits whichever class came first",
+          "symbol_sha": "sha256:11a58b1ea8853787775d11e39a1177a95a1e3865f26ec2f07e0ecfa13ecd3e4b"
+        },
+        {
+          "id": "no-short-names",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "_resolved",
+          "old": "    return matches[0] if matches else name\n",
+          "new": "    return name\n",
+          "breaks": "a model must guess the class prefix",
+          "symbol_sha": "sha256:11a58b1ea8853787775d11e39a1177a95a1e3865f26ec2f07e0ecfa13ecd3e4b"
+        },
+        {
+          "id": "sql-double-semicolon",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/sql/codestructure.py",
+          "symbol": "SqlCodeStructure._replacement_bytes",
+          "old": "        return super()._replacement_bytes(trimmed.removesuffix(\";\"), node)\n",
+          "new": "        return super()._replacement_bytes(new_code, node)\n",
+          "breaks": "a replaced SQL statement ends in ;;",
+          "symbol_sha": "sha256:9a02ba7408747bc48fda56a8cd663737332dfb11259e3359c666fcabeeb0a099"
+        },
+        {
+          "id": "sql-stray-semicolon",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/sql/codestructure.py",
+          "symbol": "SqlCodeStructure._delete_span",
+          "old": "        if rest.lstrip().startswith(b\";\"):\n",
+          "new": "        if False:\n",
+          "breaks": "a deleted SQL statement leaves its ; behind",
+          "symbol_sha": "sha256:801af833ad9ac1003cdd1bcce0ba916d76b32ca140478ba609643fb689a37921"
         }
       ]
     }
