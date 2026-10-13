@@ -4,6 +4,7 @@
 import logging
 import uuid
 
+from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepStatus
 from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.workspace.memory.models import HandoverContext
@@ -65,7 +66,8 @@ async def _target_task_id(repo: MemoryRepository, context: RunContext) -> uuid.U
         return uuid.UUID(context.run.task_id)
 
     active = await repo.list_tasks(
-        project_name=context.project_path.name, status=TaskStatus.IN_PROGRESS
+        project_name=registered_name(context),
+        status=TaskStatus.IN_PROGRESS,
     )
     return uuid.UUID(str(active[0]["id"])) if active else None
 

@@ -111,7 +111,7 @@ proven through `/review`, not `/implement`).
 | TECH-004 FR-6 | `resolve_service_name` unused and always "default" | `assurance/graph/loader.py:62` |
 | C-FLOW-01 (REST) | `POST /review`, `/implement` crashed on every call until `67f51443`; now works, still weakly tested | `test_telemetry_wiring.py` mocks |
 | TECH-011 FR-1/2, C-EXEC-02 FR-2/12, found 2026-10-12 | `validate_flow()` was never called outside tests, so no pipeline was checked at load: a bad bash step ran its earlier steps first; `sw pipelines` listed the validation rule lists and `context.yaml` as runnable. **Fixed** 2026-10-12: `load_pipeline` refuses a pipeline that does not validate; the list holds only runnable pipelines | `core/flow/engine/parser.py` |
-| C-FLOW-01 (REST pipelines), found 2026-10-08 | `POST /pipelines/{name}/run` and `/runs/{id}/resume` build their run with no model router and no database: a step that needs a model fails, no cost history or outcome is written; the returned run id was never the run's. **Fixed** 2026-10-08 | `interfaces/api/v1/pipelines.py:56,148` |
+| C-FLOW-01 (REST pipelines), found 2026-10-08 | `POST /pipelines/{name}/run` and `/runs/{id}/resume` build their run with no model router and no database: a step that needs a model fails, no cost history or outcome is written; the returned run id was never the run's. **Fixed** 2026-10-08; 2026-10-13: a run stores its project's registered name, so a gate answer or `sw resume` finds a run parked over REST | `interfaces/api/v1/pipelines.py:56,148` |
 
 **Baselines hiding debt:** `fr_uncited.json` (127 FRs, undercounts by ≥ 20 — the sweep only scans
 some roadmap lines and skips unparsable FR tables); `nfr_uncited.json` (120 behavioural NFRs, most

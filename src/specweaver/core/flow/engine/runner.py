@@ -26,6 +26,7 @@ from specweaver.core.flow.engine.fan_out import isolate_sub_run_context
 from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.hydration import rehydrate_from_records
 from specweaver.core.flow.engine.isolation import resolve_should_isolate, seed_dal_level
+from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 from specweaver.core.flow.engine.security import verify_vault_security
 from specweaver.core.flow.engine.session import execute_run
@@ -149,7 +150,7 @@ class PipelineRunner:
             run_id=run_id or str(uuid.uuid4()),
             parent_run_id=parent_run_id,
             pipeline_name=self._pipeline.name,
-            project_name=self._context.project_path.name,
+            project_name=registered_name(self._context),
             spec_path=str(self._context.spec_path),
             status=RunStatus.NOT_STARTED,
             current_step=0,

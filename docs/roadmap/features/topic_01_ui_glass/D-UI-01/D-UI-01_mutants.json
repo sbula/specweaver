@@ -73,6 +73,25 @@
           "breaks": "the socket closes after announcing the wrong terminal event, so a dashboard cannot tell completion from a dropped connection"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A REST run is the run the CLI would start, and can be resumed",
+      "scope": [
+        "tests/e2e/capabilities/interfaces/test_api_gate_resumes_the_run_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-stores-folder-name",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner.run",
+          "old": "            project_name=registered_name(self._context),\n",
+          "new": "            project_name=self._context.project_path.name,\n",
+          "breaks": "a run parked over REST cannot be resumed when the project is named unlike its folder",
+          "symbol_sha": "sha256:3876abc419ee216627b1fc5d0c609f6a6b280a01bba92d442eb5e05842261ec4"
+        }
+      ]
     }
   ]
 }
