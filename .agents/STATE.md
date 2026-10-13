@@ -15,7 +15,7 @@ of them**.
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with `TECH-003`
 and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03`, `D-EXEC-02`,
 `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06`, `D-VAL-05`, `D-SENS-02`,
-`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06`, `E-SENS-02`, `C-FLOW-06` and `E-EXEC-01` were signed off and `D-FLOW-03`
+`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06`, `E-SENS-02`, `C-FLOW-06`, `E-EXEC-01` and `E-INTL-02` were signed off and `D-FLOW-03`
 retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence:
 [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
@@ -61,6 +61,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `E-INTL-02` Spec Drafting | Finished, signed off 2026-10-13: `sw draft` shows each written section; the person keeps, changes or skips it |
 | `E-EXEC-01` Standard Local Execution | Finished, signed off 2026-10-13: a timed-out or interrupted child is gone, and a child sees no unlisted variable |
 | `C-FLOW-06` Phase 3 Optimizations | Finished, signed off 2026-10-13: a test step runs the tests of what changed since the last green run; contracts reach the prompt as outlines |
 | `E-SENS-02` Agentic Research Tools | Finished, signed off 2026-10-13: agents search the web through Tavily; `read_url` reads only public pages |

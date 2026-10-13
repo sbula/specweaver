@@ -1,6 +1,6 @@
 # E-INTL-02 — Spec Drafting
 
-**Status**: 🔧 Built, waiting for sign-off. · **Phase**: 1 · **Feature ID**: E-INTL-02
+**Status**: ✅ Finished — signed off by the user 2026-10-13. · **Phase**: 1 · **Feature ID**: E-INTL-02
 
 | | |
 |---|---|

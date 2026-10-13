@@ -16,7 +16,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM-dependent capability · the S03/S07 spec rules · the S04 dependency-direction rule
   > - **Done when:** a rule or workflow calls a model without naming a provider
 
-* **`E-INTL-02` 🔧: Spec Drafting** (Legacy: Step 4)
+* **`E-INTL-02` ✅: Spec Drafting** (Legacy: Step 4)
   > - **Purpose:** Write a spec with the model rather than from a blank page, stopping for the human at each decision
   > - **Trigger:** When a user runs `sw draft`
   > - **Precondition:** `E-INTL-01` → the model
