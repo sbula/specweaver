@@ -99,7 +99,7 @@ proven through `/review`, not `/implement`).
 | B-FLOW-01 FR-1/9/10 | S07 warns not rejects; no stack trace to the coder; ambiguity park not resumable | `s07_test_first.py:122`; `arbiter.py`. FR-1 **fixed** 2026-10-13: `## Scenarios` is optional hints; unreadable YAML fails S07 `[agreed 2026-10-13]`. FR-9/10 **fixed** 2026-10-13: the coder gets its own frames; an unclear clause parks naming its readings, settled by editing the spec `[agreed 2026-10-13]` |
 | C-EXEC-02 FR-2/12/13 | Load-time containment/PATH checks missing; atom raises on `env:null`; crashes FAILED not ERROR. **Fixed** 2026-10-09: one check runs at load and before each run; a wrong type is a result, not an exception; a step that never ran is ERROR | `models.py:380`; `atom.py:128` |
 | C-EXEC-06 FR-4/5 | Reconcile failure leaves COMPLETED; glob allow-lists exact-match. **Fixed** 2026-10-09: a failed reconcile stores the run FAILED; an allow-list entry may be a glob (`*` in one folder, `**` across folders) | `runner.py:276`; `worktree_ops.py:128` |
-| E-EXEC-01 FR-2/4 | No per-DAL timeouts; no peak memory | `executor.py` |
+| E-EXEC-01 FR-2/4 | No per-DAL timeouts; no peak memory | `executor.py`. **Fixed** 2026-10-13: both removed from the FRs `[agreed 2026-10-13]`; timeout, interrupt and env proven on real processes |
 | E-INTL-02 FR-2 | Draft accept/modify/reject step missing | `drafting/_base.py:136-200` |
 | D-SENS-03 FR-4/5 | Markdown/SQL traceability always empty. **Descoped** 2026-10-12 (user's decision): nothing reads tags from Markdown or SQL, so the promise is removed | `markdown/codestructure.py:70` |
 | D-VAL-05 | C04 never yields coverage; relative paths break C02/C04/C05. **Fixed** 2026-10-09: C04 runs the file's test with coverage on the file itself; paths are resolved once; C03 and C05 fail, naming why, when their tool could not run (they passed). 2026-10-12: C03 uses the test file the run found; a test imports its module by name in any project; C05 says to run `sw scan` without `tach.toml`; Kotlin coverage is "not measured", not 0% | `validation_hydrator.py:257` |
@@ -122,5 +122,5 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
-Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `E-EXEC-01`, `E-INTL-02`, `D-INTL-03`, `D-FLOW-04`,
+Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `E-INTL-02`, `D-INTL-03`, `D-FLOW-04`,
 `TECH-004` FR-6, `C-FLOW-01` REST tests, `E-SENS-03` task-scoped roots.

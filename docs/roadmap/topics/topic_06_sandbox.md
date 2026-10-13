@@ -7,7 +7,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-E: Prototyping
 
-* **`E-EXEC-01` 🔧: Standard Local Execution**
+* **`E-EXEC-01` ✅: Standard Local Execution**
   > - **Purpose:** One controlled way to run a child process: timeout, resource limits, a clean environment, a fixed working directory
   > - **Trigger:** Any tool, runner or step that starts a process
   > - **Precondition:** —
