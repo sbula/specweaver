@@ -57,7 +57,7 @@ Hub: [architecture/README.md](architecture/README.md).
 | [E-INTL-03: Spec Review Engine](roadmap/features/topic_04_intelligence/E-INTL-03/E-INTL-03_design.md) | ✅ | `sw review`: a model judges a spec or code; only a verdict line decides |
 | [D-INTL-01: Code Gen](roadmap/features/topic_04_intelligence/D-INTL-01/D-INTL-01_design.md) | 📜 | Legacy Step 5 MVP |
 | [D-VAL-01: QA Runner](roadmap/features/topic_05_validation/D-VAL-01/D-VAL-01_design.md) | 📜 | Legacy Step 5 MVP |
-| [C-VAL-02: Domain Profiles](roadmap/features/topic_05_validation/C-VAL-02/C-VAL-02_design.md) | 🔧 | One name sets a project's spec limits, in `sw check` and in runs |
+| [C-VAL-02: Domain Profiles](roadmap/features/topic_05_validation/C-VAL-02/C-VAL-02_design.md) | ✅ | One name sets a project's spec limits, in `sw check` and in runs |
 | [D-VAL-05: Code Validation Rules](roadmap/features/topic_05_validation/D-VAL-05/D-VAL-05_design.md) | ✅ | C01–C08 on a code file, its own test and coverage included |
 | [E-SENS-01: Loom FS Tools](roadmap/features/topic_02_sensors/E-SENS-01/E-SENS-01_design.md) | ✅ | Model file tools that stay inside the project and its grants |
 | [Domain Brain / Hybrid RAG](analysis/domain_brain_hybrid_rag.md) | 📋 | Future: domain knowledge + RAG integration |

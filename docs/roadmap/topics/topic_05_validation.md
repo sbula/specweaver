@@ -109,7 +109,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** every LLM call · `sw constitution show/check/init`
   > - **Done when:** a project's rules reach every call without being restated per prompt
 
-* **`C-VAL-02` 🔧: Domain Profiles** (Legacy: 3.3)
+* **`C-VAL-02` ✅: Domain Profiles** (Legacy: 3.3)
   > - **Purpose:** Configure a project by naming what kind of thing it is, rather than setting each option by hand
   > - **Trigger:** When a project's profile is set
   > - **Precondition:** `E-FLOW-01` → the config DB

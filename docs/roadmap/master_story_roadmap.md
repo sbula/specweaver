@@ -496,7 +496,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*
 *   **Core Required (MVS):**
     *   `✅` **C-VAL-01:** Constitution Artifact
-    *   `🔧` **C-VAL-02:** Domain Profiles
+    *   `✅` **C-VAL-02:** Domain Profiles
 *   **Sub-Story Add-Ons:**
     *   🟢 **Dynamic Risk Controls:**
         *   `✅` **D-VAL-02:** Custom Rule Paths
