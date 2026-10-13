@@ -208,6 +208,19 @@ class StepLimits(_Strict):
     min_steps: int = Field(ge=1)
 
 
+class SearchEntry(_Strict):
+    """The web search the agents' `web_search` tool asks: Tavily, its key in `keys.env`."""
+
+    api_key_env: str
+
+    @model_validator(mode="after")
+    def _a_variable_name(self) -> SearchEntry:
+        if not _VARIABLE_NAME.fullmatch(self.api_key_env):
+            msg = "api_key_env names the environment variable that holds the key, not the key"
+            raise ValueError(msg)
+        return self
+
+
 class MachineLlmFile(_Strict):
     """`~/.specweaver/settings.toml`."""
 
@@ -218,6 +231,7 @@ class MachineLlmFile(_Strict):
     brake: BrakeValues = Field(default_factory=BrakeValues)
     models: dict[str, ModelFacts] = Field(default_factory=dict)
     step_limits: StepLimits | None = None
+    search: SearchEntry | None = None
 
 
 class ProjectLlmSection(_Strict):

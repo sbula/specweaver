@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from specweaver.sandbox.web.interfaces.facades import (
@@ -57,13 +55,12 @@ class TestPlannerFunctional:
         iface = PlannerWebInterface(tool)
         result = iface.web_search("test")
         assert result.status == "error"
-        assert "credentials" in result.message.lower()
+        assert "key" in result.message.lower()
 
-    @patch("urllib.request.urlopen", side_effect=Exception("mocked"))
-    def test_read_url_delegates(self, mock: MagicMock) -> None:
+    def test_read_url_delegates(self) -> None:
         tool = WebTool(role="planner")
         iface = PlannerWebInterface(tool)
-        result = iface.read_url("http://example.com")
+        result = iface.read_url("http://127.0.0.1/")
         assert result.status == "error"
 
 
@@ -75,7 +72,7 @@ class TestReviewerFunctional:
         iface = ReviewerWebInterface(tool)
         result = iface.web_search("test")
         assert result.status == "error"
-        assert "credentials" in result.message.lower()
+        assert "key" in result.message.lower()
 
 
 # ===========================================================================
@@ -98,6 +95,6 @@ class TestFactory:
         with pytest.raises(ValueError, match="Unknown role"):
             create_web_interface("hacker")
 
-    def test_with_credentials(self) -> None:
-        iface = create_web_interface("planner", api_key="key", engine_id="cx1")
+    def test_with_a_key(self) -> None:
+        iface = create_web_interface("planner", api_key="key")
         assert isinstance(iface, PlannerWebInterface)

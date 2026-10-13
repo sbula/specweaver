@@ -9,10 +9,15 @@ role-based intent gating with standardized result types.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
+import socket
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urljoin, urlsplit
+
+import httpx
 
 from specweaver.sandbox.base import BaseTool
 
@@ -22,6 +27,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 TOOL_TIMEOUT_SECONDS = 10
+TAVILY_SEARCH_URL = "https://api.tavily.com/search"
+#: Tavily takes 0 to 20; zero results is no search.
+MAX_SEARCH_RESULTS = 20
+#: How much of a page is read; the rest never leaves the network.
+MAX_PAGE_BYTES = 2_000_000
+MAX_REDIRECTS = 5
 
 
 # ---------------------------------------------------------------------------
@@ -69,23 +80,15 @@ class WebTool(BaseTool):
 
     Args:
         role: The agent's role (determines which intents are allowed).
-        api_key: Google Custom Search API key.
-        engine_id: Programmable Search Engine ID (cx).
+        api_key: The Tavily search key; without it there is no search.
     """
 
-    def __init__(
-        self,
-        role: str,
-        *,
-        api_key: str = "",
-        engine_id: str = "",
-    ) -> None:
+    def __init__(self, role: str, *, api_key: str = "") -> None:
         if role not in ROLE_INTENTS:
             msg = f"Unknown role: {role!r}. Known roles: {sorted(ROLE_INTENTS)}"
             raise ValueError(msg)
         self._role = role
         self._api_key = api_key
-        self._engine_id = engine_id
 
     @property
     def role(self) -> str:
@@ -94,104 +97,51 @@ class WebTool(BaseTool):
 
     @property
     def web_enabled(self) -> bool:
-        """Whether web search is available (has credentials)."""
-        return bool(self._api_key and self._engine_id)
+        """Whether web search is available (has a key)."""
+        return bool(self._api_key)
 
     # Intent methods
 
-    def web_search(
-        self,
-        query: str,
-        *,
-        max_results: int = 5,
-    ) -> WebToolResult:
-        """Search the web using Google Custom Search API.
-
-        Args:
-            query: Search query string.
-            max_results: Maximum number of results.
-
-        Returns:
-            WebToolResult with data=list of {title, snippet, url}.
-        """
+    def web_search(self, query: str, *, max_results: int = 5) -> WebToolResult:
+        """Search the web through Tavily: a list of {title, snippet, url}."""
         self._require_intent("web_search")
         if not self.web_enabled:
-            return WebToolResult(
-                status="error",
-                message="Web search not available (missing API credentials)",
-            )
-
-        import urllib.parse
-        import urllib.request
-
-        params = urllib.parse.urlencode(
-            {
-                "key": self._api_key,
-                "cx": self._engine_id,
-                "q": query,
-                "num": min(max_results, 10),  # API max is 10
-            }
-        )
-        url = f"https://www.googleapis.com/customsearch/v1?{params}"
-
+            return WebToolResult(status="error", message="Web search has no key")
+        count = min(max(max_results, 1), MAX_SEARCH_RESULTS)
         try:
-            from specweaver.commons import json
-
-            req = urllib.request.Request(url, headers={"User-Agent": "SpecWeaver/1.0"})
-            with urllib.request.urlopen(req, timeout=TOOL_TIMEOUT_SECONDS) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-
-            results: list[dict[str, Any]] = []
-            for item in data.get("items", [])[:max_results]:
-                results.append(
-                    {
-                        "title": item.get("title", ""),
-                        "snippet": item.get("snippet", ""),
-                        "url": item.get("link", ""),
-                    }
-                )
-            return WebToolResult(status="success", data=results)
-
+            response = httpx.post(
+                TAVILY_SEARCH_URL,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={"query": query, "max_results": count, "search_depth": "basic"},
+                timeout=TOOL_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            items = response.json().get("results", [])[:count]
         except Exception as exc:
             logger.warning("web_search failed: %s", exc)
             return WebToolResult(status="error", message=str(exc))
+        results = [
+            {"title": i.get("title", ""), "snippet": i.get("content", ""), "url": i.get("url", "")}
+            for i in items
+        ]
+        return WebToolResult(status="success", data=results)
 
-    def read_url(
-        self,
-        url: str,
-        *,
-        max_chars: int = 10000,
-    ) -> WebToolResult:
-        """Fetch and read a URL's content, converting HTML to text.
-
-        Args:
-            url: URL to fetch.
-            max_chars: Maximum characters to return.
-
-        Returns:
-            WebToolResult with data={url, content}.
-        """
+    def read_url(self, url: str, *, max_chars: int = 10000) -> WebToolResult:
+        """A public page as text: {url, content}, the url being where redirects ended."""
         self._require_intent("read_url")
-
-        import urllib.request
-
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "SpecWeaver/1.0"})
-            with urllib.request.urlopen(req, timeout=TOOL_TIMEOUT_SECONDS) as resp:
-                raw = resp.read().decode("utf-8", errors="replace")
-
-            content = _strip_html(raw)
-
-            result: dict[str, Any] = {"url": url, "content": content}
-            if len(content) > max_chars:
-                result["content"] = content[:max_chars]
-                result["truncated"] = True
-                result["warning"] = f"Content truncated to {max_chars} characters"
-            return WebToolResult(status="success", data=result)
-
+            final_url, raw = _fetch_public(url)
         except Exception as exc:
             logger.warning("read_url failed: %s", exc)
             return WebToolResult(status="error", message=str(exc))
+
+        content = _strip_html(raw)
+        result: dict[str, Any] = {"url": final_url, "content": content}
+        if len(content) > max_chars:
+            result["content"] = content[:max_chars]
+            result["truncated"] = True
+            result["warning"] = f"Content truncated to {max_chars} characters"
+        return WebToolResult(status="success", data=result)
 
     # Internal: role gating
     def definitions(self) -> list[ToolDefinition]:
@@ -208,6 +158,50 @@ class WebTool(BaseTool):
                 f"Allowed: {sorted(ROLE_INTENTS[self._role])}"
             )
             raise WebToolError(msg)
+
+
+# ---------------------------------------------------------------------------
+# Public addresses only
+# ---------------------------------------------------------------------------
+
+
+class NotPublicError(ValueError):
+    """The URL leads somewhere other than the public internet."""
+
+
+def _check_public(url: str) -> None:
+    """Refuse a URL that is not http(s), or whose host resolves to any non-public address."""
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise NotPublicError(f"only http and https URLs are read: {url!r}")
+    try:
+        infos = socket.getaddrinfo(parts.hostname, parts.port or 443, proto=socket.IPPROTO_TCP)
+    except OSError as exc:
+        raise NotPublicError(f"{parts.hostname} does not resolve: {exc}") from exc
+    for info in infos:
+        address = ipaddress.ip_address(str(info[4][0]).split("%", 1)[0])
+        if not address.is_global or address.is_multicast:
+            raise NotPublicError(f"{parts.hostname} is not a public address ({address})")
+
+
+def _fetch_public(url: str) -> tuple[str, str]:
+    """Where the redirects ended and the page there, every hop checked before it is asked."""
+    with httpx.Client(follow_redirects=False, timeout=TOOL_TIMEOUT_SECONDS) as client:
+        for _ in range(MAX_REDIRECTS + 1):
+            _check_public(url)
+            with client.stream("GET", url, headers={"User-Agent": "SpecWeaver/1.0"}) as response:
+                if response.is_redirect:
+                    url = urljoin(url, response.headers["Location"])
+                    continue
+                response.raise_for_status()
+                body = b""
+                for chunk in response.iter_bytes():
+                    body += chunk
+                    if len(body) >= MAX_PAGE_BYTES:
+                        break
+                encoding = response.encoding or "utf-8"
+                return url, body[:MAX_PAGE_BYTES].decode(encoding, errors="replace")
+    raise NotPublicError(f"more than {MAX_REDIRECTS} redirects")
 
 
 # ---------------------------------------------------------------------------

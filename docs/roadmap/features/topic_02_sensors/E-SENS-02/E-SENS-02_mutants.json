@@ -1,0 +1,185 @@
+{
+  "schema": 2,
+  "feature": "E-SENS-02",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Search sends the key in the header and asks for 1 to 20 results",
+      "scope": [
+        "tests/unit/sandbox/web/interfaces/web/test_web_tool.py",
+        "tests/integration/core/flow/handlers/test_review_web_search.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-key-in-header",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "WebTool.web_search",
+          "old": "headers={\"Authorization\": f\"Bearer {self._api_key}\"},",
+          "new": "headers={\"Authorization\": \"Bearer \"},",
+          "breaks": "Tavily gets no key; every search is refused",
+          "symbol_sha": "sha256:c02ab09dc9a5b642f8c06725960bd5fcea271fff78a65e63aa283c015e37a59b"
+        },
+        {
+          "id": "no-clamp",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "WebTool.web_search",
+          "old": "count = min(max(max_results, 1), MAX_SEARCH_RESULTS)",
+          "new": "count = max_results",
+          "breaks": "a model asks for 0, -4 or 50 results and Tavily refuses or bills more",
+          "symbol_sha": "sha256:c02ab09dc9a5b642f8c06725960bd5fcea271fff78a65e63aa283c015e37a59b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "read_url returns at most the cap, after at most five redirects",
+      "scope": [
+        "tests/unit/sandbox/web/interfaces/web/test_web_tool.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-byte-cap",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "_fetch_public",
+          "old": "body[:MAX_PAGE_BYTES].decode(",
+          "new": "body.decode(",
+          "breaks": "a page larger than the cap reaches the model whole",
+          "symbol_sha": "sha256:e3eace75412700e5613ccf5d48e5d1c3d4bf2fe2b4e51b25bb91486aab75eb9f"
+        },
+        {
+          "id": "endless-redirects",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "_fetch_public",
+          "old": "for _ in range(MAX_REDIRECTS + 1):",
+          "new": "for _ in range(MAX_REDIRECTS * 4):",
+          "breaks": "a redirect loop is followed twenty times instead of five",
+          "symbol_sha": "sha256:e3eace75412700e5613ccf5d48e5d1c3d4bf2fe2b4e51b25bb91486aab75eb9f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "read_url reads only http(s) on public addresses, at every hop",
+      "scope": [
+        "tests/unit/sandbox/web/interfaces/web/test_web_tool.py"
+      ],
+      "mutants": [
+        {
+          "id": "loopback-only",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "_check_public",
+          "old": "if not address.is_global or address.is_multicast:",
+          "new": "if address.is_loopback:",
+          "breaks": "private networks and the metadata service are read",
+          "symbol_sha": "sha256:6be211de778d57a6d4d43fa35603ba01b212bc4d0b812379ff6a5943e0018097"
+        },
+        {
+          "id": "first-hop-only",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "_fetch_public",
+          "old": "            _check_public(url)\n",
+          "new": "            _check_public(url) if _ == 0 else None\n",
+          "breaks": "a public page redirects to a private address and it is read",
+          "symbol_sha": "sha256:e3eace75412700e5613ccf5d48e5d1c3d4bf2fe2b4e51b25bb91486aab75eb9f"
+        },
+        {
+          "id": "any-scheme",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/tool.py",
+          "symbol": "_check_public",
+          "old": "if parts.scheme not in (\"http\", \"https\") or not parts.hostname:",
+          "new": "if not parts.hostname:",
+          "breaks": "ftp and other schemes reach httpx",
+          "symbol_sha": "sha256:6be211de778d57a6d4d43fa35603ba01b212bc4d0b812379ff6a5943e0018097"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The key comes from keys.env through [search], or the command refuses",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_resolve.py",
+        "tests/unit/infrastructure/llm/test_router.py",
+        "tests/unit/core/config/test_llm_settings_search.py",
+        "tests/integration/core/flow/handlers/test_review_web_search.py"
+      ],
+      "mutants": [
+        {
+          "id": "missing-key-passes",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver.search_key",
+          "old": "        if not key:\n            self._refuse(",
+          "new": "        if False:\n            self._refuse(",
+          "breaks": "a [search] whose key keys.env lacks runs with no search, silently",
+          "symbol_sha": "sha256:cf4d8b8144ce984f56a30b92b9e6816507aff0e5132802a72b67f17e26b605e7"
+        },
+        {
+          "id": "late-refusal",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "build_router",
+          "old": "    resolver.search_key()\n",
+          "new": "    pass\n",
+          "breaks": "a broken search setting is found only when a review runs",
+          "symbol_sha": "sha256:7b3bd106854bac213499e44da189d37070dc31368b28aaa32aeae7907b338bbc"
+        },
+        {
+          "id": "pasted-key-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "SearchEntry._a_variable_name",
+          "old": "        if not _VARIABLE_NAME.fullmatch(self.api_key_env):\n",
+          "new": "        if False:\n",
+          "breaks": "a key pasted into settings.toml is taken as a variable name",
+          "symbol_sha": "sha256:37c77106a2144c79eb05b07c5db441cabe6443df73daac5fe6c71455320c2727"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Review and generation get the web tools only with a key",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_review_web_search.py"
+      ],
+      "mutants": [
+        {
+          "id": "never-web",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_build_tool_dispatcher",
+          "old": "allowed_tools = [\"fs\", \"ast\", \"web\"] if search_key else [\"fs\", \"ast\"]",
+          "new": "allowed_tools = [\"fs\", \"ast\"]",
+          "breaks": "a set key gives the agent no web tools",
+          "symbol_sha": "sha256:5c8d4e6fef12c0c9687097a89014cfa8b5e2dcd488ffae29473bbda5045723f0"
+        },
+        {
+          "id": "always-web",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_build_tool_dispatcher",
+          "old": "allowed_tools = [\"fs\", \"ast\", \"web\"] if search_key else [\"fs\", \"ast\"]",
+          "new": "allowed_tools = [\"fs\", \"ast\", \"web\"]",
+          "breaks": "an agent with no key is offered tools that cannot search",
+          "symbol_sha": "sha256:5c8d4e6fef12c0c9687097a89014cfa8b5e2dcd488ffae29473bbda5045723f0"
+        },
+        {
+          "id": "key-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/registry.py",
+          "symbol": "get_standard_registry",
+          "old": "api_key=kwargs.get(\"search_key\") or \"\"",
+          "new": "api_key=\"\"",
+          "breaks": "the key never reaches the web tool",
+          "symbol_sha": "sha256:9db90c617e02f574313e10777231e05640102cff6f5a2c0a409c22377218807c"
+        }
+      ]
+    }
+  ]
+}

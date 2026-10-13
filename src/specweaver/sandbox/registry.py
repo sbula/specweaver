@@ -84,7 +84,7 @@ def get_standard_registry() -> ToolRegistry:
     def create_web(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.web.interfaces.tool import WebTool
 
-        return WebTool(role=kwargs["role"])
+        return WebTool(role=kwargs["role"], api_key=kwargs.get("search_key") or "")
 
     def create_mcp(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.mcp.interfaces.facades import create_mcp_interface

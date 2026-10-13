@@ -219,7 +219,7 @@ class TestBaseToolConformance:
             ),
             pytest.param(
                 lambda: __import__("specweaver.sandbox.web.interfaces.tool", fromlist=[""]).WebTool(
-                    role="implementer", api_key="dummy", engine_id="dummy"
+                    role="implementer", api_key="dummy"
                 ),
                 id="WebTool",
             ),

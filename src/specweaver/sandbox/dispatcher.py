@@ -115,6 +115,7 @@ class ToolDispatcher:
         analyzer_factory: Any | None = None,
         topology: Any | None = None,
         parsers: Any | None = None,
+        search_key: str | None = None,
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -122,6 +123,7 @@ class ToolDispatcher:
             boundary: The WorkspaceBoundary for the current execution.
             role: The agent's pipeline role ("reviewer", "planner", etc.).
             allowed_tools: List of tool subsets to enable (e.g., ["fs", "web"]).
+            search_key: The web-search key; "web" without it searches nothing.
 
         Returns:
             A configured ToolDispatcher encompassing all allowed intents.
@@ -136,6 +138,7 @@ class ToolDispatcher:
             topology=topology,
             parsers=parsers,
         )
+        kwargs["search_key"] = search_key
 
         registry = get_standard_registry()
         tools = registry.create_tools(allowed_tools, **kwargs)

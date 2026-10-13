@@ -145,6 +145,21 @@ class RoleResolver:
             table,
         )
 
+    def search_key(self) -> str | None:
+        """The web-search key `[search]` names, from keys.env; None when there is no `[search]`."""
+        search = self._files.machine.search
+        if search is None:
+            return None
+        key = self._files.keys.get(search.api_key_env)
+        if not key:
+            self._refuse(
+                "search.api_key_env",
+                f"web search reads its key from {search.api_key_env}, which "
+                f"{self._files.keys_source} does not set",
+                "search",
+            )
+        return key
+
     def _refuse(self, key: str, message: str, *near: str) -> NoReturn:
         """Refuse naming `key`'s line, else the line of the first of `near` in the file."""
         line = line_of(self._files.machine_text, key, *near)

@@ -86,14 +86,12 @@ def create_web_interface(
     role: str,
     *,
     api_key: str = "",
-    engine_id: str = "",
 ) -> PlannerWebInterface | ReviewerWebInterface:
     """Create a role-specific web interface.
 
     Args:
         role: The agent's role ("planner", "reviewer").
-        api_key: Google Custom Search API key.
-        engine_id: Programmable Search Engine ID (cx).
+        api_key: The Tavily search key.
 
     Returns:
         A role-specific interface with only the allowed methods.
@@ -105,7 +103,7 @@ def create_web_interface(
         msg = f"Unknown role: {role!r}. Known roles: {sorted(_ROLE_INTERFACE_MAP)}"
         raise ValueError(msg)
 
-    tool = WebTool(role=role, api_key=api_key, engine_id=engine_id)
+    tool = WebTool(role=role, api_key=api_key)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]
     return interface_cls(tool)

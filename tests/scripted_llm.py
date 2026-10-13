@@ -126,8 +126,16 @@ class FixedRouter:
     """A router that answers every task type with one adapter — for tests that build a
     `RunContext` by hand. Production runs get theirs from `RoleResolver`."""
 
-    def __init__(self, adapter: Any, model: str = "test-model", **settings: Any) -> None:
+    def __init__(
+        self,
+        adapter: Any,
+        model: str = "test-model",
+        *,
+        search_key: str | None = None,
+        **settings: Any,
+    ) -> None:
         self.adapter = adapter
+        self.search_key = search_key
         self.config = GenerationConfig(model=model, **(_TEST_LIMITS | settings))
 
     def get_for_task(self, task_type: Any) -> RouterResult:

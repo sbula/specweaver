@@ -149,3 +149,36 @@ class TestRoleResolverPrices:
 
         assert facts is not None
         assert (facts.usd_per_million_input, facts.usd_per_million_output) == (2.0, 8.0)
+
+
+class TestTheSearchKey:
+    """The web-search key comes from keys.env, through the variable `[search]` names."""
+
+    @staticmethod
+    def _with(machine: str, keys: dict[str, str]) -> RoleResolver:
+        files = LlmSettingsFiles.from_texts(
+            machine_text=machine,
+            machine_source="settings.toml",
+            project_text="",
+            project_source="-",
+            keys=keys,
+            keys_source="keys.env",
+        )
+        return RoleResolver(files, telemetry_project="demo", budget=SpendBudget())
+
+    def test_the_named_variable_gives_the_key(self) -> None:
+        # Proves: E-SENS-02 FR-4
+        machine = _MACHINE + '\n[search]\napi_key_env = "TAVILY_API_KEY"\n'
+        resolver = self._with(machine, {"TAVILY_API_KEY": "tvly-1", "OTHER": "x"})
+        assert resolver.search_key() == "tvly-1"
+
+    def test_no_section_means_no_key(self) -> None:
+        assert self._with(_MACHINE, {"TAVILY_API_KEY": "tvly-1"}).search_key() is None
+
+    def test_a_variable_keys_env_does_not_set_refuses_naming_its_line(self) -> None:
+        machine = _MACHINE + '\n[search]\napi_key_env = "TAVILY_API_KEY"\n'
+        with pytest.raises(SettingsFileError) as caught:
+            self._with(machine, {}).search_key()
+        assert caught.value.key == "search.api_key_env"
+        assert "TAVILY_API_KEY" in str(caught.value)
+        assert caught.value.line == machine.splitlines().index('api_key_env = "TAVILY_API_KEY"') + 1

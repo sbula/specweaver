@@ -31,6 +31,7 @@ SpecWeaver reads keys from nowhere else — not from the shell, not from a proje
 # ~/.specweaver/keys.env — only you may read it: chmod 600 ~/.specweaver/keys.env
 GEMINI_API_KEY=your-gemini-key
 ANTHROPIC_API_KEY=your-anthropic-key
+TAVILY_API_KEY=your-tavily-key      # optional: web search for the agents
 ```
 
 SpecWeaver refuses `keys.env` if other users can read it. Everything else about models lives in
@@ -108,6 +109,11 @@ rate_date = 2026-09-26
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
 - Every cloud server names its key variable in `api_key_env`; a key goes only to the server that
   names it. A server that needs no key is `kind = "openai-compatible"`.
+- **Web search** (optional): `[search]` with `api_key_env = "TAVILY_API_KEY"` gives the review and
+  code-writing agents `web_search` (Tavily; the free plan has 1,000 searches a month) and
+  `read_url`. Without the section they get neither. If `keys.env` lacks the variable, every LLM
+  command stops at the start and names `search.api_key_env`. `read_url` reads only `http` and
+  `https` pages on public addresses: never `localhost`, a private network or `169.254.169.254`.
 
 ## 4. Initializing your First Project
 

@@ -41,8 +41,6 @@ def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> Tool
     backwards compatibility with contexts that don't set workspace roots
     or when the LLM doesn't support tool use.
     """
-    import os
-
     from specweaver.sandbox.dispatcher import ToolDispatcher
     from specweaver.sandbox.security import WorkspaceBoundary
 
@@ -55,9 +53,8 @@ def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> Tool
     except (ValueError, AttributeError):
         return None
 
-    allowed_tools = ["fs", "ast"]
-    if bool(os.environ.get("SEARCH_API_KEY")):
-        allowed_tools.append("web")
+    search_key = context.model.llm_router.search_key
+    allowed_tools = ["fs", "ast", "web"] if search_key else ["fs", "ast"]
 
     return ToolDispatcher.create_standard_set(
         boundary,
@@ -65,6 +62,7 @@ def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> Tool
         allowed_tools=allowed_tools,
         analyzer_factory=context.analysis.analyzer_factory,
         topology=context.graph.topology,
+        search_key=search_key,
     )
 
 

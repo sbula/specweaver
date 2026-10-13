@@ -48,6 +48,11 @@ class ModelRouter:
         """The run's spend brake, shared by every role."""
         return self._resolver.budget
 
+    @property
+    def search_key(self) -> str | None:
+        """The web-search key, or None when the machine file names no search."""
+        return self._resolver.search_key()
+
     def collectors(self) -> list[TelemetryCollector]:
         """Every collector the run's calls went through, for flushing their usage records."""
         return self._resolver.collectors()
@@ -78,4 +83,5 @@ def build_router(
         files, telemetry_project=project, budget=budget, run_model=run_model, history=db
     )
     resolver.require(role.value if isinstance(role, TaskType) else role for role in roles)
+    resolver.search_key()
     return ModelRouter(resolver)

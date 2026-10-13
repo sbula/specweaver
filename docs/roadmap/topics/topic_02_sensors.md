@@ -22,7 +22,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Precondition:** `E-SENS-01` → boundary enforcement
   > - **Reads:** workspace files · the web
   > - **Produces:** tool results returned into the model's context
-  > - **Enables:** Reviewer · Planner
+  > - **Enables:** Reviewer · code generation
   > - **Done when:** six tools — four filesystem, two web — resolve through one provider-agnostic call
 
 * **`E-SENS-03` 🔧: Context Ledgers & Workspace Boundaries**

@@ -77,3 +77,35 @@ def test_every_role_shares_the_resolvers_collectors() -> None:
 
     assert review.adapter is draft.adapter
     assert router.collectors() == [review.adapter]
+
+
+def test_the_router_hands_on_the_search_key() -> None:
+    # Proves: E-SENS-02 FR-4
+    files = LlmSettingsFiles.from_texts(
+        machine_text=_MACHINE + '\n[search]\napi_key_env = "TAVILY_API_KEY"\n',
+        machine_source="m",
+        project_text="",
+        project_source="-",
+        keys={"TAVILY_API_KEY": "tvly-1"},
+    )
+    router = ModelRouter(
+        RoleResolver(files, telemetry_project="p", budget=SpendBudget(), catalogue=_CATALOGUE)
+    )
+    assert router.search_key == "tvly-1"
+    assert _router().search_key is None
+
+
+def test_a_search_key_keys_env_lacks_refuses_before_any_call() -> None:
+    # Proves: E-SENS-02 FR-4
+    from specweaver.infrastructure.llm.router import build_router
+
+    machine = (
+        _MACHINE
+        + "\n[brake]\nhosted_spend_per_run = 1.0\ntokens_per_run = 10\nagent_turns = 2\n"
+        + '\n[search]\napi_key_env = "TAVILY_API_KEY"\n'
+    )
+    files = LlmSettingsFiles.from_texts(
+        machine_text=machine, machine_source="m", project_text="", project_source="-"
+    )
+    with pytest.raises(SettingsFileError, match=r"search\.api_key_env"):
+        build_router(files, project="p", roles=[TaskType.REVIEW])
