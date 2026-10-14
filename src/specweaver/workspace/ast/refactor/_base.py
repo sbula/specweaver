@@ -13,6 +13,7 @@ import re
 from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
+from specweaver.workspace.ast.refactor._family import ClassId, Parents, hierarchy, outside_bases
 from specweaver.workspace.ast.refactor._model import Found, RenameRefusal, Spot
 
 if TYPE_CHECKING:
@@ -91,6 +92,65 @@ class Resolver:
                 f"'{name}' is nested; only top-level classes, their methods and functions rename"
             )
         return name
+
+    def start(
+        self,
+        path: str,
+        symbol_name: str,
+        new_name: str,
+        valid: Callable[[str], bool],
+        language: str,
+    ) -> tuple[str, str] | RenameRefusal:
+        """`(symbol as listed, its short name)`, or why the rename cannot start."""
+        name = self.pick(path, symbol_name)
+        if isinstance(name, RenameRefusal):
+            return name
+        old = name.rsplit(".", 1)[-1]
+        if new_name == old:
+            return RenameRefusal(f"the new name is '{old}' already; nothing to change")
+        if not valid(new_name):
+            return RenameRefusal(f"'{new_name}' is not a free {language} name")
+        return name, old
+
+    def family(
+        self,
+        home: str,
+        cls: str,
+        old: str,
+        resolve: Callable[[str, str], tuple[str, ...]],
+        harmless: frozenset[str],
+    ) -> set[ClassId] | RenameRefusal:
+        """The override family of `cls`, or a refusal when a class in it has an outside base."""
+        parents: Parents = {
+            (p, name): [(b, resolve(p, b)) for b in bases]
+            for p in sorted(self.code)
+            for name, bases in self.facts(p).bases.items()
+        }
+        members = hierarchy(parents, (home, cls))
+        outside = outside_bases(parents, members, harmless)
+        if outside:
+            return RenameRefusal(
+                f"a class in the hierarchy of {cls} has a base outside the project "
+                f"({', '.join(outside)}); renaming '{old}' could stop it overriding that base"
+            )
+        return members
+
+    def module_kind(self, path: str, local: str) -> str:
+        """What binds `local` at the module level of `path`: `def`, `import`, `other`, `none`
+        or, when more than one does, `conflict`."""
+        facts = self.facts(path)
+        kinds = [
+            k
+            for k, hit in (
+                ("def", local in facts.defs),
+                ("import", local in facts.imports),
+                ("other", local in facts.others),
+            )
+            if hit
+        ]
+        if len(kinds) > 1:
+            return "conflict"
+        return kinds[0] if kinds else "none"
 
     def definitions(self, path: str, name: str) -> int:
         owner, _, short = name.rpartition(".")

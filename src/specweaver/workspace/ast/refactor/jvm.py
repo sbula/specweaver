@@ -14,11 +14,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._family import ClassId, hierarchy, outside_bases
 from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
 
 if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import Reference
+    from specweaver.workspace.ast.refactor._family import ClassId
 
 #: Root types that add no method a rename could stop overriding.
 _HARMLESS = frozenset({"Object", "java.lang.Object", "Any", "kotlin.Any"})
@@ -154,14 +154,16 @@ class JvmResolver(Resolver):
     # --- the rename --------------------------------------------------------------------------
 
     def find(self, path: str, symbol_name: str, new_name: str) -> Found | RenameRefusal:
-        name = self.pick(path, symbol_name)
-        if isinstance(name, RenameRefusal):
-            return name
-        old = name.rsplit(".", 1)[-1]
-        if new_name == old:
-            return RenameRefusal(f"the new name is '{old}' already; nothing to change")
-        if not new_name.isidentifier() or new_name in _KEYWORDS:
-            return RenameRefusal(f"'{new_name}' is not a free Java or Kotlin name")
+        started = self.start(
+            path,
+            symbol_name,
+            new_name,
+            lambda n: n.isidentifier() and n not in _KEYWORDS,
+            "Java or Kotlin",
+        )
+        if isinstance(started, RenameRefusal):
+            return started
+        name, old = started
         if self._is_type(path, name):
             return self._find_type(path, name)
         if "." in name:
@@ -247,22 +249,10 @@ class JvmResolver(Resolver):
 
     # --- methods -----------------------------------------------------------------------------
 
-    def _parents(self) -> dict[ClassId, list[tuple[str, Resolved]]]:
-        return {
-            (p, cls): [(b, self.resolve_text(p, b)) for b in bases]
-            for p in sorted(self.code)
-            for cls, bases in self.facts(p).bases.items()
-        }
-
     def _find_method(self, home: str, cls: str, old: str) -> Found | RenameRefusal:
-        parents = self._parents()
-        family = hierarchy(parents, (home, cls))
-        outside = outside_bases(parents, family, _HARMLESS)
-        if outside:
-            return RenameRefusal(
-                f"a class in the hierarchy of {cls} has a base outside the project "
-                f"({', '.join(outside)}); renaming '{old}' could stop it overriding that base"
-            )
+        family = self.family(home, cls, old, self.resolve_text, _HARMLESS)
+        if isinstance(family, RenameRefusal):
+            return family
         return self.collect(old, lambda p, r: self._method_use(family, p, r))
 
     def _method_use(self, family: set[ClassId], p: str, ref: Reference) -> str:

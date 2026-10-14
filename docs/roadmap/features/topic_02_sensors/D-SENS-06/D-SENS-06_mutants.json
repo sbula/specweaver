@@ -236,7 +236,9 @@
       "requirement": "FR-7",
       "title": "A method is renamed in its whole override family, or not at all",
       "scope": [
-        "tests/unit/workspace/ast/refactor/test_plan_rename.py"
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_typescript.py"
       ],
       "mutants": [
         {
@@ -262,12 +264,12 @@
         {
           "id": "outside-base-ignored",
           "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "PythonResolver._find_method",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "Resolver.family",
           "old": "        if outside:\n",
           "new": "        if False:\n",
           "breaks": "a method that overrides an outside base is renamed",
-          "symbol_sha": "sha256:9d664ee884e769b2b01c4982a8ef9c24609d408898db0e3abbec5dc3b83d0bfd"
+          "symbol_sha": "sha256:e5cc942cf5e4372163904727d318a23887dca92376bfbd2790173e711c771250"
         },
         {
           "id": "family-one-way",
@@ -296,7 +298,7 @@
           "old": "        (enum_declaration name: (identifier) @name)\n",
           "new": "\n",
           "breaks": "an enum is not a symbol",
-          "symbol_sha": "sha256:af12e886b569a00102292cec537066b61f22dc6bee2d58694e18d64aa03a1a10"
+          "symbol_sha": "sha256:85f76d1a976a501190e6c0267de4d8fbfaeaee4a1524a6801543e17021795c57"
         },
         {
           "id": "ts-interface-not-listed",
@@ -306,7 +308,7 @@
           "old": "        (interface_declaration name: (type_identifier) @name)\n",
           "new": "\n",
           "breaks": "an interface is not a symbol",
-          "symbol_sha": "sha256:af12e886b569a00102292cec537066b61f22dc6bee2d58694e18d64aa03a1a10"
+          "symbol_sha": "sha256:85f76d1a976a501190e6c0267de4d8fbfaeaee4a1524a6801543e17021795c57"
         },
         {
           "id": "rust-enum-not-listed",
@@ -334,10 +336,12 @@
       "requirement": "FR-8",
       "title": "Java and Kotlin rename every proven use and refuse when unsure",
       "scope": [
-        "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py",
         "tests/unit/workspace/ast/parsers/java/test_java_references.py",
         "tests/unit/workspace/ast/parsers/kotlin/test_kotlin_references.py",
-        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+        "tests/unit/workspace/ast/parsers/typescript/test_typescript_references.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_typescript.py"
       ],
       "mutants": [
         {
@@ -437,7 +441,77 @@
           "symbol": "in_anonymous",
           "old": "        if grammar.anonymous(parent):\n            return True\n",
           "new": "        if False:\n            return True\n",
-          "breaks": "a call in an anonymous class looks like a call on this"
+          "breaks": "a call in an anonymous class looks like a call on this",
+          "symbol_sha": "sha256:3f8e4573db92eaeabba8d10427609c9f17771cd9d53a9c9c093c710289e40400"
+        },
+        {
+          "id": "ts-aliases-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/typescript.py",
+          "symbol": "TypeScriptResolver.resolve_module",
+          "old": "            return (\"unknown\",) if self._aliased else (\"external\",)\n",
+          "new": "            return (\"external\",)\n",
+          "breaks": "an import through a tsconfig path alias is skipped",
+          "symbol_sha": "sha256:73ff5f15ee81580600f5f2d974827dbb517ffd69716b6f1dea7c5fce9d4117f7"
+        },
+        {
+          "id": "ts-export-star-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/typescript.py",
+          "symbol": "TypeScriptResolver.resolve_export",
+          "old": "        return (\"unknown\",) if facts.wildcards else (\"missing\",)\n",
+          "new": "        return (\"missing\",)\n",
+          "breaks": "an import through export * is skipped",
+          "symbol_sha": "sha256:72c7d37953e8460ae7cddcecf8f06da1f635eeb140d4618ebf17a81d62188c88"
+        },
+        {
+          "id": "ts-javascript-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/typescript.py",
+          "symbol": "TypeScriptResolver._in_javascript",
+          "old": "                    spots.append(Spot(p, line))\n",
+          "new": "                    pass\n",
+          "breaks": "a .js file keeps the old name",
+          "symbol_sha": "sha256:bcb94b749d93f9a6addf28e3fa9942cc7035e875289d9b393bfdb47c27f2726d"
+        },
+        {
+          "id": "ts-unknown-module-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/typescript.py",
+          "symbol": "TypeScriptResolver._exported",
+          "old": "            return \"unsure\" if module[0] in _UNSURE else \"unrelated\"\n",
+          "new": "            return \"unrelated\"\n",
+          "breaks": "an import from a missing module is skipped",
+          "symbol_sha": "sha256:d9ea866d920652be8cd214b9e1f74cf2b9ea9f451aaaf3e6b1e1a34fbd5c997f"
+        },
+        {
+          "id": "ts-rebound-this-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/_references.py",
+          "symbol": "_this_binding",
+          "old": "            return \"rebound\"\n",
+          "new": "            return receiver.type\n",
+          "breaks": "this inside a function expression is taken as the class",
+          "symbol_sha": "sha256:93e8352079daf6e37e8623cc0458bbac4f5ed510e87973646c648a8dabbedfda"
+        },
+        {
+          "id": "ts-object-key-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/_references.py",
+          "symbol": "_property",
+          "old": "    if parent.type == \"pair\":\n        return ref(\"string\", node)\n",
+          "new": "    if False:\n        return ref(\"string\", node)\n",
+          "breaks": "an object-literal key keeps the old name",
+          "symbol_sha": "sha256:64abc8cb1c0f6e74dc844c768b8fb9d4a82a221e0b8ed3690f45212ecfadfe89"
+        },
+        {
+          "id": "ts-shadow-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/_references.py",
+          "symbol": "_binding",
+          "old": "            return \"local\"\n",
+          "new": "            return \"free\"\n",
+          "breaks": "a TypeScript local of the name is taken as the name"
         }
       ]
     }

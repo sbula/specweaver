@@ -251,3 +251,23 @@ async def test_the_implementer_renames_a_kotlin_method_called_from_java(tmp_path
     assert "error" not in result, result
     assert "open fun welcome(n: String)" in (root / "src/app/util/Greeter.kt").read_text()
     assert 'return welcome("x");' in (root / "src/app/Use.java").read_text()
+
+
+async def test_the_implementer_renames_a_typescript_class_across_modules(tmp_path: Path) -> None:
+    # Proves: D-SENS-06 FR-8
+    root = _write(
+        tmp_path / "ts",
+        {
+            "src/greeter.ts": "export class Greeter {}\n",
+            "src/app.ts": 'import { Greeter } from "./greeter";\nconst g = new Greeter();\n',
+        },
+    )
+    result = await _dispatcher(root).execute(
+        "rename_symbol",
+        {"path": "src/greeter.ts", "symbol_name": "Greeter", "new_name": "Welcomer"},
+    )
+
+    assert "error" not in result, result
+    assert (
+        root / "src/app.ts"
+    ).read_text() == 'import { Welcomer } from "./greeter";\nconst g = new Welcomer();\n'

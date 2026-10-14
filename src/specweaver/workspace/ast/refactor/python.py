@@ -15,13 +15,13 @@ import keyword
 from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._family import ClassId, hierarchy, outside_bases
 from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
 
 if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import (
         Reference,
     )
+    from specweaver.workspace.ast.refactor._family import ClassId
 
 #: Bases that give a class no method a rename could stop overriding.
 _HARMLESS_BASES = frozenset(
@@ -91,14 +91,13 @@ class PythonResolver(Resolver):
         self, path: str, local: str, seen: frozenset[tuple[str, str]] = frozenset()
     ) -> Resolved:
         """What the module-level name `local` of `path` stands for."""
-        facts = self.facts(path)
-        kinds = [local in facts.defs, local in facts.imports, local in facts.others]
-        if (path, local) in seen or sum(kinds) > 1:
+        kind = self.module_kind(path, local)
+        if (path, local) in seen or kind == "conflict":
             return ("unknown",)
-        if kinds[0]:
+        if kind == "def":
             return ("def", path, local)
-        if kinds[1]:
-            module, imported = facts.imports[local]
+        if kind == "import":
+            module, imported = self.facts(path).imports[local]
             found = self.resolve_module(module, path)
             if found[0] != "module" or imported is None:
                 return found
@@ -106,9 +105,9 @@ class PythonResolver(Resolver):
             if sub:
                 return ("module", sub)
             return self.resolve_name(found[1], imported, seen | {(path, local)})
-        if kinds[2]:
+        if kind == "other":
             return ("other",)
-        return ("unknown",) if facts.wildcards else ("free",)
+        return ("unknown",) if self.facts(path).wildcards else ("free",)
 
     def resolve_dotted(self, path: str, text: str) -> Resolved:
         """What a module-level dotted name like `app.greeter.Greeter` stands for."""
@@ -124,13 +123,6 @@ class PythonResolver(Resolver):
         return found
 
     # --- classes -----------------------------------------------------------------------------
-
-    def _parents(self) -> dict[ClassId, list[tuple[str, Resolved]]]:
-        return {
-            (p, cls): [(b, self.resolve_dotted(p, b)) for b in bases]
-            for p in sorted(self.code)
-            for cls, bases in self.facts(p).bases.items()
-        }
 
     # --- the rename --------------------------------------------------------------------------
 
@@ -184,14 +176,9 @@ class PythonResolver(Resolver):
         return "unrelated" if ref.binding in ("local", "class", "module_other") else "unsure"
 
     def _find_method(self, home: str, cls: str, old: str) -> Found | RenameRefusal:
-        parents = self._parents()
-        family = hierarchy(parents, (home, cls))
-        outside = outside_bases(parents, family, _HARMLESS_BASES)
-        if outside:
-            return RenameRefusal(
-                f"a class in the hierarchy of {cls} has a base outside the project "
-                f"({', '.join(outside)}); renaming '{old}' could stop it overriding that base"
-            )
+        family = self.family(home, cls, old, self.resolve_dotted, _HARMLESS_BASES)
+        if isinstance(family, RenameRefusal):
+            return family
         return self.collect(old, lambda p, r: self._method(family, p, r))
 
     def _method(self, family: set[ClassId], p: str, ref: Reference) -> str:

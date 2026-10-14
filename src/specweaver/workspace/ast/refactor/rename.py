@@ -21,6 +21,7 @@ from specweaver.workspace.ast.refactor._model import (
 )
 from specweaver.workspace.ast.refactor.jvm import JvmResolver
 from specweaver.workspace.ast.refactor.python import PythonResolver
+from specweaver.workspace.ast.refactor.typescript import TypeScriptResolver
 
 __all__ = [
     "CODE_SUFFIXES",
@@ -45,6 +46,8 @@ _RESOLVERS: dict[str, type[Resolver]] = {
     ".java": JvmResolver,
     ".kt": JvmResolver,
     ".kts": JvmResolver,
+    ".ts": TypeScriptResolver,
+    ".tsx": TypeScriptResolver,
 }
 
 #: Endings of source code; every other file is text, where a name is only ever a mention.

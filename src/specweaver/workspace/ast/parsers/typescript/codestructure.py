@@ -9,9 +9,11 @@ import typing
 import tree_sitter_typescript
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _ref_tools
 from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser, enclosing_name
+from specweaver.workspace.ast.parsers.typescript import _references
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +32,14 @@ def _visibility_of(name_node: typing.Any) -> Visibility:
     return "public" if _vis.has_ancestor(name_node.parent, "export_statement") else "internal"
 
 
-class TypeScriptCodeStructure(ClassBasedParser):
+class TypeScriptCodeStructure(_ref_tools.Renames, ClassBasedParser):
     grammar = staticmethod(tree_sitter_typescript.language_typescript)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
+
+    def _finder(self) -> typing.Any:
+        return _references
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """TypeScript wraps both clauses in `class_heritage`, and keeps them distinct inside it."""
@@ -85,6 +90,8 @@ class TypeScriptCodeStructure(ClassBasedParser):
         (enum_declaration name: (identifier) @name)
         (interface_declaration name: (type_identifier) @name)
         (method_signature name: (property_identifier) @name)
+        (abstract_class_declaration name: (type_identifier) @name)
+        (abstract_method_signature name: (property_identifier) @name)
         """
 
     @property
@@ -93,12 +100,11 @@ class TypeScriptCodeStructure(ClassBasedParser):
         (comment) @comment
         """
 
-    def supported_intents(self) -> list[str]:
-        return super().supported_intents()
-
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         return enclosing_name(
-            name_node, ("class_declaration", "interface_declaration"), "type_identifier"
+            name_node,
+            ("class_declaration", "abstract_class_declaration", "interface_declaration"),
+            "type_identifier",
         )
 
     #: Declaration nodes an identifier may belong to. A `variable_declarator` counts because
@@ -111,6 +117,8 @@ class TypeScriptCodeStructure(ClassBasedParser):
         "enum_declaration",
         "interface_declaration",
         "method_signature",
+        "abstract_class_declaration",
+        "abstract_method_signature",
     )
 
     @classmethod
