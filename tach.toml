@@ -51,7 +51,7 @@ depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "sp
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm"

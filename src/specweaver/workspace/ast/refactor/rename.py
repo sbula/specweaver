@@ -39,10 +39,10 @@ def plan_rename(
     parser: CodeStructureInterface,
 ) -> RenamePlan | RenameRefusal:
     """Rename `symbol_name` in `path` to `new_name`, across `files` (path → content)."""
-    if path not in files:
-        return RenameRefusal(f"{path} is not a file of the project")
     if not path.endswith(_PYTHON):
         return RenameRefusal(f"rename works on Python files only, not on {path}")
+    if path not in files:
+        return RenameRefusal(f"{path} is not a file of the project")
 
     found = PythonResolver(files, parser).find(path, symbol_name, new_name)
     if isinstance(found, RenameRefusal):

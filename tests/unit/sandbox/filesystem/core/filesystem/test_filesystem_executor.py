@@ -287,6 +287,28 @@ class TestFileExecutorMove:
 class TestProtectedPatterns:
     """context.yaml, .env, .git/, .specweaver/ are blocked for mutation."""
 
+    @pytest.mark.parametrize(
+        ("path", "protected"),
+        [
+            ("context.yaml", True),
+            ("src/context.yaml", True),
+            (".env/hook.py", True),
+            ("a\\.git\\x", True),
+            (".specweaver/x", True),
+            ("src/main.py", False),
+            ("src/context.yaml.bak", False),
+        ],
+    )
+    def test_is_protected_says_what_a_write_would_refuse(
+        self,
+        executor: FileExecutor,
+        engine_executor: EngineFileExecutor,
+        path: str,
+        protected: bool,
+    ) -> None:
+        assert executor.is_protected(path) is protected
+        assert engine_executor.is_protected(path) is False
+
     def test_write_context_yaml_blocked(self, executor: FileExecutor) -> None:
         """Cannot write to context.yaml."""
         result = executor.write("context.yaml", "hacked: true")

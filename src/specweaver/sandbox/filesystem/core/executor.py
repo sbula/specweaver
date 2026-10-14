@@ -447,6 +447,10 @@ class FileExecutor:
                 return True
         return False
 
+    def is_protected(self, path: str) -> bool:
+        """Whether a write, delete or move of `path` would be refused as protected."""
+        return self._is_protected(path)
+
     def _is_protected(self, path: str) -> bool:
         """Check if a path matches any protected pattern.
 

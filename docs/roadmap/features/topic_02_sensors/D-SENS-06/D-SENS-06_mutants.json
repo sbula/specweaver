@@ -144,10 +144,11 @@
     },
     {
       "requirement": "FR-3",
-      "title": "New contents parse before any write",
+      "title": "All files or none: parsed before writing, restored on a failed write, refused when stale",
       "scope": [
         "tests/unit/workspace/ast/refactor/test_plan_rename.py",
-        "tests/unit/workspace/ast/parsers/python/test_python_references.py"
+        "tests/unit/workspace/ast/parsers/python/test_python_references.py",
+        "tests/integration/sandbox/test_rename_through_the_atom.py"
       ],
       "mutants": [
         {
@@ -159,6 +160,55 @@
           "new": "    if False:\n",
           "breaks": "a rename that breaks parsing is planned",
           "symbol_sha": "sha256:20600f07d5543df2da575359cb8b5ea1d3716b226d4d046886be9c38295866bf"
+        },
+        {
+          "id": "no-restore",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "_write_all",
+          "old": "            unrestored = [p for p in written if executor.write(p, original[p]).status != \"success\"]\n",
+          "new": "            unrestored: list[str] = []\n",
+          "breaks": "a failed write leaves the earlier files changed",
+          "symbol_sha": "sha256:031b1f05779a8b28f5f4ffce45c259a6aa8cd611f8ab8de49ec0b9179345fca8"
+        },
+        {
+          "id": "no-stale-check",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "apply_changes",
+          "old": "    if stale:\n",
+          "new": "    if False:\n",
+          "breaks": "a file edited after the plan is overwritten",
+          "symbol_sha": "sha256:d95919ef4de88375ec8949886e031e2f15a8ad9b4a5c22f9fedcffafda0d3ea7"
+        },
+        {
+          "id": "ignore-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "_entries",
+          "old": "        if not ignored.match_file(rel + (\"/\" if kind == \"dir\" else \"\")):\n",
+          "new": "        if True:\n",
+          "breaks": "an ignored folder makes a rename refuse",
+          "symbol_sha": "sha256:2b8900c2bbd418bb56e01d40f832c8a3cead2fbd20fc1ee862a90bc62195689d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A protected file in the change refuses it",
+      "scope": [
+        "tests/integration/sandbox/test_rename_through_the_atom.py"
+      ],
+      "mutants": [
+        {
+          "id": "protected-written",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "apply_changes",
+          "old": "    if protected:\n",
+          "new": "    if False:\n",
+          "breaks": "a protected file is changed by a rename",
+          "symbol_sha": "sha256:d95919ef4de88375ec8949886e031e2f15a8ad9b4a5c22f9fedcffafda0d3ea7"
         }
       ]
     }

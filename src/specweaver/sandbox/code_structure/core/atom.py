@@ -11,10 +11,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.code_structure.core import changes
 from specweaver.workspace.ast.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
+from specweaver.workspace.ast.refactor.rename import RenameRefusal
 
 if TYPE_CHECKING:
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
@@ -62,6 +64,8 @@ class CodeStructureAtom(Atom):
         active_archetype: str = "generic",
         plugins: list[str] | None = None,
         parsers: dict[tuple[str, ...], CodeStructureInterface] | None = None,
+        exclude_dirs: set[str] | None = None,
+        exclude_patterns: set[str] | None = None,
     ) -> None:
         """Initialize with a FileExecutor or construct one if cwd is provided."""
         if file_executor:
@@ -75,6 +79,8 @@ class CodeStructureAtom(Atom):
         self._evaluator_schemas = evaluator_schemas or {}
         self._active_archetype = active_archetype
         self._plugins = plugins or []
+        self.exclude_dirs = exclude_dirs or set()
+        self.exclude_patterns = exclude_patterns or set()
 
         if parsers is not None:
             self._parsers = parsers
@@ -203,6 +209,7 @@ class CodeStructureAtom(Atom):
             "add_symbol",
             "delete_symbol",
             "extract_framework_markers",
+            "rename_symbol",
         }
         if intent not in valid_intents:
             return AtomResult(
@@ -215,6 +222,9 @@ class CodeStructureAtom(Atom):
                 status=AtomStatus.FAILED,
                 message=f"AST Structure Extraction not supported for '{Path(path).suffix}' files. Please use read_file instead.",
             )
+
+        if intent == "rename_symbol":
+            return self._handle_rename(parser, context)
 
         read_res = self._executor.read(path)
         if read_res.status == "error":
@@ -229,6 +239,34 @@ class CodeStructureAtom(Atom):
         if intent == "list_symbols":
             return self._handle_list(parser, code, context, path)
         return self._handle_symbol(parser, code, context, intent, path)
+
+    @property
+    def executor(self) -> FileExecutor:
+        """The executor every read and write of this atom goes through."""
+        return self._executor
+
+    def _handle_rename(self, parser: CodeStructureInterface, context: dict[str, Any]) -> AtomResult:
+        plan, sources = changes.rename_plan(
+            self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
+        )
+        if isinstance(plan, RenameRefusal):
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=plan.reason,
+                exports={"spots": [str(s) for s in plan.spots]},
+            )
+        applied = changes.apply_changes(self._executor, sources.files, plan.changes)
+        if not applied.ok:
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=applied.message,
+                exports={"unrestored": applied.unrestored},
+            )
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Renamed '{context['symbol_name']}' to '{context['new_name']}': {applied.message}",
+            exports={"changed": sorted(plan.changes), "mentions": [str(s) for s in plan.mentions]},
+        )
 
     def _handle_framework_markers(
         self, parser: CodeStructureInterface, code: str, path: str
