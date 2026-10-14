@@ -16,7 +16,10 @@ immediate adjacency; this is their rule, not an invented threshold.
 
 from __future__ import annotations
 
+import inspect
 import typing
+
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
 #: Stripped from the front of a line, repeatedly, longest first so `/**` never leaves a stray `*`.
 _LEADING_MARKERS = ("///", "//!", "//", "/**", "/*", "#")
@@ -77,7 +80,11 @@ def _anchor(name_node: typing.Any) -> typing.Any | None:
     node = name_node.parent if name_node is not None else None
     if node is None:
         return None
-    while node.parent is not None and node.parent.start_point[0] == node.start_point[0]:
+    while (
+        node.parent is not None
+        and node.parent.parent is not None
+        and node.parent.start_point[0] == node.start_point[0]
+    ):
         node = node.parent
     return node
 
@@ -108,22 +115,28 @@ def sibling_doc(name_node: typing.Any) -> str:
     anchor = _anchor(name_node)
     if anchor is None:
         return ""
+    # `rstrip` for the same grammar difference `_last_content_row` normalises: a Rust
+    # `line_comment` owns its trailing newline, so joining two of them would insert a
+    # blank line the source never had. Newlines INSIDE a block comment are kept.
+    return strip_markers("\n".join(_text(c).rstrip("\n") for c in _doc_comments(anchor)))
 
-    collected: list[str] = []
+
+def _text(node: typing.Any) -> str:
+    return typing.cast("bytes", node.text or b"").decode("utf-8")
+
+
+def _doc_comments(anchor: typing.Any) -> list[typing.Any]:
+    """The comment nodes directly above `anchor`, top first; a blank line ends them."""
+    collected: list[typing.Any] = []
     below = anchor
     sibling = anchor.prev_sibling
     while sibling is not None and "comment" in sibling.type:
-        raw = typing.cast("bytes", sibling.text or b"").decode("utf-8")
-        if _last_content_row(sibling, raw) + 1 != below.start_point[0]:
+        if _last_content_row(sibling, _text(sibling)) + 1 != below.start_point[0]:
             break  # a blank line between them: a note about something else, not a description
-        # `rstrip` for the same grammar difference `_last_content_row` normalises: a Rust
-        # `line_comment` owns its trailing newline, so joining two of them would insert a
-        # blank line the source never had. Newlines INSIDE a block comment are kept.
-        collected.append(raw.rstrip("\n"))
+        collected.append(sibling)
         below = sibling
         sibling = sibling.prev_sibling
-
-    return strip_markers("\n".join(reversed(collected)))
+    return collected[::-1]
 
 
 def docstring_doc(name_node: typing.Any) -> str:
@@ -147,5 +160,83 @@ def docstring_doc(name_node: typing.Any) -> str:
     text = typing.cast("bytes", literal.text or b"").decode("utf-8")
     for quote in ('"""', "'''", '"', "'"):
         if text.startswith(quote) and text.endswith(quote) and len(text) >= 2 * len(quote):
-            return text[len(quote) : -len(quote)].strip()
+            return inspect.cleandoc(text[len(quote) : -len(quote)])
     return text.strip()
+
+
+# --- writing ---------------------------------------------------------------------------------
+
+#: The marker styles a doc is written in, longest first so `///` is never read as `//`.
+_STYLES = ("///", "//", "/**", "/*")
+
+
+def _line_start(code: bytes, at: int) -> int:
+    return code.rfind(b"\n", 0, at) + 1
+
+
+def _render_comment(doc: str, style: str, indent: str) -> str:
+    lines = doc.strip("\n").splitlines()
+    if not lines:
+        return ""
+    if style.startswith("/*"):
+        if "*/" in doc:
+            raise CodeStructureError("the doc holds '*/', which would end its comment")
+        inner = "".join(f"{indent} * {line}".rstrip() + "\n" for line in lines)
+        return f"{indent}{style}\n{inner}{indent} */\n"
+    return "".join(f"{indent}{style} {line}".rstrip() + "\n" for line in lines)
+
+
+def write_sibling_doc(code: bytes, name_node: typing.Any, doc: str, style: str) -> bytes:
+    """`code` with the comment above this declaration replaced by `doc`; `""` removes it.
+
+    Only the comment's own lines change. An existing comment keeps its marker style, so `//`
+    stays `//`; `style` is used only when there is none yet.
+    """
+    anchor = _anchor(name_node)
+    if anchor is None:
+        raise CodeStructureError("the symbol has no declaration to write a doc above")
+    comments = _doc_comments(anchor)
+    top = comments[0] if comments else anchor
+    start, end = _line_start(code, top.start_byte), _line_start(code, anchor.start_byte)
+    if code[start : top.start_byte].strip() or code[end : anchor.start_byte].strip():
+        raise CodeStructureError("the declaration or its doc shares a line with other code")
+    if comments:
+        style = next(s for s in _STYLES if _text(comments[0]).startswith(s))
+    indent = code[end : anchor.start_byte].decode("utf-8")
+    return code[:start] + _render_comment(doc, style, indent).encode("utf-8") + code[end:]
+
+
+def _render_docstring(doc: str, indent: str) -> str:
+    if '"""' in doc or doc.rstrip().endswith('"'):
+        raise CodeStructureError("the doc holds a quote that would end its docstring")
+    lines = doc.strip("\n").splitlines()
+    if len(lines) == 1:
+        return f'"""{lines[0]}"""'
+    rest = "".join(f"\n{indent}{line}".rstrip(" \t") for line in lines[1:])
+    return f'"""{lines[0]}{rest}\n{indent}"""'
+
+
+def write_docstring(code: bytes, name_node: typing.Any, doc: str) -> bytes:
+    """`code` with this Python declaration's docstring replaced by `doc`; `""` removes it."""
+    declaration = name_node.parent
+    body = next((c for c in declaration.children if c.type == "block"), None)
+    if body is None or not body.children or body.start_point[0] == name_node.start_point[0]:
+        raise CodeStructureError("a docstring needs a body on its own lines")
+    first = body.children[0]
+    line = _line_start(code, first.start_byte)
+    indent = code[line : first.start_byte].decode("utf-8")
+    has_doc = first.type == "expression_statement" and first.children[0].type == "string"
+    if not doc.strip():
+        return _without_docstring(code, body, line) if has_doc else code
+    text = _render_docstring(doc, indent).encode("utf-8")
+    if has_doc:
+        return code[: first.start_byte] + text + code[first.end_byte :]
+    return code[: first.start_byte] + text + f"\n{indent}".encode() + code[first.start_byte :]
+
+
+def _without_docstring(code: bytes, body: typing.Any, line: int) -> bytes:
+    first = body.children[0]
+    if len(body.children) == 1:
+        return code[: first.start_byte] + b"pass" + code[first.end_byte :]
+    newline = code.find(b"\n", first.end_byte)
+    return code[:line] + code[newline + 1 if newline >= 0 else len(code) :]

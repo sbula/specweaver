@@ -43,7 +43,7 @@ Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 Reads and changes code by symbol, never by raw text: `read_file_structure`, `read_symbol`,
 `read_symbol_body`, `list_symbols` for every role that reads; `replace_symbol`,
 `replace_symbol_body`, `add_symbol`, `delete_symbol`, `rename_symbol`, `move_module`,
-`create_module` and `delete_module` for the implementer.
+`create_module`, `delete_module`, `read_symbol_doc` and `replace_symbol_doc` for the implementer.
 `CodeStructureAtom` (`sandbox/code_structure/core/atom.py`) offers the same intents to the flow
 engine without grants.
 
@@ -84,6 +84,13 @@ project or protected, or has no parser, and code that does not parse. `delete_mo
 a file only when nothing uses it: no import of it, and no proven or unsure use of its top-level
 symbols in another file. The refusal names the files that use it; a Rust module is always used by
 its parent's `mod` line. Each needs `FULL` on `path`.
+
+`read_symbol_doc(path, symbol_name)` returns the doc above a symbol (Python: its docstring) as
+plain text. `replace_symbol_doc(path, symbol_name, doc)` takes plain text and adds the markers and
+the indentation: `/** */` in Java, Kotlin, TypeScript, C and C++, `///` in Rust, `//` in Go. An
+existing doc keeps its own style, an empty `doc` removes it, and only the doc's lines change. A doc
+that shares a line with other code, or text that would end its own comment, refuses. SQL and
+Markdown have no doc intents.
 
 ## GitTool (agents)
 

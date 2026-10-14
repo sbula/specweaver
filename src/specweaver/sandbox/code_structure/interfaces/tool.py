@@ -54,6 +54,8 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "move_module",
             "create_module",
             "delete_module",
+            "read_symbol_doc",
+            "replace_symbol_doc",
         }
     ),
     "reviewer": frozenset(
@@ -191,6 +193,32 @@ class CodeStructureTool(BaseTool):
         res = self._atom.run(
             {"intent": "read_symbol_body", "path": path, "symbol_name": symbol_name}
         )
+        return ToolResult(
+            status="success" if res.status.value == "SUCCESS" else "error",
+            message=res.message,
+            data=res.exports,
+        )
+
+    def read_symbol_doc(self, path: str, symbol_name: str) -> ToolResult:
+        """The doc of one symbol as plain text."""
+        self._require_intent("read_symbol_doc")
+        grant_err = self._check_grant(path, MODE_ALLOWS_READ)
+        if grant_err:
+            return grant_err
+        return self._run({"intent": "read_symbol_doc", "path": path, "symbol_name": symbol_name})
+
+    def replace_symbol_doc(self, path: str, symbol_name: str, doc: str) -> ToolResult:
+        """Replace the doc of one symbol with plain `doc`; `""` removes it."""
+        self._require_intent("replace_symbol_doc")
+        grant_err = self._check_grant(path, MODE_ALLOWS_WRITE)
+        if grant_err:
+            return grant_err
+        return self._run(
+            {"intent": "replace_symbol_doc", "path": path, "symbol_name": symbol_name, "doc": doc}
+        )
+
+    def _run(self, context: dict[str, str]) -> ToolResult:
+        res = self._atom.run(context)
         return ToolResult(
             status="success" if res.status.value == "SUCCESS" else "error",
             message=res.message,

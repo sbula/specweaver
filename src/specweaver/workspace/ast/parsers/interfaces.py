@@ -168,6 +168,14 @@ class CodeStructureInterface(ABC):
         once per symbol during a whole-repository scan.
         """
 
+    def replace_symbol_doc(self, code: str, symbol_name: str, doc: str) -> str:
+        """`code` with one symbol's description replaced by plain `doc`; `""` removes it.
+
+        The language's markers and the symbol's indentation are added. Raises
+        `CodeStructureError` where the language has no doc comment.
+        """
+        raise CodeStructureError(f"docs are not supported for {type(self).__name__}")
+
     @abstractmethod
     def extract_symbol_visibility(self, code: str, symbol_name: str) -> Visibility:
         """The access level of one symbol, as a word from `VISIBILITY`.
@@ -275,6 +283,8 @@ class CodeStructureInterface(ABC):
             "imports",
             "framework_markers",
             "create",
+            "doc",
+            "replace_doc",
         ]
 
     def find_references(self, code: str, name: str) -> list[Reference]:

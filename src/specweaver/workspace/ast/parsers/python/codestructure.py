@@ -49,6 +49,9 @@ class PythonCodeStructure(Renames, ClassBasedParser):
     def _finder(self) -> typing.Any:
         return _references
 
+    def _write_doc(self, code: bytes, name_node: typing.Any, doc: str) -> bytes:
+        return _docs.write_docstring(code, name_node, doc)
+
     grammar = staticmethod(tree_sitter_python.language)
     _doc_of = staticmethod(_docs.docstring_doc)
     _get_symbol_visibility = staticmethod(_visibility_of)

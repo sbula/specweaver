@@ -9,6 +9,7 @@ import typing
 import tree_sitter_rust
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _docs
 from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
@@ -62,6 +63,9 @@ class RustCodeStructure(Renames, FunctionBasedParser):
 
     def _finder(self) -> typing.Any:
         return _references
+
+    def _write_doc(self, code: bytes, name_node: typing.Any, doc: str) -> bytes:
+        return _docs.write_sibling_doc(code, name_node, doc, "///")
 
     def _declared_type_name(self, node: typing.Any) -> str | None:
         """The type a node is ABOUT.

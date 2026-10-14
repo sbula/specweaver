@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 import tree_sitter_go
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _docs
 from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.go import _references
@@ -85,6 +86,9 @@ class GoCodeStructure(Renames, FunctionBasedParser):
 
     def _finder(self) -> typing.Any:
         return _references
+
+    def _write_doc(self, code: bytes, name_node: typing.Any, doc: str) -> bytes:
+        return _docs.write_sibling_doc(code, name_node, doc, "//")
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """What this type embeds. Embedding is reported as EXTENSION.

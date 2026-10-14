@@ -281,6 +281,17 @@ class SymbolReadingMixin:
     #: walk above the declaration will ever find it.
     _doc_of = staticmethod(_docs.sibling_doc)
 
+    def _write_doc(self, code: bytes, name_node: typing.Any, doc: str) -> bytes:
+        """How this language writes a description; a new one gets `/** */`."""
+        return _docs.write_sibling_doc(code, name_node, doc, "/**")
+
+    def replace_symbol_doc(self, code: str, symbol_name: str, doc: str) -> str:
+        """`code` with one symbol's description replaced by `doc`; `""` removes it."""
+        for name, name_node in self._declared_names(code):
+            if name == symbol_name:
+                return self._write_doc(code.encode("utf-8"), name_node, doc).decode("utf-8")
+        raise CodeStructureError(f"Symbol '{symbol_name}' not found.")
+
     def extract_symbol_doc(self, code: str, symbol_name: str) -> str:
         """The description attached to one symbol, marker-free, or `""`. Never raises.
 

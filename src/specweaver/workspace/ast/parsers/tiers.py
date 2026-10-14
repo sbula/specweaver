@@ -30,6 +30,7 @@ import typing
 from abc import abstractmethod
 
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
+from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
 
 def enclosing_name(
@@ -88,6 +89,10 @@ class DeclarativeParser(BaseTreeSitterParser):
     rather than refusals: a declarative language *can* have imports — `proto` does — and overriding
     one value is a normal thing for a subclass to do.
     """
+
+    def replace_symbol_doc(self, code: str, symbol_name: str, doc: str) -> str:
+        """No doc comment to write: a declarative file documents itself."""
+        raise CodeStructureError(f"docs are not supported for {type(self).__name__}")
 
     def _find_target_block(self, node: typing.Any) -> typing.Any | None:
         """No executable body to edit. Markdown overrides — a section IS its block."""

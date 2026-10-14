@@ -1077,6 +1077,126 @@
           "symbol_sha": "sha256:f7ce36af2d052bedbdab81ac54c7a60090343c424cddef1410ff18757a2758e4"
         }
       ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "The doc above a symbol is read and replaced; nothing else changes",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_symbol_doc_round_trip.py",
+        "tests/integration/sandbox/test_symbol_docs_through_the_tool.py"
+      ],
+      "mutants": [
+        {
+          "id": "doc-other-lines-touched",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "write_sibling_doc",
+          "old": "    top = comments[0] if comments else anchor\n",
+          "new": "    top = anchor\n",
+          "breaks": "an old doc stays and a second one is added above the symbol",
+          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+        },
+        {
+          "id": "doc-style-forced",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "write_sibling_doc",
+          "old": "    if comments:\n        style = next(",
+          "new": "    if False:\n        style = next(",
+          "breaks": "an existing // doc is rewritten as /** */",
+          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+        },
+        {
+          "id": "doc-remove-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_render_comment",
+          "old": "    if not lines:\n        return \"\"\n",
+          "new": "    if not lines:\n        lines = [\"\"]\n",
+          "breaks": "an empty doc leaves an empty comment instead of removing it",
+          "symbol_sha": "sha256:98fbb7d96dae52ba014dd908362558678b973bac79126840d87f15c607675a65"
+        },
+        {
+          "id": "docstring-remove-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "write_docstring",
+          "old": "        return _without_docstring(code, body, line) if has_doc else code\n",
+          "new": "        return code\n",
+          "breaks": "an empty doc leaves the docstring in place",
+          "symbol_sha": "sha256:8a09e2af22b3fc6891a09d074a3fda0adf584b3e3c720fe97bb2f136264ca67c"
+        },
+        {
+          "id": "docstring-only-statement-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_without_docstring",
+          "old": "        return code[: first.start_byte] + b\"pass\" + code[first.end_byte :]\n",
+          "new": "        return code[: first.start_byte] + code[first.end_byte :]\n",
+          "breaks": "removing the only docstring leaves a body with nothing in it",
+          "symbol_sha": "sha256:368f3c73c62f4eeda89268f73b731111ef4b99bcc5cd07040ec04da386a392ab"
+        },
+        {
+          "id": "doc-shared-line-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "write_sibling_doc",
+          "old": "    if code[start : top.start_byte].strip() or code[end : anchor.start_byte].strip():\n",
+          "new": "    if False:\n",
+          "breaks": "a doc written above a line that holds other code cuts that code",
+          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+        },
+        {
+          "id": "doc-close-marker-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_render_comment",
+          "old": "        if \"*/\" in doc:\n",
+          "new": "        if False:\n",
+          "breaks": "a doc holding */ ends its comment early",
+          "symbol_sha": "sha256:98fbb7d96dae52ba014dd908362558678b973bac79126840d87f15c607675a65"
+        },
+        {
+          "id": "docstring-quote-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_render_docstring",
+          "old": "    if '\"\"\"' in doc or doc.rstrip().endswith('\"'):\n",
+          "new": "    if False:\n",
+          "breaks": "a doc holding triple quotes ends its docstring early",
+          "symbol_sha": "sha256:8f7d5f8c225d3c40240c20e287a0a7b8369a3a7953a61d683e8fa0e9542d20ca"
+        },
+        {
+          "id": "doc-anchor-to-root",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_anchor",
+          "old": "        and node.parent.parent is not None\n",
+          "new": "        and True\n",
+          "breaks": "a declaration on line 1 sharing it with other code is not refused",
+          "symbol_sha": "sha256:2f5e3d25e9bc552c82d8d05d9b8e17d3ba528417da698e492d7f21c08abb176b"
+        },
+        {
+          "id": "doc-sql-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "CodeStructureAtom.run",
+          "old": "        if intent in _DOC_INTENTS and _DOC_INTENTS[intent] not in parser.supported_intents():\n",
+          "new": "        if False:\n",
+          "breaks": "SQL and Markdown are read for a doc they cannot have",
+          "symbol_sha": "sha256:9caa35aa9d1e938e4c49570e4404bdcffb94a0b54ec84844dbd998c80ac41e10"
+        },
+        {
+          "id": "doc-grant-off",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.replace_symbol_doc",
+          "old": "        self._require_intent(\"replace_symbol_doc\")\n        grant_err = self._check_grant(path, MODE_ALLOWS_WRITE)\n",
+          "new": "        self._require_intent(\"replace_symbol_doc\")\n        grant_err = None\n",
+          "breaks": "an agent writes the doc of a file it may only read",
+          "symbol_sha": "sha256:f8fd051dbf378e2db10bdb7a8a67ac5021750b37546aeec86d9613690c5b3d8b"
+        }
+      ]
     }
   ]
 }

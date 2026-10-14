@@ -213,6 +213,53 @@ ADD_SYMBOL_SCHEMA = ToolDefinition(
     ],
 )
 
+READ_SYMBOL_DOC_SCHEMA = ToolDefinition(
+    name="read_symbol_doc",
+    description=(
+        "Returns the doc comment or docstring of a symbol as plain text, without its comment "
+        "markers. Empty when the symbol has none."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The class, function or method whose doc to read.",
+        ),
+    ],
+)
+
+REPLACE_SYMBOL_DOC_SCHEMA = ToolDefinition(
+    name="replace_symbol_doc",
+    description=(
+        "Replaces the doc comment or docstring of a symbol. Give plain text: the comment markers "
+        "and the indentation are added, and an existing doc keeps its own marker style. An empty "
+        "doc removes it. Only the doc's lines change."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the target file.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The class, function or method whose doc to replace.",
+        ),
+        ToolParameter(
+            name="doc",
+            type="string",
+            description="The new doc as plain text, without comment markers.",
+        ),
+    ],
+)
+
+
 REPLACE_SYMBOL_BODY_SCHEMA = ToolDefinition(
     name="replace_symbol_body",
     description=(
@@ -296,6 +343,8 @@ def get_code_structure_schema(
         "move": MOVE_MODULE_SCHEMA,
         "create": CREATE_MODULE_SCHEMA,
         "remove": DELETE_MODULE_SCHEMA,
+        "doc": READ_SYMBOL_DOC_SCHEMA,
+        "replace_doc": REPLACE_SYMBOL_DOC_SCHEMA,
     }
 
     for intent, schema in intent_map.items():

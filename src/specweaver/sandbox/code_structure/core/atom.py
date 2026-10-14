@@ -167,7 +167,12 @@ class CodeStructureAtom(Atom):
     ) -> AtomResult:
         try:
             symbol_name = _resolved(parser, code, context.get("symbol_name"))
-            if intent in ("read_symbol", "read_symbol_body", "read_unrolled_symbol"):
+            if intent in (
+                "read_symbol",
+                "read_symbol_body",
+                "read_unrolled_symbol",
+                "read_symbol_doc",
+            ):
                 if not symbol_name:
                     return AtomResult(
                         status=AtomStatus.FAILED,
@@ -213,6 +218,8 @@ class CodeStructureAtom(Atom):
             "move_module",
             "create_module",
             "delete_module",
+            "read_symbol_doc",
+            "replace_symbol_doc",
         }
         if intent not in valid_intents:
             return AtomResult(
@@ -228,6 +235,11 @@ class CodeStructureAtom(Atom):
 
         if intent in _CHANGES:
             return self._handle_change(parser, context, intent)
+        if intent in _DOC_INTENTS and _DOC_INTENTS[intent] not in parser.supported_intents():
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"{intent} is not supported for '{Path(path).suffix}' files",
+            )
 
         read_res = self._executor.read(path)
         if read_res.status == "error":
@@ -281,6 +293,13 @@ class CodeStructureAtom(Atom):
     def _handle_read_symbol(
         self, parser: CodeStructureInterface, code: str, symbol_name: str, intent: str, path: str
     ) -> AtomResult:
+        if intent == "read_symbol_doc":
+            parser.extract_symbol(code, symbol_name)
+            return AtomResult(
+                status=AtomStatus.SUCCESS,
+                message=f"Extracted the doc of '{symbol_name}'",
+                exports={"doc": parser.extract_symbol_doc(code, symbol_name)},
+            )
         if intent == "read_symbol":
             symbol_code = parser.extract_symbol(code, symbol_name)
             return AtomResult(
@@ -343,20 +362,24 @@ class CodeStructureAtom(Atom):
         path: str,
         symbol_name: str | None,
     ) -> AtomResult:
-        if intent in ("replace_symbol", "replace_symbol_body", "delete_symbol") and not symbol_name:
+        if intent != "add_symbol" and not symbol_name:
             return AtomResult(
                 status=AtomStatus.FAILED, message=f"Missing 'symbol_name' for {intent}."
             )
+        name = symbol_name or ""
 
         if intent == "replace_symbol":
-            mutated = parser.replace_symbol(code, symbol_name, context.get("new_code", ""))  # type: ignore
+            mutated = parser.replace_symbol(code, name, context.get("new_code", ""))
             done = f"Replaced symbol '{symbol_name}'"
         elif intent == "replace_symbol_body":
-            mutated = parser.replace_symbol_body(code, symbol_name, context.get("new_code", ""))  # type: ignore
+            mutated = parser.replace_symbol_body(code, name, context.get("new_code", ""))
             done = f"Replaced body of symbol '{symbol_name}'"
         elif intent == "delete_symbol":
-            mutated = parser.delete_symbol(code, symbol_name)  # type: ignore
+            mutated = parser.delete_symbol(code, name)
             done = f"Deleted symbol '{symbol_name}'"
+        elif intent == "replace_symbol_doc":
+            mutated = parser.replace_symbol_doc(code, name, context.get("doc", ""))
+            done = f"Replaced the doc of '{symbol_name}'"
         elif intent == "add_symbol":
             target_parent = context.get("target_parent")
             mutated = parser.add_symbol(code, target_parent, context.get("new_code", ""))
@@ -377,6 +400,10 @@ class CodeStructureAtom(Atom):
         return AtomResult(
             status=AtomStatus.SUCCESS, message=done, exports={"written": path, "done": done}
         )
+
+
+#: The doc intents, and the parser intent that says a language has them.
+_DOC_INTENTS = {"read_symbol_doc": "doc", "replace_symbol_doc": "replace_doc"}
 
 
 def _as_list(value: Any) -> list[str] | None:
