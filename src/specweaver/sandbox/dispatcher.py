@@ -250,6 +250,9 @@ class ToolDispatcher:
         grants = cls._compute_role_grants(role, boundary)
         cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
         atom, hidden_intents = cls._build_ast_kwargs(boundary, cwd_path, allowed_tools, parsers)
+        if atom is not None:
+            atom.exclude_dirs |= exclude_dirs
+            atom.exclude_patterns |= exclude_patterns
 
         return {
             "boundary": boundary,
@@ -259,6 +262,7 @@ class ToolDispatcher:
             "exclude_dirs": exclude_dirs,
             "exclude_patterns": exclude_patterns,
             "atom": atom,
+            "ast_executor": atom.executor if atom else None,
             "hidden_intents": hidden_intents,
             "topology": topology,
         }

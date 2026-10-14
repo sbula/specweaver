@@ -191,12 +191,12 @@ sub-feature extends with its own intents. SF-03 and SF-04 can run in parallel.
 
 | SF | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|--------|-----------|-----|------------|-----------|
-| SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-01 plan approved.
-**Next**: the dev skill for SF-01, CB-1.
+**Now**: SF-01 built: Python rename through the tool and the atom.
+**Next**: the implementation-plan skill for SF-02.

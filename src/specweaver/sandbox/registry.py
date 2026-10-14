@@ -79,6 +79,9 @@ def get_standard_registry() -> ToolRegistry:
             role=kwargs["role"],
             grants=kwargs["grants"],
             hidden_intents=kwargs.get("hidden_intents"),
+            executor=kwargs.get("ast_executor"),
+            exclude_dirs=kwargs.get("exclude_dirs"),
+            exclude_patterns=kwargs.get("exclude_patterns"),
         )
 
     def create_web(**kwargs: Any) -> BaseTool:

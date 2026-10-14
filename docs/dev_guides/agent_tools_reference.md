@@ -38,6 +38,30 @@ traversal beyond the project root returns an error, for `grep` and `find_files` 
 a symlink, or with `:` in a segment, is refused.
 Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
+## CodeStructureTool
+
+Reads and changes code by symbol, never by raw text: `read_file_structure`, `read_symbol`,
+`read_symbol_body`, `list_symbols` for every role that reads; `replace_symbol`,
+`replace_symbol_body`, `add_symbol`, `delete_symbol` and `rename_symbol` for the implementer.
+`CodeStructureAtom` (`sandbox/code_structure/core/atom.py`) offers the same intents to the flow
+engine without grants.
+
+`rename_symbol(path, symbol_name, new_name)` (Python) renames a function, class or method and
+every **proven** use in the project, in one change: all files or none. The plan is pure logic in
+`workspace/ast/refactor/`; reading and writing are in `sandbox/code_structure/core/changes.py`.
+
+| A use is | When |
+|---|---|
+| proven | the definition; an import that resolves to it, also through a re-export; a bare name that resolves to it; `self.m()` in its class or a subclass; `Class.m()`; `module.f()` |
+| unrelated | a name its own file binds to something else: a local, a parameter, another import |
+| unsure | anything else in code: `obj.m()` with an unknown `obj`, the name as a string, `global`, a free name |
+| a mention | a comment, a docstring word, a doc or config file: reported, not changed |
+
+One unsure use refuses the whole rename and lists the lines. A method whose hierarchy has a base
+outside the project, or a class above or below with the same method, refuses. The tool also
+refuses when a changed file is outside the role's write grants, and counts (does not name) spots
+and mentions in files the role may not read.
+
 ## GitTool (agents)
 
 Agents call git by intent, not raw commands. Each intent maps to a safe sequence of git commands on

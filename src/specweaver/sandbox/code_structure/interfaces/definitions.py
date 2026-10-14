@@ -122,6 +122,33 @@ DELETE_SYMBOL_SCHEMA = ToolDefinition(
     ],
 )
 
+RENAME_SYMBOL_SCHEMA = ToolDefinition(
+    name="rename_symbol",
+    description=(
+        "Renames a function, method or class and every proven use of it in the project, in one "
+        "change: all files or none. Refuses, and lists the lines, when any use is unsure (an "
+        "unknown receiver, the name as a string). Names in comments and docs are reported, not "
+        "changed. Python only."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path",
+            type="string",
+            description="The exact relative path of the file that defines the symbol.",
+        ),
+        ToolParameter(
+            name="symbol_name",
+            type="string",
+            description="The symbol to rename: a function, a class, or a method as Class.method.",
+        ),
+        ToolParameter(
+            name="new_name",
+            type="string",
+            description="The new name: a plain identifier, without the class.",
+        ),
+    ],
+)
+
 ADD_SYMBOL_SCHEMA = ToolDefinition(
     name="add_symbol",
     description="Injects a completely new symbol cleanly into a specified parent class or to the bottom of the file if target_parent is omitted.",
@@ -224,6 +251,7 @@ def get_code_structure_schema(
         "replace_body": REPLACE_SYMBOL_BODY_SCHEMA,
         "add": ADD_SYMBOL_SCHEMA,
         "delete": DELETE_SYMBOL_SCHEMA,
+        "rename": RENAME_SYMBOL_SCHEMA,
     }
 
     for intent, schema in intent_map.items():

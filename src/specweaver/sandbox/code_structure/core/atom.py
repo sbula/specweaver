@@ -16,7 +16,7 @@ from specweaver.workspace.ast.parsers.interfaces import (
     CodeStructureError,
     CodeStructureInterface,
 )
-from specweaver.workspace.ast.refactor.rename import RenameRefusal
+from specweaver.workspace.ast.refactor.rename import RenameRefusal, listing
 
 if TYPE_CHECKING:
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
@@ -252,7 +252,7 @@ class CodeStructureAtom(Atom):
         if isinstance(plan, RenameRefusal):
             return AtomResult(
                 status=AtomStatus.FAILED,
-                message=plan.reason,
+                message=f"{plan.reason}: {listing(plan.spots)}" if plan.spots else plan.reason,
                 exports={"spots": [str(s) for s in plan.spots]},
             )
         applied = changes.apply_changes(self._executor, sources.files, plan.changes)

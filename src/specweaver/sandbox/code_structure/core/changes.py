@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser
-from specweaver.workspace.ast.refactor.rename import RenamePlan, RenameRefusal, plan_rename
+from specweaver.workspace.ast.refactor.rename import RenamePlan, RenameRefusal, Spot, plan_rename
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -121,7 +121,8 @@ def rename_plan(
         return RenameRefusal("rename needs 'path', 'symbol_name' and 'new_name'"), Sources()
     sources = project_sources(executor, exclude_dirs, exclude_patterns)
     if sources.unreadable:
-        return RenameRefusal(f"could not read {', '.join(sources.unreadable)}"), sources
+        spots = [Spot(p, 1) for p in sources.unreadable]
+        return RenameRefusal(f"could not read {len(spots)} code file(s)", spots), sources
     return plan_rename(sources.files, str(path), str(symbol), str(new), parser), sources
 
 

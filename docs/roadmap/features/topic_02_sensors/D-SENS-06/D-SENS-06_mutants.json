@@ -38,7 +38,7 @@
           "old": "    if taken:\n",
           "new": "    if False:\n",
           "breaks": "a new name already used in a changed file is accepted",
-          "symbol_sha": "sha256:20600f07d5543df2da575359cb8b5ea1d3716b226d4d046886be9c38295866bf"
+          "symbol_sha": "sha256:0ea5709fca6e836adb262189e1dc455f07496d49a60476bc374a28564e6d2917"
         }
       ]
     },
@@ -108,7 +108,7 @@
           "old": "        if overrides:\n",
           "new": "        if False:\n",
           "breaks": "an override is left with the old name",
-          "symbol_sha": "sha256:786925e286b6d63cec4d21bce023b6a9197ec554b40dfd5055637bebc5e94b11"
+          "symbol_sha": "sha256:ba0b1665af3d889153e948fe021958c14c7bf3f5145c969ca3742d822326918c"
         },
         {
           "id": "outside-base-ignored",
@@ -118,7 +118,7 @@
           "old": "        if outside:\n",
           "new": "        if False:\n",
           "breaks": "a method that overrides an outside base is renamed",
-          "symbol_sha": "sha256:786925e286b6d63cec4d21bce023b6a9197ec554b40dfd5055637bebc5e94b11"
+          "symbol_sha": "sha256:ba0b1665af3d889153e948fe021958c14c7bf3f5145c969ca3742d822326918c"
         },
         {
           "id": "hierarchy-self-proven",
@@ -159,7 +159,7 @@
           "old": "    if broken:\n",
           "new": "    if False:\n",
           "breaks": "a rename that breaks parsing is planned",
-          "symbol_sha": "sha256:20600f07d5543df2da575359cb8b5ea1d3716b226d4d046886be9c38295866bf"
+          "symbol_sha": "sha256:0ea5709fca6e836adb262189e1dc455f07496d49a60476bc374a28564e6d2917"
         },
         {
           "id": "no-restore",
@@ -195,9 +195,10 @@
     },
     {
       "requirement": "FR-4",
-      "title": "A protected file in the change refuses it",
+      "title": "Grants hold for every file of the change; nothing outside them is named",
       "scope": [
-        "tests/integration/sandbox/test_rename_through_the_atom.py"
+        "tests/integration/sandbox/test_rename_through_the_atom.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
       ],
       "mutants": [
         {
@@ -209,6 +210,55 @@
           "new": "    if False:\n",
           "breaks": "a protected file is changed by a rename",
           "symbol_sha": "sha256:d95919ef4de88375ec8949886e031e2f15a8ad9b4a5c22f9fedcffafda0d3ea7"
+        },
+        {
+          "id": "no-grant-on-callers",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.rename_symbol",
+          "old": "        if outside:\n",
+          "new": "        if False:\n",
+          "breaks": "a caller outside the write grants is changed",
+          "symbol_sha": "sha256:4ae9e4697cd03b669d385701c8895935df1a86b9bc2d4cb6ad8cb7d8c9b44cd9"
+        },
+        {
+          "id": "unreadable-named",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool._readable",
+          "old": "        seen = [s for s in spots if self._mode_of(s.path) in MODE_ALLOWS_READ]\n",
+          "new": "        seen = list(spots)\n",
+          "breaks": "a refusal names a file the role may not read",
+          "symbol_sha": "sha256:c88f5c08d3ef72be81fe96199d14ec49e2737955dc8b7766702d5a98669b710f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Only the implementer is offered and allowed the rename",
+      "scope": [
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "any-role-can-call",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool._require_intent",
+          "old": "        if intent not in ROLE_INTENTS[self._role]:\n",
+          "new": "        if False:\n",
+          "breaks": "a reviewer can call rename_symbol",
+          "symbol_sha": "sha256:b87d838d0b8c9fef350c7865c67a192af96007e1b49e0ef16411e1a1916280dd"
+        },
+        {
+          "id": "any-role-is-offered",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.definitions",
+          "old": "if d.name in allowed and d.name not in self._hidden_intents]",
+          "new": "if d.name not in self._hidden_intents]",
+          "breaks": "a reviewer is offered rename_symbol",
+          "symbol_sha": "sha256:a60a2932f57cb66bd935a9d752007ffc1d8ba5ab1d7208cafb463875b02a019a"
         }
       ]
     }
