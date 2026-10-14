@@ -7,7 +7,7 @@
 |---|---|
 | Lives in | `workspace/ast/parsers/<lang>/` (find uses in one file) · `workspace/ast/refactor/` (new: plan a change across files) · `CodeStructureTool`, `CodeStructureAtom` (`sandbox/code_structure/`) |
 | Used by | the implementer role, through the tool · the flow engine, through the atom. No flow step uses them yet: that is `D-INTL-09` `[agreed 2026-10-14]` |
-| Plan | [SF-01](D-SENS-06_sf01_implementation_plan.md) · [SF-02](D-SENS-06_sf02_implementation_plan.md) |
+| Plan | [SF-01](D-SENS-06_sf01_implementation_plan.md) · [SF-02](D-SENS-06_sf02_implementation_plan.md) · [SF-03](D-SENS-06_sf03_implementation_plan.md) |
 
 ## What it does
 
@@ -183,7 +183,7 @@ names `greet`:
 |----|------|-----|-----------|------|
 | SF-01 | Rename a symbol in Python: planner, apply, grants, text mentions, the seam | FR-1, FR-2, FR-3, FR-4, FR-5, FR-6 | — | [sf01](D-SENS-06_sf01_implementation_plan.md) |
 | SF-02 | Rename in the other 7 languages; override family; TS and Rust enums, TS interfaces | FR-7, FR-8, FR-9 | SF-01 | [sf02](D-SENS-06_sf02_implementation_plan.md) |
-| SF-03 | Rename or move a file | FR-10, FR-11 | SF-02 | ⬜ |
+| SF-03 | Rename or move a file | FR-10, FR-11 | SF-02 | [sf03](D-SENS-06_sf03_implementation_plan.md) |
 | SF-04 | Create and delete a file; the comment above a symbol | FR-12, FR-13, FR-14 | SF-02 | ⬜ |
 
 SF-01 holds 6 FRs. FR-6 is small: one `ROLE_INTENTS` entry and one test, which each later
@@ -195,10 +195,10 @@ sub-feature extends with its own intents. SF-03 and SF-04 can run in parallel.
 |----|--------|-----------|-----|------------|-----------|
 | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: SF-01 and SF-02 built: rename in all 8 code languages, override families, enums and interfaces as symbols.
-**Next**: the implementation-plan skill for SF-03 (move a file) or SF-04 (create, delete, docs).
+**Next**: the dev skill for SF-03, CB-1.
