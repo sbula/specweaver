@@ -32,6 +32,22 @@ from abc import abstractmethod
 from specweaver.workspace.ast.parsers.base import BaseTreeSitterParser
 
 
+def enclosing_name(
+    name_node: typing.Any, containers: tuple[str, ...], name_type: str
+) -> str | None:
+    """The name of the nearest declaration of a `containers` type around `name_node`, or None."""
+    if not name_node.parent:
+        return None
+    parent = name_node.parent.parent
+    while parent:
+        if parent.type in containers:
+            for child in parent.children:
+                if child.type == name_type:
+                    return typing.cast("bytes", child.text).decode("utf-8")
+        parent = parent.parent
+    return None
+
+
 class ClassBasedParser(BaseTreeSitterParser):
     """A language with classes: symbols inherit, and carry annotations.
 

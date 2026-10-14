@@ -88,7 +88,7 @@
           "old": "        if ref.receiver_binding not in (\"module_def\", \"import\"):\n            return \"unsure\"\n        found",
           "new": "        if False:\n            return \"unsure\"\n        found",
           "breaks": "a parameter named like the class is taken for the class",
-          "symbol_sha": "sha256:3d296a32b9545044633907fe169bc720c7c81093448f5d98b88898f1a3ac07ed"
+          "symbol_sha": "sha256:0bdfed94565b81012917c3e50f6f9203661053b1375cb313338d59d1c5724a32"
         },
         {
           "id": "shadow-ignored",
@@ -99,36 +99,6 @@
           "new": "            elif False:\n                return \"local\"\n",
           "breaks": "a local of the same name is renamed",
           "symbol_sha": "sha256:5771c47a21de949d38b97efc78cf8a9c8d6e4baed3ac90f7d3316833120feb06"
-        },
-        {
-          "id": "override-renamed",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "PythonResolver._find_method",
-          "old": "        if overrides:\n",
-          "new": "        if False:\n",
-          "breaks": "an override is left with the old name",
-          "symbol_sha": "sha256:ba0b1665af3d889153e948fe021958c14c7bf3f5145c969ca3742d822326918c"
-        },
-        {
-          "id": "outside-base-ignored",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "PythonResolver._find_method",
-          "old": "        if outside:\n",
-          "new": "        if False:\n",
-          "breaks": "a method that overrides an outside base is renamed",
-          "symbol_sha": "sha256:ba0b1665af3d889153e948fe021958c14c7bf3f5145c969ca3742d822326918c"
-        },
-        {
-          "id": "hierarchy-self-proven",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "_member",
-          "old": "    return \"unsure\" if cls in hierarchy else \"unrelated\"\n",
-          "new": "    return \"proven\"\n",
-          "breaks": "self calls in unrelated classes are renamed",
-          "symbol_sha": "sha256:ab8e9062f72a0a38d7938c0eef27c7ec7ffef0d385c9f7897e9b46b4c8b38370"
         },
         {
           "id": "cap-off",
@@ -259,6 +229,103 @@
           "new": "if d.name not in self._hidden_intents]",
           "breaks": "a reviewer is offered rename_symbol",
           "symbol_sha": "sha256:a60a2932f57cb66bd935a9d752007ffc1d8ba5ab1d7208cafb463875b02a019a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A method is renamed in its whole override family, or not at all",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py"
+      ],
+      "mutants": [
+        {
+          "id": "family-half-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "_member",
+          "old": "    return \"proven\" if cls in family else \"unrelated\"\n",
+          "new": "    return \"unrelated\"\n",
+          "breaks": "a subclass keeps calling the old name",
+          "symbol_sha": "sha256:710241961c2a4f83eb841c3a9fb0e1085c8ac4f099fd7eb5b11e5db71d71fcb1"
+        },
+        {
+          "id": "family-definitions-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._method",
+          "old": "            in_family = ref.scope == \"class\" and (p, ref.owner) in family\n",
+          "new": "            in_family = False\n",
+          "breaks": "an override keeps the old name",
+          "symbol_sha": "sha256:9760c4ce8f1c363f77b5ce68dd7ba4d356a69483363c2b626dfbaeb05457799b"
+        },
+        {
+          "id": "outside-base-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._find_method",
+          "old": "        if outside:\n",
+          "new": "        if False:\n",
+          "breaks": "a method that overrides an outside base is renamed",
+          "symbol_sha": "sha256:a71781e06065a618a2344ee3b1fae14d74b6135c29142ff055589d142210c6b8"
+        },
+        {
+          "id": "family-one-way",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/_family.py",
+          "symbol": "hierarchy",
+          "old": "                links.setdefault(parent, set()).add(child)\n",
+          "new": "                pass\n",
+          "breaks": "a subclass is not found from its parent",
+          "symbol_sha": "sha256:98621d8ea6e97b333a603fed594801b8ebd812e1d9a56a8111ec8e840a695c7f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "TypeScript enums and interfaces, Rust enums are symbols",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_enums_and_interfaces_are_symbols.py"
+      ],
+      "mutants": [
+        {
+          "id": "ts-enum-not-listed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py",
+          "symbol": "TypeScriptCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (enum_declaration name: (identifier) @name)\n",
+          "new": "\n",
+          "breaks": "an enum is not a symbol",
+          "symbol_sha": "sha256:af12e886b569a00102292cec537066b61f22dc6bee2d58694e18d64aa03a1a10"
+        },
+        {
+          "id": "ts-interface-not-listed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py",
+          "symbol": "TypeScriptCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (interface_declaration name: (type_identifier) @name)\n",
+          "new": "\n",
+          "breaks": "an interface is not a symbol",
+          "symbol_sha": "sha256:af12e886b569a00102292cec537066b61f22dc6bee2d58694e18d64aa03a1a10"
+        },
+        {
+          "id": "rust-enum-not-listed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (enum_item name: (type_identifier) @name)\n",
+          "new": "\n",
+          "breaks": "a Rust enum is not a symbol",
+          "symbol_sha": "sha256:450deafcd7923657f51ae7a44504e0bf73cd4871d3075bdad9ee9fea48d0ffb0"
+        },
+        {
+          "id": "rust-enum-not-found",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure._process_symbol_match",
+          "old": "            \"enum_item\",\n",
+          "new": "\n",
+          "breaks": "a listed Rust enum cannot be read"
         }
       ]
     }

@@ -57,8 +57,9 @@ every **proven** use in the project, in one change: all files or none. The plan 
 | unsure | anything else in code: `obj.m()` with an unknown `obj`, the name as a string, `global`, a free name |
 | a mention | a comment, a docstring word, a doc or config file: reported, not changed |
 
-One unsure use refuses the whole rename and lists the lines. A method whose hierarchy has a base
-outside the project, or a class above or below with the same method, refuses. The tool also
+One unsure use refuses the whole rename and lists the lines. A method is renamed in its whole
+override family: every class above and below it that defines it. A family with a base outside the
+project refuses. The tool also
 refuses when a changed file is outside the role's write grants, and counts (does not name) spots
 and mentions in files the role may not read.
 

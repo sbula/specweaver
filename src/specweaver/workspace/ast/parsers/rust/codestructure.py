@@ -120,6 +120,7 @@ class RustCodeStructure(FunctionBasedParser):
         # made the part of a trait that IS the contract invisible: no symbol, no chunk, no node.
         return """
         (struct_item name: (type_identifier) @name)
+        (enum_item name: (type_identifier) @name)
         (trait_item name: (type_identifier) @name)
         (impl_item type: (type_identifier) @name)
         (impl_item type: (generic_type (type_identifier) @name))
@@ -214,6 +215,7 @@ class RustCodeStructure(FunctionBasedParser):
             "function_item",
             "function_signature_item",
             "struct_item",
+            "enum_item",
             "impl_item",
             "trait_item",
         ):

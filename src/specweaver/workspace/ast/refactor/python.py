@@ -14,6 +14,7 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING
 
+from specweaver.workspace.ast.refactor._family import ClassId, hierarchy, outside_bases
 from specweaver.workspace.ast.refactor._model import Found, RenameRefusal, Spot
 
 if TYPE_CHECKING:
@@ -35,7 +36,6 @@ _UNSURE = ("unknown", "free", "other")
 #: `("def", file, name)` · `("module", file)` · `("external",)` · `("unknown",)` · `("free",)`
 #: · `("other",)`
 Resolved = tuple[str, ...]
-ClassId = tuple[str, str]
 
 
 def _parent_dir(path: str) -> str:
@@ -149,27 +149,6 @@ class PythonResolver:
             for cls, bases in self.facts(p).bases.items()
         }
 
-    def family(self, target: ClassId) -> tuple[set[ClassId], set[ClassId], list[str]]:
-        """The class's whole hierarchy, its subclasses, and the bases outside the project."""
-        parents = self._parents()
-        links: dict[ClassId, set[ClassId]] = {}
-        children: dict[ClassId, set[ClassId]] = {}
-        for child, bases in parents.items():
-            for _, found in bases:
-                if found[0] == "def":
-                    parent = (found[1], found[2])
-                    links.setdefault(child, set()).add(parent)
-                    links.setdefault(parent, set()).add(child)
-                    children.setdefault(parent, set()).add(child)
-        hierarchy = _reach(target, links)
-        outside = [
-            text
-            for cls in sorted(hierarchy)
-            for text, found in parents.get(cls, [])
-            if found[0] != "def" and text not in _HARMLESS_BASES
-        ]
-        return hierarchy, _reach(target, children) - {target}, outside
-
     # --- the rename --------------------------------------------------------------------------
 
     def find(self, path: str, symbol_name: str, new_name: str) -> Found | RenameRefusal:
@@ -260,71 +239,45 @@ class PythonResolver:
         return "unrelated" if ref.binding in ("local", "class", "module_other") else "unsure"
 
     def _find_method(self, home: str, cls: str, old: str) -> Found | RenameRefusal:
-        hierarchy, below, outside = self.family((home, cls))
+        parents = self._parents()
+        family = hierarchy(parents, (home, cls))
+        outside = outside_bases(parents, family, _HARMLESS_BASES)
         if outside:
             return RenameRefusal(
-                f"a class in the hierarchy of {cls} has a base outside the project ({', '.join(outside)}); "
-                f"renaming '{old}' could stop it overriding that base"
+                f"a class in the hierarchy of {cls} has a base outside the project "
+                f"({', '.join(outside)}); renaming '{old}' could stop it overriding that base"
             )
-        overrides = sorted(
-            Spot(p, r.line)
-            for p, other in sorted(hierarchy - {(home, cls)})
-            if f"{other}.{old}" in self.symbols(p)
-            for r in self._parser.find_references(self._code[p], old)
-            if r.kind == "definition" and r.owner == other
-        )
-        if overrides:
-            return RenameRefusal(
-                f"a class above or below {cls} has its own '{old}'; renaming an override family "
-                f"is not supported yet: {', '.join(str(s) for s in overrides)}",
-                overrides,
-            )
-        own = {(home, cls)} | below
-        return self._collect(old, lambda p, r: self._method(home, cls, own, hierarchy, p, r))
+        return self._collect(old, lambda p, r: self._method(family, p, r))
 
-    def _method(
-        self,
-        home: str,
-        cls: str,
-        own: set[ClassId],
-        hierarchy: set[ClassId],
-        p: str,
-        ref: Reference,
-    ) -> str:
-        """The verdict on one occurrence of method `cls.<name>`; `own` is the class and its subclasses."""
+    def _method(self, family: set[ClassId], p: str, ref: Reference) -> str:
+        """The verdict on one occurrence of the method's name; `family` is its override family."""
         if ref.kind == "definition":
-            return (
-                "proven" if (p, ref.owner) == (home, cls) and ref.scope == "class" else "unrelated"
-            )
+            in_family = ref.scope == "class" and (p, ref.owner) in family
+            return "proven" if in_family else "unrelated"
         if ref.kind == "bare":
-            in_body = ref.binding == "class" and (p, ref.owner) == (home, cls)
-            return "unsure" if in_body else "unrelated"
+            return "unsure" if ref.binding == "class" and (p, ref.owner) in family else "unrelated"
         if ref.kind == "attribute":
-            return self._method_attribute(own, hierarchy, p, ref)
+            return self._method_attribute(family, p, ref)
         if ref.kind in ("import", "scope_escape"):
             return "unrelated"
         return _common(ref)
 
-    def _method_attribute(
-        self, own: set[ClassId], hierarchy: set[ClassId], p: str, ref: Reference
-    ) -> str:
+    def _method_attribute(self, family: set[ClassId], p: str, ref: Reference) -> str:
         """The verdict on `receiver.<name>`: `self`, a class, or something unknown."""
         if ref.receiver in ("self", "cls"):
-            return _member((p, ref.owner) if ref.owner else None, own, hierarchy)
+            return _member((p, ref.owner) if ref.owner else None, family)
         if ref.receiver_binding not in ("module_def", "import"):
             return "unsure"
         found = self.resolve_dotted(p, ref.receiver or "")
         if found[0] == "def":
-            return _member((found[1], found[2]), own, hierarchy)
+            return _member((found[1], found[2]), family)
         return "unsure" if found[0] in _UNSURE else "unrelated"
 
 
-def _member(cls: ClassId | None, own: set[ClassId], hierarchy: set[ClassId]) -> str:
+def _member(cls: ClassId | None, family: set[ClassId]) -> str:
     if not cls:
         return "unsure"
-    if cls in own:
-        return "proven"
-    return "unsure" if cls in hierarchy else "unrelated"
+    return "proven" if cls in family else "unrelated"
 
 
 def _verdict(found: Resolved, target: Resolved) -> str:
@@ -341,16 +294,6 @@ def _common(ref: Reference) -> str:
 
 def _text_at(code: str, ref: Reference) -> str:
     return code.encode("utf-8")[ref.start_byte : ref.end_byte].decode("utf-8")
-
-
-def _reach(start: ClassId, links: dict[ClassId, set[ClassId]]) -> set[ClassId]:
-    seen, todo = {start}, [start]
-    while todo:
-        for nxt in links.get(todo.pop(), set()):
-            if nxt not in seen:
-                seen.add(nxt)
-                todo.append(nxt)
-    return seen
 
 
 def _bad_new_name(old: str, new: str) -> RenameRefusal | None:

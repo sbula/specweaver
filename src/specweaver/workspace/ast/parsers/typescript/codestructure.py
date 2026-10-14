@@ -11,7 +11,7 @@ from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _visibility as _vis
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
-from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
+from specweaver.workspace.ast.parsers.tiers import ClassBasedParser, enclosing_name
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,9 @@ class TypeScriptCodeStructure(ClassBasedParser):
         (method_definition name: (property_identifier) @name)
         (class_declaration name: (type_identifier) @name)
         (variable_declarator name: (identifier) @name value: (arrow_function))
+        (enum_declaration name: (identifier) @name)
+        (interface_declaration name: (type_identifier) @name)
+        (method_signature name: (property_identifier) @name)
         """
 
     @property
@@ -91,16 +94,9 @@ class TypeScriptCodeStructure(ClassBasedParser):
         """
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
-        if not name_node.parent:
-            return None
-        parent = name_node.parent.parent
-        while parent:
-            if parent.type == "class_declaration":
-                for child in parent.children:
-                    if child.type == "type_identifier":
-                        return typing.cast("bytes", child.text).decode("utf-8")
-            parent = parent.parent
-        return None
+        return enclosing_name(
+            name_node, ("class_declaration", "interface_declaration"), "type_identifier"
+        )
 
     #: Declaration nodes an identifier may belong to. A `variable_declarator` counts because
     #: `const f = () => {}` declares a function without a `function_declaration`.
@@ -109,6 +105,9 @@ class TypeScriptCodeStructure(ClassBasedParser):
         "method_definition",
         "class_declaration",
         "variable_declarator",
+        "enum_declaration",
+        "interface_declaration",
+        "method_signature",
     )
 
     @classmethod

@@ -206,14 +206,50 @@ def test_a_symbol_that_cannot_be_renamed(files: dict[str, str], symbol: str, rea
     assert reason in _refusal(files, "a.py", symbol, new).reason
 
 
-def test_an_override_refuses_until_the_override_family_lands() -> None:
+def test_an_override_family_is_renamed_together() -> None:
+    # Proves: D-SENS-06 FR-7
     files = {
         **_GREETER,
         "app/loud.py": _GREETER["app/loud.py"] + "    def greet(self, n):\n        return n\n",
+        "app/zz.py": "from app.loud import Loud\nprint(Loud.greet(Loud(), 'x'))\n",
     }
-    refusal = _refusal(files, "app/greeter.py", "Greeter.greet", "welcome")
-    assert "override" in refusal.reason
-    assert refusal.spots == [Spot("app/loud.py", 6)]
+    plan = _plan(files, "app/greeter.py", "Greeter.greet", "welcome")
+
+    assert "def welcome(self, n)" in plan.changes["app/loud.py"]
+    assert "self.welcome(name).upper()" in plan.changes["app/loud.py"]
+    assert "Loud.welcome(Loud(), 'x')" in plan.changes["app/zz.py"]
+    assert plan.changes["app/greeter.py"].count("welcome") == 3
+
+
+def test_the_family_is_found_from_a_subclass_too() -> None:
+    # Proves: D-SENS-06 FR-7
+    files = {
+        "a.py": "class A:\n    def go(self): pass\n",
+        "b.py": "from a import A\nclass B(A):\n    def go(self): pass\n",
+        "c.py": "from a import A\nclass C(A):\n    def go(self):\n        return self.go\n",
+    }
+    plan = _plan(files, "b.py", "B.go", "run")
+    assert sorted(plan.changes) == ["a.py", "b.py", "c.py"]
+    assert plan.changes["c.py"].count("run") == 2
+
+
+def test_a_mixin_that_calls_the_method_is_in_the_family() -> None:
+    # Proves: D-SENS-06 FR-7
+    files = {
+        "a.py": "class A:\n    def go(self): pass\n",
+        "m.py": "class Mixin:\n    def twice(self):\n        return self.go()\n",
+        "x.py": "from a import A\nfrom m import Mixin\nclass X(Mixin, A): pass\n",
+    }
+    plan = _plan(files, "a.py", "A.go", "run")
+    assert "self.run()" in plan.changes["m.py"]
+
+
+def test_a_new_name_taken_in_another_family_class_refuses() -> None:
+    files = {
+        "a.py": "class A:\n    def go(self): pass\n",
+        "b.py": "from a import A\nclass B(A):\n    def go(self): pass\n    def run(self): pass\n",
+    }
+    assert _refusal(files, "a.py", "A.go", "run").spots == [Spot("b.py", 4)]
 
 
 @pytest.mark.parametrize("base", ["Thread", "threading.Thread", "Unknown"])

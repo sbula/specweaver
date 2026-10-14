@@ -20,7 +20,7 @@ from specweaver.workspace.ast.parsers.interfaces import (
     Visibility,
 )
 from specweaver.workspace.ast.parsers.python import _references
-from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
+from specweaver.workspace.ast.parsers.tiers import ClassBasedParser, enclosing_name
 
 logger = logging.getLogger(__name__)
 
@@ -101,16 +101,7 @@ class PythonCodeStructure(ClassBasedParser):
         """
 
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
-        if not name_node.parent:
-            return None
-        parent = name_node.parent.parent
-        while parent:
-            if parent.type == "class_definition":
-                for child in parent.children:
-                    if child.type == "identifier":
-                        return typing.cast("bytes", child.text).decode("utf-8")
-            parent = parent.parent
-        return None
+        return enclosing_name(name_node, ("class_definition",), "identifier")
 
     #: Class and function declarations this language exposes to the framework walk.
     SCM_FRAMEWORK_QUERY = "(class_definition name: (identifier) @name) @cls\n(function_definition name: (identifier) @name) @fn"

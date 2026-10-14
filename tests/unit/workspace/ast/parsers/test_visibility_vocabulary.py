@@ -202,6 +202,8 @@ _KT_ALL = [
     "free",
 ]
 _TS_ALL = [
+    "Shape",
+    "Shape.area",
     "Circle",
     "Circle.area",
     "Circle.log",
@@ -250,8 +252,7 @@ UNFILTERED: dict[str, list[str]] = {
     # `Shape.area` — the trait's REQUIRED method — is absent, and the defaulted `name` arrives with
     # no scope where `Shape.name` is expected. Two lost names, pinned as-is: SF-03 `FR-18` owns them.
     "rust": _RS_ALL,
-    # `Shape` (the interface) is missing entirely: TypeScript interfaces are never reported.
-    # Parked with the graph classifier by decision on 2026-08-26.
+    # `Shape` and its `area` JOINED with D-SENS-06 FR-9 `[agreed 2026-10-14]`.
     "typescript": _TS_ALL,
     "go": _GO_ALL,
     "c": _C_ALL,
@@ -273,7 +274,7 @@ PUBLIC_ONLY: dict[str, list[str]] = {
     "kotlin": ["Shape", "Shape.area", "Circle", "Circle.area", "free"],
     # `Circle.log` (protected) and `Circle.helper` (private) LEFT. TypeScript now reads a member's
     # accessibility instead of only asking whether an ancestor is exported (`FR-3`).
-    "typescript": ["Circle", "Circle.area", "free"],
+    "typescript": ["Shape", "Shape.area", "Circle", "Circle.area", "free"],
     # `name` — the trait's defaulted method — JOINED `[agreed 2026-08-26]`, same rule as Java's.
     # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a request for `public` excludes it.
     # That one follows from `FR-1`'s vocabulary rather than being a separate decision.

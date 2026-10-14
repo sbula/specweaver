@@ -72,6 +72,8 @@ EXPECTED: dict[str, dict[str, str]] = {
         "free": "public",
     },
     "typescript": {
+        "Shape": "public",
+        "Shape.area": "public",  # an interface member is public; D-SENS-06 FR-9
         "Circle": "public",
         "Circle.area": "public",
         "Circle.log": "protected",  # today reported as visible -- FR-3

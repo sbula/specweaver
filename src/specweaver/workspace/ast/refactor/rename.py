@@ -50,7 +50,7 @@ def plan_rename(
     if found.unsure:
         spots = sorted(set(found.unsure))
         return RenameRefusal(
-            f"{len(spots)} unsure use(s) of '{found.old}'; nothing was changed: {listing(spots)}",
+            f"{len(spots)} unsure use(s) of '{found.old}'; nothing was changed",
             spots,
         )
     changes = {p: _splice(files[p], spans, new_name) for p, spans in sorted(found.proven.items())}
@@ -80,9 +80,7 @@ def _checked(
         if r.kind != "text"
     )
     if taken:
-        return RenameRefusal(
-            f"'{new_name}' is already used in a file the rename changes: {listing(taken)}", taken
-        )
+        return RenameRefusal(f"'{new_name}' is already used in a file the rename changes", taken)
     grammar = getattr(parser, "parser", None)
     if grammar is None:
         return None
@@ -93,9 +91,7 @@ def _checked(
         and not grammar.parse(files[p].encode("utf-8")).root_node.has_error
     ]
     if broken:
-        return RenameRefusal(
-            f"the rename would leave files that do not parse: {listing(broken)}", broken
-        )
+        return RenameRefusal("the rename would leave files that do not parse", broken)
     return None
 
 
