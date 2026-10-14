@@ -31,6 +31,7 @@ from typer.testing import CliRunner
 from specweaver.core.config.bootstrap.llm_settings_loader import load_keys
 from specweaver.interfaces.cli.main import app
 from specweaver.workflows.planning.models import PlanArtifact
+from tests.e2e.gemini_budget import BUDGET
 
 pytestmark = [pytest.mark.live, pytest.mark.e2e]
 
@@ -97,7 +98,7 @@ def test_gemini_writes_a_valid_plan(tmp_path: Path, _isolate_env: Path) -> None:
                 str(project),
             ],
         )
-        if result.exit_code == 0 or attempt == 4:  # a busy model shows only in the log
+        if result.exit_code == 0 or BUDGET.stopped or attempt == 4:  # busy shows only in the log
             break
         time.sleep(60)
 

@@ -96,3 +96,26 @@ def test_the_handover_shows_the_live_verdict() -> None:
 
     assert line.startswith("- **Live** ")
     assert "live run:" in line
+
+
+@pytest.mark.parametrize(
+    ("stdout", "note"),
+    [
+        (
+            "SKIPPED [1] tests/e2e/a.py:3: provider quota: the free Gemini quota is used up\n"
+            "SKIPPED [2] tests/e2e/b.py:9: provider quota: the free Gemini quota is used up\n",
+            " — 3 stopped by the provider quota",
+        ),
+        ("SKIPPED [1] tests/e2e/a.py:3: no tavily key\n", ""),
+        ("", ""),
+    ],
+)
+def test_the_summary_says_how_many_the_quota_stopped(
+    live: ModuleType, stdout: str, note: str
+) -> None:
+    # Proves: B-FLOW-05 NFR-4
+    assert live.quota_note(stdout) == note
+
+
+def test_the_run_lists_skip_reasons() -> None:
+    assert '"-rs"' in (REPO_ROOT / "scripts" / "live.py").read_text(encoding="utf-8")

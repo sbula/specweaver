@@ -718,6 +718,56 @@
           "symbol_sha": "sha256:68d9a36c8c6c405e0d0a9a56ea1a3ae77f0e1253a19a4b4a8592af347604d93d"
         }
       ]
+    },
+    {
+      "requirement": "NFR-4",
+      "title": "The nightly live run stays inside the free Gemini quota and says when it stopped",
+      "scope": [
+        "tests/unit/test_gemini_budget.py",
+        "tests/unit/scripts/test_live_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "budget-unlimited",
+          "origin": "authored",
+          "file": "tests/e2e/gemini_budget.py",
+          "symbol": "GeminiBudget._spend",
+          "old": "        if self.stopped is None and self.used >= self.limit:\n",
+          "new": "        if False:\n",
+          "breaks": "the live run sends more requests than the free quota allows",
+          "symbol_sha": "sha256:1aac38996a0bc329ad4f109240acbd4e56f79fa0652f1d56f62729349ef61369"
+        },
+        {
+          "id": "quota-answer-ignored",
+          "origin": "authored",
+          "file": "tests/e2e/gemini_budget.py",
+          "symbol": "GeminiBudget.wrap",
+          "old": "                if _QUOTA_USED in str(exc):\n",
+          "new": "                if False:\n",
+          "breaks": "after a used-up quota every later test still sends and fails",
+          "symbol_sha": "sha256:41225f1e1a0911fe8c4967f3b4ea2caef4e46874167242ddecf6a4971baead05"
+        },
+        {
+          "id": "every-failure-skipped",
+          "origin": "authored",
+          "file": "tests/e2e/gemini_budget.py",
+          "symbol": "as_quota_skip",
+          "old": "    if report.when != \"call\" or not report.failed or reason is None:\n",
+          "new": "    if report.when != \"call\" or not report.failed:\n",
+          "breaks": "a real failure is hidden as a quota skip",
+          "symbol_sha": "sha256:64201b0b9851a32852342f7436702b6c20fc5ddfed15254657861b408e8b76ff"
+        },
+        {
+          "id": "quota-note-dropped",
+          "origin": "authored",
+          "file": "scripts/live.py",
+          "symbol": "quota_note",
+          "old": "    return f\" — {stopped} stopped by the provider quota\" if stopped else \"\"\n",
+          "new": "    return \"\"\n",
+          "breaks": "the verdict hides how many tests the quota stopped",
+          "symbol_sha": "sha256:8c08c7b8ff08ee57663dcbc5017a380556943f1bb06b90d9bc915d351c8d1c7e"
+        }
+      ]
     }
   ]
 }

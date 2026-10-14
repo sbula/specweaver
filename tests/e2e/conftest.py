@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from specweaver.core.config.database import Database
+from tests.e2e.gemini_budget import BUDGET, as_quota_skip
 
 
 @pytest.fixture(autouse=True)
@@ -16,6 +17,30 @@ def _isolate_env(tmp_path: Path, monkeypatch):
     test_data_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(test_data_dir))
     return test_data_dir
+
+
+@pytest.fixture(autouse=True)
+def _gemini_budget(request, monkeypatch):
+    """A live test sends Gemini requests only while the night's budget lasts."""
+    if request.node.get_closest_marker("live") is None:
+        return
+    from google.genai.models import AsyncModels
+
+    for name in ("generate_content", "generate_content_stream"):
+        monkeypatch.setattr(AsyncModels, name, BUDGET.wrap(getattr(AsyncModels, name)))
+    request.node.stash[_BUDGET_MARK] = BUDGET.mark()
+
+
+_BUDGET_MARK = pytest.StashKey[tuple[int, str | None]]()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    if item.get_closest_marker("live") is not None and _BUDGET_MARK in item.stash:
+        reason = BUDGET.hit_since(item.stash[_BUDGET_MARK])
+        as_quota_skip(report, (str(item.path), item.location[1] or 0), reason)
+    return report
 
 
 @pytest.fixture

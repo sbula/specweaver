@@ -54,7 +54,8 @@ The run's limits are `[brake] hosted_spend_per_run`, `tokens_per_run` and `agent
 set. A run warns once at 80% and stops at 100%, naming the key. A limit cannot be switched off.
 
 **The nightly session** (`specweaver-mutation.timer`, 03:00) first runs `scripts/live.py`: the live
-tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover shows its verdict;
+tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`, on the free tier: at most 20 Gemini
+requests a night, and a test the quota stops is skipped and counted in the verdict `[agreed 2026-10-14]`. The handover shows its verdict;
 `python scripts/live.py --status` gives the last one.
 
 ## Recently done

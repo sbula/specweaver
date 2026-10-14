@@ -40,6 +40,7 @@ from typer.testing import CliRunner
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_keys
 from specweaver.interfaces.cli.main import app
+from tests.e2e.gemini_budget import BUDGET
 
 pytestmark = [pytest.mark.live, pytest.mark.e2e]
 
@@ -47,7 +48,7 @@ runner = CliRunner()
 
 
 _MODEL = "gemini-3.8-flash"
-_TRANSIENT = ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")
+_TRANSIENT = ("503", "UNAVAILABLE")
 #: Busy answers cost nothing; the free tier is often busy for minutes.
 _ATTEMPTS = 5
 _SPEC = "# Greeter\n\n## 1. Purpose\n\nReturn the text 'hello'.\n"
@@ -100,7 +101,11 @@ def _review(project: Path, data_dir: Path, limit_usd: float, extra: str = ""):
         result = runner.invoke(
             app, ["review", str(project / "greeter_spec.md"), "--project", str(project)]
         )
-        if not any(mark in result.output for mark in _TRANSIENT) or attempt == _ATTEMPTS - 1:
+        if (
+            BUDGET.stopped
+            or not any(m in result.output for m in _TRANSIENT)
+            or attempt == _ATTEMPTS - 1
+        ):
             return result
         time.sleep(60)
     return result
@@ -203,7 +208,11 @@ def test_a_code_review_reaches_gemini_with_spec_and_code(
                 str(project),
             ],
         )
-        if not any(mark in result.output for mark in _TRANSIENT) or attempt == _ATTEMPTS - 1:
+        if (
+            BUDGET.stopped
+            or not any(m in result.output for m in _TRANSIENT)
+            or attempt == _ATTEMPTS - 1
+        ):
             break
         time.sleep(60)
 

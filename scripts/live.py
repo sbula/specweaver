@@ -9,7 +9,9 @@
 
 The nightly session (`scripts/_mutation_timer.py`) runs it before the mutation corpus. The live
 tests read their keys from `~/.specweaver/keys.env`, as SpecWeaver does; no value is printed.
-Each live test sets its own spend limit; together they stay under USD 0.10 a night.
+Each live test sets its own spend limit; together they stay under USD 0.10 a night. The key is on
+the free tier: `tests/e2e/gemini_budget.py` sends at most 20 Gemini requests, and a test the quota
+stops is skipped as `provider quota` and counted in the verdict.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -28,6 +31,16 @@ RESULT = REPO_ROOT / ".tmp" / "live" / "last.json"
 MAX_AGE_HOURS = 48
 
 
+def quota_note(stdout: str) -> str:
+    """How many tests the Gemini quota stopped, from pytest's `-rs` lines; `""` for none."""
+    stopped = 0
+    for line in stdout.splitlines():
+        match = re.match(r"SKIPPED \[(\d+)\] .*provider quota", line)
+        if match:
+            stopped += int(match.group(1))
+    return f" — {stopped} stopped by the provider quota" if stopped else ""
+
+
 def run() -> int:
     from specweaver.core.config.paths import specweaver_root
 
@@ -35,7 +48,18 @@ def run() -> int:
     # The test session moves the data directory; the live tests need the real key file.
     env = {**os.environ, "SPECWEAVER_LIVE_KEYS": str(specweaver_root() / "keys.env")}
     proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-m", "live", "-q", "-p", "no:randomly", "tests/e2e"],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-m",
+            "live",
+            "-q",
+            "-rs",
+            "-p",
+            "no:randomly",
+            "tests/e2e",
+        ],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -43,7 +67,7 @@ def run() -> int:
         env=env,
     )
     lines = proc.stdout.strip().splitlines()
-    summary = lines[-1] if lines else proc.stderr.strip()[-300:]
+    summary = (lines[-1] if lines else proc.stderr.strip()[-300:]) + quota_note(proc.stdout)
     RESULT.parent.mkdir(parents=True, exist_ok=True)
     RESULT.write_text(
         json.dumps({"at": started, "passed": proc.returncode == 0, "summary": summary}),
