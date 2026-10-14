@@ -42,7 +42,8 @@ Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
 Reads and changes code by symbol, never by raw text: `read_file_structure`, `read_symbol`,
 `read_symbol_body`, `list_symbols` for every role that reads; `replace_symbol`,
-`replace_symbol_body`, `add_symbol`, `delete_symbol` and `rename_symbol` for the implementer.
+`replace_symbol_body`, `add_symbol`, `delete_symbol`, `rename_symbol` and `move_module` for the
+implementer.
 `CodeStructureAtom` (`sandbox/code_structure/core/atom.py`) offers the same intents to the flow
 engine without grants.
 
@@ -68,6 +69,12 @@ override family: every class above and below it that defines it. A family with a
 project refuses. The tool also
 refuses when a changed file is outside the role's write grants, and counts (does not name) spots
 and mentions in files the role may not read.
+
+`move_module(path, new_path)` (Python, TypeScript, Go) moves a file and rewrites every import of it,
+all files or none. It refuses a target that exists, is protected, or lies under another
+`context.yaml`; an import it cannot rewrite for certain (a module path as a string, a `tsconfig`
+alias) refuses with its line. A Go file moves only within its folder. The agent needs `FULL` on
+both paths: a move creates one file and deletes another.
 
 ## GitTool (agents)
 

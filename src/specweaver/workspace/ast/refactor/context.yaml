@@ -20,6 +20,7 @@ forbids:
   - specweaver/interfaces/cli
 
 exposes:
+  - move
   - rename
 
 # -- Operational Metadata --------------------------------------------------

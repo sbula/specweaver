@@ -302,3 +302,29 @@ def file_bindings(root: typing.Any) -> FileBindings:
         else:
             _add_declaration(facts, node)
     return facts
+
+
+def _specifier(node: typing.Any) -> typing.Any | None:
+    """The quoted specifier of an import, an `export ... from`, `import(...)` or `require(...)`."""
+    source = None
+    if node.type in ("import_statement", "export_statement"):
+        source = node.child_by_field_name("source")
+    elif node.type == "call_expression":
+        function, arguments = (
+            node.child_by_field_name("function"),
+            node.child_by_field_name("arguments"),
+        )
+        if (
+            function is not None
+            and arguments is not None
+            and text(function) in ("import", "require")
+        ):
+            source = next((a for a in arguments.named_children if a.type == "string"), None)
+    if source is None:
+        return None
+    return next((c for c in source.children if c.type == "string_fragment"), None)
+
+
+def module_references(root: typing.Any) -> list[Reference]:
+    """Each module specifier, the span inside its quotes; `module` is its text."""
+    return [ref("module", f, module=text(f)) for f in map(_specifier, walk(root)) if f is not None]

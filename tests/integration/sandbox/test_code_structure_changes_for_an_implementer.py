@@ -327,3 +327,63 @@ async def test_the_implementer_renames_a_c_function_with_its_header(tmp_path: Pa
     assert "error" not in result, result
     assert (root / "src/util.h").read_text() == "int sum(int a);\n"
     assert "return sum(1);" in (root / "src/main.c").read_text()
+
+
+async def test_the_implementer_moves_a_module_and_its_importers_follow(project: Path) -> None:
+    # Proves: D-SENS-06 FR-10
+    result = await _dispatcher(project).execute(
+        "move_module", {"path": "src/app/greeter.py", "new_path": "src/app/words/greeter.py"}
+    )
+
+    assert "error" not in result, result
+    assert not (project / "src/app/greeter.py").exists()
+    assert (
+        (project / "src/app/main.py")
+        .read_text()
+        .startswith("from app.words.greeter import Greeter\n")
+    )
+    assert result["moved"] == ["src/app/greeter.py", "src/app/words/greeter.py"]
+
+
+def test_a_move_needs_full_rights_on_both_paths(project: Path) -> None:
+    # Proves: D-SENS-06 FR-4
+    before = _snapshot(project)
+    grants = [
+        FolderGrant(str(project / "src/app"), AccessMode.WRITE, recursive=True),
+        FolderGrant(str(project), AccessMode.READ, recursive=True),
+    ]
+    result = _tool(project, grants).move_module("src/app/greeter.py", "src/app/words/greeter.py")
+
+    assert result.status == "error"
+    assert "create" in result.message or "delete" in result.message
+    assert _snapshot(project) == before
+
+
+@pytest.mark.parametrize("role", ["reviewer", "planner", "drafter"])
+async def test_no_other_role_may_move(project: Path, role: str) -> None:
+    # Proves: D-SENS-06 FR-6
+    dispatcher = _dispatcher(project, role)
+    before = _snapshot(project)
+
+    assert "move_module" not in {d.name for d in dispatcher.available_tools()}
+    result = await dispatcher.execute(
+        "move_module", {"path": "src/app/greeter.py", "new_path": "src/app/x.py"}
+    )
+
+    assert "error" in result
+    assert _snapshot(project) == before
+
+
+def test_a_move_needs_the_right_to_create_the_new_file(project: Path) -> None:
+    # Proves: D-SENS-06 FR-4
+    before = _snapshot(project)
+    grants = [
+        FolderGrant(str(project / "src/app/greeter.py"), AccessMode.FULL, recursive=False),
+        FolderGrant(str(project / "src/app"), AccessMode.WRITE, recursive=True),
+        FolderGrant(str(project), AccessMode.READ, recursive=True),
+    ]
+    result = _tool(project, grants).move_module("src/app/greeter.py", "src/app/words/greeter.py")
+
+    assert result.status == "error"
+    assert "create" in result.message
+    assert _snapshot(project) == before

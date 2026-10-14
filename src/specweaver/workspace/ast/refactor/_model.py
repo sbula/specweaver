@@ -53,3 +53,14 @@ def listing(spots: list[Spot], cap: int = MAX_SPOTS) -> str:
     shown = ", ".join(str(s) for s in spots[:cap])
     rest = len(spots) - cap
     return f"{shown} … +{rest} more" if rest > 0 else shown
+
+
+@dataclass
+class Edits:
+    """Replacements per file: `(start byte, end byte, new text)`; and the unsure spots."""
+
+    spans: dict[str, list[tuple[int, int, str]]] = field(default_factory=dict)
+    unsure: list[Spot] = field(default_factory=list)
+
+    def add(self, path: str, start: int, end: int, new: str) -> None:
+        self.spans.setdefault(path, []).append((start, end, new))

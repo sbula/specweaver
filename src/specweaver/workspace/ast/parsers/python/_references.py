@@ -288,3 +288,61 @@ def _add_import(facts: FileBindings, node: typing.Any) -> None:
         facts.wildcards.append(_text(node.child_by_field_name("module_name")))
     for local, module, imported, _ in _import_names(node):
         facts.imports[local] = (module, imported)
+
+
+def _import_statement_refs(node: typing.Any) -> list[Reference]:
+    return [
+        _ref(
+            "import",
+            dotted,
+            module=_text(dotted),
+            alias=None if local == module.split(".")[0] else local,
+        )
+        for local, module, _, dotted in _import_names(node)
+    ]
+
+
+def _from_statement_refs(node: typing.Any) -> list[Reference]:
+    module_node = node.child_by_field_name("module_name")
+    names = list(_import_names(node))
+    listed = ",".join(imported or "" for _, _, imported, _ in names)
+    found = [_ref("from", module_node, module=_text(module_node), receiver=listed)]
+    for local, module, imported, dotted in names:
+        alias = None if local == imported else local
+        found.append(_ref("from_name", dotted, module=module, receiver=listed, alias=alias))
+    return found
+
+
+def module_references(root: typing.Any) -> list[Reference]:
+    """Each module path in an import, each imported name of a `from` import, each string.
+
+    `import a.b [as c]` is kind `import`; `from M import ...` gives one `from` (the span of `M`)
+    and one `from_name` per name, carrying `module=M`, the names of the statement in `receiver`
+    and any alias. A string's content is in `module`, for a move to check against.
+    """
+    found: list[Reference] = []
+    for node in _walk(root):
+        if node.type == "import_statement":
+            found.extend(_import_statement_refs(node))
+        elif node.type == "import_from_statement":
+            found.extend(_from_statement_refs(node))
+        elif node.type == "string":
+            content = "".join(_text(c) for c in node.children if c.type == "string_content")
+            found.append(_ref("string", node, module=content))
+    return sorted(found, key=lambda r: r.start_byte)
+
+
+def dotted_spans(root: typing.Any, dotted: str) -> list[Reference]:
+    """Each expression outside imports whose text is exactly `dotted`, like `app.greeter`."""
+    return [
+        _ref("chain", node)
+        for node in _walk(root)
+        if node.type in ("attribute", "identifier")
+        and _text(node) == dotted
+        and not _in_import(node)
+        and not (
+            node.parent is not None
+            and node.parent.type == "attribute"
+            and node == node.parent.child_by_field_name("attribute")
+        )
+    ]

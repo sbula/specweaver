@@ -280,6 +280,14 @@ class CodeStructureInterface(ABC):
         """Every place `name` occurs in `code`, in byte order. Only languages that rename have it."""
         raise CodeStructureError(f"rename is not supported for {type(self).__name__}")
 
+    def find_module_references(self, code: str) -> list[Reference]:
+        """Each module path an import names. Only languages that move files have it."""
+        raise CodeStructureError(f"moving files is not supported for {type(self).__name__}")
+
+    def find_dotted(self, code: str, dotted: str) -> list[Reference]:
+        """Each expression whose text is `dotted`; empty where a language has no dotted paths."""
+        return []
+
     def file_bindings(self, code: str) -> FileBindings:
         """The names the module level of `code` binds. Only languages that rename have it."""
         raise CodeStructureError(f"rename is not supported for {type(self).__name__}")

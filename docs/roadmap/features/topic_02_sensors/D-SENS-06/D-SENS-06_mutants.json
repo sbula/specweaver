@@ -135,11 +135,11 @@
           "id": "no-restore",
           "origin": "authored",
           "file": "src/specweaver/sandbox/code_structure/core/changes.py",
-          "symbol": "_write_all",
-          "old": "            unrestored = [p for p in written if executor.write(p, original[p]).status != \"success\"]\n",
-          "new": "            unrestored: list[str] = []\n",
+          "symbol": "_undo",
+          "old": "        result = executor.write(p, original[p]) if p in original else executor.delete(p)\n",
+          "new": "        result = executor.exists(p)\n",
           "breaks": "a failed write leaves the earlier files changed",
-          "symbol_sha": "sha256:031b1f05779a8b28f5f4ffce45c259a6aa8cd611f8ab8de49ec0b9179345fca8"
+          "symbol_sha": "sha256:9d4502ae342b2a221f9e42d3e2179a65a6b3099651d296daf2cf65484d254ea4"
         },
         {
           "id": "no-stale-check",
@@ -149,7 +149,7 @@
           "old": "    if stale:\n",
           "new": "    if False:\n",
           "breaks": "a file edited after the plan is overwritten",
-          "symbol_sha": "sha256:d95919ef4de88375ec8949886e031e2f15a8ad9b4a5c22f9fedcffafda0d3ea7"
+          "symbol_sha": "sha256:6cf0954b6f2cd8cf7162b2717ed1d541c14520b0ad6581cb13d035f9015fbc57"
         },
         {
           "id": "ignore-skipped",
@@ -179,15 +179,15 @@
           "old": "    if protected:\n",
           "new": "    if False:\n",
           "breaks": "a protected file is changed by a rename",
-          "symbol_sha": "sha256:d95919ef4de88375ec8949886e031e2f15a8ad9b4a5c22f9fedcffafda0d3ea7"
+          "symbol_sha": "sha256:6cf0954b6f2cd8cf7162b2717ed1d541c14520b0ad6581cb13d035f9015fbc57"
         },
         {
           "id": "no-grant-on-callers",
           "origin": "authored",
           "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
           "symbol": "CodeStructureTool.rename_symbol",
-          "old": "        if outside:\n",
-          "new": "        if False:\n",
+          "old": "        outside = [p for p in plan.changes if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if outside:\n",
+          "new": "        outside = [p for p in plan.changes if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if False:\n",
           "breaks": "a caller outside the write grants is changed",
           "symbol_sha": "sha256:4ae9e4697cd03b669d385701c8895935df1a86b9bc2d4cb6ad8cb7d8c9b44cd9"
         },
@@ -778,7 +778,129 @@
           "symbol": "CResolver._unqualified",
           "old": "        if ref.binding == \"local\" or (ref.kind == \"bare\" and ref.owner and p != home):\n",
           "new": "        if ref.kind == \"bare\" and ref.owner and p != home:\n",
-          "breaks": "a parameter of the name is renamed"
+          "breaks": "a parameter of the name is renamed",
+          "symbol_sha": "sha256:e94c80522d95308991259a091273239d955f3cce133b09f7bded79510ab4eb7e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "A file moves and every import of it follows, all or none",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_move.py",
+        "tests/integration/sandbox/test_move_through_the_atom.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "move-target-exists-ok",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/move.py",
+          "symbol": "_target_refusal",
+          "old": "    if normal in files or normal == path:\n",
+          "new": "    if False:\n",
+          "breaks": "a move overwrites an existing file",
+          "symbol_sha": "sha256:04cf58031870a6a0e4d08addda9dc1bf46d9453fd3894d21a1851bc4e869f8f6"
+        },
+        {
+          "id": "move-old-file-kept",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "_write_all",
+          "old": "        result = executor.delete(delete)\n",
+          "new": "        result = executor.exists(delete)\n",
+          "breaks": "the old file stays beside the new one",
+          "symbol_sha": "sha256:dd9d30a5e43fe9f5d6ac2f3c2efd76a2ac09c65af80debd5d0308d48f911c675"
+        },
+        {
+          "id": "move-restore-off",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "_undo",
+          "old": "if p in original else executor.delete(p)",
+          "new": "if p in original else executor.exists(p)",
+          "breaks": "a failed move leaves the new file behind",
+          "symbol_sha": "sha256:9d4502ae342b2a221f9e42d3e2179a65a6b3099651d296daf2cf65484d254ea4"
+        },
+        {
+          "id": "move-grant-create-off",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.move_module",
+          "old": "        if self._mode_of(new_path) not in MODE_ALLOWS_CREATE:\n",
+          "new": "        if False:\n",
+          "breaks": "an agent creates a file it may only write",
+          "symbol_sha": "sha256:38fe4a94ca862824492dff8795381b5efe0157db5ee3e7943d6384602b3f442b"
+        },
+        {
+          "id": "python-importer-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves.py",
+          "symbol": "_python_from",
+          "old": "    if found[1] != path:\n        return\n",
+          "new": "    if True:\n        return\n",
+          "breaks": "an importer keeps the old module path",
+          "symbol_sha": "sha256:b5426d87977d85cdbf0b75633027f1b204a9bf323c8a5fde25e3959fe8111984"
+        },
+        {
+          "id": "python-string-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves.py",
+          "symbol": "_python_file",
+          "old": "            if ref.module in old.values() and p != path:\n",
+          "new": "            if False:\n",
+          "breaks": "importlib keeps the old module path",
+          "symbol_sha": "sha256:125e11b7d475c7a72be109a539c7c945e0592ea436034373c8c504e9f8efabba"
+        },
+        {
+          "id": "ts-importer-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves.py",
+          "symbol": "_typescript_ref",
+          "old": "    if found[0] != \"module\" or (found[1] == path) == (p == path):\n",
+          "new": "    if found[0] != \"module\" or p != path:\n",
+          "breaks": "a TypeScript importer keeps the old path",
+          "symbol_sha": "sha256:60450a4965eadf51a64583d9c5e0eecafe83737d340cceb5fe584384864498bb"
+        },
+        {
+          "id": "go-folder-move-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves.py",
+          "symbol": "go_edits",
+          "old": "    if posixpath.dirname(path) != posixpath.dirname(new_path):\n",
+          "new": "    if False:\n",
+          "breaks": "a Go file leaves its package",
+          "symbol_sha": "sha256:e45364e133363ed56704a8eb092dd2f743f9d329fe3b04fde7468a453c5ef581"
+        },
+        {
+          "id": "python-own-relative-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves.py",
+          "symbol": "_python_from",
+          "old": "            new = relative_spec(new_path, found[1])\n",
+          "new": "            new = spec\n",
+          "breaks": "the moved file's relative imports point at the wrong place",
+          "symbol_sha": "sha256:b5426d87977d85cdbf0b75633027f1b204a9bf323c8a5fde25e3959fe8111984"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "A move stays in its context.yaml module",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_move.py",
+        "tests/integration/sandbox/test_move_through_the_atom.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "move-boundary-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/move.py",
+          "symbol": "_target_refusal",
+          "old": "    if module_of_path(files, path) != module_of_path(files, normal):\n",
+          "new": "    if False:\n",
+          "breaks": "a file moves into another module"
         }
       ]
     }

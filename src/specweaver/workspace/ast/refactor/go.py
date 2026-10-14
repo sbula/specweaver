@@ -16,8 +16,9 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves
 from specweaver.workspace.ast.refactor._base import Resolver, common, plain_name
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -75,6 +76,9 @@ class GoResolver(Resolver):
     """Resolves function, type and method names across the Go packages of one project."""
 
     SUFFIXES: ClassVar[tuple[str, ...]] = (".go",)
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves.go_edits(self, path, new_path)
 
     def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
         super().__init__(files, parser)

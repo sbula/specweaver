@@ -210,3 +210,14 @@ def test_a_parser_offers_rename_exactly_when_a_resolver_renames_its_files() -> N
         if not offered:
             with pytest.raises(CodeStructureError):
                 parser.find_references("x", "x")
+
+
+def test_a_parser_offers_move_exactly_when_its_resolver_can_move() -> None:
+    from specweaver.workspace.ast.parsers.factory import get_default_parsers
+    from specweaver.workspace.ast.refactor._base import Resolver
+    from specweaver.workspace.ast.refactor.rename import resolver_for
+
+    for exts, parser in get_default_parsers().items():
+        resolver = resolver_for(f"x{exts[0]}")
+        moves = resolver is not None and resolver.move_edits is not Resolver.move_edits
+        assert ("move" in parser.supported_intents()) == moves, exts

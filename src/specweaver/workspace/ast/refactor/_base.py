@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 from specweaver.workspace.ast.refactor._family import ClassId, Parents, hierarchy, outside_bases
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal, Spot
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal, Spot
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -52,6 +52,14 @@ class Resolver:
 
     def find(self, path: str, symbol_name: str, new_name: str) -> Found | RenameRefusal:
         raise NotImplementedError
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        """The import rewrites a move of `path` to `new_path` needs."""
+        return RenameRefusal(f"moving is not supported for {path}")
+
+    def module_names(self, path: str) -> list[str]:
+        """The names other files reach `path` by, for reporting doc mentions of a move."""
+        return []
 
     def parser_for(self, path: str) -> CodeStructureInterface:
         return next(p for ext, p in self._parsers.items() if path.endswith(ext))

@@ -9,6 +9,7 @@ import re
 import typing
 
 from specweaver.workspace.ast.parsers.interfaces import (
+    CodeStructureError,
     CodeStructureInterface,
     FileBindings,
     Reference,
@@ -94,5 +95,18 @@ class Renames(CodeStructureInterface):
     def file_bindings(self, code: str) -> FileBindings:
         return typing.cast("FileBindings", self._finder().file_bindings(self._root(code)))
 
+    def find_module_references(self, code: str) -> list[Reference]:
+        """Each module path an import names, where the language's move reads them."""
+        finder = getattr(self._finder(), "module_references", None)
+        if finder is None:
+            raise CodeStructureError(f"moving files is not supported for {type(self).__name__}")
+        return list(finder(self._root(code)))
+
+    def find_dotted(self, code: str, dotted: str) -> list[Reference]:
+        """Each expression whose text is `dotted`, where the language has dotted module paths."""
+        finder = getattr(self._finder(), "dotted_spans", None)
+        return list(finder(self._root(code), dotted)) if finder is not None else []
+
     def supported_intents(self) -> list[str]:
-        return [*super().supported_intents(), "rename"]
+        moves = ["move"] if hasattr(self._finder(), "module_references") else []
+        return [*super().supported_intents(), "rename", *moves]

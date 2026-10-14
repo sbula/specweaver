@@ -149,6 +149,25 @@ RENAME_SYMBOL_SCHEMA = ToolDefinition(
     ],
 )
 
+MOVE_MODULE_SCHEMA = ToolDefinition(
+    name="move_module",
+    description=(
+        "Renames or moves a source file and rewrites every import of it in the project, in one "
+        "change: all files or none. Refuses when an import cannot be rewritten for certain, when "
+        "the new path exists, or when it lies in another module (another context.yaml)."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="The exact relative path of the file to move."
+        ),
+        ToolParameter(
+            name="new_path",
+            type="string",
+            description="The relative path it moves to, with the same ending.",
+        ),
+    ],
+)
+
 ADD_SYMBOL_SCHEMA = ToolDefinition(
     name="add_symbol",
     description="Injects a completely new symbol cleanly into a specified parent class or to the bottom of the file if target_parent is omitted.",
@@ -252,6 +271,7 @@ def get_code_structure_schema(
         "add": ADD_SYMBOL_SCHEMA,
         "delete": DELETE_SYMBOL_SCHEMA,
         "rename": RENAME_SYMBOL_SCHEMA,
+        "move": MOVE_MODULE_SCHEMA,
     }
 
     for intent, schema in intent_map.items():

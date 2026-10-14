@@ -35,6 +35,7 @@ __all__ = [
     "family_of",
     "listing",
     "plan_rename",
+    "resolver_for",
 ]
 
 if TYPE_CHECKING:
@@ -86,9 +87,14 @@ CODE_SUFFIXES = (
 )
 
 
+def resolver_for(path: str) -> type[Resolver] | None:
+    """The resolver for a file with this ending, or None when the language has none."""
+    return next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+
+
 def family_of(path: str) -> tuple[str, ...]:
     """The endings searched when renaming a symbol of `path`: its language and its partners."""
-    resolver = next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+    resolver = resolver_for(path)
     return resolver.SUFFIXES if resolver else ()
 
 
@@ -100,7 +106,7 @@ def plan_rename(
     parser: CodeStructureInterface,
 ) -> RenamePlan | RenameRefusal:
     """Rename `symbol_name` in `path` to `new_name`, across `files` (path → content)."""
-    kind = next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+    kind = resolver_for(path)
     if kind is None:
         return RenameRefusal(f"rename is not supported for {path}")
     if path not in files:

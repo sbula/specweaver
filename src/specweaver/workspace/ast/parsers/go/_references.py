@@ -197,3 +197,8 @@ def file_bindings(root: typing.Any) -> FileBindings:
                 if spec.type in _NAMED and spec.child_by_field_name("name") is not None
             )
     return facts
+
+
+def module_references(_root: typing.Any) -> list[Reference]:
+    """Go imports name packages (folders), never files: a file's move changes no import."""
+    return []

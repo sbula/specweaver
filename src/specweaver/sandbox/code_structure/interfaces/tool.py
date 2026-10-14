@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.code_structure.core import changes
 from specweaver.sandbox.security import (
+    MODE_ALLOWS_CREATE,
+    MODE_ALLOWS_DELETE,
     MODE_ALLOWS_READ,
     MODE_ALLOWS_WRITE,
     AccessMode,
@@ -47,6 +49,7 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "delete_symbol",
             "add_symbol",
             "rename_symbol",
+            "move_module",
         }
     ),
     "reviewer": frozenset(
@@ -310,6 +313,46 @@ class CodeStructureTool(BaseTool):
             status="success",
             message=f"Renamed '{symbol_name}' to '{new_name}': {applied.message}",
             data={
+                "changed": sorted(plan.changes),
+                "mentions": [str(s) for s in seen],
+                "mentions_outside_grants": hidden,
+            },
+        )
+
+    def move_module(self, path: str, new_path: str) -> ToolResult:
+        """Move a file and rewrite its imports, all files or none, inside the role's grants."""
+        self._require_intent("move_module")
+        if self._mode_of(path) not in MODE_ALLOWS_DELETE:
+            return ToolResult(status="error", message=f"moving needs the right to delete {path}")
+        if self._mode_of(new_path) not in MODE_ALLOWS_CREATE:
+            return ToolResult(
+                status="error", message=f"moving needs the right to create {new_path}"
+            )
+        parser = _parser_for(path)
+        if self._executor is None or parser is None:
+            return ToolResult(status="error", message=f"moving is not supported for {path}")
+        context = {"path": path, "new_path": new_path}
+        plan, sources = changes.move_plan(
+            self._executor, parser, context, self._exclude_dirs, self._exclude_patterns
+        )
+        if isinstance(plan, RenameRefusal):
+            return ToolResult(status="error", message=self._refusal_text(plan.reason, plan.spots))
+        others = [p for p in plan.changes if p != plan.new_path]
+        outside = [p for p in others if self._mode_of(p) not in MODE_ALLOWS_WRITE]
+        if outside:
+            return ToolResult(
+                status="error",
+                message=f"{len(outside)} file(s) of the move are outside your write grants; nothing was changed",
+            )
+        applied = changes.apply_changes(self._executor, sources.files, plan.changes, plan.old_path)
+        if not applied.ok:
+            return ToolResult(status="error", message=applied.message)
+        seen, hidden = self._readable(plan.mentions)
+        return ToolResult(
+            status="success",
+            message=f"Moved {path} to {plan.new_path}: {applied.message}",
+            data={
+                "moved": [path, plan.new_path],
                 "changed": sorted(plan.changes),
                 "mentions": [str(s) for s in seen],
                 "mentions_outside_grants": hidden,

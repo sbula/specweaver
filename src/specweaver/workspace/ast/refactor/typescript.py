@@ -15,8 +15,9 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal, Spot
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal, Spot
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -87,6 +88,9 @@ class TypeScriptResolver(Resolver):
     """Resolves names across the TypeScript modules of one project."""
 
     SUFFIXES: ClassVar[tuple[str, ...]] = (".ts", ".tsx")
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves.typescript_edits(self, path, new_path)
 
     def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
         super().__init__(files, parser)

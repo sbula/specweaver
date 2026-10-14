@@ -139,7 +139,7 @@ expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStruct
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.refactor",]
-expose = [ "rename", "rename.CODE_SUFFIXES", "rename.RenamePlan", "rename.RenameRefusal", "rename.Spot", "rename.family_of", "rename.listing", "rename.plan_rename",]
+expose = [ "move", "move.MovePlan", "move.plan_move", "rename", "rename.CODE_SUFFIXES", "rename.RenamePlan", "rename.RenameRefusal", "rename.Spot", "rename.family_of", "rename.listing", "rename.plan_rename",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.adapters",]

@@ -210,6 +210,7 @@ class CodeStructureAtom(Atom):
             "delete_symbol",
             "extract_framework_markers",
             "rename_symbol",
+            "move_module",
         }
         if intent not in valid_intents:
             return AtomResult(
@@ -225,6 +226,8 @@ class CodeStructureAtom(Atom):
 
         if intent == "rename_symbol":
             return self._handle_rename(parser, context)
+        if intent == "move_module":
+            return self._handle_move(parser, context)
 
         read_res = self._executor.read(path)
         if read_res.status == "error":
@@ -250,22 +253,33 @@ class CodeStructureAtom(Atom):
             self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
         )
         if isinstance(plan, RenameRefusal):
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"{plan.reason}: {listing(plan.spots)}" if plan.spots else plan.reason,
-                exports={"spots": [str(s) for s in plan.spots]},
-            )
+            return _refused(plan)
         applied = changes.apply_changes(self._executor, sources.files, plan.changes)
         if not applied.ok:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=applied.message,
-                exports={"unrestored": applied.unrestored},
-            )
+            return _not_applied(applied)
         return AtomResult(
             status=AtomStatus.SUCCESS,
             message=f"Renamed '{context['symbol_name']}' to '{context['new_name']}': {applied.message}",
             exports={"changed": sorted(plan.changes), "mentions": [str(s) for s in plan.mentions]},
+        )
+
+    def _handle_move(self, parser: CodeStructureInterface, context: dict[str, Any]) -> AtomResult:
+        plan, sources = changes.move_plan(
+            self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
+        )
+        if isinstance(plan, RenameRefusal):
+            return _refused(plan)
+        applied = changes.apply_changes(self._executor, sources.files, plan.changes, plan.old_path)
+        if not applied.ok:
+            return _not_applied(applied)
+        return AtomResult(
+            status=AtomStatus.SUCCESS,
+            message=f"Moved {plan.old_path} to {plan.new_path}: {applied.message}",
+            exports={
+                "moved": [plan.old_path, plan.new_path],
+                "changed": sorted(plan.changes),
+                "mentions": [str(s) for s in plan.mentions],
+            },
         )
 
     def _handle_framework_markers(
@@ -411,3 +425,18 @@ def _breaks_parsing(parser: CodeStructureInterface, before: str, after: str) -> 
         return False
     errors = [grammar.parse(text.encode("utf-8")).root_node.has_error for text in (before, after)]
     return errors == [False, True]
+
+
+def _refused(plan: RenameRefusal) -> AtomResult:
+    message = f"{plan.reason}: {listing(plan.spots)}" if plan.spots else plan.reason
+    return AtomResult(
+        status=AtomStatus.FAILED, message=message, exports={"spots": [str(s) for s in plan.spots]}
+    )
+
+
+def _not_applied(applied: changes.Applied) -> AtomResult:
+    return AtomResult(
+        status=AtomStatus.FAILED,
+        message=applied.message,
+        exports={"unrestored": applied.unrestored},
+    )

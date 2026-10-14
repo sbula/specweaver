@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser
+from specweaver.workspace.ast.refactor.move import MovePlan, plan_move
 from specweaver.workspace.ast.refactor.rename import (
     CODE_SUFFIXES,
     RenamePlan,
@@ -28,7 +29,16 @@ if TYPE_CHECKING:
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
-__all__ = ["Applied", "Sources", "apply_changes", "plan_rename", "project_sources", "rename_plan"]
+__all__ = [
+    "Applied",
+    "Sources",
+    "apply_changes",
+    "move_plan",
+    "plan_move",
+    "plan_rename",
+    "project_sources",
+    "rename_plan",
+]
 
 TEXT_SUFFIXES = (".md", ".rst", ".txt", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini", ".mod")
 
@@ -114,6 +124,21 @@ def _read_into(executor: FileExecutor, rel: str, found: Sources) -> None:
         found.unreadable.append(rel)
 
 
+def _read_project(
+    executor: FileExecutor,
+    path: str,
+    exclude_dirs: set[str] | None,
+    exclude_patterns: set[str] | None,
+) -> Sources | RenameRefusal:
+    """The project's files, or a refusal when a code file of `path`'s language cannot be read."""
+    sources = project_sources(executor, exclude_dirs, exclude_patterns)
+    unreadable = [p for p in sources.unreadable if p.endswith(family_of(path))]
+    if unreadable:
+        spots = [Spot(p, 1) for p in unreadable]
+        return RenameRefusal(f"could not read {len(spots)} code file(s)", spots)
+    return sources
+
+
 def rename_plan(
     executor: FileExecutor,
     parser: CodeStructureInterface,
@@ -125,44 +150,95 @@ def rename_plan(
     path, symbol, new = (context.get(k) for k in ("path", "symbol_name", "new_name"))
     if not all(isinstance(v, str) and v for v in (path, symbol, new)):
         return RenameRefusal("rename needs 'path', 'symbol_name' and 'new_name'"), Sources()
-    sources = project_sources(executor, exclude_dirs, exclude_patterns)
-    unreadable = [p for p in sources.unreadable if p.endswith(family_of(str(path)))]
-    if unreadable:
-        spots = [Spot(p, 1) for p in unreadable]
-        return RenameRefusal(f"could not read {len(spots)} code file(s)", spots), sources
+    sources = _read_project(executor, str(path), exclude_dirs, exclude_patterns)
+    if isinstance(sources, RenameRefusal):
+        return sources, Sources()
     return plan_rename(sources.files, str(path), str(symbol), str(new), parser), sources
 
 
+def move_plan(
+    executor: FileExecutor,
+    parser: CodeStructureInterface,
+    context: Mapping[str, object],
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: set[str] | None = None,
+) -> tuple[MovePlan | RenameRefusal, Sources]:
+    """Read the project and plan `context`'s move: `path` to `new_path`."""
+    path, new_path = context.get("path"), context.get("new_path")
+    if not all(isinstance(v, str) and v for v in (path, new_path)):
+        return RenameRefusal("a move needs 'path' and 'new_path'"), Sources()
+    sources = _read_project(executor, str(path), exclude_dirs, exclude_patterns)
+    if isinstance(sources, RenameRefusal):
+        return sources, Sources()
+    return plan_move(sources.files, str(path), str(new_path), parser), sources
+
+
 def apply_changes(
-    executor: FileExecutor, original: Mapping[str, str], changes: Mapping[str, str]
+    executor: FileExecutor,
+    original: Mapping[str, str],
+    changes: Mapping[str, str],
+    delete: str | None = None,
 ) -> Applied:
-    """Write `changes`, all or none. `original` is what each file held when the plan was made."""
-    protected = [p for p in sorted(changes) if executor.is_protected(p)]
+    """Write `changes` and delete `delete`, all or none.
+
+    `original` is what each file held when the plan was made; a changed path missing from it is
+    a new file, and must not exist yet.
+    """
+    touched = sorted({*changes, *([delete] if delete else [])})
+    protected = [p for p in touched if executor.is_protected(p)]
     if protected:
         return Applied(
             False, f"protected file(s) in the change: {', '.join(protected)}; nothing was written"
         )
+    created = [p for p in sorted(changes) if p not in original and executor.exists(p).data]
+    if created:
+        return Applied(False, f"{', '.join(created)} exists already; nothing was written")
     stale = [
-        p for p in sorted(changes) if executor.read(p, max_bytes=_MAX_BYTES).data != original[p]
+        p
+        for p in touched
+        if p in original and executor.read(p, max_bytes=_MAX_BYTES).data != original[p]
     ]
     if stale:
         return Applied(False, f"changed since it was read: {', '.join(stale)}; nothing was written")
-    return _write_all(executor, original, changes)
+    return _write_all(executor, original, changes, delete)
+
+
+def _undo(executor: FileExecutor, original: Mapping[str, str], written: list[str]) -> list[str]:
+    """Put every written file back; a new one is removed. The files that could not be undone."""
+    failed = []
+    for p in written:
+        result = executor.write(p, original[p]) if p in original else executor.delete(p)
+        if result.status != "success":
+            failed.append(p)
+    return failed
 
 
 def _write_all(
-    executor: FileExecutor, original: Mapping[str, str], changes: Mapping[str, str]
+    executor: FileExecutor,
+    original: Mapping[str, str],
+    changes: Mapping[str, str],
+    delete: str | None,
 ) -> Applied:
     written: list[str] = []
     for path in sorted(changes):
         result = executor.write(path, changes[path])
         if result.status != "success":
-            unrestored = [p for p in written if executor.write(p, original[p]).status != "success"]
-            note = (
-                f"; could not restore {', '.join(unrestored)}"
-                if unrestored
-                else "; the others were restored"
-            )
-            return Applied(False, f"writing {path} failed: {result.error}{note}", unrestored)
+            return _failed(executor, original, written, f"writing {path} failed: {result.error}")
         written.append(path)
+    if delete:
+        result = executor.delete(delete)
+        if result.status != "success":
+            return _failed(executor, original, written, f"deleting {delete} failed: {result.error}")
     return Applied(True, f"changed {len(written)} file(s)")
+
+
+def _failed(
+    executor: FileExecutor, original: Mapping[str, str], written: list[str], why: str
+) -> Applied:
+    unrestored = _undo(executor, original, written)
+    note = (
+        f"; could not restore {', '.join(unrestored)}"
+        if unrestored
+        else "; the others were restored"
+    )
+    return Applied(False, f"{why}{note}", unrestored)

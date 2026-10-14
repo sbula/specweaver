@@ -14,8 +14,9 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal
 
 if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import (
@@ -49,6 +50,12 @@ class PythonResolver(Resolver):
     SUFFIXES: ClassVar[tuple[str, ...]] = (".py",)
 
     # --- files and modules ------------------------------------------------------------------
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves.python_edits(self, path, new_path)
+
+    def module_names(self, path: str) -> list[str]:
+        return list(moves.python_dotted(path).values())
 
     def _module_file(self, base: str) -> str | None:
         return next((c for c in (f"{base}.py", f"{base}/__init__.py") if c in self.code), None)
