@@ -21,6 +21,7 @@ from specweaver.workspace.ast.refactor._model import (
 )
 from specweaver.workspace.ast.refactor.jvm import JvmResolver
 from specweaver.workspace.ast.refactor.python import PythonResolver
+from specweaver.workspace.ast.refactor.rust import RustResolver
 from specweaver.workspace.ast.refactor.typescript import TypeScriptResolver
 
 __all__ = [
@@ -48,6 +49,7 @@ _RESOLVERS: dict[str, type[Resolver]] = {
     ".kts": JvmResolver,
     ".ts": TypeScriptResolver,
     ".tsx": TypeScriptResolver,
+    ".rs": RustResolver,
 }
 
 #: Endings of source code; every other file is text, where a name is only ever a mention.

@@ -339,8 +339,10 @@
         "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py",
         "tests/unit/workspace/ast/parsers/java/test_java_references.py",
         "tests/unit/workspace/ast/parsers/kotlin/test_kotlin_references.py",
+        "tests/unit/workspace/ast/parsers/rust/test_rust_references.py",
         "tests/unit/workspace/ast/parsers/typescript/test_typescript_references.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_rust.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_typescript.py"
       ],
       "mutants": [
@@ -511,7 +513,87 @@
           "symbol": "_binding",
           "old": "            return \"local\"\n",
           "new": "            return \"free\"\n",
-          "breaks": "a TypeScript local of the name is taken as the name"
+          "breaks": "a TypeScript local of the name is taken as the name",
+          "symbol_sha": "sha256:c3683076d904688f3bae8d2d5cfb7abcd4f8e2aa37f016845e9e3cef57878922"
+        },
+        {
+          "id": "rust-glob-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._member",
+          "old": "        return (\"unknown\",) if facts.wildcards else (\"missing\",)\n",
+          "new": "        return (\"missing\",)\n",
+          "breaks": "a name through a glob use is skipped",
+          "symbol_sha": "sha256:4b11350dc081d22584fbbb08e17b32e7109b84376a442eeab3655a7c2e774cb4"
+        },
+        {
+          "id": "rust-macro-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/_references.py",
+          "symbol": "_identifier",
+          "old": "    if _in_macro(node):\n        return ref(\"string\", node)\n",
+          "new": "    if False:\n        return ref(\"string\", node)\n",
+          "breaks": "a name inside a macro is renamed blindly",
+          "symbol_sha": "sha256:cd6afa4c73ead58c35ebb81f0f4b4cedf8f2b328bfe2ccdb399291af5f9a585f"
+        },
+        {
+          "id": "rust-shadow-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/_references.py",
+          "symbol": "_binding",
+          "old": "            if text(node) in declared:\n",
+          "new": "            if False:\n",
+          "breaks": "a Rust local of the name is renamed",
+          "symbol_sha": "sha256:55fbf2888aacb3712a8300046a1e7229efe63470995d74147fe66297a2c7de30"
+        },
+        {
+          "id": "rust-local-skip-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._item_use",
+          "old": "            if ref.binding == \"local\":\n                return \"unrelated\"\n",
+          "new": "            if False:\n                return \"unrelated\"\n",
+          "breaks": "a local of the name is renamed",
+          "symbol_sha": "sha256:90fec4409c0a9809b6126186444397792e3519d6c8fee4a946c5f9f691b9717c"
+        },
+        {
+          "id": "rust-self-call-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._method_use",
+          "old": "            return \"proven\" if mine else \"unrelated\"\n        if ref.kind == \"path\":\n",
+          "new": "            return \"unrelated\"\n        if ref.kind == \"path\":\n",
+          "breaks": "self.m() keeps the old name",
+          "symbol_sha": "sha256:7bdef7c35e7d5183cdbb9d866d55ad81bbb7c6d61fb0b59d677b4429852044aa"
+        },
+        {
+          "id": "rust-outside-trait-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._trait_family",
+          "old": "        if found[0] != \"def\":\n",
+          "new": "        if False:\n",
+          "breaks": "a method of an outside trait is renamed",
+          "symbol_sha": "sha256:48b0010bcc696f97cd260afdf5f60bfd5375a61a70286dd6afd027982913cc00"
+        },
+        {
+          "id": "rust-impls-missed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._trait_family",
+          "old": "                if any(self.resolve_path(p, t.split(\"::\")) == found for t in traits):\n",
+          "new": "                if False:\n",
+          "breaks": "an impl of the trait keeps the old name",
+          "symbol_sha": "sha256:48b0010bcc696f97cd260afdf5f60bfd5375a61a70286dd6afd027982913cc00"
+        },
+        {
+          "id": "rust-trait-clash-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rust.py",
+          "symbol": "RustResolver._inherent",
+          "old": "                if r.kind == \"definition\" and r.qualifier and self.class_id(p, r.owner) == me:\n",
+          "new": "                if False:\n",
+          "breaks": "an inherent method shadowed by a trait method is renamed"
         }
       ]
     }

@@ -10,7 +10,9 @@ import tree_sitter_rust
 from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
+from specweaver.workspace.ast.parsers.rust import _references
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
@@ -44,7 +46,7 @@ def _bare(name: str) -> str:
     return name.rsplit("::", 1)[-1]
 
 
-class RustCodeStructure(FunctionBasedParser):
+class RustCodeStructure(Renames, FunctionBasedParser):
     grammar = staticmethod(tree_sitter_rust.language)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
@@ -57,6 +59,9 @@ class RustCodeStructure(FunctionBasedParser):
         "trait_item",
         "impl_item",
     )
+
+    def _finder(self) -> typing.Any:
+        return _references
 
     def _declared_type_name(self, node: typing.Any) -> str | None:
         """The type a node is ABOUT.
@@ -147,6 +152,7 @@ class RustCodeStructure(FunctionBasedParser):
             "delete",
             "traceability",
             "imports",
+            "rename",
         ]
 
     def supported_parameters(self) -> list[str]:

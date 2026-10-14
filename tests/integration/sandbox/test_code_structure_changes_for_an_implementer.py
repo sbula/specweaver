@@ -271,3 +271,22 @@ async def test_the_implementer_renames_a_typescript_class_across_modules(tmp_pat
     assert (
         root / "src/app.ts"
     ).read_text() == 'import { Welcomer } from "./greeter";\nconst g = new Welcomer();\n'
+
+
+async def test_the_implementer_renames_a_rust_function_across_modules(tmp_path: Path) -> None:
+    # Proves: D-SENS-06 FR-8
+    root = _write(
+        tmp_path / "rs",
+        {
+            "Cargo.toml": '[package]\nname = "app"\n',
+            "src/lib.rs": "mod util;\nmod run;\n",
+            "src/util.rs": "pub fn total(a: u32) -> u32 { a }\n",
+            "src/run.rs": "use crate::util::total;\nfn go() -> u32 { total(1) }\n",
+        },
+    )
+    result = await _dispatcher(root).execute(
+        "rename_symbol", {"path": "src/util.rs", "symbol_name": "total", "new_name": "add"}
+    )
+
+    assert "error" not in result, result
+    assert (root / "src/run.rs").read_text() == "use crate::util::add;\nfn go() -> u32 { add(1) }\n"

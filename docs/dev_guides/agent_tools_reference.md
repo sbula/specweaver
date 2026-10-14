@@ -46,7 +46,7 @@ Reads and changes code by symbol, never by raw text: `read_file_structure`, `rea
 `CodeStructureAtom` (`sandbox/code_structure/core/atom.py`) offers the same intents to the flow
 engine without grants.
 
-`rename_symbol(path, symbol_name, new_name)` (Python, Java, Kotlin, TypeScript; Java and Kotlin are searched together) renames a function, class or method and
+`rename_symbol(path, symbol_name, new_name)` (Python, Java, Kotlin, TypeScript, Rust; Java and Kotlin are searched together) renames a function, class or method and
 every **proven** use in the project, in one change: all files or none. The plan is pure logic in
 `workspace/ast/refactor/`; reading and writing are in `sandbox/code_structure/core/changes.py`.
 
@@ -59,7 +59,8 @@ every **proven** use in the project, in one change: all files or none. The plan 
 
 One unsure use refuses the whole rename and lists the lines. A file that does not parse and holds
 the name counts as unsure: its uses cannot be seen. In TypeScript, so do `export *`, a
-`tsconfig.json` path alias, an object-literal key, and a `.js` file holding the name. A method is renamed in its whole
+`tsconfig.json` path alias, an object-literal key, and a `.js` file holding the name; in Rust, a
+glob `use` and any name inside a macro. A Rust trait method renames in the trait and every impl. A method is renamed in its whole
 override family: every class above and below it that defines it. A family with a base outside the
 project refuses. The tool also
 refuses when a changed file is outside the role's write grants, and counts (does not name) spots
