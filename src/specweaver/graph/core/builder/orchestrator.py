@@ -252,17 +252,11 @@ class GraphOrchestrator:
 
     @staticmethod
     def build_target(target_path: Path, project_path: Path) -> int:
-        from specweaver.assurance.graph.loader import load_topology
+        from specweaver.assurance.graph.loader import load_topology, resolve_service_name
         from specweaver.graph.core.engine.core import InMemoryGraphEngine
         from specweaver.graph.core.store.repository import SqliteGraphRepository
 
-        service_name = "default"
-        topology = load_topology(project_path)
-        if topology and topology.nodes:
-            for node in topology.nodes.values():
-                if node.yaml_path and str(node.yaml_path.parent) == str(project_path.resolve()):
-                    service_name = node.name
-                    break
+        service_name = resolve_service_name(load_topology(project_path), project_path)
 
         db_path = str(project_path / ".specweaver" / "graph.db")
         repo = SqliteGraphRepository(db_path, service_name)

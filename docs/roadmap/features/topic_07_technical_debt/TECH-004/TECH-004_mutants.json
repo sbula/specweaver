@@ -1,0 +1,46 @@
+{
+  "schema": 2,
+  "feature": "TECH-004",
+  "campaigns": [
+    {
+      "requirement": "FR-6",
+      "title": "The project's service name comes from its root context.yaml",
+      "scope": [
+        "tests/unit/assurance/graph/test_loader_service_name.py",
+        "tests/integration/graph/test_graph_service_name.py"
+      ],
+      "mutants": [
+        {
+          "id": "sub-module-taken",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/graph/loader.py",
+          "symbol": "resolve_service_name",
+          "old": "        if node.yaml_path and node.yaml_path.parent.resolve() == root:\n",
+          "new": "        if node.yaml_path:\n",
+          "breaks": "a sub-module's name is stored as the whole project's service",
+          "symbol_sha": "sha256:f3f0b414dfa5120ffbe9895da2e9796906fc3e07a7347f84e413ea5cbb531c2e"
+        },
+        {
+          "id": "root-name-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/graph/loader.py",
+          "symbol": "resolve_service_name",
+          "old": "            return node.name\n",
+          "new": "            return \"default\"\n",
+          "breaks": "every project's graph is stored as default",
+          "symbol_sha": "sha256:f3f0b414dfa5120ffbe9895da2e9796906fc3e07a7347f84e413ea5cbb531c2e"
+        },
+        {
+          "id": "build-ignores-name",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphOrchestrator.build_target",
+          "old": "        service_name = resolve_service_name(load_topology(project_path), project_path)\n",
+          "new": "        service_name = \"default\"\n",
+          "breaks": "a graph build ignores the project's service name",
+          "symbol_sha": "sha256:8428d329eaaeb60773dba85ae881cac45019ce6ebe2186799e74baebf6ca41e0"
+        }
+      ]
+    }
+  ]
+}

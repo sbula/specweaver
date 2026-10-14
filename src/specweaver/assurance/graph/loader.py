@@ -10,10 +10,11 @@ load topology without importing from a CLI module.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
 
 logger = logging.getLogger(__name__)
@@ -59,22 +60,15 @@ def load_topology(project_path: Path) -> TopologyGraph | None:
     return graph
 
 
-def resolve_service_name(topology: TopologyGraph | None, target_path: Path) -> str:
-    """Resolve the logical service name for a given file path based on the topology graph.
+def resolve_service_name(topology: TopologyGraph | None, project_path: Path) -> str:
+    """The project's service name: the name in the `context.yaml` at its root, else `default`.
 
-    If no topology is present or no matching node is found, returns 'default'.
+    A sub-module's name is never taken: the graph store keeps one service per project.
     """
-    if topology is None or getattr(topology, "nodes", None) is None or not topology.nodes:
-        return "default"
-
-    target_str = str(target_path.resolve()).replace("\\", "/")
-
-    for node in topology.nodes.values():
-        if getattr(node, "path", None):
-            node_path_str = str(Path(node.path).resolve()).replace("\\", "/")  # type: ignore[attr-defined]
-            if target_str.startswith(node_path_str):
-                return node.name
-
+    root = project_path.resolve()
+    for node in (topology.nodes if topology else {}).values():
+        if node.yaml_path and node.yaml_path.parent.resolve() == root:
+            return node.name
     return "default"
 
 

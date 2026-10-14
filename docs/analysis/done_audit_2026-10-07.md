@@ -108,7 +108,7 @@ proven through `/review`, not `/implement`).
 | D-FLOW-03, E-FLOW-03 | Superseded by C-FLOW-13; designs still say COMPLETE. **Fixed** 2026-10-09: both designs say SUPERSEDED; their status flags are the user's call | removed tables/commands |
 | D-SENS-02 FR-3, TECH-003 FR-3 | Stale `loom/` layout consumed by 3 `context.yaml`. **Fixed** 2026-10-09: the root `context.yaml` exposes the real top-level packages; D-SENS-02 FR-3 names `sandbox/language/core/<name>` | workspace `context.yaml` |
 | C-VAL-02 | "Produces bulk-written overrides" is false. **Fixed** 2026-10-09: the topic entry says a profile stores its name, which selects the pipeline | `core/config/profiles.py:7` |
-| TECH-004 FR-6 | `resolve_service_name` unused and always "default" | `assurance/graph/loader.py:62` |
+| TECH-004 FR-6 | `resolve_service_name` unused and always "default". **Fixed** 2026-10-14: it holds the root-`context.yaml` rule the graph build used inline, and the build calls it | `assurance/graph/loader.py:62` |
 | C-FLOW-01 (REST) | `POST /review`, `/implement` crashed on every call until `67f51443`; now works, still weakly tested | `test_telemetry_wiring.py` mocks |
 | TECH-011 FR-1/2, C-EXEC-02 FR-2/12, found 2026-10-12 | `validate_flow()` was never called outside tests, so no pipeline was checked at load: a bad bash step ran its earlier steps first; `sw pipelines` listed the validation rule lists and `context.yaml` as runnable. **Fixed** 2026-10-12: `load_pipeline` refuses a pipeline that does not validate; the list holds only runnable pipelines | `core/flow/engine/parser.py` |
 | C-FLOW-01 (REST pipelines), found 2026-10-08 | `POST /pipelines/{name}/run` and `/runs/{id}/resume` build their run with no model router and no database: a step that needs a model fails, no cost history or outcome is written; the returned run id was never the run's. **Fixed** 2026-10-08; 2026-10-13: a run stores its project's registered name, so a gate answer or `sw resume` finds a run parked over REST | `interfaces/api/v1/pipelines.py:56,148` |
@@ -122,5 +122,5 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
-Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-FLOW-04`,
-`TECH-004` FR-6, `C-FLOW-01` REST tests, `E-SENS-03` task-scoped roots.
+Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-FLOW-04`, `C-FLOW-01` REST tests,
+`E-SENS-03` task-scoped roots, and `TECH-004` FR-1..5 and FR-7..12, which no test cites.
