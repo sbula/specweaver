@@ -117,7 +117,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **E-UI-01:** CLI Scaffold
     *   `✅` **E-SENS-01:** Loom Filesystem Tools
     *   `✅` **E-INTL-01:** LLM Adapter (Gemini)
-    *   `🔧` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
+    *   `✅` **E-INTL-02:** Spec Drafting (`sw draft`) & HITL Provider
     *   `✅` **E-INTL-03:** Spec Review Engine
     *   `✅` **D-INTL-05:** Project Metadata Injection
 *   **Sub-Story Add-Ons:**
@@ -141,6 +141,9 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   🟡 **Multi-Language Test Support:**
         *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
+    *   🟡 **Structured Code Changes** *(agents with no raw file access)*:
+        *   `[ ]` **D-SENS-06:** Structured Code Editing for Agents
+        *   `[ ]` **D-INTL-09:** Code Step Through Structure Tools — needs `D-SENS-06`
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
     *   🟡 **Graduated Autonomy:**

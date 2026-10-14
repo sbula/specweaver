@@ -108,6 +108,15 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a non-Python target is implemented end to end
   > - **Note:** paths, artifact tags and the fence stripper are hardcoded to `.py` at four points, and no `--language` flag exists. Builds no runner — routes to the ones that exist
 
+* **`D-INTL-09` 🔜: Code Step Through Structure Tools**
+  > - **Purpose:** The code step changes existing files through the code-structure tools instead of rewriting them whole
+  > - **Trigger:** When a run's code or test step touches a file that already exists
+  > - **Precondition:** `D-SENS-06` → structured editing tools · `D-INTL-03` → the plan's file layout
+  > - **Reads:** the plan, the spec and the existing code
+  > - **Produces:** symbol-level edits and new module files, each checked to parse
+  > - **Enables:** agents with no raw file access · edits that leave the rest of a file untouched
+  > - **Done when:** a run changes an existing file and only the planned symbols differ
+
 ## DAL-C: Enterprise Standard
 
 * **`C-INTL-01` ✅: Iterative Decomposition** (Legacy: 3.24)
