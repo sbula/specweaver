@@ -10,7 +10,12 @@ import tree_sitter_kotlin
 from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _visibility as _vis
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
+from specweaver.workspace.ast.parsers._ref_tools import Renames
+from specweaver.workspace.ast.parsers.interfaces import (
+    CodeStructureError,
+    Visibility,
+)
+from specweaver.workspace.ast.parsers.kotlin import _references
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
@@ -25,11 +30,14 @@ def _visibility_of(name_node: typing.Any) -> Visibility:
     return _vis.keyword_level(name_node.parent, "modifiers", _vis.KOTLIN_ACCESS) or "public"
 
 
-class KotlinCodeStructure(ClassBasedParser):
+class KotlinCodeStructure(Renames, ClassBasedParser):
     grammar = staticmethod(tree_sitter_kotlin.language)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("class_declaration",)
+
+    def _finder(self) -> typing.Any:
+        return _references
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """Kotlin holds both kinds in one list, so every supertype is reported as extension.
@@ -38,6 +46,7 @@ class KotlinCodeStructure(ClassBasedParser):
         `by` delegation or a base with no explicit invocation breaks that convention. Settled with
         the user: report extension only rather than be right most of the time.
         """
+
         specifiers = next((c for c in node.children if c.type == "delegation_specifiers"), None)
         return {"extends": self._type_names_in(specifiers), "implements": []}
 

@@ -199,14 +199,14 @@ def test_file_bindings(parser: PythonCodeStructure) -> None:
     assert facts.bases == {"Loud": ["G", "mod.Base", "Generic"]}
 
 
-def test_find_references_is_only_offered_by_python() -> None:
+def test_a_parser_offers_rename_exactly_when_a_resolver_renames_its_files() -> None:
     from specweaver.workspace.ast.parsers.factory import get_default_parsers
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
+    from specweaver.workspace.ast.refactor.rename import family_of
 
-    for exts, other in get_default_parsers().items():
-        if ".py" in exts:
-            assert "rename" in other.supported_intents()
-            continue
-        assert "rename" not in other.supported_intents(), exts
-        with pytest.raises(CodeStructureError):
-            other.find_references("x", "x")
+    for exts, parser in get_default_parsers().items():
+        offered = "rename" in parser.supported_intents()
+        assert offered == all(family_of(f"x{ext}") for ext in exts), exts
+        if not offered:
+            with pytest.raises(CodeStructureError):
+                parser.find_references("x", "x")

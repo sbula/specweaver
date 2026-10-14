@@ -70,6 +70,8 @@ Every other place in **code** where the old name appears as a name or a string i
 One unsure spot refuses the whole rename. So method renames will often refuse; that is the price
 of never breaking code silently `[agreed 2026-10-14]`.
 
+A code file that does not parse, and holds the old name, is unsure too: its uses cannot be seen.
+
 The old name in a comment, a doc, a spec or a config file is a **text mention**. It is reported
 and not changed `[agreed 2026-10-14]`.
 

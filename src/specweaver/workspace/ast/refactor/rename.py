@@ -19,16 +19,63 @@ from specweaver.workspace.ast.refactor._model import (
     Spot,
     listing,
 )
+from specweaver.workspace.ast.refactor.jvm import JvmResolver
 from specweaver.workspace.ast.refactor.python import PythonResolver
 
-__all__ = ["MAX_SPOTS", "RenamePlan", "RenameRefusal", "Spot", "listing", "plan_rename"]
-
-_PYTHON = (".py", ".pyi")
+__all__ = [
+    "CODE_SUFFIXES",
+    "MAX_SPOTS",
+    "RenamePlan",
+    "RenameRefusal",
+    "Spot",
+    "family_of",
+    "listing",
+    "plan_rename",
+]
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
+    from specweaver.workspace.ast.refactor._base import Resolver
+
+#: Which resolver renames a symbol defined in a file with this ending.
+_RESOLVERS: dict[str, type[Resolver]] = {
+    ".py": PythonResolver,
+    ".java": JvmResolver,
+    ".kt": JvmResolver,
+    ".kts": JvmResolver,
+}
+
+#: Endings of source code; every other file is text, where a name is only ever a mention.
+CODE_SUFFIXES = (
+    ".py",
+    ".pyi",
+    ".java",
+    ".kt",
+    ".kts",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".rs",
+    ".go",
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".cc",
+    ".cxx",
+    ".sql",
+)
+
+
+def family_of(path: str) -> tuple[str, ...]:
+    """The endings searched when renaming a symbol of `path`: its language and its partners."""
+    resolver = next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+    return resolver.SUFFIXES if resolver else ()
 
 
 def plan_rename(
@@ -39,12 +86,14 @@ def plan_rename(
     parser: CodeStructureInterface,
 ) -> RenamePlan | RenameRefusal:
     """Rename `symbol_name` in `path` to `new_name`, across `files` (path → content)."""
-    if not path.endswith(_PYTHON):
-        return RenameRefusal(f"rename works on Python files only, not on {path}")
+    kind = next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+    if kind is None:
+        return RenameRefusal(f"rename is not supported for {path}")
     if path not in files:
         return RenameRefusal(f"{path} is not a file of the project")
 
-    found = PythonResolver(files, parser).find(path, symbol_name, new_name)
+    resolver = kind(files, parser)
+    found = resolver.find(path, symbol_name, new_name)
     if isinstance(found, RenameRefusal):
         return found
     if found.unsure:
@@ -54,7 +103,7 @@ def plan_rename(
             spots,
         )
     changes = {p: _splice(files[p], spans, new_name) for p, spans in sorted(found.proven.items())}
-    return _checked(files, changes, new_name, parser) or RenamePlan(
+    return _checked(files, changes, new_name, resolver) or RenamePlan(
         changes, sorted(set(found.mentions) | set(_text_mentions(files, found.old)))
     )
 
@@ -70,29 +119,29 @@ def _splice(code: str, spans: list[tuple[int, int]], new_name: str) -> str:
 
 
 def _checked(
-    files: Mapping[str, str], changes: dict[str, str], new_name: str, parser: CodeStructureInterface
+    files: Mapping[str, str], changes: dict[str, str], new_name: str, resolver: Resolver
 ) -> RenameRefusal | None:
     """A refusal when the new name is already used in a changed file, or a file stops parsing."""
     taken = sorted(
         Spot(p, r.line)
         for p in changes
-        for r in parser.find_references(files[p], new_name)
+        for r in resolver.parser_for(p).find_references(files[p], new_name)
         if r.kind != "text"
     )
     if taken:
         return RenameRefusal(f"'{new_name}' is already used in a file the rename changes", taken)
-    grammar = getattr(parser, "parser", None)
-    if grammar is None:
-        return None
-    broken = [
-        Spot(p, 1)
-        for p, new in changes.items()
-        if grammar.parse(new.encode("utf-8")).root_node.has_error
-        and not grammar.parse(files[p].encode("utf-8")).root_node.has_error
-    ]
+    broken = [Spot(p, 1) for p, new in changes.items() if _newly_broken(resolver, p, files[p], new)]
     if broken:
         return RenameRefusal("the rename would leave files that do not parse", broken)
     return None
+
+
+def _newly_broken(resolver: Resolver, path: str, old: str, new: str) -> bool:
+    grammar = getattr(resolver.parser_for(path), "parser", None)
+    if grammar is None:
+        return False
+    errors = [grammar.parse(t.encode("utf-8")).root_node.has_error for t in (old, new)]
+    return errors == [False, True]
 
 
 def _text_mentions(files: Mapping[str, str], name: str) -> list[Spot]:
@@ -100,7 +149,7 @@ def _text_mentions(files: Mapping[str, str], name: str) -> list[Spot]:
     return [
         Spot(p, n)
         for p, text in files.items()
-        if not p.endswith(_PYTHON)
+        if not p.endswith(CODE_SUFFIXES)
         for n, line in enumerate(text.splitlines(), start=1)
         if word.search(line)
     ]

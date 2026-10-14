@@ -229,3 +229,25 @@ def test_a_tool_that_cannot_rename_says_so(project: Path, path: str, with_execut
     result = tool.rename_symbol(path, "Greeter.greet", "welcome")
     assert result.status == "error"
     assert "not supported" in result.message
+
+
+_JVM = {
+    "src/app/util/Greeter.kt": "package app.util\n\nopen class Greeter {\n    open fun greet(n: String) = n\n}\n",
+    "src/app/Use.java": (
+        "package app;\n\nimport app.util.Greeter;\n\n"
+        'class Use extends Greeter {\n    String f() { return greet("x"); }\n}\n'
+    ),
+}
+
+
+async def test_the_implementer_renames_a_kotlin_method_called_from_java(tmp_path: Path) -> None:
+    # Proves: D-SENS-06 FR-8
+    root = _write(tmp_path / "jvm", _JVM)
+    result = await _dispatcher(root).execute(
+        "rename_symbol",
+        {"path": "src/app/util/Greeter.kt", "symbol_name": "Greeter.greet", "new_name": "welcome"},
+    )
+
+    assert "error" not in result, result
+    assert "open fun welcome(n: String)" in (root / "src/app/util/Greeter.kt").read_text()
+    assert 'return welcome("x");' in (root / "src/app/Use.java").read_text()

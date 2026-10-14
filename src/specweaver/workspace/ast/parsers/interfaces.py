@@ -49,6 +49,10 @@ class Reference:
     the name), `text` (a comment or string holding the name as a word) or `scope_escape`
     (`global` / `nonlocal`). `binding` says, for a bare name, what binds it where it is read:
     `local`, `class`, `module_def`, `import`, `module_other`, `mixed` or `free`.
+
+    Java and Kotlin add `call` (a call with no receiver), `type` (a name in a type position),
+    `constructor`, and `field` (a field, variable or parameter of that name). `qualifier` is the
+    dotted text before a qualified name; `enclosing` the classes around it, innermost first.
     """
 
     kind: str
@@ -62,17 +66,25 @@ class Reference:
     receiver_binding: str | None = None
     module: str | None = None
     alias: str | None = None
+    qualifier: str | None = None
+    enclosing: tuple[str, ...] = ()
 
 
 @dataclass
 class FileBindings:
-    """What the module level of one file binds: definitions, imports, other names, class bases."""
+    """What the module level of one file binds: definitions, imports, other names, class bases.
+
+    For Java and Kotlin: `package`, `imports` as `local → (package, type)`, `statics` as
+    `member → (class, member)`, `wildcards` as the packages imported with `*`.
+    """
 
     defs: set[str] = field(default_factory=set)
     imports: dict[str, tuple[str, str | None]] = field(default_factory=dict)
     wildcards: list[str] = field(default_factory=list)
     others: set[str] = field(default_factory=set)
     bases: dict[str, list[str]] = field(default_factory=dict)
+    package: str = ""
+    statics: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 class CodeStructureInterface(ABC):

@@ -12,17 +12,14 @@ its own file binds to something else. Anything else in code is unsure.
 from __future__ import annotations
 
 import keyword
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
 from specweaver.workspace.ast.refactor._family import ClassId, hierarchy, outside_bases
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal, Spot
+from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
-
     from specweaver.workspace.ast.parsers.interfaces import (
-        CodeStructureInterface,
-        FileBindings,
         Reference,
     )
 
@@ -46,36 +43,22 @@ def _join(directory: str, rest: str) -> str:
     return f"{directory}/{rest}" if directory else rest
 
 
-class PythonResolver:
+class PythonResolver(Resolver):
     """Resolves names across the Python files of one project."""
 
-    def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
-        self._parser = parser
-        self._code = {p: c for p, c in files.items() if p.endswith((".py", ".pyi"))}
-        self._facts: dict[str, FileBindings] = {}
-        self._symbols: dict[str, list[str]] = {}
+    SUFFIXES: ClassVar[tuple[str, ...]] = (".py",)
 
     # --- files and modules ------------------------------------------------------------------
 
-    def facts(self, path: str) -> FileBindings:
-        if path not in self._facts:
-            self._facts[path] = self._parser.file_bindings(self._code[path])
-        return self._facts[path]
-
-    def symbols(self, path: str) -> list[str]:
-        if path not in self._symbols:
-            self._symbols[path] = self._parser.list_symbols(self._code[path])
-        return self._symbols[path]
-
     def _module_file(self, base: str) -> str | None:
-        return next((c for c in (f"{base}.py", f"{base}/__init__.py") if c in self._code), None)
+        return next((c for c in (f"{base}.py", f"{base}/__init__.py") if c in self.code), None)
 
     def _is_project_package(self, dotted: str) -> bool:
         top = dotted.split(".")[0]
         return any(
             p == f"{root}{top}.py" or p.startswith(f"{root}{top}/")
             for root in _ROOTS
-            for p in self._code
+            for p in self.code
         )
 
     def resolve_module(self, module: str, from_file: str) -> Resolved:
@@ -145,7 +128,7 @@ class PythonResolver:
     def _parents(self) -> dict[ClassId, list[tuple[str, Resolved]]]:
         return {
             (p, cls): [(b, self.resolve_dotted(p, b)) for b in bases]
-            for p in sorted(self._code)
+            for p in sorted(self.code)
             for cls, bases in self.facts(p).bases.items()
         }
 
@@ -161,54 +144,16 @@ class PythonResolver:
             return refusal
         if "." in name:
             return self._find_method(path, name.split(".")[0], old)
-        return self._collect(old, lambda p, r: self._top_level(path, old, p, r))
+        return self.collect(old, lambda p, r: self._top_level(path, old, p, r))
 
     def _target(self, path: str, symbol_name: str) -> str | RenameRefusal:
-        symbols = self.symbols(path)
-        name = symbol_name
-        if name not in symbols:
-            matches = sorted({s for s in symbols if s.rsplit(".", 1)[-1] == name and "." in s})
-            if len(matches) > 1:
-                return RenameRefusal(
-                    f"'{name}' is ambiguous: {', '.join(matches)}; name it with its class"
-                )
-            name = matches[0] if matches else name
-        if name not in symbols:
-            return RenameRefusal(
-                f"only functions, methods and classes can be renamed; '{symbol_name}' is none of them in {path}"
-            )
-        if self._definitions(path, name) > 1:
-            return RenameRefusal(f"'{name}' is defined more than once in {path}")
-        if name.count(".") > 1:
-            return RenameRefusal(
-                f"'{name}' is nested; only top-level classes, their methods and functions rename"
-            )
+        name = self.pick(path, symbol_name)
+        if isinstance(name, RenameRefusal):
+            return name
         short = name.rsplit(".", 1)[-1]
         if short.startswith("__") and short.endswith("__"):
             return RenameRefusal(f"'{short}' is a special method; Python calls it by that name")
         return name
-
-    def _definitions(self, path: str, name: str) -> int:
-        owner, _, short = name.rpartition(".")
-        scope = "class" if owner else "module"
-        return sum(
-            1
-            for r in self._parser.find_references(self._code[path], short)
-            if r.kind == "definition" and r.scope == scope and (r.owner or "") == owner
-        )
-
-    def _collect(self, old: str, judge: Callable[[str, Reference], str]) -> Found:
-        found = Found(old, {}, [], [])
-        for p in sorted(self._code):
-            for ref in self._parser.find_references(self._code[p], old):
-                verdict = judge(p, ref)
-                if verdict == "proven":
-                    found.proven.setdefault(p, []).append((ref.start_byte, ref.end_byte))
-                elif verdict == "unsure":
-                    found.unsure.append(Spot(p, ref.line))
-                elif verdict == "mention":
-                    found.mentions.append(Spot(p, ref.line))
-        return found
 
     def _top_level(self, home: str, old: str, p: str, ref: Reference) -> str:
         """The verdict on one occurrence of the top-level symbol `old` defined in `home`."""
@@ -223,19 +168,19 @@ class PythonResolver:
             if ref.receiver_binding not in ("module_def", "import"):
                 return "unsure"
             return self._in_module(self.resolve_dotted(p, ref.receiver or ""), old, target)
-        return _common(ref)
+        return common(ref, ("keyword",))
 
     def _in_module(self, module: Resolved, old: str, target: Resolved) -> str:
         """The verdict on `old` read from `module`: an import from it, or `module.old`."""
         if module[0] != "module":
             return "unsure" if module[0] in _UNSURE else "unrelated"
-        return _verdict(self.resolve_name(module[1], old), target)
+        return verdict(self.resolve_name(module[1], old), target, _UNSURE)
 
     def _bare_top_level(self, home: str, p: str, ref: Reference, target: Resolved) -> str:
         if ref.binding == "module_def":
             return "proven" if p == home else "unrelated"
         if ref.binding == "import":
-            return _verdict(self.resolve_name(p, _text_at(self._code[p], ref)), target)
+            return verdict(self.resolve_name(p, _text_at(self.code[p], ref)), target, _UNSURE)
         return "unrelated" if ref.binding in ("local", "class", "module_other") else "unsure"
 
     def _find_method(self, home: str, cls: str, old: str) -> Found | RenameRefusal:
@@ -247,7 +192,7 @@ class PythonResolver:
                 f"a class in the hierarchy of {cls} has a base outside the project "
                 f"({', '.join(outside)}); renaming '{old}' could stop it overriding that base"
             )
-        return self._collect(old, lambda p, r: self._method(family, p, r))
+        return self.collect(old, lambda p, r: self._method(family, p, r))
 
     def _method(self, family: set[ClassId], p: str, ref: Reference) -> str:
         """The verdict on one occurrence of the method's name; `family` is its override family."""
@@ -260,7 +205,7 @@ class PythonResolver:
             return self._method_attribute(family, p, ref)
         if ref.kind in ("import", "scope_escape"):
             return "unrelated"
-        return _common(ref)
+        return common(ref, ("keyword",))
 
     def _method_attribute(self, family: set[ClassId], p: str, ref: Reference) -> str:
         """The verdict on `receiver.<name>`: `self`, a class, or something unknown."""
@@ -278,18 +223,6 @@ def _member(cls: ClassId | None, family: set[ClassId]) -> str:
     if not cls:
         return "unsure"
     return "proven" if cls in family else "unrelated"
-
-
-def _verdict(found: Resolved, target: Resolved) -> str:
-    if found == target:
-        return "proven"
-    return "unsure" if found[0] in _UNSURE else "unrelated"
-
-
-def _common(ref: Reference) -> str:
-    if ref.kind == "text":
-        return "mention"
-    return "unrelated" if ref.kind == "keyword" else "unsure"
 
 
 def _text_at(code: str, ref: Reference) -> str:

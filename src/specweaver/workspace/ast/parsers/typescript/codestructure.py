@@ -93,6 +93,9 @@ class TypeScriptCodeStructure(ClassBasedParser):
         (comment) @comment
         """
 
+    def supported_intents(self) -> list[str]:
+        return super().supported_intents()
+
     def _get_symbol_scope(self, name_node: typing.Any) -> str | None:
         return enclosing_name(
             name_node, ("class_declaration", "interface_declaration"), "type_identifier"

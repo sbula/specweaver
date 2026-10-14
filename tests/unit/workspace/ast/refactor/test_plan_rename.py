@@ -340,8 +340,11 @@ def test_an_unknown_receiver_refuses_a_method_rename() -> None:
     ]
 
 
-def test_a_file_that_is_not_python_refuses() -> None:
-    assert "Python" in _refusal({"a.ts": "function f() {}\n"}, "a.ts", "f", "g").reason
+def test_a_language_without_rename_refuses() -> None:
+    # Proves: D-SENS-06 FR-8
+    files = {"a.sql": "CREATE TABLE f (id INT);\n", "b.md": "# f\n"}
+    for path in files:
+        assert "not supported" in _refusal(files, path, "f", "g").reason
 
 
 def test_a_path_that_is_not_in_the_project_refuses() -> None:

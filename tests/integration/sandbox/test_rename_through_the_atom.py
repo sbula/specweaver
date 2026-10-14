@@ -235,19 +235,8 @@ def test_a_bad_request_changes_nothing(project: Path, context: dict[str, object]
     assert _snapshot(project) == before
 
 
-def test_a_typescript_file_is_refused(project: Path) -> None:
-    _project(project, {"web/a.ts": "export function total() {}\n"})
-    result = _rename(CodeStructureAtom(cwd=project), path="web/a.ts")
+def test_a_sql_file_is_refused(project: Path) -> None:
+    _project(project, {"db/a.sql": "CREATE TABLE total (id INT);\n"})
+    result = _rename(CodeStructureAtom(cwd=project), path="db/a.sql")
     assert result.status == AtomStatus.FAILED
-    assert "Python" in result.message
-
-
-def test_a_code_file_too_big_to_read_refuses(project: Path) -> None:
-    (project / "app/huge.py").write_text("x = 1\n" * 400_000, encoding="utf-8")
-    before = _snapshot(project)
-
-    result = _rename(CodeStructureAtom(cwd=project))
-
-    assert result.status == AtomStatus.FAILED
-    assert "app/huge.py" in result.message
-    assert _snapshot(project) == before
+    assert "not supported" in result.message

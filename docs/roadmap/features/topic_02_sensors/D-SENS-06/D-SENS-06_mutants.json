@@ -23,12 +23,12 @@
         {
           "id": "overload-renamed",
           "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "PythonResolver._target",
-          "old": "        if self._definitions(path, name) > 1:\n",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "Resolver.pick",
+          "old": "        if self.definitions(path, name) > 1:\n",
           "new": "        if False:\n",
           "breaks": "one of two same-named definitions is renamed",
-          "symbol_sha": "sha256:7fdce90d32c5e058c1bc8545c66e1c5e05a4df23fdecbc4a050e68a0584b5035"
+          "symbol_sha": "sha256:d191dbc0e6a2b6e7c4e0389df21fa8629ead69ed5c05b46cc4b9c0950500d927"
         },
         {
           "id": "collision-ignored",
@@ -38,7 +38,7 @@
           "old": "    if taken:\n",
           "new": "    if False:\n",
           "breaks": "a new name already used in a changed file is accepted",
-          "symbol_sha": "sha256:0ea5709fca6e836adb262189e1dc455f07496d49a60476bc374a28564e6d2917"
+          "symbol_sha": "sha256:f58062f4adc61b20eccd0eefcb80c16cf899d70f0265784a825c68f0b53e8337"
         }
       ]
     },
@@ -53,22 +53,22 @@
         {
           "id": "unknown-is-unrelated",
           "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "_verdict",
-          "old": "        return \"proven\"\n    return \"unsure\" if found[0] in _UNSURE else \"unrelated\"\n",
-          "new": "        return \"proven\"\n    return \"unrelated\"\n",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "verdict",
+          "old": "    return \"unsure\" if found[0] in unsure else \"unrelated\"\n",
+          "new": "    return \"unrelated\"\n",
           "breaks": "an unresolved import is left behind unrenamed",
-          "symbol_sha": "sha256:5f9cdcd84e77cfed3c0d62055126e518e68f26b096c67d57d0856a8b1fb5441b"
+          "symbol_sha": "sha256:8f118eb7195abf4b626de606c9982314fadbbdacd8821179d9506ebeb53277f6"
         },
         {
           "id": "string-ignored",
           "origin": "authored",
-          "file": "src/specweaver/workspace/ast/refactor/python.py",
-          "symbol": "_common",
-          "old": "    return \"unrelated\" if ref.kind == \"keyword\" else \"unsure\"\n",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "common",
+          "old": "    return \"unrelated\" if ref.kind in unrelated else \"unsure\"\n",
           "new": "    return \"unrelated\"\n",
           "breaks": "getattr text keeps the old name",
-          "symbol_sha": "sha256:ea66366710706383b070c1721535d5cc1bb32a9e93e0502f7788b1c67fda8676"
+          "symbol_sha": "sha256:91bfc8472e76542995a5ba04759b314d6a62e55d4da6af7fd9a02bb8db548555"
         },
         {
           "id": "free-is-unrelated",
@@ -78,7 +78,7 @@
           "old": "        return \"unrelated\" if ref.binding in (\"local\", \"class\", \"module_other\") else \"unsure\"\n",
           "new": "        return \"unrelated\"\n",
           "breaks": "a free name, maybe from a wildcard, is skipped",
-          "symbol_sha": "sha256:e69c73a3ceff9ff539891e333c5ec2339bb88b706248465dffa9ce4f4a374613"
+          "symbol_sha": "sha256:45a389f738ac7248acebcea209a09d2ba76bc4f1269b9dcde14f52a644e9f546"
         },
         {
           "id": "local-receiver-trusted",
@@ -129,7 +129,7 @@
           "old": "    if broken:\n",
           "new": "    if False:\n",
           "breaks": "a rename that breaks parsing is planned",
-          "symbol_sha": "sha256:0ea5709fca6e836adb262189e1dc455f07496d49a60476bc374a28564e6d2917"
+          "symbol_sha": "sha256:f58062f4adc61b20eccd0eefcb80c16cf899d70f0265784a825c68f0b53e8337"
         },
         {
           "id": "no-restore",
@@ -257,7 +257,7 @@
           "old": "            in_family = ref.scope == \"class\" and (p, ref.owner) in family\n",
           "new": "            in_family = False\n",
           "breaks": "an override keeps the old name",
-          "symbol_sha": "sha256:9760c4ce8f1c363f77b5ce68dd7ba4d356a69483363c2b626dfbaeb05457799b"
+          "symbol_sha": "sha256:3b2a140ee56c52a19f8fced66a2b44e3d1c1d2dc5f87fcfe3bf6a95396021e2b"
         },
         {
           "id": "outside-base-ignored",
@@ -267,7 +267,7 @@
           "old": "        if outside:\n",
           "new": "        if False:\n",
           "breaks": "a method that overrides an outside base is renamed",
-          "symbol_sha": "sha256:a71781e06065a618a2344ee3b1fae14d74b6135c29142ff055589d142210c6b8"
+          "symbol_sha": "sha256:9d664ee884e769b2b01c4982a8ef9c24609d408898db0e3abbec5dc3b83d0bfd"
         },
         {
           "id": "family-one-way",
@@ -325,7 +325,119 @@
           "symbol": "RustCodeStructure._process_symbol_match",
           "old": "            \"enum_item\",\n",
           "new": "\n",
-          "breaks": "a listed Rust enum cannot be read"
+          "breaks": "a listed Rust enum cannot be read",
+          "symbol_sha": "sha256:f3eeec71619c09fbb1aae4da177e4eaa87a8fabac534008131f94f0d7799d56f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Java and Kotlin rename every proven use and refuse when unsure",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
+        "tests/unit/workspace/ast/parsers/java/test_java_references.py",
+        "tests/unit/workspace/ast/parsers/kotlin/test_kotlin_references.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "jvm-import-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver._type_use",
+          "old": "            return \"proven\" if ref.qualifier == package else \"unrelated\"\n",
+          "new": "            return \"unrelated\"\n",
+          "breaks": "an import keeps the old class name",
+          "symbol_sha": "sha256:0116b3965521696f95097186db6362d0484662eeba1ec94cdd64176755af5204"
+        },
+        {
+          "id": "jvm-unknown-is-unrelated",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "verdict",
+          "old": "    return \"unsure\" if found[0] in unsure else \"unrelated\"\n",
+          "new": "    return \"unrelated\"\n",
+          "breaks": "a type behind an unknown * import is skipped",
+          "symbol_sha": "sha256:8f118eb7195abf4b626de606c9982314fadbbdacd8821179d9506ebeb53277f6"
+        },
+        {
+          "id": "jvm-local-receiver-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver._method_attribute",
+          "old": "        if ref.receiver_binding == \"local\" or not all(",
+          "new": "        if False and not all(",
+          "breaks": "a call on a local is taken as a call on the class",
+          "symbol_sha": "sha256:e2c52e12537a981bd589f88d4ce56cd7cb7630cb8a106ae687c6e0f059021a16"
+        },
+        {
+          "id": "jvm-implicit-this-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver._method_call",
+          "old": "        if ref.owner and (p, ref.owner) in family:\n            return \"proven\"\n",
+          "new": "        if False:\n            return \"proven\"\n",
+          "breaks": "a call on this keeps the old name",
+          "symbol_sha": "sha256:ac6eda675687a01e1cf474faa8b250ed089d47102c721db377d2f5efd57151e5"
+        },
+        {
+          "id": "jvm-anonymous-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver._method_call",
+          "old": "        if ref.binding == \"anonymous\":\n            return \"unsure\"\n        facts",
+          "new": "        if False:\n            return \"unsure\"\n        facts",
+          "breaks": "a call in an anonymous class is renamed blindly",
+          "symbol_sha": "sha256:ac6eda675687a01e1cf474faa8b250ed089d47102c721db377d2f5efd57151e5"
+        },
+        {
+          "id": "jvm-public-file-class",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver._find_type",
+          "old": "        if home.endswith(\".java\") and stem == name and public:\n",
+          "new": "        if False:\n",
+          "breaks": "a public class leaves its file misnamed",
+          "symbol_sha": "sha256:77a41a65d33f9ac56c0647c26f889339e99989de1102683a804e72c6b9be0bb9"
+        },
+        {
+          "id": "jvm-same-package-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/jvm.py",
+          "symbol": "JvmResolver.resolve_type",
+          "old": "            facts.package,\n",
+          "new": "            \"~\",\n",
+          "breaks": "a class used in its own package keeps the old name",
+          "symbol_sha": "sha256:1edbe9785a3693d16b9021db683e25fe07ad2fa3e90fdb53b4267c66cee440c3"
+        },
+        {
+          "id": "broken-file-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/_base.py",
+          "symbol": "Resolver.broken",
+          "old": "            if line is not None:\n",
+          "new": "            if False:\n",
+          "breaks": "a file that does not parse hides a use",
+          "symbol_sha": "sha256:4ed03b90ee5e349bbc0cfef94e2930bed12d28cdf97a0abae9b8b2c3b921b750"
+        },
+        {
+          "id": "jvm-shadow-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_jvm.py",
+          "symbol": "binding",
+          "old": "    return \"local\" if text(node) in declared else \"free\"\n",
+          "new": "    return \"free\"\n",
+          "breaks": "a local of the name is taken as the name",
+          "symbol_sha": "sha256:d182b22aab868210adae21fad3fd24c342fed8c03d07ea47357ed30e6c56bfe7"
+        },
+        {
+          "id": "jvm-anonymous-unseen",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_jvm.py",
+          "symbol": "in_anonymous",
+          "old": "        if grammar.anonymous(parent):\n            return True\n",
+          "new": "        if False:\n            return True\n",
+          "breaks": "a call in an anonymous class looks like a call on this"
         }
       ]
     }

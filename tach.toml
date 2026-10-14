@@ -123,7 +123,7 @@ depends_on = [ "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.ast.refactor"
-depends_on = []
+depends_on = [ "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.memory"
@@ -139,7 +139,7 @@ expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStruct
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.refactor",]
-expose = [ "rename", "rename.RenamePlan", "rename.RenameRefusal", "rename.Spot", "rename.listing", "rename.plan_rename",]
+expose = [ "rename", "rename.CODE_SUFFIXES", "rename.RenamePlan", "rename.RenameRefusal", "rename.Spot", "rename.family_of", "rename.listing", "rename.plan_rename",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.adapters",]

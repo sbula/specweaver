@@ -13,7 +13,14 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser
-from specweaver.workspace.ast.refactor.rename import RenamePlan, RenameRefusal, Spot, plan_rename
+from specweaver.workspace.ast.refactor.rename import (
+    CODE_SUFFIXES,
+    RenamePlan,
+    RenameRefusal,
+    Spot,
+    family_of,
+    plan_rename,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -23,7 +30,6 @@ if TYPE_CHECKING:
 
 __all__ = ["Applied", "Sources", "apply_changes", "plan_rename", "project_sources", "rename_plan"]
 
-CODE_SUFFIXES = (".py", ".pyi")
 TEXT_SUFFIXES = (".md", ".rst", ".txt", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini")
 
 #: Folders no project scan enters, whatever the exclusions say.
@@ -120,8 +126,9 @@ def rename_plan(
     if not all(isinstance(v, str) and v for v in (path, symbol, new)):
         return RenameRefusal("rename needs 'path', 'symbol_name' and 'new_name'"), Sources()
     sources = project_sources(executor, exclude_dirs, exclude_patterns)
-    if sources.unreadable:
-        spots = [Spot(p, 1) for p in sources.unreadable]
+    unreadable = [p for p in sources.unreadable if p.endswith(family_of(str(path)))]
+    if unreadable:
+        spots = [Spot(p, 1) for p in unreadable]
         return RenameRefusal(f"could not read {len(spots)} code file(s)", spots), sources
     return plan_rename(sources.files, str(path), str(symbol), str(new), parser), sources
 

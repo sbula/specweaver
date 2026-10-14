@@ -10,7 +10,12 @@ import tree_sitter_java
 from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _visibility as _vis
-from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
+from specweaver.workspace.ast.parsers._ref_tools import Renames
+from specweaver.workspace.ast.parsers.interfaces import (
+    CodeStructureError,
+    Visibility,
+)
+from specweaver.workspace.ast.parsers.java import _references
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
 logger = logging.getLogger(__name__)
@@ -35,7 +40,7 @@ def _visibility_of(name_node: typing.Any) -> Visibility:
     return "public" if inside_interface else "internal"
 
 
-class JavaCodeStructure(ClassBasedParser):
+class JavaCodeStructure(Renames, ClassBasedParser):
     grammar = staticmethod(tree_sitter_java.language)
     _get_symbol_visibility = staticmethod(_visibility_of)
 
@@ -44,8 +49,12 @@ class JavaCodeStructure(ClassBasedParser):
         "interface_declaration",
     )
 
+    def _finder(self) -> typing.Any:
+        return _references
+
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """Java's grammar names the two separately, so the graph can keep them apart."""
+
         by_type = {child.type: child for child in node.children}
         return {
             "extends": self._type_names_in(by_type.get("superclass")),

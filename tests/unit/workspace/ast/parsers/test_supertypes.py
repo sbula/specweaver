@@ -91,7 +91,9 @@ def test_a_language_declaring_type_nodes_without_a_hook_is_refused() -> None:
     class HalfDeclared(PythonCodeStructure):
         """Declares where types live and says nothing about what they inherit."""
 
-    HalfDeclared._supertypes_of = PythonCodeStructure.__mro__[1]._supertypes_of  # type: ignore[method-assign]
+    from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
+
+    HalfDeclared._supertypes_of = ClassBasedParser._supertypes_of  # type: ignore[method-assign]
 
     with pytest.raises(NotImplementedError, match="TYPE_DECLARATION_NODES"):
         HalfDeclared().extract_supertypes("class Impl(Base):\n    pass\n")

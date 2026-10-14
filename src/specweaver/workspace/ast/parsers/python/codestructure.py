@@ -13,10 +13,9 @@ from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _docs
 from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.interfaces import (
     CodeStructureError,
-    FileBindings,
-    Reference,
     Visibility,
 )
 from specweaver.workspace.ast.parsers.python import _references
@@ -44,8 +43,11 @@ def _visibility_of(name_node: typing.Any) -> Visibility:
     return "public"
 
 
-class PythonCodeStructure(ClassBasedParser):
+class PythonCodeStructure(Renames, ClassBasedParser):
     """Python tree-sitter structural parser."""
+
+    def _finder(self) -> typing.Any:
+        return _references
 
     grammar = staticmethod(tree_sitter_python.language)
     _doc_of = staticmethod(_docs.docstring_doc)
@@ -57,15 +59,6 @@ class PythonCodeStructure(ClassBasedParser):
         """Python has no interfaces, so there is no distinction here to lose."""
         bases = next((c for c in node.children if c.type == "argument_list"), None)
         return {"extends": self._type_names_in(bases), "implements": []}
-
-    def find_references(self, code: str, name: str) -> list[Reference]:
-        return _references.find_references(self.parser.parse(code.encode("utf-8")).root_node, name)
-
-    def file_bindings(self, code: str) -> FileBindings:
-        return _references.file_bindings(self.parser.parse(code.encode("utf-8")).root_node)
-
-    def supported_intents(self) -> list[str]:
-        return [*super().supported_intents(), "rename"]
 
     TAGS_QUERY: typing.ClassVar[str | None] = tree_sitter_python.TAGS_QUERY
     CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = (
