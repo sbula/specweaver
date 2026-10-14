@@ -66,7 +66,7 @@ intents from agents, with no code change:
 ```yaml
 # frameworks/spring-security.yaml
 intents:
-  hide: ["list_symbols", "edit_file"]
+  hide: ["list_symbols", "replace_symbol"]
 ```
 
 Agents are then limited to read-only structural queries, without tool limits hardcoded in the

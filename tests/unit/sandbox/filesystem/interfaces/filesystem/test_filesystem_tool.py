@@ -21,7 +21,6 @@ import pytest
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
 from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
-    FileSystemToolError,
 )
 from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
 from specweaver.sandbox.security import AccessMode, FolderGrant
@@ -147,46 +146,9 @@ class TestModels:
 class TestRoleIntentMapping:
     """Verify role → intent whitelist is correct."""
 
-    def test_implementer_intents(self) -> None:
-        expected = {
-            "read_file",
-            "write_file",
-            "edit_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-        assert ROLE_INTENTS["implementer"] == frozenset(expected)
-
     def test_reviewer_intents(self) -> None:
         expected = {"read_file", "list_directory", "grep", "find_files"}
         assert ROLE_INTENTS["reviewer"] == frozenset(expected)
-
-    def test_drafter_intents(self) -> None:
-        expected = {
-            "read_file",
-            "write_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-        assert ROLE_INTENTS["drafter"] == frozenset(expected)
-
-    def test_scenario_agent_intents(self) -> None:
-        expected = {
-            "read_file",
-            "write_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-        assert ROLE_INTENTS["scenario_agent"] == frozenset(expected)
 
     def test_unknown_role_raises(self, executor: FileExecutor) -> None:
         with pytest.raises(ValueError, match="Unknown role"):
@@ -203,10 +165,6 @@ class TestConstructor:
 
     def test_role_property(self, implementer: FileSystemTool) -> None:
         assert implementer.role == "implementer"
-
-    def test_allowed_intents(self, implementer: FileSystemTool) -> None:
-        assert "read_file" in implementer.allowed_intents
-        assert "write_file" in implementer.allowed_intents
 
     def test_reviewer_cannot_write(self, reviewer: FileSystemTool) -> None:
         assert "write_file" not in reviewer.allowed_intents
@@ -226,58 +184,10 @@ class TestImplementerIntents:
         assert result.status == "success"
         assert "total" in result.data
 
-    def test_write_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
-        result = implementer.write_file("src/domain/billing/calc.py", "# updated\n")
-        assert result.status == "success"
-        assert (project / "src/domain/billing/calc.py").read_text() == "# updated\n"
-
-    def test_create_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
-        result = implementer.create_file("src/domain/billing/invoice.py", "class Invoice: pass")
-        assert result.status == "success"
-        assert (project / "src/domain/billing/invoice.py").is_file()
-
-    def test_create_file_already_exists(self, implementer: FileSystemTool) -> None:
-        """create_file fails if file already exists (use write_file to overwrite)."""
-        result = implementer.create_file("src/domain/billing/calc.py", "overwrite")
-        assert result.status == "error"
-
-    def test_delete_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
-        result = implementer.delete_file("src/domain/billing/calc.py")
-        assert result.status == "success"
-        assert not (project / "src/domain/billing/calc.py").exists()
-
     def test_list_directory_in_boundary(self, implementer: FileSystemTool) -> None:
         result = implementer.list_directory("src/domain/billing")
         assert result.status == "success"
         assert "src/domain/billing/calc.py" in result.data
-
-    def test_edit_file_in_boundary(self, implementer: FileSystemTool, project: Path) -> None:
-        result = implementer.edit_file(
-            "src/domain/billing/calc.py",
-            old="return a + b",
-            new="return a + b  # sum",
-        )
-        assert result.status == "success"
-        content = (project / "src/domain/billing/calc.py").read_text()
-        assert "# sum" in content
-
-    def test_edit_file_old_not_found(self, implementer: FileSystemTool) -> None:
-        """edit_file returns error if old content not found."""
-        result = implementer.edit_file(
-            "src/domain/billing/calc.py",
-            old="nonexistent string",
-            new="replacement",
-        )
-        assert result.status == "error"
-
-    def test_write_file_in_test_boundary(self, implementer: FileSystemTool, project: Path) -> None:
-        """Implementer can also write to test directory."""
-        result = implementer.create_file(
-            "tests/unit/billing/test_invoice.py",
-            "def test_it(): pass",
-        )
-        assert result.status == "success"
-        assert (project / "tests/unit/billing/test_invoice.py").is_file()
 
 
 # ===========================================================================
@@ -293,21 +203,6 @@ class TestReadOnlyGrants:
         result = implementer.read_file("src/shared/currency/rates.py")
         assert result.status == "success"
 
-    def test_implementer_cannot_write_shared(self, implementer: FileSystemTool) -> None:
-        """Implementer has READ-only grant on shared/currency — write blocked."""
-        result = implementer.write_file("src/shared/currency/rates.py", "hacked")
-        assert result.status == "error"
-
-    def test_implementer_cannot_create_in_shared(self, implementer: FileSystemTool) -> None:
-        """Cannot create files in read-only boundary."""
-        result = implementer.create_file("src/shared/currency/hack.py", "bad")
-        assert result.status == "error"
-
-    def test_implementer_cannot_delete_in_shared(self, implementer: FileSystemTool) -> None:
-        """Cannot delete files in read-only boundary."""
-        result = implementer.delete_file("src/shared/currency/rates.py")
-        assert result.status == "error"
-
 
 # ===========================================================================
 # Boundary Enforcement — No Grant = Blocked
@@ -320,11 +215,6 @@ class TestNoGrantBlocked:
     def test_read_outside_grants(self, implementer: FileSystemTool) -> None:
         """Cannot read files outside any grant."""
         result = implementer.read_file("specs/billing_spec.md")
-        assert result.status == "error"
-
-    def test_write_outside_grants(self, implementer: FileSystemTool) -> None:
-        """Cannot write to files outside any grant."""
-        result = implementer.write_file("specs/billing_spec.md", "hacked")
         assert result.status == "error"
 
     def test_list_outside_grants(self, implementer: FileSystemTool) -> None:
@@ -380,16 +270,6 @@ class TestRecursiveVsExclusive:
 class TestToolProtectedPatterns:
     """context.yaml is protected even with FULL grants."""
 
-    def test_write_context_yaml_blocked(self, implementer: FileSystemTool) -> None:
-        """Cannot write context.yaml even with FULL grant on the directory."""
-        result = implementer.write_file("src/domain/billing/context.yaml", "hacked: true")
-        assert result.status == "error"
-
-    def test_delete_context_yaml_blocked(self, implementer: FileSystemTool) -> None:
-        """Cannot delete context.yaml even with FULL grant."""
-        result = implementer.delete_file("src/domain/billing/context.yaml")
-        assert result.status == "error"
-
     def test_read_context_yaml_allowed(self, implementer: FileSystemTool) -> None:
         """Can read context.yaml (protection is write-only)."""
         result = implementer.read_file("src/domain/billing/context.yaml")
@@ -403,23 +283,6 @@ class TestToolProtectedPatterns:
 
 class TestRoleGating:
     """Non-whitelisted intents for a role should raise FileSystemToolError."""
-
-    def test_reviewer_cannot_write(self, reviewer: FileSystemTool) -> None:
-        """Reviewer role does not have write_file intent."""
-        with pytest.raises(FileSystemToolError, match="not allowed"):
-            reviewer.write_file("src/domain/billing/calc.py", "hacked")
-
-    def test_reviewer_cannot_create(self, reviewer: FileSystemTool) -> None:
-        with pytest.raises(FileSystemToolError, match="not allowed"):
-            reviewer.create_file("src/new.py", "bad")
-
-    def test_reviewer_cannot_delete(self, reviewer: FileSystemTool) -> None:
-        with pytest.raises(FileSystemToolError, match="not allowed"):
-            reviewer.delete_file("src/domain/billing/calc.py")
-
-    def test_reviewer_cannot_edit(self, reviewer: FileSystemTool) -> None:
-        with pytest.raises(FileSystemToolError, match="not allowed"):
-            reviewer.edit_file("src/domain/billing/calc.py", old="x", new="y")
 
     def test_reviewer_can_read(self, reviewer: FileSystemTool) -> None:
         result = reviewer.read_file("src/domain/billing/calc.py")
@@ -446,52 +309,14 @@ class TestDrafterRole:
         result = drafter.read_file("specs/billing_spec.md")
         assert result.status == "success"
 
-    def test_drafter_can_write_specs(self, drafter: FileSystemTool, project: Path) -> None:
-        result = drafter.write_file("specs/billing_spec.md", "# Updated\n")
-        assert result.status == "success"
-        assert "Updated" in (project / "specs/billing_spec.md").read_text()
-
-    def test_drafter_can_create_specs(self, drafter: FileSystemTool, project: Path) -> None:
-        result = drafter.create_file("specs/new_spec.md", "# New\n")
-        assert result.status == "success"
-
-    def test_drafter_can_delete_specs(self, drafter: FileSystemTool, project: Path) -> None:
-        result = drafter.delete_file("specs/billing_spec.md")
-        assert result.status == "success"
-
     def test_drafter_can_read_source(self, drafter: FileSystemTool) -> None:
         result = drafter.read_file("src/domain/billing/calc.py")
         assert result.status == "success"
-
-    def test_drafter_cannot_write_source(self, drafter: FileSystemTool) -> None:
-        """Drafter has READ-only on src — cannot modify source code."""
-        result = drafter.write_file("src/domain/billing/calc.py", "hacked")
-        assert result.status == "error"
 
 
 # ===========================================================================
 # Additive Grant Resolution
 # ===========================================================================
-
-
-class TestAdditiveGrants:
-    """Multiple grants combine — most permissive wins for overlapping paths."""
-
-    def test_overlapping_grants_most_permissive_wins(self, executor: FileExecutor) -> None:
-        """If two grants cover the same path, most permissive mode wins."""
-        grants = [
-            FolderGrant("src", AccessMode.READ, recursive=True),
-            FolderGrant("src/domain/billing", AccessMode.FULL, recursive=True),
-        ]
-        tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
-        # Can write to billing (FULL wins over parent READ)
-        result = tool.write_file("src/domain/billing/calc.py", "# updated")
-        assert result.status == "success"
-        # Can only read from shared (only READ grant)
-        result = tool.read_file("src/shared/currency/rates.py")
-        assert result.status == "success"
-        result = tool.write_file("src/shared/currency/rates.py", "hacked")
-        assert result.status == "error"
 
 
 # ===========================================================================
@@ -505,31 +330,6 @@ class TestGrantBypassAttempts:
     def test_dotdot_read_escape_blocked_outside_grants(self, implementer: FileSystemTool) -> None:
         """Agent tries ../.. to reach a path with NO grant at all."""
         result = implementer.read_file("src/domain/billing/../../../specs/billing_spec.md")
-        assert result.status == "error"
-
-    def test_dotdot_write_escalation_blocked(self, implementer: FileSystemTool) -> None:
-        """Agent has FULL on billing, READ on shared/currency. Tries to
-        WRITE to shared via ../ from billing — must be blocked."""
-        result = implementer.write_file(
-            "src/domain/billing/../../shared/currency/rates.py",
-            "hacked",
-        )
-        assert result.status == "error"
-
-    def test_dotdot_write_escape(self, implementer: FileSystemTool) -> None:
-        """Agent tries to WRITE outside grant via ../."""
-        result = implementer.write_file(
-            "src/domain/billing/../../../specs/hacked.md",
-            "hacked",
-        )
-        assert result.status == "error"
-
-    def test_dotdot_to_root_context_yaml(self, implementer: FileSystemTool) -> None:
-        """Agent tries to reach root context.yaml via ../."""
-        result = implementer.write_file(
-            "src/domain/billing/../../../context.yaml",
-            "hacked: true",
-        )
         assert result.status == "error"
 
     @pytest.mark.skipif(os.name == "nt", reason="On Windows a backslash IS a separator")
@@ -647,28 +447,6 @@ class TestPathTraversalEdgeCases:
         result = FSTool._normalize_path("a/../../b")
         assert ".." not in result or result.startswith("..")
         # The key is that this should NOT match any grant starting with "a/"
-
-    def test_dotdot_escape_with_delete(self, implementer: FileSystemTool) -> None:
-        """Agent tries to delete a file outside grants via .. traversal."""
-        result = implementer.delete_file("src/domain/billing/../../../specs/billing_spec.md")
-        assert result.status == "error"
-
-    def test_dotdot_escape_with_create(self, implementer: FileSystemTool) -> None:
-        """Agent tries to create a file outside grants via .. traversal."""
-        result = implementer.create_file(
-            "src/domain/billing/../../../evil.py",
-            "import os; os.system('rm -rf /')",
-        )
-        assert result.status == "error"
-
-    def test_dotdot_escape_with_edit(self, implementer: FileSystemTool) -> None:
-        """Agent tries to edit a file outside grants via .. traversal."""
-        result = implementer.edit_file(
-            "src/domain/billing/../../../specs/billing_spec.md",
-            old="# Billing Spec",
-            new="# HACKED",
-        )
-        assert result.status == "error"
 
     def test_dotdot_escape_with_list(self, implementer: FileSystemTool) -> None:
         """Agent tries to list a directory outside grants via .. traversal."""

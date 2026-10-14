@@ -160,17 +160,18 @@ def test_found_paths_are_from_the_project_root_and_readable(project: Path) -> No
         assert tool.read_file(path).status == "success", path
 
 
-def test_an_edit_whose_text_appears_twice_is_refused(project: Path) -> None:
-    # Proves: E-SENS-01 FR-5
-    (project / "src" / "twice.py").write_text("q = 1\nq = 1\n", encoding="utf-8")
-    tool = FileSystemTool(
-        executor=FileExecutor(cwd=project),
-        role="implementer",
-        grants=[FolderGrant(path="src", mode=AccessMode.FULL, recursive=True)],
-    )
+@pytest.mark.parametrize(
+    "role", ["implementer", "reviewer", "planner", "scenario_agent", "drafter", "arbiter_agent"]
+)
+def test_no_role_can_write_a_file(project: Path, role: str) -> None:
+    # Proves: E-SENS-01 FR-3
+    from specweaver.sandbox.filesystem.interfaces.facades import create_filesystem_interface
+    from specweaver.sandbox.filesystem.interfaces.models import ROLE_INTENTS
 
-    result = tool.edit_file("src/twice.py", old="q = 1", new="q = 2")
+    grants = [FolderGrant(path="src", mode=AccessMode.FULL, recursive=True)]
+    iface = create_filesystem_interface(role, project, grants)
 
-    assert result.status == "error"
-    assert "2 times" in result.message
-    assert (project / "src" / "twice.py").read_text(encoding="utf-8") == "q = 1\nq = 1\n"
+    assert ROLE_INTENTS[role] == {"read_file", "list_directory", "grep", "find_files"}
+    for name in ("write_file", "edit_file", "create_file", "delete_file"):
+        assert not hasattr(iface, name), f"{role} still has {name}"
+        assert not hasattr(FileSystemTool, name)

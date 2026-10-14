@@ -32,7 +32,7 @@ A Tool *may* instantiate an Atom to reuse its operations, after validating role 
 ### Dynamic masking and exclusions
 
 - **Dynamic Masking (Feature 3.30a):** orthogonal `plugins` (e.g. `spring-security`) in
-  `context.yaml` use `intents.hide` to make `ToolDispatcher` remove tool methods (like `edit_file`)
+  `context.yaml` use `intents.hide` to make `ToolDispatcher` remove tool methods (like `replace_symbol`)
   from the LLM globally, without Python changes.
 - **Dynamic System Exclusions (Feature 3.32b):** `ToolDispatcher` applies polyglot filesystem
   exclusions for tools like `FileSystemTool`. It reads the injected

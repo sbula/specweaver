@@ -10,9 +10,9 @@ in `specweaver.sandbox.security`, `create_git_interface` in
 
 ## FileSystemTool
 
-Grant-based file access. Each agent gets `FolderGrant` objects naming the directories it may read,
-write, or execute. A model is offered only the four read tools (`read_file`, `list_directory`,
-`grep`, `find_files`); the write intents are built and offered to no model yet (`E-SENS-01`).
+Grant-based read access. Each agent gets `FolderGrant` objects naming the directories it may read.
+There are four tools and no write tool: agents change code through the code-structure tools, and
+the engine writes whole files.
 
 ```python
 from specweaver.sandbox.filesystem.interfaces.tool import FileSystemTool
@@ -22,7 +22,6 @@ grants = [FolderGrant("src/billing", AccessMode.WRITE, recursive=True)]
 tool = FileSystemTool(executor=executor, role="implementer", grants=grants)
 
 tool.read_file("src/billing/calc.py")           # ✅ within grant
-tool.create_file("src/billing/utils.py", code)  # ✅ write access
 tool.read_file("src/auth/secrets.py")           # ❌ outside grant
 tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 ```
@@ -30,9 +29,6 @@ tool.read_file("src/billing/../../etc/passwd")  # ❌ path traversal blocked
 | Intent | Description |
 |---|---|
 | `read_file` | Read a file (up to 100 KB), or lines `start_line` to `end_line` of a file of any size |
-| `create_file` | Create a new file |
-| `edit_file` | Replace a specific section of a file |
-| `delete_file` | Remove a file |
 | `list_directory` | Paths from the project root, `depth` levels deep (default 2), at most `max_entries` (50); folders end in `/`; links, excluded and ungranted folders are never entered |
 | `grep` | Regex search across files |
 | `find_files` | Find files by glob |

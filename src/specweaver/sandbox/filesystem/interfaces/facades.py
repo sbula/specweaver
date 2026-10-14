@@ -1,11 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""MCP-like role interfaces for filesystem operations.
+"""The filesystem interface a model gets: read, list and search, and nothing that writes.
 
-Each interface class exposes ONLY the intents allowed for its role.
-The LLM agent receives one of these — it physically cannot call
-methods that don't exist on its interface.
+A model physically cannot call a method the interface does not have.
 
 The grants come from the Engine (derived from context.yaml boundaries).
 
@@ -33,71 +31,8 @@ if TYPE_CHECKING:
     from specweaver.sandbox.security import FolderGrant
 
 
-# ---------------------------------------------------------------------------
-# Role-specific interfaces
-# ---------------------------------------------------------------------------
-
-
-class ImplementerFileInterface(BaseTool):
-    """Filesystem interface for the Implementer role.
-
-    Allowed intents: read_file, write_file, edit_file, create_file,
-                     delete_file, list_directory, grep, find_files.
-    """
-
-    def __init__(self, tool: FileSystemTool) -> None:
-        self._tool = tool
-
-    @property
-    def role(self) -> str:
-        return self._tool.role
-
-    def definitions(self) -> list[ToolDefinition]:
-        return self._tool.definitions()
-
-    def read_file(
-        self, path: str, start_line: int | None = None, end_line: int | None = None
-    ) -> ToolResult:
-        """Read a file, or lines `start_line` to `end_line` of it."""
-        return self._tool.read_file(path, start_line, end_line)
-
-    def write_file(self, path: str, content: str) -> ToolResult:
-        """Overwrite a file's contents."""
-        return self._tool.write_file(path, content)
-
-    def edit_file(self, path: str, *, old: str, new: str) -> ToolResult:
-        """Patch-based edit: replace old content with new."""
-        return self._tool.edit_file(path, old=old, new=new)
-
-    def create_file(self, path: str, content: str) -> ToolResult:
-        """Create a new file (fails if exists)."""
-        return self._tool.create_file(path, content)
-
-    def delete_file(self, path: str) -> ToolResult:
-        """Delete a file."""
-        return self._tool.delete_file(path)
-
-    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
-        """The tree under `path`, `depth` levels deep, at most `max_entries` entries."""
-        return self._tool.list_directory(path, depth, max_entries)
-
-    def grep(self, pattern: str, path: str = ".", **kwargs: object) -> ToolResult:
-        """Search for a pattern in file contents."""
-        return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
-
-    def find_files(
-        self, pattern: str, path: str = ".", type: str = "any", **kwargs: object
-    ) -> ToolResult:
-        """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
-        return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
-
-
-class ReviewerFileInterface(BaseTool):
-    """Filesystem interface for the Reviewer role.
-
-    Allowed intents: read_file, list_directory, grep, find_files.
-    All read-only.
-    """
+class FileReadInterface(BaseTool):
+    """What a model may do with files: read, list, search. Every role gets this one."""
 
     def __init__(self, tool: FileSystemTool) -> None:
         self._tool = tool
@@ -128,75 +63,6 @@ class ReviewerFileInterface(BaseTool):
     ) -> ToolResult:
         """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
         return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
-
-
-class DrafterFileInterface(BaseTool):
-    """Filesystem interface for the Drafter role.
-
-    Allowed intents: read_file, write_file, create_file, delete_file,
-                     list_directory, grep, find_files.
-    """
-
-    def __init__(self, tool: FileSystemTool) -> None:
-        self._tool = tool
-
-    @property
-    def role(self) -> str:
-        return self._tool.role
-
-    def definitions(self) -> list[ToolDefinition]:
-        return self._tool.definitions()
-
-    def read_file(
-        self, path: str, start_line: int | None = None, end_line: int | None = None
-    ) -> ToolResult:
-        """Read a file, or lines `start_line` to `end_line` of it."""
-        return self._tool.read_file(path, start_line, end_line)
-
-    def write_file(self, path: str, content: str) -> ToolResult:
-        """Overwrite a file's contents."""
-        return self._tool.write_file(path, content)
-
-    def create_file(self, path: str, content: str) -> ToolResult:
-        """Create a new file (fails if exists)."""
-        return self._tool.create_file(path, content)
-
-    def delete_file(self, path: str) -> ToolResult:
-        """Delete a file."""
-        return self._tool.delete_file(path)
-
-    def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
-        """The tree under `path`, `depth` levels deep, at most `max_entries` entries."""
-        return self._tool.list_directory(path, depth, max_entries)
-
-    def grep(self, pattern: str, path: str = ".", **kwargs: object) -> ToolResult:
-        """Search for a pattern in file contents."""
-        return self._tool.grep(path, pattern, **kwargs)  # type: ignore[arg-type]
-
-    def find_files(
-        self, pattern: str, path: str = ".", type: str = "any", **kwargs: object
-    ) -> ToolResult:
-        """Find files matching a glob pattern; `type` is the definition's name for `file_type`."""
-        return self._tool.find_files(path, pattern, file_type=type, **kwargs)  # type: ignore[arg-type]
-
-
-# ---------------------------------------------------------------------------
-# Factory
-# ---------------------------------------------------------------------------
-
-_ROLE_INTERFACE_MAP: dict[
-    str,
-    type[ImplementerFileInterface] | type[ReviewerFileInterface] | type[DrafterFileInterface],
-] = {
-    "implementer": ImplementerFileInterface,
-    "reviewer": ReviewerFileInterface,
-    "drafter": DrafterFileInterface,
-    "planner": ReviewerFileInterface,
-    "scenario_agent": DrafterFileInterface,
-    "arbiter_agent": ReviewerFileInterface,
-}
-
-FileInterface = ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface
 
 
 def create_filesystem_interface(
@@ -205,8 +71,8 @@ def create_filesystem_interface(
     grants: list[FolderGrant],
     exclude_dirs: set[str] | None = None,
     exclude_patterns: set[str] | None = None,
-) -> ImplementerFileInterface | ReviewerFileInterface | DrafterFileInterface:
-    """Create a role-specific filesystem interface.
+) -> FileReadInterface:
+    """Create a role's filesystem interface: the same read tools for every role.
 
     The cwd and grants are set by the Engine — the agent cannot change them.
 
@@ -218,15 +84,11 @@ def create_filesystem_interface(
         exclude_patterns: Optional set of glob patterns to exclude.
 
     Returns:
-        A role-specific interface with only the allowed methods.
+        The read interface, over the role's grants.
 
     Raises:
         ValueError: If the role is unknown.
     """
-    if role not in _ROLE_INTERFACE_MAP:
-        msg = f"Unknown role: {role!r}. Known roles: {sorted(_ROLE_INTERFACE_MAP)}"
-        raise ValueError(msg)
-
     executor = FileExecutor(cwd=cwd)
     tool = FileSystemTool(
         executor=executor,
@@ -236,5 +98,4 @@ def create_filesystem_interface(
         exclude_patterns=exclude_patterns,
     )
 
-    interface_cls = _ROLE_INTERFACE_MAP[role]
-    return interface_cls(tool)
+    return FileReadInterface(tool)

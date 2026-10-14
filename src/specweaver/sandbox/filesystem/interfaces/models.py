@@ -47,51 +47,13 @@ logger = logging.getLogger(__name__)
 
 # Role → allowed intents
 
+#: Agents read files; they change code through the code-structure tools, and the engine writes
+#: whole files [agreed 2026-10-13].
+_READ = frozenset({"read_file", "list_directory", "grep", "find_files"})
+
 ROLE_INTENTS: dict[str, frozenset[str]] = {
-    "implementer": frozenset(
-        {
-            "read_file",
-            "write_file",
-            "edit_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-    ),
-    "reviewer": frozenset({"read_file", "list_directory", "grep", "find_files"}),
-    "planner": frozenset({"read_file", "list_directory", "grep", "find_files"}),
-    "scenario_agent": frozenset(
-        {
-            "read_file",
-            "write_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-    ),
-    "drafter": frozenset(
-        {
-            "read_file",
-            "write_file",
-            "create_file",
-            "delete_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-    ),
-    "arbiter_agent": frozenset(
-        {
-            "read_file",
-            "list_directory",
-            "grep",
-            "find_files",
-        }
-    ),
+    role: _READ
+    for role in ("implementer", "reviewer", "planner", "scenario_agent", "drafter", "arbiter_agent")
 }
 
 

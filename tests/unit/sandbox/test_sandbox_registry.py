@@ -280,7 +280,7 @@ class TestFacadeConformance:
             pytest.param(
                 lambda: __import__(
                     "specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]
-                ).ImplementerFileInterface(
+                ).FileReadInterface(
                     __import__(
                         "specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]
                     ).FileSystemTool(
@@ -289,35 +289,7 @@ class TestFacadeConformance:
                         grants=[],
                     )
                 ),
-                id="ImplementerFileInterface",
-            ),
-            pytest.param(
-                lambda: __import__(
-                    "specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]
-                ).ReviewerFileInterface(
-                    __import__(
-                        "specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]
-                    ).FileSystemTool(
-                        executor=__import__("unittest.mock").mock.MagicMock(),
-                        role="reviewer",
-                        grants=[],
-                    )
-                ),
-                id="ReviewerFileInterface",
-            ),
-            pytest.param(
-                lambda: __import__(
-                    "specweaver.sandbox.filesystem.interfaces.facades", fromlist=[""]
-                ).DrafterFileInterface(
-                    __import__(
-                        "specweaver.sandbox.filesystem.interfaces.tool", fromlist=[""]
-                    ).FileSystemTool(
-                        executor=__import__("unittest.mock").mock.MagicMock(),
-                        role="drafter",
-                        grants=[],
-                    )
-                ),
-                id="DrafterFileInterface",
+                id="FileReadInterface",
             ),
             pytest.param(
                 lambda: __import__(

@@ -23,10 +23,7 @@ from specweaver.sandbox.filesystem.interfaces.models import (
     ToolResult,
 )
 from specweaver.sandbox.security import (
-    MODE_ALLOWS_CREATE,
-    MODE_ALLOWS_DELETE,
     MODE_ALLOWS_READ,
-    MODE_ALLOWS_WRITE,
     AccessMode,
     FolderGrant,
     grant_mode_for,
@@ -112,75 +109,6 @@ class FileSystemTool(BaseTool):
                 status="error", message=f"{path} has {count} lines; line {start} does not exist"
             )
         return ToolResult(status="success", data=text)
-
-    def write_file(self, path: str, content: str) -> ToolResult:
-        """Overwrite a file's contents."""
-        self._require_intent("write_file")
-        logger.debug("FileSystemTool.write_file: checking grant for %s", path)
-        err = self._check_grant(path, MODE_ALLOWS_WRITE)
-        if err:
-            return err
-        result = self._executor.write(path, content)
-        return self._wrap(result)
-
-    def create_file(self, path: str, content: str) -> ToolResult:
-        """Create a new file (fails if exists)."""
-        self._require_intent("create_file")
-        logger.debug("FileSystemTool.create_file: checking grant for %s", path)
-        err = self._check_grant(path, MODE_ALLOWS_CREATE)
-        if err:
-            return err
-        # Check existence first
-        exists_result = self._executor.exists(path)
-        if exists_result.status == "success" and exists_result.data is True:
-            return ToolResult(status="error", message=f"File already exists: {path}")
-        result = self._executor.write(path, content)
-        return self._wrap(result)
-
-    def delete_file(self, path: str) -> ToolResult:
-        """Delete a file."""
-        self._require_intent("delete_file")
-        logger.debug("FileSystemTool.delete_file: checking grant for %s", path)
-        err = self._check_grant(path, MODE_ALLOWS_DELETE)
-        if err:
-            return err
-        result = self._executor.delete(path)
-        return self._wrap(result)
-
-    def edit_file(self, path: str, *, old: str, new: str) -> ToolResult:
-        """Patch-based edit: replace old content with new.
-
-        Args:
-            path: Relative path to file.
-            old: Exact string to find.
-            new: Replacement string.
-        """
-        self._require_intent("edit_file")
-        logger.debug("FileSystemTool.edit_file: checking grant for %s", path)
-        err = self._check_grant(path, MODE_ALLOWS_WRITE)
-        if err:
-            return err
-
-        # Read current content
-        read_result = self._executor.read(path)
-        if read_result.status != "success":
-            return ToolResult(status="error", message=read_result.error)
-
-        content = read_result.data
-        if old not in content:
-            return ToolResult(
-                status="error",
-                message=f"Target content not found in {path}",
-            )
-
-        if (count := content.count(old)) > 1:
-            return ToolResult(
-                status="error",
-                message=f"The text appears {count} times in {path}; include more around it",
-            )
-        patched = content.replace(old, new, 1)
-        write_result = self._executor.write(path, patched)
-        return self._wrap(write_result)
 
     def list_directory(self, path: str = ".", depth: int = 2, max_entries: int = 50) -> ToolResult:
         """The tree under `path`, `depth` levels deep, at most `max_entries` entries.

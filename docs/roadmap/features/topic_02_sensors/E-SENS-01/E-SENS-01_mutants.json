@@ -156,16 +156,6 @@
           "new": "                        if False:\n",
           "breaks": "one range pulls a whole huge file into the model's context",
           "symbol_sha": "sha256:fa63a760eecfadac4a9709d9ec9732e2cd13785b6f8a0124c40d5ccaabd759d1"
-        },
-        {
-          "id": "edit-first-of-many",
-          "origin": "authored",
-          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
-          "symbol": "FileSystemTool.edit_file",
-          "old": "        if (count := content.count(old)) > 1:\n",
-          "new": "        if (count := content.count(old)) > 99:\n",
-          "breaks": "an edit silently changes the first of several matches",
-          "symbol_sha": "sha256:edbf08d91d92131ffc0e31e7ab31903cf455351f758c80189c9a561c38a812b4"
         }
       ]
     }

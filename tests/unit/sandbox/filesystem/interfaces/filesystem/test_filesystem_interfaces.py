@@ -1,12 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.sandbox.filesystem.interfaces.facades — TDD.
+"""The filesystem interface a model gets: read, list, search — the same for every role.
 
-Same exhaustive invisibility pattern as git interfaces:
-- Each interface exposes ONLY the methods for its role
-- Non-permitted methods are physically absent (not just blocked)
-- Factory function builds the right interface for any role
+A method the interface does not have cannot be called, so no role can write through it.
 """
 
 from __future__ import annotations
@@ -16,261 +13,66 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.filesystem.interfaces.facades import (
-    DrafterFileInterface,
-    ImplementerFileInterface,
-    ReviewerFileInterface,
+    FileReadInterface,
     create_filesystem_interface,
 )
-from specweaver.sandbox.security import (
-    AccessMode,
-    FolderGrant,
-)
+from specweaver.sandbox.security import AccessMode, FolderGrant
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+_ROLES = ["implementer", "reviewer", "planner", "drafter", "scenario_agent", "arbiter_agent"]
+_READ_METHODS = {"read_file", "list_directory", "grep", "find_files"}
+_WRITE_METHODS = {"write_file", "edit_file", "create_file", "delete_file"}
+_GRANTS = [
+    FolderGrant("src", AccessMode.FULL, recursive=True),
+    FolderGrant("specs", AccessMode.READ, recursive=True),
+]
 
 
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
-    """Create a project with files to operate on."""
     (tmp_path / "src" / "domain" / "billing").mkdir(parents=True)
     (tmp_path / "src" / "domain" / "billing" / "calc.py").write_text(
-        "def total(a, b): return a + b",
-        encoding="utf-8",
+        "def total(a, b): return a + b", encoding="utf-8"
     )
     (tmp_path / "specs").mkdir()
     (tmp_path / "specs" / "billing.md").write_text("# Billing\n", encoding="utf-8")
-    (tmp_path / "context.yaml").write_text("name: test\nlevel: system\n", encoding="utf-8")
     return tmp_path
 
 
-# ---------------------------------------------------------------------------
-# Factory grants for each role
-# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("role", _ROLES)
+def test_every_role_gets_the_read_methods_and_no_write(project: Path, role: str) -> None:
+    iface = create_filesystem_interface(role, project, _GRANTS)
 
-_IMPLEMENTER_GRANTS = [
-    FolderGrant("src/domain/billing", AccessMode.FULL, recursive=True),
-]
-_REVIEWER_GRANTS = [
-    FolderGrant("src", AccessMode.READ, recursive=True),
-    FolderGrant("specs", AccessMode.READ, recursive=True),
-]
-_DRAFTER_GRANTS = [
-    FolderGrant("specs", AccessMode.FULL, recursive=True),
-    FolderGrant("src", AccessMode.READ, recursive=True),
-]
+    assert isinstance(iface, FileReadInterface)
+    for method in _READ_METHODS:
+        assert callable(getattr(iface, method)), method
+    for method in _WRITE_METHODS:
+        assert not hasattr(iface, method), method
 
 
-# ===========================================================================
-# Method Visibility — Exhaustive Parametrized
-# ===========================================================================
+@pytest.mark.parametrize("role", _ROLES)
+def test_every_role_reads_lists_and_searches(project: Path, role: str) -> None:
+    iface = create_filesystem_interface(role, project, _GRANTS)
+
+    assert iface.read_file("src/domain/billing/calc.py").status == "success"
+    assert "src/domain/billing/calc.py" in iface.list_directory("src/domain/billing").data
+    assert iface.grep(pattern="def", path="src/domain/billing").status == "success"
+    assert iface.find_files(pattern="*.md", path="specs").status == "success"
 
 
-# All possible intent methods across all roles
-_ALL_METHODS = {
-    "read_file",
-    "write_file",
-    "edit_file",
-    "create_file",
-    "delete_file",
-    "list_directory",
-    "grep",
-    "find_files",
-}
-
-_IMPLEMENTER_METHODS = {
-    "read_file",
-    "write_file",
-    "edit_file",
-    "create_file",
-    "delete_file",
-    "list_directory",
-    "grep",
-    "find_files",
-}
-_REVIEWER_METHODS = {"read_file", "list_directory", "grep", "find_files"}
-_DRAFTER_METHODS = {
-    "read_file",
-    "write_file",
-    "create_file",
-    "delete_file",
-    "list_directory",
-    "grep",
-    "find_files",
-}
+def test_a_read_outside_the_grants_is_refused(project: Path) -> None:
+    iface = create_filesystem_interface(
+        "reviewer", project, [FolderGrant("specs", AccessMode.READ, recursive=True)]
+    )
+    assert iface.read_file("src/domain/billing/calc.py").status == "error"
 
 
-class TestImplementerMethodVisibility:
-    """ImplementerFileInterface exposes all file methods."""
-
-    @pytest.mark.parametrize("method", sorted(_IMPLEMENTER_METHODS))
-    def test_has_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert hasattr(iface, method), f"Missing method: {method}"
-
-    # Implementer has ALL methods, so this set is empty → pytest skips.
-    # This is correct: there are no methods the implementer should NOT have.
-    @pytest.mark.parametrize("method", sorted(_ALL_METHODS - _IMPLEMENTER_METHODS))
-    def test_missing_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert not hasattr(iface, method), f"Should not have: {method}"
+def test_the_interface_reports_its_role(project: Path) -> None:
+    assert create_filesystem_interface("planner", project, _GRANTS).role == "planner"
 
 
-class TestReviewerMethodVisibility:
-    """ReviewerFileInterface exposes only read/list/search."""
-
-    @pytest.mark.parametrize("method", sorted(_REVIEWER_METHODS))
-    def test_has_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        assert hasattr(iface, method), f"Missing method: {method}"
-
-    @pytest.mark.parametrize("method", sorted(_ALL_METHODS - _REVIEWER_METHODS))
-    def test_missing_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        assert not hasattr(iface, method), f"Should not have: {method}"
-
-
-class TestDrafterMethodVisibility:
-    """DrafterFileInterface exposes read/write/create/delete/list/grep/find_files."""
-
-    @pytest.mark.parametrize("method", sorted(_DRAFTER_METHODS))
-    def test_has_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert hasattr(iface, method), f"Missing method: {method}"
-
-    @pytest.mark.parametrize("method", sorted(_ALL_METHODS - _DRAFTER_METHODS))
-    def test_missing_method(self, method: str, project: Path) -> None:
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert not hasattr(iface, method), f"Should not have: {method}"
-
-
-# ===========================================================================
-# Functional — interfaces delegate to tool correctly
-# ===========================================================================
-
-
-class TestImplementerFunctional:
-    """ImplementerFileInterface delegates correctly."""
-
-    def test_read_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-        result = iface.read_file("src/domain/billing/calc.py")
-        assert result.status == "success"
-        assert "total" in result.data
-
-    def test_write_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-        result = iface.write_file("src/domain/billing/calc.py", "# updated\n")
-        assert result.status == "success"
-
-    def test_create_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-        result = iface.create_file("src/domain/billing/new.py", "# new")
-        assert result.status == "success"
-
-    def test_delete_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-        result = iface.delete_file("src/domain/billing/calc.py")
-        assert result.status == "success"
-
-    def test_list_directory(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        result = iface.list_directory("src/domain/billing")
-        assert result.status == "success"
-
-    def test_grep(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        result = iface.grep(path="src/domain/billing", pattern="def")
-        assert result.status == "success"
-
-    def test_edit_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-        result = iface.edit_file(
-            "src/domain/billing/calc.py",
-            old="return a + b",
-            new="return a + b  # sum",
-        )
-        assert result.status == "success"
-
-
-class TestReviewerFunctional:
-    """ReviewerFileInterface delegates correctly."""
-
-    def test_read_file(self, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        result = iface.read_file("src/domain/billing/calc.py")
-        assert result.status == "success"
-
-    def test_list_directory(self, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        result = iface.list_directory("src/domain/billing")
-        assert result.status == "success"
-
-    def test_grep(self, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        result = iface.grep(path="src/domain/billing", pattern="def")
-        assert result.status == "success"
-
-
-class TestDrafterFunctional:
-    """DrafterFileInterface delegates correctly."""
-
-    def test_read_source(self, project: Path) -> None:
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert isinstance(iface, DrafterFileInterface)
-        result = iface.read_file("src/domain/billing/calc.py")
-        assert result.status == "success"
-
-    def test_write_spec(self, project: Path) -> None:
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert isinstance(iface, DrafterFileInterface)
-        result = iface.write_file("specs/billing.md", "# Updated\n")
-        assert result.status == "success"
-
-    def test_cannot_write_source(self, project: Path) -> None:
-        """Drafter has READ-only on src — boundary enforcement still works through interface."""
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert isinstance(iface, DrafterFileInterface)
-        result = iface.write_file("src/domain/billing/calc.py", "hacked")
-        assert result.status == "error"
-
-
-# ===========================================================================
-# Factory
-# ===========================================================================
-
-
-class TestFactory:
-    """create_filesystem_interface builds correct types."""
-
-    def test_implementer(self, project: Path) -> None:
-        iface = create_filesystem_interface("implementer", project, _IMPLEMENTER_GRANTS)
-        assert isinstance(iface, ImplementerFileInterface)
-
-    def test_reviewer(self, project: Path) -> None:
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        assert isinstance(iface, ReviewerFileInterface)
-
-    def test_drafter(self, project: Path) -> None:
-        iface = create_filesystem_interface("drafter", project, _DRAFTER_GRANTS)
-        assert isinstance(iface, DrafterFileInterface)
-
-    def test_unknown_role_raises(self, project: Path) -> None:
-        with pytest.raises(ValueError, match="Unknown role"):
-            create_filesystem_interface("hacker", project, [])
-
-    def test_return_type_is_union(self, project: Path) -> None:
-        """Factory return type is the FileInterface union."""
-        iface = create_filesystem_interface("reviewer", project, _REVIEWER_GRANTS)
-        assert isinstance(
-            iface, (ImplementerFileInterface, ReviewerFileInterface, DrafterFileInterface)
-        )
+def test_an_unknown_role_is_refused(project: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown role"):
+        create_filesystem_interface("hacker", project, [])
