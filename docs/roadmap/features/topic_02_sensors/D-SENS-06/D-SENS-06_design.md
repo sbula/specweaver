@@ -1,6 +1,6 @@
 # D-SENS-06 — Structured Code Editing for Agents
 
-**Status**: APPROVED by the user 2026-10-14 · **DAL**: D · **Story**: US-3 add-on *Structured Code Changes*
+**Status**: ✅ Finished — signed off by the user 2026-10-14 · **DAL**: D · **Story**: US-3 add-on *Structured Code Changes*
 ([path list](../../../stories/US-03.md), *Structured Code Changes*)
 
 | | |
@@ -201,4 +201,4 @@ sub-feature extends with its own intents. SF-03 and SF-04 can run in parallel.
 ## Session Handoff
 
 **Now**: SF-01 to SF-04 built: rename in all 8 code languages, override families, enums and interfaces as symbols, file moves with their imports, file create and delete, and the doc above a symbol.
-**Next**: feature closure — the user's sign-off.
+**Next**: nothing; `D-INTL-09` puts these tools in the code step.

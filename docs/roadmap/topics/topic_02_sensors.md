@@ -81,7 +81,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** 🔴
   > - **Done when:** 🔴
 
-* **`D-SENS-06` 🔜: Structured Code Editing for Agents**
+* **`D-SENS-06` ✅: Structured Code Editing for Agents**
   > - **Purpose:** Let agents make every code change through named structure, so they never need raw file writes
   > - **Trigger:** When an agent creates, renames, moves or deletes code
   > - **Precondition:** `D-SENS-02` → the code-structure tools

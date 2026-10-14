@@ -5,6 +5,7 @@
 
 Proves: D-SENS-06 FR-3
 Proves: D-SENS-06 FR-4
+Proves: D-SENS-06 NFR-1
 
 A real project in a temporary folder, a real `FileExecutor` and the real parsers. The atom reads
 the project, plans the rename, and writes through the executor. It checks no grant; it still

@@ -1249,6 +1249,82 @@
           "symbol_sha": "sha256:0b4b37f3a539271c21481b8d09c000d0b1a34af5bb6897702e72babd8b04adca"
         }
       ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "A change takes only safe paths",
+      "scope": [
+        "tests/integration/sandbox/test_change_requests_are_safe.py"
+      ],
+      "mutants": [
+        {
+          "id": "symlink-followed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor._validate_path",
+          "old": "        if self._has_symlink(check_path):\n            return None\n",
+          "new": "        if False:\n            return None\n",
+          "breaks": "a move writes through a symlink, outside the project",
+          "symbol_sha": "sha256:67f164615e072394d1e5578304e84d4565f4900f44a4d97e3df34c6807967319"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-3",
+      "title": "A refusal lists at most 50 spots",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py"
+      ],
+      "mutants": [
+        {
+          "id": "listing-uncapped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/_model.py",
+          "symbol": "listing",
+          "old": "    shown = \", \".join(str(s) for s in spots[:cap])\n",
+          "new": "    shown = \", \".join(str(s) for s in spots)\n",
+          "breaks": "a refusal lists thousands of spots",
+          "symbol_sha": "sha256:1a28dc0cd673235c13aa97130fa57735f5493da8f49f21daac83107c7b6ef4cf"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-4",
+      "title": "Files are written in sorted path order",
+      "scope": [
+        "tests/integration/sandbox/test_change_requests_are_safe.py"
+      ],
+      "mutants": [
+        {
+          "id": "write-order-reversed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "_write_all",
+          "old": "    for path in sorted(changes):\n",
+          "new": "    for path in sorted(changes, reverse=True):\n",
+          "breaks": "the same change writes its files in another order",
+          "symbol_sha": "sha256:dd9d30a5e43fe9f5d6ac2f3c2efd76a2ac09c65af80debd5d0308d48f911c675"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-5",
+      "title": "A failed change leaves no temporary file",
+      "scope": [
+        "tests/integration/sandbox/test_change_requests_are_safe.py"
+      ],
+      "mutants": [
+        {
+          "id": "temp-file-kept",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor.write",
+          "old": "                    tmp_path.unlink()\n",
+          "new": "                    pass\n",
+          "breaks": "a failed write leaves a .tmp file in the project",
+          "symbol_sha": "sha256:b0d209afa22fdf8557d7377921f48557f234a5f1614933b22125cdb0a3501f61"
+        }
+      ]
     }
   ]
 }

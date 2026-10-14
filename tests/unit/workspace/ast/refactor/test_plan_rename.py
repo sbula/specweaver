@@ -7,6 +7,7 @@ Proves: D-SENS-06 FR-1
 Proves: D-SENS-06 FR-2
 Proves: D-SENS-06 FR-3
 Proves: D-SENS-06 FR-5
+Proves: D-SENS-06 NFR-3
 
 | Bucket | Case |
 |---|---|

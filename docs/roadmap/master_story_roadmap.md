@@ -142,7 +142,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
         *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🟡 **Structured Code Changes** *(agents with no raw file access)*:
-        *   `[ ]` **D-SENS-06:** Structured Code Editing for Agents
+        *   `✅` **D-SENS-06:** Structured Code Editing for Agents
         *   `[ ]` **D-INTL-09:** Code Step Through Structure Tools — needs `D-SENS-06`
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates

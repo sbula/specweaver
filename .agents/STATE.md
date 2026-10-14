@@ -61,6 +61,7 @@ tests against real Gemini, under USD 0.10 `[agreed 2026-10-10]`. The handover sh
 
 | What | Result |
 |---|---|
+| `D-SENS-06` Structured Code Editing | Finished, signed off 2026-10-14: an agent renames, moves, creates and deletes code by name in 8 languages, all files or none; a change keeps line endings |
 | `D-INTL-03` Explicit Plan Phase | Finished, signed off 2026-10-13: `new_feature` decides a plan before code; the file and code-structure tools do what they offer |
 | `E-INTL-02` Spec Drafting | Finished, signed off 2026-10-13: `sw draft` shows each written section; the person keeps, changes or skips it |
 | `E-EXEC-01` Standard Local Execution | Finished, signed off 2026-10-13: a timed-out or interrupted child is gone, and a child sees no unlisted variable |
