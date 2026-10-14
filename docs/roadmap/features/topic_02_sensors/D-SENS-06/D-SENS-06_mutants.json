@@ -342,7 +342,9 @@
         "tests/unit/workspace/ast/parsers/java/test_java_references.py",
         "tests/unit/workspace/ast/parsers/kotlin/test_kotlin_references.py",
         "tests/unit/workspace/ast/parsers/rust/test_rust_references.py",
+        "tests/unit/workspace/ast/parsers/test_c_family_references.py",
         "tests/unit/workspace/ast/parsers/typescript/test_typescript_references.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_c_family.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_go.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_rust.py",
@@ -617,7 +619,7 @@
           "old": "        if old[:1].isupper() != new_name[:1].isupper():\n",
           "new": "        if False:\n",
           "breaks": "an exported name silently becomes unexported",
-          "symbol_sha": "sha256:9ed5b5e17bfc5b8a6e4fbb4d3beaa6a8540df10a55ac08449eec4a23cd529781"
+          "symbol_sha": "sha256:a285769bd481657dc38430c28fdf77f656d3929375eff92154685b44b6dbff66"
         },
         {
           "id": "go-standard-name-allowed",
@@ -693,10 +695,90 @@
           "id": "go-mod-unread",
           "origin": "authored",
           "file": "src/specweaver/sandbox/code_structure/core/changes.py",
-          "symbol": "<module>",
-          "old": "\".ini\", \".mod\")",
-          "new": "\".ini\")",
-          "breaks": "go.mod is not read, so no import resolves"
+          "symbol": "project_sources",
+          "old": "rel.endswith(CODE_SUFFIXES + TEXT_SUFFIXES)",
+          "new": "rel.endswith(CODE_SUFFIXES + tuple(s for s in TEXT_SUFFIXES if s != \".mod\"))",
+          "breaks": "go.mod is not read, so no import resolves",
+          "symbol_sha": "sha256:1ec9a02f8d85bdac2eca15e899e148d141e6c8393e26202a3bb6c0a67b7724de"
+        },
+        {
+          "id": "c-two-definitions-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._find_top_level",
+          "old": "            if elsewhere:\n",
+          "new": "            if False:\n",
+          "breaks": "one of two external definitions is renamed",
+          "symbol_sha": "sha256:91935b1d54c8f5d27d7234a5391acb09f4816b121ae83b67d1ca11d1da2b19dd"
+        },
+        {
+          "id": "c-reach-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._unqualified",
+          "old": "        return \"proven\" if self._sees(declares, p) else \"unsure\"\n",
+          "new": "        return \"proven\"\n",
+          "breaks": "a use with no declaration in reach is renamed",
+          "symbol_sha": "sha256:e94c80522d95308991259a091273239d955f3cce133b09f7bded79510ab4eb7e"
+        },
+        {
+          "id": "cpp-using-namespace-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._outside_namespace",
+          "old": "        return \"unsure\" if namespace in self.facts(p).wildcards else \"unrelated\"\n",
+          "new": "        return \"unrelated\"\n",
+          "breaks": "a name through using namespace is skipped",
+          "symbol_sha": "sha256:ae3a6222ce53a93709c000bcc3e82230a46ef7a8b33b4288408c2be00ee10f2d"
+        },
+        {
+          "id": "c-static-leaks",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._unqualified",
+          "old": "        if p != home and (static or self._has_own_static(p, ref)):\n",
+          "new": "        if False:\n",
+          "breaks": "another file's static of the name is renamed",
+          "symbol_sha": "sha256:e94c80522d95308991259a091273239d955f3cce133b09f7bded79510ab4eb7e"
+        },
+        {
+          "id": "cpp-receiver-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._method_use",
+          "old": "            if ref.receiver_binding != \"this\":\n                return \"unsure\"\n",
+          "new": "            if False:\n                return \"unsure\"\n",
+          "breaks": "a call on an unknown object is renamed",
+          "symbol_sha": "sha256:ee91434aa1a0779d158b3fa6a7b6c11051a0c1a62e7d697ba8f3e141bf1858ef"
+        },
+        {
+          "id": "c-macro-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_c_family.py",
+          "symbol": "find_references",
+          "old": "                found.append(ref(\"string\", node))\n",
+          "new": "                pass\n",
+          "breaks": "a name in a macro body keeps the old name",
+          "symbol_sha": "sha256:a30b937f42c27f3ddbb52f919485d52ee4a4522d0b09f616c7ffaf1a0ff0addc"
+        },
+        {
+          "id": "c-static-unseen",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_c_family.py",
+          "symbol": "_function_role",
+          "old": "    binding = \"static\" if _is_static(outer) else None\n",
+          "new": "    binding = None\n",
+          "breaks": "a static function is taken as program-wide",
+          "symbol_sha": "sha256:d585e1518b92a480668eb1aed2b3484547a93e8512aee7d6930c53ed409ee58a"
+        },
+        {
+          "id": "c-local-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/c_family.py",
+          "symbol": "CResolver._unqualified",
+          "old": "        if ref.binding == \"local\" or (ref.kind == \"bare\" and ref.owner and p != home):\n",
+          "new": "        if ref.kind == \"bare\" and ref.owner and p != home:\n",
+          "breaks": "a parameter of the name is renamed"
         }
       ]
     }

@@ -379,30 +379,35 @@
     "first": "src/specweaver/workspace/analyzers/factory.py:306",
     "second": "src/specweaver/workspace/analyzers/factory.py:287"
   },
+  "src/specweaver/workspace/ast/parsers/_c_family.py <-> src/specweaver/workspace/ast/parsers/rust/_references.py @103f521e8f08": {
+    "lines": 8,
+    "first": "src/specweaver/workspace/ast/parsers/_c_family.py:209",
+    "second": "src/specweaver/workspace/ast/parsers/rust/_references.py:231"
+  },
   "src/specweaver/workspace/ast/parsers/_editing.py <-> src/specweaver/workspace/ast/parsers/_reading.py @a2f865a2cb54": {
     "lines": 6,
     "first": "src/specweaver/workspace/ast/parsers/_editing.py:30",
     "second": "src/specweaver/workspace/ast/parsers/_reading.py:89"
   },
-  "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @6fe30dfa822b": {
-    "lines": 22,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:92",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:146"
-  },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @a0ddc5b9ed85": {
     "lines": 54,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:149",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:327"
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:143",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:321"
+  },
+  "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @a6ad6b8d65d1": {
+    "lines": 11,
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:97",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:151"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @ad200c9e3c55": {
     "lines": 12,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:115",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:221"
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:109",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:215"
   },
   "src/specweaver/workspace/ast/parsers/c/codestructure.py <-> src/specweaver/workspace/ast/parsers/cpp/codestructure.py @f93916a9015c": {
     "lines": 12,
-    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:126",
-    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:237"
+    "first": "src/specweaver/workspace/ast/parsers/c/codestructure.py:120",
+    "second": "src/specweaver/workspace/ast/parsers/cpp/codestructure.py:231"
   },
   "src/specweaver/workspace/ast/parsers/go/codestructure.py <-> src/specweaver/workspace/ast/parsers/python/codestructure.py @572a363ef837": {
     "lines": 9,
@@ -498,6 +503,11 @@
     "lines": 7,
     "first": "src/specweaver/workspace/ast/parsers/rust/codestructure.py:282",
     "second": "src/specweaver/workspace/ast/parsers/typescript/codestructure.py:220"
+  },
+  "src/specweaver/workspace/ast/refactor/c_family.py <-> src/specweaver/workspace/ast/refactor/go.py @27941429c82b": {
+    "lines": 11,
+    "first": "src/specweaver/workspace/ast/refactor/c_family.py:17",
+    "second": "src/specweaver/workspace/ast/refactor/go.py:17"
   },
   "src/specweaver/workspace/ast/refactor/jvm.py <-> src/specweaver/workspace/ast/refactor/python.py @863ce9c6ba03": {
     "lines": 7,

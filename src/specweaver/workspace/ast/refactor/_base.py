@@ -204,3 +204,8 @@ def common(ref: Reference, unrelated: tuple[str, ...]) -> str:
     if ref.kind == "text":
         return "mention"
     return "unrelated" if ref.kind in unrelated else "unsure"
+
+
+def plain_name(keywords: frozenset[str]) -> Callable[[str], bool]:
+    """A check that a name is a letters-digits-underscore identifier and not one of `keywords`."""
+    return lambda name: bool(re.fullmatch(r"[A-Za-z_]\w*", name)) and name not in keywords

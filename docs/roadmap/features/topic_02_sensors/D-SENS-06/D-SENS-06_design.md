@@ -194,11 +194,11 @@ sub-feature extends with its own intents. SF-03 and SF-04 can run in parallel.
 | SF | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|--------|-----------|-----|------------|-----------|
 | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-01 built: Python rename through the tool and the atom.
-**Next**: the dev skill for SF-02, CB-1.
+**Now**: SF-01 and SF-02 built: rename in all 8 code languages, override families, enums and interfaces as symbols.
+**Next**: the implementation-plan skill for SF-03 (move a file) or SF-04 (create, delete, docs).

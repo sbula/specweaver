@@ -9,6 +9,8 @@ import typing
 import tree_sitter_c
 from tree_sitter import Query
 
+from specweaver.workspace.ast.parsers import _c_family
+from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError, Visibility
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
@@ -52,7 +54,7 @@ def _static_is_private(name_node: typing.Any) -> Visibility:
     return "private" if any(c.text == b"static" for c in storage) else "public"
 
 
-class CCodeStructure(FunctionBasedParser):
+class CCodeStructure(Renames, FunctionBasedParser):
     """AST parser for C source files."""
 
     grammar = staticmethod(tree_sitter_c.language)
@@ -65,6 +67,9 @@ class CCodeStructure(FunctionBasedParser):
         (call_expression function: (identifier) @name) @reference.call
         """
     CALLER_SCOPE_NODES: typing.ClassVar[tuple[str, ...]] = ("function_definition",)
+
+    def _finder(self) -> typing.Any:
+        return _c_family
 
     @property
     def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
@@ -96,18 +101,7 @@ class CCodeStructure(FunctionBasedParser):
         """
 
     def supported_intents(self) -> list[str]:
-        return [
-            "skeleton",
-            "symbol",
-            "symbol_body",
-            "list",
-            "replace",
-            "replace_body",
-            "add",
-            "delete",
-            "traceability",
-            "imports",
-        ]
+        return [i for i in super().supported_intents() if i != "framework_markers"]
 
     def supported_parameters(self) -> list[str]:
         return []

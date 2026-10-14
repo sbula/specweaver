@@ -308,3 +308,22 @@ async def test_the_implementer_renames_a_go_function_across_packages(tmp_path: P
 
     assert "error" not in result, result
     assert "util.Sum(1)" in (root / "app/main.go").read_text()
+
+
+async def test_the_implementer_renames_a_c_function_with_its_header(tmp_path: Path) -> None:
+    # Proves: D-SENS-06 FR-8
+    root = _write(
+        tmp_path / "c",
+        {
+            "src/util.h": "int total(int a);\n",
+            "src/util.c": '#include "util.h"\nint total(int a) { return a; }\n',
+            "src/main.c": '#include "util.h"\nint main(void) { return total(1); }\n',
+        },
+    )
+    result = await _dispatcher(root).execute(
+        "rename_symbol", {"path": "src/util.c", "symbol_name": "total", "new_name": "sum"}
+    )
+
+    assert "error" not in result, result
+    assert (root / "src/util.h").read_text() == "int sum(int a);\n"
+    assert "return sum(1);" in (root / "src/main.c").read_text()

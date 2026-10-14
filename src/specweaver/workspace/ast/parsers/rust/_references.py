@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import typing
 
-from specweaver.workspace.ast.parsers._ref_tools import mention, ref, text, walk, word
+from specweaver.workspace.ast.parsers._ref_tools import inside, mention, ref, text, walk, word
 from specweaver.workspace.ast.parsers.interfaces import FileBindings, Reference
 
 _ITEMS = ("struct_item", "enum_item", "trait_item", "type_item", "union_item")
@@ -109,15 +109,6 @@ def _in_macro(node: typing.Any) -> bool:
     parent = node.parent
     while parent is not None:
         if parent.type == "token_tree":
-            return True
-        parent = parent.parent
-    return False
-
-
-def _inside(node: typing.Any, kind: str) -> bool:
-    parent = node.parent
-    while parent is not None:
-        if parent.type == kind:
             return True
         parent = parent.parent
     return False
@@ -250,7 +241,7 @@ def find_references(root: typing.Any, name: str) -> list[Reference]:
             node.type in ("identifier", "type_identifier", "field_identifier")
             and text(node) == name
         ):
-            if not _inside(node, "use_declaration"):
+            if not inside(node, ("use_declaration",)):
                 found.append(_identifier(node))
         else:
             strings = {"string_literal": "string_content", "raw_string_literal": "string_content"}

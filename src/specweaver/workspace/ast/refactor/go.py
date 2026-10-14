@@ -16,7 +16,7 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
-from specweaver.workspace.ast.refactor._base import Resolver, common
+from specweaver.workspace.ast.refactor._base import Resolver, common, plain_name
 from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
 
 if TYPE_CHECKING:
@@ -131,7 +131,7 @@ class GoResolver(Resolver):
             path,
             symbol_name,
             new_name,
-            lambda n: bool(re.fullmatch(r"[A-Za-z_]\w*", n)) and n not in _KEYWORDS,
+            plain_name(_KEYWORDS),
             "Go",
         )
         if isinstance(started, RenameRefusal):

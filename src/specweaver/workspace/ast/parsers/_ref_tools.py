@@ -51,6 +51,16 @@ def comment_ref(node: typing.Any, pattern: re.Pattern[str]) -> Reference | None:
     return ref("text", node) if pattern.search(text(node)) else None
 
 
+def inside(node: typing.Any, kinds: tuple[str, ...]) -> bool:
+    """Whether any ancestor of `node` is one of `kinds`."""
+    parent = node.parent
+    while parent is not None:
+        if parent.type in kinds:
+            return True
+        parent = parent.parent
+    return False
+
+
 def mention(
     node: typing.Any,
     name: str,

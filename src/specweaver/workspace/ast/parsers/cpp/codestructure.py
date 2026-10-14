@@ -9,6 +9,8 @@ import typing
 import tree_sitter_cpp
 from tree_sitter import Query, QueryCursor
 
+from specweaver.workspace.ast.parsers import _c_family
+from specweaver.workspace.ast.parsers._ref_tools import Renames
 from specweaver.workspace.ast.parsers.interfaces import Visibility
 from specweaver.workspace.ast.parsers.tiers import ClassBasedParser
 
@@ -73,7 +75,7 @@ def _visibility_of(name_node: typing.Any) -> Visibility:
     return _CPP_LABELS.get(_preceding_access_specifier(declaration) or "", default)
 
 
-class CppCodeStructure(ClassBasedParser):
+class CppCodeStructure(Renames, ClassBasedParser):
     """AST parser for C++ source files."""
 
     grammar = staticmethod(tree_sitter_cpp.language)
@@ -85,6 +87,9 @@ class CppCodeStructure(ClassBasedParser):
         "class_specifier",
         "struct_specifier",
     )
+
+    def _finder(self) -> typing.Any:
+        return _c_family
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """C++ has no interfaces, so every base is extension.
@@ -150,18 +155,7 @@ class CppCodeStructure(ClassBasedParser):
         """
 
     def supported_intents(self) -> list[str]:
-        return [
-            "skeleton",
-            "symbol",
-            "symbol_body",
-            "list",
-            "replace",
-            "replace_body",
-            "add",
-            "delete",
-            "traceability",
-            "imports",
-        ]
+        return [i for i in super().supported_intents() if i != "framework_markers"]
 
     def supported_parameters(self) -> list[str]:
         return ["visibility"]
