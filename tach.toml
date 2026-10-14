@@ -122,6 +122,10 @@ path = "specweaver.workspace.ast.adapters"
 depends_on = [ "specweaver.workspace.ast.parsers",]
 
 [[modules]]
+path = "specweaver.workspace.ast.refactor"
+depends_on = []
+
+[[modules]]
 path = "specweaver.workspace.memory"
 depends_on = [ "specweaver.core.config", "specweaver.workspace",]
 
@@ -131,7 +135,11 @@ depends_on = [ "specweaver.core.config",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.parsers",]
-expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "rust.parsers", "rust.parsers.parse_clippy_complexity", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
+expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.FileBindings", "interfaces.Reference", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "rust.parsers", "rust.parsers.parse_clippy_complexity", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
+
+[[interfaces]]
+from = [ "specweaver.workspace.ast.refactor",]
+expose = [ "rename", "rename.RenamePlan", "rename.RenameRefusal", "rename.Spot", "rename.listing", "rename.plan_rename",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.adapters",]

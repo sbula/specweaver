@@ -1,0 +1,166 @@
+{
+  "schema": 2,
+  "feature": "D-SENS-06",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Only a listed function, method or class renames, to a free name",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py",
+        "tests/unit/workspace/ast/parsers/python/test_python_references.py"
+      ],
+      "mutants": [
+        {
+          "id": "keyword-new-name",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "_bad_new_name",
+          "old": "    if not new.isidentifier() or keyword.iskeyword(new) or keyword.issoftkeyword(new):\n",
+          "new": "    if not new.isidentifier():\n",
+          "breaks": "a keyword becomes the new name",
+          "symbol_sha": "sha256:1f408e0d4d840adc45e9195f127bbba26d3d80693e0a089288d7765704e1e0f3"
+        },
+        {
+          "id": "overload-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._target",
+          "old": "        if self._definitions(path, name) > 1:\n",
+          "new": "        if False:\n",
+          "breaks": "one of two same-named definitions is renamed",
+          "symbol_sha": "sha256:7fdce90d32c5e058c1bc8545c66e1c5e05a4df23fdecbc4a050e68a0584b5035"
+        },
+        {
+          "id": "collision-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rename.py",
+          "symbol": "_checked",
+          "old": "    if taken:\n",
+          "new": "    if False:\n",
+          "breaks": "a new name already used in a changed file is accepted",
+          "symbol_sha": "sha256:20600f07d5543df2da575359cb8b5ea1d3716b226d4d046886be9c38295866bf"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "One unsure use refuses the whole rename",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py",
+        "tests/unit/workspace/ast/parsers/python/test_python_references.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-is-unrelated",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "_verdict",
+          "old": "        return \"proven\"\n    return \"unsure\" if found[0] in _UNSURE else \"unrelated\"\n",
+          "new": "        return \"proven\"\n    return \"unrelated\"\n",
+          "breaks": "an unresolved import is left behind unrenamed",
+          "symbol_sha": "sha256:5f9cdcd84e77cfed3c0d62055126e518e68f26b096c67d57d0856a8b1fb5441b"
+        },
+        {
+          "id": "string-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "_common",
+          "old": "    return \"unrelated\" if ref.kind == \"keyword\" else \"unsure\"\n",
+          "new": "    return \"unrelated\"\n",
+          "breaks": "getattr text keeps the old name",
+          "symbol_sha": "sha256:ea66366710706383b070c1721535d5cc1bb32a9e93e0502f7788b1c67fda8676"
+        },
+        {
+          "id": "free-is-unrelated",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._bare_top_level",
+          "old": "        return \"unrelated\" if ref.binding in (\"local\", \"class\", \"module_other\") else \"unsure\"\n",
+          "new": "        return \"unrelated\"\n",
+          "breaks": "a free name, maybe from a wildcard, is skipped",
+          "symbol_sha": "sha256:e69c73a3ceff9ff539891e333c5ec2339bb88b706248465dffa9ce4f4a374613"
+        },
+        {
+          "id": "local-receiver-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._method_attribute",
+          "old": "        if ref.receiver_binding not in (\"module_def\", \"import\"):\n            return \"unsure\"\n        found",
+          "new": "        if False:\n            return \"unsure\"\n        found",
+          "breaks": "a parameter named like the class is taken for the class",
+          "symbol_sha": "sha256:3d296a32b9545044633907fe169bc720c7c81093448f5d98b88898f1a3ac07ed"
+        },
+        {
+          "id": "shadow-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/python/_references.py",
+          "symbol": "_Scopes.lookup",
+          "old": "            elif kinds:\n                return \"local\"\n",
+          "new": "            elif False:\n                return \"local\"\n",
+          "breaks": "a local of the same name is renamed",
+          "symbol_sha": "sha256:5771c47a21de949d38b97efc78cf8a9c8d6e4baed3ac90f7d3316833120feb06"
+        },
+        {
+          "id": "override-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._find_method",
+          "old": "        if overrides:\n",
+          "new": "        if False:\n",
+          "breaks": "an override is left with the old name",
+          "symbol_sha": "sha256:786925e286b6d63cec4d21bce023b6a9197ec554b40dfd5055637bebc5e94b11"
+        },
+        {
+          "id": "outside-base-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver._find_method",
+          "old": "        if outside:\n",
+          "new": "        if False:\n",
+          "breaks": "a method that overrides an outside base is renamed",
+          "symbol_sha": "sha256:786925e286b6d63cec4d21bce023b6a9197ec554b40dfd5055637bebc5e94b11"
+        },
+        {
+          "id": "hierarchy-self-proven",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "_member",
+          "old": "    return \"unsure\" if cls in hierarchy else \"unrelated\"\n",
+          "new": "    return \"proven\"\n",
+          "breaks": "self calls in unrelated classes are renamed",
+          "symbol_sha": "sha256:ab8e9062f72a0a38d7938c0eef27c7ec7ffef0d385c9f7897e9b46b4c8b38370"
+        },
+        {
+          "id": "cap-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/_model.py",
+          "symbol": "listing",
+          "old": "    rest = len(spots) - cap\n",
+          "new": "    rest = 0\n",
+          "breaks": "a refusal lists every spot, unbounded",
+          "symbol_sha": "sha256:1a28dc0cd673235c13aa97130fa57735f5493da8f49f21daac83107c7b6ef4cf"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "New contents parse before any write",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_rename.py",
+        "tests/unit/workspace/ast/parsers/python/test_python_references.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-parse-guard",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rename.py",
+          "symbol": "_checked",
+          "old": "    if broken:\n",
+          "new": "    if False:\n",
+          "breaks": "a rename that breaks parsing is planned",
+          "symbol_sha": "sha256:20600f07d5543df2da575359cb8b5ea1d3716b226d4d046886be9c38295866bf"
+        }
+      ]
+    }
+  ]
+}

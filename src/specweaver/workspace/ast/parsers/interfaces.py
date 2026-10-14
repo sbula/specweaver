@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import typing
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,40 @@ VISIBILITY: tuple[str, ...] = ("public", "protected", "internal", "private", "un
 
 #: The same set as a type, so mypy rejects a typo that the tuple alone would only catch at runtime.
 Visibility = typing.Literal["public", "protected", "internal", "private", "unknown"]
+
+
+@dataclass(frozen=True)
+class Reference:
+    """One place a name occurs in a file, and what it is there.
+
+    `kind` is `definition`, `import`, `bare`, `attribute`, `keyword`, `string` (the whole string is
+    the name), `text` (a comment or string holding the name as a word) or `scope_escape`
+    (`global` / `nonlocal`). `binding` says, for a bare name, what binds it where it is read:
+    `local`, `class`, `module_def`, `import`, `module_other`, `mixed` or `free`.
+    """
+
+    kind: str
+    line: int
+    start_byte: int
+    end_byte: int
+    scope: str = "module"
+    owner: str | None = None
+    binding: str | None = None
+    receiver: str | None = None
+    receiver_binding: str | None = None
+    module: str | None = None
+    alias: str | None = None
+
+
+@dataclass
+class FileBindings:
+    """What the module level of one file binds: definitions, imports, other names, class bases."""
+
+    defs: set[str] = field(default_factory=set)
+    imports: dict[str, tuple[str, str | None]] = field(default_factory=dict)
+    wildcards: list[str] = field(default_factory=list)
+    others: set[str] = field(default_factory=set)
+    bases: dict[str, list[str]] = field(default_factory=dict)
 
 
 class CodeStructureInterface(ABC):
@@ -228,6 +263,14 @@ class CodeStructureInterface(ABC):
             "imports",
             "framework_markers",
         ]
+
+    def find_references(self, code: str, name: str) -> list[Reference]:
+        """Every place `name` occurs in `code`, in byte order. Only languages that rename have it."""
+        raise CodeStructureError(f"rename is not supported for {type(self).__name__}")
+
+    def file_bindings(self, code: str) -> FileBindings:
+        """The names the module level of `code` binds. Only languages that rename have it."""
+        raise CodeStructureError(f"rename is not supported for {type(self).__name__}")
 
     def supported_parameters(self) -> list[str]:
         """Return a list of optional parameters supported by this parser.
