@@ -169,3 +169,19 @@ def _add_import(facts: FileBindings, node: typing.Any) -> None:
         facts.statics[names[-1]] = (".".join(names[:-1]), names[-1])
     else:
         facts.imports[names[-1]] = (".".join(names[:-1]), names[-1])
+
+
+def module_references(root: typing.Any) -> list[Reference]:
+    """The `package` line (kind `package`) and each import's dotted path (kind `import`)."""
+    found: list[Reference] = []
+    for node in root.named_children:
+        if node.type == "package_declaration":
+            found.append(_jvm.header_ref("package", node.named_children[0], wildcard=False))
+        elif node.type == "import_declaration":
+            path = next(
+                c for c in node.named_children if c.type in ("scoped_identifier", "identifier")
+            )
+            found.append(
+                _jvm.header_ref("import", path, any(c.type == "asterisk" for c in node.children))
+            )
+    return found

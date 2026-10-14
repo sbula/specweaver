@@ -178,3 +178,8 @@ def scan(
             if mention:
                 found.append(mention)
     return sorted(found, key=lambda r: r.start_byte)
+
+
+def header_ref(kind: str, path: typing.Any, wildcard: bool) -> Reference:
+    """A `package` or `import` line's dotted path, for a move to rewrite."""
+    return ref(kind, path, module=text(path), binding="wildcard" if wildcard else None)

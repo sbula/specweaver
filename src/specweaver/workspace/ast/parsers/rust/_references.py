@@ -286,3 +286,8 @@ def file_bindings(root: typing.Any) -> FileBindings:
             if owner:
                 facts.bases.setdefault(owner, []).append(text(node.child_by_field_name("trait")))
     return facts
+
+
+def module_references(_root: typing.Any) -> list[Reference]:
+    """Rust names modules, not files: a move goes through `mod` lines and paths, not this list."""
+    return []

@@ -409,7 +409,7 @@
           "old": "        if home.endswith(\".java\") and stem == name and public:\n",
           "new": "        if False:\n",
           "breaks": "a public class leaves its file misnamed",
-          "symbol_sha": "sha256:77a41a65d33f9ac56c0647c26f889339e99989de1102683a804e72c6b9be0bb9"
+          "symbol_sha": "sha256:5176e75d65cfa60d45d00797dfb31793136e8013dc6f5604f60bde0ebd7b79ce"
         },
         {
           "id": "jvm-same-package-off",
@@ -787,9 +787,10 @@
       "requirement": "FR-10",
       "title": "A file moves and every import of it follows, all or none",
       "scope": [
-        "tests/unit/workspace/ast/refactor/test_plan_move.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py",
         "tests/integration/sandbox/test_move_through_the_atom.py",
-        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+        "tests/unit/workspace/ast/refactor/test_plan_move.py",
+        "tests/unit/workspace/ast/refactor/test_plan_move_more.py"
       ],
       "mutants": [
         {
@@ -881,6 +882,86 @@
           "new": "            new = spec\n",
           "breaks": "the moved file's relative imports point at the wrong place",
           "symbol_sha": "sha256:b5426d87977d85cdbf0b75633027f1b204a9bf323c8a5fde25e3959fe8111984"
+        },
+        {
+          "id": "jvm-package-line-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_change_package",
+          "old": "        if ref.kind == \"package\":\n",
+          "new": "        if False:\n",
+          "breaks": "the moved file keeps its old package line",
+          "symbol_sha": "sha256:9fabff75925b62e6c9ffe4fa17263a10a5dd5be5dbb934162b77961ba16f930a"
+        },
+        {
+          "id": "jvm-file-class-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "jvm_edits",
+          "old": "    renamed = _rename_file_class(resolver, edits, path, new_path)\n",
+          "new": "    renamed: dict[str, str] = {}\n",
+          "breaks": "a Java file renamed keeps its old class name",
+          "symbol_sha": "sha256:9ed3b0195a606baaed1cad94fc02e84cf73f5330cafa4cfbd37bdba95c859b56"
+        },
+        {
+          "id": "jvm-star-import-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_rewrite_import",
+          "old": "        if module == package and any(_uses(resolver, p, t) for t in types):\n",
+          "new": "        if False:\n",
+          "breaks": "a * import silently loses the class",
+          "symbol_sha": "sha256:d58445b4548f307d2942f72564dd52b1647f0d65eeb65bc3982e1c34d4f54ca8"
+        },
+        {
+          "id": "jvm-old-neighbours-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_same_package_uses",
+          "old": "            edits.unsure.extend(Spot(p, line) for line in _uses(resolver, p, name))\n",
+          "new": "            pass\n",
+          "breaks": "a same-package user loses the class",
+          "symbol_sha": "sha256:23fdda90ce2a8091c09ef81785a4a4953df54c4d9a6867f7285d1fd3cc331e92"
+        },
+        {
+          "id": "jvm-moved-file-neighbours-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_uses_of_old_neighbours",
+          "old": "                edits.unsure.extend(Spot(path, line) for line in _uses(resolver, path, name))\n",
+          "new": "                pass\n",
+          "breaks": "the moved class loses its old neighbours",
+          "symbol_sha": "sha256:cab24c9992b7258a10db4244ff78bc1abaf492b12d577ba9df8a7271a473c4b0"
+        },
+        {
+          "id": "rust-module-paths-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_rust_verdict",
+          "old": "        return \"proven\" if resolver.resolve_path(p, segments) == module else \"unrelated\"\n",
+          "new": "        return \"unrelated\"\n",
+          "breaks": "use lines keep the old module name",
+          "symbol_sha": "sha256:ce62399077bd44b90eb5cd621d038c61871a5cbf00b3ea013035d2ada6029cc9"
+        },
+        {
+          "id": "c-search-include-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_include_edit",
+          "old": "    return _relative(new_path, p) if beside else \"\"\n",
+          "new": "    return _relative(new_path, p)\n",
+          "breaks": "an include through an include path is rewritten blindly",
+          "symbol_sha": "sha256:c5d4432c1b67717bed18b0185750da36623e3f2565d91e39ade84b8e8cc5290b"
+        },
+        {
+          "id": "c-own-include-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/moves_more.py",
+          "symbol": "_include_edit",
+          "old": "            _relative(target, new_path)\n            if target is not None",
+          "new": "            written\n            if target is not None",
+          "breaks": "the moved file's own includes point at the wrong place",
+          "symbol_sha": "sha256:c5d4432c1b67717bed18b0185750da36623e3f2565d91e39ade84b8e8cc5290b"
         }
       ]
     },

@@ -195,10 +195,10 @@ sub-feature extends with its own intents. SF-03 and SF-04 can run in parallel.
 |----|--------|-----------|-----|------------|-----------|
 | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-01 and SF-02 built: rename in all 8 code languages, override families, enums and interfaces as symbols.
-**Next**: the dev skill for SF-03, CB-1.
+**Now**: SF-01 to SF-03 built: rename in all 8 code languages, override families, enums and interfaces as symbols, and file moves with their imports.
+**Next**: the implementation-plan skill for SF-04 (create and delete a file, the comment above a symbol).

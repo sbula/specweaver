@@ -13,8 +13,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves_more
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal
 
 if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import Reference
@@ -105,6 +106,9 @@ class JvmResolver(Resolver):
 
     # --- types -------------------------------------------------------------------------------
 
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves_more.jvm_edits(self, path, new_path)
+
     def _index(self) -> dict[tuple[str, str], str]:
         if not hasattr(self, "_types"):
             self._types = {
@@ -187,6 +191,10 @@ class JvmResolver(Resolver):
                 f"'{name}' is the public class of {home}, which Java names after it; "
                 "rename the file with move_module"
             )
+        return self.type_uses(home, name)
+
+    def type_uses(self, home: str, name: str) -> Found:
+        """Every use of the top-level type `name` of `home`, judged; a move renames through it."""
         target = ("def", home, name)
         package = self.facts(home).package
         return self.collect(name, lambda p, r: self._type_use(target, package, p, r))

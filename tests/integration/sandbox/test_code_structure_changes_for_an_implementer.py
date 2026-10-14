@@ -387,3 +387,40 @@ def test_a_move_needs_the_right_to_create_the_new_file(project: Path) -> None:
     assert result.status == "error"
     assert "create" in result.message
     assert _snapshot(project) == before
+
+
+@pytest.mark.parametrize(
+    ("files", "path", "new_path", "changed", "expected"),
+    [
+        (
+            {
+                "src/main/java/app/util/Greeter.java": "package app.util;\n\npublic class Greeter {}\n",
+                "src/main/java/app/Main.java": "package app;\n\nimport app.util.Greeter;\n\nclass Main { Greeter g; }\n",
+            },
+            "src/main/java/app/util/Greeter.java",
+            "src/main/java/app/words/Greeter.java",
+            "src/main/java/app/Main.java",
+            "import app.words.Greeter;",
+        ),
+        (
+            {
+                "src/util.h": "int total(int a);\n",
+                "src/main.c": '#include "util.h"\nint main(void) { return total(1); }\n',
+            },
+            "src/util.h",
+            "src/inc/util.h",
+            "src/main.c",
+            '#include "inc/util.h"',
+        ),
+    ],
+)
+async def test_the_implementer_moves_java_and_c_files(
+    tmp_path: Path, files: dict[str, str], path: str, new_path: str, changed: str, expected: str
+) -> None:
+    # Proves: D-SENS-06 FR-10
+    root = _write(tmp_path / "moves", files)
+    result = await _dispatcher(root).execute("move_module", {"path": path, "new_path": new_path})
+
+    assert "error" not in result, result
+    assert not (root / path).exists()
+    assert expected in (root / changed).read_text()

@@ -16,8 +16,9 @@ from __future__ import annotations
 import posixpath
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves_more
 from specweaver.workspace.ast.refactor._base import Resolver, common, plain_name
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -118,6 +119,9 @@ class CResolver(Resolver):
     #: C++ files may include a C header, so a new name must be free in both languages.
     KEYWORDS: ClassVar[frozenset[str]] = _CPP_KEYWORDS
     LANGUAGE: ClassVar[str] = "C"
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves_more.c_edits(self, path, new_path)
 
     def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
         super().__init__(files, parser)

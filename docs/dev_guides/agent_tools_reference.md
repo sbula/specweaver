@@ -70,10 +70,13 @@ project refuses. The tool also
 refuses when a changed file is outside the role's write grants, and counts (does not name) spots
 and mentions in files the role may not read.
 
-`move_module(path, new_path)` (Python, TypeScript, Go) moves a file and rewrites every import of it,
+`move_module(path, new_path)` (all 8 code languages) moves a file and rewrites every import of it,
 all files or none. It refuses a target that exists, is protected, or lies under another
 `context.yaml`; an import it cannot rewrite for certain (a module path as a string, a `tsconfig`
-alias) refuses with its line. A Go file moves only within its folder. The agent needs `FULL` on
+alias) refuses with its line. A Go or Rust file moves only within its folder; a Java or Kotlin
+file renamed in its folder renames its public class, and a move to another package refuses while
+the old package uses it without an import. C and C++ includes are rewritten when they resolve beside
+their includer, and unsure when only an include path finds them. The agent needs `FULL` on
 both paths: a move creates one file and deletes another.
 
 ## GitTool (agents)

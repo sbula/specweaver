@@ -15,8 +15,9 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.workspace.ast.refactor import moves_more
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
-from specweaver.workspace.ast.refactor._model import Found, RenameRefusal
+from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -90,6 +91,9 @@ class RustResolver(Resolver):
     """Resolves item, method and trait names across the Rust crates of one project."""
 
     SUFFIXES: ClassVar[tuple[str, ...]] = (".rs",)
+
+    def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
+        return moves_more.rust_edits(self, path, new_path)
 
     def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
         super().__init__(files, parser)

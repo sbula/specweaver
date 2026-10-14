@@ -253,3 +253,19 @@ def file_bindings(root: typing.Any) -> FileBindings:
         ):
             _add_class(facts, node)
     return facts
+
+
+def module_references(root: typing.Any) -> list[Reference]:
+    """Each quoted `#include`: the span inside its quotes; `module` is the text."""
+    found = []
+    for node in walk(root):
+        if node.type == "preproc_include":
+            path = node.child_by_field_name("path")
+            content = (
+                next((c for c in path.children if c.type == "string_content"), None)
+                if path is not None
+                else None
+            )
+            if content is not None:
+                found.append(ref("include", content, module=text(content)))
+    return found

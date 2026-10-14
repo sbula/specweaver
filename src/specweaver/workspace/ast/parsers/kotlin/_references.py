@@ -161,3 +161,18 @@ def _add_import(facts: FileBindings, node: typing.Any) -> None:
         facts.wildcards.append(".".join(names))
     else:
         facts.imports[alias or names[-1]] = (".".join(names[:-1]), names[-1])
+
+
+def _header(node: typing.Any) -> Reference | None:
+    if not node.is_named or node.type not in ("package_header", "import"):
+        return None
+    path = next((c for c in node.named_children if c.type == "qualified_identifier"), None)
+    if path is None:
+        return None
+    kind = "package" if node.type == "package_header" else "import"
+    return _jvm.header_ref(kind, path, any(c.type == "*" for c in node.children))
+
+
+def module_references(root: typing.Any) -> list[Reference]:
+    """The `package` line (kind `package`) and each import's dotted path (kind `import`)."""
+    return [r for r in map(_header, root.named_children) if r is not None]
