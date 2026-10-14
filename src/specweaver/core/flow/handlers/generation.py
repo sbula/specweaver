@@ -341,9 +341,7 @@ class PlanSpecHandler:
                 llm=adapter,
                 config=config,
                 max_retries=max_retries,
-                tool_dispatcher=_build_tool_dispatcher(
-                    context, role="implementer", adapter=adapter
-                ),
+                tool_dispatcher=_build_tool_dispatcher(context, role="planner", adapter=adapter),
             )
 
             spec_content = context.spec_path.read_text(encoding="utf-8")

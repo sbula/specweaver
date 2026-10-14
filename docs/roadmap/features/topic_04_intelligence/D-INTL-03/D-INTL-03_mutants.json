@@ -6,7 +6,8 @@
       "requirement": "FR-2",
       "title": "The plan is saved beside the spec and reaches the code prompt",
       "scope": [
-        "tests/e2e/capabilities/workflows/test_plan_before_code_e2e.py"
+        "tests/e2e/capabilities/workflows/test_plan_before_code_e2e.py",
+        "tests/integration/core/flow/handlers/test_plan_step_only_reads.py"
       ],
       "mutants": [
         {
@@ -28,6 +29,16 @@
           "new": "    if False:\n        base_prompt.add_plan(context.plan_context.plan)\n",
           "breaks": "the code ignores the decided plan",
           "symbol_sha": "sha256:f76115141827d8f690e858b17269cf870c51dcb74be6f5880d8ce1cbcb58cc75"
+        },
+        {
+          "id": "planner-can-write",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "PlanSpecHandler.execute",
+          "old": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"planner\", adapter=adapter),\n",
+          "new": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"implementer\", adapter=adapter),\n",
+          "breaks": "the plan step's model can add, replace and delete code",
+          "symbol_sha": "sha256:ed8c6052313878486e74757d11bab1e277f9ba9047d344d38a84526d9e4090bf"
         }
       ]
     },
