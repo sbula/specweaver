@@ -168,6 +168,28 @@ MOVE_MODULE_SCHEMA = ToolDefinition(
     ],
 )
 
+CREATE_MODULE_SCHEMA = ToolDefinition(
+    name="create_module",
+    description="Creates a new source file holding the given code. Refuses when the file exists or the code does not parse.",
+    parameters=[
+        ToolParameter(name="path", type="string", description="The relative path of the new file."),
+        ToolParameter(name="code", type="string", description="The whole content of the new file."),
+    ],
+)
+
+DELETE_MODULE_SCHEMA = ToolDefinition(
+    name="delete_module",
+    description=(
+        "Deletes a source file. Refuses while another file imports it or uses one of its "
+        "symbols, and names those files."
+    ),
+    parameters=[
+        ToolParameter(
+            name="path", type="string", description="The relative path of the file to delete."
+        )
+    ],
+)
+
 ADD_SYMBOL_SCHEMA = ToolDefinition(
     name="add_symbol",
     description="Injects a completely new symbol cleanly into a specified parent class or to the bottom of the file if target_parent is omitted.",
@@ -272,6 +294,8 @@ def get_code_structure_schema(
         "delete": DELETE_SYMBOL_SCHEMA,
         "rename": RENAME_SYMBOL_SCHEMA,
         "move": MOVE_MODULE_SCHEMA,
+        "create": CREATE_MODULE_SCHEMA,
+        "remove": DELETE_MODULE_SCHEMA,
     }
 
     for intent, schema in intent_map.items():

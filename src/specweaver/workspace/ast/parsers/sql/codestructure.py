@@ -95,6 +95,7 @@ class SqlCodeStructure(DeclarativeParser):
             "replace_body",
             "add",
             "delete",
+            "create",
         ]
 
     def supported_parameters(self) -> list[str]:

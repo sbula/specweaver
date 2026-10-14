@@ -185,11 +185,11 @@
           "id": "no-grant-on-callers",
           "origin": "authored",
           "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
-          "symbol": "CodeStructureTool.rename_symbol",
-          "old": "        outside = [p for p in plan.changes if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if outside:\n",
-          "new": "        outside = [p for p in plan.changes if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if False:\n",
+          "symbol": "CodeStructureTool._apply_edits",
+          "old": "        outside = [p for p in edited if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if outside:\n",
+          "new": "        outside = [p for p in edited if self._mode_of(p) not in MODE_ALLOWS_WRITE]\n        if False:\n",
           "breaks": "a caller outside the write grants is changed",
-          "symbol_sha": "sha256:4ae9e4697cd03b669d385701c8895935df1a86b9bc2d4cb6ad8cb7d8c9b44cd9"
+          "symbol_sha": "sha256:370b8f5c8cf2e886d462d275ae3af06e230594c82d3d54ba27ff080faa30438f"
         },
         {
           "id": "unreadable-named",
@@ -797,11 +797,11 @@
           "id": "move-target-exists-ok",
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/refactor/move.py",
-          "symbol": "_target_refusal",
-          "old": "    if normal in files or normal == path:\n",
+          "symbol": "new_path_refusal",
+          "old": "    if normal in files:\n",
           "new": "    if False:\n",
           "breaks": "a move overwrites an existing file",
-          "symbol_sha": "sha256:04cf58031870a6a0e4d08addda9dc1bf46d9453fd3894d21a1851bc4e869f8f6"
+          "symbol_sha": "sha256:c7a309ed1d64640480b1de59cfbf679178bfe863a3f43532e2a8fdc9266c2cb4"
         },
         {
           "id": "move-old-file-kept",
@@ -831,7 +831,7 @@
           "old": "        if self._mode_of(new_path) not in MODE_ALLOWS_CREATE:\n",
           "new": "        if False:\n",
           "breaks": "an agent creates a file it may only write",
-          "symbol_sha": "sha256:38fe4a94ca862824492dff8795381b5efe0157db5ee3e7943d6384602b3f442b"
+          "symbol_sha": "sha256:9026494a4f44329bb160b16f9b6584c2b08c0b1bd30d645bc3c0e41790b640c6"
         },
         {
           "id": "python-importer-skipped",
@@ -981,7 +981,100 @@
           "symbol": "_target_refusal",
           "old": "    if module_of_path(files, path) != module_of_path(files, normal):\n",
           "new": "    if False:\n",
-          "breaks": "a file moves into another module"
+          "breaks": "a file moves into another module",
+          "symbol_sha": "sha256:26a43f6731060281f874dc84f7e87c16ab96df5b2cb1564a681994e3893fd7ca"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "A file is created only where nothing is, from code that parses",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_files.py",
+        "tests/integration/sandbox/test_files_through_the_atom.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "create-overwrites",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "apply_changes",
+          "old": "    created = [p for p in sorted(changes) if p not in original and executor.exists(p).data]\n",
+          "new": "    created: list[str] = []\n",
+          "breaks": "a create overwrites a file the scan did not see",
+          "symbol_sha": "sha256:6cf0954b6f2cd8cf7162b2717ed1d541c14520b0ad6581cb13d035f9015fbc57"
+        },
+        {
+          "id": "create-broken-code",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/files.py",
+          "symbol": "plan_create",
+          "old": "    if grammar is not None and grammar.parse(code.encode(\"utf-8\")).root_node.has_error:\n",
+          "new": "    if False:\n",
+          "breaks": "a file that does not parse is created",
+          "symbol_sha": "sha256:b0863ed13daa34347527e4eed844f4d91f9c5ef9f63422c38a56207826dd5acd"
+        },
+        {
+          "id": "create-grant-off",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.create_module",
+          "old": "        if self._mode_of(path) not in MODE_ALLOWS_CREATE:\n",
+          "new": "        if False:\n",
+          "breaks": "an agent creates a file it may only write",
+          "symbol_sha": "sha256:9925dcdb342bd37d1d02c2f0d5c9dcbb508884df7fd872ddb5b9aac8a6adbd34"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "A file is deleted only when nothing uses it",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_plan_files.py",
+        "tests/integration/sandbox/test_files_through_the_atom.py",
+        "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py"
+      ],
+      "mutants": [
+        {
+          "id": "delete-importers-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/files.py",
+          "symbol": "plan_delete",
+          "old": "    users = _importers(resolver, path) + _symbol_users(resolver, path)\n",
+          "new": "    users = _symbol_users(resolver, path)\n",
+          "breaks": "an imported file is deleted",
+          "symbol_sha": "sha256:a1c9a1c8dd0fb8bc7630fff412a71ee117b52075239597f710ed20edf7bff0a5"
+        },
+        {
+          "id": "delete-users-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/files.py",
+          "symbol": "plan_delete",
+          "old": "    users = _importers(resolver, path) + _symbol_users(resolver, path)\n",
+          "new": "    users = _importers(resolver, path)\n",
+          "breaks": "a file whose functions are used is deleted",
+          "symbol_sha": "sha256:a1c9a1c8dd0fb8bc7630fff412a71ee117b52075239597f710ed20edf7bff0a5"
+        },
+        {
+          "id": "delete-unknown-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/files.py",
+          "symbol": "_symbol_users",
+          "old": "            spots.append(Spot(path, 1))  # who uses it cannot be told, so it may be used\n",
+          "new": "            pass\n",
+          "breaks": "a file whose users cannot be told is deleted",
+          "symbol_sha": "sha256:28a96dea5b5e67609cc46f04071754b73425299b7db4ae5d4ffc45e68ba7ed22"
+        },
+        {
+          "id": "delete-grant-off",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/interfaces/tool.py",
+          "symbol": "CodeStructureTool.delete_module",
+          "old": "        if self._mode_of(path) not in MODE_ALLOWS_DELETE:\n            return ToolResult(status=\"error\", message=f\"deleting needs",
+          "new": "        if False:\n            return ToolResult(status=\"error\", message=f\"deleting needs",
+          "breaks": "an agent deletes a file it may only write",
+          "symbol_sha": "sha256:f7ce36af2d052bedbdab81ac54c7a60090343c424cddef1410ff18757a2758e4"
         }
       ]
     }

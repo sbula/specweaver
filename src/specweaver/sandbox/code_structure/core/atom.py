@@ -211,6 +211,8 @@ class CodeStructureAtom(Atom):
             "extract_framework_markers",
             "rename_symbol",
             "move_module",
+            "create_module",
+            "delete_module",
         }
         if intent not in valid_intents:
             return AtomResult(
@@ -224,10 +226,8 @@ class CodeStructureAtom(Atom):
                 message=f"AST Structure Extraction not supported for '{Path(path).suffix}' files. Please use read_file instead.",
             )
 
-        if intent == "rename_symbol":
-            return self._handle_rename(parser, context)
-        if intent == "move_module":
-            return self._handle_move(parser, context)
+        if intent in _CHANGES:
+            return self._handle_change(parser, context, intent)
 
         read_res = self._executor.read(path)
         if read_res.status == "error":
@@ -248,38 +248,21 @@ class CodeStructureAtom(Atom):
         """The executor every read and write of this atom goes through."""
         return self._executor
 
-    def _handle_rename(self, parser: CodeStructureInterface, context: dict[str, Any]) -> AtomResult:
-        plan, sources = changes.rename_plan(
-            self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
+    def _handle_change(
+        self, parser: CodeStructureInterface, context: dict[str, Any], intent: str
+    ) -> AtomResult:
+        """Rename, move, create or delete: planned over the whole project, written all or none."""
+        plan, sources = changes.plan_change(
+            intent, self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
         )
         if isinstance(plan, RenameRefusal):
             return _refused(plan)
-        applied = changes.apply_changes(self._executor, sources.files, plan.changes)
+        applied = changes.apply_plan(self._executor, sources, plan)
         if not applied.ok:
             return _not_applied(applied)
+        exports = _CHANGES[intent](plan, context)
         return AtomResult(
-            status=AtomStatus.SUCCESS,
-            message=f"Renamed '{context['symbol_name']}' to '{context['new_name']}': {applied.message}",
-            exports={"changed": sorted(plan.changes), "mentions": [str(s) for s in plan.mentions]},
-        )
-
-    def _handle_move(self, parser: CodeStructureInterface, context: dict[str, Any]) -> AtomResult:
-        plan, sources = changes.move_plan(
-            self._executor, parser, context, self.exclude_dirs, self.exclude_patterns
-        )
-        if isinstance(plan, RenameRefusal):
-            return _refused(plan)
-        applied = changes.apply_changes(self._executor, sources.files, plan.changes, plan.old_path)
-        if not applied.ok:
-            return _not_applied(applied)
-        return AtomResult(
-            status=AtomStatus.SUCCESS,
-            message=f"Moved {plan.old_path} to {plan.new_path}: {applied.message}",
-            exports={
-                "moved": [plan.old_path, plan.new_path],
-                "changed": sorted(plan.changes),
-                "mentions": [str(s) for s in plan.mentions],
-            },
+            status=AtomStatus.SUCCESS, message=f"{intent}: {applied.message}", exports=exports
         )
 
     def _handle_framework_markers(
@@ -440,3 +423,23 @@ def _not_applied(applied: changes.Applied) -> AtomResult:
         message=applied.message,
         exports={"unrestored": applied.unrestored},
     )
+
+
+def _mentions(plan: Any) -> list[str]:
+    return [str(s) for s in plan.mentions]
+
+
+#: What each change intent reports on success.
+_CHANGES: dict[str, Any] = {
+    "rename_symbol": lambda plan, _context: {
+        "changed": sorted(plan.changes),
+        "mentions": _mentions(plan),
+    },
+    "move_module": lambda plan, _context: {
+        "moved": [plan.old_path, plan.new_path],
+        "changed": sorted(plan.changes),
+        "mentions": _mentions(plan),
+    },
+    "create_module": lambda _plan, context: {"created": str(context["path"])},
+    "delete_module": lambda _plan, context: {"deleted": str(context["path"])},
+}

@@ -207,6 +207,8 @@ def test_a_parser_offers_rename_exactly_when_a_resolver_renames_its_files() -> N
     for exts, parser in get_default_parsers().items():
         offered = "rename" in parser.supported_intents()
         assert offered == all(family_of(f"x{ext}") for ext in exts), exts
+        assert ("remove" in parser.supported_intents()) == offered, exts
+        assert "create" in parser.supported_intents(), exts
         if not offered:
             with pytest.raises(CodeStructureError):
                 parser.find_references("x", "x")

@@ -50,18 +50,27 @@ def module_of_path(files: Mapping[str, str], path: str) -> str:
         folder = posixpath.dirname(folder)
 
 
-def _target_refusal(files: Mapping[str, str], path: str, new_path: str) -> RenameRefusal | None:
-    if path not in files:
-        return RenameRefusal(f"{path} is not a file of the project")
+def new_path_refusal(files: Mapping[str, str], new_path: str) -> RenameRefusal | None:
+    """Why a file cannot be written at `new_path`: outside the project, protected, or there."""
     normal = posixpath.normpath(new_path)
     if new_path.startswith("/") or normal.startswith("..") or ":" in new_path:
         return RenameRefusal(f"{new_path} is outside the project")
     if any(part in _PROTECTED for part in normal.split("/")):
         return RenameRefusal(f"{new_path} is protected")
+    if normal in files:
+        return RenameRefusal(f"{new_path} exists already")
+    return None
+
+
+def _target_refusal(files: Mapping[str, str], path: str, new_path: str) -> RenameRefusal | None:
+    if path not in files:
+        return RenameRefusal(f"{path} is not a file of the project")
+    refusal = new_path_refusal(files, new_path)
+    if refusal:
+        return refusal
+    normal = posixpath.normpath(new_path)
     if posixpath.splitext(path)[1] != posixpath.splitext(new_path)[1]:
         return RenameRefusal(f"{new_path} has another ending than {path}")
-    if normal in files or normal == path:
-        return RenameRefusal(f"{new_path} exists already")
     if module_of_path(files, path) != module_of_path(files, normal):
         return RenameRefusal(f"{new_path} is in another module (another context.yaml) than {path}")
     return None

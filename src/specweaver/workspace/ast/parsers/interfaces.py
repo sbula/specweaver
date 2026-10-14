@@ -274,6 +274,7 @@ class CodeStructureInterface(ABC):
             "traceability",
             "imports",
             "framework_markers",
+            "create",
         ]
 
     def find_references(self, code: str, name: str) -> list[Reference]:

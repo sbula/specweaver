@@ -424,3 +424,37 @@ async def test_the_implementer_moves_java_and_c_files(
     assert "error" not in result, result
     assert not (root / path).exists()
     assert expected in (root / changed).read_text()
+
+
+async def test_the_implementer_creates_and_deletes_a_module(project: Path) -> None:
+    # Proves: D-SENS-06 FR-12
+    dispatcher = _dispatcher(project)
+    created = await dispatcher.execute(
+        "create_module", {"path": "src/app/extra.py", "code": "def extra_helper():\n    return 1\n"}
+    )
+    deleted = await dispatcher.execute("delete_module", {"path": "src/app/extra.py"})
+    refused = await dispatcher.execute("delete_module", {"path": "src/app/greeter.py"})
+
+    assert "error" not in created, created
+    assert "error" not in deleted, deleted
+    assert not (project / "src/app/extra.py").exists()
+    assert "still used" in refused["error"]
+    assert (project / "src/app/greeter.py").exists()
+
+
+def test_create_and_delete_need_full_rights(project: Path) -> None:
+    # Proves: D-SENS-06 FR-13
+    _write(project, {"src/app/lonely.py": "def alone():\n    return 1\n"})
+    before = _snapshot(project)
+    tool = _tool(project, [FolderGrant(str(project), AccessMode.WRITE, recursive=True)])
+
+    assert "right to create" in tool.create_module("src/app/extra.py", "x = 1\n").message
+    assert "right to delete" in tool.delete_module("src/app/lonely.py").message
+    assert _snapshot(project) == before
+
+
+@pytest.mark.parametrize("role", ["reviewer", "planner", "drafter"])
+async def test_no_other_role_may_create_or_delete(project: Path, role: str) -> None:
+    dispatcher = _dispatcher(project, role)
+    names = {d.name for d in dispatcher.available_tools()}
+    assert not names & {"create_module", "delete_module"}

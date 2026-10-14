@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import typing
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -30,7 +31,8 @@ if TYPE_CHECKING:
     from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
-    from specweaver.workspace.ast.refactor.rename import Spot
+    from specweaver.workspace.ast.refactor.move import MovePlan
+    from specweaver.workspace.ast.refactor.rename import RenamePlan, Spot
 
 # ---------------------------------------------------------------------------
 # Role → allowed intents
@@ -50,6 +52,8 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
             "add_symbol",
             "rename_symbol",
             "move_module",
+            "create_module",
+            "delete_module",
         }
     ),
     "reviewer": frozenset(
@@ -289,34 +293,18 @@ class CodeStructureTool(BaseTool):
         grant_err = self._check_grant(path, MODE_ALLOWS_WRITE)
         if grant_err:
             return grant_err
-        parser = _parser_for(path)
-        if self._executor is None or parser is None:
-            return ToolResult(status="error", message=f"rename is not supported for {path}")
         context = {"path": path, "symbol_name": symbol_name, "new_name": new_name}
-        plan, sources = changes.rename_plan(
-            self._executor, parser, context, self._exclude_dirs, self._exclude_patterns
-        )
-        if isinstance(plan, RenameRefusal):
-            return ToolResult(status="error", message=self._refusal_text(plan.reason, plan.spots))
-        outside = [p for p in plan.changes if self._mode_of(p) not in MODE_ALLOWS_WRITE]
-        if outside:
-            return ToolResult(
-                status="error",
-                message=f"{len(outside)} file(s) of the rename are outside your write grants; "
-                "nothing was changed",
-            )
-        applied = changes.apply_changes(self._executor, sources.files, plan.changes)
-        if not applied.ok:
-            return ToolResult(status="error", message=applied.message)
-        seen, hidden = self._readable(plan.mentions)
-        return ToolResult(
-            status="success",
-            message=f"Renamed '{symbol_name}' to '{new_name}': {applied.message}",
-            data={
-                "changed": sorted(plan.changes),
-                "mentions": [str(s) for s in seen],
-                "mentions_outside_grants": hidden,
-            },
+        planned = self._planned("rename_symbol", path, context)
+        if isinstance(planned, ToolResult):
+            return planned
+        plan, sources = typing.cast("RenamePlan", planned[0]), planned[1]
+        return self._apply_edits(
+            sources,
+            plan,
+            list(plan.changes),
+            "rename",
+            f"Renamed '{symbol_name}' to '{new_name}'",
+            {},
         )
 
     def move_module(self, path: str, new_path: str) -> ToolResult:
@@ -328,36 +316,96 @@ class CodeStructureTool(BaseTool):
             return ToolResult(
                 status="error", message=f"moving needs the right to create {new_path}"
             )
-        parser = _parser_for(path)
-        if self._executor is None or parser is None:
-            return ToolResult(status="error", message=f"moving is not supported for {path}")
         context = {"path": path, "new_path": new_path}
-        plan, sources = changes.move_plan(
-            self._executor, parser, context, self._exclude_dirs, self._exclude_patterns
-        )
-        if isinstance(plan, RenameRefusal):
-            return ToolResult(status="error", message=self._refusal_text(plan.reason, plan.spots))
+        planned = self._planned("move_module", path, context)
+        if isinstance(planned, ToolResult):
+            return planned
+        plan, sources = typing.cast("MovePlan", planned[0]), planned[1]
         others = [p for p in plan.changes if p != plan.new_path]
-        outside = [p for p in others if self._mode_of(p) not in MODE_ALLOWS_WRITE]
+        return self._apply_edits(
+            sources,
+            plan,
+            others,
+            "move",
+            f"Moved {path} to {plan.new_path}",
+            {"moved": [path, plan.new_path]},
+        )
+
+    def create_module(self, path: str, code: str) -> ToolResult:
+        """Create a new file holding `code`, where the role may create it."""
+        self._require_intent("create_module")
+        if self._mode_of(path) not in MODE_ALLOWS_CREATE:
+            return ToolResult(status="error", message=f"creating needs the right to create {path}")
+        return self._file_change("create_module", {"path": path, "code": code}, path)
+
+    def delete_module(self, path: str) -> ToolResult:
+        """Delete a file nothing uses, where the role may delete it."""
+        self._require_intent("delete_module")
+        if self._mode_of(path) not in MODE_ALLOWS_DELETE:
+            return ToolResult(status="error", message=f"deleting needs the right to delete {path}")
+        return self._file_change("delete_module", {"path": path}, path)
+
+    def _apply_edits(
+        self,
+        sources: Any,
+        plan: RenamePlan | MovePlan,
+        edited: list[str],
+        what: str,
+        done: str,
+        data: dict[str, Any],
+    ) -> ToolResult:
+        """Write a plan whose `edited` files all need write grants, and report its mentions."""
+        outside = [p for p in edited if self._mode_of(p) not in MODE_ALLOWS_WRITE]
         if outside:
             return ToolResult(
                 status="error",
-                message=f"{len(outside)} file(s) of the move are outside your write grants; nothing was changed",
+                message=f"{len(outside)} file(s) of the {what} are outside your write grants; "
+                "nothing was changed",
             )
-        applied = changes.apply_changes(self._executor, sources.files, plan.changes, plan.old_path)
+        applied = self._apply(sources, plan)
         if not applied.ok:
             return ToolResult(status="error", message=applied.message)
         seen, hidden = self._readable(plan.mentions)
         return ToolResult(
             status="success",
-            message=f"Moved {path} to {plan.new_path}: {applied.message}",
+            message=f"{done}: {applied.message}",
             data={
-                "moved": [path, plan.new_path],
+                **data,
                 "changed": sorted(plan.changes),
                 "mentions": [str(s) for s in seen],
                 "mentions_outside_grants": hidden,
             },
         )
+
+    def _file_change(self, intent: str, context: dict[str, str], path: str) -> ToolResult:
+        planned = self._planned(intent, path, context)
+        if isinstance(planned, ToolResult):
+            return planned
+        plan, sources = planned
+        applied = self._apply(sources, plan)
+        if not applied.ok:
+            return ToolResult(status="error", message=applied.message)
+        key = "created" if intent == "create_module" else "deleted"
+        return ToolResult(status="success", message=f"{key.capitalize()} {path}", data={key: path})
+
+    def _planned(
+        self, intent: str, path: str, context: dict[str, str]
+    ) -> ToolResult | tuple[Any, Any]:
+        """The plan of a change intent and the files it read, or the error to return."""
+        parser = _parser_for(path)
+        if self._executor is None or parser is None:
+            return ToolResult(status="error", message=f"{intent} is not supported for {path}")
+        plan, sources = changes.plan_change(
+            intent, self._executor, parser, context, self._exclude_dirs, self._exclude_patterns
+        )
+        if isinstance(plan, RenameRefusal):
+            return ToolResult(status="error", message=self._refusal_text(plan.reason, plan.spots))
+        return plan, sources
+
+    def _apply(self, sources: Any, plan: Any) -> changes.Applied:
+        if self._executor is None:
+            raise CodeStructureToolError("this tool has no executor to write with")
+        return changes.apply_plan(self._executor, sources, plan)
 
     def _mode_of(self, path: str) -> AccessMode | None:
         return self._resolve_mode(self._normalize_path(path))

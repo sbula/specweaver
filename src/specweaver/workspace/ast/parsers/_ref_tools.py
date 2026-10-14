@@ -109,4 +109,4 @@ class Renames(CodeStructureInterface):
 
     def supported_intents(self) -> list[str]:
         moves = ["move"] if hasattr(self._finder(), "module_references") else []
-        return [*super().supported_intents(), "rename", *moves]
+        return [*super().supported_intents(), "rename", "remove", *moves]

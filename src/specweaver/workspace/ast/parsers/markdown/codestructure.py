@@ -55,6 +55,7 @@ class MarkdownCodeStructure(DeclarativeParser):
             "add",
             "delete",
             "imports",
+            "create",
         ]
 
     def supported_parameters(self) -> list[str]:

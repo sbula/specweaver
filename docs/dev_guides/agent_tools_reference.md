@@ -42,8 +42,8 @@ Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
 Reads and changes code by symbol, never by raw text: `read_file_structure`, `read_symbol`,
 `read_symbol_body`, `list_symbols` for every role that reads; `replace_symbol`,
-`replace_symbol_body`, `add_symbol`, `delete_symbol`, `rename_symbol` and `move_module` for the
-implementer.
+`replace_symbol_body`, `add_symbol`, `delete_symbol`, `rename_symbol`, `move_module`,
+`create_module` and `delete_module` for the implementer.
 `CodeStructureAtom` (`sandbox/code_structure/core/atom.py`) offers the same intents to the flow
 engine without grants.
 
@@ -78,6 +78,12 @@ file renamed in its folder renames its public class, and a move to another packa
 the old package uses it without an import. C and C++ includes are rewritten when they resolve beside
 their includer, and unsure when only an include path finds them. The agent needs `FULL` on
 both paths: a move creates one file and deletes another.
+
+`create_module(path, code)` writes a new file. It refuses a path that exists, is outside the
+project or protected, or has no parser, and code that does not parse. `delete_module(path)` deletes
+a file only when nothing uses it: no import of it, and no proven or unsure use of its top-level
+symbols in another file. The refusal names the files that use it; a Rust module is always used by
+its parent's `mod` line. Each needs `FULL` on `path`.
 
 ## GitTool (agents)
 

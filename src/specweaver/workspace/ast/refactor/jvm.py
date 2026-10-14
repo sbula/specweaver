@@ -193,6 +193,11 @@ class JvmResolver(Resolver):
             )
         return self.type_uses(home, name)
 
+    def symbol_users(self, path: str, symbol: str) -> Found | RenameRefusal:
+        if symbol in self.facts(path).defs and self._is_type(path, symbol):
+            return self.type_uses(path, symbol)
+        return self.find(path, symbol, f"{symbol}_unused_name")
+
     def type_uses(self, home: str, name: str) -> Found:
         """Every use of the top-level type `name` of `home`, judged; a move renames through it."""
         target = ("def", home, name)

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from specweaver.workspace.ast.parsers.exclusions import SpecWeaverIgnoreParser
+from specweaver.workspace.ast.refactor.files import FilePlan, plan_create, plan_delete
 from specweaver.workspace.ast.refactor.move import MovePlan, plan_move
 from specweaver.workspace.ast.refactor.rename import (
     CODE_SUFFIXES,
@@ -24,7 +25,7 @@ from specweaver.workspace.ast.refactor.rename import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
@@ -33,11 +34,14 @@ __all__ = [
     "Applied",
     "Sources",
     "apply_changes",
-    "move_plan",
+    "apply_plan",
+    "deleted_by",
+    "plan_change",
+    "plan_create",
+    "plan_delete",
     "plan_move",
     "plan_rename",
     "project_sources",
-    "rename_plan",
 ]
 
 TEXT_SUFFIXES = (".md", ".rst", ".txt", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini", ".mod")
@@ -139,38 +143,55 @@ def _read_project(
     return sources
 
 
-def rename_plan(
+#: Each change intent: the context keys it needs, and the name of its planner in this module
+#: (looked up when called, so a test can stand in for one).
+_PLANNERS: dict[str, tuple[tuple[str, ...], str]] = {
+    "rename_symbol": (("path", "symbol_name", "new_name"), "plan_rename"),
+    "move_module": (("path", "new_path"), "plan_move"),
+    "create_module": (("path", "code"), "plan_create"),
+    "delete_module": (("path",), "plan_delete"),
+}
+
+Plan = RenamePlan | MovePlan | FilePlan
+
+
+def plan_change(
+    intent: str,
     executor: FileExecutor,
     parser: CodeStructureInterface,
     context: Mapping[str, object],
     exclude_dirs: set[str] | None = None,
     exclude_patterns: set[str] | None = None,
-) -> tuple[RenamePlan | RenameRefusal, Sources]:
-    """Read the project and plan `context`'s rename: `path`, `symbol_name`, `new_name`."""
-    path, symbol, new = (context.get(k) for k in ("path", "symbol_name", "new_name"))
-    if not all(isinstance(v, str) and v for v in (path, symbol, new)):
-        return RenameRefusal("rename needs 'path', 'symbol_name' and 'new_name'"), Sources()
-    sources = _read_project(executor, str(path), exclude_dirs, exclude_patterns)
+) -> tuple[Plan | RenameRefusal, Sources]:
+    """Read the project and plan one change intent from `context`."""
+    keys, planner_name = _PLANNERS[intent]
+    planner: Callable[..., Any] = globals()[planner_name]
+    values = [context.get(k) for k in keys]
+    empty_ok = {"code"}
+    if not all(
+        isinstance(v, str) and (v or k in empty_ok) for k, v in zip(keys, values, strict=True)
+    ):
+        return RenameRefusal(f"{intent} needs {', '.join(repr(k) for k in keys)}"), Sources()
+    path = str(values[0])
+    sources: Sources | RenameRefusal
+    if intent == "create_module":
+        sources = project_sources(executor, exclude_dirs, exclude_patterns)
+    else:
+        sources = _read_project(executor, path, exclude_dirs, exclude_patterns)
     if isinstance(sources, RenameRefusal):
         return sources, Sources()
-    return plan_rename(sources.files, str(path), str(symbol), str(new), parser), sources
+    return planner(sources.files, *values, parser), sources
 
 
-def move_plan(
-    executor: FileExecutor,
-    parser: CodeStructureInterface,
-    context: Mapping[str, object],
-    exclude_dirs: set[str] | None = None,
-    exclude_patterns: set[str] | None = None,
-) -> tuple[MovePlan | RenameRefusal, Sources]:
-    """Read the project and plan `context`'s move: `path` to `new_path`."""
-    path, new_path = context.get("path"), context.get("new_path")
-    if not all(isinstance(v, str) and v for v in (path, new_path)):
-        return RenameRefusal("a move needs 'path' and 'new_path'"), Sources()
-    sources = _read_project(executor, str(path), exclude_dirs, exclude_patterns)
-    if isinstance(sources, RenameRefusal):
-        return sources, Sources()
-    return plan_move(sources.files, str(path), str(new_path), parser), sources
+def deleted_by(plan: Plan) -> str | None:
+    """The file a plan removes: a move's old path, a delete's path, else None."""
+    if isinstance(plan, MovePlan):
+        return plan.old_path
+    return plan.delete if isinstance(plan, FilePlan) else None
+
+
+def apply_plan(executor: FileExecutor, sources: Sources, plan: Plan) -> Applied:
+    return apply_changes(executor, sources.files, plan.changes, deleted_by(plan))
 
 
 def apply_changes(
