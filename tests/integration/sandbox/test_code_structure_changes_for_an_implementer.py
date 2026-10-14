@@ -290,3 +290,21 @@ async def test_the_implementer_renames_a_rust_function_across_modules(tmp_path: 
 
     assert "error" not in result, result
     assert (root / "src/run.rs").read_text() == "use crate::util::add;\nfn go() -> u32 { add(1) }\n"
+
+
+async def test_the_implementer_renames_a_go_function_across_packages(tmp_path: Path) -> None:
+    # Proves: D-SENS-06 FR-8
+    root = _write(
+        tmp_path / "go",
+        {
+            "go.mod": "module example.com/m\n",
+            "util/util.go": "package util\n\nfunc Total(a int) int { return a }\n",
+            "app/main.go": 'package main\n\nimport "example.com/m/util"\n\nfunc main() { util.Total(1) }\n',
+        },
+    )
+    result = await _dispatcher(root).execute(
+        "rename_symbol", {"path": "util/util.go", "symbol_name": "Total", "new_name": "Sum"}
+    )
+
+    assert "error" not in result, result
+    assert "util.Sum(1)" in (root / "app/main.go").read_text()

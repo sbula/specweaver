@@ -141,19 +141,7 @@ class RustCodeStructure(Renames, FunctionBasedParser):
         """
 
     def supported_intents(self) -> list[str]:
-        return [
-            "skeleton",
-            "symbol",
-            "symbol_body",
-            "list",
-            "replace",
-            "replace_body",
-            "add",
-            "delete",
-            "traceability",
-            "imports",
-            "rename",
-        ]
+        return [i for i in super().supported_intents() if i != "framework_markers"]
 
     def supported_parameters(self) -> list[str]:
         return ["visibility"]

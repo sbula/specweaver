@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = ["Applied", "Sources", "apply_changes", "plan_rename", "project_sources", "rename_plan"]
 
-TEXT_SUFFIXES = (".md", ".rst", ".txt", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini")
+TEXT_SUFFIXES = (".md", ".rst", ".txt", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini", ".mod")
 
 #: Folders no project scan enters, whatever the exclusions say.
 _ALWAYS_SKIPPED = frozenset(

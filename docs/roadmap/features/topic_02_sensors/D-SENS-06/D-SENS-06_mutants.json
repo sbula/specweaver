@@ -337,10 +337,13 @@
       "title": "Java and Kotlin rename every proven use and refuse when unsure",
       "scope": [
         "tests/integration/sandbox/test_code_structure_changes_for_an_implementer.py",
+        "tests/integration/sandbox/test_rename_through_the_atom.py",
+        "tests/unit/workspace/ast/parsers/go/test_go_references.py",
         "tests/unit/workspace/ast/parsers/java/test_java_references.py",
         "tests/unit/workspace/ast/parsers/kotlin/test_kotlin_references.py",
         "tests/unit/workspace/ast/parsers/rust/test_rust_references.py",
         "tests/unit/workspace/ast/parsers/typescript/test_typescript_references.py",
+        "tests/unit/workspace/ast/refactor/test_plan_rename_go.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_jvm.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_rust.py",
         "tests/unit/workspace/ast/refactor/test_plan_rename_typescript.py"
@@ -593,7 +596,107 @@
           "symbol": "RustResolver._inherent",
           "old": "                if r.kind == \"definition\" and r.qualifier and self.class_id(p, r.owner) == me:\n",
           "new": "                if False:\n",
-          "breaks": "an inherent method shadowed by a trait method is renamed"
+          "breaks": "an inherent method shadowed by a trait method is renamed",
+          "symbol_sha": "sha256:8e6442d97e6e6646dbd735d04694ccac7ff3f2b767594f81eeeb231e1b7ed42b"
+        },
+        {
+          "id": "go-dot-import-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver._unqualified",
+          "old": "        return \"unsure\" if home[0] in dots or None in dots else \"unrelated\"\n",
+          "new": "        return \"unrelated\"\n",
+          "breaks": "a name through a dot import is skipped",
+          "symbol_sha": "sha256:180044b8d8b15f32fc6ede98005f366557a38354c021f33d1583020498982467"
+        },
+        {
+          "id": "go-export-change-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver.find",
+          "old": "        if old[:1].isupper() != new_name[:1].isupper():\n",
+          "new": "        if False:\n",
+          "breaks": "an exported name silently becomes unexported",
+          "symbol_sha": "sha256:9ed5b5e17bfc5b8a6e4fbb4d3beaa6a8540df10a55ac08449eec4a23cd529781"
+        },
+        {
+          "id": "go-standard-name-allowed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver._find_method",
+          "old": "        if old in STANDARD_METHODS:\n",
+          "new": "        if False:\n",
+          "breaks": "String() is renamed and printing breaks",
+          "symbol_sha": "sha256:1a68e80fcd3219a501ccff0b0fb1cf5f3ef6b2146f0f2eed0a125b806f8a5a9f"
+        },
+        {
+          "id": "go-interface-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver._find_method",
+          "old": "            if any(r.kind == \"definition\" and r.binding == \"interface\" for r in self.refs(p, old)):\n",
+          "new": "            if False:\n",
+          "breaks": "a type stops satisfying an interface",
+          "symbol_sha": "sha256:1a68e80fcd3219a501ccff0b0fb1cf5f3ef6b2146f0f2eed0a125b806f8a5a9f"
+        },
+        {
+          "id": "go-receiver-call-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver._method_use",
+          "old": "        if ref.receiver_binding == \"receiver\":\n",
+          "new": "        if False:\n",
+          "breaks": "g.M() inside a method keeps the old name",
+          "symbol_sha": "sha256:5acbc4779bfb1d944b00ded0a6d3b09f56dfa85989b42bd840136d600ce5bbeb"
+        },
+        {
+          "id": "go-same-package-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver._unqualified",
+          "old": "        if self.package_of(p) == home:\n            return \"proven\"\n",
+          "new": "        if False:\n            return \"proven\"\n",
+          "breaks": "a call in the same package keeps the old name",
+          "symbol_sha": "sha256:180044b8d8b15f32fc6ede98005f366557a38354c021f33d1583020498982467"
+        },
+        {
+          "id": "go-package-name-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/go.py",
+          "symbol": "GoResolver.aliases",
+          "old": "                name = self._package_name(folder) or local\n",
+          "new": "                name = local\n",
+          "breaks": "a package named unlike its folder is not followed",
+          "symbol_sha": "sha256:56a6474c1cdcf9197a3a0db30331eed256041f7983371ee8b02b9e2fd9b385a4"
+        },
+        {
+          "id": "go-receiver-unseen",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/go/_references.py",
+          "symbol": "_receiver_binding",
+          "old": "        return \"receiver\"\n",
+          "new": "        return \"free\"\n",
+          "breaks": "the method's receiver is taken as an unknown value",
+          "symbol_sha": "sha256:9af8b2bf8848b3a302a73c19e83cf16e9b538b3517482607b2aa342fc611cb58"
+        },
+        {
+          "id": "go-shadow-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/go/_references.py",
+          "symbol": "_identifier",
+          "old": "    binding = \"local\" if text(node) in _locals(node) else \"free\"\n",
+          "new": "    binding = \"free\"\n",
+          "breaks": "a Go local of the name is renamed",
+          "symbol_sha": "sha256:16a4466e9f32ad0adc517dadd2c308cc404341eb63a89040339c18c1855f18c0"
+        },
+        {
+          "id": "go-mod-unread",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/changes.py",
+          "symbol": "<module>",
+          "old": "\".ini\", \".mod\")",
+          "new": "\".ini\")",
+          "breaks": "go.mod is not read, so no import resolves"
         }
       ]
     }

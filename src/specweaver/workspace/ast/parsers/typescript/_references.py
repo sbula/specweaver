@@ -12,14 +12,7 @@ from __future__ import annotations
 
 import typing
 
-from specweaver.workspace.ast.parsers._ref_tools import (
-    comment_ref,
-    literal_ref,
-    ref,
-    text,
-    walk,
-    word,
-)
+from specweaver.workspace.ast.parsers._ref_tools import mention, ref, text, walk, word
 from specweaver.workspace.ast.parsers.interfaces import FileBindings, Reference
 
 _FUNCTIONS = (
@@ -227,17 +220,10 @@ def find_references(root: typing.Any, name: str) -> list[Reference]:
     for node in walk(root):
         if node.type in _NAMES and text(node) == name:
             found.append(_identifier(node, module))
-        elif node.type in ("string", "template_string") and node.parent.type not in (
-            "import_statement",
-            "export_statement",
-        ):
-            literal = literal_ref(node, name, pattern, ("string_fragment",))
-            if literal:
-                found.append(literal)
-        elif node.type == "comment":
-            comment = comment_ref(node, pattern)
-            if comment:
-                found.append(comment)
+        else:
+            strings = {"string": "string_fragment", "template_string": "string_fragment"}
+            skip = ("import_statement", "export_statement")
+            found.extend(filter(None, [mention(node, name, pattern, strings, ("comment",), skip)]))
     return sorted(found, key=lambda r: r.start_byte)
 
 

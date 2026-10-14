@@ -51,6 +51,22 @@ def comment_ref(node: typing.Any, pattern: re.Pattern[str]) -> Reference | None:
     return ref("text", node) if pattern.search(text(node)) else None
 
 
+def mention(
+    node: typing.Any,
+    name: str,
+    pattern: re.Pattern[str],
+    strings: dict[str, str],
+    comments: tuple[str, ...],
+    skip_parents: tuple[str, ...] = (),
+) -> Reference | None:
+    """A string or comment holding `name`: `strings` maps a string node to its content node."""
+    if node.type in strings and node.parent is not None and node.parent.type not in skip_parents:
+        return literal_ref(node, name, pattern, (strings[node.type],))
+    if node.type in comments:
+        return comment_ref(node, pattern)
+    return None
+
+
 class Renames(CodeStructureInterface):
     """Mixin for a parser whose language renames: `_finder` gives its reference finder."""
 

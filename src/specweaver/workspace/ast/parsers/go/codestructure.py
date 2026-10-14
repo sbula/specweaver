@@ -16,6 +16,8 @@ import tree_sitter_go
 from tree_sitter import Query, QueryCursor
 
 from specweaver.workspace.ast.parsers import _visibility as _vis
+from specweaver.workspace.ast.parsers._ref_tools import Renames
+from specweaver.workspace.ast.parsers.go import _references
 from specweaver.workspace.ast.parsers.tiers import FunctionBasedParser
 
 logger = logging.getLogger(__name__)
@@ -69,7 +71,7 @@ def _embedded_nodes(body: typing.Any | None) -> list[typing.Any]:
     return found
 
 
-class GoCodeStructure(FunctionBasedParser):
+class GoCodeStructure(Renames, FunctionBasedParser):
     """Go tree-sitter structural parser."""
 
     grammar = staticmethod(tree_sitter_go.language)
@@ -80,6 +82,9 @@ class GoCodeStructure(FunctionBasedParser):
     # both a `type_declaration` wrapping one, so naming the wrapper would need two entries and
     # naming the spec needs one.
     TYPE_DECLARATION_NODES: typing.ClassVar[tuple[str, ...]] = ("type_spec",)
+
+    def _finder(self) -> typing.Any:
+        return _references
 
     def _supertypes_of(self, node: typing.Any) -> dict[str, list[str]]:
         """What this type embeds. Embedding is reported as EXTENSION.
@@ -236,18 +241,7 @@ class GoCodeStructure(FunctionBasedParser):
         return {}
 
     def supported_intents(self) -> list[str]:
-        return [
-            "skeleton",
-            "symbol",
-            "symbol_body",
-            "list",
-            "replace",
-            "replace_body",
-            "add",
-            "delete",
-            "traceability",
-            "imports",
-        ]
+        return [i for i in super().supported_intents() if i != "framework_markers"]
 
     def supported_parameters(self) -> list[str]:
         return ["visibility"]

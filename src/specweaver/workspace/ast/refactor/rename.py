@@ -19,6 +19,7 @@ from specweaver.workspace.ast.refactor._model import (
     Spot,
     listing,
 )
+from specweaver.workspace.ast.refactor.go import GoResolver
 from specweaver.workspace.ast.refactor.jvm import JvmResolver
 from specweaver.workspace.ast.refactor.python import PythonResolver
 from specweaver.workspace.ast.refactor.rust import RustResolver
@@ -50,6 +51,7 @@ _RESOLVERS: dict[str, type[Resolver]] = {
     ".ts": TypeScriptResolver,
     ".tsx": TypeScriptResolver,
     ".rs": RustResolver,
+    ".go": GoResolver,
 }
 
 #: Endings of source code; every other file is text, where a name is only ever a mention.

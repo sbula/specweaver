@@ -13,14 +13,7 @@ from __future__ import annotations
 
 import typing
 
-from specweaver.workspace.ast.parsers._ref_tools import (
-    comment_ref,
-    literal_ref,
-    ref,
-    text,
-    walk,
-    word,
-)
+from specweaver.workspace.ast.parsers._ref_tools import mention, ref, text, walk, word
 from specweaver.workspace.ast.parsers.interfaces import FileBindings, Reference
 
 _ITEMS = ("struct_item", "enum_item", "trait_item", "type_item", "union_item")
@@ -244,14 +237,6 @@ def _use_refs(declaration: typing.Any, name: str) -> list[Reference]:
     return found
 
 
-def _mention(node: typing.Any, name: str, pattern: typing.Any) -> Reference | None:
-    if node.type in ("string_literal", "raw_string_literal"):
-        return literal_ref(node, name, pattern, ("string_content",))
-    if node.type in ("line_comment", "block_comment"):
-        return comment_ref(node, pattern)
-    return None
-
-
 def find_references(root: typing.Any, name: str) -> list[Reference]:
     """Every place `name` occurs under `root`, in byte order."""
     if not name:
@@ -268,9 +253,12 @@ def find_references(root: typing.Any, name: str) -> list[Reference]:
             if not _inside(node, "use_declaration"):
                 found.append(_identifier(node))
         else:
-            mention = _mention(node, name, pattern)
-            if mention:
-                found.append(mention)
+            strings = {"string_literal": "string_content", "raw_string_literal": "string_content"}
+            found.extend(
+                filter(
+                    None, [mention(node, name, pattern, strings, ("line_comment", "block_comment"))]
+                )
+            )
     return sorted(found, key=lambda r: r.start_byte)
 
 
