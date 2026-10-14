@@ -186,3 +186,91 @@ def test_only_code_languages_offer_the_doc_intents() -> None:
         assert {"doc", "replace_doc"} <= set(parser.supported_intents())
     for parser in (SqlCodeStructure(), MarkdownCodeStructure()):
         assert not {"doc", "replace_doc"} & set(parser.supported_intents())
+
+
+# --- a doc above an attribute, a decorator or a template ------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("parser", "code", "symbol", "expected"),
+    [
+        (
+            RustCodeStructure(),
+            "/// Old.\n#[derive(Debug)]\npub struct S {}\n",
+            "S",
+            "/// New.\n#[derive(Debug)]\npub struct S {}\n",
+        ),
+        (
+            RustCodeStructure(),
+            "#[test]\n#[ignore]\nfn f() {}\n",
+            "f",
+            "/// New.\n#[test]\n#[ignore]\nfn f() {}\n",
+        ),
+        (
+            CppCodeStructure(),
+            "/** Old. */\ntemplate <typename T>\nT f(T a) { return a; }\n",
+            "f",
+            "/**\n * New.\n */\ntemplate <typename T>\nT f(T a) { return a; }\n",
+        ),
+        (
+            CppCodeStructure(),
+            "template <typename T>\nclass Box {};\n",
+            "Box",
+            "/**\n * New.\n */\ntemplate <typename T>\nclass Box {};\n",
+        ),
+        (
+            TypeScriptCodeStructure(),
+            "/** Old. */\n@Component({})\nexport class A {}\n",
+            "A",
+            "/**\n * New.\n */\n@Component({})\nexport class A {}\n",
+        ),
+        (
+            TypeScriptCodeStructure(),
+            "class A {\n    @Input()\n    m(): void {}\n}\n",
+            "A.m",
+            "class A {\n    /**\n     * New.\n     */\n    @Input()\n    m(): void {}\n}\n",
+        ),
+    ],
+)
+def test_the_doc_sits_above_attributes_decorators_and_templates(  # type: ignore[no-untyped-def]
+    parser, code, symbol, expected
+) -> None:
+    assert parser.replace_symbol_doc(code, symbol, "New.") == expected
+    assert parser.extract_symbol_doc(expected, symbol) == "New."
+
+
+def test_an_attribute_after_a_blank_line_keeps_the_doc_detached() -> None:
+    code = "/// Licence.\n\n#[test]\nfn f() {}\n"
+    assert RustCodeStructure().extract_symbol_doc(code, "f") == ""
+
+
+# --- line endings ----------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("parser", "code", "symbol", "expected"),
+    [
+        (
+            GoCodeStructure(),
+            "package m\r\n\r\nfunc F() {}\r\n",
+            "F",
+            "package m\r\n\r\n// A.\r\n// B.\r\nfunc F() {}\r\n",
+        ),
+        (
+            JavaCodeStructure(),
+            "class A {}\r\n",
+            "A",
+            "/**\r\n * A.\r\n * B.\r\n */\r\nclass A {}\r\n",
+        ),
+        (
+            PythonCodeStructure(),
+            "def f():\r\n    return 1\r\n",
+            "f",
+            'def f():\r\n    """A.\r\n    B.\r\n    """\r\n    return 1\r\n',
+        ),
+    ],
+)
+def test_a_crlf_file_gets_crlf_doc_lines(parser, code, symbol, expected) -> None:  # type: ignore[no-untyped-def]
+    assert parser.replace_symbol_doc(code, symbol, "A.\nB.") == expected
+    assert parser.extract_symbol_doc(expected, symbol) == "A.\nB."
+    assert parser.replace_symbol_doc(expected, symbol, "") == code

@@ -118,7 +118,8 @@
       "scope": [
         "tests/unit/workspace/ast/refactor/test_plan_rename.py",
         "tests/unit/workspace/ast/parsers/python/test_python_references.py",
-        "tests/integration/sandbox/test_rename_through_the_atom.py"
+        "tests/integration/sandbox/test_rename_through_the_atom.py",
+        "tests/integration/sandbox/test_line_endings_kept.py"
       ],
       "mutants": [
         {
@@ -160,6 +161,26 @@
           "new": "        if True:\n",
           "breaks": "an ignored folder makes a rename refuse",
           "symbol_sha": "sha256:2b8900c2bbd418bb56e01d40f832c8a3cead2fbd20fc1ee862a90bc62195689d"
+        },
+        {
+          "id": "read-turns-crlf-to-lf",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor.read",
+          "old": "            with resolved.open(encoding=\"utf-8\", newline=\"\") as handle:\n                content = handle.read()\n",
+          "new": "            with resolved.open(encoding=\"utf-8\") as handle:\n                content = handle.read()\n",
+          "breaks": "one rename rewrites every line ending of a CRLF file",
+          "symbol_sha": "sha256:a7f30087b3d7169b37f745f5f766fb44f50ca0c82fbba935c043919a840f909a"
+        },
+        {
+          "id": "write-turns-lf-to-os",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor.write",
+          "old": "            tmp_path.write_text(content, encoding=\"utf-8\", newline=\"\")\n",
+          "new": "            tmp_path.write_text(content.replace(\"\\r\\n\", \"\\n\"), encoding=\"utf-8\")\n",
+          "breaks": "a write changes the line endings it was given",
+          "symbol_sha": "sha256:b0d209afa22fdf8557d7377921f48557f234a5f1614933b22125cdb0a3501f61"
         }
       ]
     },
@@ -1083,7 +1104,8 @@
       "title": "The doc above a symbol is read and replaced; nothing else changes",
       "scope": [
         "tests/unit/workspace/ast/parsers/test_symbol_doc_round_trip.py",
-        "tests/integration/sandbox/test_symbol_docs_through_the_tool.py"
+        "tests/integration/sandbox/test_symbol_docs_through_the_tool.py",
+        "tests/integration/sandbox/test_line_endings_kept.py"
       ],
       "mutants": [
         {
@@ -1091,10 +1113,10 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/parsers/_docs.py",
           "symbol": "write_sibling_doc",
-          "old": "    top = comments[0] if comments else anchor\n",
-          "new": "    top = anchor\n",
+          "old": "    top = comments[0] if comments else below\n",
+          "new": "    top = below\n",
           "breaks": "an old doc stays and a second one is added above the symbol",
-          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+          "symbol_sha": "sha256:223f997ce7cddfe70713a74ad93c0cde80a09e8363addf05ce37147e25f8b832"
         },
         {
           "id": "doc-style-forced",
@@ -1104,7 +1126,7 @@
           "old": "    if comments:\n        style = next(",
           "new": "    if False:\n        style = next(",
           "breaks": "an existing // doc is rewritten as /** */",
-          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+          "symbol_sha": "sha256:223f997ce7cddfe70713a74ad93c0cde80a09e8363addf05ce37147e25f8b832"
         },
         {
           "id": "doc-remove-off",
@@ -1114,7 +1136,7 @@
           "old": "    if not lines:\n        return \"\"\n",
           "new": "    if not lines:\n        lines = [\"\"]\n",
           "breaks": "an empty doc leaves an empty comment instead of removing it",
-          "symbol_sha": "sha256:98fbb7d96dae52ba014dd908362558678b973bac79126840d87f15c607675a65"
+          "symbol_sha": "sha256:c90237363a1544d4f71f7ca6a721a8238e9551f2b0e837ecae9492c51a99c996"
         },
         {
           "id": "docstring-remove-off",
@@ -1124,7 +1146,7 @@
           "old": "        return _without_docstring(code, body, line) if has_doc else code\n",
           "new": "        return code\n",
           "breaks": "an empty doc leaves the docstring in place",
-          "symbol_sha": "sha256:8a09e2af22b3fc6891a09d074a3fda0adf584b3e3c720fe97bb2f136264ca67c"
+          "symbol_sha": "sha256:d0f952571f492e829b344b01d6737b151acbae4536dc3091aadfa9b1abc3ea29"
         },
         {
           "id": "docstring-only-statement-dropped",
@@ -1141,10 +1163,10 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/parsers/_docs.py",
           "symbol": "write_sibling_doc",
-          "old": "    if code[start : top.start_byte].strip() or code[end : anchor.start_byte].strip():\n",
+          "old": "    if code[start : top.start_byte].strip() or code[end : below.start_byte].strip():\n",
           "new": "    if False:\n",
           "breaks": "a doc written above a line that holds other code cuts that code",
-          "symbol_sha": "sha256:a05a227eeae5f36534188654d0ff855d1f2222d3d682eae46c44d6f9ca9cd8c6"
+          "symbol_sha": "sha256:223f997ce7cddfe70713a74ad93c0cde80a09e8363addf05ce37147e25f8b832"
         },
         {
           "id": "doc-close-marker-allowed",
@@ -1154,7 +1176,7 @@
           "old": "        if \"*/\" in doc:\n",
           "new": "        if False:\n",
           "breaks": "a doc holding */ ends its comment early",
-          "symbol_sha": "sha256:98fbb7d96dae52ba014dd908362558678b973bac79126840d87f15c607675a65"
+          "symbol_sha": "sha256:c90237363a1544d4f71f7ca6a721a8238e9551f2b0e837ecae9492c51a99c996"
         },
         {
           "id": "docstring-quote-allowed",
@@ -1164,7 +1186,7 @@
           "old": "    if '\"\"\"' in doc or doc.rstrip().endswith('\"'):\n",
           "new": "    if False:\n",
           "breaks": "a doc holding triple quotes ends its docstring early",
-          "symbol_sha": "sha256:8f7d5f8c225d3c40240c20e287a0a7b8369a3a7953a61d683e8fa0e9542d20ca"
+          "symbol_sha": "sha256:a0d65bf294a708c8d0fa27c6bb35f76a35cda995bf18391183a30901f3fcad6d"
         },
         {
           "id": "doc-anchor-to-root",
@@ -1174,7 +1196,7 @@
           "old": "        and node.parent.parent is not None\n",
           "new": "        and True\n",
           "breaks": "a declaration on line 1 sharing it with other code is not refused",
-          "symbol_sha": "sha256:2f5e3d25e9bc552c82d8d05d9b8e17d3ba528417da698e492d7f21c08abb176b"
+          "symbol_sha": "sha256:aedd34c83d1a94ef6f4feb9f112b99dd85d68b53df2d0e5ae0707e9624cc4003"
         },
         {
           "id": "doc-sql-allowed",
@@ -1195,6 +1217,36 @@
           "new": "        self._require_intent(\"replace_symbol_doc\")\n        grant_err = None\n",
           "breaks": "an agent writes the doc of a file it may only read",
           "symbol_sha": "sha256:f8fd051dbf378e2db10bdb7a8a67ac5021750b37546aeec86d9613690c5b3d8b"
+        },
+        {
+          "id": "doc-wrapper-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_anchor",
+          "old": "        and (node.parent.start_point[0] == node.start_point[0] or node.parent.type in _WRAPPERS)\n",
+          "new": "        and node.parent.start_point[0] == node.start_point[0]\n",
+          "breaks": "a doc above a C++ template or a decorated TypeScript export is not seen, and a second is added",
+          "symbol_sha": "sha256:aedd34c83d1a94ef6f4feb9f112b99dd85d68b53df2d0e5ae0707e9624cc4003"
+        },
+        {
+          "id": "doc-attribute-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_with_attached",
+          "old": "        and top.prev_sibling.type in _ATTACHED\n",
+          "new": "        and False\n",
+          "breaks": "a doc above a Rust attribute is not seen, and a second is added",
+          "symbol_sha": "sha256:5e67b97d613c31dd3169e9eb0548a03d78e181954d31223fb9e686e7167e4b2b"
+        },
+        {
+          "id": "doc-eol-forced",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_eol",
+          "old": "    return \"\\r\\n\" if b\"\\r\\n\" in code else \"\\n\"\n",
+          "new": "    return \"\\n\"\n",
+          "breaks": "a doc written into a CRLF file gets LF lines",
+          "symbol_sha": "sha256:0b4b37f3a539271c21481b8d09c000d0b1a34af5bb6897702e72babd8b04adca"
         }
       ]
     }

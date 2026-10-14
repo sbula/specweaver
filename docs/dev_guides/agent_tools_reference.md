@@ -90,7 +90,11 @@ plain text. `replace_symbol_doc(path, symbol_name, doc)` takes plain text and ad
 the indentation: `/** */` in Java, Kotlin, TypeScript, C and C++, `///` in Rust, `//` in Go. An
 existing doc keeps its own style, an empty `doc` removes it, and only the doc's lines change. A doc
 that shares a line with other code, or text that would end its own comment, refuses. SQL and
-Markdown have no doc intents.
+Markdown have no doc intents. A doc goes above a Rust attribute, a decorator and a C++
+`template` line.
+
+`FileExecutor` reads and writes the text exactly as it is on disk, so every change keeps each
+file's line endings: a read returns `\r\n` where the file has it.
 
 ## GitTool (agents)
 

@@ -120,7 +120,9 @@ class FileExecutor:
             )
 
         try:
-            content = resolved.read_text(encoding="utf-8")
+            # `newline=""`: the text as it is on disk, so a write back keeps its line endings.
+            with resolved.open(encoding="utf-8", newline="") as handle:
+                content = handle.read()
         except UnicodeDecodeError:
             return ExecutorResult(status="error", error=f"File is not valid UTF-8: {path}")
         except OSError as exc:
@@ -142,7 +144,7 @@ class FileExecutor:
         size = 0
         count = 0
         try:
-            with resolved.open(encoding="utf-8") as handle:
+            with resolved.open(encoding="utf-8", newline="") as handle:
                 for count, line in enumerate(handle, start=1):
                     if count >= start and (end is None or count <= end):
                         kept.append(line)
@@ -180,7 +182,7 @@ class FileExecutor:
         tmp_path = resolved.with_suffix(f".tmp.{uuid.uuid4()}")
         try:
             resolved.parent.mkdir(parents=True, exist_ok=True)
-            tmp_path.write_text(content, encoding="utf-8")
+            tmp_path.write_text(content, encoding="utf-8", newline="")
             os.replace(tmp_path, resolved)
         except OSError as exc:
             if tmp_path.exists():

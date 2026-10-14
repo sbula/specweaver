@@ -21,6 +21,13 @@ import typing
 
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureError
 
+#: Wrappers that open on an earlier row than what they wrap: `template <...>` above a C++
+#: declaration, and a TypeScript `export` holding a decorator.
+_WRAPPERS = frozenset({"template_declaration", "export_statement"})
+
+#: Siblings that belong to the declaration below them; its doc sits above them.
+_ATTACHED = frozenset({"attribute_item", "decorator"})
+
 #: Stripped from the front of a line, repeatedly, longest first so `/**` never leaves a stray `*`.
 _LEADING_MARKERS = ("///", "//!", "//", "/**", "/*", "#")
 
@@ -83,7 +90,7 @@ def _anchor(name_node: typing.Any) -> typing.Any | None:
     while (
         node.parent is not None
         and node.parent.parent is not None
-        and node.parent.start_point[0] == node.start_point[0]
+        and (node.parent.start_point[0] == node.start_point[0] or node.parent.type in _WRAPPERS)
     ):
         node = node.parent
     return node
@@ -118,11 +125,24 @@ def sibling_doc(name_node: typing.Any) -> str:
     # `rstrip` for the same grammar difference `_last_content_row` normalises: a Rust
     # `line_comment` owns its trailing newline, so joining two of them would insert a
     # blank line the source never had. Newlines INSIDE a block comment are kept.
-    return strip_markers("\n".join(_text(c).rstrip("\n") for c in _doc_comments(anchor)))
+    comments = _doc_comments(_with_attached(anchor))
+    return strip_markers("\n".join(_text(c).rstrip("\r\n") for c in comments))
 
 
 def _text(node: typing.Any) -> str:
     return typing.cast("bytes", node.text or b"").decode("utf-8")
+
+
+def _with_attached(anchor: typing.Any) -> typing.Any:
+    """The topmost attribute or decorator directly above `anchor`, or `anchor` itself."""
+    top = anchor
+    while (
+        top.prev_sibling is not None
+        and top.prev_sibling.type in _ATTACHED
+        and top.prev_sibling.end_point[0] + 1 >= top.start_point[0]
+    ):
+        top = top.prev_sibling
+    return top
 
 
 def _doc_comments(anchor: typing.Any) -> list[typing.Any]:
@@ -160,7 +180,7 @@ def docstring_doc(name_node: typing.Any) -> str:
     text = typing.cast("bytes", literal.text or b"").decode("utf-8")
     for quote in ('"""', "'''", '"', "'"):
         if text.startswith(quote) and text.endswith(quote) and len(text) >= 2 * len(quote):
-            return inspect.cleandoc(text[len(quote) : -len(quote)])
+            return inspect.cleandoc(text[len(quote) : -len(quote)].replace("\r\n", "\n"))
     return text.strip()
 
 
@@ -174,16 +194,21 @@ def _line_start(code: bytes, at: int) -> int:
     return code.rfind(b"\n", 0, at) + 1
 
 
-def _render_comment(doc: str, style: str, indent: str) -> str:
+def _eol(code: bytes) -> str:
+    """The line ending a new line in `code` gets: the file's own."""
+    return "\r\n" if b"\r\n" in code else "\n"
+
+
+def _render_comment(doc: str, style: str, indent: str, eol: str) -> str:
     lines = doc.strip("\n").splitlines()
     if not lines:
         return ""
     if style.startswith("/*"):
         if "*/" in doc:
             raise CodeStructureError("the doc holds '*/', which would end its comment")
-        inner = "".join(f"{indent} * {line}".rstrip() + "\n" for line in lines)
-        return f"{indent}{style}\n{inner}{indent} */\n"
-    return "".join(f"{indent}{style} {line}".rstrip() + "\n" for line in lines)
+        inner = "".join(f"{indent} * {line}".rstrip() + eol for line in lines)
+        return f"{indent}{style}{eol}{inner}{indent} */{eol}"
+    return "".join(f"{indent}{style} {line}".rstrip() + eol for line in lines)
 
 
 def write_sibling_doc(code: bytes, name_node: typing.Any, doc: str, style: str) -> bytes:
@@ -195,25 +220,27 @@ def write_sibling_doc(code: bytes, name_node: typing.Any, doc: str, style: str) 
     anchor = _anchor(name_node)
     if anchor is None:
         raise CodeStructureError("the symbol has no declaration to write a doc above")
-    comments = _doc_comments(anchor)
-    top = comments[0] if comments else anchor
-    start, end = _line_start(code, top.start_byte), _line_start(code, anchor.start_byte)
-    if code[start : top.start_byte].strip() or code[end : anchor.start_byte].strip():
+    below = _with_attached(anchor)
+    comments = _doc_comments(below)
+    top = comments[0] if comments else below
+    start, end = _line_start(code, top.start_byte), _line_start(code, below.start_byte)
+    if code[start : top.start_byte].strip() or code[end : below.start_byte].strip():
         raise CodeStructureError("the declaration or its doc shares a line with other code")
     if comments:
         style = next(s for s in _STYLES if _text(comments[0]).startswith(s))
-    indent = code[end : anchor.start_byte].decode("utf-8")
-    return code[:start] + _render_comment(doc, style, indent).encode("utf-8") + code[end:]
+    indent = code[end : below.start_byte].decode("utf-8")
+    text = _render_comment(doc, style, indent, _eol(code))
+    return code[:start] + text.encode("utf-8") + code[end:]
 
 
-def _render_docstring(doc: str, indent: str) -> str:
+def _render_docstring(doc: str, indent: str, eol: str) -> str:
     if '"""' in doc or doc.rstrip().endswith('"'):
         raise CodeStructureError("the doc holds a quote that would end its docstring")
     lines = doc.strip("\n").splitlines()
     if len(lines) == 1:
         return f'"""{lines[0]}"""'
-    rest = "".join(f"\n{indent}{line}".rstrip(" \t") for line in lines[1:])
-    return f'"""{lines[0]}{rest}\n{indent}"""'
+    rest = "".join(eol + f"{indent}{line}".rstrip(" \t") for line in lines[1:])
+    return f'"""{lines[0]}{rest}{eol}{indent}"""'
 
 
 def write_docstring(code: bytes, name_node: typing.Any, doc: str) -> bytes:
@@ -228,10 +255,11 @@ def write_docstring(code: bytes, name_node: typing.Any, doc: str) -> bytes:
     has_doc = first.type == "expression_statement" and first.children[0].type == "string"
     if not doc.strip():
         return _without_docstring(code, body, line) if has_doc else code
-    text = _render_docstring(doc, indent).encode("utf-8")
+    eol = _eol(code)
+    text = _render_docstring(doc, indent, eol).encode("utf-8")
     if has_doc:
         return code[: first.start_byte] + text + code[first.end_byte :]
-    return code[: first.start_byte] + text + f"\n{indent}".encode() + code[first.start_byte :]
+    return code[: first.start_byte] + text + f"{eol}{indent}".encode() + code[first.start_byte :]
 
 
 def _without_docstring(code: bytes, body: typing.Any, line: int) -> bytes:
