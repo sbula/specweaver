@@ -21,6 +21,10 @@ FROM python:${PY_VERSION}-slim
 # Install uv (fast Python package manager) — same mechanism as the root Containerfile.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# pytest runs the scenario tests SpecWeaver generates, also for a project whose own manifest names
+# no test dependency. Installed as root, before the non-root user below.
+RUN uv pip install --system --no-cache pytest
+
 # Non-root default user (ContainerSubprocessExecutor overrides this at runtime via
 # --user $(id -u):$(id -g) on Linux/macOS — NFR-4 — this USER is the fallback for
 # any invocation that doesn't pass --user, e.g. today's Windows best-effort path).

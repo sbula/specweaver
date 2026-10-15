@@ -116,7 +116,9 @@ class TestToolRegistry:
         assert "Failed to create tool 'crash'" in caplog.text
         assert "Factory crash!" in caplog.text
 
-    def test_registry_lazy_resolution_preserves_namespace(self) -> None:
+    def test_registry_lazy_resolution_preserves_namespace(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
 
         # Remove the modules if they happen to be loaded already
         target_modules = [
@@ -129,8 +131,11 @@ class TestToolRegistry:
             "specweaver.sandbox.protocol.interfaces.tool",
         ]
 
+        # `monkeypatch` puts the original modules back afterwards: a bare `pop` left later imports to
+        # build second copies, so another test's `pytest.raises(CodeStructureToolError)` caught the
+        # wrong class and failed whenever this test ran first.
         for mod in target_modules:
-            sys.modules.pop(mod, None)
+            monkeypatch.delitem(sys.modules, mod, raising=False)
 
         # Call get_standard_registry to set up closures
         _ = get_standard_registry()
@@ -138,10 +143,6 @@ class TestToolRegistry:
         # Ensure that none of the heavy domains were imported just by calling get_standard_registry
         for mod in target_modules:
             assert mod not in sys.modules, f"Module {mod} was imported prematurely!"
-
-        # Restore sys.modules just in case
-        for mod in target_modules:
-            sys.modules.pop(mod, None)
 
     def test_registry_duplicate_registration_overwrites(self) -> None:
         """Registering the same key twice silently overwrites the factory."""

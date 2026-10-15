@@ -14,10 +14,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import re
 import shutil
 import sys
-import tomllib
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -30,6 +28,12 @@ from specweaver.commons.prepare_plan import (
     plan_for,
 )
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.execution.sandbox_image import (
+    _ENGINES,
+    _RECIPE,
+    _resolve_image,
+    ensure_sandbox_image,
+)
 
 if TYPE_CHECKING:
     from specweaver.commons.tooling_sources import ToolingSource
@@ -41,8 +45,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_TAGS: tuple[str, ...] = ("3.11", "3.12", "3.13")
-_DEFAULT_TAG = "3.13"
 #: Where the prepare phase builds the target project's environment. On the rw cache mount,
 #: because the source tree is mounted read-only and `uv`'s default `.venv` lands there.
 _PREPARED_VENV = "/cache/venv"
@@ -54,59 +56,12 @@ _CONTAINER_PATH = (
     f"{_PREPARED_VENV}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
 
-#: An image per toolchain, because `cargo` is not in the Python sandbox image and no amount of
-#: preparing puts it there. Public upstream images for the others: building one polyglot image would
-#: pull every toolchain for every project, and the executor already picks per project.
-_TOOLCHAIN_IMAGES = {
-    "cargo": "docker.io/library/rust:1-slim",
-    "maven": "docker.io/library/maven:3-eclipse-temurin-21",
-}
-
-_DEFAULT_IMAGE_REPO = "ghcr.io/sbula/specweaver-sandbox-python"
-
-# NFR-5 / AD-4: reuse BashActionAtom's resource-limit defaults verbatim (2 GiB / 128 procs)
-# rather than inventing a second limits schema for the same underlying concern.
 _CONTAINER_MEMORY_BYTES = 2_147_483_648
 _CONTAINER_PIDS_LIMIT = 128
-
-_ENGINES: tuple[str, ...] = ("podman", "docker")  # AD-6: podman preferred, docker fallback
 
 
 class ContainerEngineUnavailableError(Exception):
     """Raised when neither podman nor docker is detected and live on the host (FR-7)."""
-
-
-def _resolve_image(source_root: Path) -> str:
-    """The image for this project's toolchain.
-
-    Python keeps its own sandbox image and its `requires-python` tag selection. Every other toolchain
-    takes an upstream image that carries it, because the Python image contains no `cargo` and no JDK.
-    """
-    toolchain = detect_toolchain(source_root)
-    if toolchain in _TOOLCHAIN_IMAGES:
-        return _TOOLCHAIN_IMAGES[toolchain]
-    version = _DEFAULT_TAG
-    pyproject = source_root / "pyproject.toml"
-    if pyproject.exists():
-        try:
-            with pyproject.open("rb") as f:
-                data = tomllib.load(f)
-            requires_python = data.get("project", {}).get("requires-python", "")
-            match = re.search(r"3\.(\d+)", requires_python)
-            if match:
-                minor = int(match.group(1))
-                candidate = f"3.{minor}"
-                if candidate in _SUPPORTED_TAGS:
-                    version = candidate
-                elif minor < 11:
-                    version = _SUPPORTED_TAGS[0]
-                else:
-                    version = _DEFAULT_TAG
-        except (OSError, tomllib.TOMLDecodeError, AttributeError, TypeError):
-            logger.debug(
-                "ContainerSubprocessExecutor: could not parse %s for requires-python", pyproject
-            )
-    return f"{_DEFAULT_IMAGE_REPO}:{version}"
 
 
 class ContainerSubprocessExecutor(SubprocessExecutor):
@@ -148,6 +103,10 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         self._run_id = run_id or uuid.uuid4().hex[:12]
         self._image = image or _resolve_image(mounts.source_root)
         self._engine: str | None = None
+
+    def _run_engine(self, argv: list[str]) -> int:
+        """An engine command on the host, for its exit code; image builds may take minutes."""
+        return super().execute(argv, timeout_seconds=1800).exit_code
 
     def _ensure_engine(self) -> str:
         """Lazily detect and memoize a live container engine (FR-6, FR-7, Finding #2)."""
@@ -231,6 +190,10 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
 
     def _ensure_prepared(self) -> None:
         """Network-enabled `uv sync` prepare phase, gated by a lockfile-hash stamp (AD-7, AD-9)."""
+        engine = self._ensure_engine()
+        if not ensure_sandbox_image(self._image, engine, self._run_engine):
+            msg = f"the sandbox image {self._image} could not be built from {_RECIPE}"
+            raise RuntimeError(msg)
         plan = plan_for(self._mounts.source_root)
         if plan.toolchain != "uv":
             self._prepare_other_toolchain(plan)
@@ -522,6 +485,11 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             f"{self._mounts.source_root}:/workspace:{self._workspace_mode()}",
             "-v",
             f"{self._mounts.scratch_root}:/scratch:rw",
+            *(
+                ["-v", f"{self._mounts.scenarios_root}:/scenarios:ro"]
+                if self._mounts.scenarios_root is not None
+                else []
+            ),
             # An overlay is discarded with the container, so reports must land outside it.
             *(
                 ["-v", f"{self._mounts.scratch_root / 'target'}:/workspace/target:rw"]

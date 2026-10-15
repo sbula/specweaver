@@ -113,7 +113,11 @@ class ScenarioConverter:
             "",
             "import pytest  # noqa: F401 — used by raise-asserting groups",
             "",
-            f"_TARGET_PATH = Path(__file__).resolve().parents[2] / 'src' / {filename!r}",
+            # In the container the code is at /workspace and this file sits in the /scenarios
+            # mount, so no path relative to this file can find it.
+            "_WORKSPACE = Path('/workspace')",
+            "_ROOT = _WORKSPACE if (_WORKSPACE / 'src').is_dir() else Path(__file__).resolve().parents[2]",
+            f"_TARGET_PATH = _ROOT / 'src' / {filename!r}",
             "",
             "",
             "def _load_target():",

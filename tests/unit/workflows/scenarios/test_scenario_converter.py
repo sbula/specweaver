@@ -258,3 +258,11 @@ class TestRealTestBodies:
         compile(result, "<scenario_test>", "exec")
         assert "@trace(FR-1)" in result
         assert "@trace(FR-2)" in result
+
+
+def test_the_target_is_found_under_the_container_workspace_first() -> None:
+    # Proves: B-FLOW-01 FR-14
+    content = ScenarioConverter.convert(_make_scenario_set(), stem="auth")
+    assert "_WORKSPACE = Path('/workspace')" in content
+    assert "_ROOT = _WORKSPACE if (_WORKSPACE / 'src').is_dir() else" in content
+    assert "_TARGET_PATH = _ROOT / 'src' / 'auth.py'" in content

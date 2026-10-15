@@ -20,6 +20,13 @@ from specweaver.core.flow.handlers.run_context import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _a_container_is_available(monkeypatch):
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+    )
+
+
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
@@ -33,6 +40,7 @@ def run_context():
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.run = RunHandle(run_id="test_run_123")
     ctx.spec_path = Path("/mock/project/specs/login_spec.md")
+    ctx.project_path = Path("/mock/project")
     ctx.feedback = {}
     # Need to mock the pipeline_runner and its components
     ctx.run = RunHandle(run_id="test_run_123", pipeline_runner=MagicMock())

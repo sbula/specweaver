@@ -13,7 +13,12 @@ is supported, but the interface allows future language support.
 from __future__ import annotations
 
 import logging
+import posixpath
+import shutil
+import tempfile
+import weakref
 from dataclasses import asdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
@@ -22,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from pathlib import Path
 
     from specweaver.core.config.settings import SandboxSettings
     from specweaver.sandbox.execution.executor import SubprocessExecutor
@@ -48,17 +52,32 @@ def _resolve_runner(
     return resolve_runner(cwd, executor=executor)
 
 
-def _build_container_executor(cwd: Path) -> SubprocessExecutor:
+def container_available(project_root: Path) -> bool:
+    """Whether this project's tests can run in a container: a live engine and its image, built
+    here from SpecWeaver's own recipe when missing."""
+    from specweaver.sandbox.execution.sandbox_image import sandbox_ready
+
+    return sandbox_ready(project_root)
+
+
+def _build_container_executor(
+    cwd: Path, scenarios_root: Path | None = None, scratch_root: Path | None = None
+) -> SubprocessExecutor:
     """Derive the RO-source / RW-scratch-cache mount layout under `.specweaver/.sandbox/`
-    and build a ContainerSubprocessExecutor from it."""
+    and build a ContainerSubprocessExecutor from it.
+
+    A scenario run also mounts its store read-only, and writes its scratch outside the project:
+    a pytest cache in the project would carry scenario test names to the coder's next run.
+    """
     from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
     from specweaver.sandbox.execution.models import ContainerMounts
 
     sandbox_dir = cwd / ".specweaver" / ".sandbox"
     mounts = ContainerMounts(
         source_root=cwd,
-        scratch_root=sandbox_dir / "scratch",
+        scratch_root=scratch_root or sandbox_dir / "scratch",
         cache_root=sandbox_dir / "cache",
+        scenarios_root=scenarios_root,
     )
     return ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)
 
@@ -89,13 +108,19 @@ class QARunnerAtom(Atom):
         cwd: Path,
         language: str = "python",
         sandbox_settings: SandboxSettings | None = None,
+        scenarios_root: Path | None = None,
     ) -> None:
         executor: SubprocessExecutor | None = None
-        if sandbox_settings is not None and sandbox_settings.execution_mode == "container":
+        if scenarios_root is not None:
+            scratch = Path(tempfile.mkdtemp(prefix="specweaver-scenario-"))
+            weakref.finalize(self, shutil.rmtree, scratch, True)
+            executor = _build_container_executor(cwd, scenarios_root, scratch)
+        elif sandbox_settings is not None and sandbox_settings.execution_mode == "container":
             executor = _build_container_executor(cwd)
 
         self._runner = _resolve_runner(language, cwd, executor)
         self._cwd = cwd
+        self._scenarios_mounted = scenarios_root is not None
 
     def run(self, context: dict[str, Any]) -> AtomResult:
         """Dispatch to the appropriate intent based on context.
@@ -172,6 +197,8 @@ class QARunnerAtom(Atom):
         """NFR-3 path-traversal protection: None when every target stays inside the sandbox."""
         try:
             for t in targets:
+                if self._in_scenarios_mount(t):
+                    continue
                 if not (self._cwd / t).resolve().is_relative_to(self._cwd.resolve()):
                     return AtomResult(
                         status=AtomStatus.FAILED,
@@ -183,6 +210,11 @@ class QARunnerAtom(Atom):
                 message="Invalid target path provided for sandbox execution.",
             )
         return None
+
+    def _in_scenarios_mount(self, target: str) -> bool:
+        """A target under the container's `/scenarios` mount, for a scenario run only."""
+        normal = posixpath.normpath(target)
+        return self._scenarios_mounted and normal.startswith("/scenarios/")
 
     def _intent_run_tests(self, context: dict[str, Any]) -> AtomResult:
         """Run tests via the language-specific runner.

@@ -174,12 +174,12 @@ class TestConstruction:
             '[project]\nrequires-python = ">=3.12"\n'
         )
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.12")
+        assert executor._image.split(":")[-1].startswith("3.12-")
 
     def test_image_defaults_to_latest_when_pyproject_absent(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.13")
+        assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_to_latest_when_requires_python_unparseable(
         self, tmp_path: Path
@@ -187,7 +187,7 @@ class TestConstruction:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text("not valid toml [[[")
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.13")
+        assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_explicit_image_overrides_detection(self, tmp_path: Path) -> None:
         executor = ContainerSubprocessExecutor(
@@ -200,7 +200,7 @@ class TestConstruction:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text('[project]\nrequires-python = ">=3.9"\n')
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.11")
+        assert executor._image.split(":")[-1].startswith("3.11-")
 
     def test_image_clamps_above_newest_supported_tag(self, tmp_path: Path) -> None:
         """requires-python above 3.13 clamps to the default tag, not a literal 3.14."""
@@ -209,7 +209,7 @@ class TestConstruction:
             '[project]\nrequires-python = ">=3.14"\n'
         )
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.13")
+        assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_when_requires_python_does_not_match_version_regex(
         self, tmp_path: Path
@@ -219,7 +219,7 @@ class TestConstruction:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text('[project]\nrequires-python = ""\n')
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.13")
+        assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_when_requires_python_is_not_a_string(self, tmp_path: Path) -> None:
         """A non-string requires-python (TOML int) raises TypeError inside re.search,
@@ -227,7 +227,7 @@ class TestConstruction:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text("[project]\nrequires-python = 312\n")
         executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
-        assert executor._image.endswith(":3.13")
+        assert executor._image.split(":")[-1].startswith("3.13-")
 
 
 # ---------------------------------------------------------------------------
@@ -408,7 +408,7 @@ class TestExecuteOverride:
 
     def test_cleanup_runs_on_super_execute_exception(self, tmp_path: Path, monkeypatch) -> None:
         def side_effect(cmd, **kwargs):
-            if "info" in cmd:
+            if "info" in cmd or "image" in cmd:
                 return _ok_result()
             if "rm" in cmd:
                 return _ok_result()

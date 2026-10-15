@@ -38,6 +38,7 @@ from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
+from specweaver.sandbox.execution.sandbox_image import container_available
 from tests.rendering import shows
 from tests.scripted_llm import doubled_llm
 
@@ -46,7 +47,13 @@ if TYPE_CHECKING:
 
 runner = CliRunner()
 
-pytestmark = pytest.mark.e2e
+#: The scenario tests run in a container (B-FLOW-01 FR-14), so this journey needs a live engine.
+pytestmark = [
+    pytest.mark.e2e,
+    pytest.mark.skipif(
+        not container_available(), reason="no live podman/docker engine on this host"
+    ),
+]
 
 # --------------------------------------------------------------------------- #
 # Fixtures: spec, implementations, scenario payloads, verdicts                 #

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
@@ -14,8 +15,6 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.flow.engine.models import PipelineStep
@@ -345,6 +344,19 @@ class ValidateCodeHandler:
 _WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 
+def _scenarios_root(context: RunContext) -> Path:
+    """Where the scenario tests are kept, mounted at `/scenarios` for their run."""
+    return context.project_path / "scenarios"
+
+
+def _in_scenarios_mount(target: str, root: Path) -> str:
+    """`target` as the container sees it: under `/scenarios` when it is in the scenario folder."""
+    path = Path(target)
+    if path.is_absolute() and path.is_relative_to(root):
+        return "/scenarios/" + path.relative_to(root).as_posix()
+    return target
+
+
 def _default_test_target(context: RunContext, kind: str) -> str:
     """The file a test step runs when it names none: the scenario file for the scenario step only.
 
@@ -380,6 +392,9 @@ class ValidateTestsHandler:
         started = _now_iso()
         kind = step.params.get("kind", "unit")
         target = step.params.get("target") or _default_test_target(context, kind)
+        if kind == "scenario":
+            # The container sees the scenario tests only under its /scenarios mount.
+            target = _in_scenarios_mount(target, _scenarios_root(context))
         logger.debug("ValidateTestsHandler: resolving %s test targets for '%s'", kind, target)
 
         targets = self._resolve_targets(context, target, kind)
@@ -397,7 +412,7 @@ class ValidateTestsHandler:
         _one_generated_file = bool(target) and str(target).endswith(".py")
         atom_kind = "" if (kind == "scenario" or _one_generated_file) else kind
 
-        atom = self._get_atom(context)
+        atom = self._get_atom(context, kind)
         result = atom.run(
             {
                 "intent": "run_tests",
@@ -466,7 +481,7 @@ class ValidateTestsHandler:
             completed_at=_now_iso(),
         )
 
-    def _get_atom(self, context: RunContext) -> QARunnerAtom:
+    def _get_atom(self, context: RunContext, kind: str = "unit") -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project.
 
         ``run_tests`` (pytest) executes LLM-authored test code, so under
@@ -478,6 +493,9 @@ class ValidateTestsHandler:
 
         sandbox_settings = context.model.config.sandbox if context.model.config else None
         cwd = context.isolation.execution_root or context.project_path
+        if kind == "scenario":
+            # Always in a container, with the scenario tests mounted read-only at /scenarios.
+            return QARunnerAtom(cwd=cwd, scenarios_root=_scenarios_root(context))
         return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:

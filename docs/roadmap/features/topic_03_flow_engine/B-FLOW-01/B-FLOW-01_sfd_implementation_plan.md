@@ -91,6 +91,7 @@ A mutant must be killed by a test that runs on a machine without an engine.
 | P2 | How the store names a project | the registered project name; a dual run refuses for an unregistered project `[agreed 2026-10-15]` |
 | P3 | Which steps use the container | every step that runs the coder's code: `run_tests`, the C03 and C04 runs, `lint_fix` `[agreed 2026-10-15]` |
 | P4 | `bash` pipeline steps | out of SF-D: a `bash` step is the person's own pipeline code, and no shipped dual-run pipeline has one `[agreed 2026-10-15]` |
+| P7 | Where the sandbox image comes from | built on the machine SpecWeaver runs on, from `Containerfile.sandbox` shipped in the package, the first time it is needed; no registry. The image carries pytest for the scenario tests, and its tag carries the recipe's fingerprint, so a changed recipe rebuilds `[agreed 2026-10-15]`. Found in CB-3: the GHCR image was never published (`403`), so container runs had never worked out of the box |
 | P5 | The store when a project is removed | `remove_project` deletes the project's store too `[agreed 2026-10-15]` (CB-4) |
 
 Consequences, not decisions: a dual run of a Java, Kotlin, TypeScript or Rust project refuses until

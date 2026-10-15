@@ -31,7 +31,7 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.engine.state import RunStatus
+from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 
@@ -102,6 +102,13 @@ class _Spawner:
         return _Done()
 
 
+@pytest.fixture(autouse=True)
+def _a_container_is_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+    )
+
+
 async def _dual_round(context: RunContext, spawner: _Spawner) -> None:
     context.run = RunHandle(run_id="r", pipeline_runner=spawner)
     step = PipelineStep(
@@ -140,3 +147,24 @@ async def test_no_verdict_means_both_sides_start_empty(tmp_path: Path) -> None:
     await _dual_round(context, spawner)
 
     assert spawner.handed == [{}, {}]
+
+
+@pytest.mark.asyncio
+async def test_a_dual_run_refuses_without_a_container(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Proves: B-FLOW-01 FR-18
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: False)
+    )
+    context, spawner = _context(tmp_path, {}), _Spawner()
+    context.run = RunHandle(run_id="r", pipeline_runner=spawner)
+    step = PipelineStep(
+        name="run_dual_pipelines", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS
+    )
+
+    result = await ArbitrateDualPipelineHandler().execute(step, context)
+
+    assert result.status == StepStatus.FAILED
+    assert "container" in (result.error_message or "")
+    assert spawner.handed == []

@@ -16,6 +16,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.sandbox.qa_runner.core.atom import container_available
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -31,12 +32,28 @@ class ArbitrateDualPipelineHandler:
     for exactly one component (derived from the spec_path).
     """
 
+    #: Whether a container can run the tests here; a class attribute so tests can stand in for it.
+    container_available = staticmethod(container_available)
+
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
         if context.run.pipeline_runner is None:
             return _error_result(
                 "pipeline_runner not available in context — cannot fan out dual pipelines",
                 started,
+            )
+        if not self.container_available(context.project_path):
+            # FR-18: fail closed. Without a container the coder's code could read the scenario
+            # tests, so a run that only looks independent never starts.
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=(
+                    "a dual run needs a container to keep the scenario tests from the coder, and "
+                    "no Podman or Docker engine answers here; install one, or run without the "
+                    "scenario side"
+                ),
+                started_at=started,
+                completed_at=_now_iso(),
             )
         stem = context.spec_path.stem.replace("_spec", "")
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)

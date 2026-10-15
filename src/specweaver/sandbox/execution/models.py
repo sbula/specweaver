@@ -75,3 +75,7 @@ class ContainerMounts:
 
     cache_root: Path
     """Persistent ``uv sync`` package-cache directory — mounted read-write during the prepare phase only."""
+
+    scenarios_root: Path | None = None
+    """The scenario store — mounted read-only at ``/scenarios`` for a scenario test run only; never
+    while dependencies install, and never for a run of the coder's code."""

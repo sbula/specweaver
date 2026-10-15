@@ -213,7 +213,9 @@ async def _flag(tmp_path: Path, target: str, monkeypatch: pytest.MonkeyPatch) ->
     from specweaver.core.flow.engine.models import PipelineStep
 
     root = _project(tmp_path)
-    monkeypatch.setattr(ValidateTestsHandler, "_get_atom", lambda self, context: _PassingAtom())
+    monkeypatch.setattr(
+        ValidateTestsHandler, "_get_atom", lambda self, context, kind="unit": _PassingAtom()
+    )
     step = PipelineStep(name="t", action="validate", target="tests", params={"target": target})
     context = RunContext(project_path=root, spec_path=root / "spec.md")
     result = await ValidateTestsHandler().execute(step, context)

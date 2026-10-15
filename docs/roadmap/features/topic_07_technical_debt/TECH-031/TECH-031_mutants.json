@@ -55,7 +55,7 @@
           "old": "f\"PATH={_CONTAINER_PATH}\"",
           "new": "f\"PATH=/usr/bin:{_CONTAINER_PATH}\"",
           "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter — the membership check that used to pass this is why the assertion is positional",
-          "symbol_sha": "sha256:e582ffc16628e6f68d7bffa3a9bb5ead02266171821552ea56cc021b0872620f"
+          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
         }
       ]
     },
@@ -75,7 +75,7 @@
           "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
-          "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
+          "symbol_sha": "sha256:651f127bbfd6dc1f1234a08391e69f04395b7a47b25d1f3241ae657df5ab6817"
         }
       ]
     },
@@ -124,7 +124,7 @@
           "old": "locked=lockfile.exists()",
           "new": "locked=True",
           "breaks": "a project with no uv.lock is sent to `uv sync --frozen`, which refuses, so it gets no environment at all",
-          "symbol_sha": "sha256:fa8e187ab939763a7ef904ae95dafe71d10dcab3d9b35c612276ce16b6243fe7"
+          "symbol_sha": "sha256:651f127bbfd6dc1f1234a08391e69f04395b7a47b25d1f3241ae657df5ab6817"
         }
       ]
     },
@@ -310,12 +310,12 @@
         {
           "id": "every-toolchain-gets-the-python-image",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "file": "src/specweaver/sandbox/execution/sandbox_image.py",
           "symbol": "_resolve_image",
           "old": "    if toolchain in _TOOLCHAIN_IMAGES:",
           "new": "    if False:",
           "breaks": "a Rust or JVM project is handed the Python sandbox image, which contains no cargo and no JDK, and no amount of preparing puts one there",
-          "symbol_sha": "sha256:c2a1704388bc6d604115aa94a490ed052cbde1354ae3ffb7f36a4c6232921ba3"
+          "symbol_sha": "sha256:77e019906faa9086785e6fc7c65d3515c3fcb720dafb26e1d757b2d0004acb39"
         }
       ]
     },

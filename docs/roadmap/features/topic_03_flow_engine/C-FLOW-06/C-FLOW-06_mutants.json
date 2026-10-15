@@ -118,7 +118,7 @@
           "old": "\"tests_cover_project\": target in _WHOLE_PROJECT",
           "new": "\"tests_cover_project\": True",
           "breaks": "tests of one folder mark the whole project as tested",
-          "symbol_sha": "sha256:d7e1a92cc556fc233744f34dc7c815092683f759e3af0b3c850f97f6bc4320bd"
+          "symbol_sha": "sha256:1f6c418795f6300d90898d5d459b3feb66a97760dc7c71ebfdd111c392527ecf"
         }
       ]
     },

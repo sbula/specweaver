@@ -178,6 +178,95 @@
           "symbol_sha": "sha256:831233dbdc9f556644fb55f2c31bc3300a5e2ded0431b75b3409a7acdbe27f0c"
         }
       ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "Scenario tests run in a container from a read-only /scenarios mount, and nowhere else",
+      "scope": [
+        "tests/unit/sandbox/execution/test_scenario_mount.py",
+        "tests/unit/core/flow/handlers/test_scenario_step_container.py"
+      ],
+      "mutants": [
+        {
+          "id": "scenario-mount-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._build_container_cmd",
+          "old": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:ro\"]\n",
+          "new": "                []\n",
+          "breaks": "the scenario tests are not in the container, so nothing is checked",
+          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
+        },
+        {
+          "id": "scenario-mount-rw",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._build_container_cmd",
+          "old": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:ro\"]\n",
+          "new": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:rw\"]\n",
+          "breaks": "code under test can rewrite the scenario tests it is checked against",
+          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
+        },
+        {
+          "id": "scenario-mount-on-coder",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "QARunnerAtom.__init__",
+          "old": "            executor = _build_container_executor(cwd)\n",
+          "new": "            executor = _build_container_executor(cwd, cwd / \"scenarios\")\n",
+          "breaks": "the coder's own test run sees the scenario tests",
+          "symbol_sha": "sha256:78dbc3ac29473eb1f832872611852f21bd365a04957044751c6e07b3cefa0209"
+        },
+        {
+          "id": "traversal-allowlist-widened",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "QARunnerAtom._in_scenarios_mount",
+          "old": "        return self._scenarios_mounted and normal.startswith(\"/scenarios/\")\n",
+          "new": "        return normal.startswith(\"/\")\n",
+          "breaks": "any absolute path, /etc included, is accepted as a test target",
+          "symbol_sha": "sha256:9980272c689af5c9e1ed591e9435aaade1a30a834c182ab91128977086d42bf0"
+        },
+        {
+          "id": "image-never-built",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/sandbox_image.py",
+          "symbol": "ensure_sandbox_image",
+          "old": "    if run(exists) == 0:\n",
+          "new": "    if True:\n",
+          "breaks": "a machine without the sandbox image never gets one, so no container run can work",
+          "symbol_sha": "sha256:d313b0b891e74185daf0ca22de46c29dc7ead3b9e2139d3e957c2f272c97fd6f"
+        },
+        {
+          "id": "scenario-target-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler.execute",
+          "old": "            target = _in_scenarios_mount(target, _scenarios_root(context))\n",
+          "new": "            pass\n",
+          "breaks": "the container is handed a host path and collects nothing",
+          "symbol_sha": "sha256:1f6c418795f6300d90898d5d459b3feb66a97760dc7c71ebfdd111c392527ecf"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "A dual run refuses to start without a container",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_dual_run_feedback.py"
+      ],
+      "mutants": [
+        {
+          "id": "dual-run-without-container",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler.execute",
+          "old": "        if not self.container_available(context.project_path):\n",
+          "new": "        if False:\n",
+          "breaks": "a dual run starts where the coder's code could read the scenario tests",
+          "symbol_sha": "sha256:85d5afbb8bc5e6bab23d8462f0260cc6f486c0995dde7556a06dc5a5ee189816"
+        }
+      ]
     }
   ]
 }
