@@ -5,6 +5,7 @@
 """Gate evaluation in the runner, including the RESERVE gate's atomic reservation.
 
 Proves: C-FLOW-03 FR-2
+Proves: TECH-006 FR-8b
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-18-MIG`. `C-FLOW-03` is `✅` with six FRs, one planned
 and none cited.

@@ -57,12 +57,13 @@ TESTS_ROOT = REPO_ROOT / "tests"
 #: line such as `- **FRs**: [FR-1, FR-2]`, or prose like `see FR-5's correction`, must not invent
 #: ledger entries the story can never satisfy.
 _FR_DECLARATION = re.compile(
-    r"^\s*(?:\|\s*\**(?P<row>FR-\d+)\**\s*\||[-*+]\s+\**(?P<bullet>FR-\d+)\**\s*:)",
+    r"^\s*(?:\|\s*\**(?P<row>FR-\d+[a-z]?)\**\s*\||[-*+]\s+\**(?P<bullet>FR-\d+[a-z]?)\**\s*:)",
     re.MULTILINE,
 )
 
 #: A bare FR mention anywhere in free text. Uppercase only — `fr-1` in prose is not a citation.
-_FR_MENTION = re.compile(r"(?<![\w-])(FR-\d+)(?![\w-])")
+#: A lowercase letter may follow the number: `FR-5a` is its own id, never `FR-5`.
+_FR_MENTION = re.compile(r"(?<![\w-])(FR-\d+[a-z]?)(?![\w-])")
 
 #: Story ids are used to build glob patterns; refuse anything that is not plainly an id.
 _STORY_ID = re.compile(r"^[A-Z0-9-]+$")
@@ -234,7 +235,7 @@ _NFR_DECLARATION = re.compile(r"^\s*\|\s*\**(NFR-\d+)\**\s*\|", re.MULTILINE)
 #: convention beside the marker rather than instead of it.
 FIXTURE_ID_FLOOR = 90
 
-_ID_NUMBER = re.compile(r"-(\d+)$")
+_ID_NUMBER = re.compile(r"-(\d+)[a-z]?$")
 
 
 def parse_design_nfrs(text: str) -> set[str]:
@@ -299,13 +300,20 @@ def declared_frs(features_root: Path, story: str) -> tuple[list[str], str | None
 #: trusting it — both of its only two hits were this, pointing readers at a parser bug that is not
 #: there. The window is short so an unrelated id earlier in a sentence cannot adopt an FR.
 _FOREIGN_FR = re.compile(
-    r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?['\u2019]?s?\s*`?\s*(FR-\d+)"
+    r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:-SF\d+)?['\u2019]?s?\s*`?\s*(FR-\d+[a-z]?)(?![\w-])"
 )
 
 
 def _own_fr_mentions(text: str) -> set[str]:
     """FR ids mentioned that are not explicitly another story's."""
     return collect_frs(text) - set(_FOREIGN_FR.findall(text))
+
+
+def _fr_order(fr: str) -> tuple[int, str]:
+    """`FR-5` < `FR-5a` < `FR-10`: by number, then by letter."""
+    match = _ID_NUMBER.search(fr)
+    number = int(match.group(1)) if match else 0
+    return number, fr[-1] if fr[-1].isalpha() else ""
 
 
 def declared_frs_from_text(text: str, name: str) -> tuple[list[str], str | None]:
@@ -326,7 +334,7 @@ def declared_frs_from_text(text: str, name: str) -> tuple[list[str], str | None]
     frs = parse_design_frs(text)
     if frs:
         return frs, None
-    mentioned = sorted(_own_fr_mentions(text), key=lambda fr: int(fr.split("-")[1]))
+    mentioned = sorted(_own_fr_mentions(text), key=_fr_order)
     if mentioned:
         return [], (
             f"{name} mentions {', '.join(mentioned)} but this parser cannot read them as "

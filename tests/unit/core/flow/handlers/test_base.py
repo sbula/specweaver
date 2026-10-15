@@ -521,7 +521,7 @@ class TestGuidanceContent:
 class TestRemovedFields:
     """Two unused fields are gone; passing either is an error, not a silent no-op.
 
-    Proves: TECH-006 FR-8.
+    Proves: TECH-006 FR-8, FR-8a, FR-8b.
     """
 
     @pytest.mark.parametrize(

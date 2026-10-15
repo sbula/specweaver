@@ -58,6 +58,9 @@ because the closure ledger checks that each requirement is owned by a plan, and 
 every commit is exactly the kind that gets missed.
 
 FR-6, FR-8, FR-9, FR-10, FR-11 and FR-12 are owned by the specific boundaries called out below.
+FR-8 was split during implementation into FR-8a (`env_vars` removed), FR-8b (`pipeline_name` removed,
+the RESERVE gate locked per pipeline) and FR-8c (`step_records` moved into `RunHandle`); this plan owns
+all three (recorded 2026-10-15, when the FR checker learned to read lettered ids).
 
 ## Proposed Changes (by commit boundary, per the design's already-approved sequencing)
 

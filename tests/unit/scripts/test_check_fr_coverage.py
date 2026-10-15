@@ -640,3 +640,38 @@ class TestPrintLedgerRatio:
 
         out = capsys.readouterr().out
         assert "1 of 1 requirement(s)" in out, out
+
+
+# ---------------------------------------------------------------------------
+# Lettered FR ids (B-FLOW-01 FR-5a, FR-5b were never judged)
+# ---------------------------------------------------------------------------
+
+DESIGN_WITH_LETTERS = """\
+## Functional Requirements
+
+| # | FR | Actor | Action | Outcome |
+|---|-----|-------|--------|---------|
+| FR-5 | Fifth | Engine | does | happens |
+| FR-5a | Fifth, part a | Engine | does | happens |
+- **FR-5b**: Fifth, part b
+"""
+
+
+class TestLetteredIds:
+    def test_a_lettered_row_and_bullet_are_declared(self, mod: ModuleType) -> None:
+        assert mod.parse_design_frs(DESIGN_WITH_LETTERS) == ["FR-5", "FR-5a", "FR-5b"]
+
+    @pytest.mark.parametrize("text", ["see FR-5A", "see FR-5ab", "see FR-5-a"])
+    def test_other_shapes_are_not_ids(self, mod: ModuleType, text: str) -> None:
+        assert mod.collect_frs(text) == set()
+
+    def test_fr_5_and_fr_5a_are_different_ids(self, mod: ModuleType) -> None:
+        assert mod.collect_frs("FR-5 and FR-5a") == {"FR-5", "FR-5a"}
+
+    def test_prose_mentions_with_letters_are_reported_not_crashed(self, mod: ModuleType) -> None:
+        frs, error = mod.declared_frs_from_text("We touch FR-10, FR-5a and FR-5 here.", "d.md")
+        assert frs == []
+        assert error is not None and "FR-5, FR-5a, FR-10" in error
+
+    def test_a_lettered_fixture_id_is_still_a_fixture(self, mod: ModuleType) -> None:
+        assert mod._is_fixture_id("FR-9001a")

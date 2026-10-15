@@ -43,7 +43,7 @@ _TAG = re.compile(
 )
 
 #: A requirement id. Both families, because NFRs joined the ledger with `TECH-017`.
-_REQ = re.compile(r"\b((?:N?FR)-\d+)\b")
+_REQ = re.compile(r"\b((?:N?FR)-\d+[a-z]?)\b")
 
 #: A requirement id that is an *input* to the code under test rather than a claim about it. Keeping
 #: these out is why `unattributed_requirements` reads only comments and docstrings: writing

@@ -205,3 +205,19 @@ class TestCreditedRequirementsAmbiguity:
         """Back-compatible default: callers that pass no registry cannot detect ambiguity."""
         text = "Covers B-EXEC-01 and INT-US-09.\n\n" + "x\n" * 20 + "FR-5 is asserted here."
         assert cit.credited_requirements(text, "B-EXEC-01") == {"FR-5"}
+
+
+class TestLetteredCitations:
+    """`FR-5a` is its own id: it neither credits nor is credited by `FR-5`."""
+
+    def test_a_lettered_id_is_cited(self, cit: ModuleType) -> None:
+        text = '"""T.\n\nProves: B-FLOW-01 FR-5a, FR-5b.\n"""\n'
+        assert cit.strict_citations(text) == {"B-FLOW-01": {"FR-5a", "FR-5b"}}
+
+    @pytest.mark.parametrize(("cited", "not_credited"), [("FR-5", "FR-5a"), ("FR-5a", "FR-5")])
+    def test_fr_5_and_fr_5a_never_credit_each_other(
+        self, cit: ModuleType, cited: str, not_credited: str
+    ) -> None:
+        text = f'"""T.\n\nProves: B-FLOW-01 {cited}.\n"""\n'
+        assert not_credited not in cit.strict_citations(text)["B-FLOW-01"]
+        assert not_credited not in cit.loose_mentions(text, "B-FLOW-01")
