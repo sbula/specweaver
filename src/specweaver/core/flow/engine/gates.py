@@ -242,5 +242,26 @@ class GateEvaluator:
             attempts[step_idx],
             gate.max_retries,
         )
+        if gate.on_exhausted == "park":
+            return self._park_spent_loop(gate, result, run, attempts, step_idx)
         run.fail_current_step(result)
         return "stop"
+
+    @staticmethod
+    def _park_spent_loop(
+        gate: GateDefinition,
+        result: StepResult,
+        run: PipelineRun,
+        attempts: dict[int, int],
+        step_idx: int,
+    ) -> str:
+        """Ask the person: the run waits, and a resume gets the loop's rounds back."""
+        attempts[step_idx] = 0
+        message = (
+            f"{gate.max_retries} rounds did not settle it: {result.error_message or 'failed'}. "
+            "Fix what you can, then resume to try again."
+        )
+        run.park_current_step(result.model_copy(update={"error_message": message}))
+        record = run.step_records[step_idx]
+        record.attempt = 1  # the stored count a resume reads back
+        return "park"

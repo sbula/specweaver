@@ -194,8 +194,8 @@ async def test_red_path_arbitrates_with_real_evidence_and_loops_back(tmp_path: P
     assert result.status == RunStatus.COMPLETED
     # Exactly one arbitration LLM call (round 1); round 2 short-circuited green.
     assert ctx.model.llm_router.adapter.generate.await_count == 1
-    # loop_back re-ran the dual step: 2 sub-runs per round x 2 rounds.
-    assert stub_runner.run.await_count == 4
+    # loop_back re-ran the dual step: both sides in round 1, the coding side only in round 2.
+    assert stub_runner.run.await_count == 3
     # The coding-side feedback was routed and is scenario-vocabulary-free.
     coding = ctx.feedback["generate_code"]["findings"]["results"][0]["message"]
     assert "scenario" not in coding.lower()

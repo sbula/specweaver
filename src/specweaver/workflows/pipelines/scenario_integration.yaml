@@ -46,5 +46,5 @@ steps:
       condition: completed
       on_fail: loop_back
       loop_target: run_dual_pipelines
-      max_retries: 3
-      max_retries_hitl: 4
+      max_retries: 2  # two verdicts send a side back; the third failure asks the person
+      on_exhausted: park

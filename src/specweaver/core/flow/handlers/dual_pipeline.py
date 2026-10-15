@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import importlib.resources
 import logging
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
 import yaml
@@ -46,6 +47,23 @@ def _isolation_refusal(context: RunContext) -> str | None:
             "a dual run is proven for Python projects only; containers for other languages are not"
         )
     return None
+
+
+#: Each side's pipeline and the step its arbiter feedback is for.
+_SIDES = {
+    "coder": ("new_feature.yaml", "generate_code"),
+    "scenario": ("scenario_validation.yaml", "generate_scenarios"),
+}
+#: A side that was right last round: its output stays as it is.
+_KEPT = SimpleNamespace(status="completed", step_records=())
+
+
+def _sides_to_run(feedback: dict[str, Any]) -> set[str]:
+    """The sides a verdict sent back; on a first round, or with no verdict, both."""
+    sent_back = {side for side, (_, step) in _SIDES.items() if step in feedback}
+    if sent_back:
+        logger.info("ArbitrateDualPipelineHandler: running again: %s", ", ".join(sorted(sent_back)))
+    return sent_back or set(_SIDES)
 
 
 #: The coding side's steps that draft or review the spec, which a dual run has already reviewed.
@@ -125,24 +143,20 @@ class ArbitrateDualPipelineHandler:
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 
         try:
-            coding_runner = self._build_runner(
-                "new_feature.yaml", stem, context, "generate_code", coder_side=True
-            )
-            scenario_runner = self._build_runner(
-                "scenario_validation.yaml", stem, context, "generate_scenarios"
-            )
-
-            coding_task = asyncio.create_task(coding_runner.run(parent_run_id=context.run.run_id))
-            scenario_task = asyncio.create_task(
-                scenario_runner.run(parent_run_id=context.run.run_id)
-            )
-
-            _done, _ = await asyncio.wait(
-                [coding_task, scenario_task], return_when=asyncio.ALL_COMPLETED
-            )
-
-            coding_result = coding_task.result()
-            scenario_result = scenario_task.result()
+            # Chosen first: building a side's runner takes its feedback entry out.
+            sides = _sides_to_run(context.feedback)
+            tasks = {
+                side: asyncio.create_task(
+                    self._build_runner(pipe, stem, context, step, coder_side=side == "coder").run(
+                        parent_run_id=context.run.run_id
+                    )
+                )
+                for side, (pipe, step) in _SIDES.items()
+                if side in sides
+            }
+            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)
+            coding_result = tasks["coder"].result() if "coder" in tasks else _KEPT
+            scenario_result = tasks["scenario"].result() if "scenario" in tasks else _KEPT
             # The scenario agent's spec or contract problems are for the person only.
             problems = {"problems": _problems(scenario_result)}
 

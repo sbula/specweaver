@@ -40,5 +40,6 @@ class TestScenarioIntegrationPipeline:
     def test_arbitrate_step_max_retries(self):
         data = get_yaml_data()
         arbitrate_step = next(step for step in data["steps"] if step["name"] == "arbitrate_verdict")
-        assert arbitrate_step["gate"]["max_retries"] == 3
-        assert arbitrate_step["gate"]["max_retries_hitl"] == 4
+        # B-FLOW-01 NFR-5: two rounds, then the person is asked.
+        assert arbitrate_step["gate"]["max_retries"] == 2
+        assert arbitrate_step["gate"]["on_exhausted"] == "park"

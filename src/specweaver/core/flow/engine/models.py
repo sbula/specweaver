@@ -15,7 +15,7 @@ optional gates that control flow (proceed, retry, loop back, abort).
 from __future__ import annotations
 
 import enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -153,6 +153,8 @@ class GateDefinition(BaseModel):
         on_fail: What to do when the condition is not met.
         loop_target: Step name to loop back to (required if on_fail == loop_back).
         max_retries: Maximum retry/loop count before escalating.
+        on_exhausted: What a loop-back gate does once its rounds are spent: `stop` fails the run,
+            `park` waits for the person and gives a resume a fresh set of rounds.
     """
 
     type: GateType = GateType.AUTO
@@ -161,6 +163,7 @@ class GateDefinition(BaseModel):
     loop_target: str | None = None
     max_retries: int = Field(default=3, ge=0)
     max_retries_hitl: int = Field(default=5, ge=0)
+    on_exhausted: Literal["stop", "park"] = "stop"
 
 
 # ---------------------------------------------------------------------------

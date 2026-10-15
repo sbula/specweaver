@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
+          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
         },
         {
           "id": "unregistered-runs",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
+          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
         }
       ]
     },
@@ -637,7 +637,7 @@
           "old": "        if unreviewed is not None:\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
-          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
+          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
         },
         {
           "id": "changed-spec-arbitrated",
@@ -658,6 +658,76 @@
           "new": "            if False:\n",
           "breaks": "the coding side drafts and reviews its own copy of the spec",
           "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "Only the side at fault runs again",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_side_at_fault_reruns.py",
+        "tests/integration/core/flow/handlers/test_scenario_integration_dispatch.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "both-sides-rerun",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_sides_to_run",
+          "old": "    return sent_back or set(_SIDES)\n",
+          "new": "    return set(_SIDES)\n",
+          "breaks": "a verdict against one side makes both run again",
+          "symbol_sha": "sha256:1fd2b924a6976ce66576a02ae20f201fb6ac94b21fccf8fd13b024efc2ffa81f"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-5",
+      "title": "Two rounds, then the person is asked",
+      "scope": [
+        "tests/unit/core/flow/engine/test_loop_parks_when_spent.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "exhausted-loop-fails",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/gates.py",
+          "symbol": "GateEvaluator._handle_loop_back",
+          "old": "        if gate.on_exhausted == \"park\":\n",
+          "new": "        if False:\n",
+          "breaks": "a spent loop fails the run instead of asking the person",
+          "symbol_sha": "sha256:15dbd1fa004b8dfaa17046598fb4dbc5e3e359e5ae77446973d8d13b3830c4b8"
+        },
+        {
+          "id": "resume-gets-no-rounds",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/gates.py",
+          "symbol": "GateEvaluator._park_spent_loop",
+          "old": "        record.attempt = 1  # the stored count a resume reads back\n",
+          "new": "        pass\n",
+          "breaks": "a resume after the person was asked parks again at once",
+          "symbol_sha": "sha256:b408012f557d84bc068f1cc688542e89772d47195903c1dbccb174131ae7c833"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The sides run at the same time and the next step waits for both",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_side_at_fault_reruns.py"
+      ],
+      "mutants": [
+        {
+          "id": "sides-not-joined",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler.execute",
+          "old": "            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)\n",
+          "new": "            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED)\n",
+          "breaks": "the scenario tests can run before the coder has finished",
+          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
         }
       ]
     }

@@ -16,7 +16,7 @@ the US-24 sentence: unit-green but business-wrong, caught by independent verific
   E2 code_bug: buggy impl FAILS real scenario tests -> arbiter -> loop -> fixed -> green
   E3 scenario_error: arbiter blames scenarios -> regeneration WITH the prior-verdict block
   E4 spec_ambiguity: park (exit 0 + resume hint + PARKED row + evidence retained in-run)
-  E5 retries exhausted: bounded stop, non-zero, arbiter message surfaced
+  E5 two rounds spent: the third failure parks for the person, arbiter message kept
   E6 empty set: refused where it is made, three times -> loud failure, no test runs
   E7 park -> resume: evidence is NOT persisted -> honest arbiter error trips the
      loop_back and the park HEALS through a fresh verification round (COMPLETED)
@@ -487,6 +487,7 @@ def test_e2_code_bug_loop_buggy_then_fixed(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert adapter.arb_calls == 1
+    assert adapter.scen_calls == 1  # the scenario side was right, so it did not run again (FR-16)
     # Round 1 genuinely failed on real pytest; round 2 genuinely passed.
     assert record[0].status == StepStatus.FAILED and record[0].output["failed"] == 2
     assert record[1].status == StepStatus.PASSED and record[1].output["passed"] == 3
@@ -518,6 +519,7 @@ def test_e3_scenario_error_regenerates_with_delta(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert adapter.scen_calls == 2
+    assert len(implementer.received_feedback) == 1  # the code was right; it ran once (FR-16)
     # INT-US-24 FR-4 end-to-end: the second generation prompt carries the arbiter's delta.
     assert "Prior Verdict Feedback" in adapter.scen_prompts[1]
     assert "not 'Hi <name>'" in adapter.scen_prompts[1]
@@ -550,11 +552,12 @@ def test_e4_spec_ambiguity_parks(tmp_path: Path, monkeypatch, _isolated_env) -> 
 
 
 # --------------------------------------------------------------------------- #
-# E5 — retries exhausted: bounded, loud                                        #
+# E5 — two rounds spent: the person is asked (B-FLOW-01 NFR-5)                #
 # --------------------------------------------------------------------------- #
 
 
-def test_e5_retries_exhausted_fails_loud(tmp_path: Path, _isolated_env) -> None:
+def test_e5_two_rounds_then_the_person_is_asked(tmp_path: Path, _isolated_env) -> None:
+    """B-FLOW-01 NFR-5: two verdicts send the coder back; the third failure parks for the person."""
     project = _init_project(tmp_path, "us24_e5")
     adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[CODE_BUG_VERDICT] * 4)
     implementer = ImplementerState([WRONG_IMPL])  # never fixed
@@ -563,12 +566,12 @@ def test_e5_retries_exhausted_fails_loud(tmp_path: Path, _isolated_env) -> None:
     with _scenario_world(adapter, implementer, record):
         result = _run_cli(project)
 
-    assert result.exit_code != 0
-    assert adapter.arb_calls == 4  # initial + max_retries(3)
-    # The arbiter's actionable message is persisted on the failed run record
-    # (the rich CLI table does not render step error messages on this path).
+    assert result.exit_code == 0, result.output  # parked is not an error
+    assert adapter.arb_calls == 3  # initial + 2 rounds
+    assert len(implementer.received_feedback) == 3
     run_state = _latest_run(_isolated_env, "us24_e5")
-    assert run_state is not None and "salutation" in run_state.model_dump_json()
+    assert run_state is not None and run_state.status.value == "parked"
+    assert "salutation" in run_state.model_dump_json()
 
 
 # --------------------------------------------------------------------------- #
