@@ -18,7 +18,7 @@
           "old": "        errors.extend(f\"Step '{step.name}': {error}\" for error in bash_param_errors(step.params))\n",
           "new": "        pass\n",
           "breaks": "a bash step naming ../evil.sh or setting PATH loads clean and fails only when it runs",
-          "symbol_sha": "sha256:762426fe1ba7979a9a66c64acf03ffb9a04481dfd137c5e7a06c4a761a1cb075"
+          "symbol_sha": "sha256:213ee47109e0dc0b8eefb1053a225be811315963b76cca59c5a93aac20d408f0"
         },
         {
           "id": "containment-skipped",
@@ -114,7 +114,7 @@
           "file": "src/specweaver/sandbox/execution/core/atom.py",
           "symbol": "_result",
           "old": "    if result.timed_out:\n",
-          "new": "        if False:\n",
+          "new": "    if False:\n",
           "breaks": "a timeout reads as a script that exited -15",
           "symbol_sha": "sha256:a4d90bf7519ef53eeb8703dea53b6be12ada3f6d8d73898de7ef0bdaa7e6d332"
         }

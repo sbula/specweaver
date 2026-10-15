@@ -19,7 +19,7 @@
           "old": "                \"step_name\": step_def.name,\n",
           "new": "                \"step_name\": None,\n",
           "breaks": "calls cannot be added up per step",
-          "symbol_sha": "sha256:95b13f7a7ac3edb99d84cec50f6c70f5516ad532a40302fd27c0810184e18923"
+          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
         },
         {
           "id": "dal-not-stamped",
@@ -39,7 +39,7 @@
           "old": "                server=server_name,\n",
           "new": "                server=\"\",\n",
           "breaks": "spend on the GB10 and on DashScope is mixed",
-          "symbol_sha": "sha256:624beba4d5fd7a28d0e6e93981887d9154e3ae5e4b81754b7bd69e5628ad8f13"
+          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
         },
         {
           "id": "step-not-stored",
@@ -59,7 +59,7 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id))\n",
           "new": "        bridge.start_run(run_id, runner.run())\n",
           "breaks": "GET /runs/{id} never finds a run started over REST",
-          "symbol_sha": "sha256:f6a0ee5103a451f9ce5c094d31bc8c41281d9d86e6ae3653a1d6b171bde668c4"
+          "symbol_sha": "sha256:a4081853ee5b6f10a43f77daa1b12899d9e56a7ab09c7438f3af04b4c2ebd45a"
         },
         {
           "id": "rest-run-without-models",
@@ -69,7 +69,7 @@
           "old": "        db=db,\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
           "new": "        db=db,\n",
           "breaks": "a REST pipeline step that needs a model fails",
-          "symbol_sha": "sha256:f6a0ee5103a451f9ce5c094d31bc8c41281d9d86e6ae3653a1d6b171bde668c4"
+          "symbol_sha": "sha256:a4081853ee5b6f10a43f77daa1b12899d9e56a7ab09c7438f3af04b4c2ebd45a"
         },
         {
           "id": "rest-resume-without-models",
@@ -79,7 +79,7 @@
           "old": "        db=db,\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
           "new": "        db=db,\n",
           "breaks": "a REST resume of a step that needs a model fails",
-          "symbol_sha": "sha256:6fa40be2da19883d7c6116254fefcd4c2b45dde836841caa2d0ce2c4f15c4f67"
+          "symbol_sha": "sha256:6d4649004a54d31d4fe4bc6987c23df8b9b86f6e03a6ba01b7fba39f8dac063b"
         }
       ]
     },
@@ -110,17 +110,17 @@
           "old": "    if dal is None and db is not None:\n",
           "new": "    if False:\n",
           "breaks": "a target without a declared DAL has none, so its history group is unknown",
-          "symbol_sha": "sha256:4e6a1c84b78eb378c50ccff460381e3b0171bfbe7ea9db0c2f1d1c30007223cc"
+          "symbol_sha": "sha256:3131b33e0a7d870359d515b9bbd1dde141267ca9d8ea42d062a5141e8eddfb4d"
         },
         {
           "id": "old-default-dal-a",
           "origin": "authored",
           "file": "src/specweaver/workspace/store.py",
           "symbol": "Project",
-          "old": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_C\", nullable=False)\n",
+          "old": "    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)\n",
           "new": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_A\", nullable=False)\n",
           "breaks": "a new project defaults to DAL_A instead of the agreed DAL_C",
-          "symbol_sha": "sha256:1d6b2f19350aef0cbfd3161e183959832b1b64dba9ee1f0965a6c71c3e505931"
+          "symbol_sha": "sha256:f5d72483232ccc990d7c988d11f422f645a1585b4f819ced2e0bf56917298340"
         }
       ]
     },
@@ -158,7 +158,8 @@
       "title": "Each step's outcome joins its calls",
       "scope": [
         "tests/integration/core/flow/engine/test_step_outcomes.py",
-        "tests/e2e/capabilities/infrastructure/test_cost_history_e2e.py"
+        "tests/e2e/capabilities/infrastructure/test_cost_history_e2e.py",
+        "tests/integration/infrastructure/llm/test_step_history_limit.py"
       ],
       "mutants": [
         {
@@ -179,17 +180,17 @@
           "old": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\"}\n",
           "new": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"passed\", StepStatus.ERROR: \"failed\"}\n",
           "breaks": "cheap failed attempts lower the typical cost",
-          "symbol_sha": "sha256:3f31fbc80016b2ac4c997c1462bf754542008dfbf3789c9f7b7ec52776a91ec6"
+          "symbol_sha": "sha256:982fb2f9a08509a0277b3158effecd112d1e44c8b7622818e4c9b15cc3943c05"
         },
         {
           "id": "unfinished-counts-as-passed",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/telemetry.py",
           "symbol": "step_outcomes",
-          "old": "    return {r.step_name: ended[r.status] for r in run.step_records if r.status in ended}\n",
-          "new": "    return {r.step_name: ended.get(r.status, \"passed\") for r in run.step_records}\n",
+          "old": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\"}\n",
+          "new": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\", StepStatus.WAITING_FOR_INPUT: \"passed\"}\n",
           "breaks": "a parked step's partial cost counts as finished work",
-          "symbol_sha": "sha256:3f31fbc80016b2ac4c997c1462bf754542008dfbf3789c9f7b7ec52776a91ec6"
+          "symbol_sha": "sha256:982fb2f9a08509a0277b3158effecd112d1e44c8b7622818e4c9b15cc3943c05"
         },
         {
           "id": "stale-outcome-kept",
@@ -218,7 +219,7 @@
           "old": "        spent, unpriced = spend.get((model, server), (None, 0))\n",
           "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
           "breaks": "the same model on two servers shows one server's spend on both",
-          "symbol_sha": "sha256:cf3e00c4f1e891d313a9d3b5c2db54d86d474c3f0c74dd693e194eed5c9fccf1"
+          "symbol_sha": "sha256:12bfec0af18b030d203f1818891d642fc3abb05c225843744c6a8e898fed7ff4"
         },
         {
           "id": "old-spend-hidden",
@@ -228,7 +229,7 @@
           "old": "        if where is None:  # recorded before the server was stored\n",
           "new": "        if False:\n",
           "breaks": "spend from before the upgrade disappears from sw costs",
-          "symbol_sha": "sha256:cf3e00c4f1e891d313a9d3b5c2db54d86d474c3f0c74dd693e194eed5c9fccf1"
+          "symbol_sha": "sha256:12bfec0af18b030d203f1818891d642fc3abb05c225843744c6a8e898fed7ff4"
         }
       ]
     },
@@ -375,7 +376,7 @@
           "old": "        return CallScope(limits=(*limits, *self._step_limit(config, unit)), facts=facts)\n",
           "new": "        return CallScope(limits=limits, facts=facts)\n",
           "breaks": "a step that costs far more than usual is never asked about",
-          "symbol_sha": "sha256:039743435291a29d7156869bc8d8b120595d4e0913a5651bce9fc6c15ba6ab6c"
+          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
         },
         {
           "id": "command-without-history",

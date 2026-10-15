@@ -36,7 +36,7 @@
           "old": "        if written.status != \"success\":\n",
           "new": "        if False:\n",
           "breaks": "the executor refuses a protected write and the agent is told the symbol was replaced",
-          "symbol_sha": "sha256:feb31b95f16a70800a4e6d71a92a10625140b7257cc2d80b2c1daa3e09628723"
+          "symbol_sha": "sha256:14fcd03b122186e5a2818c966d56993b0a999986a2bfc7a7d601f661ddfa10f2"
         }
       ]
     },
@@ -109,12 +109,12 @@
         {
           "id": "short-values-scrubbed",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/mcp/core/atom.py",
-          "symbol": "scrub_secrets",
-          "old": "    secrets = {v for v in env.values() if isinstance(v, str) and len(v.strip()) >= 8}\n",
-          "new": "    secrets = {v for v in env.values() if isinstance(v, str)}\n",
+          "file": "src/specweaver/infrastructure/llm/redaction.py",
+          "symbol": "Redactor.__init__",
+          "old": "        kept = {value.strip() for value in secrets if len(value.strip()) >= _MIN_SECRET_LENGTH}\n",
+          "new": "        kept = {value.strip() for value in secrets if value.strip()}\n",
           "breaks": "a port or a flag like 'true' is redacted everywhere it appears, destroying ordinary replies",
-          "symbol_sha": "sha256:b74b6d9b7950e419ccb0886cb7a28264e9d243ed4e5bd9bf1108613a0b76877f"
+          "symbol_sha": "sha256:56bd1cb4d979db3e9635aa68301cb9175d85b70e7ba82220c1d2c3d910c23c2a"
         }
       ]
     },
@@ -122,7 +122,8 @@
       "requirement": "FR-7",
       "title": "No path outside the root is covered",
       "scope": [
-        "tests/integration/sandbox/test_file_tool_stays_inside_root.py"
+        "tests/integration/sandbox/test_file_tool_stays_inside_root.py",
+        "tests/unit/sandbox/test_grant_matching_agreement.py"
       ],
       "mutants": [
         {

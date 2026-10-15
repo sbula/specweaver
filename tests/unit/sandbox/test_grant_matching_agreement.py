@@ -67,3 +67,15 @@ def test_both_tools_agree(
 
     assert fs_allows is covered, f"file tool: {path}"
     assert ast_allows is fs_allows, f"AST tool disagrees with the file tool on {path}"
+
+
+@pytest.mark.parametrize("path", ["..", "../x.py", "src/../../x.py"])
+def test_a_grant_on_the_root_does_not_cover_what_is_beside_it(tmp_path: Path, path: str) -> None:
+    # Proves: TECH-072 FR-7
+    from specweaver.sandbox.security import grant_mode_for
+
+    root = tmp_path / "project"
+    root.mkdir()
+    grants = [FolderGrant(str(root), AccessMode.FULL, recursive=True)]
+
+    assert grant_mode_for(path, grants, root) is None

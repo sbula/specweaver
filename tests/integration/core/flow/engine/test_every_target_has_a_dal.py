@@ -144,3 +144,14 @@ def test_a_rebuilt_old_table_still_moves_to_dal_c(tmp_path: Path, db: Database) 
 
     with sqlite3.connect(path) as conn:
         assert conn.execute("SELECT default_dal FROM workspace_projects").fetchall() == [("DAL_C",)]
+
+
+def test_a_projects_default_dal_is_found_by_its_folder_not_its_name(
+    tmp_path: Path, db: Database
+) -> None:
+    # Proves: B-FLOW-07 FR-3
+    root = _project(tmp_path, db)
+    with sqlite3.connect(tmp_path / "specweaver.db") as conn:
+        conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
+
+    assert default_dal_at(db, root) is DALLevel.DAL_A
