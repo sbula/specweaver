@@ -19,6 +19,9 @@ and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03
 retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence:
 [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
+`C-FLOW-01` was reopened `✅` → `🔧` on 2026-10-15 `[agreed 2026-10-15]`: a failed call never reached
+the cost ledger and a killed run lost every row — [design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-01/C-FLOW-01_design.md).
+
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
 

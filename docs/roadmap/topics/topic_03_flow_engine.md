@@ -72,7 +72,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-C: Enterprise Standard
 
-* **`C-FLOW-01` ✅: Cost Telemetry** (Legacy: 3.12)
+* **`C-FLOW-01` 🔧: Cost Telemetry** (Legacy: 3.12)
   > - **Purpose:** Record what every LLM call cost and which task it served, so spend can be seen rather than guessed
   > - **Trigger:** On every LLM call
   > - **Precondition:** `C-FLOW-13` → prices · `E-FLOW-03` → the adapters
@@ -269,7 +269,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Reads:** the telemetry and friction ledgers
   > - **Produces:** 🟡 model-swap suggestions
   > - **Enables:** the human choosing a model on evidence
-  > - **Done when:** 🟡 it suggests and never auto-applies
+  > - **Done when:** 🟡 it suggests and never auto-applies · open: a quality score per call — who ranks, by what, on which scale
   > - **Note:** inherits the selection decisions of 2026-09-26 — [record](../../analysis/llm_settings_grilling_2026-09-26.md); its auto-escalation (Q24) contradicts "never auto-applies"
 
 * **`A-FLOW-02` 🔜: Hash GC** (Legacy: 5.3)
