@@ -78,12 +78,21 @@ def _model_check(context: RunContext) -> tuple[dict[str, str], str | None]:
     return {"one_model": coder}, None
 
 
-def _sides_to_run(feedback: dict[str, Any]) -> set[str]:
-    """The sides a verdict sent back; on a first round, or with no verdict, both."""
-    sent_back = {side for side, (_, step) in _SIDES.items() if step in feedback}
+def _sides_to_run(context: RunContext) -> set[str]:
+    """The sides a verdict sent back; with no verdict, both — but a fresh kept scenario set is
+    used as it is, so only the coding side runs."""
+    from specweaver.core.flow.handlers.reviewed_spec import kept_set_fresh
+
+    sent_back = {side for side, (_, step) in _SIDES.items() if step in context.feedback}
     if sent_back:
         logger.info("ArbitrateDualPipelineHandler: running again: %s", ", ".join(sorted(sent_back)))
-    return sent_back or set(_SIDES)
+        return sent_back
+    if kept_set_fresh(context):
+        logger.info(
+            "ArbitrateDualPipelineHandler: the kept scenario set is fresh; coding side only"
+        )
+        return {"coder"}
+    return set(_SIDES)
 
 
 #: The coding side's steps that draft or review the spec, which a dual run has already reviewed.
@@ -201,7 +210,7 @@ class ArbitrateDualPipelineHandler:
 
         try:
             # Chosen first: building a side's runner takes its feedback entry out.
-            sides = _sides_to_run(context.feedback)
+            sides = _sides_to_run(context)
             tasks = {
                 side: asyncio.create_task(
                     self._build_runner(pipe, stem, context, step, coder_side=side == "coder").run(

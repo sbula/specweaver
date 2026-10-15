@@ -337,6 +337,9 @@ class ArbitrateVerdictHandler(StepHandler):
                 "ArbitrateVerdictHandler: %d/%d scenario tests green — no arbitration", total, total
             )
             context.feedback.pop("scenario_test_failures", None)
+            from specweaver.core.flow.handlers.reviewed_spec import keep_set
+
+            keep_set(context)
             return StepResult(
                 status=StepStatus.PASSED,
                 output={

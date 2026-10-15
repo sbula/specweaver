@@ -23,6 +23,7 @@ the US-24 sentence: unit-green but business-wrong, caught by independent verific
   E8 generator retry exhaustion: garbage JSON x3 -> loud pipeline failure
   E9 an unknown requirement id: refused, retried, never stored
   E10 the scenario agent's tools read the spec and contract, never the code
+  E11 a passing set is kept; a second run on the same spec reuses it
 """
 
 from __future__ import annotations
@@ -415,6 +416,7 @@ STORED_SCENARIOS = {
     "definitions/greet_scenarios.yaml",
     "generated/test_greet_scenarios.py",
     "reviewed/greet_spec.json",  # the accepted review the dual run required (FR-15)
+    "kept/greet_spec.json",  # the passing set, kept with its fingerprints (FR-19)
 }
 
 
@@ -778,3 +780,27 @@ def test_e10_the_scenario_agent_reads_the_spec_and_contract_only(tmp_path: Path)
     assert "Greet Service Spec" in json.dumps(adapter.tool_reads["specs/greet_spec.md"])
     assert "GreetProtocol" in json.dumps(adapter.tool_reads["contracts/greet_contract.py"])
     assert "error" in adapter.tool_reads["src/greet.py"]
+
+
+# --------------------------------------------------------------------------- #
+# E11 — a kept set is used again while its spec and contract are unchanged     #
+# --------------------------------------------------------------------------- #
+
+
+def test_e11_a_second_run_reuses_the_kept_set(tmp_path: Path, _isolated_env: Path) -> None:
+    """B-FLOW-01 FR-19: a passing set is kept; the next run on the same spec makes no new set."""
+    project = _init_project(tmp_path, "us24_e11")
+    adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[])
+    implementer = ImplementerState([CORRECT_IMPL])
+    record: list = []
+
+    with _scenario_world(adapter, implementer, record):
+        first = _run_cli(project)
+        second = _run_cli(project)
+
+    assert first.exit_code == 0, first.output
+    assert second.exit_code == 0, second.output
+    assert adapter.scen_calls == 1  # the second run used the kept set
+    assert len(record) == 2 and record[1].output["passed"] == 3  # and still ran its tests
+    kept = _isolated_env / "projects" / "us24_e11" / "scenarios" / "kept" / "greet_spec.json"
+    assert kept.is_file()

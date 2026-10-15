@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
+          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
         },
         {
           "id": "unregistered-runs",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
+          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
         }
       ]
     },
@@ -607,7 +607,7 @@
           "old": "                safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
           "new": "                safe_scenario_feedback = result.scenario_feedback\n",
           "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
-          "symbol_sha": "sha256:b28295bfb2e5b9040b3919b93e598ea873716dcd4ac1ec1161db66154558f767"
+          "symbol_sha": "sha256:4793235ed24339374aa6970bc49eb0b7fac401aecfa970fb620d1b783c592c0e"
         }
       ]
     },
@@ -637,7 +637,7 @@
           "old": "        if unreviewed is not None:\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
-          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
+          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
         },
         {
           "id": "changed-spec-arbitrated",
@@ -675,10 +675,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
           "symbol": "_sides_to_run",
-          "old": "    return sent_back or set(_SIDES)\n",
-          "new": "    return set(_SIDES)\n",
+          "old": "        return sent_back\n",
+          "new": "        return set(_SIDES)\n",
           "breaks": "a verdict against one side makes both run again",
-          "symbol_sha": "sha256:1fd2b924a6976ce66576a02ae20f201fb6ac94b21fccf8fd13b024efc2ffa81f"
+          "symbol_sha": "sha256:f2fcf34c7c71ed3b0b8a0288ce30ea3cd92ad9aa35cc4bfe235fb82640ecdc44"
         }
       ]
     },
@@ -727,7 +727,7 @@
           "old": "            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)\n",
           "new": "            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED)\n",
           "breaks": "the scenario tests can run before the coder has finished",
-          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
+          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
         }
       ]
     },
@@ -828,6 +828,56 @@
           "new": "        if True:\n",
           "breaks": "a conflict the model invented denies the spec",
           "symbol_sha": "sha256:56a4ea02b1355cf89ecd8e739e1d52239b9fb3de2434db2bb22c68434d992023"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-19",
+      "title": "A passing set is kept with its fingerprints, made again only on a change",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_kept_suite.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "set-not-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "ArbitrateVerdictHandler.execute",
+          "old": "            keep_set(context)\n",
+          "new": "            pass\n",
+          "breaks": "a passing set is not kept, so every run makes it again",
+          "symbol_sha": "sha256:4793235ed24339374aa6970bc49eb0b7fac401aecfa970fb620d1b783c592c0e"
+        },
+        {
+          "id": "kept-set-regenerated",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_sides_to_run",
+          "old": "    if kept_set_fresh(context):\n",
+          "new": "    if False:\n",
+          "breaks": "a fresh kept set is thrown away and made again",
+          "symbol_sha": "sha256:f2fcf34c7c71ed3b0b8a0288ce30ea3cd92ad9aa35cc4bfe235fb82640ecdc44"
+        },
+        {
+          "id": "changed-spec-reused",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/reviewed_spec.py",
+          "symbol": "kept_set_fresh",
+          "old": "        record.get(\"spec_sha256\") == spec_sha(context.spec_path)\n",
+          "new": "        True\n",
+          "breaks": "a set made for an older spec keeps checking the new one",
+          "symbol_sha": "sha256:4c08e097418676055e3b3b5d3fac432462c6777d00541e85b5da543d9cc71b65"
+        },
+        {
+          "id": "changed-contract-reused",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/reviewed_spec.py",
+          "symbol": "kept_set_fresh",
+          "old": "        and record.get(\"contract_sha256\") == _contract_sha(context)\n",
+          "new": "        and True\n",
+          "breaks": "a set made for an older contract keeps checking the new one",
+          "symbol_sha": "sha256:4c08e097418676055e3b3b5d3fac432462c6777d00541e85b5da543d9cc71b65"
         }
       ]
     }
