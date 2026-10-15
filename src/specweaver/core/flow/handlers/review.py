@@ -199,6 +199,12 @@ class ReviewSpecHandler:
                 base_prompt = await _build_review_prompt(context, step, "spec_review")
             except ValueError as e:
                 return _error_result(str(e), started)
+            from specweaver.core.flow.handlers.spec_map import signature_conflicts, spec_map
+
+            base_prompt.add_context(spec_map(context), "other_specs")
+            clashes = signature_conflicts(context)
+            if clashes:
+                base_prompt.add_context("\n".join(clashes), "known_conflicts")
 
             result = await reviewer.review_spec(
                 context.spec_path,
@@ -216,6 +222,7 @@ class ReviewSpecHandler:
             # 3.11: Scan LLM response for file mentions
             _scan_and_store_mentions(result.raw_response, context)
 
+            result = _judge_conflicts(result, clashes, context)
             if result.verdict.value == "accepted":
                 from specweaver.core.flow.handlers.reviewed_spec import record_review
 
@@ -413,6 +420,27 @@ def _is_within(path: Path, root: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _judge_conflicts(result: Any, clashes: list[str], context: RunContext) -> Any:
+    """A proven conflict, or a contract clash the check found, denies; an unproven one only warns."""
+    from specweaver.core.flow.handlers.spec_map import is_conflict, proven
+    from specweaver.workflows.review.reviewer import ReviewFinding, ReviewVerdict
+
+    if not clashes and not any(is_conflict(f.message) for f in result.findings):
+        return result
+    findings, denies = [], bool(clashes)
+    for finding in result.findings:
+        if is_conflict(finding.message) and not proven(finding.message, context):
+            finding = finding.model_copy(update={"message": f"UNPROVEN {finding.message}"})
+        elif is_conflict(finding.message):
+            denies = True
+        findings.append(finding)
+    findings += [ReviewFinding(category="conflict", message=clash) for clash in clashes]
+    verdict = result.verdict
+    if denies and verdict == ReviewVerdict.ACCEPTED:
+        verdict = ReviewVerdict.DENIED
+    return result.model_copy(update={"findings": findings, "verdict": verdict})
 
 
 def _review_step_result(result: Any, started: str) -> StepResult:

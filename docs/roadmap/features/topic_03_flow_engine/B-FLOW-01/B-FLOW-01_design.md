@@ -217,7 +217,7 @@ FR needs a capability outside this one.
 | FR-17 | Different models | Dual-pipeline handler | When the roles in `settings.toml` name two or more distinct models and the resolved models of the `generate_code` and `generate_scenarios` roles are the same, the dual run SHALL refuse, naming the two settings keys; with one model it SHALL warn and say so in the run report; `--model` sets the coding side only, the one exception to `C-FLOW-13` FR-3 `[agreed 2026-10-15]` | the two sides do not share one model's misreadings where the settings allow otherwise |
 | FR-18 | Fail closed | Dual-pipeline handler | A dual run SHALL refuse to start, naming why, when no container can run the coder's and the scenario tests, or when FR-5b or FR-11 cannot hold `[agreed 2026-10-15]` | a dual run that only looks independent never runs |
 | FR-19 | Scenario tests kept | Scenario store | After a passing run the scenario set SHALL stay in the store with its spec's and contract's fingerprints, generated again when either changed; only dual runs and a separate acceptance step run it, and the acceptance step reports to the person only `[agreed 2026-10-15]` | a later change cannot quietly break a requirement only it checked, and no coder ever sees the result |
-| FR-20 | Seam: spec conflicts found | Spec review (`E-INTL-03`) | Spec review SHALL check a spec against the project's existing specs and contracts and name each conflict `[agreed 2026-10-15]` | a spec that contradicts another is caught before any code or scenario is written |
+| FR-20 | Seam: spec conflicts found | Spec review (`E-INTL-03`) | Spec review SHALL check a spec against the project's existing specs and contracts and name each conflict `[agreed 2026-10-15]`; adds a check to the finished `E-INTL-03` | a spec that contradicts another is caught before any code or scenario is written |
 | FR-21 | Normal runs of a project with kept scenarios | Test step, container | In any run of a project whose scenario store holds a set, the coder's tests SHALL run in a container; without one the run SHALL warn and go on `[agreed 2026-10-15]` | outside a dual run too, running code cannot reach the scenario store where a container exists |
 
 ## Non-Functional Requirements
@@ -272,7 +272,7 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-E | Memory and coverage apart | FR-12, FR-13 | handover, hydrator, C09 walk → no scenario text in coder memory; C09 counts the coder's tests; a coverage report per requirement | none | [sfe](B-FLOW-01_sfe_implementation_plan.md) |
 | SF-F | Scenario side: read-only tools, checked scenarios, filtered reports | FR-5a, FR-3, FR-8, FR-2, FR-6 | spec, contracts → scenarios checked against the spec and the contract; a scenario report with no code | SF-D | [sff](B-FLOW-01_sff_implementation_plan.md) |
 | SF-G | Run control: one spec, the side at fault only, models, the scenario run in a container, overlap | FR-15, FR-16, FR-17, FR-7 | the dual run → one reviewed spec; one side per round, 2 rounds; scenario tests run in a container from the store | SF-D | [sfg](B-FLOW-01_sfg_implementation_plan.md) |
-| SF-H | Spec conflicts and the kept suite | FR-20, FR-19 | spec review, scenario store → conflicts named at review; scenario sets kept with fingerprints, regenerated on a change, run by dual runs and an acceptance step for the person | SF-D | — |
+| SF-H | Spec conflicts and the kept suite | FR-20, FR-19 | spec review, scenario store → conflicts named at review; scenario sets kept with fingerprints, regenerated on a change, run by dual runs and an acceptance step for the person | SF-D | [sfh](B-FLOW-01_sfh_implementation_plan.md) |
 | SF-C (3.28i + 3.28j) | Arbiter for error attribution, run post-JOIN after `QARunnerAtom` executes scenario tests. **All-read, no-write** boundary (`api_paths` only, zero `roots`). Filtered feedback keeps total information opacity — coding feedback reads like a reviewer finding (AD-9, AD-10). HITL escalation on spec ambiguity. | FR-9, FR-10 (FR-8 moved to SF-F) | scenario test results (pass/fail from QARunnerAtom), spec, API contract, `src/` output, `scenarios/` output → one filtered feedback report per pipeline (vocabulary-filtered per NFR-8), or HITL escalation. Coding feedback has NO scenario vocabulary — phrased as "Spec clause §X requires Y. Your implementation does Z." | SF-B, SF-B2 | [sfc](B-FLOW-01_sfc_implementation_plan.md) |
 
 ## Progress Tracker
@@ -286,10 +286,10 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-E | Memory and coverage apart | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-F | Scenario side | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-G | Run control | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: SF-G committed — a dual run needs a reviewed spec; only the side at fault runs again,
 twice, then the person is asked; the two sides use different models where the settings allow.
-**Next**: the implementation-plan skill for SF-H (spec conflicts and the kept suite).
+**Next**: the dev skill for SF-H CB-1 (spec conflicts at review).

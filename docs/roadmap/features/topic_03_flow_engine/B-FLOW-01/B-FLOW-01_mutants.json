@@ -627,7 +627,7 @@
           "old": "                record_review(context)\n",
           "new": "                pass\n",
           "breaks": "an accepted review leaves no record, so no dual run can start",
-          "symbol_sha": "sha256:649c4facaf0345011bd5f1df530f25c1a6578f0c6256dbada0e811cfc553bef3"
+          "symbol_sha": "sha256:149b7ecb6f28d937ec02c425168612e6df7bfbe026106e3b3dc4e6663779cff3"
         },
         {
           "id": "unreviewed-spec-runs",
@@ -778,6 +778,56 @@
           "new": "    pass\n",
           "breaks": "the person never learns both sides used one model",
           "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-20",
+      "title": "Spec review names each conflict with the project's other specs and contracts",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_spec_conflicts.py",
+        "tests/e2e/capabilities/workflows/test_spec_conflict_review_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "map-not-sent",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "ReviewSpecHandler.execute",
+          "old": "            base_prompt.add_context(spec_map(context), \"other_specs\")\n",
+          "new": "            pass\n",
+          "breaks": "the reviewer never learns which other specs exist",
+          "symbol_sha": "sha256:149b7ecb6f28d937ec02c425168612e6df7bfbe026106e3b3dc4e6663779cff3"
+        },
+        {
+          "id": "signature-conflict-missed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/spec_map.py",
+          "symbol": "signature_conflicts",
+          "old": "            if name in mine and \" \".join(signature.split()) != \" \".join(mine[name].split()):\n",
+          "new": "            if False:\n",
+          "breaks": "a contract method declared twice with other parameters passes review",
+          "symbol_sha": "sha256:9adbade53bd77c301b617be5ab49697aa703527b819ce92adfc5ae0ae12e8cf3"
+        },
+        {
+          "id": "conflict-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_judge_conflicts",
+          "old": "        verdict = ReviewVerdict.DENIED\n",
+          "new": "        pass\n",
+          "breaks": "a proven conflict leaves the review accepted, so a dual run starts on it",
+          "symbol_sha": "sha256:5084da19a6f956148961496ffb6609a2c8afbdbdb1402b17bcbed9138add37ef"
+        },
+        {
+          "id": "invented-conflict-denies",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/spec_map.py",
+          "symbol": "proven",
+          "old": "        if any(quote in text for quote in quotes):\n",
+          "new": "        if True:\n",
+          "breaks": "a conflict the model invented denies the spec",
+          "symbol_sha": "sha256:56a4ea02b1355cf89ecd8e739e1d52239b9fb3de2434db2bb22c68434d992023"
         }
       ]
     }

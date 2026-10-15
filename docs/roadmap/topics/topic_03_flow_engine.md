@@ -223,12 +223,12 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🟡 a rewrite above 20% is flagged. Pure diff maths — no LLM
 
 * **`B-FLOW-04` 🔜: Hybrid RAG Orchestration** (Legacy: 5.4)
-  > - **Purpose:** Find candidate code from a fuzzy description, then hand those candidates to the graph for exact expansion — the **locate** step
+  > - **Purpose:** Find candidate code and specs from a fuzzy description, then hand those candidates to the graph for exact expansion — the **locate** step
   > - **Trigger:** When a task needs to find relevant code without an exact symbol name
   > - **Precondition:** `A-SENS-02` → vectors · `B-SENS-03` → chunks
   > - **Reads:** the vector store
   > - **Produces:** memory → ranked candidates, scored by semantic similarity, recency decay and importance
-  > - **Enables:** `B-SENS-09` → exact graph closure over the candidates
+  > - **Enables:** `B-SENS-09` → exact graph closure over the candidates · `B-FLOW-01` FR-20 → spec review
   > - **Done when:** 🔴
   > - **Note:** its output never feeds a gate or a blast radius. No correctness decision consumes vector output (`ADR-006` decision 3)
 

@@ -11,3 +11,7 @@ Your job is to evaluate whether this spec is CLEAR, COMPLETE, and IMPLEMENTABLE.
 3. **Implementability**: Can a developer write code from this spec WITHOUT guessing?
 4. **Testability**: Can tests be written from the Contract section alone?
 5. **Single Responsibility**: Does it describe ONE component doing ONE thing?
+6. **Consistency**: Does it contradict another spec, a contract or the code of this project? Read
+   the other specs listed under `other_specs` that touch the same behaviour, in full, with your
+   file tools. Name each conflict as one finding line:
+   `- CONFLICT: <file> says "<its exact words>", this spec says "<its exact words>"`
