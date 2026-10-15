@@ -47,7 +47,7 @@
           "old": "                \"source\": _generated_code(context),\n",
           "new": "                \"source\": \"\",\n",
           "breaks": "sw implement's test step cannot import the generated code",
-          "symbol_sha": "sha256:801d299622321f839af21d56741cc6e16fbb8ac0aa584e00102991e745959d7b"
+          "symbol_sha": "sha256:682f084a00257e201749eba59f12fa4ca42579de5ee871bc11b802e99d6c4e65"
         },
         {
           "id": "c03-own-search",
@@ -96,7 +96,7 @@
           "old": "        if not (self._cwd / \"tach.toml\").is_file():\n",
           "new": "        if False:\n",
           "breaks": "a missing tach.toml reads as tach's own 'run tach init'",
-          "symbol_sha": "sha256:63e56193e1d1c2089f4b01c11c8d30ded8b8d9f606710a2001def3b3a4638d1d"
+          "symbol_sha": "sha256:ac7babb8f412c028be65903f65129829a2e7a8a4b8aa1f8f03a27ee69b9ca307"
         }
       ]
     }

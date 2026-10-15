@@ -65,7 +65,8 @@
       "scope": [
         "tests/unit/scripts/test_mutation_gate.py",
         "tests/unit/scripts/test_session_record.py",
-        "tests/unit/scripts/test_mutation_gate_admissibility.py"
+        "tests/unit/scripts/test_mutation_gate_admissibility.py",
+        "tests/unit/scripts/test_run_reach_tree.py"
       ],
       "mutants": [
         {
@@ -167,6 +168,16 @@
           "new": "for path in sorted(store.glob(\"*.json\")):",
           "breaks": "the gate answers from the first nightly ever recorded and never sees a newer one, so the store makes it permanently stale instead of current",
           "symbol_sha": "sha256:c254fcd075a1746065fa0353c3f3f3ed3e28a0bfeb5300babafa1a4d528b72f1"
+        },
+        {
+          "id": "ledger-in-fingerprint",
+          "origin": "authored",
+          "file": "scripts/_run_reach.py",
+          "symbol": "tree_sha",
+          "old": "    diff = _mutate._run([\"git\", \"diff\", \"HEAD\", \"--\", \".\", f\":(exclude){LEDGER}\"], root)\n",
+          "new": "    diff = _mutate._run([\"git\", \"diff\", \"HEAD\"], root)\n",
+          "breaks": "the run's own ledger write changes the tree under its verdict, so the gate blocks every nightly",
+          "symbol_sha": "sha256:0ad803b6928b8eb8153d7c8a40d6babd99208a9575d682a89fea433adcb886d7"
         }
       ]
     },

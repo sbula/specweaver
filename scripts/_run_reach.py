@@ -38,6 +38,8 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+#: Written by every run AFTER it stamps the tree; in the fingerprint, it changed every verdict's tree.
+LEDGER = "scripts/baselines/mutation_findings.json"
 
 
 def _sibling(name: str) -> Any:
@@ -60,18 +62,17 @@ def scope_of(*, full_sweep: bool, paths: list[Path]) -> dict[str, Any]:
     return {"kind": "scoped", "corpora": sorted(p.name for p in paths)}
 
 
-def tree_sha() -> str:
+def tree_sha(root: Path = REPO_ROOT) -> str:
     """Fingerprint the tree a session measures: the tracked diff plus every untracked file."""
     untracked = {
-        name: (REPO_ROOT / name).read_text(encoding="utf-8", errors="replace")
+        name: (root / name).read_text(encoding="utf-8", errors="replace")
         for name in _mutate._run(
-            ["git", "ls-files", "--others", "--exclude-standard"], REPO_ROOT
+            ["git", "ls-files", "--others", "--exclude-standard"], root
         ).split()
-        if (REPO_ROOT / name).is_file()
+        if (root / name).is_file()
     }
-    return str(
-        _record.working_tree_sha(_mutate._run(["git", "diff", "HEAD"], REPO_ROOT), untracked)
-    )
+    diff = _mutate._run(["git", "diff", "HEAD", "--", ".", f":(exclude){LEDGER}"], root)
+    return str(_record.working_tree_sha(diff, untracked))
 
 
 def current_tree_sha() -> str | None:

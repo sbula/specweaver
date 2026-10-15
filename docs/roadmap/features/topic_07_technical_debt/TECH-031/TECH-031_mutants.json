@@ -162,7 +162,7 @@
           "old": "toolchain_note=_supplied_note(self._executor),",
           "new": "toolchain_note=\"\",",
           "breaks": "a green run attests to a suite executed against a version nobody chose, with none of the plugins it may need, and says nothing about it",
-          "symbol_sha": "sha256:5b5265daf26be27639500dcca47dd3db8b5ed70be6efa3be956f5130c871f792"
+          "symbol_sha": "sha256:52cfd431613d3cde219b9b7686ad188e241a00d369237add53377fac93b04d96"
         }
       ]
     },

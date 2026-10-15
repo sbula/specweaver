@@ -155,7 +155,7 @@
           "old": "                        if size > max_bytes:\n",
           "new": "                        if False:\n",
           "breaks": "one range pulls a whole huge file into the model's context",
-          "symbol_sha": "sha256:fa63a760eecfadac4a9709d9ec9732e2cd13785b6f8a0124c40d5ccaabd759d1"
+          "symbol_sha": "sha256:f519e34a8e392a988b034a49cdc871e3c20103475bef0e746c5d13fb48df1c1b"
         }
       ]
     }
