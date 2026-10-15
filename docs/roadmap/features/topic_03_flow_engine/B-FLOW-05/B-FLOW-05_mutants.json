@@ -34,7 +34,7 @@
           "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            self._record_failure(scope, reservation, exc)\n",
           "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            pass\n",
           "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
-          "symbol_sha": "sha256:bbdb5ddf011afbdb19cd158ab895338f318c58369fae8375f56d1748a0451d0d"
+          "symbol_sha": "sha256:e0e8358390e753fa81a77fb8324967c6f35e1ba07989c79984e3640d8131aa46"
         },
         {
           "id": "stream-input-dropped",
@@ -44,7 +44,7 @@
           "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
           "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
           "breaks": "a streamed call's prompt is never counted",
-          "symbol_sha": "sha256:7815d20355dbead80b95fe959bdce81ec7a3885b0ffd79e4af2d0a79cc054b8b"
+          "symbol_sha": "sha256:93454b36ebeae0cd5f84ad06f91484aa490fcef7c7debcb6efe8ef8d4c28f745"
         },
         {
           "id": "failed-tool-call-not-counted",
@@ -54,7 +54,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:e653064462a749511d30c07f8c3dd69ca650f4cad07bbc3530e7fdb9e814dc8c"
+          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -64,7 +64,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:2756f8b13a1edee11d3b93799f3df55405f20e7f4d222ea5f1d79056b79da0c4"
+          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
         },
         {
           "id": "failure-usage-ignored",
@@ -94,7 +94,7 @@
           "old": "            if response.usage == TokenUsage()\n",
           "new": "            if False\n",
           "breaks": "a server that reports no usage never fills the token limit",
-          "symbol_sha": "sha256:ce3a0b781ada1dc9aaf490d21ecc51749cbebd55ffecb2339a9a1244629d5e31"
+          "symbol_sha": "sha256:2e31ae77f38d267aff2aa4bc2b8c2677b2f961c009d207519157eaa1ade51a8b"
         }
       ]
     },
@@ -121,7 +121,7 @@
           "old": "            if needed > self.limit_of(limit):\n",
           "new": "            if False:\n",
           "breaks": "every call is sent whatever it may cost",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "reservation-not-held",
@@ -131,7 +131,7 @@
           "old": "            self._reserved[key] += amount\n",
           "new": "            pass\n",
           "breaks": "parallel calls each pass on the same headroom",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "margin-dropped",
@@ -161,7 +161,7 @@
           "old": "            if amount is None:\n",
           "new": "            if amount is None and False:\n",
           "breaks": "a call with no price passes a money limit unchecked",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "round-not-checked",
@@ -171,17 +171,17 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:e653064462a749511d30c07f8c3dd69ca650f4cad07bbc3530e7fdb9e814dc8c"
+          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
         },
         {
           "id": "round-payload-ignored",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
           "symbol": "OpenAIAdapter.generate_with_tools",
-          "old": "                    before_request(round_num, payload_chars(oai_messages))\n",
+          "old": "                    before_request(round_num, payload_chars(kwargs))\n",
           "new": "                    before_request(round_num, 0)\n",
           "breaks": "a tool round's growing prompt is never counted before it is sent",
-          "symbol_sha": "sha256:2756f8b13a1edee11d3b93799f3df55405f20e7f4d222ea5f1d79056b79da0c4"
+          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
         }
       ]
     },
@@ -198,10 +198,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget._warn",
-          "old": "        if limit.key in self._warned or spent < self.limit_of(limit) * _WARN_AT:\n",
-          "new": "        if self._warned or spent < self.limit_of(limit) * _WARN_AT:\n",
+          "old": "        if self._warned.get(limit.key) == current or spent < current * _WARN_AT:\n",
+          "new": "        if self._warned or spent < current * _WARN_AT:\n",
           "breaks": "after the first limit warns, no other limit ever warns",
-          "symbol_sha": "sha256:645992ba14b8fc5d0e778f4805e9bc17dc64f1a66318fb1aa44b963a99871e31"
+          "symbol_sha": "sha256:9f49ead4e0c1c9a23dcac3e2e47ad030cabe88f2794f123a61f607a7b44ecd37"
         }
       ]
     },
@@ -224,7 +224,7 @@
           "old": "        if server.private:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "new": "        if False:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "breaks": "a GB10 run is limited by money it never spends, so nothing stops it",
-          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
         },
         {
           "id": "task-not-stamped",
@@ -242,7 +242,8 @@
       "requirement": "FR-3",
       "title": "A tripped breaker reaches the operator",
       "scope": [
-        "tests/unit/workflows/test_budget_error_propagates.py"
+        "tests/unit/workflows/test_budget_error_propagates.py",
+        "tests/integration/core/flow/engine/test_spend_brake_parks_run.py"
       ],
       "mutants": [
         {
@@ -263,7 +264,7 @@
           "old": "    track_step_refusals()\n    try:\n",
           "new": "    try:\n",
           "breaks": "a stopped step is not parked, and a sibling's stop leaks into the next step",
-          "symbol_sha": "sha256:5caee53a15f8647560b8b17a0ccdd8f7390c5d9de4d6af5d5b3bee8d49ef1d1a"
+          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
         },
         {
           "id": "refusal-not-recorded",
@@ -312,7 +313,8 @@
       "title": "A stop parks the run whatever the step did with it",
       "scope": [
         "tests/integration/core/flow/engine/test_spend_brake_parks_run.py",
-        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py"
+        "tests/e2e/capabilities/infrastructure/test_spend_brake_e2e.py",
+        "tests/unit/infrastructure/llm/test_spend_budget.py"
       ],
       "mutants": [
         {
@@ -320,20 +322,20 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/step_execution.py",
           "symbol": "execute_step",
-          "old": "    return _parked_by_brake(runner._context) or result\n",
+          "old": "    return _parked_by_brake(result) or result\n",
           "new": "    return result\n",
           "breaks": "a step that caught the stop reports success, and a retry gate retries into the spent limit",
-          "symbol_sha": "sha256:bc0cb2b737028d2082b6a5e6343e224c97ef4a169982b44ea636166a0e8e4245"
+          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
         },
         {
           "id": "stop-not-remembered",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget._stop",
-          "old": "        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason)\n        raise self.stopped\n",
-          "new": "        raise SpendLimitReachedError(limit, self._spent[limit.key], reason)\n",
+          "old": "        self.stopped = SpendLimitReachedError(limit, self._spent[limit.key], reason, advice)\n        _refused(self.stopped)\n",
+          "new": "        _refused(SpendLimitReachedError(limit, self._spent[limit.key], reason, advice))\n",
           "breaks": "the runner cannot see that the brake stopped a call",
-          "symbol_sha": "sha256:2681a9e5ae8178ba9abeaefdd13b32721a5a42b5f77c46894c0d09badb53f07e"
+          "symbol_sha": "sha256:181313bc4eeab489ad452fc80761df3075b577dd5430cdd53593fea8524596ab"
         }
       ]
     },
@@ -350,20 +352,20 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.before_call",
-          "old": "                self._raised[limit.key] += steps * limit.value\n",
-          "new": "                pass\n",
+          "old": "            self._raised[key] += amount\n",
+          "new": "            pass\n",
           "breaks": "a yes lets one call through and the next crossing asks again at the same limit",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "raise-by-one-step-only",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget.before_call",
-          "old": "                self._raised[limit.key] += steps * limit.value\n",
-          "new": "                self._raised[limit.key] += limit.value\n",
+          "symbol": "SpendBudget._ask_to_raise",
+          "old": "        return steps * limit.value\n",
+          "new": "        return limit.value\n",
           "breaks": "one yes raises less than the call needs",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
         }
       ]
     },
@@ -379,11 +381,11 @@
           "id": "no-ask-goes-on",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
-          "symbol": "SpendBudget.before_call",
-          "old": "                if self._ask is None or not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
-          "new": "                if self._ask is not None and not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
+          "symbol": "SpendBudget._ask_to_raise",
+          "old": "        if self._ask is None or not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
+          "new": "        if self._ask is not None and not self._ask(f\"{reason}. Continue up to {raised}?\"):\n",
           "breaks": "a headless run spends past its limit with nobody asked",
-          "symbol_sha": "sha256:ebf80aef0e49bee4be2359e98d4f23fd7247445edd9c9eb3b44583e7e146d459"
+          "symbol_sha": "sha256:12e6bb5d8d6ade4d80d3e128f03c2a7b021d3eebe744a7a66c053669b58163c7"
         },
         {
           "id": "enter-is-yes",
@@ -393,7 +395,7 @@
           "old": "    return answer.strip().lower() in (\"y\", \"yes\")\n",
           "new": "    return answer.strip().lower() in (\"y\", \"yes\", \"\")\n",
           "breaks": "pressing Enter spends more money",
-          "symbol_sha": "sha256:ddfd3c466f2aabf569ad01eb6cf412f2f7bc48b21d731316c74347dd04bcd854"
+          "symbol_sha": "sha256:7e8dabf9708253125161d6ed339d189cef3c4ba4c728de2e67d753e2f67dcbd2"
         },
         {
           "id": "implement-says-tests-failed",
@@ -403,7 +405,7 @@
           "old": "    if run_state.status == \"parked\":\n",
           "new": "    if False:\n",
           "breaks": "sw implement stopped by the spend brake says the tests did not pass",
-          "symbol_sha": "sha256:fbff0a828dd3b40125a0a264e72c1ed5c1aebc36adf505f0e8c71a3d534351bf"
+          "symbol_sha": "sha256:a68b5e91c66be33cc1643514d4b4f620007c59dd7f4d6502d55baad6e88e902d"
         }
       ]
     },
@@ -434,7 +436,7 @@
           "old": "            budget.restore(run.spend_state)\n",
           "new": "            pass\n",
           "breaks": "a resumed run buys a fresh budget",
-          "symbol_sha": "sha256:b67062a620d1688f22c85e424a66aef7c42cad12a8f94bbf8782b57248abcc4c"
+          "symbol_sha": "sha256:537e8c7daa21e02adce85c6f92a16e06b1fbcb4c39552de530693b571dcf7c22"
         },
         {
           "id": "store-drops-totals",
@@ -473,7 +475,7 @@
           "old": "    if isinstance(stopped, SpendLimitReachedError):\n",
           "new": "    if False:\n",
           "breaks": "a spent budget looks to an API client like an ordinary result",
-          "symbol_sha": "sha256:0a4793273b7b09a0549b7350982290ea33b4b007f1b933f31001789a8a50f60c"
+          "symbol_sha": "sha256:99fafcb89c2ceae1599b5b86025f7174a61a309695bd82a4dfa76ef722fa3fbd"
         }
       ]
     },
@@ -513,15 +515,15 @@
           "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
-          "symbol_sha": "sha256:5caee53a15f8647560b8b17a0ccdd8f7390c5d9de4d6af5d5b3bee8d49ef1d1a"
+          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
         },
         {
           "id": "worktree-merges-stopped-work",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
           "symbol": "execute_in_sandbox",
-          "old": "        if brake_stop(context) is not None:\n",
-          "new": "        if False:\n",
+          "old": "        if step_refusal() is not None or result.status != StepStatus.PASSED:\n",
+          "new": "        if result.status != StepStatus.PASSED:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
           "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
         }
@@ -542,7 +544,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if True:\n",
           "breaks": "a parked run loses the paid work of its earlier steps",
-          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
         },
         {
           "id": "unresumable-park-leaks-worktree",
@@ -552,7 +554,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if not run.status == RunStatus.PARKED:\n",
           "breaks": "sw implement leaves a worktree behind that nothing can resume",
-          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
         },
         {
           "id": "resume-starts-fresh-worktree",
@@ -562,7 +564,7 @@
           "old": "    if approve_parked and run.current_step > 0:\n",
           "new": "    if False:\n",
           "breaks": "a resume runs the later steps without the files the earlier steps wrote",
-          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
         },
         {
           "id": "resume-without-worktree-runs",
@@ -572,7 +574,7 @@
           "old": "        if not worktree.is_dir():\n",
           "new": "        if False:\n",
           "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
-          "symbol_sha": "sha256:5d0d971a40dee395a32e669ad7cf4a7198a335560d4f81506995785426811a68"
+          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
         }
       ]
     },
@@ -590,10 +592,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/budget.py",
           "symbol": "SpendBudget.before_call",
-          "old": "        if self.stopped is not None:\n            raise self.stopped\n        raises: dict[str, float] = {}\n",
+          "old": "        if self.stopped is not None:\n            _refused(self.stopped)\n        raises: dict[str, float] = {}\n",
           "new": "        raises: dict[str, float] = {}\n",
           "breaks": "after a no, every further call asks again",
-          "symbol_sha": "sha256:8a0fd0499f59b84c3a99705a0742be812d0a04f61102b33831a8a4cb240d204f"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "refused-call-keeps-raise",
@@ -603,7 +605,7 @@
           "old": "                raises[limit.key] = self._ask_to_raise(limit, amount, needed)\n",
           "new": "                self._raised[limit.key] += self._ask_to_raise(limit, amount, needed)\n",
           "breaks": "a yes on one limit stays even though the call was refused",
-          "symbol_sha": "sha256:8a0fd0499f59b84c3a99705a0742be812d0a04f61102b33831a8a4cb240d204f"
+          "symbol_sha": "sha256:bd82ed90e0534566b6c04e0dd86ab0ff83cbb3bbf1e1306bf0e92489bd13e100"
         },
         {
           "id": "warning-never-rearmed",
@@ -672,7 +674,7 @@
           "old": "            run.status = RunStatus.ABORTED\n            self._persist(run)\n",
           "new": "            pass\n",
           "breaks": "Ctrl-C leaves the run RUNNING and its resume pays from zero",
-          "symbol_sha": "sha256:1dad2159e2ffcd34b4a02002d4bdcda58db77b3e7ba471518695f56afbf15e45"
+          "symbol_sha": "sha256:283d19d6a63f1471c1cc05b2e7d5a2b72e5045311ea5d8d51848a15ab140882b"
         },
         {
           "id": "aborted-not-found",

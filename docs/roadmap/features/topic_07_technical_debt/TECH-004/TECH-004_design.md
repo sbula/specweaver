@@ -362,9 +362,10 @@ stays inside the Rust boundary.
 
 ## Session Handoff
 
-**Current status**: Impl Plan for SF-01 APPROVED.
-**Next step**: Run `/dev docs/roadmap/features/topic_07_technical_debt/TECH-004/TECH-004_sf01_implementation_plan.md` to begin TDD implementation.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume.
+**Current status**: SF-01 and SF-02 committed. FR-6 fixed 2026-10-14: `resolve_service_name` holds the
+root-`context.yaml` rule and the graph build calls it.
+**Next step**: FR-1..5 and FR-7..12 have no test that cites them (`check_fr_coverage.py TECH-004`); find or
+write one per FR before the ticket can close.
 
 ## Carried down from the topic entry (2026-08-13, `TECH-044`)
 
