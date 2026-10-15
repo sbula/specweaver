@@ -28,7 +28,7 @@ class ScenarioGenerator:
         llm: LLM adapter for scenario generation.
         config: Optional generation config overrides.
         max_retries: Max retries on invalid LLM output.
-        tool_dispatcher: Optional tool dispatcher (reserved for future use).
+        tool_dispatcher: Optional read-only file tools over the spec and the contracts.
     """
 
     def __init__(
@@ -115,7 +115,7 @@ class ScenarioGenerator:
             else:
                 retry_prompt = prompt
 
-            raw = await self._llm.generate(retry_prompt, config=self._config)
+            raw = await self._ask(retry_prompt)
             # Real adapters return LLMResponse objects (as in reviewer.py:
             # `response.text`); string returns are the unit-mock convention only.
             raw_text = raw.text if hasattr(raw, "text") else raw
@@ -133,6 +133,16 @@ class ScenarioGenerator:
         )
         logger.error(msg)
         raise ValueError(msg)
+
+    async def _ask(self, prompt: str) -> Any:
+        """One answer; with tools, the model may read the specs and contracts first."""
+        if self._tool_dispatcher is None or self._config is None:
+            return await self._llm.generate(prompt, config=self._config)
+        from specweaver.infrastructure.llm.models import Message, Role
+
+        config = self._config.model_copy(update={"tools": self._tool_dispatcher.available_tools()})
+        messages = [Message(role=Role.USER, content=prompt)]
+        return await self._llm.generate_with_tools(messages, config, self._tool_dispatcher)
 
     @classmethod
     def _parse(cls, raw_text: str) -> tuple[ScenarioSet | None, str | None]:
@@ -261,8 +271,11 @@ class ScenarioGenerator:
         parts.extend(
             [
                 "",
+                "If the spec or the contract has a problem — a contradiction, a gap, an unclear "
+                "rule — name it in problems. Never change the contract.",
                 "Respond with a JSON object matching this schema:",
-                '{"spec_path": "...", "contract_path": "...", "scenarios": [...], "reasoning": "..."}',
+                '{"spec_path": "...", "contract_path": "...", "scenarios": [...], '
+                '"reasoning": "...", "problems": ["..."]}',
                 "Each scenario: {name, description, function_under_test, req_id, category, "
                 "preconditions, input_summary, inputs, constructor_inputs, expected_behavior, "
                 "expected_output}",

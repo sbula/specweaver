@@ -115,13 +115,13 @@ async def test_a_whole_project_search_skips_links_out(world: dict[str, Path], ro
 
 
 async def test_a_link_inside_the_project_cannot_widen_a_grant(world: dict[str, Path]) -> None:
-    """The scenario agent reads `scenarios/`, `specs/`, `contracts/` only; a link to `src/` fails."""
+    """The scenario agent reads `specs/` and `contracts/` only; a link to `src/` fails."""
     project = world["project"]
-    (project / "scenarios").mkdir()
-    (project / "scenarios" / "own.py").symlink_to(project / "src" / "own.py")
+    (project / "specs").mkdir(exist_ok=True)
+    (project / "specs" / "own.py").symlink_to(project / "src" / "own.py")
 
     direct = await _call(project, "scenario_agent", "read_file", {"path": "src/own.py"})
-    linked = await _call(project, "scenario_agent", "read_file", {"path": "scenarios/own.py"})
+    linked = await _call(project, "scenario_agent", "read_file", {"path": "specs/own.py"})
 
     assert "error" in direct
     assert "error" in linked, f"a link widened the grant: {linked}"

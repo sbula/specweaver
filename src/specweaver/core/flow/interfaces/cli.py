@@ -339,24 +339,6 @@ def _tests_passed_over_project(final_run: Any) -> bool:
     )
 
 
-_COVERED_BY = {"both": "both", "coder": "coder only", "scenario": "scenario only"}
-
-
-def _show_coverage(final_run: Any) -> None:
-    """Per requirement, whose tests cover it, from the last step that reported it."""
-    reports = [
-        (record.result.output or {}).get("requirement_coverage")
-        for record in final_run.step_records
-        if record.result is not None
-    ]
-    coverage = next((report for report in reversed(reports) if report), None)
-    if not coverage:
-        return
-    _core.console.print("[bold]Test coverage per requirement[/bold]")
-    for rid, side in coverage.items():
-        _core.console.print(f"  {rid}  {_COVERED_BY.get(side, 'none')}")
-
-
 def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) -> None:
     """Save the hash cache after green tests, then translate the run status into an exit code.
 
@@ -368,8 +350,9 @@ def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) ->
     rather than an absence of one, and saying so keeps the three statuses side by side.
     """
     from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.core.flow.interfaces.run_summary import show_run_summary
 
-    _show_coverage(final_run)
+    show_run_summary(final_run)
     if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):
         from specweaver.assurance.graph.hasher import DependencyHasher
 

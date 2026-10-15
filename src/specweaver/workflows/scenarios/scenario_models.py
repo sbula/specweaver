@@ -58,6 +58,7 @@ class ScenarioSet(BaseModel):
         contract_path: Path to the API contract used.
         scenarios: List of generated scenario definitions.
         reasoning: LLM chain-of-thought (stored, not exposed).
+        problems: Spec or contract problems the agent found, for the person.
     """
 
     __test__ = False
@@ -66,3 +67,5 @@ class ScenarioSet(BaseModel):
     contract_path: str
     scenarios: list[ScenarioDefinition]
     reasoning: str = ""
+    #: Spec or contract problems the agent names; shown to the person, never sent on.
+    problems: list[str] = Field(default_factory=list)

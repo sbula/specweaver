@@ -247,7 +247,6 @@ GitInterface = (
 _ROLE_INTERFACE_MAP: dict[str, type[GitInterface]] = {
     "implementer": ImplementerGitInterface,
     "reviewer": ReviewerGitInterface,
-    "scenario_agent": ReviewerGitInterface,
     "arbiter_agent": ReviewerGitInterface,
     "planner": ReviewerGitInterface,
     "debugger": DebuggerGitInterface,

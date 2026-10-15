@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:f0889b93e0c6d311811f4da27a13a31206bbcd0abbfa75e36b6f8f348bb94c3a"
+          "symbol_sha": "sha256:c3871cc66a4996752bc89c3adad767dd31106b627a7eac499a6e20c3778a57ae"
         },
         {
           "id": "unregistered-runs",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:f0889b93e0c6d311811f4da27a13a31206bbcd0abbfa75e36b6f8f348bb94c3a"
+          "symbol_sha": "sha256:c3871cc66a4996752bc89c3adad767dd31106b627a7eac499a6e20c3778a57ae"
         }
       ]
     },
@@ -449,12 +449,12 @@
         {
           "id": "coverage-not-shown",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_finish_run",
-          "old": "    _show_coverage(final_run)\n",
+          "file": "src/specweaver/core/flow/interfaces/run_summary.py",
+          "symbol": "show_run_summary",
+          "old": "    show_coverage(final_run)\n",
           "new": "    pass\n",
           "breaks": "sw run ends without the coverage table",
-          "symbol_sha": "sha256:fbbfb74cd668468df91b7c4fc11ef4620a04eeb4b63156b69a9feeb64e281b87"
+          "symbol_sha": "sha256:84e7cb34905ac1b822d8722e79466b7d9f814ef605ba56236ac85264f03f5157"
         }
       ]
     },
@@ -536,6 +536,58 @@
           "new": "            break\n",
           "breaks": "the person sees 'Unknown' instead of why a side failed",
           "symbol_sha": "sha256:db90f8ab07ae63638b5bd10dcd68c713bbd372c697035f4a2952615e34207ebe"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5a",
+      "title": "The scenario agent reads the spec and contracts only; its problems reach the person",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_scenario_agent_tools.py",
+        "tests/unit/sandbox/test_dispatcher.py",
+        "tests/integration/sandbox/test_dispatcher_registry_delegation.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "scenario-agent-writes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._compute_role_grants",
+          "old": "                    _folder_grant(root / \"specs\", AccessMode.READ),\n",
+          "new": "                    _folder_grant(root, AccessMode.FULL),\n",
+          "breaks": "the scenario agent can read and write the whole project, the coder's code too",
+          "symbol_sha": "sha256:11528c232746306421504850c1d89d7e1dd76b55ee81f12d42c937112d118f56"
+        },
+        {
+          "id": "scenario-agent-has-git",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/interfaces/tool.py",
+          "old": "        if role not in ROLE_INTENTS:\n            msg = f\"Unknown role: {role!r}. Known roles: {sorted(ROLE_INTENTS)}\"\n            raise ValueError(msg)\n",
+          "new": "        if role not in ROLE_INTENTS:\n            role = \"reviewer\"\n",
+          "breaks": "a role without git, the scenario agent, gets the reviewer's git",
+          "symbol": "GitTool.__init__",
+          "symbol_sha": "sha256:c33612ec1509ac69d04666e87b96f7bc2abd372f6db6d07e3bdbf7b80066ed3e"
+        },
+        {
+          "id": "scenario-tools-not-given",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/scenario.py",
+          "symbol": "GenerateScenarioHandler.execute",
+          "old": "                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)\n",
+          "new": "                llm=adapter, config=config, tool_dispatcher=None\n",
+          "breaks": "the agent cannot read the contracts it tests against",
+          "symbol_sha": "sha256:edbdabb9ba1c98d7659ba7c063e3305aac3c30df3f123257a5b6d42694deb1d1"
+        },
+        {
+          "id": "problems-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/run_summary.py",
+          "symbol": "show_run_summary",
+          "old": "    show_problems(final_run)\n",
+          "new": "    pass\n",
+          "breaks": "a spec problem the agent found never reaches the person",
+          "symbol_sha": "sha256:84e7cb34905ac1b822d8722e79466b7d9f814ef605ba56236ac85264f03f5157"
         }
       ]
     }

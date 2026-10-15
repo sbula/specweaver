@@ -50,6 +50,14 @@ from tests.scripted_llm import FixedRouter
 if TYPE_CHECKING:
     from pathlib import Path
 
+
+def _model_without_tools() -> AsyncMock:
+    """A model double that has `generate` only: no tool use, so the plain prompt path runs."""
+    llm = AsyncMock(spec=["generate"])
+    llm.generate = AsyncMock()
+    return llm
+
+
 pytestmark = pytest.mark.integration
 
 _SPEC = '''# Greet
@@ -107,7 +115,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[RunContext, 
     (root / "specs").mkdir(parents=True)
     (root / "specs" / "greet_spec.md").write_text(_SPEC, encoding="utf-8")
     register_test_project(db, "greeter", str(root))
-    llm = AsyncMock()
+    llm = _model_without_tools()
     context = RunContext(
         project_path=root,
         spec_path=root / "specs" / "greet_spec.md",

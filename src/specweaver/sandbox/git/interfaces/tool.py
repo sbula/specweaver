@@ -41,7 +41,6 @@ ROLE_INTENTS: dict[str, frozenset[str]] = {
         {"commit", "inspect_changes", "discard", "uncommit", "start_branch", "switch_branch"}
     ),
     "reviewer": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
-    "scenario_agent": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "arbiter_agent": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "planner": frozenset({"history", "show_commit", "blame", "compare", "list_branches"}),
     "debugger": frozenset(

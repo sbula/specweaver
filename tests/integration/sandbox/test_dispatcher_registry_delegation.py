@@ -63,10 +63,11 @@ def test_create_standard_set_preserves_grant_logic(tmp_path):
         _, kwargs = mock_registry.create_tools.call_args
         grants = kwargs["grants"]
 
-        # Scenario agent should only have full access to 'scenarios', read access to 'specs'/'contracts'
-        scenarios_grant = next((g for g in grants if Path(g.path).name == "scenarios"), None)
-        assert scenarios_grant is not None
-        assert scenarios_grant.mode == AccessMode.FULL
+        # The scenario agent reads specs/ and contracts/ and writes nowhere.
+        assert {(Path(g.path).name, g.mode) for g in grants} == {
+            ("specs", AccessMode.READ),
+            ("contracts", AccessMode.READ),
+        }
 
 
 def test_create_standard_set_preserves_archetype_resolution(tmp_path):

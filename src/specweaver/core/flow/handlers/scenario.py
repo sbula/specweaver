@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
@@ -38,6 +38,21 @@ def scenario_store(context: RunContext) -> Path | None:
     return scenario_store_for(name) if name else None
 
 
+def _scenario_tools(context: RunContext, adapter: Any) -> Any:
+    """Read-only file tools on `specs/` and `contracts/`, when the model can use tools."""
+    if not hasattr(adapter, "generate_with_tools"):
+        return None
+    from specweaver.sandbox.dispatcher import ToolDispatcher
+    from specweaver.sandbox.security import WorkspaceBoundary
+
+    return ToolDispatcher.create_standard_set(
+        WorkspaceBoundary(roots=[context.project_path]),
+        role="scenario_agent",
+        allowed_tools=["fs"],
+        analyzer_factory=context.analysis.analyzer_factory,
+    )
+
+
 def _contract_methods(spec_text: str) -> tuple[list[str], dict[str, list[str] | None]]:
     """The spec's contract methods, as scenarios name them, and each class's constructor."""
     from specweaver.core.flow.handlers.contract_renderers import (
@@ -62,7 +77,9 @@ class GenerateScenarioHandler:
             from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator
 
             adapter, config = _resolve_generation_routing(context)
-            generator = ScenarioGenerator(llm=adapter, config=config)
+            generator = ScenarioGenerator(
+                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)
+            )
 
             if not context.spec_path.exists():
                 return _error_result(f"Spec file not found: {context.spec_path}", started)
@@ -148,6 +165,7 @@ class GenerateScenarioHandler:
                 output={
                     "generated_path": str(output_path),
                     "scenario_count": len(scenario_set.scenarios),
+                    "problems": scenario_set.problems,
                 },
                 started_at=started,
                 completed_at=_now_iso(),

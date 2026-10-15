@@ -169,11 +169,11 @@ class ToolDispatcher:
         from specweaver.sandbox.security import AccessMode, ReadOnlyWorkspaceBoundary
 
         if role == "scenario_agent":
+            # It writes nothing: its scenarios are kept by the engine, outside the project.
             return [
                 grant
                 for root in boundary.roots
                 for grant in (
-                    _folder_grant(root / "scenarios", AccessMode.FULL),
                     _folder_grant(root / "specs", AccessMode.READ),
                     _folder_grant(root / "contracts", AccessMode.READ),
                 )

@@ -53,6 +53,14 @@ from tests.scripted_llm import FixedRouter
 if TYPE_CHECKING:
     from pathlib import Path
 
+
+def _model_without_tools() -> AsyncMock:
+    """A model double that has `generate` only: no tool use, so the plain prompt path runs."""
+    llm = AsyncMock(spec=["generate"])
+    llm.generate = AsyncMock()
+    return llm
+
+
 pytestmark = pytest.mark.integration
 
 _SECRET = "coder-note-7f3k"
@@ -166,7 +174,7 @@ async def test_a_coders_note_never_reaches_the_scenario_prompt(
     (root / "specs" / "greet_spec.md").write_text(
         "# Greet\n\n## Functional Requirements\n\n| FR-1 | hi |\n"
     )
-    llm = AsyncMock()
+    llm = _model_without_tools()
     llm.generate.return_value = json.dumps(
         {"spec_path": "specs/greet_spec.md", "contract_path": "c.py", "scenarios": []}
     )

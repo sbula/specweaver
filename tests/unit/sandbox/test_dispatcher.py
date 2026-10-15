@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.security import AccessMode
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -235,10 +237,11 @@ class TestScenarioAgentIsolation:
         tool_instance = fs_interface._tool
         assert tool_instance.role == "scenario_agent"
 
-        paths = {g.path for g in tool_instance._grants}
-        assert str(project / "scenarios") in paths
-        assert str(project / "contracts") in paths
-        assert str(project) not in paths  # Full root is NOT granted
+        grants = {g.path: g.mode for g in tool_instance._grants}
+        assert grants == {
+            str(project / "specs"): AccessMode.READ,
+            str(project / "contracts"): AccessMode.READ,
+        }
 
 
 class TestDispatcherASTInitialization:
@@ -369,11 +372,11 @@ class TestDispatcherInternalMethods:
         boundary = WorkspaceBoundary(roots=[project])
         grants = ToolDispatcher._compute_role_grants("scenario_agent", boundary)
 
-        paths = [g.path for g in grants]
-        # scenario_agent gets FULL access to scenarios/ and READ to specs/ and contracts/
-        assert str(project / "scenarios") in paths
-        assert str(project / "specs") in paths
-        assert str(project / "contracts") in paths
+        # READ on specs/ and contracts/ only: its scenarios are kept outside the project.
+        assert {(g.path, g.mode) for g in grants} == {
+            (str(project / "specs"), AccessMode.READ),
+            (str(project / "contracts"), AccessMode.READ),
+        }
 
     def test_build_ast_kwargs_not_allowed(self, project: Path) -> None:
         from specweaver.sandbox.dispatcher import ToolDispatcher

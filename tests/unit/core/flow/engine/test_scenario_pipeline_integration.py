@@ -26,6 +26,13 @@ from specweaver.core.flow.handlers.run_context import (
 from tests.scripted_llm import FixedRouter
 
 
+def _model_without_tools() -> AsyncMock:
+    """A model double that has `generate` only: no tool use, so the plain prompt path runs."""
+    llm = AsyncMock(spec=["generate"])
+    llm.generate = AsyncMock()
+    return llm
+
+
 @pytest.fixture()
 def scenario_pipeline_path() -> Path:
     """Path to the real scenario validation pipeline."""
@@ -74,7 +81,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     pipeline_data["steps"] = [s for s in pipeline_data["steps"] if s["name"] != "generate_contract"]
     definition = PipelineDefinition.model_validate(pipeline_data)
 
-    mock_llm = AsyncMock()
+    mock_llm = _model_without_tools()
     valid_response = {
         "spec_path": "specs/auth_spec.md",
         "contract_path": "contracts/auth_contract.py",

@@ -31,6 +31,13 @@ from specweaver.core.flow.engine.state import StepStatus
 from tests.scripted_llm import FixedRouter
 
 
+def _model_without_tools() -> AsyncMock:
+    """A model double that has `generate` only: no tool use, so the plain prompt path runs."""
+    llm = AsyncMock(spec=["generate"])
+    llm.generate = AsyncMock()
+    return llm
+
+
 @pytest.fixture(autouse=True)
 def _a_scenario_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The handlers write to the project's store; here it stands at `tmp_path / "scenarios"`.
@@ -116,7 +123,7 @@ class TestGenerateScenarioHandler:
 
     async def test_execute_creates_scenario_yaml(self, tmp_path: Path) -> None:
         """Handler writes YAML to scenarios/definitions/."""
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
 
@@ -142,7 +149,7 @@ class TestGenerateScenarioHandler:
 
     async def test_execute_reads_contract_from_context(self, tmp_path: Path) -> None:
         """Picks up api_contract_paths from context."""
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
 
@@ -163,7 +170,7 @@ class TestGenerateScenarioHandler:
 
     async def test_missing_spec_file(self, tmp_path: Path) -> None:
         """Handler returns StepStatus.ERROR if spec file is missing."""
-        ctx = _make_context(tmp_path, llm=AsyncMock())
+        ctx = _make_context(tmp_path, llm=_model_without_tools())
         ctx.spec_path.unlink()  # Remove the spec file
 
         handler = GenerateScenarioHandler()
@@ -201,7 +208,7 @@ class TestGenerateScenarioFeedback:
     async def test_consumes_feedback_into_prompt_and_pops(self, tmp_path: Path, caplog) -> None:
         # [Happy] arbiter-shaped feedback → extracted "[FR-1] ..." text reaches
         # the regeneration prompt; key popped (consume-once); INFO logged.
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
         ctx.feedback = {"generate_scenarios": _arbiter_feedback()}
@@ -219,7 +226,7 @@ class TestGenerateScenarioFeedback:
     async def test_no_feedback_byte_identical(self, tmp_path: Path) -> None:
         # [Boundary/backward-compat] no feedback → no verdict block, feedback
         # dict untouched.
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
 
@@ -231,7 +238,7 @@ class TestGenerateScenarioFeedback:
 
     async def test_unrelated_feedback_keys_survive(self, tmp_path: Path) -> None:
         # [Boundary] only the handler's own key is popped.
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
         ctx.feedback = {
@@ -251,7 +258,7 @@ class TestGenerateScenarioFeedback:
         # is the Q2 "knowingly ignored" path — no crash, no verdict block, key
         # still consumed. If scenario steps ever gain HITL gates, this pin
         # trips instead of user remarks vanishing silently.
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
         ctx.feedback = {
@@ -269,7 +276,7 @@ class TestGenerateScenarioFeedback:
     async def test_malformed_findings_treated_as_no_feedback(self, tmp_path: Path, caplog) -> None:
         # [Graceful degradation] a malformed findings value must not crash the
         # regeneration — call-site guard treats it as no-feedback + WARNING.
-        mock_llm = AsyncMock()
+        mock_llm = _model_without_tools()
         mock_llm.generate.return_value = json.dumps(_VALID_RESPONSE)
         ctx = _make_context(tmp_path, llm=mock_llm)
         ctx.feedback = {"generate_scenarios": {"findings": "notadict"}}

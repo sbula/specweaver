@@ -55,6 +55,15 @@ def _why_failed(run: Any) -> str:
     return str(getattr(run, "error_message", None) or "Unknown")
 
 
+def _problems(run: Any) -> list[str]:
+    """The spec or contract problems a side's scenario step named."""
+    for record in getattr(run, "step_records", None) or []:
+        found = (record.result.output or {}).get("problems") if record.result else None
+        if found:
+            return [str(problem) for problem in found]
+    return []
+
+
 class ArbitrateDualPipelineHandler:
     """Handler for orchestrating the dual verification pipeline.
 
@@ -119,6 +128,8 @@ class ArbitrateDualPipelineHandler:
 
             coding_result = coding_task.result()
             scenario_result = scenario_task.result()
+            # The scenario agent's spec or contract problems are for the person only.
+            problems = {"problems": _problems(scenario_result)}
 
             logger.info(
                 "ArbitrateDualPipelineHandler: Completed. Coding=%s, Scenario=%s",
@@ -129,6 +140,7 @@ class ArbitrateDualPipelineHandler:
             if getattr(coding_result, "status", None) not in (StepStatus.PASSED, "completed"):
                 return StepResult(
                     status=StepStatus.FAILED,
+                    output=problems,
                     error_message=f"Coding pipeline failed: {_why_failed(coding_result)}",
                     started_at=started,
                     completed_at=_now_iso(),
@@ -137,6 +149,7 @@ class ArbitrateDualPipelineHandler:
             if getattr(scenario_result, "status", None) not in (StepStatus.PASSED, "completed"):
                 return StepResult(
                     status=StepStatus.FAILED,
+                    output=problems,
                     error_message=f"Scenario pipeline failed: {_why_failed(scenario_result)}",
                     started_at=started,
                     completed_at=_now_iso(),
@@ -144,7 +157,7 @@ class ArbitrateDualPipelineHandler:
 
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"component": stem, "status": "dual_completed"},
+                output={"component": stem, "status": "dual_completed", **problems},
                 started_at=started,
                 completed_at=_now_iso(),
             )

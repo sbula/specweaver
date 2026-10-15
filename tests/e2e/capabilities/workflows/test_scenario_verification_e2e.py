@@ -22,6 +22,7 @@ the US-24 sentence: unit-green but business-wrong, caught by independent verific
      loop_back and the park HEALS through a fresh verification round (COMPLETED)
   E8 generator retry exhaustion: garbage JSON x3 -> loud pipeline failure
   E9 an unknown requirement id: refused, retried, never stored
+  E10 the scenario agent's tools read the spec and contract, never the code
 """
 
 from __future__ import annotations
@@ -219,9 +220,13 @@ class ScenarioWorldAdapter:
         self.arb_calls = 0
         self.scen_calls = 0
         self.scen_prompts: list[str] = []
+        self.tool_reads: dict[str, dict] = {}
 
     async def generate(self, messages, config=None, *args, **kwargs) -> LLMResponse:
-        flat = str(messages)
+        if isinstance(messages, list):
+            flat = "\n".join(getattr(m, "content", str(m)) for m in messages)
+        else:
+            flat = str(messages)
         if "arbitration agent" in flat:
             self.arb_calls += 1
             if not self.verdicts:
@@ -236,6 +241,10 @@ class ScenarioWorldAdapter:
         raise AssertionError(f"Out-of-contract LLM call: {flat[:160]}")
 
     async def generate_with_tools(self, messages, config, dispatcher, **kwargs) -> LLMResponse:
+        if "Respond with a JSON object" in str(messages):
+            # The scenario agent tries its tools: the spec and contract, then the coder's code.
+            for path in ("specs/greet_spec.md", "contracts/greet_contract.py", "src/greet.py"):
+                self.tool_reads[path] = await dispatcher.execute("read_file", {"path": path})
         return await self.generate(messages, config)
 
 
@@ -720,3 +729,23 @@ def test_e9_an_unknown_requirement_is_refused_and_never_stored(
     stored = _isolated_env / "projects" / "us24_e9" / "scenarios" / "definitions"
     assert "FR-99" not in (stored / "greet_scenarios.yaml").read_text(encoding="utf-8")
     assert record and record[0].output["passed"] == 3
+
+
+# --------------------------------------------------------------------------- #
+# E10 — the scenario agent reads the spec and contract, never the code         #
+# --------------------------------------------------------------------------- #
+
+
+def test_e10_the_scenario_agent_reads_the_spec_and_contract_only(tmp_path: Path) -> None:
+    project = _init_project(tmp_path, "us24_e10")
+    adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[])
+    implementer = ImplementerState([CORRECT_IMPL])
+    record: list = []
+
+    with _scenario_world(adapter, implementer, record):
+        result = _run_cli(project)
+
+    assert result.exit_code == 0, result.output
+    assert "Greet Service Spec" in json.dumps(adapter.tool_reads["specs/greet_spec.md"])
+    assert "GreetProtocol" in json.dumps(adapter.tool_reads["contracts/greet_contract.py"])
+    assert "error" in adapter.tool_reads["src/greet.py"]
