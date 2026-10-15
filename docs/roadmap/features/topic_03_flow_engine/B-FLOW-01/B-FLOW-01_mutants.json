@@ -130,6 +130,25 @@
           "symbol_sha": "sha256:c2c0b09984598e8c2f11dd2011cd30c77eac111d3d3a6e590829fbbe96846149"
         }
       ]
+    },
+    {
+      "requirement": "NFR-8",
+      "title": "The coder's test step never runs the scenario tests",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_the_coder_runs_its_own_tests.py"
+      ],
+      "mutants": [
+        {
+          "id": "coder-runs-scenario-tests",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "_default_test_target",
+          "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
+          "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
+          "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
+          "symbol_sha": "sha256:dd6c21ae445db11cdf8ad8355976035bc1389a57f97626fa333c8ba9d37505d2"
+        }
+      ]
     }
   ]
 }

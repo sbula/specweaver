@@ -122,5 +122,5 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
-Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-FLOW-04`, `C-FLOW-01` REST tests,
+Not yet looked at: `B-FLOW-01` FR-2..8 proofs (measured 2026-10-15: [b_flow_01_isolation_2026-10-15.md](b_flow_01_isolation_2026-10-15.md); its design is reopened), `D-FLOW-04`, `C-FLOW-01` REST tests,
 `E-SENS-03` task-scoped roots. `TECH-004` signed off 2026-10-15.

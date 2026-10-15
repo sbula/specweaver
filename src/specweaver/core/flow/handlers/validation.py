@@ -345,6 +345,24 @@ class ValidateCodeHandler:
 _WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 
+def _default_test_target(context: RunContext, kind: str) -> str:
+    """The file a test step runs when it names none: the scenario file for the scenario step only.
+
+    Every other step runs the coder's own tests, where `generate_tests` wrote them. Falling back to
+    the scenario file for every kind retried the coder until the hidden scenario tests passed.
+    """
+    stem = context.spec_path.stem.replace("_spec", "")
+    if kind == "scenario":
+        from specweaver.sandbox.language.core.scenario_converter_factory import (
+            create_scenario_converter,
+        )
+
+        return str(
+            create_scenario_converter(context.project_path).output_path(stem, context.project_path)
+        )
+    return str((context.output_dir or context.project_path / "tests") / f"test_{stem}.py")
+
+
 class ValidateTestsHandler:
     """Runs tests via the QARunnerAtom.
 
@@ -360,18 +378,8 @@ class ValidateTestsHandler:
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
-        target = step.params.get("target")
-        if not target:
-            from specweaver.sandbox.language.core.scenario_converter_factory import (
-                create_scenario_converter,
-            )
-
-            converter = create_scenario_converter(context.project_path)
-            stem = context.spec_path.stem.replace("_spec", "")
-            target_path = converter.output_path(stem, context.project_path)
-            target = str(target_path)
-
         kind = step.params.get("kind", "unit")
+        target = step.params.get("target") or _default_test_target(context, kind)
         logger.debug("ValidateTestsHandler: resolving %s test targets for '%s'", kind, target)
 
         targets = self._resolve_targets(context, target, kind)
