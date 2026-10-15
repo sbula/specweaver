@@ -94,6 +94,8 @@ class RunHandle(BaseModel):
     task_id: str | None = None  # Target Task ID for Handover Protocol
     step_name: str | None = None
     step_records: list[dict[str, Any]] | None = None
+    #: Which side of a dual run this is, `"coder"` or `"scenario"`; None outside one.
+    dual_side: str | None = None
 
 
 class AnalysisContext(BaseModel):

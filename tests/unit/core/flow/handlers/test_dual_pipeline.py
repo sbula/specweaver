@@ -56,7 +56,7 @@ def run_context():
     # already holds to `spawn` a sibling, which is what broke the five-module cycle. Resolving the
     # class here at CALL time is what keeps `@patch(...runner.PipelineRunner)` effective, exactly
     # as the handler's own deferred import used to.
-    def _spawn(pipe: object, feedback: dict | None = None) -> object:
+    def _spawn(pipe: object, feedback: dict | None = None, side: str | None = None) -> object:
         from specweaver.core.flow.engine.runner import PipelineRunner
 
         return PipelineRunner(pipeline=pipe)

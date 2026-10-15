@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.assurance.validation.models import Status as RuleStatus
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
+from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
@@ -254,6 +255,7 @@ class ValidateCodeHandler:
                 analyzer_factory=context.analysis.analyzer_factory,
                 parsers=context.analysis.parsers,
                 dal_level=dal_level,
+                sandbox_settings=coder_sandbox(context),
             )
             output, failed = _validation_output(
                 results, strict=bool(dal_level and dal_level.is_strict)
@@ -309,6 +311,7 @@ class ValidateCodeHandler:
         analyzer_factory: Any | None = None,
         parsers: Any | None = None,
         dal_level: Any | None = None,
+        sandbox_settings: Any | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -337,6 +340,7 @@ class ValidateCodeHandler:
             project_root=project_path,
             dal_level=dal_level,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
+            sandbox_settings=sandbox_settings,
         )
 
 
@@ -496,12 +500,11 @@ class ValidateTestsHandler:
         """
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-        sandbox_settings = context.model.config.sandbox if context.model.config else None
         cwd = context.isolation.execution_root or context.project_path
         if kind == "scenario":
             # Always in a container, with the scenario tests mounted read-only at /scenarios.
             return QARunnerAtom(cwd=cwd, scenarios_root=_scenarios_root(context))
-        return QARunnerAtom(cwd=cwd, sandbox_settings=sandbox_settings)
+        return QARunnerAtom(cwd=cwd, sandbox_settings=coder_sandbox(context))
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
         """The test folders of the modules changed since the last green run; else `target`.

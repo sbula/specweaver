@@ -102,7 +102,10 @@ class PipelineRunner:
         seed_dal_level(self._context)
 
     def spawn(
-        self, pipeline: PipelineDefinition, feedback: dict[str, Any] | None = None
+        self,
+        pipeline: PipelineDefinition,
+        feedback: dict[str, Any] | None = None,
+        side: str | None = None,
     ) -> PipelineRunner:
         """A sibling runner for a sub-pipeline, sharing this run's collaborators.
 
@@ -120,11 +123,12 @@ class PipelineRunner:
         what marks it as a sub-run. With `feedback`, the sub-run gets that dict instead of sharing
         the parent's: a dual run's two sides must not see each other's entries.
         """
-        context = (
-            self._context
-            if feedback is None
-            else self._context.model_copy(update={"feedback": dict(feedback)})
-        )
+        update: dict[str, Any] = {}
+        if feedback is not None:
+            update["feedback"] = dict(feedback)
+        if side is not None:
+            update["run"] = self._context.run.model_copy(update={"dual_side": side})
+        context = self._context.model_copy(update=update) if update else self._context
         return PipelineRunner(
             pipeline,
             context,

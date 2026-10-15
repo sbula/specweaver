@@ -162,10 +162,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner.spawn",
-          "old": "            else self._context.model_copy(update={\"feedback\": dict(feedback)})\n",
-          "new": "            else self._context\n",
+          "old": "            update[\"feedback\"] = dict(feedback)\n",
+          "new": "            pass\n",
           "breaks": "both sides of a dual run read and write one feedback dict again",
-          "symbol_sha": "sha256:4d067add4b6742ec545db13d26dc2be3bea1dbc0875680db8558011265749b7b"
+          "symbol_sha": "sha256:b77998dda3bc53b15f63d38ee34afd7307c2af0133d0e4b60495a1528186cffa"
         },
         {
           "id": "seed-copied-not-popped",
@@ -175,7 +175,7 @@
           "old": "        entry = context.feedback.pop(own_step, None)\n",
           "new": "        entry = context.feedback.get(own_step, None)\n",
           "breaks": "an arbiter verdict is applied again on every later round",
-          "symbol_sha": "sha256:831233dbdc9f556644fb55f2c31bc3300a5e2ded0431b75b3409a7acdbe27f0c"
+          "symbol_sha": "sha256:d2c4556094ef3011abda20d02231d7eadc2c6b53be3a8ae705702b1ba0b53e95"
         }
       ]
     },
@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:c7544a620055f87c588bb2bfd099a7c36d93e59134e546bf1dc0da9de386b1a5"
+          "symbol_sha": "sha256:e21321f1ceee225dab31cffe3aeab82032dd95314e0026dc8c41cab05d1b6d8a"
         },
         {
           "id": "unregistered-runs",
@@ -326,6 +326,65 @@
           "new": "        pass\n",
           "breaks": "a new project under the same name inherits another project's hidden tests",
           "symbol_sha": "sha256:2ebd142c83b8affa714043fd7cd5153fe28a24fbd72280175c3e582fc945d5f1"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-21",
+      "title": "The coder's code runs in a container in a dual run and for a project with kept scenarios",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_coder_container_choice.py"
+      ],
+      "mutants": [
+        {
+          "id": "kept-set-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/coder_sandbox.py",
+          "symbol": "_keeps_scenarios",
+          "old": "    return store is not None and any((store / \"generated\").glob(\"*\"))\n",
+          "new": "    return False\n",
+          "breaks": "a project with kept scenario tests runs the coder's code on the host",
+          "symbol_sha": "sha256:3f4349fc5a139645ef323e49b53efef75563d9fbdba01fa5d428091eb9457947"
+        },
+        {
+          "id": "coder-side-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/coder_sandbox.py",
+          "symbol": "coder_sandbox",
+          "old": "    if not (context.run.dual_side == \"coder\" or _keeps_scenarios(context)):\n",
+          "new": "    if not _keeps_scenarios(context):\n",
+          "breaks": "the coder side of a dual run runs its code on the host",
+          "symbol_sha": "sha256:ec164aea35382f1000738bd8e1e3dfaee8c4b222a4985455802fbef4e63fab87"
+        },
+        {
+          "id": "dual-run-coder-unflagged",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler._build_runner",
+          "old": "        side = \"coder\" if coder_side else \"scenario\"\n",
+          "new": "        side = \"scenario\"\n",
+          "breaks": "the dual run never tells its coder side to use a container",
+          "symbol_sha": "sha256:d2c4556094ef3011abda20d02231d7eadc2c6b53be3a8ae705702b1ba0b53e95"
+        },
+        {
+          "id": "c03-c04-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "symbol": "hydrate_code_validation_context",
+          "old": "    atom = QARunnerAtom(cwd=project_root, sandbox_settings=sandbox_settings)\n",
+          "new": "    atom = QARunnerAtom(cwd=project_root)\n",
+          "breaks": "C03 and C04 run the coder's tests on the host",
+          "symbol_sha": "sha256:8b6a9c278b4fa89ecdbd019ecba8571b5e7d9dcee8de986516a4d339b4717e1c"
+        },
+        {
+          "id": "lint-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._get_atom",
+          "old": "        return QARunnerAtom(cwd=context.project_path, sandbox_settings=coder_sandbox(context))\n",
+          "new": "        return QARunnerAtom(cwd=context.project_path)\n",
+          "breaks": "lint fix runs the coder's tools on the host",
+          "symbol_sha": "sha256:af6d9ee400b0bdc06d50e395e9521d360eebe364f3a5571e4d105415657aaf33"
         }
       ]
     }

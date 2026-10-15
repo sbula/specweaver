@@ -90,7 +90,9 @@ class _Spawner:
     def __init__(self) -> None:
         self.spawned = 0
 
-    def spawn(self, pipeline: Any, feedback: dict[str, Any] | None = None) -> Any:
+    def spawn(
+        self, pipeline: Any, feedback: dict[str, Any] | None = None, side: str | None = None
+    ) -> Any:
         self.spawned += 1
 
         class _Done:

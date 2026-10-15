@@ -282,7 +282,7 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-D | Isolation core | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-D | Isolation core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-E | Memory and coverage apart | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-F | Scenario side | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-G | Run control | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -291,4 +291,5 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 ## Session Handoff
 
 **Now**: the repair design is approved; leak 1 is fixed (`80a6f90a`).
-**Next**: the dev skill for SF-D, CB-1 ([plan](B-FLOW-01_sfd_implementation_plan.md)).
+**Now**: SF-D committed — scenario files live in SpecWeaver's store, dual runs need a container, each side its own feedback.
+**Next**: the implementation-plan skill for SF-E (memory and coverage apart), SF-F, SF-G or SF-H.

@@ -48,6 +48,10 @@ from the coder: no live Podman or Docker engine, a project that is not registere
 `scenarios/generated/` in the project, or a non-Python project. SpecWeaver builds its sandbox
 image on the machine the first time it is needed, from `Containerfile.sandbox` in the package.
 
+The coder's code runs in a container too: on the coder side of a dual run, and in every run of a
+project whose store keeps a scenario set — its tests, C03/C04 and lint fix. Without an engine, a
+normal run of such a project warns and runs on the host.
+
 ## Pipeline: `scenario_validation.yaml`
 
 1. **Extract Contract** (`generate+contract`): a python Protocol/ABC from the Spec's `Contract`

@@ -91,7 +91,9 @@ class ArbitrateDualPipelineHandler:
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 
         try:
-            coding_runner = self._build_runner("new_feature.yaml", stem, context, "generate_code")
+            coding_runner = self._build_runner(
+                "new_feature.yaml", stem, context, "generate_code", coder_side=True
+            )
             scenario_runner = self._build_runner(
                 "scenario_validation.yaml", stem, context, "generate_scenarios"
             )
@@ -144,7 +146,12 @@ class ArbitrateDualPipelineHandler:
             return _error_result(str(exc), started)
 
     def _build_runner(
-        self, pipe_file: str, component: str, context: RunContext, own_step: str
+        self,
+        pipe_file: str,
+        component: str,
+        context: RunContext,
+        own_step: str,
+        coder_side: bool = False,
     ) -> Any:
         files = importlib.resources.files("specweaver.workflows.pipelines")
         resource = files.joinpath(pipe_file)
@@ -174,4 +181,5 @@ class ArbitrateDualPipelineHandler:
         # reaches that side once: nothing the other side wrote or was told crosses over.
         entry = context.feedback.pop(own_step, None)
         own = {own_step: entry} if entry is not None else {}
-        return context.run.pipeline_runner.spawn(pipe, feedback=own)
+        side = "coder" if coder_side else "scenario"
+        return context.run.pipeline_runner.spawn(pipe, feedback=own, side=side)

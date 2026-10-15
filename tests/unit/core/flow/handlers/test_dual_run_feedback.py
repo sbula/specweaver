@@ -89,7 +89,12 @@ class _Spawner:
     def __init__(self) -> None:
         self.handed: list[dict[str, Any]] = []
 
-    def spawn(self, pipeline: PipelineDefinition, feedback: dict[str, Any] | None = None) -> Any:
+    def spawn(
+        self,
+        pipeline: PipelineDefinition,
+        feedback: dict[str, Any] | None = None,
+        side: str | None = None,
+    ) -> Any:
         self.handed.append(dict(feedback or {}))
 
         class _Done:
