@@ -15,7 +15,7 @@ of them**.
 **Twenty-three more were reopened `✅` → `🔧` on 2026-10-07** `[agreed 2026-10-07]`, with `TECH-003`
 and `TECH-004`: a promised behaviour is missing or broken. Since then `E-FLOW-03`, `D-EXEC-02`,
 `E-SENS-01`, `E-INTL-01`, `B-INTL-01`, `C-EXEC-02`, `C-EXEC-06`, `D-VAL-05`, `D-SENS-02`,
-`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06`, `E-SENS-02`, `C-FLOW-06`, `E-EXEC-01`, `E-INTL-02` and `D-INTL-03` were signed off and `D-FLOW-03`
+`TECH-003`, `E-INTL-03`, `C-VAL-02`, `D-SENS-03`, `D-INTL-06`, `E-SENS-02`, `C-FLOW-06`, `E-EXEC-01`, `E-INTL-02`, `D-INTL-03` and `TECH-004` were signed off and `D-FLOW-03`
 retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md` §6. Evidence:
 [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md).
 
@@ -64,6 +64,7 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 
 | What | Result |
 |---|---|
+| `TECH-004` Graph Refactoring | Finished, signed off 2026-10-15: every FR proven; the engine matches its protocol, the store keeps AD-6 names, a build stores its project's service name |
 | `D-SENS-06` Structured Code Editing | Finished, signed off 2026-10-14: an agent renames, moves, creates and deletes code by name in 8 languages, all files or none; a change keeps line endings |
 | `D-INTL-03` Explicit Plan Phase | Finished, signed off 2026-10-13: `new_feature` decides a plan before code; the file and code-structure tools do what they offer |
 | `E-INTL-02` Spec Drafting | Finished, signed off 2026-10-13: `sw draft` shows each written section; the person keeps, changes or skips it |

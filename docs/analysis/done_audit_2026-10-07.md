@@ -123,4 +123,4 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
 Not yet looked at: `B-FLOW-01` FR-2..8 proofs, `D-FLOW-04`, `C-FLOW-01` REST tests,
-`E-SENS-03` task-scoped roots. `TECH-004`'s FRs are all cited since 2026-10-15; it waits for sign-off.
+`E-SENS-03` task-scoped roots. `TECH-004` signed off 2026-10-15.

@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-004
 - **Phase**: Technical Debt
-- **Status**: APPROVED
+- **Status**: ✅ Finished — signed off by the user 2026-10-15
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-004/TECH-004_design.md
 - **Audit History**: 3 rounds of Red Team / Blue Team adversarial audit
 
@@ -367,7 +367,7 @@ root-`context.yaml` rule and the graph build calls it.
 2026-10-15: every FR cited by a test that proves it. A real protocol check replaced a two-name
 `hasattr` test and found `extract_subgraph(requested_depth)` against the protocol's `depth`; an AD-6
 check found `_extract_nodes(nx_graph)`. Both fixed.
-**Next step**: the user's sign-off.
+**Next step**: none.
 
 ## Carried down from the topic entry (2026-08-13, `TECH-044`)
 

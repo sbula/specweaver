@@ -59,7 +59,7 @@ critical for long-term project viability.
 * **`TECH-003` 🟢: Structural Refactoring of Workspace AST Module**
   > [Description](../features/topic_07_technical_debt/TECH-003/TECH-003_design.md) | To make the bounded context crystal clear, we want to introduce a dedicated `ast` boundary inside the workspace
   > module. This separates mechanical Tree-Sitter extraction (`parsers`) from output mapping (`adapters`).
-* **`TECH-004` 🔧: Architectural Refactoring of `graph/` Bounded Context**
+* **`TECH-004` 🟢: Architectural Refactoring of `graph/` Bounded Context**
   > [Description](../features/topic_07_technical_debt/TECH-004/TECH-004_design.md) | Resolved: the standalone CLI command for graph building is **not** an architectural violation. Design doc `AD-2`
   > decided to keep the CLI as the Composition Root rather than centralize orchestration into a `GraphBuildAtom` or an autonomous `spinUp` workflow — no such Atom exists in `src/`, matching that
   > decision. _(2026-07-31: reworded — this previously read as an open question when the decision has been settled and shipped.)_
