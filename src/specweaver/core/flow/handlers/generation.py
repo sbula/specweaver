@@ -416,10 +416,10 @@ class GenerateContractHandler:
         try:
             from specweaver.core.flow.handlers.contract_renderers import (
                 contract_extension,
+                contract_names,
                 extract_contract,
-                extract_docstrings,
-                extract_signatures,
-                render_contract,
+                extract_methods,
+                render_contract_file,
             )
 
             spec_text = context.spec_path.read_text(encoding="utf-8")
@@ -427,14 +427,12 @@ class GenerateContractHandler:
             if contract_section is None:
                 return _error_result("No ## Contract section found in spec", started)
 
-            signatures = extract_signatures(contract_section)
-            if not signatures:
+            methods = extract_methods(contract_section)
+            if not methods:
                 return _error_result(
                     "No Python function signatures found in Contract code blocks",
                     started,
                 )
-
-            docstrings = extract_docstrings(contract_section)
 
             contracts_dir = context.project_path / "contracts"
             contracts_dir.mkdir(parents=True, exist_ok=True)
@@ -449,7 +447,7 @@ class GenerateContractHandler:
             exports = res.exports or {}
             language = exports.get("language", "python")
 
-            contract_content = render_contract(language, class_name, signatures, docstrings)
+            contract_content = render_contract_file(language, class_name, methods)
             ext = contract_extension(language)
             output_path = contracts_dir / f"{stem}_contract.{ext}"
 
@@ -469,7 +467,11 @@ class GenerateContractHandler:
 
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"generated_path": str(output_path), "signature_count": len(signatures)},
+                output={
+                    "generated_path": str(output_path),
+                    "signature_count": len(methods),
+                    "methods": contract_names(methods),
+                },
                 started_at=started,
                 completed_at=_now_iso(),
             )

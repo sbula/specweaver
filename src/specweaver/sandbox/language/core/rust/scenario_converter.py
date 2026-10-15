@@ -45,7 +45,8 @@ class RustScenarioConverter(ScenarioConverterInterface):
 
         test_fns: list[str] = []
         for s in scenario_set.scenarios:
-            fn_name = f"test_{_to_snake_case(s.function_under_test)}_{_to_snake_case(s.category)}"
+            function = _to_snake_case(s.function_under_test.replace(".", "_"))
+            fn_name = f"test_{function}_{_to_snake_case(s.category)}"
             # Make unique if multiple same-category scenarios exist for the same function
             if any(t.endswith(fn_name) for t in test_fns):
                 fn_name = f"{fn_name}_{_to_snake_case(s.name)}"

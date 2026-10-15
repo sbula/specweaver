@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 
 # ---------------------------------------------------------------------------
 # Extension helpers
@@ -409,3 +410,102 @@ def extract_docstrings(contract_text: str) -> dict[str, str]:
             docstring = match.group(2).strip()
             docstrings[func_name] = docstring
     return docstrings
+
+
+# ---------------------------------------------------------------------------
+# Methods with their owner
+# ---------------------------------------------------------------------------
+
+_SIGNATURE = re.compile(
+    r"^([ \t]*)((?:async\s+)?def\s+\w+\(.*?\)(?:\s*->\s*[^\n:]+)?)\s*:", re.MULTILINE | re.DOTALL
+)
+_DOCSTRING = re.compile(r'\s*\n\s+"""(.*?)"""', re.DOTALL)
+_TYPE_START = re.compile(r"^(?:@runtime_checkable|/\*\*|///)", re.MULTILINE)
+
+
+@dataclass(frozen=True)
+class ContractMethod:
+    """One callable a spec's contract declares; `owner` is its class, None for a function."""
+
+    owner: str | None
+    signature: str
+    docstring: str | None
+
+    @property
+    def name(self) -> str:
+        found = re.search(r"def\s+(\w+)\(", self.signature)
+        return found.group(1) if found else ""
+
+    @property
+    def qualified(self) -> str:
+        return f"{self.owner}.{self.name}" if self.owner else self.name
+
+
+def _owner_of(lines_before: list[str], indent: str) -> str | None | bool:
+    """The class a `def` indented by `indent` belongs to; None at the top; False when nested."""
+    if not indent:
+        return None
+    body_indent: str | None = None
+    for line in reversed(lines_before):
+        if not line.strip():
+            continue
+        lead = line[: len(line) - len(line.lstrip())]
+        if lead:
+            body_indent = lead
+            continue
+        found = re.match(r"class\s+(\w+)", line)
+        return found.group(1) if found and body_indent == indent else False
+    return False
+
+
+def _method_at(block: str, match: re.Match[str]) -> ContractMethod | None:
+    """The contract method one `def` match declares; None when it is nested or private."""
+    indent, signature = match.group(1), match.group(2).strip()
+    owner = _owner_of(block[: match.start()].splitlines(), indent)
+    if owner is False:
+        return None
+    doc = _DOCSTRING.match(block, match.end())
+    method = ContractMethod(
+        owner if isinstance(owner, str) else None,
+        signature,
+        doc.group(1).strip() if doc else None,
+    )
+    return None if method.owner and method.name.startswith("_") else method
+
+
+def extract_methods(contract_text: str) -> list[ContractMethod]:
+    """The contract's functions and public methods, in the spec's order."""
+    blocks = re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL)
+    found = (_method_at(block, match) for block in blocks for match in _SIGNATURE.finditer(block))
+    return [method for method in found if method is not None]
+
+
+def contract_names(methods: list[ContractMethod]) -> list[str]:
+    """Each method as a scenario names it: `function` or `Class.method`."""
+    return [method.qualified for method in methods]
+
+
+def render_contract_file(language: str, class_name: str, methods: list[ContractMethod]) -> str:
+    """One contract file: a type for the functions, named after `class_name`, and one per class."""
+    groups: dict[str | None, list[ContractMethod]] = {}
+    for method in methods:
+        groups.setdefault(method.owner, []).append(method)
+    texts = [
+        render_contract(
+            language,
+            owner or class_name,
+            [m.signature for m in group],
+            {m.name: m.docstring for m in group if m.docstring},
+        )
+        for owner, group in groups.items()
+    ]
+    if not texts:
+        return render_contract(language, class_name, [], {})
+    first, rest = texts[0], texts[1:]
+    for text in rest:
+        start = _TYPE_START.search(text)
+        body = text[start.start() :] if start else text
+        if language == "java":
+            body = body.replace("public interface", "interface", 1)
+        first = first.rstrip("\n") + "\n\n\n" + body
+    return first

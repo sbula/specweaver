@@ -44,7 +44,7 @@ class KotlinScenarioConverter(ScenarioConverterInterface):
 
         groups: dict[str, list[Any]] = defaultdict(list[Any])
         for s in scenario_set.scenarios:
-            groups[s.function_under_test].append(s)
+            groups[s.function_under_test.replace(".", "_")].append(s)
 
         method_blocks: list[Any] = []
         data_methods: list[Any] = []

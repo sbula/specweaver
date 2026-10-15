@@ -23,12 +23,13 @@ class ScenarioDefinition(BaseModel):
     Attributes:
         name: Unique scenario identifier.
         description: What this scenario verifies.
-        function_under_test: Target function/method name.
+        function_under_test: `function`, or `Class.method` as the contract names it.
         req_id: Requirement ID from the spec (e.g., "FR-1", "NFR-3").
         category: One of "happy", "error", "boundary".
         preconditions: Setup state descriptions.
         input_summary: Human-readable input description.
         inputs: Concrete input values for parametrize.
+        constructor_inputs: Values for the class's constructor, for a `Class.method`.
         expected_behavior: Human-readable expected outcome.
         expected_output: Concrete expected value for assertion.
     """
@@ -43,6 +44,8 @@ class ScenarioDefinition(BaseModel):
     preconditions: list[str] = Field(default_factory=list)
     input_summary: str = ""
     inputs: dict[str, Any] = Field(default_factory=dict)
+    #: The values that build the object when `function_under_test` is `Class.method`.
+    constructor_inputs: dict[str, Any] = Field(default_factory=dict)
     expected_behavior: str = ""
     expected_output: Any = None
 

@@ -457,6 +457,46 @@
           "symbol_sha": "sha256:fbbfb74cd668468df91b7c4fc11ef4620a04eeb4b63156b69a9feeb64e281b87"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A contract keeps each method's class",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_contract_methods.py",
+        "tests/integration/core/flow/handlers/test_class_contract_runs.py"
+      ],
+      "mutants": [
+        {
+          "id": "contract-drops-class",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/contract_renderers.py",
+          "symbol": "_method_at",
+          "old": "        owner if isinstance(owner, str) else None,\n",
+          "new": "        None,\n",
+          "breaks": "a class's method is named and rendered as a plain function",
+          "symbol_sha": "sha256:02960faef5aa481c9ebfd55473cf46020fa2733d1fec4e4798a5701f5a271743"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A scenario on a class's method builds the object and calls it",
+      "scope": [
+        "tests/unit/workflows/scenarios/test_class_scenarios.py",
+        "tests/integration/core/flow/handlers/test_class_contract_runs.py"
+      ],
+      "mutants": [
+        {
+          "id": "object-not-built",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/scenarios/scenario_converter.py",
+          "symbol": "_callee",
+          "old": "    return f\"_target.{owner}(**{ctor_expr}).{method}\"\n",
+          "new": "    return f\"_target.{method}\"\n",
+          "breaks": "a method's scenario calls a module function that does not exist",
+          "symbol_sha": "sha256:082822957468127e45379a2b84c010edd4b8b948baa8a3f09210169324a0f6fa"
+        }
+      ]
     }
   ]
 }

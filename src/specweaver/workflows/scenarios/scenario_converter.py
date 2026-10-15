@@ -23,6 +23,27 @@ if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
 
 
+def _callable_name(name: str) -> bool:
+    """A function name, or `Class.method` with a capitalised class."""
+    parts = name.split(".")
+    if len(parts) == 1:
+        return name.isidentifier()
+    owner, method = parts[0], parts[-1]
+    return len(parts) == 2 and owner.isidentifier() and owner[0].isupper() and method.isidentifier()
+
+
+def _callee(func_name: str, ctor_expr: str) -> str:
+    """The expression a test calls: the function, or the method on a newly built object."""
+    if "." not in func_name:
+        return f"_target.{func_name}"
+    owner, method = func_name.split(".")
+    return f"_target.{owner}(**{ctor_expr}).{method}"
+
+
+def _test_name(func_name: str) -> str:
+    return func_name.replace(".", "_")
+
+
 class ScenarioConverter:
     """Converts a ScenarioSet to parametrized pytest file content.
 
@@ -48,7 +69,7 @@ class ScenarioConverter:
 
         Raises:
             ValueError: If no usable stem can be resolved, or a
-                ``function_under_test`` is not a plain Python identifier.
+                ``function_under_test`` is neither an identifier nor ``Class.method``.
         """
         lines: list[str] = [
             '"""Auto-generated scenario tests from spec scenarios."""',
@@ -67,11 +88,11 @@ class ScenarioConverter:
             raise ValueError(msg)
 
         for scenario in scenario_set.scenarios:
-            if not scenario.function_under_test.isidentifier():
+            if not _callable_name(scenario.function_under_test):
                 msg = (
-                    "function_under_test must be a plain Python identifier "
-                    f"(got {scenario.function_under_test!r}) — dotted/qualified or "
-                    "hostile names are rejected to keep the emitted file injection-free."
+                    "function_under_test must be a Python identifier or Class.method "
+                    f"(got {scenario.function_under_test!r}) — other names are rejected to "
+                    "keep the emitted file injection-free."
                 )
                 raise ValueError(msg)
 
@@ -155,7 +176,7 @@ class ScenarioConverter:
 
     @staticmethod
     def _render_call_body(
-        func_name: str,
+        callee: str,
         inputs_expr: str,
         expected_expr: str | None,
         category: str,
@@ -167,7 +188,7 @@ class ScenarioConverter:
         - expected expression present → equality assertion.
         - otherwise → smoke call (must not raise).
         """
-        call = f"_target.{func_name}(**{inputs_expr})"
+        call = f"{callee}(**{inputs_expr})"
         if category == "error":
             return [
                 f"{indent}with pytest.raises(Exception):",
@@ -188,7 +209,7 @@ class ScenarioConverter:
         """Render a single non-parametrized test function."""
         trace = f"  # @trace({scenario.req_id})"
         lines = [
-            f"def test_{func_name}_{scenario.category}():{trace}",
+            f"def test_{_test_name(func_name)}_{scenario.category}():{trace}",
             f'    """Scenario: {scenario.name} — {scenario.description}."""',
         ]
         if scenario.preconditions:
@@ -200,7 +221,10 @@ class ScenarioConverter:
         )
         lines.extend(
             ScenarioConverter._render_call_body(
-                func_name, repr(scenario.inputs), expected_expr, scenario.category
+                _callee(func_name, repr(scenario.constructor_inputs)),
+                repr(scenario.inputs),
+                expected_expr,
+                scenario.category,
             )
         )
         return lines
@@ -215,13 +239,17 @@ class ScenarioConverter:
         lines: list[str] = []
 
         # Build parametrize data (ids via repr — hostile names stay inert text)
+        # A method's group also carries each scenario's constructor values.
+        method = "." in func_name
         param_entries: list[str] = []
         for s in scenarios:
+            ctor = f" {s.constructor_inputs!r}," if method else ""
             param_entries.append(
-                f"    pytest.param({s.inputs!r}, {s.expected_output!r}, id={s.name!r})"
+                f"    pytest.param({s.inputs!r}, {s.expected_output!r},{ctor} id={s.name!r})"
             )
 
-        lines.append('@pytest.mark.parametrize("inputs,expected", [')
+        names = "inputs,expected,ctor" if method else "inputs,expected"
+        lines.append(f'@pytest.mark.parametrize("{names}", [')
         lines.extend(f"{entry}," for entry in param_entries)
         lines.append("])")
 
@@ -229,17 +257,19 @@ class ScenarioConverter:
         req_ids = sorted({s.req_id for s in scenarios})
         trace_str = "  # " + " ".join(f"@trace({rid})" for rid in req_ids)
 
-        lines.append(f"def test_{func_name}_{category}_scenarios(inputs, expected):{trace_str}")
+        args = names.replace(",", ", ")
+        lines.append(f"def test_{_test_name(func_name)}_{category}_scenarios({args}):{trace_str}")
+        callee = _callee(func_name, "ctor")
 
         # Use first scenario's description as docstring
         first = scenarios[0]
         lines.append(f'    """Scenario group: {func_name} — {first.description}."""')
         if category == "error":
-            lines.extend(ScenarioConverter._render_call_body(func_name, "inputs", None, "error"))
+            lines.extend(ScenarioConverter._render_call_body(callee, "inputs", None, "error"))
         else:
             # Rows with expected=None smoke-call; the assert tolerates them by
             # comparing only when an expectation exists.
-            lines.append(f"    result = _target.{func_name}(**inputs)")
+            lines.append(f"    result = {callee}(**inputs)")
             lines.append("    if expected is not None:")
             lines.append("        assert result == expected")
         return lines
