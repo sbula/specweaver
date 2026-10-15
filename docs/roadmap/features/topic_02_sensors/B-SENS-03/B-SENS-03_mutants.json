@@ -1,733 +1,733 @@
 {
- "schema": 2,
- "feature": "B-SENS-03",
- "campaigns": [
-  {
-   "requirement": "FR-1",
-   "title": "A symbol is chunked once, as a whole",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_semantic_chunking.py"
-   ],
-   "mutants": [
+  "schema": 2,
+  "feature": "B-SENS-03",
+  "campaigns": [
     {
-     "id": "nested-not-filtered",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_top_level",
-     "old": "return [name for name in symbols if \".\" not in name]",
-     "new": "return symbols",
-     "breaks": "a parser listing a method before its class consumes the method's text first, so the whole class is skipped"
+      "requirement": "FR-1",
+      "title": "A symbol is chunked once, as a whole",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py"
+      ],
+      "mutants": [
+        {
+          "id": "nested-not-filtered",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_top_level",
+          "old": "return [name for name in symbols if \".\" not in name]",
+          "new": "return symbols",
+          "breaks": "a parser listing a method before its class consumes the method's text first, so the whole class is skipped"
+        }
+      ],
+      "retired": {
+        "reason": "FR-1 is no longer 'a symbol is chunked once, as a whole'. The 2026-08-26 design gives that number to 'visibility is a value'; the old claim is replaced by FR-8 and FR-12, under which a chunk may hold several whole units and a signature is deliberately in two layers.",
+        "date": "2026-08-26"
+      }
+    },
+    {
+      "requirement": "FR-3",
+      "title": "An oversized symbol splits rather than truncating",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py",
+        "tests/unit/workspace/analyzers/test_chunking_properties.py"
+      ],
+      "mutants": [
+        {
+          "id": "split-truncates",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_split",
+          "old": "return parts or [text]",
+          "new": "return [parts[0]] if parts else [text]",
+          "breaks": "only the first slice of a long function is indexed and the rest is lost silently"
+        }
+      ],
+      "retired": {
+        "reason": "FR-3 is no longer 'an oversized symbol splits rather than truncating'. That claim moved to FR-10 and was demoted to a last resort behind FR-8, which splits on nested symbols first. FR-3 now means TypeScript's export-versus-accessibility rule.",
+        "date": "2026-08-26"
+      }
+    },
+    {
+      "requirement": "FR-16",
+      "title": "An unreadable file is still indexed, and says it is not a whole unit",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_totality.py",
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py"
+      ],
+      "mutants": [
+        {
+          "id": "parser-failure-drops-file",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        order, unreadable = [], True",
+          "new": "        return []",
+          "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        },
+        {
+          "id": "a-line-window-is-not-flagged",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_emit",
+          "old": "    windowed = line_window or len(pieces) > 1",
+          "new": "    windowed = False",
+          "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
+          "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
+        },
+        {
+          "id": "everything-is-a-line-window",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_emit",
+          "old": "    windowed = line_window or len(pieces) > 1",
+          "new": "    windowed = True",
+          "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
+          "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
+        },
+        {
+          "id": "an-unreadable-file-reads-as-readable",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        order, unreadable = [], True",
+          "new": "        order, unreadable = [], False",
+          "breaks": "the one case `len(pieces) > 1` cannot infer: a SMALL file no grammar handles arrives in one piece, so nothing about the cut says it was never understood",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        }
+      ],
+      "rekeyed": {
+        "from": "FR-4",
+        "date": "2026-08-26",
+        "reason": "Re-keyed 2026-08-26. The claim survives verbatim; only its number moved. `FR-4` now means 'Go has no private' and this campaign proves 'an unreadable file is still indexed', which the 2026-08-26 design calls `FR-16`. Left as `FR-4` the nightly would report a green claim nobody makes -- the same defect that retired `FR-1` and `FR-3`."
+      }
+    },
+    {
+      "requirement": "FR-17",
+      "title": "Nothing is dropped",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_semantic_chunking.py",
+        "tests/unit/workspace/analyzers/test_chunking_properties.py"
+      ],
+      "mutants": [
+        {
+          "id": "preamble-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+          "new": "        \"\", path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+          "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass. Re-anchored a THIRD time on 2026-08-26 when SF-06 CB-1 gave the preamble call its scope arguments -- six re-anchors in this story, each one a correction the drift check forced rather than a silent pass",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        }
+      ],
+      "rekeyed": {
+        "from": "FR-5",
+        "date": "2026-08-26",
+        "reason": "Re-keyed 2026-08-26. Same claim, new number: `FR-5` now means 'a symbol yields its description'. Found when SF-02's FR-5 campaign landed and the runner reported SEVEN mutants under one requirement -- six new and one that had nothing to do with them."
+      }
+    },
+    {
+      "requirement": "FR-1",
+      "title": "Visibility is a value, and each language's default is its own",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_visibility_mapping.py"
+      ],
+      "mutants": [
+        {
+          "id": "go-lowercase-reads-as-public",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/go/codestructure.py",
+          "symbol": "_visibility_of",
+          "old": "return \"public\" if short[:1].isupper() else \"internal\"",
+          "new": "return \"public\"",
+          "breaks": "Go's only visibility signal. Capitalisation is the whole rule, and without it every unexported identifier claims to be part of the package's interface",
+          "symbol_sha": "sha256:748152e8725cd8780796e77f2d3950ccb5775750875a33793def5b30b98ebc05"
+        },
+        {
+          "id": "an-interface-member-reads-as-package-private",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/java/codestructure.py",
+          "symbol": "_visibility_of",
+          "old": "    return \"public\" if inside_interface else \"internal\"",
+          "new": "    return \"internal\"",
+          "breaks": "the container rule. An interface member carries no modifier and is implicitly public by the JLS; reading it as hidden dropped every interface method from the public set, which is how the defect shipped",
+          "symbol_sha": "sha256:36fd862601063e57810aa0c617b9583c798c06224fca514f8e4435eb290b0597"
+        },
+        {
+          "id": "a-name-mangled-member-reads-as-interface",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/python/codestructure.py",
+          "symbol": "_visibility_of",
+          "old": "if short.startswith(\"__\") and short.endswith(\"__\"):",
+          "new": "if short.startswith(\"__\"):",
+          "breaks": "the one column that separates `__init__` from `__checksum`. Collapsing them put a name-mangled member into the `exposes:` list of every generated `context.yaml`",
+          "symbol_sha": "sha256:5a002f3c6ba9d78a462947949ba99aa0ed11ea7bc03f1a421603ae5e25974ce5"
+        },
+        {
+          "id": "pub-crate-reads-as-public",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "_visibility_of",
+          "old": "return \"internal\" if \"(\" in text else \"public\"",
+          "new": "return \"public\"",
+          "breaks": "Rust's third level. `pub(crate)` is module-scoped, and calling it public offers a crate-internal API to consumers outside the crate",
+          "symbol_sha": "sha256:273f733ba99ef0821648799fc1c1d5420020d2f90f0ae76c155dc2ac18b70a9a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The filter returns the levels asked for, and cannot fail open",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_visibility_filter.py",
+        "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py",
+        "tests/integration/workspace/context/test_exposes_seam.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-filter-admits-everything",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin._is_symbol_valid",
+          "old": "            if not matched:",
+          "new": "            if False:",
+          "breaks": "the defect this requirement closed, restored exactly: a request for `private` returns the whole file. One of the two live callers passes whatever an agent typed, so failing open is the worst direction for a filter whose job is to withhold",
+          "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+        },
+        {
+          "id": "the-filter-rejects-everything",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin._is_symbol_valid",
+          "old": "            matched = \"public\" in requested if level == \"unknown\" else level in requested",
+          "new": "            matched = False",
+          "breaks": "the opposite failure, and the one that gets a gate switched off: every filtered request answers with silence, which reads as *this code does not exist* rather than as a broken filter",
+          "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+        },
+        {
+          "id": "unknown-stops-counting-as-visible",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin._is_symbol_valid",
+          "old": "            matched = \"public\" in requested if level == \"unknown\" else level in requested",
+          "new": "            matched = level in requested",
+          "breaks": "`AD-5`. SQL and markdown have no access concept and report `unknown`, so treating it as a level nobody requests empties the index for two of the eight target languages",
+          "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A description is what was written above THIS declaration, and nothing else",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_symbol_docs.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-distant-comment-becomes-a-description",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_doc_comments",
+          "old": "        if _last_content_row(sibling, _text(sibling)) + 1 != below.start_point[0]:\n",
+          "new": "        if False:\n",
+          "breaks": "attachment. `prev_sibling` alone finds a comment three blank lines above, so without the gap check every file's licence header becomes the description of its first declaration -- and every test about a PRESENT description still passes, which is why this mutant is the one that matters",
+          "symbol_sha": "sha256:82d25443bc240dcbaadff1854ede8553ef0e9f299fae80dbb068a214fe99aae9"
+        },
+        {
+          "id": "only-the-nearest-comment-line-is-taken",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "sibling_doc",
+          "old": "        below = sibling\n        sibling = sibling.prev_sibling",
+          "new": "        break",
+          "breaks": "stacked doc blocks. `///` and `//` lines arrive one node each, so taking only the nearest returns a doc block's last line and gives no sign the rest was dropped",
+          "symbol_sha": "sha256:2e75b3d3966b4491eb796657f763e2c3c3afca5707176ebcf10e7349fd36aa80"
+        },
+        {
+          "id": "the-wrapper-climb-stops",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_anchor",
+          "old": "        and (node.parent.start_point[0] == node.start_point[0] or node.parent.type in _WRAPPERS)\n",
+          "new": "        and False\n",
+          "breaks": "every documented TYPE in TypeScript and Go, whose comment precedes a wrapper -- an `export_statement` and a `type_declaration` -- rather than the declaration itself. A fixed per-language depth passed every method-level test and failed four of eight type-level ones",
+          "symbol_sha": "sha256:aedd34c83d1a94ef6f4feb9f112b99dd85d68b53df2d0e5ae0707e9624cc4003"
+        },
+        {
+          "id": "the-climb-reaches-the-file",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_anchor",
+          "old": "        and (node.parent.start_point[0] == node.start_point[0] or node.parent.type in _WRAPPERS)\n",
+          "new": "        and True\n",
+          "breaks": "the opposite: climbing past the declaration to the file itself, so one comment somewhere near the top becomes the description of everything in it",
+          "symbol_sha": "sha256:aedd34c83d1a94ef6f4feb9f112b99dd85d68b53df2d0e5ae0707e9624cc4003"
+        },
+        {
+          "id": "comment-markers-reach-the-index",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "_clean_line",
+          "old": "        for marker in _LEADING_MARKERS:",
+          "new": "        for marker in ():",
+          "breaks": "the description's text. `/**`, `///` and `#` appear in every doc in a language, so they carry no signal and make same-language chunks look alike to an embedding",
+          "symbol_sha": "sha256:0a626740a695f22cf25f503ce9305bf4604ea8347f31d2530e9830d55e3b329a"
+        },
+        {
+          "id": "python-stops-reading-its-docstring",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_docs.py",
+          "symbol": "docstring_doc",
+          "old": "    if literal.type != \"string\":",
+          "new": "    if True:",
+          "breaks": "Python's descriptions entirely. It is the one language whose description is not a comment, so no sibling walk substitutes for this",
+          "symbol_sha": "sha256:b0822e6cf99bfc29a89d1aa163093c95ebab71cca59fcfd6544ed45a0c13699b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A signature is the declaration without its body, behind its description",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/test_symbol_signatures.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-body-is-not-elided",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin.extract_symbol_signature",
+          "old": "        if body and declaration.endswith(body):",
+          "new": "        if False:",
+          "breaks": "the whole point: a skeleton chunk carrying the full implementation is the body chunk again, and the two layers stop being distinguishable",
+          "symbol_sha": "sha256:4fea87a19d01c8828cd610f6b23ff288a007212b7e2b3f51638d2dbf45faffa7"
+        },
+        {
+          "id": "the-description-is-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin.extract_symbol_signature",
+          "old": "        return f\"{doc}\\n{signature}\" if doc else signature",
+          "new": "        return signature",
+          "breaks": "`FR-6`'s other half. A signature without its description is the thing `extract_symbol` already returned, and the reason this accessor exists is that a name and a shape retrieve worse than a name, a shape and a sentence",
+          "symbol_sha": "sha256:4fea87a19d01c8828cd610f6b23ff288a007212b7e2b3f51638d2dbf45faffa7"
+        },
+        {
+          "id": "a-language-with-no-body-raises",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/_reading.py",
+          "symbol": "SymbolReadingMixin._raw_body",
+          "old": "        return typing.cast(\"bytes\", block.text).decode(\"utf-8\") if block else \"\"\n",
+          "new": "        return typing.cast(\"bytes\", block.text).decode(\"utf-8\")\n",
+          "breaks": "SQL. The declarative tier has no target block, so `extract_symbol_body` raises there -- and this is called once per symbol during a whole-repository scan, where one raise takes the scan down",
+          "symbol_sha": "sha256:6f935dc57ea8f26d79312e23a8d871e9b1f07d4946a3461d4bc284bf6d0cab9f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A qualified SQL object is one symbol, not one per name part",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/sql/test_sql_qualified_names.py",
+        "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-capture-drops-back-to-the-identifier",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/sql/codestructure.py",
+          "symbol": "SqlCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (create_table (object_reference) @name)",
+          "new": "        (create_table (object_reference (identifier) @name))",
+          "breaks": "the defect exactly as it shipped: an `object_reference` holds one identifier per name part, so `public.orders` reports as TWO symbols and the index gains a chunk named after a schema. A test asserting `'public.orders' in symbols` would pass with both fragments still present, which is why the assertions are on the exact list",
+          "symbol_sha": "sha256:fb66682908dc54d7627a50f78e9d6cf9b52684a80ab82877e18a83dce4251deb"
+        },
+        {
+          "id": "a-bare-name-resolves-to-a-qualified-object",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/base.py",
+          "symbol": "BaseTreeSitterParser._named_nodes",
+          "old": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\") == target_name:",
+          "new": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\").endswith(target_name):",
+          "breaks": "strict resolution `[agreed 2026-08-26]`. `orders` would resolve to `public.orders`, which is the bare-name matching that gives the knowledge graph its measured 48% ghost rate -- a name that looks unique is not the same as the right target. Re-pointed here on 2026-08-26: the first version aimed at a type guard in the SQL parser that turned out to be EQUIVALENT, because the query can only produce that node type. Strictness was never in the branch it named",
+          "symbol_sha": "sha256:f99ed8da993fa887c4b3f6af760081c0c818815c8473a90e542c75c1983e9e0f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "A Rust trait's members are symbols, and they carry the trait's name",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/rust/test_rust_trait_members.py",
+        "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
+      ],
+      "mutants": [
+        {
+          "id": "required-trait-methods-are-invisible",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
+          "old": "        (function_signature_item name: (identifier) @name)",
+          "new": "        (struct_item name: (type_identifier) @name)",
+          "breaks": "the first of two causes. A trait's REQUIRED method is a `function_signature_item`, a different node type from `function_item` -- so the part of a trait that IS the contract had no symbol, no chunk and no node in the graph",
+          "symbol_sha": "sha256:450deafcd7923657f51ae7a44504e0bf73cd4871d3075bdad9ee9fea48d0ffb0"
+        },
+        {
+          "id": "a-trait-member-loses-its-scope",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure._get_symbol_scope",
+          "old": "            if parent.type == \"trait_item\":",
+          "new": "            if False:",
+          "breaks": "the second cause, which is independent: a defaulted trait method was reported as the bare name `name`, colliding with every other `name` in the estate. Fixing only the query gives `Shape.area` unscoped; fixing only the scope leaves it missing",
+          "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
+        },
+        {
+          "id": "an-impl-method-scopes-to-the-trait-instead-of-the-type",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
+          "symbol": "RustCodeStructure._get_symbol_scope",
+          "old": "            if parent.type == \"impl_item\":\n                name = self._impl_type_name(parent)",
+          "new": "            if False:\n                name = self._impl_type_name(parent)",
+          "breaks": "the branch order. In `impl Shape for C` both a trait and an impl are in scope and the method belongs to `C`; walking up finds the `impl_item` first. A walk that stopped at whichever it met without caring which would get every trait implementation backwards",
+          "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "Indentation does not decide where code is cut",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_budget.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-budget-counts-whitespace-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/_sizing.py",
+          "symbol": "weight",
+          "old": "    return len(\"\".join(text.split()))",
+          "new": "    return len(text)",
+          "breaks": "consistency across coding styles. Counting every character lets indentation decide where code is cut, so deeply nested Java and flat Python are judged by different standards for the same amount of code -- and reformatting a file moves its chunk boundaries without a line of it changing, which costs a re-index of the whole repository once anything is embedded",
+          "symbol_sha": "sha256:b4f647c557ec0450333b418ccc40c6c5c5b3633e2eef5ac7b13b76bc3a17b928"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "An oversized symbol is cut where the code has a seam",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_structure.py"
+      ],
+      "mutants": [
+        {
+          "id": "nothing-is-ever-nested",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_parent_of",
+          "old": "    body = texts.get(name, \"\")\n    if not body:\n        return None",
+          "new": "    body = texts.get(name, \"\")\n    if body:\n        return None",
+          "breaks": "the whole rule. With no symbol nested in any other, an oversized class has no children to split into and falls straight through to the line cut -- 97 of this repository's 1,102 top-level symbols, each becoming numbered slices with one starting mid-method",
+          "symbol_sha": "sha256:c73e0885e260a43a3d0f4c1556fb2feada00aec4c030f9644d1a5c630ab10a33"
+        },
+        {
+          "id": "a-dot-means-nested-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "    tops = [n for n in order if parents[n] is None]",
+          "new": "    tops = [n for n in order if \".\" not in n]",
+          "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "Line cutting is the last resort, not the first",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_budget.py",
+        "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
+        "tests/unit/workspace/analyzers/test_chunking_structure.py"
+      ],
+      "mutants": [
+        {
+          "id": "lines-are-cut-before-structure-is-tried",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_emit_unit",
+          "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
+          "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
+          "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
+          "symbol_sha": "sha256:5b01f269b0525868dcca03114c268a266302f15aef31d4fde32a04c24b56f5ac"
+        },
+        {
+          "id": "a-line-longer-than-the-budget-is-never-cut",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/_sizing.py",
+          "symbol": "slice_long_line",
+          "old": "    if weight(line) <= max_chars:\n        return [line]",
+          "new": "    if True:\n        return [line]",
+          "breaks": "the one case a line boundary cannot serve. A minified bundle or a single-line JSON has no newline, so an 800,000-character file came back as ONE chunk against a budget of 4,000 -- measured. Whatever embeds that either fails or silently truncates",
+          "symbol_sha": "sha256:1105c4a2a72d1c6cd3b8c6641a0fcf8076f56c739a279f8ab0211ec6a77e47c0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Small neighbours merge, and never across a visibility level",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
+        "tests/unit/workspace/analyzers/test_chunking_merge.py"
+      ],
+      "mutants": [
+        {
+          "id": "a-private-symbol-joins-a-public-chunk",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_Run.absorb",
+          "old": "        if self._inside and (level != self._level or not self._fits(text)):",
+          "new": "        if self._inside and (not self._fits(text)):",
+          "breaks": "the one thing merging can get dangerously wrong. A public getter combined with a private helper puts the private one into every result that asks for the public interface -- `FR-2`'s filter undone one layer up, where no filter can see it. This mutant was SILENT on its first run: the test's budget let the class fit whole, so nothing split, nothing merged, and the assertion iterated one chunk while proving nothing",
+          "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
+        },
+        {
+          "id": "merging-is-disabled",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_Run.absorb",
+          "old": "        if self._inside and (level != self._level or not self._fits(text)):",
+          "new": "        if True:",
+          "breaks": "the requirement itself. Twelve three-line getters go back to twelve chunks of near-identical shape, which match everything and discriminate nothing",
+          "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
+        },
+        {
+          "id": "the-text-between-merged-symbols-is-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_walk",
+          "old": "        if head:",
+          "new": "        if head.strip():",
+          "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
+          "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
+        },
+        {
+          "id": "unknown-visibility-merges-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/_scope.py",
+          "symbol": "levels_of",
+          "old": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)\n            return None",
+          "new": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)",
+          "breaks": "the guard's FAILURE MODE. Falling back to a dict where every symbol reads `unknown` means every symbol matches every other, so a private one merges into a public chunk -- `FR-2`'s filter undone one layer up, failing in the same direction the original defect failed. Not knowing is not the same as knowing they are alike",
+          "symbol_sha": "sha256:dd6c99fc19b2b7b7b04016af17840938a853754e6ba947e87c46e6325ba868e2"
+        },
+        {
+          "id": "the-fail-closed-branch-is-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_Run.absorb",
+          "old": "        if self._cut.levels is None:",
+          "new": "        if False:",
+          "breaks": "the same thing from the consuming end: with no levels known, `.get(name, \"unknown\")` makes every symbol alike and merging resumes across visibility",
+          "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "The head of a file has a name, and nothing else borrows it",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_preamble.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-preamble-loses-its-name",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
+          "new": "        head, path, \"\", language, max_chars, (), package=cut.package, unit=cut.unit",
+          "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        },
+        {
+          "id": "every-gap-becomes-the-module",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_Run.flush",
+          "old": "            self._inside[0] if len(self._inside) == 1 else \"\",",
+          "new": "            self._inside[0] if len(self._inside) == 1 else _MODULE_CHUNK,",
+          "breaks": "the half that gives the name meaning. A stray comment in the middle of a file, or a `class Foo:` header inside a symbol, would be indexed as the module's own description -- worse than leaving it anonymous, because it reads as an answer",
+          "symbol_sha": "sha256:f7d5820fde78a999bbaf9369705f2b9c1e53ec8ab6eb5741fb2839793a3445e0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "Nothing is dropped, and no chunk is text the file never had",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_totality.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-text-between-symbols-is-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_walk",
+          "old": "        if head:",
+          "new": "        if head.strip():",
+          "breaks": "verbatim-ness, and totality does NOT catch it -- that is the whole reason this requirement has two halves. Totality compares non-whitespace characters, so dropping the blank run between two merged symbols satisfies it while producing `... return 1clas s Beta:`, a chunk whose content never existed in the file and which no reader could locate in it",
+          "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
+        },
+        {
+          "id": "the-final-flush-never-happens",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_merge",
+          "old": "    out.extend(run.flush())\n    return out",
+          "new": "    return out",
+          "breaks": "totality on the tail. Whatever is still accumulating when the pieces run out -- a trailing constant, a module-level call, the last merged run in the file -- is never emitted. Replaced 2026-08-26: the first version made every gap join the buffer, which moves chunk boundaries and loses nothing, and came back UNPROTECTED because it was EQUIVALENT rather than because a test was missing",
+          "symbol_sha": "sha256:6207cc5725b4874a328323120db98726eb72473c4c6d70cf97b3b85931128d96"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "A chunk knows which boundary it sits inside, at both radii",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_scope.py"
+      ],
+      "mutants": [
+        {
+          "id": "unit-falls-back-to-package",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "        unit_of(path, markers),",
+          "new": "        directory_of(path),",
+          "breaks": "`AD-5`'s reasoning at the wider radius. A chunk claiming a unit boundary the caller never established answers *is this outside my service?* from a guess -- the same failure as reporting `public` for a language with no such concept",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        },
+        {
+          "id": "visibility-is-never-known",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_level_of",
+          "old": "    return \"unknown\" if cut.levels is None else cut.levels.get(name, \"unknown\")",
+          "new": "    return \"unknown\"",
+          "breaks": "the whole point of the label. Every chunk reads `unknown`, so a query-time filter scoped by where the asker sits cannot tell an interface from an internal -- and `unknown` counts as VISIBLE, so it fails open",
+          "symbol_sha": "sha256:fc065eff1708a0993a98dff30942bc35a79cce1a0f9bb700b62e48c0a2716fa5"
+        },
+        {
+          "id": "the-first-marker-wins-not-the-nearest",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/_scope.py",
+          "symbol": "unit_of",
+          "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
+          "new": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and not best:",
+          "breaks": "the nearest-wins rule. A repository root and a nested package both hold a manifest, so taking any match puts every file in the repo root and the narrow question stops being answerable. This mutant was SILENT twice: once because the implementation iterated a frozenset and could not be pinned, and once because the fixture's marker names sorted so that first-match gave the right answer anyway",
+          "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
+        },
+        {
+          "id": "a-marker-matches-on-a-bare-prefix",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/_scope.py",
+          "symbol": "unit_of",
+          "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
+          "new": "        if path.startswith(directory) and len(directory) > len(best):",
+          "breaks": "the path boundary. A marker at `src/app` would claim every file under `src/application`, putting one service's code inside another's unit",
+          "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "Two layers, and they split and merge separately",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_layers.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-skeleton-layer-is-never-emitted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "chunk_source",
+          "old": "    return body + _skeletons(code, parser, cut, preamble)",
+          "new": "    return body",
+          "breaks": "the layer itself. The question asked first -- *what does this offer* -- has nothing to answer it, and a consumer ranking signatures above bodies has only bodies",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
+        },
+        {
+          "id": "skeletons-merge",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_skeletons",
+          "old": "            layer=\"skeleton\",\n        )\n    return chunks",
+          "new": "            layer=\"skeleton\",\n        )\n    return _merge([(c.text, c.symbol, None) for c in chunks], cut)",
+          "breaks": "the decision a measurement made. A skeleton is 99 non-whitespace characters at the median, so a 4,000 budget holds about forty -- and forty signatures in one chunk matches everything, which is the low-discrimination problem that made `FR-6` per-symbol rather than per-file",
+          "symbol_sha": "sha256:c17c6f98e8017e3b8ee7cc2743c36dccdb1d2a1b9af9750704832e0b96d4fafc"
+        },
+        {
+          "id": "every-chunk-claims-the-body-layer",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_emit",
+          "old": "    layer: str = \"body\",\n) -> list[Chunk]:",
+          "new": "    layer: str = \"body\",\n) -> list[Chunk]:\n    layer = \"body\"",
+          "breaks": "the label, without touching the content. Every chunk reads `body`, so `FR-17`'s totality would bind the skeletons too -- and a skeleton is a description and a signature concatenated, which no totality claim can hold for",
+          "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "A chunk's identity covers every label, not only its text",
+      "scope": [
+        "tests/unit/workspace/analyzers/test_chunking_identity.py"
+      ],
+      "mutants": [
+        {
+          "id": "the-hash-covers-text-only",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "content_hash",
+          "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
+          "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name == \"text\"",
+          "breaks": "the reason the field exists. A chunk whose text is unchanged and whose `visibility` was corrected from `public` to `private` is a DIFFERENT row -- hashing the text alone leaves the stale one looking current, and a consumer filtering by visibility keeps serving the old answer",
+          "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+        },
+        {
+          "id": "the-hash-is-constant",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "content_hash",
+          "old": "    return hashlib.sha256(\"\\x00\".join(parts).encode(\"utf-8\")).hexdigest()",
+          "new": "    return \"0\" * 64",
+          "breaks": "identity altogether: every chunk in the estate is the same chunk, so a re-index either replaces everything or nothing",
+          "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+        },
+        {
+          "id": "the-hash-feeds-on-itself",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "content_hash",
+          "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
+          "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk)",
+          "breaks": "recomputability. A hash that includes its own field depends on whatever that field held, so checking a stored chunk for freshness gives a different answer than computing it fresh -- and every row reads as stale",
+          "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
+        },
+        {
+          "id": "chunks-are-emitted-unsealed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/chunking.py",
+          "symbol": "_sealed",
+          "old": "    chunk = Chunk(**labels)\n    return replace(chunk, content_hash=content_hash(chunk))",
+          "new": "    return Chunk(**labels)",
+          "breaks": "the field ever being filled. Every chunk carries the empty default, so a store keyed on it collapses the whole estate into one row",
+          "symbol_sha": "sha256:66cc8d9c796516a505a5ebe968a02043c8510aa0684d1598166679c54676eb8c"
+        }
+      ]
     }
-   ],
-   "retired": {
-    "reason": "FR-1 is no longer 'a symbol is chunked once, as a whole'. The 2026-08-26 design gives that number to 'visibility is a value'; the old claim is replaced by FR-8 and FR-12, under which a chunk may hold several whole units and a signature is deliberately in two layers.",
-    "date": "2026-08-26"
-   }
-  },
-  {
-   "requirement": "FR-3",
-   "title": "An oversized symbol splits rather than truncating",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_semantic_chunking.py",
-    "tests/unit/workspace/analyzers/test_chunking_properties.py"
-   ],
-   "mutants": [
-    {
-     "id": "split-truncates",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_split",
-     "old": "return parts or [text]",
-     "new": "return [parts[0]] if parts else [text]",
-     "breaks": "only the first slice of a long function is indexed and the rest is lost silently"
-    }
-   ],
-   "retired": {
-    "reason": "FR-3 is no longer 'an oversized symbol splits rather than truncating'. That claim moved to FR-10 and was demoted to a last resort behind FR-8, which splits on nested symbols first. FR-3 now means TypeScript's export-versus-accessibility rule.",
-    "date": "2026-08-26"
-   }
-  },
-  {
-   "requirement": "FR-16",
-   "title": "An unreadable file is still indexed, and says it is not a whole unit",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_totality.py",
-    "tests/unit/workspace/analyzers/test_semantic_chunking.py"
-   ],
-   "mutants": [
-    {
-     "id": "parser-failure-drops-file",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        order, unreadable = [], True",
-     "new": "        return []",
-     "breaks": "a file whose parser raises vanishes from the index with no signal, which a reader cannot tell from *this code does not exist*. Re-anchored 2026-08-26: SF-04 CB-3 renamed `symbols` to `order`, and the drift check reported it UNMEASURED rather than letting it read as a pass",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    },
-    {
-     "id": "a-line-window-is-not-flagged",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_emit",
-     "old": "    windowed = line_window or len(pieces) > 1",
-     "new": "    windowed = False",
-     "breaks": "the distinction itself. A binary blob and a module preamble both carry no symbol, so without the flag a consumer cannot rank one below the other -- and a symbol sliced at line 400 is no more a whole unit than the blob is",
-     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
-    },
-    {
-     "id": "everything-is-a-line-window",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_emit",
-     "old": "    windowed = line_window or len(pieces) > 1",
-     "new": "    windowed = True",
-     "breaks": "the other direction, and the one that makes the flag useless rather than absent: a signal set on everything carries nothing, and a consumer ranking by it would rank real code below itself",
-     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
-    },
-    {
-     "id": "an-unreadable-file-reads-as-readable",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        order, unreadable = [], True",
-     "new": "        order, unreadable = [], False",
-     "breaks": "the one case `len(pieces) > 1` cannot infer: a SMALL file no grammar handles arrives in one piece, so nothing about the cut says it was never understood",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    }
-   ],
-   "rekeyed": {
-    "from": "FR-4",
-    "date": "2026-08-26",
-    "reason": "Re-keyed 2026-08-26. The claim survives verbatim; only its number moved. `FR-4` now means 'Go has no private' and this campaign proves 'an unreadable file is still indexed', which the 2026-08-26 design calls `FR-16`. Left as `FR-4` the nightly would report a green claim nobody makes -- the same defect that retired `FR-1` and `FR-3`."
-   }
-  },
-  {
-   "requirement": "FR-17",
-   "title": "Nothing is dropped",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_semantic_chunking.py",
-    "tests/unit/workspace/analyzers/test_chunking_properties.py"
-   ],
-   "mutants": [
-    {
-     "id": "preamble-dropped",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
-     "new": "        \"\", path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
-     "breaks": "imports, the module docstring and the 617 top-level constants this repository reports as symbols nowhere never reach the index at all. Re-anchored twice: SF-04 CB-4 moved the preamble path, and the first replacement was not valid Python, which the runner reported as `run-failed` rather than as a pass. Re-anchored a THIRD time on 2026-08-26 when SF-06 CB-1 gave the preamble call its scope arguments -- six re-anchors in this story, each one a correction the drift check forced rather than a silent pass",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    }
-   ],
-   "rekeyed": {
-    "from": "FR-5",
-    "date": "2026-08-26",
-    "reason": "Re-keyed 2026-08-26. Same claim, new number: `FR-5` now means 'a symbol yields its description'. Found when SF-02's FR-5 campaign landed and the runner reported SEVEN mutants under one requirement -- six new and one that had nothing to do with them."
-   }
-  },
-  {
-   "requirement": "FR-1",
-   "title": "Visibility is a value, and each language's default is its own",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/test_visibility_mapping.py"
-   ],
-   "mutants": [
-    {
-     "id": "go-lowercase-reads-as-public",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/go/codestructure.py",
-     "symbol": "_visibility_of",
-     "old": "return \"public\" if short[:1].isupper() else \"internal\"",
-     "new": "return \"public\"",
-     "breaks": "Go's only visibility signal. Capitalisation is the whole rule, and without it every unexported identifier claims to be part of the package's interface",
-     "symbol_sha": "sha256:748152e8725cd8780796e77f2d3950ccb5775750875a33793def5b30b98ebc05"
-    },
-    {
-     "id": "an-interface-member-reads-as-package-private",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/java/codestructure.py",
-     "symbol": "_visibility_of",
-     "old": "    return \"public\" if inside_interface else \"internal\"",
-     "new": "    return \"internal\"",
-     "breaks": "the container rule. An interface member carries no modifier and is implicitly public by the JLS; reading it as hidden dropped every interface method from the public set, which is how the defect shipped",
-     "symbol_sha": "sha256:36fd862601063e57810aa0c617b9583c798c06224fca514f8e4435eb290b0597"
-    },
-    {
-     "id": "a-name-mangled-member-reads-as-interface",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/python/codestructure.py",
-     "symbol": "_visibility_of",
-     "old": "if short.startswith(\"__\") and short.endswith(\"__\"):",
-     "new": "if short.startswith(\"__\"):",
-     "breaks": "the one column that separates `__init__` from `__checksum`. Collapsing them put a name-mangled member into the `exposes:` list of every generated `context.yaml`",
-     "symbol_sha": "sha256:5a002f3c6ba9d78a462947949ba99aa0ed11ea7bc03f1a421603ae5e25974ce5"
-    },
-    {
-     "id": "pub-crate-reads-as-public",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
-     "symbol": "_visibility_of",
-     "old": "return \"internal\" if \"(\" in text else \"public\"",
-     "new": "return \"public\"",
-     "breaks": "Rust's third level. `pub(crate)` is module-scoped, and calling it public offers a crate-internal API to consumers outside the crate",
-     "symbol_sha": "sha256:273f733ba99ef0821648799fc1c1d5420020d2f90f0ae76c155dc2ac18b70a9a"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-2",
-   "title": "The filter returns the levels asked for, and cannot fail open",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/test_visibility_filter.py",
-    "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py",
-    "tests/integration/workspace/context/test_exposes_seam.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-filter-admits-everything",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin._is_symbol_valid",
-     "old": "            if not matched:",
-     "new": "            if False:",
-     "breaks": "the defect this requirement closed, restored exactly: a request for `private` returns the whole file. One of the two live callers passes whatever an agent typed, so failing open is the worst direction for a filter whose job is to withhold",
-     "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
-    },
-    {
-     "id": "the-filter-rejects-everything",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin._is_symbol_valid",
-     "old": "            matched = \"public\" in requested if level == \"unknown\" else level in requested",
-     "new": "            matched = False",
-     "breaks": "the opposite failure, and the one that gets a gate switched off: every filtered request answers with silence, which reads as *this code does not exist* rather than as a broken filter",
-     "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
-    },
-    {
-     "id": "unknown-stops-counting-as-visible",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin._is_symbol_valid",
-     "old": "            matched = \"public\" in requested if level == \"unknown\" else level in requested",
-     "new": "            matched = level in requested",
-     "breaks": "`AD-5`. SQL and markdown have no access concept and report `unknown`, so treating it as a level nobody requests empties the index for two of the eight target languages",
-     "symbol_sha": "sha256:3d748371e3c1421cd385e07fd5f734fbd1fd4ef07bdc759369a9f26723a54b6a"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-5",
-   "title": "A description is what was written above THIS declaration, and nothing else",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/test_symbol_docs.py"
-   ],
-   "mutants": [
-    {
-     "id": "a-distant-comment-becomes-a-description",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "sibling_doc",
-     "old": "        if _last_content_row(sibling, raw) + 1 != below.start_point[0]:",
-     "new": "        if False:",
-     "breaks": "attachment. `prev_sibling` alone finds a comment three blank lines above, so without the gap check every file's licence header becomes the description of its first declaration -- and every test about a PRESENT description still passes, which is why this mutant is the one that matters",
-     "symbol_sha": "sha256:bf269278e17cd17569b44fcf20dadb9f168d9158380b08d6c4cfb23c966a81b7"
-    },
-    {
-     "id": "only-the-nearest-comment-line-is-taken",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "sibling_doc",
-     "old": "        below = sibling\n        sibling = sibling.prev_sibling",
-     "new": "        break",
-     "breaks": "stacked doc blocks. `///` and `//` lines arrive one node each, so taking only the nearest returns a doc block's last line and gives no sign the rest was dropped",
-     "symbol_sha": "sha256:bf269278e17cd17569b44fcf20dadb9f168d9158380b08d6c4cfb23c966a81b7"
-    },
-    {
-     "id": "the-wrapper-climb-stops",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "_anchor",
-     "old": "    while node.parent is not None and node.parent.start_point[0] == node.start_point[0]:",
-     "new": "    while False:",
-     "breaks": "every documented TYPE in TypeScript and Go, whose comment precedes a wrapper -- an `export_statement` and a `type_declaration` -- rather than the declaration itself. A fixed per-language depth passed every method-level test and failed four of eight type-level ones",
-     "symbol_sha": "sha256:c6583c42d661b55085f2b5eca4f6be01eaa28582f17edd5d438c534e73387e4b"
-    },
-    {
-     "id": "the-climb-reaches-the-file",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "_anchor",
-     "old": "    while node.parent is not None and node.parent.start_point[0] == node.start_point[0]:",
-     "new": "    while node.parent is not None:",
-     "breaks": "the opposite: climbing past the declaration to the file itself, so one comment somewhere near the top becomes the description of everything in it",
-     "symbol_sha": "sha256:c6583c42d661b55085f2b5eca4f6be01eaa28582f17edd5d438c534e73387e4b"
-    },
-    {
-     "id": "comment-markers-reach-the-index",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "_clean_line",
-     "old": "        for marker in _LEADING_MARKERS:",
-     "new": "        for marker in ():",
-     "breaks": "the description's text. `/**`, `///` and `#` appear in every doc in a language, so they carry no signal and make same-language chunks look alike to an embedding",
-     "symbol_sha": "sha256:0a626740a695f22cf25f503ce9305bf4604ea8347f31d2530e9830d55e3b329a"
-    },
-    {
-     "id": "python-stops-reading-its-docstring",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_docs.py",
-     "symbol": "docstring_doc",
-     "old": "    if literal.type != \"string\":",
-     "new": "    if True:",
-     "breaks": "Python's descriptions entirely. It is the one language whose description is not a comment, so no sibling walk substitutes for this",
-     "symbol_sha": "sha256:8a22ee802a00ee3157f6d8158b2d752eb948d11c21ab0ad6693164385443974b"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-6",
-   "title": "A signature is the declaration without its body, behind its description",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/test_symbol_signatures.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-body-is-not-elided",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin.extract_symbol_signature",
-     "old": "        if body and declaration.endswith(body):",
-     "new": "        if False:",
-     "breaks": "the whole point: a skeleton chunk carrying the full implementation is the body chunk again, and the two layers stop being distinguishable",
-     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
-    },
-    {
-     "id": "the-description-is-dropped",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin.extract_symbol_signature",
-     "old": "        return f\"{doc}\\n{signature}\" if doc else signature",
-     "new": "        return signature",
-     "breaks": "`FR-6`'s other half. A signature without its description is the thing `extract_symbol` already returned, and the reason this accessor exists is that a name and a shape retrieve worse than a name, a shape and a sentence",
-     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
-    },
-    {
-     "id": "a-language-with-no-body-raises",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/_reading.py",
-     "symbol": "SymbolReadingMixin.extract_symbol_signature",
-     "old": "        except CodeStructureError:\n            body = \"\"",
-     "new": "        except CodeStructureError:\n            raise",
-     "breaks": "SQL. The declarative tier has no target block, so `extract_symbol_body` raises there -- and this is called once per symbol during a whole-repository scan, where one raise takes the scan down",
-     "symbol_sha": "sha256:12157d5e49181d42948bb8f27773bf9958a51cca42d330e70327d98e4a897ea5"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-7",
-   "title": "A qualified SQL object is one symbol, not one per name part",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/sql/test_sql_qualified_names.py",
-    "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-capture-drops-back-to-the-identifier",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/sql/codestructure.py",
-     "symbol": "SqlCodeStructure.SCM_SYMBOL_QUERY",
-     "old": "        (create_table (object_reference) @name)",
-     "new": "        (create_table (object_reference (identifier) @name))",
-     "breaks": "the defect exactly as it shipped: an `object_reference` holds one identifier per name part, so `public.orders` reports as TWO symbols and the index gains a chunk named after a schema. A test asserting `'public.orders' in symbols` would pass with both fragments still present, which is why the assertions are on the exact list",
-     "symbol_sha": "sha256:fb66682908dc54d7627a50f78e9d6cf9b52684a80ab82877e18a83dce4251deb"
-    },
-    {
-     "id": "a-bare-name-resolves-to-a-qualified-object",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/base.py",
-     "symbol": "BaseTreeSitterParser._named_nodes",
-     "old": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\") == target_name:",
-     "new": "                if typing.cast(\"bytes\", name_node.text).decode(\"utf-8\").endswith(target_name):",
-     "breaks": "strict resolution `[agreed 2026-08-26]`. `orders` would resolve to `public.orders`, which is the bare-name matching that gives the knowledge graph its measured 48% ghost rate -- a name that looks unique is not the same as the right target. Re-pointed here on 2026-08-26: the first version aimed at a type guard in the SQL parser that turned out to be EQUIVALENT, because the query can only produce that node type. Strictness was never in the branch it named",
-     "symbol_sha": "sha256:f99ed8da993fa887c4b3f6af760081c0c818815c8473a90e542c75c1983e9e0f"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-18",
-   "title": "A Rust trait's members are symbols, and they carry the trait's name",
-   "scope": [
-    "tests/unit/workspace/ast/parsers/rust/test_rust_trait_members.py",
-    "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py"
-   ],
-   "mutants": [
-    {
-     "id": "required-trait-methods-are-invisible",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
-     "symbol": "RustCodeStructure.SCM_SYMBOL_QUERY",
-     "old": "        (function_signature_item name: (identifier) @name)",
-     "new": "        (struct_item name: (type_identifier) @name)",
-     "breaks": "the first of two causes. A trait's REQUIRED method is a `function_signature_item`, a different node type from `function_item` -- so the part of a trait that IS the contract had no symbol, no chunk and no node in the graph",
-     "symbol_sha": "sha256:60575adbecad87365467b153c2b2bb5f72eea0cc19073e8cf0c7d67060f3a9f4"
-    },
-    {
-     "id": "a-trait-member-loses-its-scope",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
-     "symbol": "RustCodeStructure._get_symbol_scope",
-     "old": "            if parent.type == \"trait_item\":",
-     "new": "            if False:",
-     "breaks": "the second cause, which is independent: a defaulted trait method was reported as the bare name `name`, colliding with every other `name` in the estate. Fixing only the query gives `Shape.area` unscoped; fixing only the scope leaves it missing",
-     "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
-    },
-    {
-     "id": "an-impl-method-scopes-to-the-trait-instead-of-the-type",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/ast/parsers/rust/codestructure.py",
-     "symbol": "RustCodeStructure._get_symbol_scope",
-     "old": "            if parent.type == \"impl_item\":\n                name = self._impl_type_name(parent)",
-     "new": "            if False:\n                name = self._impl_type_name(parent)",
-     "breaks": "the branch order. In `impl Shape for C` both a trait and an impl are in scope and the method belongs to `C`; walking up finds the `impl_item` first. A walk that stopped at whichever it met without caring which would get every trait implementation backwards",
-     "symbol_sha": "sha256:f778128ebd1af209ecc7120fbae0db6c398683aa8f4791744138cd7465380e56"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-11",
-   "title": "Indentation does not decide where code is cut",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_budget.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-budget-counts-whitespace-again",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/_sizing.py",
-     "symbol": "weight",
-     "old": "    return len(\"\".join(text.split()))",
-     "new": "    return len(text)",
-     "breaks": "consistency across coding styles. Counting every character lets indentation decide where code is cut, so deeply nested Java and flat Python are judged by different standards for the same amount of code -- and reformatting a file moves its chunk boundaries without a line of it changing, which costs a re-index of the whole repository once anything is embedded",
-     "symbol_sha": "sha256:b4f647c557ec0450333b418ccc40c6c5c5b3633e2eef5ac7b13b76bc3a17b928"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-8",
-   "title": "An oversized symbol is cut where the code has a seam",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_structure.py"
-   ],
-   "mutants": [
-    {
-     "id": "nothing-is-ever-nested",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_parent_of",
-     "old": "    body = texts.get(name, \"\")\n    if not body:\n        return None",
-     "new": "    body = texts.get(name, \"\")\n    if body:\n        return None",
-     "breaks": "the whole rule. With no symbol nested in any other, an oversized class has no children to split into and falls straight through to the line cut -- 97 of this repository's 1,102 top-level symbols, each becoming numbered slices with one starting mid-method",
-     "symbol_sha": "sha256:c73e0885e260a43a3d0f4c1556fb2feada00aec4c030f9644d1a5c630ab10a33"
-    },
-    {
-     "id": "a-dot-means-nested-again",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "    tops = [n for n in order if parents[n] is None]",
-     "new": "    tops = [n for n in order if \".\" not in n]",
-     "breaks": "the rule this replaced. `FR-7` made `public.orders` a top-level SQL object whose name contains a dot, so reading a dot as *nested* drops every qualified table and function in an estate from the index -- with nothing in the output to show it happened",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-10",
-   "title": "Line cutting is the last resort, not the first",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_budget.py",
-    "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
-    "tests/unit/workspace/analyzers/test_chunking_structure.py"
-   ],
-   "mutants": [
-    {
-     "id": "lines-are-cut-before-structure-is-tried",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_emit_unit",
-     "old": "    children = _children_of(name, cut.order, cut.parents)\n    if not children:",
-     "new": "    children = _children_of(name, cut.order, cut.parents)\n    if True:",
-     "breaks": "the ordering. Measured before and after on this repository: `container_executor.py` went from six line-cut parts to none, and line cuts across `src/` fell to 0.2% of chunks. Restoring this makes every oversized symbol a numbered slice again",
-     "symbol_sha": "sha256:5b01f269b0525868dcca03114c268a266302f15aef31d4fde32a04c24b56f5ac"
-    },
-    {
-     "id": "a-line-longer-than-the-budget-is-never-cut",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/_sizing.py",
-     "symbol": "slice_long_line",
-     "old": "    if weight(line) <= max_chars:\n        return [line]",
-     "new": "    if True:\n        return [line]",
-     "breaks": "the one case a line boundary cannot serve. A minified bundle or a single-line JSON has no newline, so an 800,000-character file came back as ONE chunk against a budget of 4,000 -- measured. Whatever embeds that either fails or silently truncates",
-     "symbol_sha": "sha256:1105c4a2a72d1c6cd3b8c6641a0fcf8076f56c739a279f8ab0211ec6a77e47c0"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-9",
-   "title": "Small neighbours merge, and never across a visibility level",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_failure_modes.py",
-    "tests/unit/workspace/analyzers/test_chunking_merge.py"
-   ],
-   "mutants": [
-    {
-     "id": "a-private-symbol-joins-a-public-chunk",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_Run.absorb",
-     "old": "        if self._inside and (level != self._level or not self._fits(text)):",
-     "new": "        if self._inside and (not self._fits(text)):",
-     "breaks": "the one thing merging can get dangerously wrong. A public getter combined with a private helper puts the private one into every result that asks for the public interface -- `FR-2`'s filter undone one layer up, where no filter can see it. This mutant was SILENT on its first run: the test's budget let the class fit whole, so nothing split, nothing merged, and the assertion iterated one chunk while proving nothing",
-     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
-    },
-    {
-     "id": "merging-is-disabled",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_Run.absorb",
-     "old": "        if self._inside and (level != self._level or not self._fits(text)):",
-     "new": "        if True:",
-     "breaks": "the requirement itself. Twelve three-line getters go back to twelve chunks of near-identical shape, which match everything and discriminate nothing",
-     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
-    },
-    {
-     "id": "the-text-between-merged-symbols-is-dropped",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_walk",
-     "old": "        if head:",
-     "new": "        if head.strip():",
-     "breaks": "verbatim-ness. Before merging, a blank run between two methods belonged to no chunk and nothing noticed; a merged chunk concatenates what it covers, so dropping it yields `... return 1clas s Beta:` -- a chunk whose content never existed in the file and which no reader could locate in it. Totality does NOT catch this, and did not: it compares non-whitespace characters. The assertion that catches it is containment",
-     "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
-    },
-    {
-     "id": "unknown-visibility-merges-again",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/_scope.py",
-     "symbol": "levels_of",
-     "old": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)\n            return None",
-     "new": "            logger.debug(\"Chunking: visibility unavailable at %r; merging disabled\", level)",
-     "breaks": "the guard's FAILURE MODE. Falling back to a dict where every symbol reads `unknown` means every symbol matches every other, so a private one merges into a public chunk -- `FR-2`'s filter undone one layer up, failing in the same direction the original defect failed. Not knowing is not the same as knowing they are alike",
-     "symbol_sha": "sha256:dd6c99fc19b2b7b7b04016af17840938a853754e6ba947e87c46e6325ba868e2"
-    },
-    {
-     "id": "the-fail-closed-branch-is-skipped",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_Run.absorb",
-     "old": "        if self._cut.levels is None:",
-     "new": "        if False:",
-     "breaks": "the same thing from the consuming end: with no levels known, `.get(name, \"unknown\")` makes every symbol alike and merging resumes across visibility",
-     "symbol_sha": "sha256:5f5be150d540573a3b0b1b7c56f0094a9e370ef887d8fa146c20817f66fed169"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-15",
-   "title": "The head of a file has a name, and nothing else borrows it",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_preamble.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-preamble-loses-its-name",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        head, path, _MODULE_CHUNK, language, max_chars, (), package=cut.package, unit=cut.unit",
-     "new": "        head, path, \"\", language, max_chars, (), package=cut.package, unit=cut.unit",
-     "breaks": "the requirement. A module's docstring, its imports and the 617 top-level constants this repository reports as symbols nowhere go back to being indistinguishable from the blank line between two methods -- and from a binary blob no parser could read",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    },
-    {
-     "id": "every-gap-becomes-the-module",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_Run.flush",
-     "old": "            self._inside[0] if len(self._inside) == 1 else \"\",",
-     "new": "            self._inside[0] if len(self._inside) == 1 else _MODULE_CHUNK,",
-     "breaks": "the half that gives the name meaning. A stray comment in the middle of a file, or a `class Foo:` header inside a symbol, would be indexed as the module's own description -- worse than leaving it anonymous, because it reads as an answer",
-     "symbol_sha": "sha256:f7d5820fde78a999bbaf9369705f2b9c1e53ec8ab6eb5741fb2839793a3445e0"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-17",
-   "title": "Nothing is dropped, and no chunk is text the file never had",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_totality.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-text-between-symbols-is-dropped",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_walk",
-     "old": "        if head:",
-     "new": "        if head.strip():",
-     "breaks": "verbatim-ness, and totality does NOT catch it -- that is the whole reason this requirement has two halves. Totality compares non-whitespace characters, so dropping the blank run between two merged symbols satisfies it while producing `... return 1clas s Beta:`, a chunk whose content never existed in the file and which no reader could locate in it",
-     "symbol_sha": "sha256:2117c7cb84a6513930f6ef7b8cc768802ee3c85bbd78c8b08cf0a931988b4bc1"
-    },
-    {
-     "id": "the-final-flush-never-happens",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_merge",
-     "old": "    out.extend(run.flush())\n    return out",
-     "new": "    return out",
-     "breaks": "totality on the tail. Whatever is still accumulating when the pieces run out -- a trailing constant, a module-level call, the last merged run in the file -- is never emitted. Replaced 2026-08-26: the first version made every gap join the buffer, which moves chunk boundaries and loses nothing, and came back UNPROTECTED because it was EQUIVALENT rather than because a test was missing",
-     "symbol_sha": "sha256:6207cc5725b4874a328323120db98726eb72473c4c6d70cf97b3b85931128d96"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-14",
-   "title": "A chunk knows which boundary it sits inside, at both radii",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_scope.py"
-   ],
-   "mutants": [
-    {
-     "id": "unit-falls-back-to-package",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "        unit_of(path, markers),",
-     "new": "        directory_of(path),",
-     "breaks": "`AD-5`'s reasoning at the wider radius. A chunk claiming a unit boundary the caller never established answers *is this outside my service?* from a guess -- the same failure as reporting `public` for a language with no such concept",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    },
-    {
-     "id": "visibility-is-never-known",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_level_of",
-     "old": "    return \"unknown\" if cut.levels is None else cut.levels.get(name, \"unknown\")",
-     "new": "    return \"unknown\"",
-     "breaks": "the whole point of the label. Every chunk reads `unknown`, so a query-time filter scoped by where the asker sits cannot tell an interface from an internal -- and `unknown` counts as VISIBLE, so it fails open",
-     "symbol_sha": "sha256:fc065eff1708a0993a98dff30942bc35a79cce1a0f9bb700b62e48c0a2716fa5"
-    },
-    {
-     "id": "the-first-marker-wins-not-the-nearest",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/_scope.py",
-     "symbol": "unit_of",
-     "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
-     "new": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and not best:",
-     "breaks": "the nearest-wins rule. A repository root and a nested package both hold a manifest, so taking any match puts every file in the repo root and the narrow question stops being answerable. This mutant was SILENT twice: once because the implementation iterated a frozenset and could not be pinned, and once because the fixture's marker names sorted so that first-match gave the right answer anyway",
-     "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
-    },
-    {
-     "id": "a-marker-matches-on-a-bare-prefix",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/_scope.py",
-     "symbol": "unit_of",
-     "old": "        if any(path.startswith(directory + sep) for sep in (\"/\", \"\\\\\")) and len(directory) > len(\n            best\n        ):",
-     "new": "        if path.startswith(directory) and len(directory) > len(best):",
-     "breaks": "the path boundary. A marker at `src/app` would claim every file under `src/application`, putting one service's code inside another's unit",
-     "symbol_sha": "sha256:e5d4ef1d1e4adaac55b39e5e1a3a1ddfc4dc224881b6785ecf0ea0c5b42793a2"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-12",
-   "title": "Two layers, and they split and merge separately",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_layers.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-skeleton-layer-is-never-emitted",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "chunk_source",
-     "old": "    return body + _skeletons(code, parser, cut, preamble)",
-     "new": "    return body",
-     "breaks": "the layer itself. The question asked first -- *what does this offer* -- has nothing to answer it, and a consumer ranking signatures above bodies has only bodies",
-     "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
-    },
-    {
-     "id": "skeletons-merge",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_skeletons",
-     "old": "            layer=\"skeleton\",\n        )\n    return chunks",
-     "new": "            layer=\"skeleton\",\n        )\n    return _merge([(c.text, c.symbol, None) for c in chunks], cut)",
-     "breaks": "the decision a measurement made. A skeleton is 99 non-whitespace characters at the median, so a 4,000 budget holds about forty -- and forty signatures in one chunk matches everything, which is the low-discrimination problem that made `FR-6` per-symbol rather than per-file",
-     "symbol_sha": "sha256:c17c6f98e8017e3b8ee7cc2743c36dccdb1d2a1b9af9750704832e0b96d4fafc"
-    },
-    {
-     "id": "every-chunk-claims-the-body-layer",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_emit",
-     "old": "    layer: str = \"body\",\n) -> list[Chunk]:",
-     "new": "    layer: str = \"body\",\n) -> list[Chunk]:\n    layer = \"body\"",
-     "breaks": "the label, without touching the content. Every chunk reads `body`, so `FR-17`'s totality would bind the skeletons too -- and a skeleton is a description and a signature concatenated, which no totality claim can hold for",
-     "symbol_sha": "sha256:1419f05a090325cd3da94203cc089efda75038749fb7a4e8e1c8864863faea2b"
-    }
-   ]
-  },
-  {
-   "requirement": "FR-13",
-   "title": "A chunk's identity covers every label, not only its text",
-   "scope": [
-    "tests/unit/workspace/analyzers/test_chunking_identity.py"
-   ],
-   "mutants": [
-    {
-     "id": "the-hash-covers-text-only",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "content_hash",
-     "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
-     "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name == \"text\"",
-     "breaks": "the reason the field exists. A chunk whose text is unchanged and whose `visibility` was corrected from `public` to `private` is a DIFFERENT row -- hashing the text alone leaves the stale one looking current, and a consumer filtering by visibility keeps serving the old answer",
-     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
-    },
-    {
-     "id": "the-hash-is-constant",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "content_hash",
-     "old": "    return hashlib.sha256(\"\\x00\".join(parts).encode(\"utf-8\")).hexdigest()",
-     "new": "    return \"0\" * 64",
-     "breaks": "identity altogether: every chunk in the estate is the same chunk, so a re-index either replaces everything or nothing",
-     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
-    },
-    {
-     "id": "the-hash-feeds-on-itself",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "content_hash",
-     "old": "        repr(getattr(chunk, field.name)) for field in fields(chunk) if field.name != \"content_hash\"",
-     "new": "        repr(getattr(chunk, field.name)) for field in fields(chunk)",
-     "breaks": "recomputability. A hash that includes its own field depends on whatever that field held, so checking a stored chunk for freshness gives a different answer than computing it fresh -- and every row reads as stale",
-     "symbol_sha": "sha256:4b79e459186991bc29e79fce6e296608f0788612b9068606d4718fd5077b4ddb"
-    },
-    {
-     "id": "chunks-are-emitted-unsealed",
-     "origin": "authored",
-     "file": "src/specweaver/workspace/analyzers/chunking.py",
-     "symbol": "_sealed",
-     "old": "    chunk = Chunk(**labels)\n    return replace(chunk, content_hash=content_hash(chunk))",
-     "new": "    return Chunk(**labels)",
-     "breaks": "the field ever being filled. Every chunk carries the empty default, so a store keyed on it collapses the whole estate into one row",
-     "symbol_sha": "sha256:66cc8d9c796516a505a5ebe968a02043c8510aa0684d1598166679c54676eb8c"
-    }
-   ]
-  }
- ]
+  ]
 }

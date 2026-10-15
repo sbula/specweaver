@@ -296,3 +296,25 @@ class TestOpenAIAdapter:
 
         mock_exec.execute.assert_called_once_with("my_tool", {})
         assert result.text == "Success"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("adapter_class", "sent"),
+    [("OpenAIAdapter", {}), ("OpenAICompatibleAdapter", {"temperature": 1.0, "top_p": 0.9})],
+)
+async def test_only_a_server_that_accepts_sampling_gets_it(adapter_class: str, sent: dict) -> None:
+    # Proves: C-FLOW-13 FR-3
+    from specweaver.infrastructure.llm.adapters import openai as module
+
+    adapter = getattr(module, adapter_class)(api_key="k", base_url="http://localhost:1/v1")
+    client = MagicMock()
+    client.chat.completions.create = AsyncMock(side_effect=RuntimeError("stop here"))
+    adapter._client = client
+    config = GenerationConfig(model="m", temperature=1.0, top_p=0.9, max_output_tokens=100)
+
+    with pytest.raises(Exception, match="stop here"):
+        await adapter.generate([Message(role=Role.USER, content="x")], config)
+
+    kwargs = client.chat.completions.create.call_args.kwargs
+    assert {k: kwargs[k] for k in ("temperature", "top_p") if k in kwargs} == sent

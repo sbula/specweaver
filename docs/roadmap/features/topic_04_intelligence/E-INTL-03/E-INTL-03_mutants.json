@@ -73,8 +73,8 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/review/reviewer.py",
           "symbol": "Reviewer.review_spec",
-          "old": "        return await self._execute_review(prompt, on_tool_round)\n",
-          "new": "        return await self._execute_review(prompt)\n",
+          "old": "        logger.info(\"review_spec: reviewing %s\", spec_path)\n        return await self._execute_review(prompt, on_tool_round)\n",
+          "new": "        logger.info(\"review_spec: reviewing %s\", spec_path)\n        return await self._execute_review(prompt)\n",
           "breaks": "files the model mentions are never added between rounds",
           "symbol_sha": "sha256:5f0c681ed8e166e027f43b94cbeade11a7c4267d5e23630bf02ffacfecc1e3fc"
         }

@@ -36,7 +36,7 @@
           "old": "        errors = sorted(exc.errors(), key=lambda error: error[\"type\"] != \"extra_forbidden\")\n",
           "new": "        errors = exc.errors()\n",
           "breaks": "the user is told a correct key is missing instead of being shown the typo on its line",
-          "symbol_sha": "sha256:649ca5fb4c693414847ac9c59dd310da3539c3934eb7e1e5ce33a8ede3d4703a"
+          "symbol_sha": "sha256:ca56cf84a4d06ad190830005bd4a1e99b9a22e011dd6dcc0408aeaaee397eb8d"
         }
       ]
     },
@@ -74,7 +74,7 @@
           "old": "        (overrides.items(), RUN_OVERRIDE, None, ()),\n",
           "new": "        # run override dropped\n",
           "breaks": "--model for one run is silently ignored",
-          "symbol_sha": "sha256:bfb4e02ae08d96e74887ff9c99477c450eb520d0d3761510e0afcdfeaa7e48e7"
+          "symbol_sha": "sha256:f4d2debec67789f6ba95b366151346c664f72531d22b033344fde843809cb328"
         }
       ]
     },
@@ -93,7 +93,7 @@
           "old": "            if entry.server not in files.machine.servers:\n",
           "new": "            if False:\n",
           "breaks": "a role names a server nobody defined and the failure shows up only at call time",
-          "symbol_sha": "sha256:bfb4e02ae08d96e74887ff9c99477c450eb520d0d3761510e0afcdfeaa7e48e7"
+          "symbol_sha": "sha256:f4d2debec67789f6ba95b366151346c664f72531d22b033344fde843809cb328"
         }
       ]
     },
@@ -132,7 +132,7 @@
           "old": "    if files.project.private_only:\n",
           "new": "    if False:\n",
           "breaks": "a private-only project resolves a role onto a cloud server and sends its code there",
-          "symbol_sha": "sha256:535fc034c4db8f4c8615b531c5004ce1fa0ca262ca9403629885838f8713a5d3"
+          "symbol_sha": "sha256:f4d2debec67789f6ba95b366151346c664f72531d22b033344fde843809cb328"
         },
         {
           "id": "hosted-server-passes-as-private",
@@ -142,7 +142,7 @@
           "old": "        if not files.machine.servers[setting.server].private:\n",
           "new": "        if False:\n",
           "breaks": "the rule is switched on but no server is ever judged hosted",
-          "symbol_sha": "sha256:2ff75458a5df068ccc62d872dacf6c0156880520901ac39915481198fc01fe67"
+          "symbol_sha": "sha256:57a1ed271f492f8aec4c40f53304556cb07b0bc2056c0287d0fd35ab48d0b25d"
         }
       ]
     },
@@ -163,7 +163,7 @@
           "old": "        files = _core.load_llm_settings_at(project_root)\n",
           "new": "        files = _core.load_active_llm_settings(project)\n",
           "breaks": "a private-only project's code goes to a hosted server while another project is active",
-          "symbol_sha": "sha256:ae84db77fd6c218676479259c63b657aa08d2657f17be03dac4407f233eeb710"
+          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
         },
         {
           "id": "target-name-is-active-project",
@@ -193,17 +193,17 @@
           "old": "        return _merge(_merge(self.kinds.get(kind), known), override)\n",
           "new": "        return _merge(override, _merge(self.kinds.get(kind), known))\n",
           "breaks": "a price the user corrected in the machine file is overwritten by the shipped one",
-          "symbol_sha": "sha256:ceaa2c49fab185bb9d94df3d254bc8a552bffe0d60e7174c901ba0ceb1153f4b"
+          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
         },
         {
           "id": "local-loses-to-generated",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/catalogue.py",
-          "symbol": "Catalogue.from_texts",
-          "old": "            models[key] = _combine(models[key], facts) if key in models else facts\n",
-          "new": "            models[key] = _combine(facts, models[key]) if key in models else facts\n",
+          "symbol": "Catalogue.facts",
+          "old": "        return _merge(_merge(self.kinds.get(kind), known), override)\n",
+          "new": "        return _merge(override, _merge(self.kinds.get(kind), known))\n",
           "breaks": "a hand-checked fact in local.toml is silently replaced by the generated file",
-          "symbol_sha": "sha256:02b28bd74a6463e362ef39a12520bab09fa3ae59ceae5eb11083dc04a561a94b"
+          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
         },
         {
           "id": "machine-only-model-unknown",
@@ -213,7 +213,7 @@
           "old": "        if known is None and override is None:\n",
           "new": "        if known is None:\n",
           "breaks": "a model the user describes only in the machine file has no facts",
-          "symbol_sha": "sha256:ceaa2c49fab185bb9d94df3d254bc8a552bffe0d60e7174c901ba0ceb1153f4b"
+          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
         },
         {
           "id": "kind-entry-ignored",
@@ -340,7 +340,7 @@
           "old": "    output_limit_field: ClassVar[str] = \"max_completion_tokens\"\n",
           "new": "    output_limit_field: ClassVar[str] = \"max_tokens\"\n",
           "breaks": "OpenAI reasoning models refuse the call, and the limit does not cap reasoning tokens",
-          "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
+          "symbol_sha": "sha256:1eb12af66121cc7e8e6203f3afb899f132f323e3d612874f4d78b23a778a5db4"
         },
         {
           "id": "qwen-legacy-default-address",
@@ -350,17 +350,17 @@
           "old": "    default_base_url: ClassVar[str | None] = None\n",
           "new": "    default_base_url: ClassVar[str | None] = \"https://dashscope.aliyuncs.com/compatible-mode/v1\"\n",
           "breaks": "a Qwen server without an address silently goes to DashScope's legacy domain",
-          "symbol_sha": "sha256:e194d3d5eac4ddbb0d797a8f157ecfce0a53a2e0122f26102ef7b6dffd0d8cb1"
+          "symbol_sha": "sha256:d28c472e047298634b5d1a05485137c5d7f70bfbed9a655bd60e0290f7afdcaf"
         },
         {
           "id": "openai-sends-temperature",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
           "symbol": "OpenAIAdapter",
-          "old": "    sends_sampling: ClassVar[bool] = False\n",
-          "new": "    sends_sampling: ClassVar[bool] = True\n",
+          "old": "    sent_sampling: ClassVar[frozenset[str]] = frozenset()\n",
+          "new": "    sent_sampling: ClassVar[frozenset[str]] = frozenset({\"temperature\", \"top_p\"})\n",
           "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
-          "symbol_sha": "sha256:651c9067d0d673aeb90d0995049c10a0676d7e46dc69aa5d71ad8f8819ddf8ab"
+          "symbol_sha": "sha256:1eb12af66121cc7e8e6203f3afb899f132f323e3d612874f4d78b23a778a5db4"
         },
         {
           "id": "cloud-server-without-key-variable",
@@ -401,7 +401,7 @@
           "old": "        self._key = key or wrapped.provider_name\n",
           "new": "        self._key = wrapped.provider_name\n",
           "breaks": "the GB10 and every other server of its kind share one set of slots",
-          "symbol_sha": "sha256:562c02771a098e29a34ff7bc3222e109d6b41d43177afeeb9bd5e876aaa6e1f4"
+          "symbol_sha": "sha256:942df637298e37c3aa19de6c5fb0b51cc23d3085ba4c9be809bc0079e3514b7f"
         },
         {
           "id": "semaphore-shared-across-loops",
@@ -411,17 +411,17 @@
           "old": "        per_loop = _SEMAPHORES.setdefault(asyncio.get_running_loop(), {})\n",
           "new": "        per_loop = _SEMAPHORES.setdefault(asyncio.get_event_loop_policy(), {})\n",
           "breaks": "a second event loop under contention fails with 'bound to a different event loop'",
-          "symbol_sha": "sha256:703ed74bc93c985c9a1059d78fb7caf4c03481b1f08eda6a88ee6b3329a2e83a"
+          "symbol_sha": "sha256:4089e7450591d6d72b073b29289b05989ca59f15c34bb531f000ef4071e6864a"
         },
         {
           "id": "server-limit-ignored",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/servers.py",
           "symbol": "adapter_for_server",
-          "old": "    return AsyncRateLimiterAdapter(adapter, limit=server.max_parallel, key=name)\n",
-          "new": "    return AsyncRateLimiterAdapter(adapter, key=name)\n",
+          "old": "    return AsyncRateLimiterAdapter(adapter, limit=server.max_parallel, key=name, address=address)\n",
+          "new": "    return AsyncRateLimiterAdapter(adapter, key=name, address=address)\n",
           "breaks": "max_parallel in the settings file has no effect",
-          "symbol_sha": "sha256:afd19986e4f84bfb8f922d7bbd34743a75aabf1de3835aef278a8be73faa6693"
+          "symbol_sha": "sha256:573f3031b71867b68a9833f88f56892968b05b8a70fee426041897bf4f795a9c"
         },
         {
           "id": "edited-limit-ignored",
@@ -463,7 +463,7 @@
           "old": "                budget=self._budget,\n",
           "new": "\n",
           "breaks": "each server gets its own unlimited budget, so the run's spend brake never sees those calls",
-          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
+          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
         },
         {
           "id": "adapter-per-call",
@@ -473,7 +473,7 @@
           "old": "        if server_name not in self._by_server:\n",
           "new": "        if True:\n",
           "breaks": "every role builds its own adapter, so the server's parallel limit and the flush list split",
-          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
+          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
         },
         {
           "id": "catalogue-sampling-ignored",
@@ -490,20 +490,20 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._check_key",
-          "old": "        if variable and not os.environ.get(variable):\n",
+          "old": "        if variable and not self._files.keys.get(variable):\n",
           "new": "        if False:\n",
           "breaks": "a cloud role without its key starts a run and fails only at its first call",
-          "symbol_sha": "sha256:d2723e2d239802c0a56c9c22194c69e24801c2208a4318d7af49a8eb43dc0496"
+          "symbol_sha": "sha256:a9b4ecb68e934e2836d32573be378929a3a9c7108dc2140258ebebb67e568746"
         },
         {
           "id": "routed-collectors-not-flushed",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/telemetry.py",
           "symbol": "flush_telemetry",
-          "old": "    for collector in router.collectors():\n",
-          "new": "    for collector in []:\n",
+          "old": "    for collector in router.collectors() if router is not None else ():\n",
+          "new": "    for collector in ():\n",
           "breaks": "no role's usage is ever written to the database",
-          "symbol_sha": "sha256:056174d4240cf7fec6c9b0305f2ee3975ed6f25c63ef0efabbf7eb08ae6287ce"
+          "symbol_sha": "sha256:a859da158bbaafc8c2111948f400b026c8921aaf9625a98d30022e15943abc46"
         }
       ]
     },
@@ -524,7 +524,7 @@
           "old": "        setting = self._roles.get(role) or self._roles.get(DEFAULT_ROLE)\n",
           "new": "        setting = self._roles.get(role)\n",
           "breaks": "the one fallback model is never used; every unset role refuses",
-          "symbol_sha": "sha256:d08137e26c0895435ed0b0047de7cfe7f12914339ca8cff89ef26895aea9b11b"
+          "symbol_sha": "sha256:321cbbc044ce328b6f755858e55f945a893911e7e47786d21724a9c8a645e739"
         },
         {
           "id": "role-output-limit-ignored",
@@ -534,7 +534,7 @@
           "old": "        limit = setting.max_output_tokens or (facts.max_output if facts else None)\n",
           "new": "        limit = facts.max_output if facts else None\n",
           "breaks": "the role's own output limit is ignored for the model's maximum",
-          "symbol_sha": "sha256:20b7921ed8ec96b0515815b051526dff77e952b3d150e4967f9acb1673449d35"
+          "symbol_sha": "sha256:9212d5cfc3558573cac0cf0bbed1cb95ae80c54ef6723835b9bdf8f75f5e47d9"
         },
         {
           "id": "unset-role-unhelpful",
@@ -601,7 +601,7 @@
           "old": "                prices=lambda model: self._catalogue.facts(server.kind, model, corrections),\n",
           "new": "\n",
           "breaks": "every call through the one path is stored as unpriced, whatever the catalogue or the user set",
-          "symbol_sha": "sha256:cab98e07b7dfd6b1c3557a192bd8b5ae375725858db2b70aae608852f291ded0"
+          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
         },
         {
           "id": "kind-price-shown-as-catalogue",
@@ -630,10 +630,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/config/llm_settings.py",
           "symbol": "format_money",
-          "old": "    return f\"{currency.code} {usd * currency.per_usd:.{places}f}\"\n",
-          "new": "    return f\"{currency.code} {usd:.{places}f}\"\n",
+          "old": "    code, value = (\"USD\", usd) if currency is None else (currency.code, usd * currency.per_usd)\n",
+          "new": "    code, value = (\"USD\", usd) if currency is None else (currency.code, usd)\n",
           "breaks": "USD amounts are labelled CHF",
-          "symbol_sha": "sha256:108d0f213645bb1f6444013b6b47a19f25e059eb7f1cff26138812c231d425cd"
+          "symbol_sha": "sha256:a39d008bada3401585eff3b03963c9cceae90e8f74c24d9b69d642674957b721"
         },
         {
           "id": "set-without-conversion",
@@ -675,7 +675,7 @@
           "old": "    parse_machine_file(text, str(path))  # refuses before anything is written\n",
           "new": "    pass\n",
           "breaks": "a command writes a settings file the next command refuses to read",
-          "symbol_sha": "sha256:77bde7d4dc1f6e24c447813abb7ba394a7e9c6985031cc173c7119af888be3dc"
+          "symbol_sha": "sha256:e70cb4dcefb49f2c61becf910bf5620a4c94a2b3351fb1f3ba6cd79d60b2f217"
         },
         {
           "id": "set-role-unchecked",
@@ -685,7 +685,7 @@
           "old": "    resolve_roles(files)  # refuses before anything is written\n",
           "new": "    pass\n",
           "breaks": "a role on a server nobody defined is written, and every later command refuses",
-          "symbol_sha": "sha256:f65b2eb9ed5a40663e958a4d5665f3382c07183ebdf82c558198bd46510aa755"
+          "symbol_sha": "sha256:bfe647ec61e373bdd1b86abab1ead6e05f73441541d631f9276318e93b3c3abc"
         },
         {
           "id": "retired-tables-kept",
@@ -695,7 +695,7 @@
           "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:6bb476e301a61d8d0e1135be0ca495c1850d384318b22e5e2672f1aa9f9d2550"
+          "symbol_sha": "sha256:6df52bb33340d7fa2fb63723314e8a0d653f8a91c3e25e96f5fa8436f0a6e7e6"
         },
         {
           "id": "role-table-overwritten",
@@ -712,10 +712,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/llm_settings_writer.py",
           "symbol": "_text",
-          "old": "path.read_text(encoding=\"utf-8-sig\") if path",
-          "new": "path.read_text(encoding=\"utf-8\") if path",
+          "old": "    with path.open(encoding=\"utf-8-sig\", newline=\"\") as file:\n",
+          "new": "    with path.open(encoding=\"utf-8\", newline=\"\") as file:\n",
           "breaks": "a file saved by an editor with a byte order mark cannot be edited",
-          "symbol_sha": "sha256:4d33a1515ac9cdea92bff63f2a38d54760f3e119218ef6804665d97be1e91acb"
+          "symbol_sha": "sha256:c4c0485b94370bcdc45a50d1d8b6ebf780f45d9e37d0b35b97315dbb0dbecc2b"
         },
         {
           "id": "broken-file-traceback",
@@ -823,10 +823,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/router.py",
           "symbol": "build_router",
-          "old": "    resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=run_model)\n",
-          "new": "    resolver = RoleResolver(files, telemetry_project=project, budget=budget, run_model=None)\n",
+          "old": "        files, telemetry_project=project, budget=budget, run_model=run_model, history=db\n",
+          "new": "        files, telemetry_project=project, budget=budget, run_model=None, history=db\n",
           "breaks": "commands pass --model, the router forgets it",
-          "symbol_sha": "sha256:4464396d5db583a1523148c986e2aee2474146360e8687b491f667188248929c"
+          "symbol_sha": "sha256:7b3bd106854bac213499e44da189d37070dc31368b28aaa32aeae7907b338bbc"
         },
         {
           "id": "command-drops-run-model",
@@ -836,17 +836,17 @@
           "old": "            run_model=run_model,\n",
           "new": "            run_model=None,\n",
           "breaks": "every CLI command ignores --model",
-          "symbol_sha": "sha256:521d383439014ac8d71b3b423746da6ad6ae5b6d040f06f460808727ab005229"
+          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
         },
         {
           "id": "implement-drops-run-model",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    router = command_router(project, roles_of(pipeline), run_model=run_model)\n",
-          "new": "    router = command_router(project, roles_of(pipeline))\n",
+          "old": "        project, roles_of(pipeline), run_model=run_model, project_root=project_path\n",
+          "new": "        project, roles_of(pipeline), project_root=project_path\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:fa46b6f07093e1b4feddf6c3cd6056237a1aacc4738c06417aa9215e22a235c3"
+          "symbol_sha": "sha256:a68b5e91c66be33cc1643514d4b4f620007c59dd7f4d6502d55baad6e88e902d"
         },
         {
           "id": "run-drops-run-model",
@@ -856,7 +856,7 @@
           "old": "    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)\n",
           "new": "    _wire_models(context, pipeline, active or project_path.name, run_model=None)\n",
           "breaks": "sw run and sw resume ignore --model",
-          "symbol_sha": "sha256:011347472cd234c4120c8a6f961cd4ff7eb21a7bc217d5ec7dfd7db2ca836383"
+          "symbol_sha": "sha256:67cf5c3522fa63f73cd9c7ffbb1ba915ab1eee185fcedde7b7eec6c33d3d0e00"
         },
         {
           "id": "resume-drops-run-model",
@@ -866,7 +866,7 @@
           "old": "    run_model = run_model_option(model)\n    store = _get_state_store()\n",
           "new": "    run_model = None\n    store = _get_state_store()\n",
           "breaks": "sw resume ignores --model and a bad value passes",
-          "symbol_sha": "sha256:0949570426d4b72ecba17822e7fc04e79699d5a03f7540e6a852b39266985ff8"
+          "symbol_sha": "sha256:ed2f4126ee03d03bf1815ce5fa7f98f6a69e46a67a54691d7bdaeadfa0984d6f"
         },
         {
           "id": "project-role-keeps-its-model",
@@ -886,7 +886,7 @@
           "old": "    roles = roles_of(pipeline)\n    if not roles:\n        return\n",
           "new": "    roles = roles_of(pipeline)\n    if not roles and run_model is None:\n        return\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
-          "symbol_sha": "sha256:149b8f7d2334630db754b5ec28474fcf9f7aa92e334723541f36f647c71f457a"
+          "symbol_sha": "sha256:c604aa93ef9c6fc8364ebe6c3b8fe92761919624fc675c86c23e7ae0bcee4a8b"
         }
       ]
     },
@@ -914,7 +914,7 @@
           "old": "            Limit(key, unit, value if unit == \"tokens\" else to_usd(value, currency))\n",
           "new": "            Limit(key, unit, value)\n",
           "breaks": "a limit set in CHF is applied as USD",
-          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
         },
         {
           "id": "token-limit-dropped",
@@ -924,7 +924,7 @@
           "old": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", brake.tokens_per_run)\n",
           "new": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", None)\n",
           "breaks": "the run's token limit is read and never applied",
-          "symbol_sha": "sha256:1c40aff9521f0081923444f40620fc7e47d64f3f094638503eaf541c5c42cfc0"
+          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
         },
         {
           "id": "unset-brake-passes",
@@ -934,7 +934,7 @@
           "old": "        if getattr(brake, name) is None:\n",
           "new": "        if False:\n",
           "breaks": "a run with no limit set calls the model anyway",
-          "symbol_sha": "sha256:3845e908da07b31822a0b08e94b34094d46048f74b49c117eafc520228cdb5fb"
+          "symbol_sha": "sha256:45ca9d51084e0d89a697eab932d39ee70acb07b52f4a461ad8980c3851441cd8"
         },
         {
           "id": "agent-turns-ignored",
@@ -944,7 +944,7 @@
           "old": "                \"max_tool_rounds\": self._files.machine.brake.agent_turns,\n",
           "new": "                \"max_tool_rounds\": 5,\n",
           "breaks": "the round limit is a number in code again",
-          "symbol_sha": "sha256:5f7878d042817dff21377cef5dd4b518dbb46559d8d40318c0cb70d378f9bf09"
+          "symbol_sha": "sha256:d104a362ef77058a6b4d6f80616a161ee1bf194adb6d1676ed1196b80dd1632f"
         },
         {
           "id": "no-round-limit-runs",
@@ -964,7 +964,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:6ac72fee1768ba7bfbad7776dc2023f7d78fd57ac67266d0d37a9cc0c0d270cd"
+          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
         },
         {
           "id": "anthropic-fake-answer",
@@ -974,7 +974,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:2506b996c7feca888b4b47c43a7381dbd107e3ab3ff3fe40353920ecf867a7cc"
+          "symbol_sha": "sha256:40a4a77b376ea94abeb3980215a94d3c18ba2c58aed779ee392bd6c4130d8214"
         },
         {
           "id": "mistral-fake-answer",
@@ -984,7 +984,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:46e598ee9df7e991395a14909e75c612e914545fdcc3aef46a3d6db61e1f99f4"
+          "symbol_sha": "sha256:fe691eb6857b21d6db11fd1f61d45a1e9005641fdad98c07a6f55a260fe8d186"
         },
         {
           "id": "gemini-partial-answer",
@@ -994,7 +994,7 @@
           "old": "        raise ToolRoundsExceededError.reached(total_calls)\n",
           "new": "        return self._final_response(response, config.model, cumulative_usage)\n",
           "breaks": "a tool loop at its limit returns the last half-finished response as the answer",
-          "symbol_sha": "sha256:3a05e7f403800cd623a31626e18ee0b6a15be8b3233aeba9362debf344f10aac"
+          "symbol_sha": "sha256:80fa41f880fcc06258fc3572fe92d1ec548a0cab18123566cf2d1856019a3d07"
         },
         {
           "id": "warning-in-dollars",
@@ -1014,7 +1014,7 @@
           "old": "        _core.console.print(f\"No model used: {err.key}: {err.message}\", style=\"dim\", markup=False)\n",
           "new": "        _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
           "breaks": "a scan skips the model and never says which key would turn it on",
-          "symbol_sha": "sha256:411f6c6844acf3804b52a7c55738180f6be291d01066019946880dae37945eb8"
+          "symbol_sha": "sha256:edba43ed87f37344f94e75a747c7b3cf9a46b76ff8a48039adf0e1cf6f996de9"
         },
         {
           "id": "scan-skips-wrong-settings",
@@ -1024,7 +1024,7 @@
           "old": "    except SettingNotSetError as err:\n",
           "new": "    except SettingsFileError as err:\n",
           "breaks": "a scan with a server typo says 'No model used' and goes on",
-          "symbol_sha": "sha256:742422ce1158c3f21c3581889a0d80eff71b1fabd37e6233316b4e2549e93532"
+          "symbol_sha": "sha256:edba43ed87f37344f94e75a747c7b3cf9a46b76ff8a48039adf0e1cf6f996de9"
         },
         {
           "id": "unset-brake-is-an-error",
@@ -1034,7 +1034,7 @@
           "old": "            raise SettingNotSetError(\n                files.machine_source,\n",
           "new": "            raise SettingsFileError(\n                files.machine_source,\n",
           "breaks": "a scan without [brake] stops instead of scanning without a model",
-          "symbol_sha": "sha256:48ab69546b0a16a63203015afc6a298dda59a439ed47be934767f269eae4e100"
+          "symbol_sha": "sha256:45ca9d51084e0d89a697eab932d39ee70acb07b52f4a461ad8980c3851441cd8"
         }
       ]
     },
@@ -1057,7 +1057,7 @@
           "old": "        if self.api_key_env is not None and not _VARIABLE_NAME.fullmatch(self.api_key_env):\n",
           "new": "        if False:\n",
           "breaks": "a key pasted into api_key_env is kept and shown back",
-          "symbol_sha": "sha256:3289d1895d575b9676e5d7ce4a8547fa95365e7c87d1c6dd329be086622ce323"
+          "symbol_sha": "sha256:f8bc92a39630c97dc720665b71eb90ee0b592f495406036f37d4e453cf16f97a"
         },
         {
           "id": "odd-schema-version-read",
@@ -1067,7 +1067,7 @@
           "old": "    if isinstance(version, bool) or not isinstance(version, int) or version < 1:\n",
           "new": "    if False:\n",
           "breaks": "schema_version = \"2\", 0 or true is read as valid",
-          "symbol_sha": "sha256:a3552061f36195399c6c9858141e205ce1d0adaf6faa01b2191132f51c2b93ed"
+          "symbol_sha": "sha256:4ff70626ce52ce7c0df5e4c52e966110ddb2d82454175a1cbb89ee46e7a46395"
         },
         {
           "id": "project-version-unchecked",
@@ -1077,7 +1077,7 @@
           "old": "    _check_schema_version(section, text, source, prefix=(\"llm\",))\n",
           "new": "    pass\n",
           "breaks": "a project file from a newer schema is read as if current",
-          "symbol_sha": "sha256:e16a7edb0b38dbe7d28a34dfcf99edb5327c013d1bdba7852d36dadcb5753b1f"
+          "symbol_sha": "sha256:b8f0b5ce2755c84e2b0c974066b0b38395e78e335c121c4c64742139d6ed902b"
         },
         {
           "id": "temperature-unbounded",

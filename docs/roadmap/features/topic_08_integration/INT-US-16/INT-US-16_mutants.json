@@ -14,10 +14,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/telemetry.py",
           "symbol": "flush_telemetry",
-          "old": "llm.flush(db)",
-          "new": "pass",
+          "old": "            collector.flush(db)\n",
+          "new": "            pass\n",
           "breaks": "the collector accumulates records in memory and the run ends without persisting them, so `sw usage` shows nothing for a run that really did spend tokens",
-          "symbol_sha": "sha256:66e7a63952b4c1a5697bb8d0c3135169f96bd44ec7872a0bbe7c3be0fe30c573"
+          "symbol_sha": "sha256:a859da158bbaafc8c2111948f400b026c8921aaf9625a98d30022e15943abc46"
         }
       ]
     },
@@ -32,12 +32,12 @@
         {
           "id": "telemetry-wrap-never-applied",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/factory.py",
-          "symbol": "create_llm_adapter",
-          "old": "if telemetry_project:",
-          "new": "if False:",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "            self._by_server[server_name] = TelemetryCollector(\n",
+          "new": "            self._by_server[server_name] = adapter\n            _unused = TelemetryCollector(\n",
           "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded — the exact silent-no-op shape this contract exists to catch",
-          "symbol_sha": "sha256:7ff2b16d39e403b87808a3b370c2d49b8772f33d9dc7b2811e19c0875e537c9c"
+          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
         }
       ]
     }
