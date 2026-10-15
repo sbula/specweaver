@@ -87,6 +87,28 @@ def _guard_coding_feedback(text: str) -> str:
     return text
 
 
+_FENCE = re.compile(r"```.*?(?:```|\Z)", re.DOTALL)
+_CODE_LINE = re.compile(
+    r"^\s*(?:def |class |return\b|import |from \S+ import |@\w)"
+    r"|^\s*(?:if|elif|else|for|while|with|try|except|finally)\b.*:\s*$"
+    r"|[{}]\s*$|\bself\."
+)
+_SOURCE_PATH = re.compile(r"/workspace|\b(?:src|tests?)/|\b\w+\.(?:py|java|kt|ts|rs)\b")
+
+
+def scenario_safe(text: str, clause: str) -> str:
+    """The report for the scenario side, words only: no code block, code line or source path."""
+    kept = [
+        line.strip()
+        for line in _FENCE.sub("", text or "").splitlines()
+        if line.strip() and not _CODE_LINE.search(line) and not _SOURCE_PATH.search(line)
+    ]
+    return " ".join(kept) or (
+        f"The expected behaviour for {clause or 'the failing requirement'} was judged wrong. "
+        "Derive it again from the spec."
+    )
+
+
 ARBITRATE_INSTRUCTIONS = """
 You are a strict test arbitration agent. Scenario tests have failed for the component described
 in the spec below. Your job is to determine WHO is at fault.
@@ -378,6 +400,7 @@ class ArbitrateVerdictHandler(StepHandler):
             elif result.verdict == ArbitrateVerdict.SCENARIO_ERROR:
                 logger.info("Arbitrate Verdict: SCENARIO_ERROR (%s)", result.spec_clause)
                 context.feedback.pop("scenario_test_failures", None)  # terminal verdict
+                safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)
                 context.feedback["generate_scenarios"] = {
                     "from_step": "arbitrate_verdict",
                     "findings": {
@@ -386,14 +409,14 @@ class ArbitrateVerdictHandler(StepHandler):
                             {
                                 "status": "FAIL",
                                 "rule_id": result.spec_clause,
-                                "message": result.scenario_feedback,
+                                "message": safe_scenario_feedback,
                             }
                         ],
                     },
                 }
                 return StepResult(
                     status=StepStatus.FAILED,
-                    error_message=f"Arbiter assigned: {result.scenario_feedback}",
+                    error_message=f"Arbiter assigned: {safe_scenario_feedback}",
                     started_at=started,
                     completed_at=_now_iso(),
                 )

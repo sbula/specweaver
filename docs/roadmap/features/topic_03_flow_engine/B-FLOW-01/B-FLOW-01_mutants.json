@@ -590,6 +590,26 @@
           "symbol_sha": "sha256:84e7cb34905ac1b822d8722e79466b7d9f814ef605ba56236ac85264f03f5157"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "One report, to the side at fault; the scenario side's holds no code",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_scenario_report_filtered.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "scenario-report-unfiltered",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "ArbitrateVerdictHandler.execute",
+          "old": "                safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
+          "new": "                safe_scenario_feedback = result.scenario_feedback\n",
+          "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
+          "symbol_sha": "sha256:b28295bfb2e5b9040b3919b93e598ea873716dcd4ac1ec1161db66154558f767"
+        }
+      ]
     }
   ]
 }

@@ -49,8 +49,9 @@ code, and a problem the agent finds in the spec reaches the person.
 ## The code filter (CB-4)
 
 In order: drop fenced code blocks; drop lines that look like code (`def `, `class `, `return `,
-`import `, `from … import`, a line that starts with `if`/`for`/`while`/`with`/`try` and ends in `:`, a line ending in `{`, a call with `self.`). A plain sentence ending in `:` stays; drop any path that
-names a source or test file or `/workspace`; collapse what is left. If nothing is left: *"The expected
+`import `, `from … import`, a line that starts with `if`/`for`/`while`/`with`/`try` and ends in `:`,
+a line ending in `{`, a call with `self.`). A plain sentence ending in `:` stays; drop any line that
+names a source or test path or `/workspace`; join what is left. If nothing is left: *"The expected
 behaviour for <clause> was judged wrong. Derive it again from the spec."*
 
 ## Commit boundaries
