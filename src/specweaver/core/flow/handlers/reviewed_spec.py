@@ -61,11 +61,25 @@ def record_review(context: RunContext) -> None:
     logger.info("Recorded the accepted review of '%s'", context.spec_path.name)
 
 
-def _contract_sha(context: RunContext) -> str:
+def _contract_path(context: RunContext) -> Path | None:
     from pathlib import Path
 
     paths = [Path(p) for p in context.graph.api_contract_paths or []]
-    return next((spec_sha(p) for p in paths if p.is_file()), "")
+    return next((p for p in paths if p.is_file()), None)
+
+
+def _contract_sha(context: RunContext) -> str:
+    path = _contract_path(context)
+    return spec_sha(path) if path else ""
+
+
+def _relative(path: Path | None, root: Path) -> str:
+    if path is None:
+        return ""
+    try:
+        return path.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return ""
 
 
 def _kept_path(context: RunContext) -> Path | None:
@@ -80,9 +94,15 @@ def keep_set(context: RunContext) -> None:
     target = _kept_path(context)
     if target is None:
         return
+    stem = context.spec_path.stem.removesuffix("_spec")
     record = {
+        "spec": _relative(context.spec_path, context.project_path),
         "spec_sha256": spec_sha(context.spec_path),
+        "contract": _relative(_contract_path(context), context.project_path),
         "contract_sha256": _contract_sha(context),
+        "tests": " ".join(
+            sorted(p.name for p in (target.parent.parent / "generated").glob(f"*{stem}*"))
+        ),
         "kept_at": now_iso(),
     }
     _write_whole(target, record)
@@ -119,3 +139,27 @@ def review_refusal(context: RunContext, *, without_store: str | None = "refuse")
     if _read(target).get("sha256") != spec_sha(context.spec_path):
         return f"the spec changed since its review; {command}, then resume"
     return None
+
+
+def kept_sets(context: RunContext) -> list[dict[str, str | bool]]:
+    """Every kept set of the project: its spec, its test files, and whether it is still fresh."""
+    from specweaver.core.flow.handlers.scenario_store import scenario_store
+
+    store = scenario_store(context)
+    folder = store / "kept" if store else None
+    if folder is None or not folder.is_dir():
+        return []
+    sets: list[dict[str, str | bool]] = []
+    for target in sorted(folder.glob("*.json")):
+        record = _read(target)
+        spec = context.project_path / record.get("spec", "-")
+        contract = context.project_path / record.get("contract", "-")
+        fresh = (
+            bool(record.get("spec"))
+            and spec.is_file()
+            and record.get("spec_sha256") == spec_sha(spec)
+            and (not record.get("contract") or spec_sha(contract) == record.get("contract_sha256"))
+        )
+        tests = record.get("tests", "")
+        sets.append({"spec": record.get("spec") or target.stem, "tests": tests, "fresh": fresh})
+    return sets

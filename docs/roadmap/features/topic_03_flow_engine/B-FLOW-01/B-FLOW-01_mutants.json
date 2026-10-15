@@ -245,7 +245,7 @@
           "old": "            target = _in_scenarios_mount(target, _scenarios_root(context))\n",
           "new": "            pass\n",
           "breaks": "the container is handed a host path and collects nothing",
-          "symbol_sha": "sha256:ecc3f1ce86e1a7f763ce5d0893dc876d7516487e43ce1d58c705c70abc13d6c4"
+          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
         }
       ]
     },
@@ -444,7 +444,7 @@
           "old": "            output[\"requirement_coverage\"] = _requirement_coverage(context)\n",
           "new": "            pass\n",
           "breaks": "the scenario step reports no coverage, so the person never sees it",
-          "symbol_sha": "sha256:ecc3f1ce86e1a7f763ce5d0893dc876d7516487e43ce1d58c705c70abc13d6c4"
+          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
         },
         {
           "id": "coverage-not-shown",
@@ -454,7 +454,7 @@
           "old": "    show_coverage(final_run)\n",
           "new": "    pass\n",
           "breaks": "sw run ends without the coverage table",
-          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
+          "symbol_sha": "sha256:be9b6d52a0a1ae0fb781bd029dc1d451db416f38dfbbc0df55487197a4268a50"
         }
       ]
     },
@@ -587,7 +587,7 @@
           "old": "    show_problems(final_run)\n",
           "new": "    pass\n",
           "breaks": "a spec problem the agent found never reaches the person",
-          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
+          "symbol_sha": "sha256:be9b6d52a0a1ae0fb781bd029dc1d451db416f38dfbbc0df55487197a4268a50"
         }
       ]
     },
@@ -777,7 +777,7 @@
           "old": "    show_models(final_run)\n",
           "new": "    pass\n",
           "breaks": "the person never learns both sides used one model",
-          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
+          "symbol_sha": "sha256:be9b6d52a0a1ae0fb781bd029dc1d451db416f38dfbbc0df55487197a4268a50"
         }
       ]
     },
@@ -835,8 +835,9 @@
       "requirement": "FR-19",
       "title": "A passing set is kept with its fingerprints, made again only on a change",
       "scope": [
-        "tests/integration/core/flow/handlers/test_kept_suite.py",
-        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py",
+        "tests/integration/core/flow/handlers/test_acceptance_step.py",
+        "tests/integration/core/flow/handlers/test_kept_suite.py"
       ],
       "mutants": [
         {
@@ -878,6 +879,46 @@
           "new": "        and True\n",
           "breaks": "a set made for an older contract keeps checking the new one",
           "symbol_sha": "sha256:4c08e097418676055e3b3b5d3fac432462c6777d00541e85b5da543d9cc71b65"
+        },
+        {
+          "id": "acceptance-feeds-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/acceptance.py",
+          "symbol": "_passed",
+          "old": "        status=StepStatus.PASSED,\n",
+          "new": "        status=StepStatus.FAILED,\n",
+          "breaks": "a failing kept check fails the step, so its words reach the next coder through the handover",
+          "symbol_sha": "sha256:2cf8526e710d3f361db07f6e293f946954aba96696ca2f52b6ed8c38a9af1ffb"
+        },
+        {
+          "id": "stale-set-run",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/reviewed_spec.py",
+          "symbol": "kept_sets",
+          "old": "            and record.get(\"spec_sha256\") == spec_sha(spec)\n",
+          "new": "            and True\n",
+          "breaks": "a set made for an older spec judges the new code",
+          "symbol_sha": "sha256:18feddc087c17793cdfc5b3a4d4cd68a1f3e0604d7cf0b9ffd255ee4895c767d"
+        },
+        {
+          "id": "acceptance-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/run_summary.py",
+          "symbol": "show_run_summary",
+          "old": "        show_acceptance(output.get(\"acceptance\") or {})\n",
+          "new": "        pass\n",
+          "breaks": "the person never learns a later change broke a kept requirement",
+          "symbol_sha": "sha256:be9b6d52a0a1ae0fb781bd029dc1d451db416f38dfbbc0df55487197a4268a50"
+        },
+        {
+          "id": "failed-requirement-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/acceptance.py",
+          "symbol": "_requirements_of",
+          "old": "    return {m.group(1): _TRACE.findall(m.group(0)) for m in _TEST_DEF.finditer(text)}\n",
+          "new": "    return {}\n",
+          "breaks": "the report says a check failed but not which requirement",
+          "symbol_sha": "sha256:009f13e33fe68d695ea8574b8b1bfdb335169223166b01e81843c0c67c76cf6a"
         }
       ]
     }

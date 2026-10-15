@@ -95,8 +95,9 @@ def _sides_to_run(context: RunContext) -> set[str]:
     return set(_SIDES)
 
 
-#: The coding side's steps that draft or review the spec, which a dual run has already reviewed.
-_SPEC_STEPS = frozenset({"draft_spec", "review_spec"})
+#: Steps the coding side of a dual run skips: the spec was reviewed before the run, and the kept
+#: scenario checks are never the coder's to see.
+_SPEC_STEPS = frozenset({"draft_spec", "review_spec", "acceptance"})
 
 
 def _why_failed(run: Any) -> str:

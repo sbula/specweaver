@@ -24,6 +24,7 @@ the US-24 sentence: unit-green but business-wrong, caught by independent verific
   E9 an unknown requirement id: refused, retried, never stored
   E10 the scenario agent's tools read the spec and contract, never the code
   E11 a passing set is kept; a second run on the same spec reuses it
+  E12 a later change that breaks a kept set is reported to the person; the run still passes
 """
 
 from __future__ import annotations
@@ -804,3 +805,46 @@ def test_e11_a_second_run_reuses_the_kept_set(tmp_path: Path, _isolated_env: Pat
     assert len(record) == 2 and record[1].output["passed"] == 3  # and still ran its tests
     kept = _isolated_env / "projects" / "us24_e11" / "scenarios" / "kept" / "greet_spec.json"
     assert kept.is_file()
+
+
+# --------------------------------------------------------------------------- #
+# E12 — a later change breaks a kept requirement: the person is told          #
+# --------------------------------------------------------------------------- #
+
+_ACCEPTANCE_ONLY = """\
+name: acceptance_only
+version: "1.0"
+steps:
+  - name: acceptance
+    action: validate
+    target: tests
+    params:
+      kind: acceptance
+    gate:
+      type: auto
+      condition: completed
+      on_fail: continue
+"""
+
+
+def test_e12_a_later_change_that_breaks_a_kept_set_is_reported(tmp_path: Path) -> None:
+    """B-FLOW-01 FR-19: the kept set keeps checking; its report reaches the person, the run passes."""
+    project = _init_project(tmp_path, "us24_e12")
+    adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[])
+    implementer = ImplementerState([CORRECT_IMPL])
+
+    with _scenario_world(adapter, implementer, []):
+        assert _run_cli(project).exit_code == 0
+
+    # A later, normal change drops the salutation.
+    (project / "src" / "greet.py").write_text(WRONG_IMPL, encoding="utf-8")
+    pipeline = tmp_path / "acceptance_only.yaml"
+    pipeline.write_text(_ACCEPTANCE_ONLY, encoding="utf-8")
+    result = runner.invoke(
+        app,
+        ["run", str(pipeline), str(project / "specs" / "greet_spec.md"), "--project", str(project)],
+    )
+
+    assert result.exit_code == 0, result.output  # a report, never a stop
+    assert shows(result.output, "Kept scenario checks")
+    assert shows(result.output, "failed FR-1")

@@ -95,6 +95,14 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
                 params={"target": f"src/{stem}.py"},
                 gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
             ),
+            # The kept scenario checks, for the person only; never stops the run.
+            PipelineStep(
+                name="acceptance",
+                action=StepAction.VALIDATE,
+                target=StepTarget.TESTS,
+                params={"kind": "acceptance"},
+                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
+            ),
         ],
     )
 
@@ -154,6 +162,13 @@ def _report_code_validation(mark: str, _name: str, out: dict[str, Any]) -> None:
         _core.console.print(f"      [yellow]failed rules:[/yellow] {', '.join(failed_rules)}")
 
 
+def _report_acceptance(_mark: str, _name: str, out: dict[str, Any]) -> None:
+    from specweaver.core.flow.handlers.acceptance import acceptance_lines
+
+    for line in acceptance_lines(out.get("acceptance") or {}):
+        _core.console.print(line)
+
+
 #: Which step names get a bespoke line. Anything absent falls back to "report it only if it
 #: failed" — a table rather than an `elif` chain, so adding a step is one entry rather than a
 #: branch in what would otherwise be the longest function in this package.
@@ -163,6 +178,7 @@ _STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
     "run_tests": _report_tests,
     "lint_fix": _report_lint,
     "validate_code": _report_code_validation,
+    "acceptance": _report_acceptance,
 }
 
 

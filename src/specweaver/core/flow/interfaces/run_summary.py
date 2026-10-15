@@ -57,7 +57,17 @@ def show_models(final_run: Any) -> None:
             return
 
 
+def show_acceptance(report: dict[str, Any]) -> None:
+    """The kept scenario checks: what passed, which requirements failed, which sets are stale."""
+    from specweaver.core.flow.handlers.acceptance import acceptance_lines
+
+    for line in acceptance_lines(report):
+        _core.console.print(line)
+
+
 def show_run_summary(final_run: Any) -> None:
     show_coverage(final_run)
     show_problems(final_run)
     show_models(final_run)
+    for output in _outputs(final_run):
+        show_acceptance(output.get("acceptance") or {})

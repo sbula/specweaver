@@ -412,6 +412,10 @@ class ValidateTestsHandler:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         kind = step.params.get("kind", "unit")
+        if kind == "acceptance":
+            from specweaver.core.flow.handlers.acceptance import run_acceptance
+
+            return run_acceptance(context, lambda: self._get_atom(context, "scenario"))
         target = step.params.get("target") or _default_test_target(context, kind)
         if kind == "scenario":
             # The container sees the scenario tests only under its /scenarios mount.

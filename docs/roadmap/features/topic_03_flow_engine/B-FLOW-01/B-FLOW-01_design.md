@@ -286,10 +286,9 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-E | Memory and coverage apart | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-F | Scenario side | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-G | Run control | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Now**: SF-G committed — a dual run needs a reviewed spec; only the side at fault runs again,
-twice, then the person is asked; the two sides use different models where the settings allow.
-**Next**: the dev skill for SF-H CB-1 (spec conflicts at review).
+**Now**: SF-H committed — every sub-feature is committed and all 22 FRs carry a `Proves:` test.
+**Next**: the closure gate and the user's sign-off of B-FLOW-01.

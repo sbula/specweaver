@@ -24,7 +24,7 @@ from specweaver.workflows.implementation.interfaces.cli import _build_implement_
 # --- Happy path -----------------------------------------------------------
 
 
-def test_pipeline_has_five_steps_in_order() -> None:
+def test_pipeline_has_six_steps_in_order() -> None:
     pipe = _build_implement_pipeline("greeter")
     assert [s.name for s in pipe.steps] == [
         "generate_code",
@@ -32,6 +32,7 @@ def test_pipeline_has_five_steps_in_order() -> None:
         "lint_fix",
         "run_tests",
         "validate_code",
+        "acceptance",  # B-FLOW-01 FR-19: kept scenario checks, for the person only
     ]
 
 

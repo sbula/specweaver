@@ -89,3 +89,14 @@ steps:
       on_fail: loop_back
       loop_target: generate_code
       max_retries: 2
+
+  - name: acceptance
+    action: validate
+    target: tests
+    description: "Kept scenario checks for the person; never feeds back"
+    params:
+      kind: acceptance
+    gate:
+      type: auto
+      condition: completed
+      on_fail: continue
