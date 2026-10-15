@@ -42,8 +42,10 @@ class ArbitrateDualPipelineHandler:
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 
         try:
-            coding_runner = self._build_runner("new_feature.yaml", stem, context)
-            scenario_runner = self._build_runner("scenario_validation.yaml", stem, context)
+            coding_runner = self._build_runner("new_feature.yaml", stem, context, "generate_code")
+            scenario_runner = self._build_runner(
+                "scenario_validation.yaml", stem, context, "generate_scenarios"
+            )
 
             coding_task = asyncio.create_task(coding_runner.run(parent_run_id=context.run.run_id))
             scenario_task = asyncio.create_task(
@@ -92,7 +94,9 @@ class ArbitrateDualPipelineHandler:
             )
             return _error_result(str(exc), started)
 
-    def _build_runner(self, pipe_file: str, component: str, context: RunContext) -> Any:
+    def _build_runner(
+        self, pipe_file: str, component: str, context: RunContext, own_step: str
+    ) -> Any:
         files = importlib.resources.files("specweaver.workflows.pipelines")
         resource = files.joinpath(pipe_file)
         base_pipe_yaml = resource.read_text(encoding="utf-8")
@@ -117,4 +121,8 @@ class ArbitrateDualPipelineHandler:
         pipe_data["steps"] = valid_steps
         pipe = PipelineDefinition(**pipe_data)
 
-        return context.run.pipeline_runner.spawn(pipe)
+        # Each side gets only the arbiter's entry for its own step, taken out of the parent so it
+        # reaches that side once: nothing the other side wrote or was told crosses over.
+        entry = context.feedback.pop(own_step, None)
+        own = {own_step: entry} if entry is not None else {}
+        return context.run.pipeline_runner.spawn(pipe, feedback=own)

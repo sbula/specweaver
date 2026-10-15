@@ -33,6 +33,7 @@ def run_context():
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.run = RunHandle(run_id="test_run_123")
     ctx.spec_path = Path("/mock/project/specs/login_spec.md")
+    ctx.feedback = {}
     # Need to mock the pipeline_runner and its components
     ctx.run = RunHandle(run_id="test_run_123", pipeline_runner=MagicMock())
     ctx.run.pipeline_runner._context = ctx
@@ -44,7 +45,7 @@ def run_context():
     # already holds to `spawn` a sibling, which is what broke the five-module cycle. Resolving the
     # class here at CALL time is what keeps `@patch(...runner.PipelineRunner)` effective, exactly
     # as the handler's own deferred import used to.
-    def _spawn(pipe: object) -> object:
+    def _spawn(pipe: object, feedback: dict | None = None) -> object:
         from specweaver.core.flow.engine.runner import PipelineRunner
 
         return PipelineRunner(pipeline=pipe)
@@ -178,7 +179,7 @@ class TestArbitrateDualPipelineHandler:
             )
             mock_files.return_value = mock_resource
 
-            handler._build_runner("mock_pipe.yaml", "auth", run_context)
+            handler._build_runner("mock_pipe.yaml", "auth", run_context, "generate_code")
             _, kwargs = mock_runner_cls.call_args
             pipeline = kwargs["pipeline"]
 
@@ -195,7 +196,7 @@ class TestArbitrateDualPipelineHandler:
             mock_resource.joinpath.return_value.read_text.return_value = "name: mock_pipe\nsteps:\n  - name: dummy\n    action: orchestrate\n    target: components\n    params:\n      existing: val"
             mock_files.return_value = mock_resource
 
-            _ = handler._build_runner("mock_pipe.yaml", "auth", run_context)
+            _ = handler._build_runner("mock_pipe.yaml", "auth", run_context, "generate_code")
             _, kwargs = mock_runner_cls.call_args
             pipeline = kwargs["pipeline"]
 

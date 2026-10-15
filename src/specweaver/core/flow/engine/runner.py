@@ -101,7 +101,9 @@ class PipelineRunner:
         # SF-2 (FR-3): Intrinsically load the DALLevel of the execution target
         seed_dal_level(self._context)
 
-    def spawn(self, pipeline: PipelineDefinition) -> PipelineRunner:
+    def spawn(
+        self, pipeline: PipelineDefinition, feedback: dict[str, Any] | None = None
+    ) -> PipelineRunner:
         """A sibling runner for a sub-pipeline, sharing this run's collaborators.
 
         Four sites — both fan-out paths in `handlers/decompose`, `handlers/dual_pipeline`, and
@@ -115,11 +117,17 @@ class PipelineRunner:
         copied four times, where a fifth collaborator would have had to be added in four places.
 
         The sub-run gets its own `RunContext` when it runs, not here: `run(parent_run_id=...)` is
-        what marks it as a sub-run.
+        what marks it as a sub-run. With `feedback`, the sub-run gets that dict instead of sharing
+        the parent's: a dual run's two sides must not see each other's entries.
         """
+        context = (
+            self._context
+            if feedback is None
+            else self._context.model_copy(update={"feedback": dict(feedback)})
+        )
         return PipelineRunner(
             pipeline,
-            self._context,
+            context,
             registry=self._registry,
             store=self._store,
             on_event=self._on_event,

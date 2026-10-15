@@ -149,6 +149,35 @@
           "symbol_sha": "sha256:dd6c21ae445db11cdf8ad8355976035bc1389a57f97626fa333c8ba9d37505d2"
         }
       ]
+    },
+    {
+      "requirement": "FR-5b",
+      "title": "Each side of a dual run gets only its own feedback, once",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_dual_run_feedback.py"
+      ],
+      "mutants": [
+        {
+          "id": "feedback-shared-again",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner.spawn",
+          "old": "            else self._context.model_copy(update={\"feedback\": dict(feedback)})\n",
+          "new": "            else self._context\n",
+          "breaks": "both sides of a dual run read and write one feedback dict again",
+          "symbol_sha": "sha256:4d067add4b6742ec545db13d26dc2be3bea1dbc0875680db8558011265749b7b"
+        },
+        {
+          "id": "seed-copied-not-popped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler._build_runner",
+          "old": "        entry = context.feedback.pop(own_step, None)\n",
+          "new": "        entry = context.feedback.get(own_step, None)\n",
+          "breaks": "an arbiter verdict is applied again on every later round",
+          "symbol_sha": "sha256:831233dbdc9f556644fb55f2c31bc3300a5e2ded0431b75b3409a7acdbe27f0c"
+        }
+      ]
     }
   ]
 }
