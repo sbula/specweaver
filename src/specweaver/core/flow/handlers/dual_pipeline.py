@@ -87,6 +87,8 @@ class ArbitrateDualPipelineHandler:
                 started_at=started,
                 completed_at=_now_iso(),
             )
+        # The run holding the dual run is marked, so its handover never reaches task memory.
+        context.run = context.run.model_copy(update={"dual_side": "parent"})
         stem = context.spec_path.stem.replace("_spec", "")
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 

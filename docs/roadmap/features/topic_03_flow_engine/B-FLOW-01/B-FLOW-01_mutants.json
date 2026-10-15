@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:e21321f1ceee225dab31cffe3aeab82032dd95314e0026dc8c41cab05d1b6d8a"
+          "symbol_sha": "sha256:e36aef3111b9904dc89b36ac963dbdbd8dc4b36387ef4eec1cfe7d5b58fb1fa7"
         },
         {
           "id": "unregistered-runs",
@@ -385,6 +385,36 @@
           "new": "        return QARunnerAtom(cwd=context.project_path)\n",
           "breaks": "lint fix runs the coder's tools on the host",
           "symbol_sha": "sha256:af6d9ee400b0bdc06d50e395e9521d360eebe364f3a5571e4d105415657aaf33"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "A dual run's memory never reaches a coder prompt",
+      "scope": [
+        "tests/integration/core/flow/engine/test_dual_run_memory.py",
+        "tests/unit/core/flow/handlers/test_dual_run_feedback.py"
+      ],
+      "mutants": [
+        {
+          "id": "dual-handover-to-memory",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/handover.py",
+          "symbol": "save_handover_context",
+          "old": "        if context.run.dual_side == \"parent\":\n",
+          "new": "        if False:\n",
+          "breaks": "a dual run's arbiter text reaches the next coder prompt through task memory",
+          "symbol_sha": "sha256:182c8913efaf3d02e98ef72f79b0d1c0e14ca609920290fa37c89e488928c725"
+        },
+        {
+          "id": "parent-unmarked",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler.execute",
+          "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
+          "new": "        pass\n",
+          "breaks": "the run holding a dual run saves its handover to task memory",
+          "symbol_sha": "sha256:e36aef3111b9904dc89b36ac963dbdbd8dc4b36387ef4eec1cfe7d5b58fb1fa7"
         }
       ]
     }

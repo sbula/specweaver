@@ -176,3 +176,13 @@ async def test_a_dual_run_refuses_without_a_container(
     assert result.status == StepStatus.FAILED
     assert "container" in (result.error_message or "")
     assert spawner.handed == []
+
+
+@pytest.mark.asyncio
+async def test_the_run_holding_a_dual_run_is_marked(tmp_path: Path) -> None:
+    # Proves: B-FLOW-01 FR-12
+    context, spawner = _context(tmp_path, {}), _Spawner()
+
+    await _dual_round(context, spawner)
+
+    assert context.run.dual_side == "parent"

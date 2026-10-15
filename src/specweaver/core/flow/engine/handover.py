@@ -72,6 +72,27 @@ async def _target_task_id(repo: MemoryRepository, context: RunContext) -> uuid.U
     return uuid.UUID(str(active[0]["id"])) if active else None
 
 
+def _keep_in_scenario_store(
+    context: RunContext, run: PipelineRun, handover: HandoverContext
+) -> None:
+    """A dual run's handover, kept for the person beside the scenario tests, never in task memory.
+
+    Task memory reaches the next coder prompt, and even the pipeline's name would tell the coder
+    that a scenario side exists.
+    """
+    from specweaver.core.flow.handlers.scenario import scenario_store
+
+    store = scenario_store(context)
+    if store is None:
+        logger.warning(
+            "[run_id=%s] No scenario store; the dual run's handover is dropped", run.run_id
+        )
+        return
+    target = store / "handovers" / f"{run.run_id}.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(handover.model_dump_json(indent=2), encoding="utf-8")
+
+
 async def save_handover_context(context: RunContext, run: PipelineRun) -> None:
     """Persist pipeline telemetry to the Agent Memory Bank for handover scenarios.
 
@@ -99,6 +120,10 @@ async def save_handover_context(context: RunContext, run: PipelineRun) -> None:
                 "status": run.status.value,
             },
         )
+
+        if context.run.dual_side == "parent":
+            _keep_in_scenario_store(context, run, handover_ctx)
+            return
 
         async with context.db.async_session_scope() as session:
             repo = MemoryRepository(session)

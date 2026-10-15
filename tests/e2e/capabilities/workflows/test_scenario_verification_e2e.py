@@ -438,9 +438,11 @@ def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path, _isolated
     # A4 artifact inventory: exactly the expected droppings, no strays, no scenario file.
     assert _snapshot(project) - before == EXPECTED_ARTIFACTS
     store = _isolated_env / "projects" / "us24_e1" / "scenarios"
-    assert {
-        p.relative_to(store).as_posix() for p in store.rglob("*") if p.is_file()
-    } == STORED_SCENARIOS
+    kept = {p.relative_to(store).as_posix() for p in store.rglob("*") if p.is_file()}
+    handovers = {k for k in kept if k.startswith("handovers/")}
+    assert kept - handovers == STORED_SCENARIOS
+    # The run's handover is kept beside the scenarios, never in task memory (FR-12).
+    assert len(handovers) == 1
 
 
 # --------------------------------------------------------------------------- #
