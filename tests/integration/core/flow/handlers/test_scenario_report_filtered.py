@@ -29,6 +29,7 @@ from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler, scenario_safe
+from specweaver.core.flow.handlers.reviewed_spec import record_review
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from tests.fixtures.db_utils import register_test_project
@@ -82,6 +83,7 @@ def context(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunContext:
     (root / "specs" / "greet_spec.md").write_text(_SPEC, encoding="utf-8")
     register_test_project(db, "greeter", str(root))
     context = RunContext(project_path=root, spec_path=root / "specs" / "greet_spec.md", db=db)
+    record_review(context)  # the spec was reviewed before the dual run
     context.run = RunHandle(run_id="r1", step_name="arbitrate_verdict")
     context.feedback = {
         "scenario_test_failures": {

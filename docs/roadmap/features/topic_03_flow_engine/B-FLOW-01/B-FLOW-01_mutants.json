@@ -175,7 +175,7 @@
           "old": "        entry = context.feedback.pop(own_step, None)\n",
           "new": "        entry = context.feedback.get(own_step, None)\n",
           "breaks": "an arbiter verdict is applied again on every later round",
-          "symbol_sha": "sha256:d2c4556094ef3011abda20d02231d7eadc2c6b53be3a8ae705702b1ba0b53e95"
+          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
         }
       ]
     },
@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:c3871cc66a4996752bc89c3adad767dd31106b627a7eac499a6e20c3778a57ae"
+          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
         },
         {
           "id": "unregistered-runs",
@@ -275,7 +275,7 @@
           "old": "    if scenario_store(context) is None:\n",
           "new": "    if False:\n",
           "breaks": "a project with no store runs a dual run anyway",
-          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+          "symbol_sha": "sha256:4d78fc150e995e7f4449a4c7b25cb176e5fd22c9c400d3a998fb6043014900a7"
         },
         {
           "id": "old-scenarios-ignored",
@@ -285,7 +285,7 @@
           "old": "    if (context.project_path / \"scenarios\" / \"generated\").exists():\n",
           "new": "    if False:\n",
           "breaks": "old scenario tests stay readable in the project",
-          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+          "symbol_sha": "sha256:4d78fc150e995e7f4449a4c7b25cb176e5fd22c9c400d3a998fb6043014900a7"
         },
         {
           "id": "any-language-runs",
@@ -295,7 +295,7 @@
           "old": "    if detect_toolchain(context.project_path) not in (\"uv\", \"\"):\n",
           "new": "    if False:\n",
           "breaks": "a dual run starts for a language whose container is not proven",
-          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+          "symbol_sha": "sha256:4d78fc150e995e7f4449a4c7b25cb176e5fd22c9c400d3a998fb6043014900a7"
         }
       ]
     },
@@ -344,7 +344,7 @@
           "old": "    return store is not None and any((store / \"generated\").glob(\"*\"))\n",
           "new": "    return False\n",
           "breaks": "a project with kept scenario tests runs the coder's code on the host",
-          "symbol_sha": "sha256:3f4349fc5a139645ef323e49b53efef75563d9fbdba01fa5d428091eb9457947"
+          "symbol_sha": "sha256:e6924590d0d0b09da37004a42d933ae14ba2420c01da540056c8e75f0f723158"
         },
         {
           "id": "coder-side-on-host",
@@ -364,7 +364,7 @@
           "old": "        side = \"coder\" if coder_side else \"scenario\"\n",
           "new": "        side = \"scenario\"\n",
           "breaks": "the dual run never tells its coder side to use a container",
-          "symbol_sha": "sha256:d2c4556094ef3011abda20d02231d7eadc2c6b53be3a8ae705702b1ba0b53e95"
+          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
         },
         {
           "id": "c03-c04-on-host",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:c3871cc66a4996752bc89c3adad767dd31106b627a7eac499a6e20c3778a57ae"
+          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
         }
       ]
     },
@@ -577,7 +577,7 @@
           "old": "                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)\n",
           "new": "                llm=adapter, config=config, tool_dispatcher=None\n",
           "breaks": "the agent cannot read the contracts it tests against",
-          "symbol_sha": "sha256:edbdabb9ba1c98d7659ba7c063e3305aac3c30df3f123257a5b6d42694deb1d1"
+          "symbol_sha": "sha256:c1dbed43f305dfd7c69bc240b8c9efb0f7b3237b946424b52432065d0b827b60"
         },
         {
           "id": "problems-not-shown",
@@ -608,6 +608,56 @@
           "new": "                safe_scenario_feedback = result.scenario_feedback\n",
           "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
           "symbol_sha": "sha256:b28295bfb2e5b9040b3919b93e598ea873716dcd4ac1ec1161db66154558f767"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "Both sides read one reviewed spec, unchanged during the run",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_one_reviewed_spec.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "review-not-recorded",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "ReviewSpecHandler.execute",
+          "old": "                record_review(context)\n",
+          "new": "                pass\n",
+          "breaks": "an accepted review leaves no record, so no dual run can start",
+          "symbol_sha": "sha256:649c4facaf0345011bd5f1df530f25c1a6578f0c6256dbada0e811cfc553bef3"
+        },
+        {
+          "id": "unreviewed-spec-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler.execute",
+          "old": "        if unreviewed is not None:\n",
+          "new": "        if False:\n",
+          "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
+          "symbol_sha": "sha256:ca984b81e0c6bda5b39f3291d252d5e3da99a3af7801a81ac83222d0191b5d32"
+        },
+        {
+          "id": "changed-spec-arbitrated",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_changed_spec",
+          "old": "    refusal = review_refusal(context, without_store=None)\n",
+          "new": "    refusal = None\n",
+          "breaks": "the arbiter judges a run against a spec that changed under it",
+          "symbol_sha": "sha256:44db609eff4cf8878feef5b54649584c2036523a6f72a1ae5d54e19ff8183402"
+        },
+        {
+          "id": "coder-reviews-spec",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler._build_runner",
+          "old": "            if coder_side and step_dict.get(\"name\") in _SPEC_STEPS:\n",
+          "new": "            if False:\n",
+          "breaks": "the coding side drafts and reviews its own copy of the spec",
+          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
         }
       ]
     }

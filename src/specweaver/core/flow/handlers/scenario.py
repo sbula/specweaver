@@ -9,33 +9,16 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers import scenario_store as _stores
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.generation import _resolve_generation_routing
 from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
-
-
-def scenario_store(context: RunContext) -> Path | None:
-    """The scenario store of the run's registered project; None when it is not registered."""
-    from specweaver.core.config.paths import scenario_store_for
-    from specweaver.workspace.store import project_name_at
-
-    db = getattr(context, "db", None)
-    if db is None:
-        return None
-    try:
-        name = project_name_at(db, context.project_path)
-    except Exception:
-        logger.warning("scenario_store: could not read the project registry", exc_info=True)
-        return None
-    return scenario_store_for(name) if name else None
 
 
 def _scenario_tools(context: RunContext, adapter: Any) -> Any:
@@ -97,7 +80,7 @@ class GenerateScenarioHandler:
 
             req_ids = ScenarioGenerator._extract_req_ids(spec_content)
             methods, constructors = _contract_methods(spec_content)
-            store = scenario_store(context)
+            store = _stores.scenario_store(context)
             if store is None:
                 return _error_result(
                     "the project is not registered, so it has no scenario store", started
@@ -190,7 +173,7 @@ class ConvertScenarioHandler:
             from specweaver.workflows.scenarios.scenario_models import ScenarioSet
 
             # Find scenario YAML from previous step
-            store = scenario_store(context)
+            store = _stores.scenario_store(context)
             if store is None:
                 return _error_result(
                     "the project is not registered, so it has no scenario store", started

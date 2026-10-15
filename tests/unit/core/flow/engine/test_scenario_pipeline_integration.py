@@ -71,10 +71,12 @@ async def test_scenario_pipeline_end_to_end_integration(
     Verifies that the YAML artifact is successfully transitioned between steps
     on the physical filesystem.
     """
-    import specweaver.core.flow.handlers.scenario as scenario
 
     # The project's store stands at project_workspace/scenarios here.
-    monkeypatch.setattr(scenario, "scenario_store", lambda context: project_workspace / "scenarios")
+    monkeypatch.setattr(
+        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        lambda context: project_workspace / "scenarios",
+    )
     yaml = YAML(typ="safe")
     pipeline_data = yaml.load(scenario_pipeline_path.read_text())
     # Remove the `generate_contract` step for this test, we already stubbed the contract

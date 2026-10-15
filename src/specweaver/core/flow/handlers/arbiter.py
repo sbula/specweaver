@@ -10,7 +10,6 @@ from the existence of the scenario testing engine.
 from __future__ import annotations
 
 import enum
-import hashlib
 import logging
 import re
 from typing import TYPE_CHECKING, Any
@@ -157,10 +156,25 @@ def code_trace(stacktrace: str, trace_filter: StackTraceFilterInterface) -> str:
 
 
 def _spec_sha(context: RunContext) -> str:
-    try:
-        return hashlib.sha256(context.spec_path.read_text(encoding="utf-8").encode()).hexdigest()
-    except OSError:
-        return ""
+    from specweaver.core.flow.handlers.reviewed_spec import spec_sha
+
+    return spec_sha(context.spec_path)
+
+
+def _changed_spec(context: RunContext, started: str) -> StepResult | None:
+    """A park when the spec is not the reviewed one: a verdict would judge the wrong spec."""
+    from specweaver.core.flow.handlers.reviewed_spec import review_refusal
+
+    refusal = review_refusal(context, without_store=None)
+    if refusal is None:
+        return None
+    return StepResult(
+        status=StepStatus.WAITING_FOR_INPUT,
+        output={"spec_review": "changed"},
+        error_message=f"Not arbitrated: {refusal}.",
+        started_at=started,
+        completed_at=_now_iso(),
+    )
 
 
 def _unclear_message(result: ArbitrateResult, context: RunContext) -> str:
@@ -235,7 +249,11 @@ def _code_bug(context: RunContext, clause: str, feedback: str, started: str) -> 
 
 
 def _not_arbitrable(context: RunContext, started: str) -> StepResult | None:
-    """The step's result when there is nothing to arbitrate: a resumed park, or no evidence."""
+    """The step's result when there is nothing to arbitrate: a changed spec, a resumed park, or
+    no evidence."""
+    changed = _changed_spec(context, started)
+    if changed is not None:
+        return changed
     resumed = _after_park(context, started)
     if resumed is not None:
         return resumed

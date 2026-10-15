@@ -215,6 +215,7 @@ async def _dual(root: Path, problems: list[str]) -> tuple[StepResult, RunContext
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)
         ),
+        patch.object(ArbitrateDualPipelineHandler, "review_refusal", staticmethod(lambda c: None)),
     ):
         return await ArbitrateDualPipelineHandler().execute(step, context), context
 

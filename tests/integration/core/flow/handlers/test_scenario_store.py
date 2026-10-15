@@ -28,7 +28,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
-from specweaver.core.flow.handlers.scenario import scenario_store
+from specweaver.core.flow.handlers.scenario_store import scenario_store
 from tests.fixtures.db_utils import register_test_project, remove_test_project
 
 if TYPE_CHECKING:
@@ -119,7 +119,7 @@ async def test_an_unregistered_project_refuses(tmp_path: Path, db: Database) -> 
     result, spawner = await _dual(_context(tmp_path / "loose", db))
 
     assert result.status == StepStatus.FAILED
-    assert "registered" in (result.error_message or "")
+    assert "sw init" in (result.error_message or "")
     assert spawner.spawned == 0
 
 

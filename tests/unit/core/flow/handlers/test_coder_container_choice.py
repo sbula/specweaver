@@ -46,9 +46,10 @@ def _context(tmp_path: Path, *, dual: bool = False) -> RunContext:
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path.parent / f"{tmp_path.name}-store"
-    import specweaver.core.flow.handlers.scenario as scenario
 
-    monkeypatch.setattr(scenario, "scenario_store", lambda context: path)
+    monkeypatch.setattr(
+        "specweaver.core.flow.handlers.scenario_store.scenario_store", lambda context: path
+    )
     return path
 
 
@@ -157,6 +158,9 @@ async def test_the_dual_run_flags_its_coder_side(
     )
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
+    )
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "review_refusal", staticmethod(lambda context: None)
     )
     flagged: list[bool] = []
 

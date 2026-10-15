@@ -16,6 +16,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.core.flow.handlers.reviewed_spec import review_refusal
 from specweaver.sandbox.qa_runner.core.atom import container_available
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 def _isolation_refusal(context: RunContext) -> str | None:
     """Why the scenario side cannot be kept from the coder here; None when it can (FR-11, FR-18)."""
     from specweaver.commons.prepare_plan import detect_toolchain
-    from specweaver.core.flow.handlers.scenario import scenario_store
+    from specweaver.core.flow.handlers.scenario_store import scenario_store
 
     if scenario_store(context) is None:
         return (
@@ -45,6 +46,10 @@ def _isolation_refusal(context: RunContext) -> str | None:
             "a dual run is proven for Python projects only; containers for other languages are not"
         )
     return None
+
+
+#: The coding side's steps that draft or review the spec, which a dual run has already reviewed.
+_SPEC_STEPS = frozenset({"draft_spec", "review_spec"})
 
 
 def _why_failed(run: Any) -> str:
@@ -75,6 +80,7 @@ class ArbitrateDualPipelineHandler:
     container_available = staticmethod(container_available)
     #: Why isolation cannot hold for this project; a class attribute for the same reason.
     isolation_refusal = staticmethod(_isolation_refusal)
+    review_refusal = staticmethod(review_refusal)
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
@@ -101,6 +107,15 @@ class ArbitrateDualPipelineHandler:
                     "no Podman or Docker engine answers here; install one, or run without the "
                     "scenario side"
                 ),
+                started_at=started,
+                completed_at=_now_iso(),
+            )
+        unreviewed = self.review_refusal(context)
+        if unreviewed is not None:
+            # FR-15: both sides read one reviewed spec.
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=f"a dual run needs a reviewed spec: {unreviewed}",
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -185,6 +200,8 @@ class ArbitrateDualPipelineHandler:
 
         valid_steps = []
         for step_dict in pipe_data.get("steps", []):
+            if coder_side and step_dict.get("name") in _SPEC_STEPS:
+                continue  # the spec was reviewed before the dual run; the coder only reads it
             if "params" not in step_dict:
                 step_dict["params"] = {}
             step_dict["params"]["component"] = component

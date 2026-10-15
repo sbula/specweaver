@@ -221,12 +221,16 @@ class ScenarioWorldAdapter:
         self.scen_calls = 0
         self.scen_prompts: list[str] = []
         self.tool_reads: dict[str, dict] = {}
+        self.reviews = 0
 
     async def generate(self, messages, config=None, *args, **kwargs) -> LLMResponse:
         if isinstance(messages, list):
             flat = "\n".join(getattr(m, "content", str(m)) for m in messages)
         else:
             flat = str(messages)
+        if 'with either "VERDICT: ACCEPTED"' in flat:
+            self.reviews += 1
+            return LLMResponse(text="VERDICT: ACCEPTED\nThe spec is clear.", model=self.model)
         if "arbitration agent" in flat:
             self.arb_calls += 1
             if not self.verdicts:
@@ -343,7 +347,16 @@ def _init_project(tmp_path: Path, name: str) -> Path:
     spec = project_dir / "specs" / "greet_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text(SPEC_BODY, encoding="utf-8")
+    _review_spec(project_dir)
     return project_dir
+
+
+def _review_spec(project: Path) -> None:
+    """`sw review` the spec, as the person does before a dual run (B-FLOW-01 FR-15)."""
+    spec = project / "specs" / "greet_spec.md"
+    with doubled_llm(ScenarioWorldAdapter([], verdicts=[]), model="scripted-1"):
+        result = runner.invoke(app, ["review", str(spec), "--project", str(project)])
+    assert result.exit_code == 0, result.output
 
 
 @contextlib.contextmanager
@@ -365,11 +378,13 @@ def _scenario_world(
             "specweaver.core.flow.handlers.validation.ValidateCodeHandler.execute",
         ):
             stack.enter_context(patch(target, new=_ok_execute))
-        for target in (
-            "specweaver.core.flow.handlers.review.ReviewSpecHandler.execute",
-            "specweaver.core.flow.handlers.review.ReviewCodeHandler.execute",
-        ):
-            stack.enter_context(patch(target, new=_accepted_execute))
+        # The spec review is real: `sw review` records the spec a dual run then requires.
+        stack.enter_context(
+            patch(
+                "specweaver.core.flow.handlers.review.ReviewCodeHandler.execute",
+                new=_accepted_execute,
+            )
+        )
         stack.enter_context(
             patch(
                 "specweaver.core.flow.handlers.validation.ValidateTestsHandler.execute",
@@ -399,6 +414,7 @@ EXPECTED_ARTIFACTS = {
 STORED_SCENARIOS = {
     "definitions/greet_scenarios.yaml",
     "generated/test_greet_scenarios.py",
+    "reviewed/greet_spec.json",  # the accepted review the dual run required (FR-15)
 }
 
 
@@ -606,12 +622,20 @@ def test_e7_resume_after_park_heals_through_the_loop(
         result1 = _run_cli(project)
         assert result1.exit_code == 0, result1.output
 
-        # The person settles the clause in the spec, then resumes: the round runs again.
+        # The person settles the clause in the spec and resumes: the changed spec is not run.
         spec = project / "specs" / "greet_spec.md"
         spec.write_text(
             spec.read_text(encoding="utf-8") + "\nFR-1 means: the greeting is 'Hello, <name>'.\n",
             encoding="utf-8",
         )
+        unreviewed = CliRunner().invoke(app, ["resume"])
+        assert unreviewed.exit_code == 0, unreviewed.output
+        assert _latest_run(_isolated_env, "us24_e7").status.value == "parked"
+        assert "sw review" in _latest_run(_isolated_env, "us24_e7").model_dump_json()
+
+    # The person reviews the changed spec, then resumes: the round runs again with it.
+    _review_spec(project)
+    with _scenario_world(adapter, implementer, record):
         result2 = CliRunner().invoke(app, ["resume"])
 
     assert result2.exit_code == 0, result2.output

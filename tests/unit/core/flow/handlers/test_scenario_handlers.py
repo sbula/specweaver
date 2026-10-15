@@ -45,9 +45,11 @@ def _a_scenario_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     The store's real place, outside a registered project, is proven in
     `tests/integration/core/flow/handlers/test_scenario_store.py`.
     """
-    import specweaver.core.flow.handlers.scenario as scenario
 
-    monkeypatch.setattr(scenario, "scenario_store", lambda context: tmp_path / "scenarios")
+    monkeypatch.setattr(
+        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        lambda context: tmp_path / "scenarios",
+    )
 
 
 def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:

@@ -351,7 +351,7 @@ _WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 def _scenarios_root(context: RunContext) -> Path:
     """Where the scenario tests are kept, mounted at `/scenarios` for their run: the project's
     store, outside the project. An unregistered project's dual run has already refused."""
-    from specweaver.core.flow.handlers.scenario import scenario_store
+    from specweaver.core.flow.handlers.scenario_store import scenario_store
 
     return scenario_store(context) or context.project_path / "scenarios"
 

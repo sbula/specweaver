@@ -225,6 +225,7 @@ async def test_both_sides_read_the_parents_contract(tmp_path: Path) -> None:
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)
         ),
+        patch.object(ArbitrateDualPipelineHandler, "review_refusal", staticmethod(lambda c: None)),
     ):
         result = await ArbitrateDualPipelineHandler().execute(step, context)
 

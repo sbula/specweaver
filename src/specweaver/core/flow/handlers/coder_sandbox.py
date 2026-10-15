@@ -37,7 +37,7 @@ def coder_sandbox(context: RunContext) -> SandboxSettings | None:
 
 
 def _keeps_scenarios(context: RunContext) -> bool:
-    from specweaver.core.flow.handlers.scenario import scenario_store
+    from specweaver.core.flow.handlers.scenario_store import scenario_store
 
     store = scenario_store(context)
     return store is not None and any((store / "generated").glob("*"))

@@ -42,11 +42,12 @@ async def test_polyglot_scenario_generation_integration(
     based on the project structure and writes the correctly formatted framework path.
     """
     (tmp_path / indicator_file).write_text("dummy", encoding="utf-8")
-    import specweaver.core.flow.handlers.scenario as scenario
 
     # The store stands outside the project; the converter still names the file per language.
     store = tmp_path.parent / f"{tmp_path.name}-store"
-    monkeypatch.setattr(scenario, "scenario_store", lambda context: store)
+    monkeypatch.setattr(
+        "specweaver.core.flow.handlers.scenario_store.scenario_store", lambda context: store
+    )
 
     # The scenario_yaml produced by GenerateScenarioHandler
     scenarios_dir = store / "definitions"

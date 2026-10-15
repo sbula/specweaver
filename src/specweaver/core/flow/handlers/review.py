@@ -216,6 +216,10 @@ class ReviewSpecHandler:
             # 3.11: Scan LLM response for file mentions
             _scan_and_store_mentions(result.raw_response, context)
 
+            if result.verdict.value == "accepted":
+                from specweaver.core.flow.handlers.reviewed_spec import record_review
+
+                record_review(context)
             return _review_step_result(result, started)
         except Exception as exc:
             log_step_failure(logger, "ReviewSpecHandler: unhandled exception during spec review")

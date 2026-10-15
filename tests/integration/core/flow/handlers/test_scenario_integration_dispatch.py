@@ -46,9 +46,18 @@ def _a_container_is_available(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
     )
-    import specweaver.core.flow.handlers.scenario as scenario
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "review_refusal", staticmethod(lambda context: None)
+    )
+    # These journeys are about dispatch; the reviewed-spec rule has its own proof.
+    import specweaver.core.flow.handlers.reviewed_spec as reviewed_spec
 
-    monkeypatch.setattr(scenario, "scenario_store", lambda context: tmp_path / "store")
+    monkeypatch.setattr(reviewed_spec, "review_refusal", lambda context, **_: None)
+
+    monkeypatch.setattr(
+        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        lambda context: tmp_path / "store",
+    )
 
 
 SPEC = '''# Greet Service Spec

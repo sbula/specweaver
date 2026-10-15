@@ -80,7 +80,7 @@ def _keep_in_scenario_store(
     Task memory reaches the next coder prompt, and even the pipeline's name would tell the coder
     that a scenario side exists.
     """
-    from specweaver.core.flow.handlers.scenario import scenario_store
+    from specweaver.core.flow.handlers.scenario_store import scenario_store
 
     store = scenario_store(context)
     if store is None:
