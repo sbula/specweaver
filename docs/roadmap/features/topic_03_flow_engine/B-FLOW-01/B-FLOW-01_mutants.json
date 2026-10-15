@@ -175,7 +175,7 @@
           "old": "        entry = context.feedback.pop(own_step, None)\n",
           "new": "        entry = context.feedback.get(own_step, None)\n",
           "breaks": "an arbiter verdict is applied again on every later round",
-          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
+          "symbol_sha": "sha256:0e46526a8450aa2d32d92ea6db110eb8e332b62f1706fb75d910de4113f97314"
         }
       ]
     },
@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
+          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
         },
         {
           "id": "unregistered-runs",
@@ -364,7 +364,7 @@
           "old": "        side = \"coder\" if coder_side else \"scenario\"\n",
           "new": "        side = \"scenario\"\n",
           "breaks": "the dual run never tells its coder side to use a container",
-          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
+          "symbol_sha": "sha256:0e46526a8450aa2d32d92ea6db110eb8e332b62f1706fb75d910de4113f97314"
         },
         {
           "id": "c03-c04-on-host",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
+          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
         }
       ]
     },
@@ -454,7 +454,7 @@
           "old": "    show_coverage(final_run)\n",
           "new": "    pass\n",
           "breaks": "sw run ends without the coverage table",
-          "symbol_sha": "sha256:84e7cb34905ac1b822d8722e79466b7d9f814ef605ba56236ac85264f03f5157"
+          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
         }
       ]
     },
@@ -577,7 +577,7 @@
           "old": "                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)\n",
           "new": "                llm=adapter, config=config, tool_dispatcher=None\n",
           "breaks": "the agent cannot read the contracts it tests against",
-          "symbol_sha": "sha256:c1dbed43f305dfd7c69bc240b8c9efb0f7b3237b946424b52432065d0b827b60"
+          "symbol_sha": "sha256:358bcf9a199304945186d7745751faeea570ab6cfe31eb65c07a1c418bc3b6d5"
         },
         {
           "id": "problems-not-shown",
@@ -587,7 +587,7 @@
           "old": "    show_problems(final_run)\n",
           "new": "    pass\n",
           "breaks": "a spec problem the agent found never reaches the person",
-          "symbol_sha": "sha256:84e7cb34905ac1b822d8722e79466b7d9f814ef605ba56236ac85264f03f5157"
+          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
         }
       ]
     },
@@ -637,7 +637,7 @@
           "old": "        if unreviewed is not None:\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
-          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
+          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
         },
         {
           "id": "changed-spec-arbitrated",
@@ -653,11 +653,11 @@
           "id": "coder-reviews-spec",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
-          "symbol": "ArbitrateDualPipelineHandler._build_runner",
-          "old": "            if coder_side and step_dict.get(\"name\") in _SPEC_STEPS:\n",
-          "new": "            if False:\n",
+          "symbol": "side_pipeline",
+          "old": "        if coder_side and step_dict.get(\"name\") in _SPEC_STEPS:\n",
+          "new": "        if False:\n",
           "breaks": "the coding side drafts and reviews its own copy of the spec",
-          "symbol_sha": "sha256:d6e04e54cc1ca2aacfe49f54db2395dbec148d1047bb908c0613a456daa47d93"
+          "symbol_sha": "sha256:77213b43ed54eb0f1fc12b767bef4b3fd3df528a40ff7295edf50540344717b4"
         }
       ]
     },
@@ -727,7 +727,57 @@
           "old": "            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)\n",
           "new": "            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED)\n",
           "breaks": "the scenario tests can run before the coder has finished",
-          "symbol_sha": "sha256:7813e76c7acc34071a88bf7a817e5b76c5492a9e71388414444111306b683771"
+          "symbol_sha": "sha256:b6e4a876d05e8825430077caff8ea7443877c1e3f1fb8fd8c9e8553a2a25f320"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "The two sides use different models where the settings allow it",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_two_models.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "same-model-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_model_check",
+          "old": "    if len(router.named_models()) >= 2:\n",
+          "new": "    if False:\n",
+          "breaks": "both sides run on one model although the settings name others",
+          "symbol_sha": "sha256:dbe9e6136d9eb62b5d76f8db2300614f87bd96fd228f51a81aa65cf4cd86e6e2"
+        },
+        {
+          "id": "model-flag-sets-both",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver.__init__",
+          "old": "        if run_model is not None:\n",
+          "new": "        if False:\n",
+          "breaks": "--model gives the scenario agent the coder's model",
+          "symbol_sha": "sha256:6eca5a03eef058d12887045b5f83c7daaa62df172d3dd7f6380ba9ea681ebd24"
+        },
+        {
+          "id": "side-roles-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/_llm.py",
+          "symbol": "roles_of",
+          "old": "        if step.params.get(\"mode\") == \"dual_pipeline\":\n",
+          "new": "        if False:\n",
+          "breaks": "a missing model for a side fails in the middle of the run",
+          "symbol_sha": "sha256:05d42e48d9e3fd253705b15f11889d17b16f44bbf484075f82f94581581c6232"
+        },
+        {
+          "id": "one-model-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/run_summary.py",
+          "symbol": "show_run_summary",
+          "old": "    show_models(final_run)\n",
+          "new": "    pass\n",
+          "breaks": "the person never learns both sides used one model",
+          "symbol_sha": "sha256:e08dc94410156cadf1f7e8472d2fd554632cd5380c841e62e4c104e9fdb6b3ea"
         }
       ]
     }

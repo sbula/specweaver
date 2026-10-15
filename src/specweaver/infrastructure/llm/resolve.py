@@ -45,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 #: The role that covers every role left unset.
 DEFAULT_ROLE = "default"
+#: The scenario agent's role: `--model` never sets it, so it stays apart from the coder.
+SCENARIO_ROLE = "scenario"
 _SAMPLING = ("temperature", "top_p", "top_k")
 
 
@@ -63,6 +65,11 @@ class RoleResolver:
     ) -> None:
         self._files = files
         self._roles = resolve_roles(files, _every_role(files, run_model))
+        if run_model is not None:
+            own = resolve_roles(files)
+            kept = own.get(SCENARIO_ROLE) or own.get(DEFAULT_ROLE)
+            if kept is not None:
+                self._roles[SCENARIO_ROLE] = kept
         self._project = telemetry_project
         self._budget = budget
         self._catalogue = catalogue or shipped_catalogue()
@@ -98,6 +105,14 @@ class RoleResolver:
             }
         )
         return self._adapter(setting.server), config
+
+    def model_of(self, role: str) -> str:
+        """The model this role's calls use."""
+        return self._setting(role).model
+
+    def named_models(self) -> set[str]:
+        """The models the settings files name for any role, before `--model`."""
+        return {setting.model for setting in resolve_roles(self._files).values()}
 
     def collectors(self) -> list[TelemetryCollector]:
         """Every collector this resolver built, for flushing their usage records."""
@@ -268,11 +283,12 @@ def _sampling(setting: ResolvedRole, facts: ModelFacts | None) -> dict[str, floa
 
 
 def _every_role(files: LlmSettingsFiles, run_model: RoleEntry | None) -> dict[str, RoleEntry]:
-    """`--model` for one run: every role the files name, and `default`, get the same model.
+    """`--model` for one run: every role the files name, and `default`, get the same model —
+    all but the scenario agent's, which keeps its own so the two sides of a dual run stay apart.
 
     A role nobody named falls back to `default`, so overriding `default` covers it too.
     """
     if run_model is None:
         return {}
-    named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE}
+    named = {*files.machine.roles, *files.project.roles, DEFAULT_ROLE} - {SCENARIO_ROLE}
     return dict.fromkeys(named, run_model)

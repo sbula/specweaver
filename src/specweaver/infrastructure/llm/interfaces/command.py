@@ -43,7 +43,7 @@ def command_router(
 ) -> ModelRouter:
     """The command's router with every role it uses checked; stops the command if one is unset.
 
-    `run_model` (`--model`) gives every role of this run that one model. `project_root` is the
+    `run_model` (`--model`) gives every role of this run but `scenario` that one model. `project_root` is the
     project the command works on; its own settings file decides, not the active project's.
     """
     if project_root is not None:

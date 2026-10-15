@@ -32,7 +32,9 @@ _M = TypeVar("_M", bound=BaseModel)
 SCHEMA_VERSION = 1
 
 ServerKind = Literal["gemini", "openai", "anthropic", "mistral", "qwen", "openai-compatible"]
-RoleName = Literal["draft", "review", "plan", "implement", "validate", "check", "default"]
+RoleName = Literal[
+    "draft", "review", "plan", "implement", "scenario", "validate", "check", "default"
+]
 
 _NEEDS_ADDRESS = frozenset({"openai-compatible", "qwen"})
 

@@ -43,6 +43,14 @@ class ModelRouter:
             adapter=adapter, config=config.model_copy(update={"task_type": task_type})
         )
 
+    def model_of(self, task_type: TaskType) -> str:
+        """The model a task type's calls use."""
+        return self._resolver.model_of(task_type.value)
+
+    def named_models(self) -> set[str]:
+        """The models the settings name for any role, before `--model`."""
+        return self._resolver.named_models()
+
     @property
     def budget(self) -> SpendBudget:
         """The run's spend brake, shared by every role."""

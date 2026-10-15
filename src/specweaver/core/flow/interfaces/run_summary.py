@@ -43,6 +43,21 @@ def show_problems(final_run: Any) -> None:
         _core.console.print(f"  - {escape(problem)}")
 
 
+def show_models(final_run: Any) -> None:
+    """A dual run whose two sides could not be told to use different models."""
+    for output in _outputs(final_run):
+        if output.get("one_model"):
+            model = escape(str(output["one_model"]))
+            _core.console.print(
+                f"[yellow]Both sides used one model, {model}: the settings name only one.[/yellow]"
+            )
+            return
+        if output.get("models") == "unknown":
+            _core.console.print("[yellow]The models of the two sides are unknown.[/yellow]")
+            return
+
+
 def show_run_summary(final_run: Any) -> None:
     show_coverage(final_run)
     show_problems(final_run)
+    show_models(final_run)

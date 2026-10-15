@@ -285,13 +285,11 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-D | Isolation core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-E | Memory and coverage apart | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-F | Scenario side | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-G | Run control | SF-D | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-G | Run control | SF-D | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-F committed — the scenario agent reads `specs/` and `contracts/` only; its scenarios
-are checked against the spec and the contract; a class's methods are tested; the arbiter's report
-to it holds no code.
-**Now**: SF-E committed — a dual run's handover goes to the scenario store, never to task memory; `sw run` ends with which side's tests cover each requirement.
-**Next**: the implementation-plan skill for SF-G (run control) or SF-H (spec conflicts and the kept suite).
+**Now**: SF-G committed — a dual run needs a reviewed spec; only the side at fault runs again,
+twice, then the person is asked; the two sides use different models where the settings allow.
+**Next**: the implementation-plan skill for SF-H (spec conflicts and the kept suite).

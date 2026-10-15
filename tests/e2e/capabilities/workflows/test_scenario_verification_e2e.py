@@ -461,6 +461,8 @@ def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path, _isolated
     assert record and record[0].output["total"] == 3 and record[0].output["passed"] == 3
     # Green round costs zero arbitration LLM calls (INT-US-24 NFR-2).
     assert adapter.arb_calls == 0
+    # The doubled settings name one model, so both sides used it and the run says so (FR-17).
+    assert shows(result.output, "Both sides used one model")
     # A4 artifact inventory: exactly the expected droppings, no strays, no scenario file.
     assert _snapshot(project) - before == EXPECTED_ARTIFACTS
     store = _isolated_env / "projects" / "us24_e1" / "scenarios"

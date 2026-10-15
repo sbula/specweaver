@@ -31,7 +31,7 @@ ROLE_OF_STEP: dict[tuple[StepAction, StepTarget], TaskType] = {
     (StepAction.DETECT, StepTarget.DRIFT): TaskType.REVIEW,
     (StepAction.GENERATE, StepTarget.CODE): TaskType.IMPLEMENT,
     (StepAction.GENERATE, StepTarget.TESTS): TaskType.IMPLEMENT,
-    (StepAction.GENERATE, StepTarget.SCENARIO): TaskType.IMPLEMENT,
+    (StepAction.GENERATE, StepTarget.SCENARIO): TaskType.SCENARIO,
     (StepAction.PLAN, StepTarget.SPEC): TaskType.PLAN,
     (StepAction.DECOMPOSE, StepTarget.FEATURE): TaskType.PLAN,
     (StepAction.LINT_FIX, StepTarget.CODE): TaskType.CHECK,
@@ -69,4 +69,10 @@ def roles_of(pipeline: PipelineDefinition) -> list[TaskType]:
         role = ROLE_OF_STEP.get((step.action, step.target))
         if role is not None and role not in roles:
             roles.append(role)
+        if step.params.get("mode") == "dual_pipeline":
+            # A dual run's two sides call models too; a missing one must stop the run now.
+            from specweaver.core.flow.handlers.dual_pipeline import dual_side_pipelines
+
+            for side in dual_side_pipelines():
+                roles.extend(r for r in roles_of(side) if r not in roles)
     return roles

@@ -105,6 +105,9 @@ def doubled_llm(adapter: Any, model: str = "test-model", **settings: Any) -> Ite
         stack.enter_context(patch.object(RoleResolver, "for_role", _for_role))
         stack.enter_context(patch.object(RoleResolver, "require", lambda _resolver, _roles: None))
         stack.enter_context(patch.object(RoleResolver, "collectors", lambda _resolver: flushable))
+        # Every role is one model here, and the doubled settings name only that one.
+        stack.enter_context(patch.object(RoleResolver, "model_of", lambda _resolver, _role: model))
+        stack.enter_context(patch.object(RoleResolver, "named_models", lambda _resolver: {model}))
         # The run's `[brake]` values, which a test's settings file need not spell out.
         stack.enter_context(
             patch(

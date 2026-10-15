@@ -55,9 +55,10 @@ base_url = "http://gb10:8000/v1"
 private = true
 max_parallel = 4
 
-[roles]                       # draft, review, plan, implement, validate, check
+[roles]                       # draft, review, plan, implement, scenario, validate, check
 default = "claude-sonnet-5@anthropic"   # the one fallback for every role left unset
 implement = "qwen3-coder-next@gb10"
+scenario = "claude-sonnet-5@anthropic"  # the scenario agent; keep it apart from `implement`
 
 [brake]                       # required; no defaults
 hosted_spend_per_run = 20     # the run's money limit, in your [currency]
@@ -101,7 +102,9 @@ rate_date = 2026-09-26
   (its output limit also bounds its thinking) the command runs, with one warning.
 - `--model <model@server>` on `sw implement`, `sw run` and `sw resume` gives every step of that
   one run the same model; the files stay unchanged. The server must be in `settings.toml`, and
-  `private_only` still applies.
+  `private_only` still applies. The `scenario` role is the one exception: it keeps its own model,
+  so a scenario run's two sides stay apart. Such a run refuses one model for both sides when your
+  settings name more than one, and warns when they name only one.
 - `sw costs` shows each role's model, its price per 1M tokens and this month's spend;
   `sw costs set <model> <input> <output>` corrects a price, in your currency.
   `sw costs set <kind>/<model> ...` (e.g. `anthropic/claude-sonnet-5`) prices it on one kind of

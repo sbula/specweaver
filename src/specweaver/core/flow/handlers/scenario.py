@@ -57,9 +57,10 @@ class GenerateScenarioHandler:
         if context.model.llm_router is None:
             return _error_result("LLM adapter required for scenario generation", started)
         try:
+            from specweaver.infrastructure.llm.models import TaskType
             from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator
 
-            adapter, config = _resolve_generation_routing(context)
+            adapter, config = _resolve_generation_routing(context, task_type=TaskType.SCENARIO)
             generator = ScenarioGenerator(
                 llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)
             )

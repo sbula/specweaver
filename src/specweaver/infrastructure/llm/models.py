@@ -46,6 +46,8 @@ class TaskType(enum.StrEnum):
     REVIEW = "review"
     PLAN = "plan"
     IMPLEMENT = "implement"
+    #: The scenario agent: its own role, so it can use another model than the coder.
+    SCENARIO = "scenario"
     VALIDATE = "validate"
     CHECK = "check"
     UNKNOWN = "unknown"

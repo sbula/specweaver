@@ -21,7 +21,16 @@ class TestTaskTypeEnum:
             assert isinstance(member.value, str)
 
     def test_expected_members(self):
-        expected = {"draft", "review", "plan", "implement", "validate", "check", "unknown"}
+        expected = {
+            "draft",
+            "review",
+            "plan",
+            "implement",
+            "scenario",
+            "validate",
+            "check",
+            "unknown",
+        }
         actual = {m.value for m in TaskType}
         assert actual == expected
 

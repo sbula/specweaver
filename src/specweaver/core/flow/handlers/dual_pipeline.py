@@ -58,6 +58,26 @@ _SIDES = {
 _KEPT = SimpleNamespace(status="completed", step_records=())
 
 
+def _model_check(context: RunContext) -> tuple[dict[str, str], str | None]:
+    """What the run summary says about the two sides' models, and a refusal when they share one
+    that the settings could have kept apart."""
+    from specweaver.infrastructure.llm.models import TaskType
+
+    router = context.model.llm_router
+    if not (hasattr(router, "model_of") and hasattr(router, "named_models")):
+        return {"models": "unknown"}, None
+    coder, scenario = router.model_of(TaskType.IMPLEMENT), router.model_of(TaskType.SCENARIO)
+    if coder != scenario:
+        return {}, None
+    if len(router.named_models()) >= 2:
+        return {}, (
+            f"both sides of the dual run would use {coder}, though the settings name other models; "
+            "set roles.implement and roles.scenario to different models"
+        )
+    logger.warning("ArbitrateDualPipelineHandler: both sides use one model, %s", coder)
+    return {"one_model": coder}, None
+
+
 def _sides_to_run(feedback: dict[str, Any]) -> set[str]:
     """The sides a verdict sent back; on a first round, or with no verdict, both."""
     sent_back = {side for side, (_, step) in _SIDES.items() if step in feedback}
@@ -85,6 +105,35 @@ def _problems(run: Any) -> list[str]:
         if found:
             return [str(problem) for problem in found]
     return []
+
+
+def side_pipeline(pipe_file: str, component: str, *, coder_side: bool) -> PipelineDefinition:
+    """One side's pipeline as a dual run runs it."""
+    files = importlib.resources.files("specweaver.workflows.pipelines")
+    pipe_data = yaml.safe_load(files.joinpath(pipe_file).read_text(encoding="utf-8"))
+    pipe_data["name"] = f"auto_dual_{pipe_file.replace('.yaml', '')}_{component}"
+
+    valid_steps = []
+    for step_dict in pipe_data.get("steps", []):
+        if coder_side and step_dict.get("name") in _SPEC_STEPS:
+            continue  # the spec was reviewed before the dual run; the coder only reads it
+        step_dict.setdefault("params", {})["component"] = component
+        # The fan-out is autonomous by definition — no human channel inside it — and the
+        # parent CLI enforces spec-must-exist. A HITL gate would park the sub-pipeline on every
+        # first pass and deadlock the dual step. Downgrade to auto.
+        gate_def = step_dict.get("gate")
+        if isinstance(gate_def, dict) and gate_def.get("type") == "hitl":
+            gate_def["type"] = "auto"
+        valid_steps.append(step_dict)
+    pipe_data["steps"] = valid_steps
+    return PipelineDefinition(**pipe_data)
+
+
+def dual_side_pipelines() -> list[PipelineDefinition]:
+    """Both sides' pipelines, for checking every role a dual run will use before it starts."""
+    return [
+        side_pipeline(pipe, "", coder_side=side == "coder") for side, (pipe, _) in _SIDES.items()
+    ]
 
 
 class ArbitrateDualPipelineHandler:
@@ -128,6 +177,14 @@ class ArbitrateDualPipelineHandler:
                 started_at=started,
                 completed_at=_now_iso(),
             )
+        models, refused_models = _model_check(context)
+        if refused_models is not None:
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=refused_models,
+                started_at=started,
+                completed_at=_now_iso(),
+            )
         unreviewed = self.review_refusal(context)
         if unreviewed is not None:
             # FR-15: both sides read one reviewed spec.
@@ -158,7 +215,7 @@ class ArbitrateDualPipelineHandler:
             coding_result = tasks["coder"].result() if "coder" in tasks else _KEPT
             scenario_result = tasks["scenario"].result() if "scenario" in tasks else _KEPT
             # The scenario agent's spec or contract problems are for the person only.
-            problems = {"problems": _problems(scenario_result)}
+            problems = {"problems": _problems(scenario_result), **models}
 
             logger.info(
                 "ArbitrateDualPipelineHandler: Completed. Coding=%s, Scenario=%s",
@@ -205,31 +262,7 @@ class ArbitrateDualPipelineHandler:
         own_step: str,
         coder_side: bool = False,
     ) -> Any:
-        files = importlib.resources.files("specweaver.workflows.pipelines")
-        resource = files.joinpath(pipe_file)
-        base_pipe_yaml = resource.read_text(encoding="utf-8")
-
-        pipe_data = yaml.safe_load(base_pipe_yaml)
-        pipe_data["name"] = f"auto_dual_{pipe_file.replace('.yaml', '')}_{component}"
-
-        valid_steps = []
-        for step_dict in pipe_data.get("steps", []):
-            if coder_side and step_dict.get("name") in _SPEC_STEPS:
-                continue  # the spec was reviewed before the dual run; the coder only reads it
-            if "params" not in step_dict:
-                step_dict["params"] = {}
-            step_dict["params"]["component"] = component
-            # The fan-out is autonomous by definition — no human channel inside it — and the
-            # parent CLI enforces spec-must-exist. A HITL gate (e.g. new_feature.yaml's draft_spec
-            # gate) would park the sub-pipeline on every first pass and deadlock the dual step.
-            # Downgrade to auto.
-            gate_def = step_dict.get("gate")
-            if isinstance(gate_def, dict) and gate_def.get("type") == "hitl":
-                gate_def["type"] = "auto"
-            valid_steps.append(step_dict)
-
-        pipe_data["steps"] = valid_steps
-        pipe = PipelineDefinition(**pipe_data)
+        pipe = side_pipeline(pipe_file, component, coder_side=coder_side)
 
         # Each side gets only the arbiter's entry for its own step, taken out of the parent so it
         # reaches that side once: nothing the other side wrote or was told crosses over.

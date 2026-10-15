@@ -165,7 +165,10 @@ def run_pipeline(
     model: str | None = typer.Option(
         None,
         "--model",
-        help="model@server for every step of this run only; the settings files stay unchanged.",
+        help=(
+            "model@server for every step of this run only, but not the scenario agent's; "
+            "the settings files stay unchanged."
+        ),
     ),
 ) -> None:
     """Run a pipeline against a spec file or module.
@@ -516,7 +519,10 @@ def resume(
     model: str | None = typer.Option(
         None,
         "--model",
-        help="model@server for every step of this run only; the settings files stay unchanged.",
+        help=(
+            "model@server for every step of this run only, but not the scenario agent's; "
+            "the settings files stay unchanged."
+        ),
     ),
 ) -> None:
     """Resume a parked or failed pipeline run.
