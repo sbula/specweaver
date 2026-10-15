@@ -77,7 +77,7 @@ def test_ids_outside_the_spec_and_non_tests_count_for_nothing(tmp_path: Path) ->
     project, store = tmp_path / "project", tmp_path / "store"
     _test(project / "tests", "test_greet.py", "FR-9")
     _test(project / "tests", "helpers.py", "FR-2")
-    _test(store / "generated", "test_greet_scenarios.py", "FR-77")
+    _test(store / "generated", "test_greet_scenarios.py", "FR-97")
 
     coverage = requirement_coverage(_SPEC, project, store)
 

@@ -43,7 +43,7 @@ def project_workspace(tmp_path: Path) -> Path:
     spec_path.write_text(
         "# Auth\n\n"
         "## Functional Requirements\n\n| FR-1 | Login |\n\n"
-        "## Contract\n\ndef login(u, p): ...\n\n",
+        "## Contract\n\n```python\ndef login(u, p): ...\n```\n\n",
         encoding="utf-8",
     )
 

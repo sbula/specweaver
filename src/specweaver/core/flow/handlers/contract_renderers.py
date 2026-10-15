@@ -454,7 +454,7 @@ def _owner_of(lines_before: list[str], indent: str) -> str | None | bool:
             body_indent = lead
             continue
         found = re.match(r"class\s+(\w+)", line)
-        return found.group(1) if found and body_indent == indent else False
+        return found.group(1) if found and body_indent in (None, indent) else False
     return False
 
 
@@ -509,3 +509,25 @@ def render_contract_file(language: str, class_name: str, methods: list[ContractM
             body = body.replace("public interface", "interface", 1)
         first = first.rstrip("\n") + "\n\n\n" + body
     return first
+
+
+def _parameters(signature: str) -> list[str] | None:
+    """The names a signature takes after `self`; None when it takes `**kwargs`."""
+    inside = signature[signature.index("(") + 1 : signature.rindex(")")]
+    names = [part.split(":")[0].split("=")[0].strip() for part in inside.split(",")]
+    if any(name.startswith("**") for name in names):
+        return None
+    return [name.lstrip("*") for name in names if name and name not in ("self", "*", "/")]
+
+
+def extract_constructors(contract_text: str) -> dict[str, list[str] | None]:
+    """Each class's constructor parameters; None for a class whose constructor takes any key."""
+    constructors: dict[str, list[str] | None] = {}
+    for block in re.findall(r"```python\s*\n(.*?)```", contract_text, re.DOTALL):
+        for match in _SIGNATURE.finditer(block):
+            owner = _owner_of(block[: match.start()].splitlines(), match.group(1))
+            if isinstance(owner, str):
+                constructors.setdefault(owner, [])
+                if re.search(r"def\s+__init__\(", match.group(2)):
+                    constructors[owner] = _parameters(match.group(2))
+    return constructors

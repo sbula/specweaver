@@ -38,6 +38,19 @@ def scenario_store(context: RunContext) -> Path | None:
     return scenario_store_for(name) if name else None
 
 
+def _contract_methods(spec_text: str) -> tuple[list[str], dict[str, list[str] | None]]:
+    """The spec's contract methods, as scenarios name them, and each class's constructor."""
+    from specweaver.core.flow.handlers.contract_renderers import (
+        contract_names,
+        extract_constructors,
+        extract_contract,
+        extract_methods,
+    )
+
+    section = extract_contract(spec_text) or ""
+    return contract_names(extract_methods(section)), extract_constructors(section)
+
+
 class GenerateScenarioHandler:
     """Handler for generate+scenario — LLM scenario generation from spec + contract."""
 
@@ -66,6 +79,15 @@ class GenerateScenarioHandler:
                         contract_content += p.read_text(encoding="utf-8")
 
             req_ids = ScenarioGenerator._extract_req_ids(spec_content)
+            methods, constructors = _contract_methods(spec_content)
+            store = scenario_store(context)
+            if store is None:
+                return _error_result(
+                    "the project is not registered, so it has no scenario store", started
+                )
+            stem = context.spec_path.stem.replace("_spec", "")
+            output_path = store / "definitions" / f"{stem}_scenarios.yaml"
+            earlier = output_path.read_text(encoding="utf-8") if output_path.is_file() else None
 
             # Consume the arbiter's scenario_error verdict feedback
             # (pop-once, keyed by this step's name — same contract as the coding
@@ -98,18 +120,12 @@ class GenerateScenarioHandler:
                 constitution=context.guidance.constitution,
                 project_metadata=context.project_metadata,
                 feedback=verdict_feedback,
+                methods=methods,
+                constructors=constructors,
+                earlier=earlier,
             )
 
-            # Save scenarios as YAML
-            store = scenario_store(context)
-            if store is None:
-                return _error_result(
-                    "the project is not registered, so it has no scenario store", started
-                )
-            scenarios_dir = store / "definitions"
-            scenarios_dir.mkdir(parents=True, exist_ok=True)
-            stem = context.spec_path.stem.replace("_spec", "")
-            output_path = scenarios_dir / f"{stem}_scenarios.yaml"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
 
             import io
 

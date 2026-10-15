@@ -52,7 +52,7 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
         "# Auth\n\n"
         "## Functional Requirements\n\n| FR-1 | Login |\n\n"
         "## Non-Functional Requirements\n\nNFR-1 latency\n\n"
-        "## Contract\n\ndef login(u, p): ...\n\n"
+        "## Contract\n\n```python\ndef login(u, p): ...\n```\n\n"
         "## Scenarios\n\n```yaml\n- name: happy_login\n```\n",
         encoding="utf-8",
     )

@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:e36aef3111b9904dc89b36ac963dbdbd8dc4b36387ef4eec1cfe7d5b58fb1fa7"
+          "symbol_sha": "sha256:f0889b93e0c6d311811f4da27a13a31206bbcd0abbfa75e36b6f8f348bb94c3a"
         },
         {
           "id": "unregistered-runs",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:e36aef3111b9904dc89b36ac963dbdbd8dc4b36387ef4eec1cfe7d5b58fb1fa7"
+          "symbol_sha": "sha256:f0889b93e0c6d311811f4da27a13a31206bbcd0abbfa75e36b6f8f348bb94c3a"
         }
       ]
     },
@@ -495,6 +495,47 @@
           "new": "    return f\"_target.{method}\"\n",
           "breaks": "a method's scenario calls a module function that does not exist",
           "symbol_sha": "sha256:082822957468127e45379a2b84c010edd4b8b948baa8a3f09210169324a0f6fa"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Only scenarios that match the spec and the contract are stored",
+      "scope": [
+        "tests/unit/workflows/scenarios/test_scenario_checks.py",
+        "tests/integration/core/flow/handlers/test_checked_scenarios.py",
+        "tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-req-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/scenarios/scenario_generator.py",
+          "symbol": "mismatch",
+          "old": "    if unknown_ids:\n",
+          "new": "    if False:\n",
+          "breaks": "a scenario on an id the spec lacks is stored and traced",
+          "symbol_sha": "sha256:53f9d3b4ba59923bdb98fed11665ae6a18a9ab002761e849b4bd9a62b8496d1b"
+        },
+        {
+          "id": "uncalled-method-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/scenarios/scenario_generator.py",
+          "symbol": "_method_mismatch",
+          "old": "    if uncalled:\n",
+          "new": "    if False:\n",
+          "breaks": "a contract method no scenario calls goes unchecked",
+          "symbol_sha": "sha256:e949557b410b39e0bb0aa3da164791f88e2087b0ddece14b37bedc57b66fd5fa"
+        },
+        {
+          "id": "side-reason-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_why_failed",
+          "old": "            return str(record.result.error_message)\n",
+          "new": "            break\n",
+          "breaks": "the person sees 'Unknown' instead of why a side failed",
+          "symbol_sha": "sha256:db90f8ab07ae63638b5bd10dcd68c713bbd372c697035f4a2952615e34207ebe"
         }
       ]
     }

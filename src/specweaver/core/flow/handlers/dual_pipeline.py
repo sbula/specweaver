@@ -47,6 +47,14 @@ def _isolation_refusal(context: RunContext) -> str | None:
     return None
 
 
+def _why_failed(run: Any) -> str:
+    """The error of the step that stopped a side's run, for the person reading the parent run."""
+    for record in reversed(getattr(run, "step_records", None) or []):
+        if record.result is not None and record.result.error_message:
+            return str(record.result.error_message)
+    return str(getattr(run, "error_message", None) or "Unknown")
+
+
 class ArbitrateDualPipelineHandler:
     """Handler for orchestrating the dual verification pipeline.
 
@@ -121,7 +129,7 @@ class ArbitrateDualPipelineHandler:
             if getattr(coding_result, "status", None) not in (StepStatus.PASSED, "completed"):
                 return StepResult(
                     status=StepStatus.FAILED,
-                    error_message=f"Coding pipeline failed: {getattr(coding_result, 'error_message', 'Unknown')}",
+                    error_message=f"Coding pipeline failed: {_why_failed(coding_result)}",
                     started_at=started,
                     completed_at=_now_iso(),
                 )
@@ -129,7 +137,7 @@ class ArbitrateDualPipelineHandler:
             if getattr(scenario_result, "status", None) not in (StepStatus.PASSED, "completed"):
                 return StepResult(
                     status=StepStatus.FAILED,
-                    error_message=f"Scenario pipeline failed: {getattr(scenario_result, 'error_message', 'Unknown')}",
+                    error_message=f"Scenario pipeline failed: {_why_failed(scenario_result)}",
                     started_at=started,
                     completed_at=_now_iso(),
                 )

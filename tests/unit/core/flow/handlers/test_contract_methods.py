@@ -121,3 +121,9 @@ def test_a_def_inside_a_function_is_not_a_method() -> None:
 
 def test_no_methods_give_an_empty_type() -> None:
     assert render_contract_file("python", "Greet", []) == render_contract("python", "Greet", [], {})
+
+
+def test_the_first_method_under_a_class_counts() -> None:
+    text = "```python\nclass Box:\n    def open(self) -> None:\n        ...\n```\n"
+
+    assert contract_names(extract_methods(text)) == ["Box.open"]

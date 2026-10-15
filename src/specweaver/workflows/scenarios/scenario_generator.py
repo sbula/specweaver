@@ -53,6 +53,9 @@ class ScenarioGenerator:
         constitution: str | None = None,
         project_metadata: Any = None,
         feedback: str | None = None,
+        methods: list[str] | None = None,
+        constructors: dict[str, list[str] | None] | None = None,
+        earlier: str | None = None,
     ) -> ScenarioSet:
         """Generate scenarios from spec + contract via LLM.
 
@@ -65,6 +68,10 @@ class ScenarioGenerator:
             feedback: Optional prior-verdict findings — the arbiter's behavioral
                 delta on a regeneration loop. None ⇒ the prompt is identical to a
                 first-pass generation.
+            methods: The contract's methods, `function` or `Class.method`; None skips the
+                method checks.
+            constructors: Each class's constructor parameters, None for one taking any key.
+            earlier: The set stored for this spec before, if any.
 
         Returns:
             ScenarioSet with validated scenario definitions.
@@ -87,6 +94,8 @@ class ScenarioGenerator:
             req_ids=req_ids,
             constitution=constitution,
             feedback=feedback,
+            methods=methods,
+            earlier=earlier,
         )
 
         last_error: str | None = None
@@ -110,26 +119,14 @@ class ScenarioGenerator:
             # Real adapters return LLMResponse objects (as in reviewer.py:
             # `response.text`); string returns are the unit-mock convention only.
             raw_text = raw.text if hasattr(raw, "text") else raw
-            cleaned = self._clean_json(raw_text)
-
-            try:
-                data = json.loads(cleaned)
-            except json.JSONDecodeError as exc:
-                last_error = f"Invalid JSON: {exc}"
+            scenario_set, last_error = self._parse(raw_text)
+            if scenario_set is not None:
+                last_error = mismatch(scenario_set, req_ids, methods, constructors)
+            if last_error or scenario_set is None:
                 logger.warning("ScenarioGenerator: %s (attempt %d)", last_error, attempt)
                 continue
-
-            try:
-                scenario_set = ScenarioSet.model_validate(data)
-                logger.info(
-                    "ScenarioGenerator: generated %d scenarios",
-                    len(scenario_set.scenarios),
-                )
-                return scenario_set
-            except Exception as exc:
-                last_error = f"Pydantic validation failed: {exc}"
-                logger.warning("ScenarioGenerator: %s (attempt %d)", last_error, attempt)
-                continue
+            logger.info("ScenarioGenerator: generated %d scenarios", len(scenario_set.scenarios))
+            return scenario_set
 
         msg = (
             f"ScenarioGenerator: failed after {self._max_retries} retries. Last error: {last_error}"
@@ -137,16 +134,28 @@ class ScenarioGenerator:
         logger.error(msg)
         raise ValueError(msg)
 
+    @classmethod
+    def _parse(cls, raw_text: str) -> tuple[ScenarioSet | None, str | None]:
+        """The scenario set in one answer, or why the answer is not one."""
+        try:
+            data = json.loads(cls._clean_json(raw_text))
+        except json.JSONDecodeError as exc:
+            return None, f"Invalid JSON: {exc}"
+        try:
+            return ScenarioSet.model_validate(data), None
+        except Exception as exc:
+            return None, f"Pydantic validation failed: {exc}"
+
     @staticmethod
     def _extract_req_ids(spec_content: str) -> list[str]:
         """Extract FR-X and NFR-X tags from spec text.
 
-        Uses same regex as C09: r"\\b(?:N)?FR-\\d+\\b"
+        A lettered id such as `FR-5a` is its own requirement.
 
         Returns:
             Deduplicated list of requirement IDs.
         """
-        matches = re.findall(r"\b(?:N)?FR-\d+\b", spec_content)
+        matches = re.findall(r"\b(?:N)?FR-\d+[a-z]?\b", spec_content)
         # Deduplicate while preserving order
         seen: set[str] = set()
         result: list[str] = []
@@ -198,6 +207,8 @@ class ScenarioGenerator:
         req_ids: list[str],
         constitution: str | None = None,
         feedback: str | None = None,
+        methods: list[str] | None = None,
+        earlier: str | None = None,
     ) -> str:
         """Build the LLM prompt for scenario generation."""
         parts = [
@@ -220,6 +231,19 @@ class ScenarioGenerator:
             parts.extend(["## Scenario Hints (from spec)", scenarios_section, ""])
         if contract_content:
             parts.extend(["## API Contract (Protocol class)", contract_content, ""])
+        if methods is not None:
+            parts.extend(
+                [
+                    "## Contract Methods",
+                    "Name each scenario's function_under_test exactly as one of these, and call "
+                    "every one. For a Class.method, give the constructor's values in "
+                    "constructor_inputs.",
+                    ", ".join(methods) or "(none)",
+                    "",
+                ]
+            )
+        if earlier:
+            parts.extend(["## Your Earlier Scenarios For This Spec", earlier, ""])
         if constitution:
             parts.extend(["## Project Constitution", constitution, ""])
         if feedback:
@@ -240,8 +264,55 @@ class ScenarioGenerator:
                 "Respond with a JSON object matching this schema:",
                 '{"spec_path": "...", "contract_path": "...", "scenarios": [...], "reasoning": "..."}',
                 "Each scenario: {name, description, function_under_test, req_id, category, "
-                "preconditions, input_summary, inputs, expected_behavior, expected_output}",
+                "preconditions, input_summary, inputs, constructor_inputs, expected_behavior, "
+                "expected_output}",
             ]
         )
 
         return "\n".join(parts)
+
+
+def mismatch(
+    scenario_set: ScenarioSet,
+    req_ids: list[str],
+    methods: list[str] | None,
+    constructors: dict[str, list[str] | None] | None,
+) -> str | None:
+    """Why a scenario set does not match the spec and the contract; None when it does."""
+    scenarios = scenario_set.scenarios
+    if not scenarios:
+        return "the answer has no scenario"
+    unknown_ids = sorted({s.req_id for s in scenarios} - set(req_ids))
+    if unknown_ids:
+        return f"req_id {', '.join(unknown_ids)} is not in the spec; use one of {req_ids}"
+    if methods is None:
+        return None
+    return _method_mismatch(scenarios, methods, constructors or {})
+
+
+def _method_mismatch(
+    scenarios: list[Any], methods: list[str], constructors: dict[str, list[str] | None]
+) -> str | None:
+    called = [s.function_under_test for s in scenarios]
+    unknown = sorted(set(called) - set(methods))
+    if unknown:
+        return f"{', '.join(unknown)} is not a contract method; use one of {methods}"
+    uncalled = [m for m in methods if m not in called]
+    if uncalled:
+        return f"no scenario calls {', '.join(uncalled)}"
+    for s in scenarios:
+        problem = _constructor_mismatch(s.function_under_test, s.constructor_inputs, constructors)
+        if problem:
+            return problem
+    return None
+
+
+def _constructor_mismatch(
+    method: str, values: dict[str, Any], constructors: dict[str, list[str] | None]
+) -> str | None:
+    if "." not in method:
+        return f"{method} is a function; it takes no constructor_inputs" if values else None
+    owner = method.split(".")[0]
+    allowed = constructors.get(owner, [])
+    unknown = sorted(set(values) - set(allowed)) if allowed is not None else []
+    return f"{owner}'s constructor has no {', '.join(unknown)}" if unknown else None

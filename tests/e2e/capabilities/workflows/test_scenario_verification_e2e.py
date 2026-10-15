@@ -17,10 +17,11 @@ the US-24 sentence: unit-green but business-wrong, caught by independent verific
   E3 scenario_error: arbiter blames scenarios -> regeneration WITH the prior-verdict block
   E4 spec_ambiguity: park (exit 0 + resume hint + PARKED row + evidence retained in-run)
   E5 retries exhausted: bounded stop, non-zero, arbiter message surfaced
-  E6 zero-collected: empty ScenarioSet -> loud failure (SF-01 guard chain end-to-end)
+  E6 empty set: refused where it is made, three times -> loud failure, no test runs
   E7 park -> resume: evidence is NOT persisted -> honest arbiter error trips the
      loop_back and the park HEALS through a fresh verification round (COMPLETED)
   E8 generator retry exhaustion: garbage JSON x3 -> loud pipeline failure
+  E9 an unknown requirement id: refused, retried, never stored
 """
 
 from __future__ import annotations
@@ -546,11 +547,11 @@ def test_e5_retries_exhausted_fails_loud(tmp_path: Path, _isolated_env) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# E6 — zero-collected: the false-green guard chain, end to end                 #
+# E6 — an empty set is refused where it is made (B-FLOW-01 FR-3)             #
 # --------------------------------------------------------------------------- #
 
 
-def test_e6_zero_collected_fails_loud(tmp_path: Path) -> None:
+def test_e6_an_empty_set_is_refused_where_it_is_made(tmp_path: Path, _isolated_env) -> None:
     project = _init_project(tmp_path, "us24_e6")
     adapter = ScenarioWorldAdapter([EMPTY_SET], verdicts=[])
     implementer = ImplementerState([CORRECT_IMPL])
@@ -560,8 +561,11 @@ def test_e6_zero_collected_fails_loud(tmp_path: Path) -> None:
         result = _run_cli(project)
 
     assert result.exit_code != 0
-    assert "no scenario tests" in result.output.lower()
-    assert adapter.arb_calls == 0  # zero-total short-circuits without LLM spend
+    assert adapter.scen_calls == 3  # each refusal goes back to the model
+    assert record == []  # no scenario test ever ran
+    assert adapter.arb_calls == 0
+    run_state = _latest_run(_isolated_env, "us24_e6")
+    assert run_state is not None and "no scenario" in run_state.model_dump_json()
 
 
 # --------------------------------------------------------------------------- #
@@ -691,3 +695,28 @@ def test_e8_generator_exhaustion_fails_loud(tmp_path: Path, _isolated_env) -> No
     # The dual step's actionable message is persisted on the run record.
     run_state = _latest_run(_isolated_env, "us24_e8")
     assert run_state is not None and "Scenario pipeline failed" in run_state.model_dump_json()
+
+
+# --------------------------------------------------------------------------- #
+# E9 — a scenario on an id the spec lacks is refused and never stored         #
+# --------------------------------------------------------------------------- #
+
+
+def test_e9_an_unknown_requirement_is_refused_and_never_stored(
+    tmp_path: Path, _isolated_env: Path
+) -> None:
+    project = _init_project(tmp_path, "us24_e9")
+    unknown = GOOD_SET.replace('"req_id": "FR-2"', '"req_id": "FR-99"')
+    adapter = ScenarioWorldAdapter([unknown, GOOD_SET], verdicts=[])
+    implementer = ImplementerState([CORRECT_IMPL])
+    record: list = []
+
+    with _scenario_world(adapter, implementer, record):
+        result = _run_cli(project)
+
+    assert result.exit_code == 0, result.output
+    assert adapter.scen_calls == 2
+    assert "FR-99" in adapter.scen_prompts[1] and "FR-99" not in adapter.scen_prompts[0]
+    stored = _isolated_env / "projects" / "us24_e9" / "scenarios" / "definitions"
+    assert "FR-99" not in (stored / "greet_scenarios.yaml").read_text(encoding="utf-8")
+    assert record and record[0].output["passed"] == 3
