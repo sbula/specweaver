@@ -254,8 +254,10 @@ FR-5b were never judged; SF-D widens both to `FR-<digits><letter>`.
 
 ## Sub-features
 
-The repair re-owns the seven rewritten FRs: each now belongs to the SF that builds or proves its new
-text, so every FR has exactly one owner.
+FR-14 moved from SF-G to SF-D on 2026-10-15: moving the scenario tests out of the project (FR-11)
+works only together with running them from a container mount `[agreed 2026-10-15]`. The repair
+re-owns the seven rewritten FRs: each now belongs to the SF that builds or proves its new text, so
+every FR has exactly one owner.
 
 
 The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gate) and 3.28h
@@ -266,10 +268,10 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-A (3.28a + 3.28b) | S07 checks an optional `## Scenarios` section's YAML; new handler extracts a Python Protocol/ABC from the spec's `## Contract`. | FR-1 (FR-2 moved to SF-F) | spec markdown with `## Contract` → S07 fails on a malformed `## Scenarios`; `contracts/api_contract.py` with a typed Protocol class | none | [sfa](B-FLOW-01_sfa_implementation_plan.md) |
 | SF-B (3.28c + 3.28d + 3.28e + 3.28f + 3.28g + 3.28h) | LLM scenario generation from spec + API contract → YAML; mechanical YAML → pytest with `@trace` tags; `scenario_agent` role; **total information opacity** for the coding agent (FR-5b); `scenario_validation.yaml`; dual-pipeline wiring. | FR-4 (FR-3, 5a, 6 moved to SF-F; FR-5b to SF-D; FR-7 to SF-G) | spec, API contract (Protocol class), `req_id` list → `scenarios/definitions/*.yaml` + `scenarios/generated/*.py` (parametrized pytest); two isolated parallel pipelines with JOIN; coding agent unaware of the scenario pipeline | SF-A | [sfb](B-FLOW-01_sfb_implementation_plan.md) |
 | SF-B2 | Polyglot scenario pipeline: converters, contract renderers and stack-trace filters for Python, Java, Kotlin, TypeScript, Rust. | — (extends SF-B's FR-4 to more languages; NFR-1, NFR-2) | — | SF-B | [sfb2](B-FLOW-01_sfb2_implementation_plan.md) |
-| SF-D | Isolation core: the scenario store outside the project; each side its own `feedback`; fail closed without a container; the FR checker reads lettered FRs | FR-11, FR-5b, FR-18, FR-21 | scenario writes, the sub-run context, the container check → no scenario file in the project, no shared `feedback`, no dual run without isolation | none | — |
+| SF-D | Isolation core: the scenario store outside the project, run from a container mount; each side its own `feedback`; fail closed without a container; the FR checker reads lettered FRs | FR-11, FR-14, FR-5b, FR-18, FR-21 | scenario writes, the sub-run context, the container check → no scenario file in the project, no shared `feedback`, no dual run without isolation | none | [sfd](B-FLOW-01_sfd_implementation_plan.md) |
 | SF-E | Memory and coverage apart | FR-12, FR-13 | handover, hydrator, C09 walk → no scenario text in coder memory; C09 counts the coder's tests; a coverage report per requirement | none | — |
 | SF-F | Scenario side: read-only tools, checked scenarios, filtered reports | FR-5a, FR-3, FR-8, FR-2, FR-6 | spec, contracts → scenarios checked against the spec and the contract; a scenario report with no code | SF-D | — |
-| SF-G | Run control: one spec, the side at fault only, models, the scenario run in a container, overlap | FR-15, FR-16, FR-17, FR-14, FR-7 | the dual run → one reviewed spec; one side per round, 2 rounds; scenario tests run in a container from the store | SF-D | — |
+| SF-G | Run control: one spec, the side at fault only, models, the scenario run in a container, overlap | FR-15, FR-16, FR-17, FR-7 | the dual run → one reviewed spec; one side per round, 2 rounds; scenario tests run in a container from the store | SF-D | — |
 | SF-H | Spec conflicts and the kept suite | FR-20, FR-19 | spec review, scenario store → conflicts named at review; scenario sets kept with fingerprints, regenerated on a change, run by dual runs and an acceptance step for the person | SF-D | — |
 | SF-C (3.28i + 3.28j) | Arbiter for error attribution, run post-JOIN after `QARunnerAtom` executes scenario tests. **All-read, no-write** boundary (`api_paths` only, zero `roots`). Filtered feedback keeps total information opacity — coding feedback reads like a reviewer finding (AD-9, AD-10). HITL escalation on spec ambiguity. | FR-9, FR-10 (FR-8 moved to SF-F) | scenario test results (pass/fail from QARunnerAtom), spec, API contract, `src/` output, `scenarios/` output → one filtered feedback report per pipeline (vocabulary-filtered per NFR-8), or HITL escalation. Coding feedback has NO scenario vocabulary — phrased as "Spec clause §X requires Y. Your implementation does Z." | SF-B, SF-B2 | [sfc](B-FLOW-01_sfc_implementation_plan.md) |
 
@@ -280,7 +282,7 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-D | Isolation core | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-D | Isolation core | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-E | Memory and coverage apart | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-F | Scenario side | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-G | Run control | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -289,4 +291,4 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 ## Session Handoff
 
 **Now**: the repair design is approved; leak 1 is fixed (`80a6f90a`).
-**Next**: the implementation-plan skill for SF-D (isolation core).
+**Next**: the dev skill for SF-D, CB-1 ([plan](B-FLOW-01_sfd_implementation_plan.md)).
