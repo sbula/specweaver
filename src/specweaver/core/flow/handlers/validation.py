@@ -364,6 +364,18 @@ def _in_scenarios_mount(target: str, root: Path) -> str:
     return target
 
 
+def _requirement_coverage(context: RunContext) -> dict[str, str]:
+    """Per requirement of the spec, which side's tests cover it; the coder's are the project's."""
+    from specweaver.assurance.validation.rules.code.c09_traceability import requirement_coverage
+
+    try:
+        spec_text = context.spec_path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    coder_root = context.isolation.execution_root or context.project_path
+    return requirement_coverage(spec_text, coder_root, _scenarios_root(context))
+
+
 def _default_test_target(context: RunContext, kind: str) -> str:
     """The file a test step runs when it names none: the scenario file for the scenario step only.
 
@@ -440,8 +452,10 @@ class ValidateTestsHandler:
         # reserved key — pass, fail, and zero-collected alike. The arbiter consumes
         # it on verdict; for it, an ABSENT key is a wiring defect (loud ERROR), so
         # publication must be unconditional for this kind.
+        output = dict(result.exports)
         if kind == "scenario":
             context.feedback["scenario_test_failures"] = result.exports
+            output["requirement_coverage"] = _requirement_coverage(context)
 
         # A verification that executed zero tests proves nothing — the atom's total==0 SUCCESS is
         # legitimate only for the pristine incremental paths of the other kinds. Keyed on the same
@@ -461,7 +475,7 @@ class ValidateTestsHandler:
             logger.warning("ValidateTestsHandler: %s", msg)
             return StepResult(
                 status=StepStatus.FAILED,
-                output=result.exports,
+                output=output,
                 error_message=msg,
                 started_at=started,
                 completed_at=_now_iso(),
@@ -471,7 +485,7 @@ class ValidateTestsHandler:
             logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)
             return StepResult(
                 status=StepStatus.PASSED,
-                output={**result.exports, "tests_cover_project": target in _WHOLE_PROJECT},
+                output={**output, "tests_cover_project": target in _WHOLE_PROJECT},
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -484,7 +498,7 @@ class ValidateTestsHandler:
         )
         return StepResult(
             status=StepStatus.FAILED,
-            output=result.exports,
+            output=output,
             error_message=result.message,
             started_at=started,
             completed_at=_now_iso(),

@@ -54,6 +54,7 @@ exposes:
   - rubrics.RubricNotFoundError
   - rubrics.load_rubric
   - rules
+  - rules.code.c09_traceability.requirement_coverage
   - spec_kind
 
 # -- Operational Metadata --------------------------------------------------

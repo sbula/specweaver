@@ -283,7 +283,7 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-D | Isolation core | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-E | Memory and coverage apart | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-E | Memory and coverage apart | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-F | Scenario side | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-G | Run control | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -291,5 +291,5 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 ## Session Handoff
 
 **Now**: the repair design is approved; leak 1 is fixed (`80a6f90a`).
-**Now**: SF-D committed — scenario files live in SpecWeaver's store, dual runs need a container, each side its own feedback.
-**Next**: the implementation-plan skill for SF-E (memory and coverage apart), SF-F, SF-G or SF-H.
+**Now**: SF-E committed — a dual run's handover goes to the scenario store, never to task memory; `sw run` ends with which side's tests cover each requirement.
+**Next**: the implementation-plan skill for SF-F, SF-G or SF-H.

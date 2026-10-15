@@ -245,7 +245,7 @@
           "old": "            target = _in_scenarios_mount(target, _scenarios_root(context))\n",
           "new": "            pass\n",
           "breaks": "the container is handed a host path and collects nothing",
-          "symbol_sha": "sha256:1f6c418795f6300d90898d5d459b3feb66a97760dc7c71ebfdd111c392527ecf"
+          "symbol_sha": "sha256:ecc3f1ce86e1a7f763ce5d0893dc876d7516487e43ce1d58c705c70abc13d6c4"
         }
       ]
     },
@@ -415,6 +415,46 @@
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
           "symbol_sha": "sha256:e36aef3111b9904dc89b36ac963dbdbd8dc4b36387ef4eec1cfe7d5b58fb1fa7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "Coverage is counted apart and shown per requirement",
+      "scope": [
+        "tests/unit/assurance/validation/rules/code/test_requirement_coverage.py",
+        "tests/integration/core/flow/handlers/test_coverage_apart.py"
+      ],
+      "mutants": [
+        {
+          "id": "coverage-sides-swapped",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c09_traceability.py",
+          "symbol": "requirement_coverage",
+          "old": "    sides = {(True, True): \"both\", (True, False): \"coder\", (False, True): \"scenario\"}\n",
+          "new": "    sides = {(True, True): \"both\", (True, False): \"scenario\", (False, True): \"coder\"}\n",
+          "breaks": "a requirement only the scenario tests cover is reported as the coder's",
+          "symbol_sha": "sha256:7057909e798349deda0bd547e1fa2be9bf2c8f87fbd8f7e315a4a20ea05b682f"
+        },
+        {
+          "id": "scenario-coverage-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler.execute",
+          "old": "            output[\"requirement_coverage\"] = _requirement_coverage(context)\n",
+          "new": "            pass\n",
+          "breaks": "the scenario step reports no coverage, so the person never sees it",
+          "symbol_sha": "sha256:ecc3f1ce86e1a7f763ce5d0893dc876d7516487e43ce1d58c705c70abc13d6c4"
+        },
+        {
+          "id": "coverage-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_finish_run",
+          "old": "    _show_coverage(final_run)\n",
+          "new": "    pass\n",
+          "breaks": "sw run ends without the coverage table",
+          "symbol_sha": "sha256:fbbfb74cd668468df91b7c4fc11ef4620a04eeb4b63156b69a9feeb64e281b87"
         }
       ]
     }

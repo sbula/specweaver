@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -13,6 +13,40 @@ if TYPE_CHECKING:
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
 
 logger = logging.getLogger(__name__)
+
+_REQUIREMENT_ID = re.compile(r"\b(?:N)?FR-\d+[a-z]?\b")
+
+
+def traced_requirements(root: Path, analyzer_factory: Any = None) -> set[str]:
+    """Every requirement id that a `@trace` tag in a test file under `root` names."""
+    if analyzer_factory is None:
+        from specweaver.workspace.analyzers.factory import AnalyzerFactory
+
+        analyzer_factory = AnalyzerFactory
+    mapped_ids: set[str] = set()
+    for analyzer in analyzer_factory.get_all_analyzers():
+        try:
+            mapped_ids.update(analyzer.extract_test_mapped_requirements(root))
+        except Exception as e:
+            logger.debug("Failed extracting tags via %s: %s", type(analyzer).__name__, e)
+    return mapped_ids
+
+
+def requirement_coverage(
+    spec_text: str, coder_root: Path, scenarios_root: Path | None
+) -> dict[str, str]:
+    """Per requirement of the spec: `both`, `coder`, `scenario` or `none` covers it."""
+    coder = traced_requirements(coder_root)
+    scenario = (
+        traced_requirements(scenarios_root)
+        if scenarios_root is not None and scenarios_root.is_dir()
+        else set()
+    )
+    sides = {(True, True): "both", (True, False): "coder", (False, True): "scenario"}
+    return {
+        rid: sides.get((rid in coder, rid in scenario), "none")
+        for rid in sorted(set(_REQUIREMENT_ID.findall(spec_text)))
+    }
 
 
 class TraceabilityRule(Rule):
@@ -94,22 +128,9 @@ class TraceabilityRule(Rule):
 
     def _find_and_parse_tests(self, project_root: Path) -> set[str]:
         """Find test files using AnalyzerFactory and aggregate their trace tags."""
-        mapped_ids: set[str] = set()
-
         analyzer_factory = (
             self.context.get("analyzer_factory")
             if hasattr(self, "context") and self.context
             else None
         )
-        if not analyzer_factory:
-            from specweaver.workspace.analyzers.factory import AnalyzerFactory
-
-            analyzer_factory = AnalyzerFactory
-
-        for analyzer in analyzer_factory.get_all_analyzers():
-            try:
-                mapped_ids.update(analyzer.extract_test_mapped_requirements(project_root))
-            except Exception as e:
-                logger.debug("Failed extracting tags via %s: %s", type(analyzer).__name__, e)
-
-        return mapped_ids
+        return traced_requirements(project_root, analyzer_factory)
