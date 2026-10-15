@@ -107,11 +107,11 @@ class SqliteGraphRepository:
                 )
             """)
 
-    def _extract_nodes(self, nx_graph: nx.DiGraph) -> tuple[list[Any], list[Any]]:  # type: ignore[type-arg]
+    def _extract_nodes(self, semantic_digraph: nx.DiGraph) -> tuple[list[Any], list[Any]]:  # type: ignore[type-arg]
         node_batch = []
         ghost_hashes = set()
 
-        for semantic_hash, data in nx_graph.nodes(data=True):
+        for semantic_hash, data in semantic_digraph.nodes(data=True):
             if not data:  # It's a ghost node created by add_edge
                 ghost_hashes.add(semantic_hash)
             else:
@@ -128,8 +128,8 @@ class SqliteGraphRepository:
                     )
                 )
 
-        for _source_hash, target_hash, _data in nx_graph.edges(data=True):
-            if target_hash not in nx_graph.nodes or not nx_graph.nodes[target_hash]:
+        for _source_hash, target_hash, _data in semantic_digraph.edges(data=True):
+            if target_hash not in semantic_digraph.nodes or not semantic_digraph.nodes[target_hash]:
                 ghost_hashes.add(target_hash)
 
         ghost_batch = [
@@ -221,7 +221,7 @@ class SqliteGraphRepository:
             conn.commit()
 
     def load_from_db(self) -> nx.DiGraph:  # type: ignore[type-arg]
-        nx_graph = nx.DiGraph()  # type: ignore[var-annotated]
+        semantic_digraph = nx.DiGraph()  # type: ignore[var-annotated]
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -251,7 +251,7 @@ class SqliteGraphRepository:
                 except json.JSONDecodeError:
                     metadata = {}
 
-                nx_graph.add_node(
+                semantic_digraph.add_node(
                     semantic_hash,
                     clone_hash=clone_hash,
                     file_id=file_id,
@@ -294,11 +294,11 @@ class SqliteGraphRepository:
                 # `type` because it is part of the primary key; the graph attribute has one name,
                 # and writing the column's name here is what made a loaded graph unpersistable --
                 # `_edge_kind` refuses an edge with no kind, which is every edge this returned.
-                nx_graph.add_edge(
+                semantic_digraph.add_edge(
                     source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}
                 )
 
-        return nx_graph
+        return semantic_digraph
 
     def purge_file(self, file_id: str) -> None:
         with self._get_connection() as conn:

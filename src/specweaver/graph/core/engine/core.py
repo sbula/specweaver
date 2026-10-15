@@ -73,7 +73,7 @@ class InMemoryGraphEngine:
             self._nx_graph.clear()
             self._file_index.clear()
 
-    def extract_subgraph(self, start_hash: str, requested_depth: int) -> nx.DiGraph:  # type: ignore[type-arg]
+    def extract_subgraph(self, start_hash: str, depth: int) -> nx.DiGraph:  # type: ignore[type-arg]
         """
         Extracts a subgraph centered around the start_hash.
         RT-27: Limits depth.
@@ -81,7 +81,7 @@ class InMemoryGraphEngine:
         if not isinstance(start_hash, str):
             raise ValueError(f"extract_subgraph requires a string hash, got {type(start_hash)}")
 
-        max_depth = min(requested_depth, 5)
+        max_depth = min(depth, 5)
 
         with self._lock:
             if not self._nx_graph.has_node(start_hash):

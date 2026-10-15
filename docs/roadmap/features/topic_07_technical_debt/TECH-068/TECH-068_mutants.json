@@ -748,7 +748,7 @@
           "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
           "new": "source_hash, target_hash, metadata=metadata, **{\"type\": edge_type}",
           "breaks": "the loader restores the kind under the column's name while the store reads EDGE_KIND_ATTR, so every edge load_from_db returns is one persist_semantic_digraph refuses -- a graph read out of the database can never be written back, which is the state TECH-070's incremental rebuild produces on purpose",
-          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
+          "symbol_sha": "sha256:1ea080637b85d1d6cb515df5c62a4147de7da23069ae26398945ee59790c45f1"
         },
         {
           "id": "the-loader-drops-the-kind-entirely",
@@ -758,7 +758,7 @@
           "old": "source_hash, target_hash, metadata=metadata, **{EDGE_KIND_ATTR: edge_type}",
           "new": "source_hash, target_hash, metadata=metadata",
           "breaks": "a reloaded edge carries no kind at all, so a traversal cannot tell a call from a containment and the next persist refuses the whole graph",
-          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
+          "symbol_sha": "sha256:1ea080637b85d1d6cb515df5c62a4147de7da23069ae26398945ee59790c45f1"
         }
       ]
     },
@@ -867,7 +867,7 @@
           "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
           "new": "                  AND n2.is_active = 1",
           "breaks": "a graph read back out of the database holds no ghost edges, so it says nothing depends on this about every dependency outside the parsed set -- and an incremental rebuild then writes that loss to disk",
-          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
+          "symbol_sha": "sha256:1ea080637b85d1d6cb515df5c62a4147de7da23069ae26398945ee59790c45f1"
         },
         {
           "id": "the-reload-lets-tombstones-back-in",
@@ -877,7 +877,7 @@
           "old": "                  AND (n2.is_active = 1 OR n2.file_id = '')",
           "new": "                  AND (n2.is_active = 1 OR n2.is_active = 0)",
           "breaks": "the fix goes too wide: is_active=0 covers tombstones as well as ghosts, so a deleted file's nodes return and purge_stale_entries is undone",
-          "symbol_sha": "sha256:8821a441108e3d749209a675bf5a7d643b78bc2400e77a8ab7d4331a1e6cb665"
+          "symbol_sha": "sha256:1ea080637b85d1d6cb515df5c62a4147de7da23069ae26398945ee59790c45f1"
         }
       ]
     },

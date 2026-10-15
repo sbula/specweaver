@@ -2,7 +2,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-from typing import TYPE_CHECKING
+"""The engine's public API: hash keys, a file index, copies out and REPLACE in.
+
+Proves: TECH-004 FR-1
+Proves: TECH-004 FR-2
+"""
+
+import inspect
 
 import networkx as nx
 
@@ -10,15 +16,31 @@ from specweaver.graph.core.engine.core import InMemoryGraphEngine
 from specweaver.graph.core.engine.models import GraphEdge, GraphNode
 from specweaver.graph.core.engine.ontology import EdgeKind, NodeKind
 
-if TYPE_CHECKING:
+
+def _protocol_methods():
     from specweaver.graph.core.engine.protocol import GraphEngineProtocol
 
+    return {
+        name: member
+        for name, member in vars(GraphEngineProtocol).items()
+        if callable(member) and not name.startswith("_")
+    }
 
-def test_protocol_structural_conformance():
-    """Verify that InMemoryGraphEngine implements GraphEngineProtocol."""
-    engine: GraphEngineProtocol = InMemoryGraphEngine()
-    assert hasattr(engine, "upsert_node")
-    assert hasattr(engine, "export_semantic_digraph")
+
+def test_the_engine_has_every_protocol_method_with_its_parameters():
+    """Every method a future engine must offer exists here, taking the same parameters.
+
+    Checked against the protocol's own list, so a method added to the protocol and missing here
+    fails; two names were all the old check looked at.
+    """
+    methods = _protocol_methods()
+    assert len(methods) >= 11
+    for name, member in methods.items():
+        implemented = getattr(InMemoryGraphEngine, name, None)
+        assert callable(implemented), name
+        assert list(inspect.signature(implemented).parameters) == list(
+            inspect.signature(member).parameters
+        ), name
 
 
 def test_export_semantic_digraph_returns_copy():

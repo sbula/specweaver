@@ -4,6 +4,7 @@
 """The lineage event store: what a row must contain, and which parent it points at.
 
 Proves: B-SENS-01 FR-1, B-SENS-01 FR-3
+Proves: TECH-004 FR-10
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`.
 

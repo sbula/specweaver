@@ -364,8 +364,10 @@ stays inside the Rust boundary.
 
 **Current status**: SF-01 and SF-02 committed. FR-6 fixed 2026-10-14: `resolve_service_name` holds the
 root-`context.yaml` rule and the graph build calls it.
-**Next step**: FR-1..5 and FR-7..12 have no test that cites them (`check_fr_coverage.py TECH-004`); find or
-write one per FR before the ticket can close.
+2026-10-15: every FR cited by a test that proves it. A real protocol check replaced a two-name
+`hasattr` test and found `extract_subgraph(requested_depth)` against the protocol's `depth`; an AD-6
+check found `_extract_nodes(nx_graph)`. Both fixed.
+**Next step**: the user's sign-off.
 
 ## Carried down from the topic entry (2026-08-13, `TECH-044`)
 

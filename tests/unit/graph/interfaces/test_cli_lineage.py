@@ -5,6 +5,7 @@
 """`sw lineage tag`: adopting an untagged file, and recording who wrote it.
 
 Proves: B-SENS-01 FR-6
+Proves: TECH-004 FR-7
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-15-SF01-MIG`. Mutant: `model_id=author` replaced by a
 constant, so a human edit is logged under the wrong provenance — 6 fail.

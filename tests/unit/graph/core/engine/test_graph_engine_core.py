@@ -5,6 +5,7 @@
 """The in-memory graph engine: mutation under a lock, and bounded subgraph extraction.
 
 Proves: B-SENS-02 FR-6
+Proves: TECH-004 FR-1
 
 Cited from `INT-US-10-MIG`. Two independent mutants die here, which is why the citation is trusted:
 removing the depth cap (`max_depth = min(requested_depth, 5)` -> `requested_depth`) and forcing the

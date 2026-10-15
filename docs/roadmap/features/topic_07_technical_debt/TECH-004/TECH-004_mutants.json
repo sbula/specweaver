@@ -41,6 +41,44 @@
           "symbol_sha": "sha256:8428d329eaaeb60773dba85ae881cac45019ce6ebe2186799e74baebf6ca41e0"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The engine offers every method of GraphEngineProtocol",
+      "scope": [
+        "tests/unit/graph/core/engine/test_engine_public_api.py"
+      ],
+      "mutants": [
+        {
+          "id": "engine-drifts-from-protocol",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/core.py",
+          "symbol": "InMemoryGraphEngine.extract_subgraph",
+          "old": "    def extract_subgraph(self, start_hash: str, depth: int) -> nx.DiGraph:",
+          "new": "    def extract_subgraph(self, start_hash: str, depth: int, *, deep: bool = False) -> nx.DiGraph:",
+          "breaks": "a second engine built to the protocol can no longer stand in for this one",
+          "symbol_sha": "sha256:adebe7263c5ee70253176e2c2cfb0b9b0fe22a95e87f81689e40a3cbd5ec998d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The graph store waits for a locked database",
+      "scope": [
+        "tests/unit/graph/core/store/test_repository_roundtrip.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-busy-timeout",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository._get_connection",
+          "old": "        conn.execute(\"PRAGMA busy_timeout=5000;\")\n",
+          "new": "        conn.execute(\"PRAGMA busy_timeout=0;\")\n",
+          "breaks": "a second writer fails at once with 'database is locked'",
+          "symbol_sha": "sha256:61f63de135cd18bd5d2d999f19e46fa5a63cd506902b8717007a03158652480c"
+        }
+      ]
     }
   ]
 }

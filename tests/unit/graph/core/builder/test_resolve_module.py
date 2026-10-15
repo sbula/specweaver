@@ -4,6 +4,7 @@
 """Which collected file an import names, and when it names none.
 
 Proves: TECH-068 FR-8, FR-13
+Proves: TECH-004 FR-3
 
 The whole resolution rule — longest-suffix-first matching, the package `__init__` fallback, the
 case-insensitivity RT-21 depends on, and ambiguity collapsing to `None` — was exercised only through

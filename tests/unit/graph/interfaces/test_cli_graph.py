@@ -1,6 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""`sw graph build` only reads its arguments, hands them to the orchestrator and prints the result.
+
+Proves: TECH-004 FR-8
+"""
+
 from pathlib import Path
 from unittest.mock import patch
 

@@ -5,6 +5,7 @@
 """A graph survives a round trip through SQLite unchanged.
 
 Proves: B-SENS-02 FR-2, B-SENS-02 FR-3
+Proves: TECH-004 FR-4
 
 Cited from `INT-US-10-MIG`. Both mutants die here: dropping `semantic_hash TEXT UNIQUE` (FR-2's
 dedup) fails 18 tests across the graph suites, and renaming the `INSERT OR IGNORE INTO graph_nodes`
@@ -88,3 +89,12 @@ def test_roundtrip_preserves_metadata_defaults(repo):
 
     # Metadata should default to {}
     assert g_out.nodes["test_service:ast:123"].get("metadata") == {}
+
+
+def test_a_connection_waits_for_a_locked_database(repo):
+    """[Degradation] A second writer waits up to 5 s for the lock instead of failing at once."""
+    conn = repo._get_connection()
+    try:
+        assert conn.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
+    finally:
+        conn.close()

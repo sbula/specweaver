@@ -4,6 +4,7 @@
 """`sw graph build` writes real, typed dependency edges to the database.
 
 Proves: TECH-068 FR-3, FR-14, FR-16
+Proves: TECH-004 FR-12
 
 This ticket is about edges, and until now nothing anywhere asserted one had reached disk. The two
 halves were each proven and the pair was not:
