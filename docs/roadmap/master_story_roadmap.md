@@ -489,7 +489,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 **Benefit:** *SpecWeaver runs parallel behavioral verification pipelines to prove the generated code actually solves the business scenario, not just syntax tests.*
 *   **Core Required (MVS):**
     *   `✅` **US-3 Core** *(provides QA Runner)*
-    *   `🔧` **B-FLOW-01:** Scenario Testing Pipeline
+    *   `✅` **B-FLOW-01:** Scenario Testing Pipeline
     *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**

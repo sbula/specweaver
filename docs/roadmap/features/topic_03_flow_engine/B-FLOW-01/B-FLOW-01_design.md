@@ -1,7 +1,7 @@
 # B-FLOW-01 — Scenario Testing: Independent Verification
 
-**Status**: 🔧 REOPENED 2026-10-15 — repair design APPROVED by the user 2026-10-15. SF-A, SF-B, SF-B2, SF-C committed;
-the repair adds SF-D..SF-H. Findings: [b_flow_01_isolation_2026-10-15.md](../../../analysis/b_flow_01_isolation_2026-10-15.md). · **Feature ID**:
+**Status**: ✅ Finished — signed off by the user 2026-10-15. Reopened 2026-10-15 for a repair; SF-A, SF-B,
+SF-B2, SF-C and the repair's SF-D..SF-H are committed. Findings: [b_flow_01_isolation_2026-10-15.md](../../../analysis/b_flow_01_isolation_2026-10-15.md). · **Feature ID**:
 3.28 · **Phase**: 3
 
 | | |
@@ -291,4 +291,4 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 ## Session Handoff
 
 **Now**: SF-H committed — every sub-feature is committed and all 22 FRs carry a `Proves:` test.
-**Next**: the closure gate and the user's sign-off of B-FLOW-01.
+**Next**: none — finished. Retrieval for the spec reviewer waits on `B-FLOW-04`.

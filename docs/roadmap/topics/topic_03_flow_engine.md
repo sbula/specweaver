@@ -195,7 +195,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-B: High-Assurance
 
-* **`B-FLOW-01` 🔧: Scenario Testing Pipeline** (Legacy: 3.28)
+* **`B-FLOW-01` ✅: Scenario Testing Pipeline** (Legacy: 3.28)
   > - **Purpose:** Run the code pipeline and a scenario pipeline side by side, so when they disagree the cause can be attributed
   > - **Trigger:** When a scenario pipeline is run
   > - **Precondition:** `D-FLOW-01` → the runner
