@@ -383,9 +383,12 @@ def _snapshot(project: Path) -> set[str]:
 
 EXPECTED_ARTIFACTS = {
     "contracts/greet_contract.py",
-    "scenarios/definitions/greet_scenarios.yaml",
-    "scenarios/generated/test_greet_scenarios.py",
     "src/greet.py",
+}
+#: Kept in SpecWeaver's store, never in the project (B-FLOW-01 FR-11).
+STORED_SCENARIOS = {
+    "definitions/greet_scenarios.yaml",
+    "generated/test_greet_scenarios.py",
 }
 
 
@@ -417,7 +420,7 @@ def _run_cli(project: Path):
 # --------------------------------------------------------------------------- #
 
 
-def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path) -> None:
+def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path, _isolated_env: Path) -> None:
     project = _init_project(tmp_path, "us24_e1")
     adapter = ScenarioWorldAdapter([GOOD_SET], verdicts=[])
     implementer = ImplementerState([CORRECT_IMPL])
@@ -432,8 +435,12 @@ def test_e1_happy_completes_with_zero_arbitration_cost(tmp_path: Path) -> None:
     assert record and record[0].output["total"] == 3 and record[0].output["passed"] == 3
     # Green round costs zero arbitration LLM calls (INT-US-24 NFR-2).
     assert adapter.arb_calls == 0
-    # A4 artifact inventory: exactly the expected droppings, no strays.
+    # A4 artifact inventory: exactly the expected droppings, no strays, no scenario file.
     assert _snapshot(project) - before == EXPECTED_ARTIFACTS
+    store = _isolated_env / "projects" / "us24_e1" / "scenarios"
+    assert {
+        p.relative_to(store).as_posix() for p in store.rglob("*") if p.is_file()
+    } == STORED_SCENARIOS
 
 
 # --------------------------------------------------------------------------- #

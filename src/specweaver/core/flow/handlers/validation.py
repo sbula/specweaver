@@ -345,8 +345,11 @@ _WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 
 def _scenarios_root(context: RunContext) -> Path:
-    """Where the scenario tests are kept, mounted at `/scenarios` for their run."""
-    return context.project_path / "scenarios"
+    """Where the scenario tests are kept, mounted at `/scenarios` for their run: the project's
+    store, outside the project. An unregistered project's dual run has already refused."""
+    from specweaver.core.flow.handlers.scenario import scenario_store
+
+    return scenario_store(context) or context.project_path / "scenarios"
 
 
 def _in_scenarios_mount(target: str, root: Path) -> str:
@@ -370,7 +373,9 @@ def _default_test_target(context: RunContext, kind: str) -> str:
         )
 
         return str(
-            create_scenario_converter(context.project_path).output_path(stem, context.project_path)
+            create_scenario_converter(context.project_path).output_path(
+                stem, _scenarios_root(context).parent
+            )
         )
     return str((context.output_dir or context.project_path / "tests") / f"test_{stem}.py")
 

@@ -107,6 +107,9 @@ def _a_container_is_available(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
     )
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
+    )
 
 
 async def _dual_round(context: RunContext, spawner: _Spawner) -> None:

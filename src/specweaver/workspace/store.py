@@ -4,6 +4,7 @@
 import json
 import logging
 import re
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.database import StrictISODateTime
+from specweaver.core.config.paths import scenario_store_for
 
 logger = logging.getLogger(__name__)
 
@@ -202,6 +204,8 @@ class WorkspaceRepository:
 
         await self.session.delete(project)
         await self.session.flush()
+        # A removed project's hidden scenario tests have no owner any more.
+        shutil.rmtree(scenario_store_for(name), ignore_errors=True)
 
     async def update_project_path(self, name: str, new_path: str) -> None:
         project = await self.session.get(Project, name)

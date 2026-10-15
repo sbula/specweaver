@@ -41,6 +41,12 @@ def specweaver_root() -> Path:
     return Path.home() / ".specweaver"
 
 
+def scenario_store_for(project_name: str) -> Path:
+    """Where a registered project's scenario sets and tests are kept: outside the project, so
+    nothing running in it can reach them."""
+    return specweaver_root() / "projects" / project_name / "scenarios"
+
+
 def config_db_path() -> Path:
     """Return the path to the configuration database (``specweaver.db``)."""
     path = specweaver_root() / "specweaver.db"

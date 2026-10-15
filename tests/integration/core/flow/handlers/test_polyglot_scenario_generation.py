@@ -36,15 +36,20 @@ pytestmark = pytest.mark.integration
     ],
 )
 async def test_polyglot_scenario_generation_integration(
-    tmp_path: Path, indicator_file: str, expected_test_file: str
+    tmp_path: Path, indicator_file: str, expected_test_file: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Verifies that the ConvertScenarioHandler inherently routes to the correct ScenarioConverter
     based on the project structure and writes the correctly formatted framework path.
     """
     (tmp_path / indicator_file).write_text("dummy", encoding="utf-8")
+    import specweaver.core.flow.handlers.scenario as scenario
+
+    # The store stands outside the project; the converter still names the file per language.
+    store = tmp_path.parent / f"{tmp_path.name}-store"
+    monkeypatch.setattr(scenario, "scenario_store", lambda context: store)
 
     # The scenario_yaml produced by GenerateScenarioHandler
-    scenarios_dir = tmp_path / "scenarios" / "definitions"
+    scenarios_dir = store / "definitions"
     scenarios_dir.mkdir(parents=True, exist_ok=True)
     scenario_yaml_path = scenarios_dir / "auth_scenarios.yaml"
 
@@ -89,8 +94,9 @@ scenarios:
     assert result.status.value == "passed"
 
     # Validate physical write bounds
-    generated_path = tmp_path / expected_test_file
+    generated_path = store / "generated" / Path(expected_test_file).name
     assert generated_path.exists(), f"Framework file missing at expected path: {generated_path}"
+    assert not (tmp_path / expected_test_file).exists(), "a scenario test landed in the project"
     content = generated_path.read_text(encoding="utf-8")
 
     # Ensure traces exist

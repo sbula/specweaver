@@ -40,14 +40,20 @@ Proof: `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py` (E1â
 - CANNOT read implementation source under `src/`.
 - CANNOT read the coding agent's scratchpads.
 
-The coding agent has zero access to `scenarios/`.
+Scenario sets and their tests never live in the project. They are kept in SpecWeaver's store,
+`<data dir>/projects/<registered name>/scenarios/` (`definitions/` and `generated/`), and removed
+with the project. The scenario tests run in a container that mounts the store read-only at
+`/scenarios`; the project is at `/workspace`. A dual run refuses to start when it cannot keep them
+from the coder: no live Podman or Docker engine, a project that is not registered, an old
+`scenarios/generated/` in the project, or a non-Python project. SpecWeaver builds its sandbox
+image on the machine the first time it is needed, from `Containerfile.sandbox` in the package.
 
 ## Pipeline: `scenario_validation.yaml`
 
 1. **Extract Contract** (`generate+contract`): a python Protocol/ABC from the Spec's `Contract`
    section.
 2. **Generate Scenarios** (`generate+scenario`): reads contract + Spec, emits
-   `scenarios/definitions/<name>.yaml` via declarative structured output.
+   `<store>/definitions/<name>.yaml` via declarative structured output.
    A Spec's `## Scenarios` section is optional hints, passed to the model as text. S07 fails it
    only when it has no YAML block or YAML that cannot be read; a scenario missing a key warns.
 3. **Convert to Tests** (`convert+scenario`): pure logic, zero LLM. Translates the YAML into
@@ -99,10 +105,10 @@ On failure the Arbiter attributes fault: `code_bug`, `scenario_error`, or `spec_
 
 ## Traps
 
-- Until `C-EXEC-07` runs these in worktrees, scenario artifacts (`contracts/`,
-  `scenarios/definitions/`, `scenarios/generated/`) stay in your repo after failed/aborted runs.
-- `scenarios/generated/test_*.py` is collectable by a bare `pytest` at repo root. Exclude that
-  directory in your pytest config to keep verification artifacts out of your own test runs.
+- Until `C-EXEC-07` runs these in worktrees, `contracts/` stays in your repo after failed or
+  aborted runs.
+- A project from before 2026-10-15 may still hold `scenarios/generated/`; remove it, or every
+  dual run refuses.
 
 ## See also
 

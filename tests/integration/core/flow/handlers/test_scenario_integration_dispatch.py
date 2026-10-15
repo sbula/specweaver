@@ -35,13 +35,20 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(autouse=True)
-def _a_container_is_available(monkeypatch: pytest.MonkeyPatch) -> None:
+def _a_container_is_available(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The runners here are doubled, so nothing runs in a container; the check stands in."""
     from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
     )
+
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
+    )
+    import specweaver.core.flow.handlers.scenario as scenario
+
+    monkeypatch.setattr(scenario, "scenario_store", lambda context: tmp_path / "store")
 
 
 SPEC = '''# Greet Service Spec

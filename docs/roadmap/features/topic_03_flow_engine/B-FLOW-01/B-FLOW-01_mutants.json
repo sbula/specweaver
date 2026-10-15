@@ -146,7 +146,7 @@
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:dd6c21ae445db11cdf8ad8355976035bc1389a57f97626fa333c8ba9d37505d2"
+          "symbol_sha": "sha256:08a52a2e56256c943d1dbf07a8d04f71aaddff97f860966d40db883e8c53ada8"
         }
       ]
     },
@@ -253,7 +253,8 @@
       "requirement": "FR-18",
       "title": "A dual run refuses to start without a container",
       "scope": [
-        "tests/unit/core/flow/handlers/test_dual_run_feedback.py"
+        "tests/unit/core/flow/handlers/test_dual_run_feedback.py",
+        "tests/integration/core/flow/handlers/test_scenario_store.py"
       ],
       "mutants": [
         {
@@ -264,7 +265,67 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:85d5afbb8bc5e6bab23d8462f0260cc6f486c0995dde7556a06dc5a5ee189816"
+          "symbol_sha": "sha256:c7544a620055f87c588bb2bfd099a7c36d93e59134e546bf1dc0da9de386b1a5"
+        },
+        {
+          "id": "unregistered-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_isolation_refusal",
+          "old": "    if scenario_store(context) is None:\n",
+          "new": "    if False:\n",
+          "breaks": "a project with no store runs a dual run anyway",
+          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+        },
+        {
+          "id": "old-scenarios-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_isolation_refusal",
+          "old": "    if (context.project_path / \"scenarios\" / \"generated\").exists():\n",
+          "new": "    if False:\n",
+          "breaks": "old scenario tests stay readable in the project",
+          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+        },
+        {
+          "id": "any-language-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_isolation_refusal",
+          "old": "    if detect_toolchain(context.project_path) not in (\"uv\", \"\"):\n",
+          "new": "    if False:\n",
+          "breaks": "a dual run starts for a language whose container is not proven",
+          "symbol_sha": "sha256:066082168a69c4cc6aea15f4f7e01b909c5aab59b659ae881a8bb6b324fa3beb"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "Scenario files live in SpecWeaver's store per registered project, never in the project",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_scenario_store.py",
+        "tests/unit/core/flow/handlers/test_scenario_handlers.py"
+      ],
+      "mutants": [
+        {
+          "id": "store-in-project",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/paths.py",
+          "symbol": "scenario_store_for",
+          "old": "    return specweaver_root() / \"projects\" / project_name / \"scenarios\"\n",
+          "new": "    return Path.cwd() / \"scenarios\"\n",
+          "breaks": "scenario tests land where the project's code can read them",
+          "symbol_sha": "sha256:08805062cb94c1ecb68cb504ce380b70e7a160b3881c85c0ec0405cb3be5804a"
+        },
+        {
+          "id": "remove-keeps-store",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "WorkspaceRepository.remove_project",
+          "old": "        shutil.rmtree(scenario_store_for(name), ignore_errors=True)\n",
+          "new": "        pass\n",
+          "breaks": "a new project under the same name inherits another project's hidden tests",
+          "symbol_sha": "sha256:2ebd142c83b8affa714043fd7cd5153fe28a24fbd72280175c3e582fc945d5f1"
         }
       ]
     }

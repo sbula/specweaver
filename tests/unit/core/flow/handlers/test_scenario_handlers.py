@@ -10,6 +10,8 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
@@ -27,6 +29,18 @@ if TYPE_CHECKING:
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from tests.scripted_llm import FixedRouter
+
+
+@pytest.fixture(autouse=True)
+def _a_scenario_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The handlers write to the project's store; here it stands at `tmp_path / "scenarios"`.
+
+    The store's real place, outside a registered project, is proven in
+    `tests/integration/core/flow/handlers/test_scenario_store.py`.
+    """
+    import specweaver.core.flow.handlers.scenario as scenario
+
+    monkeypatch.setattr(scenario, "scenario_store", lambda context: tmp_path / "scenarios")
 
 
 def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:

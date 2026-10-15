@@ -25,6 +25,28 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _isolation_refusal(context: RunContext) -> str | None:
+    """Why the scenario side cannot be kept from the coder here; None when it can (FR-11, FR-18)."""
+    from specweaver.commons.prepare_plan import detect_toolchain
+    from specweaver.core.flow.handlers.scenario import scenario_store
+
+    if scenario_store(context) is None:
+        return (
+            "a dual run keeps its scenario tests in the project's store, and this project is not "
+            "registered; register it with `sw init` or `sw projects add`"
+        )
+    if (context.project_path / "scenarios" / "generated").exists():
+        return (
+            "the project still holds scenario tests in scenarios/, where the coder can read them; "
+            "remove that folder — scenario tests now live outside the project"
+        )
+    if detect_toolchain(context.project_path) not in ("uv", ""):
+        return (
+            "a dual run is proven for Python projects only; containers for other languages are not"
+        )
+    return None
+
+
 class ArbitrateDualPipelineHandler:
     """Handler for orchestrating the dual verification pipeline.
 
@@ -34,6 +56,8 @@ class ArbitrateDualPipelineHandler:
 
     #: Whether a container can run the tests here; a class attribute so tests can stand in for it.
     container_available = staticmethod(container_available)
+    #: Why isolation cannot hold for this project; a class attribute for the same reason.
+    isolation_refusal = staticmethod(_isolation_refusal)
 
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         started = _now_iso()
@@ -41,6 +65,14 @@ class ArbitrateDualPipelineHandler:
             return _error_result(
                 "pipeline_runner not available in context — cannot fan out dual pipelines",
                 started,
+            )
+        refusal = self.isolation_refusal(context)
+        if refusal is not None:
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=refusal,
+                started_at=started,
+                completed_at=_now_iso(),
             )
         if not self.container_available(context.project_path):
             # FR-18: fail closed. Without a container the coder's code could read the scenario

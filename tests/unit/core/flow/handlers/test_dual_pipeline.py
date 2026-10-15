@@ -25,6 +25,9 @@ def _a_container_is_available(monkeypatch):
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
     )
+    monkeypatch.setattr(
+        ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
+    )
 
 
 @pytest.fixture

@@ -14,10 +14,28 @@ from specweaver.core.flow.handlers.generation import _resolve_generation_routing
 from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
+
+
+def scenario_store(context: RunContext) -> Path | None:
+    """The scenario store of the run's registered project; None when it is not registered."""
+    from specweaver.core.config.paths import scenario_store_for
+    from specweaver.workspace.store import project_name_at
+
+    db = getattr(context, "db", None)
+    if db is None:
+        return None
+    try:
+        name = project_name_at(db, context.project_path)
+    except Exception:
+        logger.warning("scenario_store: could not read the project registry", exc_info=True)
+        return None
+    return scenario_store_for(name) if name else None
 
 
 class GenerateScenarioHandler:
@@ -83,7 +101,12 @@ class GenerateScenarioHandler:
             )
 
             # Save scenarios as YAML
-            scenarios_dir = context.project_path / "scenarios" / "definitions"
+            store = scenario_store(context)
+            if store is None:
+                return _error_result(
+                    "the project is not registered, so it has no scenario store", started
+                )
+            scenarios_dir = store / "definitions"
             scenarios_dir.mkdir(parents=True, exist_ok=True)
             stem = context.spec_path.stem.replace("_spec", "")
             output_path = scenarios_dir / f"{stem}_scenarios.yaml"
@@ -133,7 +156,12 @@ class ConvertScenarioHandler:
             from specweaver.workflows.scenarios.scenario_models import ScenarioSet
 
             # Find scenario YAML from previous step
-            scenarios_dir = context.project_path / "scenarios" / "definitions"
+            store = scenario_store(context)
+            if store is None:
+                return _error_result(
+                    "the project is not registered, so it has no scenario store", started
+                )
+            scenarios_dir = store / "definitions"
             stem = context.spec_path.stem.replace("_spec", "")
             scenario_yaml_path = scenarios_dir / f"{stem}_scenarios.yaml"
 
@@ -166,7 +194,8 @@ class ConvertScenarioHandler:
 
             from pathlib import Path
 
-            output_path = Path(output_path_str)
+            # The converter names the file; the store, never the project, holds it.
+            output_path = store / "generated" / Path(output_path_str).name
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(test_content, encoding="utf-8")
 
