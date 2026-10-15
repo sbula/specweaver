@@ -493,7 +493,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   `✅` **D-VAL-01:** QA Runner Tool
 *   **Sub-Story Add-Ons:**
     *   🔴 **Intelligent Resolution:**
-        *   `[ ]` **B-INTL-07:** Error Attribution Arbiter
+        *   ⚰️ **B-INTL-07:** *(retired 2026-10-15 — absorbed into `B-FLOW-01`)*
 
 ### 🟢 US-25: Compliance & Constitution Governance
 **Benefit:** *I can enforce project-wide rules (Constitutions) and domain-specific profiles (e.g., 'Web App' vs 'ML Model') that dynamically override agent behavior.*

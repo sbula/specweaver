@@ -244,14 +244,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Note:** multi-agent is N work units, not a separate execution substrate
 
-* **`B-INTL-07` 🔜: Error Attribution Arbiter**
-  > - **Purpose:** When a scenario test fails, judge whether the code is wrong or the scenario is — a question a pass/fail cannot answer
-  > - **Trigger:** At the JOIN gate of the scenario pipeline
-  > - **Precondition:** `B-FLOW-01` → the JOIN gate · `E-INTL-01` → the model
-  > - **Reads:** the test failure, the code, and the YAML scenario
-  > - **Produces:** 🟡 an attribution verdict — code at fault, or scenario at fault
-  > - **Enables:** 🔴
-  > - **Done when:** 🔴
+* **`B-INTL-07` ⚰️ RETIRED:** *(Error Attribution Arbiter — absorbed into `B-FLOW-01`, 2026-10-15: SF-C built it, `core/flow/handlers/arbiter.py`)*
 
 * **`B-INTL-08` 🔮: Semantic Code Review**
   > - **Purpose:** Explain how a change alters call and dataflow chains, **beside** the text diff — not instead of it

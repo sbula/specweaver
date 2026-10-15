@@ -33,10 +33,10 @@ FR-5a and FR-5b were never judged: `check_fr_coverage.py` reads only `FR-<digits
 
 ## Related roadmap items
 
-`E-SENS-03` (task-scoped grants) is the mechanism leaks 4, 7 and 8 need. `D-INTL-08` (polyglot)
+`E-SENS-03` (task-scoped grants) was the first idea for leaks 4, 7 and 8; the approved design closes them by moving the scenario files out of the project instead. `D-INTL-08` (polyglot)
 meets FR-2's Python-only contract and leak 6. `B-INTL-07` (planned Arbiter) duplicates the built
 arbiter. `B-INTL-06` (multi-agent isolation) is the general form of FR-5b.
 
 ## Next
 
-The `specweaver-design` skill on B-FLOW-01, starting from this note `[agreed 2026-10-15]`.
+Designed and approved 2026-10-15: SF-D..SF-H of [B-FLOW-01](../roadmap/features/topic_03_flow_engine/B-FLOW-01/B-FLOW-01_design.md). Scenario files move out of the project; dual runs need a container.

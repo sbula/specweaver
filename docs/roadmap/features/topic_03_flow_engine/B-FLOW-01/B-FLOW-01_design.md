@@ -1,6 +1,7 @@
 # B-FLOW-01 — Scenario Testing: Independent Verification
 
-**Status**: APPROVED. SF-A, SF-B, SF-C committed; SF-B2 (polyglot) implemented. · **Feature ID**:
+**Status**: 🔧 REOPENED 2026-10-15 — repair design APPROVED by the user 2026-10-15. SF-A, SF-B, SF-B2, SF-C committed;
+the repair adds SF-D..SF-H. Findings: [b_flow_01_isolation_2026-10-15.md](../../../analysis/b_flow_01_isolation_2026-10-15.md). · **Feature ID**:
 3.28 · **Phase**: 3
 
 | | |
@@ -94,23 +95,22 @@ the JOIN gate and Wave N deferred execution, `AsyncRateLimiterAdapter`, `FolderG
 # In loom/tools/filesystem/models.py — ROLE_INTENTS dict
 "scenario_agent": frozenset({
     "read_file",      # Read specs, contracts, own scenarios
-    "write_file",     # Write scenario definitions
-    "create_file",    # Create new scenario files
-    "list_directory", # Browse scenarios/ dir
-    "grep",           # Search within granted paths only
-    "find_files",     # Find files within granted paths only
+    "list_directory",
+    "grep",
+    "find_files",
 }),
 ```
 
-Today no model is offered a write tool (`E-SENS-01` FR-3). Offering `write_file` and
-`create_file` to the scenario agent is this feature's work `[agreed 2026-10-12]`.
+The scenario agent reads, and never writes: it returns its scenarios and the pipeline writes the
+file. This replaces the 2026-10-12 decision to give it `write_file` and `create_file`
+`[agreed 2026-10-15]`.
 
 ### Boundary per agent
 
 | Agent | `WorkspaceBoundary.roots` (R/W) | `api_paths` (Read-Only) | Prompt Includes |
 |-------|--------------------------------|------------------------|----------------|
-| Coding agent | `src/`, `tests/` | `specs/`, `contracts/` | Spec, contract, standards, constitution. **NO** scenario references of any kind |
-| Scenario agent | `scenarios/` | `specs/`, `contracts/` | Spec, contract. **NO** `src/`, `tests/`, code output, stack traces |
+| Coding agent | the project root; scenario files are not in it (FR-11) | `specs/`, `contracts/` | Spec, contract, standards, constitution. **NO** scenario references of any kind |
+| Scenario agent | *(none — reads only)* | `specs/`, `contracts/`, its scenario store | Spec, contract. **NO** `src/`, `tests/`, code output, stack traces |
 | Arbiter agent | *(none — zero writes)* | `specs/`, `contracts/`, `src/`, `tests/`, `scenarios/` | Everything read-only. Produces structured verdict only |
 
 ### Import legality (context.yaml)
@@ -183,23 +183,42 @@ No new external dependencies.
 | AD-7 | New `StepAction.GENERATE` + `StepTarget.SCENARIO` for scenario generation | Same action+target pattern as above | No |
 | AD-8 | Arbiter is a new handler in `flow/` consuming `loom/dispatcher` | `flow/` already consumes `loom/dispatcher` (declared in context.yaml) | No |
 | AD-9 | Arbiter agent has all-read, no-write boundary | `WorkspaceBoundary(roots=[], api_paths=[specs/, contracts/, src/, tests/, scenarios/])`. Role maps to `reviewer`-equivalent intents: `{"read_file", "list_directory", "grep", "find_files"}`. Zero write grants. The arbiter is a pure judgment agent — it reads everything, writes nothing | No |
+| AD-11 | Scenario files live outside the project, in SpecWeaver's data directory; the coder's and the scenario tests run in a container | grants guard tools, not running code or git: only absence from the project closes every path `[agreed 2026-10-15]`. This replaces the earlier "grants leave out `scenarios/`" choice, which nothing then needs | **Yes** — a new store outside the project, and containers required for dual runs |
+| AD-12 | `B-INTL-07` (Error Attribution Arbiter) retired into this feature | SF-C built it (`core/flow/handlers/arbiter.py`); one arbiter, one owner `[agreed 2026-10-15]` | No |
+| AD-13 | The arbiter stays one model's verdict; execution voting (several code samples, re-derived expectations) is not built | a wrong verdict is bounded by isolation: a wrong "scenario error" only makes the scenario side regenerate from the spec, blind to the code `[agreed 2026-10-15]` | No |
+| AD-14 | Scenario tests are the acceptance layer; the coder's tests stay its working tests; overlap is reported per requirement (FR-13), never removed | two independent tests agreeing is the evidence this feature exists for `[agreed 2026-10-15]` | No |
 | AD-10 | Post-JOIN flow: engine runs scenario tests, then arbiter if failures | After JOIN synchronizes both pipelines: (1) `QARunnerAtom` (engine-level, not agent-facing) executes scenario-generated pytest against coding pipeline's output. (2) If all pass → pipeline completes. (3) If any fail → `arbitrate+verdict` handler runs. (4) Arbiter produces filtered feedback → loop-back to the failing pipeline. This runs as a Wave N deferred sequence after the JOIN gate, using the existing `OrchestrateComponentsHandler` deferred-joins mechanism | No |
 
 ## Functional Requirements
 
+FR-1, FR-4, FR-9 and FR-10 are unchanged. FR-2, 3, 5a, 5b, 6, 7 and 8 were rewritten 2026-10-15 to
+what holds, or what the repair builds `[agreed 2026-10-15]`. FR-11..FR-21 are the repair. A **seam**
+FR needs a capability outside this one.
+
 | # | FR | Actor | Action | Outcome |
 |---|-----|-------|--------|---------|
 | FR-1 | Scenario hints checked | Validation engine | SHALL accept a spec without `## Scenarios`, and SHALL fail S07 on a `## Scenarios` section with no YAML block or YAML that cannot be read, and warn on a scenario that misses a key, each finding naming the section's line and a severity `[agreed 2026-10-13]` | the section stays optional hints for scenario generation, and a broken one is caught |
-| FR-2 | API contract generation | Pipeline handler | Extract Python Protocol/ABC from a spec's `## Contract` section | Produces `contracts/api_contract.py` with typed method signatures and docstrings |
-| FR-3 | Scenario generation (LLM) | Scenario generation atom | Generate structured YAML scenarios from spec + API contract | Produces ≥1 scenario per public method covering happy, error, and boundary paths. Each scenario maps to a `req_id` from the spec |
+| FR-2 | API contract generation | Pipeline handler | SHALL extract the contract from a spec's `## Contract` in the project's language — a Python Protocol, a Java, Kotlin or TypeScript interface, a Rust trait — naming each method `Class.method` | `contracts/<stem>_contract.<ext>` with the typed signatures and docstrings of the spec |
+| FR-3 | Scenario generation | Scenario generator | SHALL generate YAML scenarios from the spec and the contract, each naming its method `Class.method` as the contract declares it, and SHALL refuse a result with no scenario, a `req_id` the spec does not declare, a method the contract does not declare, or a contract method no scenario calls | every contract method is checked, and every scenario traces to a real requirement |
 | FR-4 | Scenario → pytest conversion | Mechanical converter | Transform YAML scenarios into parametrized pytest files | Produces executable pytest files with `# @trace(FR-X)` tags for C09. Zero LLM involvement |
-| FR-5a | Scenario agent isolation | Loom security layer | Restrict the scenario agent's filesystem access to `specs/` (read-only) + `contracts/` (read-only) + `scenarios/` (read-write) only | Agent cannot read `src/` or `tests/`; `FolderGrant` enforcement blocks all unauthorized I/O |
-| FR-5b | Coding agent isolation | Loom security layer + PromptBuilder + RunContext | The coding agent MUST have zero awareness of the scenario pipeline — no `scenarios/` filesystem grant, no scenario references in its system prompt, no scenario pipeline status in its `RunContext`, no mention of scenarios in error messages or feedback | From the coding agent's perspective, the scenario pipeline does not exist. Total information opacity |
-| FR-6 | Scenario validation pipeline | Pipeline YAML | Define `scenario_validation.yaml` with steps: generate_contract → generate_scenarios → convert_to_pytest → signal READY | Pipeline executes end-to-end and produces a `READY` signal upon completion |
-| FR-7 | Dual-pipeline parallel execution | OrchestrateComponentsHandler | Run coding pipeline and scenario pipeline in parallel, synchronize at JOIN gate | Both pipelines complete independently; JOIN gate blocks until both signal READY |
-| FR-8 | Arbiter error attribution | Arbiter agent | On scenario test failure, determine fault: code bug / scenario error / spec ambiguity | Arbiter produces exactly two filtered feedback reports: one for coding agent (no scenario details whatsoever), one for scenario agent (no implementation code) |
-| FR-9 | Filtered feedback loop (one-way opacity) | Pipeline engine | Route arbiter verdicts to the correct pipeline with context filtered to preserve total isolation | Coding agent receives ONLY: spec clause reference + behavioral expectation ("function X MUST do Y") + its own stack trace (the frames of its code and their error; none when the failure is an assertion in the check). It does NOT receive: scenario YAML, scenario test file names, scenario test output, scenario pipeline existence, or the word "scenario" in any form. Scenario agent receives ONLY: spec clause reference + expected-vs-actual behavioral delta. It does NOT receive: source code, file paths in `src/`, implementation details |
+| FR-5a | Scenario agent tools | Tool dispatcher | SHALL give the scenario agent the file tools only — read, list, search; no write, git, code-structure or web tool — READ on `specs/`, `contracts/` and its scenario store; it MAY report a contract or spec problem, which goes to the person, never into the contract `[agreed 2026-10-15]` | the agent sees every contract it tests against, and its only output is the scenario set the pipeline stores |
+| FR-5b | Coder sees nothing of the scenario side | Prompt builder, run context | SHALL give each side of a dual run its own `feedback`, and SHALL keep every scenario-side word, path and value out of the coder's prompt and feedback; the person's `## Scenarios` hints stay in the coder's copy of the spec `[agreed 2026-10-15]` | the coder's inputs are the spec, the contract and its own results — nothing the scenario side made |
+| FR-6 | Scenario pipeline | Pipeline YAML | `scenario_validation.yaml` SHALL run `generate_scenarios` then `convert_to_pytest`; the contract is generated once, before the two sides start (`scenario_integration.yaml`) | both sides read one contract |
+| FR-7 | Parallel sides, joined | Dual-pipeline handler | SHALL run the coding and the scenario side at the same time and continue only when both ended | the two runs overlap in time, and the scenario tests run only after both ended |
+| FR-8 | Arbiter attribution | Arbiter | On a failed scenario test SHALL give one verdict — code bug, scenario error, or spec ambiguity — and send one report to the side at fault `[agreed 2026-10-15]` | the side at fault learns what to fix, and nothing crosses to the other side |
+| FR-9 | Filtered feedback loop (one-way opacity, both ways) | Pipeline engine | Route arbiter verdicts to the side at fault with context filtered to preserve isolation | Coding side receives ONLY: spec clause reference + behavioral expectation ("function X MUST do Y") + its own stack trace (the frames of its code and their error; none when the failure is an assertion in the check). It does NOT receive: scenario YAML, scenario test file names, scenario test output, scenario pipeline existence, or the word "scenario" in any form. Scenario side receives ONLY: spec clause reference + the disputed expectation + the arbiter's reason; never source code, a path in the project, or any value the code produced `[agreed 2026-10-15]` |
 | FR-10 | HITL escalation on spec ambiguity | Arbiter agent | When arbiter determines spec ambiguity, SHALL park naming the clause, its readings and the spec file; the person settles it by editing the spec `[agreed 2026-10-13]` | resumed with the spec unchanged, the run parks again with no model call; with it edited, the round runs again |
+| FR-11 | Scenario files outside the project | Scenario store (SpecWeaver data directory) | Scenario sets and their tests SHALL be stored outside the project, in SpecWeaver's own data directory per project — never in the repository, never in git `[agreed 2026-10-15]` | no tool, search, git command, mention or running code inside the project can reach them |
+| FR-12 | Seam: memory stays on its side | Run memory (`D-INTL-06`) | A scenario-side or arbiter text SHALL never enter memory a coder prompt reads, and a coder-side text SHALL never enter memory the scenario side reads `[agreed 2026-10-15]` | neither side learns the other's past through memory |
+| FR-13 | Seam: coverage counted apart | C09 (`C-VAL-04`) | The coder's C09 SHALL count only the coder's tests; per requirement the run SHALL report to the person whether both sides, the coder only, or the scenario side only cover it `[agreed 2026-10-15]` | a gap in the coder's tests is no longer hidden by a scenario test |
+| FR-14 | Scenario tests run apart | Scenario test step, container | The scenario tests SHALL run in a container that mounts the project and the scenario store read-only, placing each test where its language's build needs it inside the container only; the project tree never holds a scenario test `[agreed 2026-10-15]` | a scenario run leaves nothing in the project, also when it crashes |
+| FR-15 | One spec for both sides | Dual-pipeline handler, spec review | Spec review SHALL record the reviewed spec's fingerprint; a dual run SHALL start only when the spec matches it, SHALL check it again before arbitrating, and its coding side SHALL skip drafting and reviewing the spec `[agreed 2026-10-15]` | both sides read the same reviewed spec, unchanged during the run |
+| FR-16 | Only the side at fault runs again | Arbiter loop | After a verdict SHALL run again only the side at fault, keeping the other side's output; each side has its own feedback outbox, handed only to that side `[agreed 2026-10-15]` | fixed scenarios stay a stable target, and each round costs one side |
+| FR-17 | Different models | Dual-pipeline handler | When the roles in `settings.toml` name two or more distinct models and the resolved models of the `generate_code` and `generate_scenarios` roles are the same, the dual run SHALL refuse, naming the two settings keys; with one model it SHALL warn and say so in the run report; `--model` sets the coding side only `[agreed 2026-10-15]` | the two sides do not share one model's misreadings where the settings allow otherwise |
+| FR-18 | Fail closed | Dual-pipeline handler | A dual run SHALL refuse to start, naming why, when no container can run the coder's and the scenario tests, or when FR-5b or FR-11 cannot hold `[agreed 2026-10-15]` | a dual run that only looks independent never runs |
+| FR-19 | Scenario tests kept | Scenario store | After a passing run the scenario set SHALL stay in the store with its spec's and contract's fingerprints, generated again when either changed; only dual runs and a separate acceptance step run it, and the acceptance step reports to the person only `[agreed 2026-10-15]` | a later change cannot quietly break a requirement only it checked, and no coder ever sees the result |
+| FR-20 | Seam: spec conflicts found | Spec review (`E-INTL-03`) | Spec review SHALL check a spec against the project's existing specs and contracts and name each conflict `[agreed 2026-10-15]` | a spec that contradicts another is caught before any code or scenario is written |
+| FR-21 | Normal runs of a project with kept scenarios | Test step, container | In any run of a project whose scenario store holds a set, the coder's tests SHALL run in a container; without one the run SHALL warn and go on `[agreed 2026-10-15]` | outside a dual run too, running code cannot reach the scenario store where a container exists |
 
 ## Non-Functional Requirements
 
@@ -209,22 +228,50 @@ No new external dependencies.
 | NFR-2 | Scenario → pytest is non-LLM | Mechanical conversion eliminates a failure mode and ensures reproducibility |
 | NFR-3 | Logging for all pipeline synchronization | Every JOIN wait, fan_out dispatch, and arbiter verdict must produce `logger.info` entries |
 | NFR-4 | No test collision | Parallel pipelines must not share filesystem write paths; existing `FolderGrant` enforcement is sufficient |
-| NFR-5 | Bounded arbiter retries | Max 3 arbiter-mediated loop-backs before HITL escalation |
+| NFR-5 | Bounded arbiter retries | At most 2 verdicts that send a side back, each re-running only that side (FR-16); the next failure asks the person `[agreed 2026-10-15]` |
 | NFR-6 | Zero `@trace` tag dependency | Tags are comments (`# @trace(FR-X)`), not imports — no runtime dependency |
 | NFR-7 | Backward compatibility | All existing pipeline YAML files, gate types, and handler registrations must continue to work unmodified |
 | NFR-8 | Total information opacity | The coding agent MUST NOT be able to infer, discover, or be told that a second verification pipeline exists. This includes: (a) no `scenarios/` path in grants, (b) no scenario-related vocabulary in prompts or feedback, (c) arbiter feedback to the coding agent is phrased as spec-derived behavioral assertions — indistinguishable from a reviewer finding. The arbiter feedback MUST read like a review verdict, not a test failure report **[proof: none — unfalsifiable as written]** |
 
+## Repair: surfaces
+
+| FR | Binds to | Verified how |
+|---|---|---|
+| FR-11, FR-19 | `specweaver_root()` for the data directory; `ScenarioSet(spec_path, contract_path, scenarios, reasoning)`; `ConvertScenarioHandler` writes the test; `output_path(stem, project_root)` per converter | read `core/config/paths.py`, `workflows/scenarios/scenario_models.py:50`, `core/flow/handlers/scenario.py:150-174`, `sandbox/language/core/*/scenario_converter.py` |
+| FR-14, FR-18 | `ContainerExecutor` (Podman/Docker, ephemeral; mounts a directory) | read `sandbox/execution/container_executor.py:113-143`; proven for Python projects only |
+| FR-5a | `ToolDispatcher._compute_role_grants(role, boundary)` gives `scenario_agent` FULL on `scenarios/` today and nothing under a read-only boundary | read `sandbox/dispatcher.py:163-178` |
+| FR-5a | `_build_tool_dispatcher(context, role, adapter)` enables `fs` and `ast`, and `ast` has no `scenario_agent` role (`sandbox/code_structure/interfaces/tool.py:116` raises); `ScenarioGenerator(llm, *, config, max_retries, tool_dispatcher)`; the `generate_with_tools` pattern | read `core/flow/handlers/review.py:37`, `workflows/scenarios/scenario_generator.py:34`, `workflows/review/reviewer.py:190` |
+| FR-5b, FR-18 | the sub-run context, a shallow `model_copy()` sharing `feedback` | read `core/flow/engine/fan_out.py:21-43` |
+| FR-12 | `_skip_reason`, `_target_task_id` and the payload of the handover; `MemoryHydrator(session, project_name).hydrate()`; the `AGENT_MEMORY` slot | read `core/flow/engine/handover.py:17,63,86`, `workspace/memory/hydrator.py:148`, `core/flow/handlers/prompting.py:63` |
+| FR-13 | `_find_and_parse_tests` → `extract_test_mapped_requirements(project_root)`; the walk that prunes directories | read `assurance/validation/rules/code/c09_traceability.py`, `workspace/analyzers/factory.py:221-243` |
+| FR-14 | `output_path(stem, project_root)` per converter; `ValidateTestsHandler.execute` for `kind: scenario` | read `sandbox/language/core/*/scenario_converter.py`, `core/flow/handlers/validation.py` |
+| FR-15, FR-16, FR-7 | `_spec_sha` (`core/flow/handlers/arbiter.py:137`); the arbiter writes `feedback["generate_code"]`/`["generate_scenarios"]` (`arbiter.py:200,381`); `_build_runner(name, stem, context)`; the `loop_back` to `run_dual_pipelines` that re-runs both sides | read `core/flow/handlers/dual_pipeline.py:44-120`, `core/flow/engine/gates.py:196-234`, `workflows/pipelines/scenario_integration.yaml` |
+| FR-17 | role resolution from `settings.toml` | read `infrastructure/llm/resolve.py` (`RoleResolver`) |
+| FR-20 | the spec review rubric | read `assurance/validation/rubrics/spec_review.md` (five criteria; none on conflicts) |
+
+`scripts/check_fr_coverage.py` and `scripts/_citations.py` read only `FR-<digits>`, so FR-5a and
+FR-5b were never judged; SF-D widens both to `FR-<digits><letter>`.
+
 ## Sub-features
+
+The repair re-owns the seven rewritten FRs: each now belongs to the SF that builds or proves its new
+text, so every FR has exactly one owner.
+
 
 The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gate) and 3.28h
 (parallel orchestrator) were already implemented by 3.27.
 
 | SF | Does | FRs | Inputs → Outputs | Depends on | Plan |
 |----|------|-----|------------------|-----------|------|
-| SF-A (3.28a + 3.28b) | S07 checks an optional `## Scenarios` section's YAML; new handler extracts a Python Protocol/ABC from the spec's `## Contract`. | FR-1, FR-2 | spec markdown with `## Contract` → S07 fails on a malformed `## Scenarios`; `contracts/api_contract.py` with a typed Protocol class | none | [sfa](B-FLOW-01_sfa_implementation_plan.md) |
-| SF-B (3.28c + 3.28d + 3.28e + 3.28f + 3.28g + 3.28h) | LLM scenario generation from spec + API contract → YAML; mechanical YAML → pytest with `@trace` tags; `scenario_agent` role; **total information opacity** for the coding agent (FR-5b); `scenario_validation.yaml`; dual-pipeline wiring. | FR-3, FR-4, FR-5a, FR-5b, FR-6, FR-7 | spec, API contract (Protocol class), `req_id` list → `scenarios/definitions/*.yaml` + `scenarios/generated/*.py` (parametrized pytest); two isolated parallel pipelines with JOIN; coding agent unaware of the scenario pipeline | SF-A | [sfb](B-FLOW-01_sfb_implementation_plan.md) |
-| SF-B2 | Polyglot scenario pipeline: converters, contract renderers and stack-trace filters for Python, Java, Kotlin, TypeScript, Rust. | FR-4 (NFR-1, NFR-2) | — | SF-B | [sfb2](B-FLOW-01_sfb2_implementation_plan.md) |
-| SF-C (3.28i + 3.28j) | Arbiter for error attribution, run post-JOIN after `QARunnerAtom` executes scenario tests. **All-read, no-write** boundary (`api_paths` only, zero `roots`). Filtered feedback keeps total information opacity — coding feedback reads like a reviewer finding (AD-9, AD-10). HITL escalation on spec ambiguity. | FR-8, FR-9, FR-10 | scenario test results (pass/fail from QARunnerAtom), spec, API contract, `src/` output, `scenarios/` output → one filtered feedback report per pipeline (vocabulary-filtered per NFR-8), or HITL escalation. Coding feedback has NO scenario vocabulary — phrased as "Spec clause §X requires Y. Your implementation does Z." | SF-B, SF-B2 | [sfc](B-FLOW-01_sfc_implementation_plan.md) |
+| SF-A (3.28a + 3.28b) | S07 checks an optional `## Scenarios` section's YAML; new handler extracts a Python Protocol/ABC from the spec's `## Contract`. | FR-1 (FR-2 moved to SF-F) | spec markdown with `## Contract` → S07 fails on a malformed `## Scenarios`; `contracts/api_contract.py` with a typed Protocol class | none | [sfa](B-FLOW-01_sfa_implementation_plan.md) |
+| SF-B (3.28c + 3.28d + 3.28e + 3.28f + 3.28g + 3.28h) | LLM scenario generation from spec + API contract → YAML; mechanical YAML → pytest with `@trace` tags; `scenario_agent` role; **total information opacity** for the coding agent (FR-5b); `scenario_validation.yaml`; dual-pipeline wiring. | FR-4 (FR-3, 5a, 6 moved to SF-F; FR-5b to SF-D; FR-7 to SF-G) | spec, API contract (Protocol class), `req_id` list → `scenarios/definitions/*.yaml` + `scenarios/generated/*.py` (parametrized pytest); two isolated parallel pipelines with JOIN; coding agent unaware of the scenario pipeline | SF-A | [sfb](B-FLOW-01_sfb_implementation_plan.md) |
+| SF-B2 | Polyglot scenario pipeline: converters, contract renderers and stack-trace filters for Python, Java, Kotlin, TypeScript, Rust. | — (extends SF-B's FR-4 to more languages; NFR-1, NFR-2) | — | SF-B | [sfb2](B-FLOW-01_sfb2_implementation_plan.md) |
+| SF-D | Isolation core: the scenario store outside the project; each side its own `feedback`; fail closed without a container; the FR checker reads lettered FRs | FR-11, FR-5b, FR-18, FR-21 | scenario writes, the sub-run context, the container check → no scenario file in the project, no shared `feedback`, no dual run without isolation | none | — |
+| SF-E | Memory and coverage apart | FR-12, FR-13 | handover, hydrator, C09 walk → no scenario text in coder memory; C09 counts the coder's tests; a coverage report per requirement | none | — |
+| SF-F | Scenario side: read-only tools, checked scenarios, filtered reports | FR-5a, FR-3, FR-8, FR-2, FR-6 | spec, contracts → scenarios checked against the spec and the contract; a scenario report with no code | SF-D | — |
+| SF-G | Run control: one spec, the side at fault only, models, the scenario run in a container, overlap | FR-15, FR-16, FR-17, FR-14, FR-7 | the dual run → one reviewed spec; one side per round, 2 rounds; scenario tests run in a container from the store | SF-D | — |
+| SF-H | Spec conflicts and the kept suite | FR-20, FR-19 | spec review, scenario store → conflicts named at review; scenario sets kept with fingerprints, regenerated on a change, run by dual runs and an acceptance step for the person | SF-D | — |
+| SF-C (3.28i + 3.28j) | Arbiter for error attribution, run post-JOIN after `QARunnerAtom` executes scenario tests. **All-read, no-write** boundary (`api_paths` only, zero `roots`). Filtered feedback keeps total information opacity — coding feedback reads like a reviewer finding (AD-9, AD-10). HITL escalation on spec ambiguity. | FR-9, FR-10 (FR-8 moved to SF-F) | scenario test results (pass/fail from QARunnerAtom), spec, API contract, `src/` output, `scenarios/` output → one filtered feedback report per pipeline (vocabulary-filtered per NFR-8), or HITL escalation. Coding feedback has NO scenario vocabulary — phrased as "Spec clause §X requires Y. Your implementation does Z." | SF-B, SF-B2 | [sfc](B-FLOW-01_sfc_implementation_plan.md) |
 
 ## Progress Tracker
 
@@ -233,3 +280,13 @@ The original 11 sub-features (3.28a–j) were merged into three. 3.28g (JOIN gat
 | SF-A | Foundation: Spec Enforcement + Contract Generation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-B | Scenario Pipeline: Generate + Convert + Wire | SF-A | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-C | Arbiter + Feedback Loop | SF-B | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-D | Isolation core | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-E | Memory and coverage apart | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-F | Scenario side | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-G | Run control | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-H | Spec conflicts and the kept suite | SF-D | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+
+## Session Handoff
+
+**Now**: the repair design is approved; leak 1 is fixed (`80a6f90a`).
+**Next**: the implementation-plan skill for SF-D (isolation core).
