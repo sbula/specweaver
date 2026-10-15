@@ -438,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     declared: set[str] = set()
     baseline: Baseline | None = None
     head = _mutate._run(["git", "rev-parse", "--short", "HEAD"], REPO_ROOT).strip()
-    dirty = bool(_mutate._run(["git", "status", "--porcelain"], REPO_ROOT).strip())
+    dirty = _reach.is_dirty()
 
     if paths:
         sandbox = build_sandbox()

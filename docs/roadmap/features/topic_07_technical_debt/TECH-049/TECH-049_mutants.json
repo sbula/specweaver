@@ -178,6 +178,16 @@
           "new": "    diff = _mutate._run([\"git\", \"diff\", \"HEAD\"], root)\n",
           "breaks": "the run's own ledger write changes the tree under its verdict, so the gate blocks every nightly",
           "symbol_sha": "sha256:0ad803b6928b8eb8153d7c8a40d6babd99208a9575d682a89fea433adcb886d7"
+        },
+        {
+          "id": "ledger-makes-the-tree-dirty",
+          "origin": "authored",
+          "file": "scripts/_run_reach.py",
+          "symbol": "is_dirty",
+          "old": "    status = [\"git\", \"status\", \"--porcelain\", \"--\", \".\", f\":(exclude){LEDGER}\"]\n",
+          "new": "    status = [\"git\", \"status\", \"--porcelain\"]\n",
+          "breaks": "every verdict says it describes no commit, because the run's own ledger is uncommitted",
+          "symbol_sha": "sha256:6728e1c0a1b34a7e19c13d15e8a58102bf196419799fa4c3bea80a4f2b9e16ba"
         }
       ]
     },
@@ -319,7 +329,7 @@
           "old": "    _cli.announce_sweep(Path(args.out))",
           "new": "    pass",
           "breaks": "the retention rule is written and nothing calls it, so the store grows for ever while every unit test of the rule stays green",
-          "symbol_sha": "sha256:518e9b03d7a8fb099291759b9e5f4e72c1d81b23b1ab61665345ceec75c08404"
+          "symbol_sha": "sha256:22e0333b41c4316005dcc2130992a45ab00ab927b39bf1b33cc9f0bb0c315881"
         }
       ]
     }

@@ -71,3 +71,13 @@ def test_only_the_ledger_is_left_out(reach: ModuleType, repo: Path, rel: str, sa
     (repo / rel).write_text('{"changed": true}\n', encoding="utf-8")
 
     assert (reach.tree_sha(repo) == clean) is same
+
+
+@pytest.mark.parametrize(("rel", "dirty"), [(_LEDGER, False), ("a.py", True), ("new.py", True)])
+def test_only_the_ledger_leaves_the_tree_clean(
+    reach: ModuleType, repo: Path, rel: str, dirty: bool
+) -> None:
+    assert reach.is_dirty(repo) is False
+    (repo / rel).write_text('{"changed": true}\n', encoding="utf-8")
+
+    assert reach.is_dirty(repo) is dirty

@@ -75,6 +75,12 @@ def tree_sha(root: Path = REPO_ROOT) -> str:
     return str(_record.working_tree_sha(diff, untracked))
 
 
+def is_dirty(root: Path = REPO_ROOT) -> bool:
+    """Whether the tree differs from HEAD in anything but the ledger the run itself writes."""
+    status = ["git", "status", "--porcelain", "--", ".", f":(exclude){LEDGER}"]
+    return bool(_mutate._run(status, root).strip())
+
+
 def current_tree_sha() -> str | None:
     """The tree as it is now, or `None` if it cannot be read.
 
