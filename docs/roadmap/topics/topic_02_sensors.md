@@ -25,14 +25,15 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** Reviewer · code generation
   > - **Done when:** six tools — four filesystem, two web — resolve through one provider-agnostic call
 
-* **`E-SENS-03` 🔧: Context Ledgers & Workspace Boundaries**
+* **`E-SENS-03` 🔧: Workspace Boundaries**
   > - **Purpose:** Restrict what an agent can see to the scope of its assigned task, not the whole repo
   > - **Trigger:** When a task is dispatched to an agent
   > - **Precondition:** —
   > - **Reads:** the task's declared scope
   > - **Produces:** a task-scoped grant — READ / WRITE / FULL
   > - **Enables:** `E-SENS-01` · `E-SENS-02` · the `US-5` contract
-  > - **Done when:** an agent's grant is built from its task and refuses everything outside it
+  > - **Done when:** an agent's write grant is built from its task and refuses every write outside it `[agreed 2026-10-16]`
+  > - **Design:** [E-SENS-03_design.md](../features/topic_02_sensors/E-SENS-03/E-SENS-03_design.md)
 
 ## DAL-D: Internal Tooling
 
