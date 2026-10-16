@@ -4,7 +4,7 @@
 
 """E2E tests for telemetry pipeline (stories 29-30).
 
-Full vertical slice: settings file → RoleResolver → TelemetryCollector → generate → flush → DB query.
+Full vertical slice: settings file → RoleResolver → TelemetryCollector → generate → ledger → DB query.
 Only the provider adapter class is faked; the settings file, the resolver and the DB are real.
 """
 
@@ -105,7 +105,7 @@ agent_turns = 10
 """
 
 
-def _router(extra: str = ""):
+def _router(db, extra: str = ""):
     """The router a command would build, from a real machine settings file."""
     from specweaver.core.config.bootstrap.llm_settings_loader import (
         load_llm_settings,
@@ -125,6 +125,7 @@ def _router(extra: str = ""):
             load_llm_settings(None),
             project="e2e-proj",
             roles=["default"],
+            db=db,
         )
         result = router.get_for_task(TaskType.UNKNOWN)
     return result.adapter, result.config
@@ -177,14 +178,14 @@ def _get_estimated_cost_sync(db, project: str) -> float:
 
 
 class TestFullPipelineE2E:
-    """Settings file → wrapped adapter → generate → flush → query."""
+    """Settings file → wrapped adapter → generate → the ledger → query."""
 
     @pytest.mark.asyncio
     async def test_full_telemetry_pipeline(self, db):
-        """Story 29: full vertical slice — settings, resolver, collector, generate, flush, query."""
+        """Story 29: full vertical slice — settings, resolver, collector, generate, ledger, query."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
-        adapter, gen_config = _router()
+        adapter, gen_config = _router(db)
 
         assert isinstance(adapter, TelemetryCollector)
 
@@ -201,10 +202,6 @@ class TestFullPipelineE2E:
         )
         await adapter.generate([], config1)
         await adapter.generate([], config2)
-
-        # Flush to real DB
-        flushed = adapter.flush(db)
-        assert flushed == 2
 
         # Query and verify
         summary = _get_usage_summary_sync(db, "e2e-proj")
@@ -230,7 +227,7 @@ usd_per_million_output = 200000.0
 
 
 class TestCostOverrideLifecycleE2E:
-    """A machine-file price → resolver → generate → flush → the stored cost uses it."""
+    """A machine-file price → resolver → generate → the stored cost uses it."""
 
     @pytest.mark.asyncio
     async def test_cost_override_affects_persisted_cost(self, db):
@@ -238,7 +235,7 @@ class TestCostOverrideLifecycleE2E:
         # A very high price in the machine file, so it is plainly the one used
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
-        adapter, gen_config = _router(_PRICE)
+        adapter, gen_config = _router(db, _PRICE)
 
         assert isinstance(adapter, TelemetryCollector)
 
@@ -249,9 +246,6 @@ class TestCostOverrideLifecycleE2E:
             max_output_tokens=1000,
         )
         await adapter.generate([], config)
-
-        # Flush → DB
-        adapter.flush(db)
 
         # Verify cost: 500 * 100_000/1M + 200 * 200_000/1M = 50 + 40 = 90
         assert _get_estimated_cost_sync(db, "e2e-proj") == pytest.approx(90.0)

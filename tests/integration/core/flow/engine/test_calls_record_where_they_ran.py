@@ -100,7 +100,9 @@ async def test_each_call_records_server_dal_and_step(tmp_path: Path) -> None:
         project_path=root,
         spec_path=root / "a_spec.md",
         db=db,
-        model=ModelAccess(llm_router=build_router(files, project="proj", roles=[TaskType.REVIEW])),
+        model=ModelAccess(
+            llm_router=build_router(files, project="proj", roles=[TaskType.REVIEW], db=db)
+        ),
     )
     registry = StepHandlerRegistry()
     registry.register("review", "spec", _CallsOnce())

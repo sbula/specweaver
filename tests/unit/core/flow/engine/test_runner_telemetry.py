@@ -2,10 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for runner telemetry flush (Feature 3.12).
+"""What the runner does with telemetry at the end of a run (Feature 3.12, C-FLOW-01 FR-4).
 
-Verifies that PipelineRunner flushes the TelemetryCollector
-(if present on context.model.llm) after run() and resume() complete.
+The collector writes every call to the cost ledger itself, as the call happens. At the end of
+run() and resume() the runner records only how its steps ended, and never touches the collector.
 
 Proves: TECH-051 FR-4
 
@@ -75,12 +75,25 @@ def _registry(handler) -> StepHandlerRegistry:
     return reg
 
 
+@pytest.fixture(autouse=True)
+def outcomes(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """The run ids whose step outcomes the runner recorded."""
+    seen: list[str] = []
+    monkeypatch.setattr(
+        "specweaver.core.flow.engine.telemetry.record_step_outcomes",
+        lambda db, run_id, steps: seen.append(run_id),
+    )
+    return seen
+
+
 class TestQARunnerTelemetryFlush:
-    """Runner flushes TelemetryCollector after pipeline completes."""
+    """At its end a run records its step outcomes; the calls are already in the ledger."""
 
     @pytest.mark.asyncio
-    async def test_flush_called_on_successful_run(self, tmp_path: Path):
-        """After a successful pipeline run, flush() is called on context.model.llm."""
+    async def test_a_finished_run_records_its_step_outcomes(
+        self, tmp_path: Path, outcomes: list[str]
+    ):
+        """After a successful run, its step outcomes are recorded once."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
         mock_collector = MagicMock(spec=TelemetryCollector)
@@ -95,11 +108,14 @@ class TestQARunnerTelemetryFlush:
 
         await runner.run()
 
-        mock_collector.flush.assert_called_once_with(mock_db)
+        assert len(outcomes) == 1
+        assert mock_collector.method_calls == []  # the collector wrote its own rows
 
     @pytest.mark.asyncio
-    async def test_flush_called_on_failed_run(self, tmp_path: Path):
-        """After a failed pipeline run, flush() is still called."""
+    async def test_a_failed_run_records_its_step_outcomes(
+        self, tmp_path: Path, outcomes: list[str]
+    ):
+        """After a failed run, its step outcomes are still recorded."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
         mock_collector = MagicMock(spec=TelemetryCollector)
@@ -114,10 +130,11 @@ class TestQARunnerTelemetryFlush:
 
         await runner.run()
 
-        mock_collector.flush.assert_called_once_with(mock_db)
+        assert len(outcomes) == 1
+        assert mock_collector.method_calls == []  # the collector wrote its own rows
 
     @pytest.mark.asyncio
-    async def test_no_flush_when_llm_is_not_collector(self, tmp_path: Path):
+    async def test_no_flush_when_llm_is_not_collector(self, tmp_path: Path, outcomes: list[str]):
         """When context.model.llm is a plain adapter (not TelemetryCollector), no crash."""
         mock_adapter = MagicMock()  # no spec=TelemetryCollector
         ctx = RunContext(
@@ -132,8 +149,10 @@ class TestQARunnerTelemetryFlush:
         # Should not crash — no assertion needed, test passes if no exception
 
     @pytest.mark.asyncio
-    async def test_flush_skipped_when_db_is_none(self, tmp_path: Path):
-        """When context.db is None, flush is skipped (not called)."""
+    async def test_nothing_is_recorded_without_a_database(
+        self, tmp_path: Path, outcomes: list[str]
+    ):
+        """When context.db is None, nothing is recorded."""
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
         mock_collector = MagicMock(spec=TelemetryCollector)
@@ -147,10 +166,11 @@ class TestQARunnerTelemetryFlush:
 
         await runner.run()
 
-        mock_collector.flush.assert_not_called()
+        assert outcomes == []  # no database, nothing to record
+        assert mock_collector.method_calls == []
 
     @pytest.mark.asyncio
-    async def test_flush_called_when_context_llm_is_none(self, tmp_path: Path):
+    async def test_flush_called_when_context_llm_is_none(self, tmp_path: Path, outcomes: list[str]):
         """When context.model.llm is None, _flush_telemetry does nothing (no crash)."""
         ctx = RunContext(
             model=ModelAccess(llm_router=None),
@@ -164,8 +184,10 @@ class TestQARunnerTelemetryFlush:
         # No crash = success
 
     @pytest.mark.asyncio
-    async def test_resume_flushes_telemetry(self, tmp_path: Path):
-        """After resume(), flush() is called on context.model.llm."""
+    async def test_a_resumed_run_records_its_step_outcomes(
+        self, tmp_path: Path, outcomes: list[str]
+    ):
+        """After resume(), the step outcomes are recorded."""
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord
         from specweaver.infrastructure.llm.collector import TelemetryCollector
 
@@ -207,4 +229,5 @@ class TestQARunnerTelemetryFlush:
 
         await runner.resume("test-resume-id")
 
-        mock_collector.flush.assert_called_once_with(mock_db)
+        assert len(outcomes) == 1
+        assert mock_collector.method_calls == []  # the collector wrote its own rows

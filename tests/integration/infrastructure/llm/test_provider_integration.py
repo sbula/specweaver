@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -11,6 +12,10 @@ from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import Message, Role
 from specweaver.infrastructure.llm.resolve import RoleResolver
+from tests.ledger import Ledger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.asyncio
@@ -27,6 +32,7 @@ async def test_provider_e2e_flow(
     provider: str,
     env_var: str,
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     machine = (
         f'[servers.{provider}]\nkind = "{provider}"\napi_key_env = "{env_var}"\n'
@@ -44,7 +50,10 @@ async def test_provider_e2e_flow(
     )
 
     # 3. Resolve the role's adapter: the resolver always records telemetry
-    resolver = RoleResolver(files, telemetry_project="test-proj", budget=SpendBudget())
+    ledger = Ledger(tmp_path)
+    resolver = RoleResolver(
+        files, telemetry_project="test-proj", budget=SpendBudget(), history=ledger.db
+    )
     adapter, config = resolver.for_role("draft")
 
     # Unwind the wrappers: TelemetryCollector -> AsyncRateLimiterAdapter -> ActualAdapter
@@ -103,8 +112,8 @@ async def test_provider_e2e_flow(
     assert result.text == f"Response from {provider}"
 
     # Verify Telemetry was recorded
-    assert len(adapter.records) == 1
-    record = adapter.records[0]
+    [record] = ledger.rows
+    assert record.call_status == "ok"
     assert record.provider == provider
     assert record.model == "fake-model"
     assert record.prompt_tokens == 10

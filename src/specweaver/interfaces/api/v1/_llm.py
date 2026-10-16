@@ -71,11 +71,7 @@ async def run_steps(
             ),
         ),
     )
-    try:
-        run = await PipelineRunner(pipeline, context, memory_task=memory_task).run()
-    finally:
-        for collector in router.collectors():
-            await collector.flush_async(db)
+    run = await PipelineRunner(pipeline, context, memory_task=memory_task).run()
     stopped = getattr(getattr(router, "budget", None), "stopped", None)
     if isinstance(stopped, SpendLimitReachedError):
         raise SpecWeaverAPIError(detail=str(stopped), error_code="SPEND_LIMIT", status_code=402)

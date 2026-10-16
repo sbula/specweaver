@@ -8,7 +8,7 @@ Only HTTP is faked.
 
 | Bucket | Case |
 |---|---|
-| Happy | `POST /review` returns the model's verdict; `POST /implement` writes the code and the tests |
+| Happy | `POST /review` returns the model's verdict; `POST /implement` writes the code and the tests; each call is one `ok` row in the cost ledger (`C-FLOW-01` FR-1, FR-4) |
 | Boundary | not applicable — the request shapes are proven by the endpoint unit tests |
 | Degradation | not applicable — a model failure is proven by the review and generation handlers |
 | Hostile | not applicable — paths are proven by `resolve_file_in_project`'s own tests |
@@ -16,6 +16,7 @@ Only HTTP is faked.
 
 from __future__ import annotations
 
+import sqlite3
 from typing import TYPE_CHECKING
 
 import httpx2
@@ -109,3 +110,30 @@ def test_implement_writes_the_code_and_the_tests(client: TestClient, tmp_path: P
     assert (tmp_path / "proj" / "src" / "greeter.py").read_text(encoding="utf-8").strip()
     assert body["code_path"].endswith("src/greeter.py")
     assert body["test_path"].endswith("tests/test_greeter.py")
+
+
+def _ledger(tmp_path: Path) -> list[tuple[str, str, str, int, int]]:
+    with sqlite3.connect(tmp_path / "data" / "specweaver.db") as db:
+        return db.execute(
+            "SELECT project_name, task_type, call_status, prompt_tokens, completion_tokens"
+            " FROM llm_usage_log"
+        ).fetchall()
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "reply", "task_type", "calls"),
+    [
+        ("review", "VERDICT: ACCEPTED\nFine.", "review", 1),
+        ("implement", "def greet() -> str:\n    return 'hi'\n", "implement", 2),
+    ],
+)
+def test_every_api_model_call_is_one_ledger_row(
+    client: TestClient, tmp_path: Path, endpoint: str, reply: str, task_type: str, calls: int
+) -> None:
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(reply))):
+        response = client.post(
+            f"/api/v1/{endpoint}", json={"file": "specs/greeter_spec.md", "project": "api"}
+        )
+
+    assert response.status_code == 200, response.text
+    assert _ledger(tmp_path) == [("api", task_type, "ok", 10, 10)] * calls

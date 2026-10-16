@@ -18,9 +18,18 @@ from specweaver.infrastructure.llm.models import (
     TaskType,
     TokenUsage,
 )
+from tests.ledger import Ledger
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from pathlib import Path
+
+
+@pytest.fixture
+def ledger(tmp_path: Path) -> Ledger:
+    """A real ledger: the collector writes every call there itself (C-FLOW-01 FR-4)."""
+    return Ledger(tmp_path)
+
 
 # ---------------------------------------------------------------------------
 # Fake adapter for testing
@@ -75,9 +84,9 @@ class TestCollectorGenerate:
     """Test telemetry capture for generate()."""
 
     @pytest.mark.asyncio
-    async def test_captures_one_record(self):
+    async def test_captures_one_record(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="test-proj")
+        collector = TelemetryCollector(adapter, project="test-proj", ledger=ledger.db)
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
         )
@@ -85,8 +94,8 @@ class TestCollectorGenerate:
         response = await collector.generate([], config)
 
         assert response.text == "hello"
-        assert len(collector.records) == 1
-        record = collector.records[0]
+        assert len(ledger.rows) == 1
+        record = ledger.rows[0]
         assert record.project_name == "test-proj"
         assert record.task_type == "draft"
         assert record.model == "fake-model"
@@ -95,20 +104,20 @@ class TestCollectorGenerate:
         assert record.completion_tokens == 50
 
     @pytest.mark.asyncio
-    async def test_timing_is_positive(self):
+    async def test_timing_is_positive(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="test-proj")
+        collector = TelemetryCollector(adapter, project="test-proj", ledger=ledger.db)
         config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         await collector.generate([], config)
 
-        assert collector.records[0].duration_ms >= 0
+        assert ledger.rows[0].duration_ms >= 0
 
     @pytest.mark.asyncio
-    async def test_task_type_from_config_not_constructor(self):
+    async def test_task_type_from_config_not_constructor(self, ledger):
         """task_type comes from config.task_type, not the collector constructor."""
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
 
         config1 = GenerationConfig(
             model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
@@ -120,17 +129,17 @@ class TestCollectorGenerate:
         await collector.generate([], config1)
         await collector.generate([], config2)
 
-        assert collector.records[0].task_type == "review"
-        assert collector.records[1].task_type == "implement"
+        assert ledger.rows[0].task_type == "review"
+        assert ledger.rows[1].task_type == "implement"
 
 
 class TestCollectorGenerateWithTools:
     """Test telemetry capture for generate_with_tools()."""
 
     @pytest.mark.asyncio
-    async def test_captures_one_record(self):
+    async def test_captures_one_record(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
         )
@@ -138,17 +147,17 @@ class TestCollectorGenerateWithTools:
         response = await collector.generate_with_tools([], config, MagicMock())
 
         assert response.text == "hello"
-        assert len(collector.records) == 1
-        assert collector.records[0].task_type == "review"
+        assert len(ledger.rows) == 1
+        assert ledger.rows[0].task_type == "review"
 
 
 class TestCollectorGenerateStream:
     """Test telemetry capture for generate_stream()."""
 
     @pytest.mark.asyncio
-    async def test_captures_record_after_stream(self):
+    async def test_captures_record_after_stream(self, ledger):
         adapter = FakeAdapter(stream_chunks=["hello", " world", "!"])
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
         )
@@ -158,8 +167,8 @@ class TestCollectorGenerateStream:
             chunks.append(chunk)
 
         assert chunks == ["hello", " world", "!"]
-        assert len(collector.records) == 1
-        record = collector.records[0]
+        assert len(ledger.rows) == 1
+        record = ledger.rows[0]
         assert record.task_type == "draft"
         assert record.completion_tokens > 0  # Estimated from text
         assert record.prompt_tokens == 0  # Known gap for streaming
@@ -169,9 +178,9 @@ class TestCollectorMultipleCalls:
     """Test that each call produces a separate record."""
 
     @pytest.mark.asyncio
-    async def test_three_calls_three_records(self):
+    async def test_three_calls_three_records(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
 
         await collector.generate(
             [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
@@ -183,182 +192,34 @@ class TestCollectorMultipleCalls:
             [], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT, max_output_tokens=1000)
         )
 
-        assert len(collector.records) == 3
-        types = [r.task_type for r in collector.records]
+        assert len(ledger.rows) == 3
+        types = [r.task_type for r in ledger.rows]
         assert types == ["draft", "review", "implement"]
-
-
-class TestCollectorFlush:
-    """Test flush() persistence."""
-
-    @pytest.mark.asyncio
-    async def test_flush_calls_log_usage(self):
-        adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
-        config = GenerationConfig(model="fake-model", max_output_tokens=1000)
-        await collector.generate([], config)
-        await collector.generate([], config)
-
-        mock_db = MagicMock()
-        mock_session = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = mock_session
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo = mock_repo_cls.return_value
-            mock_repo.log_usage = AsyncMock()
-            count = collector.flush(mock_db)
-
-            assert count == 2
-            assert mock_repo.log_usage.call_count == 2
-            assert len(collector.records) == 0  # Cleared
-
-    @pytest.mark.asyncio
-    async def test_flush_empty_returns_zero(self):
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
-        mock_db = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock()
-            count = collector.flush(mock_db)
-            assert count == 0
-            assert mock_repo_cls.return_value.log_usage.call_count == 0
-
-    @pytest.mark.asyncio
-    async def test_flush_error_does_not_raise(self):
-        """Telemetry failures are logged, not propagated."""
-        adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock(side_effect=Exception("DB locked"))
-
-            # Should NOT raise
-            count = collector.flush(mock_db)
-            assert count == 1
-
-
-class TestFlushFromARunningLoop:
-    """The sync `flush()` must never re-enter the caller's event loop.
-
-    `flush()` used to call `nest_asyncio.apply(loop)` and then `loop.run_until_complete()` on the
-    ALREADY-RUNNING loop. The re-entrant run drains the loop's `_ready` deque while the outer
-    `_run_once` is midway through `for i in range(ntodo): self._ready.popleft()`, so the outer
-    loop then pops from an empty deque and dies with `IndexError`.
-
-    Two things made it expensive to find. The damage lands on the OUTER loop, so `flush()`'s own
-    "never raises" handler could not catch it. And whether it fires depends on what else happens
-    to be scheduled — `test_telemetry_roundtrip` passed when the whole integration tier ran and
-    failed when its file ran alone, which reads like flakiness rather than a defect.
-
-    This is not test-only: `PipelineRunner._flush_telemetry()` is called from the `finally` of
-    `async def run()` and `async def resume()`, so every `sw run` took the same path.
-    """
-
-    def test_the_collector_does_not_import_nest_asyncio(self):
-        """Asserted at module level on purpose, not by observing one call.
-
-        `nest_asyncio.apply` patches the loop CLASS and leaves it patched for the whole process,
-        so a before/after comparison inside one test passes spuriously as soon as any earlier
-        test has already triggered it. The only order-independent statement is that this module
-        does not reach for the library at all.
-        """
-        from specweaver.infrastructure.llm import collector as collector_module
-
-        assert not hasattr(collector_module, "nest_asyncio")
-
-    @pytest.mark.asyncio
-    async def test_the_loop_still_works_afterwards(self):
-        """The symptom was the OUTER loop dying later, not flush() raising."""
-        import asyncio
-
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock()
-            collector.flush(mock_db)
-
-        results = await asyncio.gather(*(asyncio.sleep(0, result=i) for i in range(25)))
-
-        assert results == list(range(25))
-
-    @pytest.mark.asyncio
-    async def test_records_are_still_persisted_and_cleared(self):
-        """Fixing the loop damage must not quietly stop the flush from working."""
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock()
-            count = collector.flush(mock_db)
-
-        assert count == 2
-        assert len(collector.records) == 0
-
-    def test_flush_still_works_with_no_loop_running(self):
-        """The plain synchronous path must keep working for genuinely sync callers."""
-        import asyncio
-
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
-        asyncio.run(collector.generate([], GenerationConfig(model="m", max_output_tokens=1000)))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock()
-            count = collector.flush(mock_db)
-
-        assert count == 1
-        assert len(collector.records) == 0
 
 
 class TestCollectorDelegation:
     """Test that non-generation methods delegate correctly."""
 
-    def test_provider_name(self):
+    def test_provider_name(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         assert collector.provider_name == "fake"
 
-    def test_available(self):
+    def test_available(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         assert collector.available() is True
 
     @pytest.mark.asyncio
-    async def test_count_tokens(self):
+    async def test_count_tokens(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         count = await collector.count_tokens("hello world", "model")
         assert isinstance(count, int)
 
-    def test_estimate_tokens(self):
+    def test_estimate_tokens(self, ledger):
         adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         est = collector.estimate_tokens("hello world test data")
         assert isinstance(est, int)
         assert est > 0
@@ -373,40 +234,43 @@ class TestCollectorAdapterExceptions:
     """Adapter exceptions propagate without capturing telemetry."""
 
     @pytest.mark.asyncio
-    async def test_generate_exception_propagates_no_record(self):
-        """adapter.generate() raises → exception propagated, no record."""
+    async def test_generate_exception_propagates_and_is_recorded_failed(self, ledger):
+        """adapter.generate() raises → the error goes on, and the call is `failed` with tokens
+        unknown (C-FLOW-01 FR-3: a billed failure is spend)."""
         adapter = FakeAdapter()
         adapter.generate = _raise_adapter_error
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="adapter exploded"):
             await collector.generate([], config)
 
-        assert len(collector.records) == 0
+        assert [(r.call_status, r.total_tokens, r.estimated_cost) for r in ledger.rows] == [
+            ("failed", 0, None)
+        ]
 
     @pytest.mark.asyncio
-    async def test_generate_with_tools_exception_propagates_no_record(self):
-        """adapter.generate_with_tools() raises → no record."""
+    async def test_generate_with_tools_exception_is_recorded_failed(self, ledger):
+        """adapter.generate_with_tools() raises → the call is `failed`."""
         adapter = FakeAdapter()
         adapter.generate_with_tools = _raise_adapter_error_tools
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="adapter exploded"):
             await collector.generate_with_tools([], config, MagicMock())
 
-        assert len(collector.records) == 0
+        assert [r.call_status for r in ledger.rows] == ["failed"]
 
 
 class TestCollectorStreamEdgeCases:
     """Edge cases for generate_stream()."""
 
     @pytest.mark.asyncio
-    async def test_empty_stream_creates_zero_token_record(self):
+    async def test_empty_stream_creates_zero_token_record(self, ledger):
         """Empty stream (0 chunks) → record with 0 completion tokens."""
         adapter = FakeAdapter(stream_chunks=[])
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         chunks = []
@@ -414,71 +278,22 @@ class TestCollectorStreamEdgeCases:
             chunks.append(chunk)
 
         assert chunks == []
-        assert len(collector.records) == 1
-        assert collector.records[0].completion_tokens == 0
+        assert len(ledger.rows) == 1
+        assert ledger.rows[0].completion_tokens == 0
 
     @pytest.mark.asyncio
-    async def test_stream_error_mid_stream_no_record(self):
-        """Adapter raises mid-stream → no record captured."""
+    async def test_stream_error_mid_stream_is_recorded_failed(self, ledger):
+        """Adapter raises mid-stream → the call is `failed`."""
         adapter = FakeAdapter()
         adapter.generate_stream = _raise_stream_error
-        collector = TelemetryCollector(adapter, project="proj")
+        collector = TelemetryCollector(adapter, project="proj", ledger=ledger.db)
         config = GenerationConfig(model="fake-model", max_output_tokens=1000)
 
         with pytest.raises(RuntimeError, match="stream exploded"):
             async for _chunk in collector.generate_stream([], config):
                 pass
 
-        assert len(collector.records) == 0
-
-
-class TestCollectorFlushEdgeCases:
-    """Flush edge cases: double flush, partial failure."""
-
-    @pytest.mark.asyncio
-    async def test_double_flush_second_returns_zero(self):
-        """Flushing twice: second flush returns 0 (records already cleared)."""
-        adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            mock_repo_cls.return_value.log_usage = AsyncMock()
-            first = collector.flush(mock_db)
-            second = collector.flush(mock_db)
-
-            assert first == 1
-            assert second == 0
-            assert mock_repo_cls.return_value.log_usage.call_count == 1
-
-    @pytest.mark.asyncio
-    async def test_partial_failure_records_not_cleared(self):
-        """DB fails mid-flush → records are NOT cleared (preserved for retry)."""
-        adapter = FakeAdapter()
-        collector = TelemetryCollector(adapter, project="proj")
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-        await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
-
-        mock_db = MagicMock()
-        mock_db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
-
-        from unittest.mock import AsyncMock, patch
-
-        with patch("specweaver.infrastructure.llm.collector.LlmRepository") as mock_repo_cls:
-            # Fail on the second call
-            mock_repo_cls.return_value.log_usage = AsyncMock(
-                side_effect=[None, Exception("DB error")]
-            )
-
-            collector.flush(mock_db)
-
-            # Records NOT cleared because the loop raised before .clear()
-            assert len(collector.records) == 2
+        assert [r.call_status for r in ledger.rows] == ["failed"]
 
 
 # ---------------------------------------------------------------------------
@@ -508,7 +323,7 @@ class TestTelemetryCollectorPrices:
     """Prices come from one lookup (the catalogue); an unknown price stays unknown."""
 
     @pytest.mark.asyncio
-    async def test_a_known_price_is_recorded_and_spent(self) -> None:
+    async def test_a_known_price_is_recorded_and_spent(self, ledger) -> None:
         from specweaver.core.config.llm_settings import ModelFacts
         from specweaver.infrastructure.llm.budget import CallScope, Limit, SpendBudget
 
@@ -521,18 +336,17 @@ class TestTelemetryCollectorPrices:
             prices={"m": facts}.get,
             budget=budget,
             scope_of=lambda _config: CallScope(limits=(run,), facts=facts),
+            ledger=ledger.db,
         )
 
         await collector.generate([], GenerationConfig(model="m", max_output_tokens=1000))
 
-        assert collector.records[0].estimated_cost_usd == pytest.approx(
-            100 / 1e6 * 2 + 50 / 1e6 * 10
-        )
-        assert budget.spent(run.key) == pytest.approx(collector.records[0].estimated_cost_usd)
+        assert ledger.rows[0].estimated_cost_usd == pytest.approx(100 / 1e6 * 2 + 50 / 1e6 * 10)
+        assert budget.spent(run.key) == pytest.approx(ledger.rows[0].estimated_cost_usd)
 
     @pytest.mark.asyncio
     async def test_an_unknown_price_counts_tokens_and_warns_once(
-        self, caplog: pytest.LogCaptureFixture
+        self, ledger, caplog: pytest.LogCaptureFixture
     ) -> None:
         from specweaver.infrastructure.llm.budget import CallScope, Limit, SpendBudget
 
@@ -544,6 +358,7 @@ class TestTelemetryCollectorPrices:
             prices=lambda model: None,
             budget=budget,
             scope_of=lambda _config: CallScope(limits=(tokens,)),
+            ledger=ledger.db,
         )
 
         with caplog.at_level("WARNING"):
@@ -554,7 +369,20 @@ class TestTelemetryCollectorPrices:
                 [], GenerationConfig(model="qwen3-coder-next", max_output_tokens=1000)
             )
 
-        assert [r.estimated_cost_usd for r in collector.records] == [None, None]
+        assert [r.estimated_cost_usd for r in ledger.rows] == [None, None]
         assert budget.spent(tokens.key) == 300
         warnings = [r for r in caplog.records if "qwen3-coder-next" in r.getMessage()]
         assert len(warnings) == 1
+
+
+def test_the_collector_does_not_import_nest_asyncio() -> None:
+    """Asserted at module level on purpose, not by observing one call.
+
+    `nest_asyncio.apply` patches the loop CLASS and leaves it patched for the whole process,
+    so a before/after comparison inside one test passes spuriously as soon as any earlier
+    test has already triggered it. The only order-independent statement is that this module
+    does not reach for the library at all.
+    """
+    from specweaver.infrastructure.llm import collector as collector_module
+
+    assert not hasattr(collector_module, "nest_asyncio")

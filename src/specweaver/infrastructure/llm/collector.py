@@ -5,8 +5,8 @@
 
 Transparent proxy: callers interact with it exactly like an LLMAdapter.
 Every ``generate()``, ``generate_with_tools()``, or ``generate_stream()``
-call produces one ``UsageRecord`` accumulated in memory.  The caller
-persists records by calling ``flush(db)`` when done.
+call is one row in the cost ledger: written ``pending`` before the request and
+closed ``ok`` or ``failed`` after it. The collector is the ledger's only writer.
 
 NOT a subclass of ``LLMAdapter`` — uses the decorator pattern and duck
 typing.  Works because ``RunContext.llm`` is typed ``Any``.
@@ -14,18 +14,18 @@ typing.  Works because ``RunContext.llm`` is typed ``Any``.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import math
 import time
 from typing import TYPE_CHECKING, Any
 
-from specweaver.commons.async_bridge import run_sync
 from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, SpendBudget
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.redaction import Redactor
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import UsageRecord, create_usage_record, estimate_cost
+from specweaver.infrastructure.llm.telemetry import create_usage_record, estimate_cost
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -40,12 +40,22 @@ logger = logging.getLogger(__name__)
 _PROMPT_MARGIN = 1.25
 
 
+def _worst_usage(prompt_tokens: int, config: GenerationConfig) -> TokenUsage:
+    """A call's worst case in tokens: the prompt with headroom, plus its whole output cap."""
+    prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)
+    return TokenUsage(
+        prompt_tokens=prompt,
+        completion_tokens=config.max_output_tokens,
+        total_tokens=prompt + config.max_output_tokens,
+    )
+
+
 class TelemetryCollector:
     """Decorator that wraps an LLMAdapter and captures usage telemetry.
 
     NOT a subclass of LLMAdapter — uses duck typing (RunContext.llm is Any).
-    Each generate/generate_with_tools/generate_stream call creates one
-    UsageRecord.  Records accumulate in memory until ``flush(db)`` is called.
+    Each generate/generate_with_tools/generate_stream call is one ledger row, written as it
+    happens: a killed process loses none. A write that fails is counted in ``unwritten``.
 
     Args:
         adapter: The LLMAdapter instance to wrap.
@@ -62,6 +72,7 @@ class TelemetryCollector:
         scope_of: Callable[[GenerationConfig], CallScope] | None = None,
         redactor: Redactor | None = None,
         server: str = "",
+        ledger: Any = None,
     ) -> None:
         self._adapter = adapter
         self._server = server
@@ -70,8 +81,10 @@ class TelemetryCollector:
         self._prices = prices or (lambda _model: None)
         self._scope_of = scope_of
         self._unpriced_warned: set[str] = set()
-        self._records: list[UsageRecord] = []
         self._budget = budget or SpendBudget()
+        self._ledger = ledger
+        #: Ledger writes that failed. Counted, never raised: a cost row never stops the work.
+        self.unwritten = 0
 
     @property
     def budget(self) -> SpendBudget:
@@ -94,12 +107,7 @@ class TelemetryCollector:
         return self._worst_of(self._prompt_tokens(messages, config), config, scope)
 
     def _worst_of(self, prompt_tokens: int, config: GenerationConfig, scope: CallScope) -> Cost:
-        prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)
-        worst = TokenUsage(
-            prompt_tokens=prompt,
-            completion_tokens=config.max_output_tokens,
-            total_tokens=prompt + config.max_output_tokens,
-        )
+        worst = _worst_usage(prompt_tokens, config)
         return Cost(usd=estimate_cost(worst, scope.facts), tokens=worst.total_tokens)
 
     def _record_failure(
@@ -132,13 +140,15 @@ class TelemetryCollector:
         """Proxy ``generate()`` — captures timing and usage."""
         messages = self._redactor.messages(messages)
         scope, reservation = self._reserve(messages, config)
+        call_id = await self._open(config, self._prompt_tokens(messages, config))
         start = time.monotonic()
         try:
             response = await self._adapter.generate(messages, config)
         except BaseException as exc:
             self._record_failure(scope, reservation, exc)
+            await self._close_failed(call_id, config, exc, time.monotonic() - start)
             raise
-        self._capture(config, response, time.monotonic() - start, scope, reservation)
+        await self._capture(config, response, time.monotonic() - start, scope, reservation, call_id)
         return response
 
     async def generate_with_tools(
@@ -154,11 +164,16 @@ class TelemetryCollector:
         on_tool_round = self._redactor.rounds(on_tool_round)
         scope, first = self._reserve(messages, config)
         held = [first]
+        prompt_tokens = [self._prompt_tokens(messages, config)]
+        call_id = await self._open(config, prompt_tokens[0])
+        widening: list[asyncio.Task[Any]] = []
 
         def before_request(round_num: int, prompt_chars: int) -> None:
             if round_num > 0:
                 worst = self._worst_of(_estimate_chars(prompt_chars), config, scope)
                 held.append(self._budget.before_call(scope, worst))
+                prompt_tokens.append(_estimate_chars(prompt_chars))
+                widening.append(asyncio.ensure_future(self._widen(call_id, config, prompt_tokens)))
 
         start = time.monotonic()
         try:
@@ -167,9 +182,12 @@ class TelemetryCollector:
             )
         except BaseException as exc:
             self._record_failure(scope, Reservation.combined(held), exc)
+            await asyncio.gather(*widening, return_exceptions=True)
+            await self._close_failed(call_id, config, exc, time.monotonic() - start)
             raise
         elapsed = time.monotonic() - start
-        self._capture(config, response, elapsed, scope, Reservation.combined(held))
+        await asyncio.gather(*widening, return_exceptions=True)
+        await self._capture(config, response, elapsed, scope, Reservation.combined(held), call_id)
         return response
 
     async def generate_stream(
@@ -180,6 +198,7 @@ class TelemetryCollector:
         """Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text."""
         messages = self._redactor.messages(messages)
         scope, reservation = self._reserve(messages, config)
+        call_id = await self._open(config, self._prompt_tokens(messages, config))
         start = time.monotonic()
         total_text: list[str] = []
         try:
@@ -188,6 +207,7 @@ class TelemetryCollector:
                 yield chunk
         except BaseException as exc:
             self._record_failure(scope, reservation, exc)
+            await self._close_failed(call_id, config, exc, time.monotonic() - start)
             raise
         prompt = self._prompt_tokens(messages, config)
         output = _estimate_tokens("".join(total_text))
@@ -198,19 +218,22 @@ class TelemetryCollector:
                 prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output
             ),
         )
-        self._capture(config, synthetic, time.monotonic() - start, scope, reservation)
+        await self._capture(
+            config, synthetic, time.monotonic() - start, scope, reservation, call_id
+        )
 
     # ------------------------------------------------------------------
     # Record capture
     # ------------------------------------------------------------------
 
-    def _capture(
+    async def _capture(
         self,
         config: GenerationConfig,
         response: LLMResponse,
         elapsed: float,
         scope: CallScope,
         reservation: Reservation,
+        call_id: int | None,
     ) -> None:
         """Create a UsageRecord and append to the internal list.
 
@@ -226,7 +249,7 @@ class TelemetryCollector:
             self._prices(config.model),
             server=self._server,
         )
-        self._records.append(record)
+        await self._close(call_id, record.model_dump(), "ok")
         if record.estimated_cost_usd is None and config.model not in self._unpriced_warned:
             self._unpriced_warned.add(config.model)
             logger.warning(
@@ -241,73 +264,69 @@ class TelemetryCollector:
         self._budget.record(scope, cost, reservation)
 
     # ------------------------------------------------------------------
-    # Persistence
+    # The ledger: the one writer of `llm_usage_log`
     # ------------------------------------------------------------------
 
-    @property
-    def records(self) -> list[UsageRecord]:
-        """Return a copy of accumulated records (for testing)."""
-        return list(self._records)
+    def _row(self, config: GenerationConfig, usage: TokenUsage, elapsed: float) -> dict[str, Any]:
+        response = LLMResponse(text="", model=config.model, usage=usage)
+        return create_usage_record(
+            config,
+            response,
+            self._adapter.provider_name,
+            self._project,
+            int(elapsed * 1000),
+            self._prices(config.model),
+            server=self._server,
+        ).model_dump()
 
-    def flush(self, db: Any) -> int:
-        """Persist all accumulated records to DB.
-
-        Never raises — telemetry failures are logged, not propagated.
-        Returns the number of records that were flushed.
-
-        Args:
-            db: Database instance with a ``log_usage(record)`` method.
-        """
-        count = len(self._records)
-        if count == 0:
-            return 0
-
-        async def _flush() -> None:
-            async with db.async_session_scope() as session:
-                repo = LlmRepository(session)
-                for r in self._records:
-                    await repo.log_usage(r.model_dump())
-
+    async def _write(self, action: Callable[[LlmRepository], Any]) -> Any:
+        """One ledger write; a failure is logged and counted, never raised."""
+        if self._ledger is None:
+            return None
         try:
-            # Never re-enters a running loop — see `commons.async_bridge`. Async callers should
-            # prefer `flush_async` and skip the thread hop entirely.
-            run_sync(_flush)
-            self._records.clear()
-            logger.debug("Flushed %d telemetry records for project '%s'", count, self._project)
+            async with self._ledger.async_session_scope() as session:
+                return await action(LlmRepository(session))
         except Exception:
-            logger.warning(
-                "Failed to flush %d telemetry records for project '%s'",
-                count,
-                self._project,
-                exc_info=True,
-            )
-        return count
+            self.unwritten += 1
+            logger.warning("A call could not be written to the cost ledger", exc_info=True)
+            return None
 
-    async def flush_async(self, db: Any) -> int:
-        """Persist all accumulated records to DB asynchronously.
+    async def _open(self, config: GenerationConfig, prompt_tokens: int) -> int | None:
+        """The call's `pending` row, with its worst case, before the request is sent."""
+        row = self._row(config, _worst_usage(prompt_tokens, config), 0.0)
+        result = await self._write(lambda repo: repo.open_call(row))
+        return result if isinstance(result, int) else None
 
-        Never raises — telemetry failures are logged, not propagated.
-        Returns the number of records that were flushed.
-        """
-        count = len(self._records)
-        if count == 0:
-            return 0
+    async def _widen(
+        self, call_id: int | None, config: GenerationConfig, prompt_tokens: list[int]
+    ) -> None:
+        """A tool loop's `pending` row: the worst case of every round so far."""
+        if call_id is None:
+            return
+        rounds = [_worst_usage(tokens, config) for tokens in prompt_tokens]
+        total = TokenUsage(
+            prompt_tokens=sum(r.prompt_tokens for r in rounds),
+            completion_tokens=sum(r.completion_tokens for r in rounds),
+            total_tokens=sum(r.total_tokens for r in rounds),
+        )
+        row = self._row(config, total, 0.0)
+        await self._write(lambda repo: repo.widen_call(call_id, row))
 
-        try:
-            async with db.async_session_scope() as session:
-                repo = LlmRepository(session)
-                for r in self._records:
-                    await repo.log_usage(r.model_dump())
-            self._records.clear()
-            logger.debug("Flushed %d telemetry records for project '%s'", count, self._project)
-        except Exception:
-            logger.warning(
-                "Failed to flush %d telemetry records for project '%s'",
-                count,
-                self._project,
-                exc_info=True,
-            )
-        return count
+    async def _close(self, call_id: int | None, row: dict[str, Any], status: str) -> None:
+        if call_id is not None:
+            await self._write(lambda repo: repo.close_call(call_id, row, status))
+
+    async def _close_failed(
+        self, call_id: int | None, config: GenerationConfig, exc: BaseException, elapsed: float
+    ) -> None:
+        """`failed`, with the usage the error reported; without one, tokens and cost unknown."""
+        usage = getattr(exc, "usage", None)
+        if not isinstance(usage, TokenUsage):
+            usage = None
+        row = self._row(config, usage or TokenUsage(), elapsed)
+        if usage is None:
+            row["estimated_cost_usd"] = None
+        await self._close(call_id, row, "failed")
 
     # ------------------------------------------------------------------
     # Delegate remaining LLMAdapter interface

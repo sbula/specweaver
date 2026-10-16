@@ -92,24 +92,21 @@ def db(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# Stories 22-24: Collector → flush → DB read-back
+# Stories 22-24: Collector → ledger → read-back
 # ---------------------------------------------------------------------------
 
 
 class TestCollectorToDatabase:
-    """TelemetryCollector.flush writes real DB rows queryable via mixin."""
+    """The collector writes real ledger rows, queryable through the repository."""
 
     @pytest.mark.asyncio
-    async def test_flush_writes_real_db_rows(self, db):
-        """Story 22: flush persists records to llm_usage_log via log_usage."""
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
+    async def test_a_call_writes_a_real_ledger_row(self, db):
+        """Story 22: a call becomes one llm_usage_log row."""
+        collector = TelemetryCollector(FakeAdapter(), project="proj", ledger=db)
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.DRAFT, max_output_tokens=1000
         )
         await collector.generate([], config)
-
-        count = await collector.flush_async(db)
-        assert count == 1
 
         with db.connect() as conn:
             rows = conn.execute("SELECT * FROM llm_usage_log").fetchall()
@@ -119,16 +116,15 @@ class TestCollectorToDatabase:
         assert rows[0]["task_type"] == "draft"
 
     @pytest.mark.asyncio
-    async def test_flush_data_queryable_via_get_usage_summary(self, db):
-        """Story 23: flush → log_usage → get_usage_summary returns data."""
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
+    async def test_ledger_rows_are_summed_by_get_usage_summary(self, db):
+        """Story 23: ledger rows → get_usage_summary returns data."""
+        collector = TelemetryCollector(FakeAdapter(), project="proj", ledger=db)
         await collector.generate(
             [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
         )
         await collector.generate(
             [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
         )
-        await collector.flush_async(db)
 
         async with db.async_session_scope() as session:
             summary = await LlmRepository(session).get_usage_summary(project="proj")
@@ -137,9 +133,9 @@ class TestCollectorToDatabase:
         assert summary[0]["total_tokens"] == 300  # 150 * 2
 
     @pytest.mark.asyncio
-    async def test_flush_data_groups_by_task_type(self, db):
-        """Story 24: flush → get_usage_by_task_type groups correctly."""
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
+    async def test_ledger_rows_group_by_task_type(self, db):
+        """Story 24: ledger rows → get_usage_by_task_type groups correctly."""
+        collector = TelemetryCollector(FakeAdapter(), project="proj", ledger=db)
         await collector.generate(
             [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
         )
@@ -149,7 +145,6 @@ class TestCollectorToDatabase:
         await collector.generate(
             [], GenerationConfig(model="m", task_type=TaskType.IMPLEMENT, max_output_tokens=1000)
         )
-        await collector.flush_async(db)
 
         async with db.async_session_scope() as session:
             result = await LlmRepository(session).get_usage_by_task_type("proj")
@@ -173,14 +168,12 @@ class TestUnknownPriceFlow:
     async def test_an_unpriced_call_is_stored_and_summed_as_unknown(self, db):
         priced = ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
         collector = TelemetryCollector(
-            FakeAdapter(), project="proj", prices={"priced-model": priced}.get
+            FakeAdapter(), project="proj", prices={"priced-model": priced}.get, ledger=db
         )
         for model in ("priced-model", "fake-model"):
             await collector.generate(
                 [], GenerationConfig(model=model, task_type=TaskType.DRAFT, max_output_tokens=1000)
             )
-
-        await collector.flush_async(db)
 
         async with db.async_session_scope() as session:
             rows = await LlmRepository(session).get_usage_summary(project="proj")
@@ -205,10 +198,11 @@ class TestTaskTypeFlowThrough:
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.REVIEW, max_output_tokens=1000
         )
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
+        collector = TelemetryCollector(FakeAdapter(), project="proj", ledger=db)
         await collector.generate([], config)
 
-        assert collector.records[0].task_type == "review"
+        with db.connect() as conn:
+            assert conn.execute("SELECT task_type FROM llm_usage_log").fetchone()[0] == "review"
 
     @pytest.mark.asyncio
     async def test_implement_task_type_survives_capture(self, db):
@@ -216,10 +210,11 @@ class TestTaskTypeFlowThrough:
         config = GenerationConfig(
             model="fake-model", task_type=TaskType.IMPLEMENT, max_output_tokens=1000
         )
-        collector = TelemetryCollector(FakeAdapter(), project="proj")
+        collector = TelemetryCollector(FakeAdapter(), project="proj", ledger=db)
         await collector.generate([], config)
 
-        assert collector.records[0].task_type == "implement"
+        with db.connect() as conn:
+            assert conn.execute("SELECT task_type FROM llm_usage_log").fetchone()[0] == "implement"
 
 
 # ---------------------------------------------------------------------------
@@ -232,10 +227,10 @@ class TestMultiProjectIsolation:
 
     @pytest.mark.asyncio
     async def test_two_projects_isolated(self, db):
-        """Story 28: two collectors flush to same DB, queries isolate by project."""
+        """Story 28: two collectors write to one ledger; queries isolate by project."""
         adapter = FakeAdapter()
-        c1 = TelemetryCollector(adapter, project="alpha")
-        c2 = TelemetryCollector(adapter, project="beta")
+        c1 = TelemetryCollector(adapter, project="alpha", ledger=db)
+        c2 = TelemetryCollector(adapter, project="beta", ledger=db)
 
         await c1.generate(
             [], GenerationConfig(model="m", task_type=TaskType.DRAFT, max_output_tokens=1000)
@@ -246,9 +241,6 @@ class TestMultiProjectIsolation:
         await c2.generate(
             [], GenerationConfig(model="m", task_type=TaskType.REVIEW, max_output_tokens=1000)
         )
-
-        await c1.flush_async(db)
-        await c2.flush_async(db)
 
         async with db.async_session_scope() as session:
             alpha = await LlmRepository(session).get_usage_summary(project="alpha")

@@ -65,6 +65,10 @@ class ModelRouter:
         """Every collector the run's calls went through, for flushing their usage records."""
         return self._resolver.collectors()
 
+    def unwritten(self) -> int:
+        """Calls of this command that could not be written to the cost ledger."""
+        return sum(collector.unwritten for collector in self._resolver.collectors())
+
 
 def build_router(
     files: LlmSettingsFiles,

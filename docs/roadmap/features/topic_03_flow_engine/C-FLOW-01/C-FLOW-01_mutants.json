@@ -3,6 +3,26 @@
   "feature": "C-FLOW-01",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "Every request of a command or endpoint is in the ledger",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py",
+        "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "commands-get-no-ledger",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._adapter",
+          "old": "                ledger=self._history,\n",
+          "new": "                ledger=None,\n",
+          "breaks": "no CLI or REST call reaches the ledger",
+          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+        }
+      ]
+    },
+    {
       "requirement": "FR-8",
       "title": "Each ledger row says pending, ok or failed; older rows count as ok",
       "scope": [
@@ -38,6 +58,77 @@
           "new": "        if False:\n",
           "breaks": "a call can be closed as pending or a made-up status",
           "symbol_sha": "sha256:e928df6b838ce5a86c92d8c7e53c07f3ba129b4a8f75f0db59c2560ff7b27068"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A call is written pending before it is sent",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py",
+        "tests/unit/infrastructure/llm/test_collector.py"
+      ],
+      "mutants": [
+        {
+          "id": "pending-not-written",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "        call_id = await self._open(config, prompt_tokens[0])\n",
+          "new": "        call_id = None\n",
+          "breaks": "a call is not in the ledger while it runs, and a killed process loses it",
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
+        },
+        {
+          "id": "round-worst-not-raised",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "                widening.append(asyncio.ensure_future(self._widen(call_id, config, prompt_tokens)))\n",
+          "new": "                pass\n",
+          "breaks": "a killed tool loop shows only its first round's worst case",
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A call that raises is failed, with its reported usage or tokens unknown",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py",
+        "tests/unit/infrastructure/llm/test_collector.py"
+      ],
+      "mutants": [
+        {
+          "id": "failed-not-marked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._close_failed",
+          "old": "        await self._close(call_id, row, \"failed\")\n",
+          "new": "        pass\n",
+          "breaks": "a billed failure stays pending forever and never counts as spend",
+          "symbol_sha": "sha256:3fc06b13fc58d53f063e2921cf16d8d70a940d226224b9bf45a585c135061903"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The collector is the ledger's only writer; a failed write is counted",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py",
+        "tests/unit/infrastructure/llm/test_collector.py",
+        "tests/unit/core/flow/engine/test_runner_telemetry.py"
+      ],
+      "mutants": [
+        {
+          "id": "write-failure-uncounted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._write",
+          "old": "            self.unwritten += 1\n",
+          "new": "            pass\n",
+          "breaks": "a gap in the ledger is never reported",
+          "symbol_sha": "sha256:d8972a2935e05ac3069a725bbda9a0134c03ea034d218f1febda9d61832d65bc"
         }
       ]
     }

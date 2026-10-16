@@ -144,6 +144,15 @@ class LlmRepository:
         await self.session.flush()
         return log.id
 
+    async def widen_call(self, call_id: int, record: dict[str, Any]) -> bool:
+        """Raise a `pending` row to a larger worst case, as a tool loop starts another round."""
+        log = await self.session.get(LlmUsageLog, call_id)
+        if log is None or log.call_status != "pending":
+            return False
+        for name, value in _columns(record).items():
+            setattr(log, name, value)
+        return True
+
     async def close_call(self, call_id: int, record: dict[str, Any], status: str) -> bool:
         """Set a call's real numbers and `ok` or `failed`; False when the row is not there."""
         if status not in _CLOSED:

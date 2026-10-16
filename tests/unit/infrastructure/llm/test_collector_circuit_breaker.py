@@ -35,9 +35,11 @@ from specweaver.infrastructure.llm.models import (
     Role,
     TokenUsage,
 )
+from tests.ledger import Ledger
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+    from pathlib import Path
 
 
 class _StubAdapter:
@@ -84,13 +86,16 @@ _CONFIG = GenerationConfig(model="stub-model", max_output_tokens=1000)
 _PROMPT = [Message(role=Role.USER, content="x" * 4000)]
 
 
-def _collector(adapter: _StubAdapter, budget: SpendBudget | None = None) -> TelemetryCollector:
+def _collector(
+    adapter: _StubAdapter, budget: SpendBudget | None = None, ledger: Any = None
+) -> TelemetryCollector:
     return TelemetryCollector(
         adapter,
         "proj",
         prices=lambda _model: _FACTS,
         budget=budget or SpendBudget(),
         scope_of=lambda _config: CallScope(limits=(_RUN,), facts=_FACTS),
+        ledger=ledger,
     )
 
 
@@ -155,24 +160,26 @@ async def test_a_failed_call_counts_the_worst_case_it_reserved(path: str) -> Non
     assert collector.budget.spent(_RUN.key) == pytest.approx(2.25)
 
 
-async def test_a_stream_counts_its_input_tokens() -> None:
-    collector = _collector(_StubAdapter())
+async def test_a_stream_counts_its_input_tokens(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path)
+    collector = _collector(_StubAdapter(), ledger=ledger.db)
 
     async for _ in collector.generate_stream(_PROMPT, _CONFIG):
         pass
 
-    assert collector.records[0].prompt_tokens == 1000  # estimated from the 4,000-char prompt
+    assert ledger.rows[0].prompt_tokens == 1000  # estimated from the 4,000-char prompt
 
 
-async def test_a_collector_without_limits_never_refuses() -> None:
+async def test_a_collector_without_limits_never_refuses(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path)
     adapter = _StubAdapter()
-    collector = TelemetryCollector(adapter, "proj")
+    collector = TelemetryCollector(adapter, "proj", ledger=ledger.db)
 
     for _ in range(3):
         await collector.generate(_PROMPT, _CONFIG)
 
     assert adapter.calls == 3
-    assert len(collector.records) == 3
+    assert [r.call_status for r in ledger.rows] == ["ok", "ok", "ok"]
 
 
 def _cost(usd: float) -> Cost:

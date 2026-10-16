@@ -31,6 +31,7 @@ from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import Message, Role
 from specweaver.infrastructure.llm.resolve import RoleResolver
 from tests.fake_http import fake_httpx2
+from tests.ledger import Ledger
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,9 +78,12 @@ def files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_two_roles_reach_the_gb10_on_one_budget(files) -> None:
+async def test_two_roles_reach_the_gb10_on_one_budget(files, tmp_path: Path) -> None:
     budget = SpendBudget()
-    resolver = RoleResolver(files(_MACHINE), telemetry_project="demo", budget=budget)
+    ledger = Ledger(tmp_path)
+    resolver = RoleResolver(
+        files(_MACHINE), telemetry_project="demo", budget=budget, history=ledger.db
+    )
 
     with fake_httpx2(lambda request: httpx2.Response(200, json=_REPLY)) as seen:
         for role in ("draft", "review"):
@@ -91,8 +95,8 @@ async def test_two_roles_reach_the_gb10_on_one_budget(files) -> None:
     assert bodies[0]["temperature"] == 1.0  # the model card's value, from the shipped catalogue
     assert bodies[1]["max_completion_tokens"] == 1024
     assert budget.spent("brake.tokens_per_run") == 30
-    [collector] = resolver.collectors()
-    assert len(collector.records) == 2
+    assert len(resolver.collectors()) == 1  # one server, one collector
+    assert [row.call_status for row in ledger.rows] == ["ok", "ok"]
 
 
 def test_a_role_nobody_set_refuses_before_any_request(files) -> None:

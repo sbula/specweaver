@@ -216,6 +216,7 @@ class RoleResolver:
                 scope_of=lambda config: self._scope(server_name, config),
                 redactor=Redactor([*keys, *self._vault]),
                 server=server_name,
+                ledger=self._history,
             )
         return self._by_server[server_name]
 

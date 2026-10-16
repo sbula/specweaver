@@ -110,10 +110,10 @@ SF-01, then SF-02.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The write | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The write | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The readers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: design APPROVED by the user 2026-10-15.
-**Next**: the dev skill for SF-01 CB-1 (the column).
+**Now**: SF-01 committed — every call is in the ledger from the moment it is sent; the collector is its only writer.
+**Next**: the implementation-plan skill for SF-02 (the readers).

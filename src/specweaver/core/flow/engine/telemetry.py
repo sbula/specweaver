@@ -21,23 +21,14 @@ logger = logging.getLogger(__name__)
 def flush_telemetry(
     context: RunContext, logger: logging.Logger, run: PipelineRun | None = None
 ) -> None:
-    """Persist the usage records of every collector the run's calls went through, then how the
-    run's steps ended.
+    """Record how the run's steps ended, so its calls join the cost history.
 
-    All collectors, not one: every role's adapter is a collector, and a run's steps use several roles.
+    The calls themselves are already in the ledger: each collector writes its own row as the call
+    happens.
     """
     db = getattr(context, "db", None)
-    router = context.model.llm_router
     if db is None:
-        if router is not None:
-            logger.warning("Cannot flush telemetry: no db on RunContext")
         return
-
-    for collector in router.collectors() if router is not None else ():
-        try:
-            collector.flush(db)
-        except Exception:
-            logger.warning("Failed to flush telemetry", exc_info=True)
     if run is not None:
         try:
             record_step_outcomes(db, run.run_id, step_outcomes(run))

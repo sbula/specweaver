@@ -4,8 +4,8 @@
 
 """Tests for REST API telemetry wiring (Feature 3.12).
 
-Verifies that API endpoints pass telemetry_project and flush
-the TelemetryCollector after operations.
+Verifies that API endpoints label their calls with the project. The calls reach the ledger
+through the collector itself (C-FLOW-01 FR-4), proven on real rows elsewhere.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from starlette.testclient import TestClient
 
-from tests.scripted_llm import FixedRouter, doubled_llm
+from tests.scripted_llm import FixedRouter
 
 
 def _flushable() -> MagicMock:
@@ -54,7 +54,7 @@ def _project_with_spec(client, tmp_path):
 
 
 class TestReviewEndpointTelemetry:
-    """POST /review passes telemetry_project and flushes collector."""
+    """POST /review passes telemetry_project."""
 
     @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
     def test_review_passes_telemetry_project(
@@ -90,39 +90,9 @@ class TestReviewEndpointTelemetry:
         _, kwargs = mock_build.call_args
         assert kwargs.get("project") == "testproj"
 
-    @patch("specweaver.workflows.review.reviewer.Reviewer.review_spec")
-    def test_review_flushes_telemetry_collector(
-        self,
-        mock_review,
-        client,
-        _project_with_spec,
-    ):
-        """After review, if adapter is TelemetryCollector, flush() is called."""
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-        from specweaver.workflows.review.reviewer import ReviewResult
-
-        mock_review.return_value = ReviewResult(
-            verdict="accepted",
-            summary="OK",
-            findings=[],
-        )
-        proj, spec = _project_with_spec
-
-        mock_collector = MagicMock(spec=TelemetryCollector)
-        with doubled_llm(mock_collector):
-            client.post(
-                "/api/v1/review",
-                json={
-                    "file": str(spec.relative_to(proj)),
-                    "project": "testproj",
-                },
-            )
-
-        mock_collector.flush_async.assert_called_once()
-
 
 class TestImplementEndpointTelemetry:
-    """POST /implement passes telemetry_project and flushes collector."""
+    """POST /implement passes telemetry_project."""
 
     def test_implement_passes_telemetry_project(
         self,
@@ -155,33 +125,3 @@ class TestImplementEndpointTelemetry:
         mock_build.assert_called_once()
         _, kwargs = mock_build.call_args
         assert kwargs.get("project") == "testproj"
-
-    def test_implement_flushes_telemetry_collector(
-        self,
-        client,
-        _project_with_spec,
-    ):
-        """After implement, if adapter is TelemetryCollector, flush() is called."""
-        from specweaver.infrastructure.llm.collector import TelemetryCollector
-
-        proj, spec = _project_with_spec
-        mock_collector = MagicMock(spec=TelemetryCollector)
-
-        with (
-            doubled_llm(mock_collector),
-            patch(
-                "specweaver.workflows.implementation.generator.Generator.generate_code",
-            ),
-            patch(
-                "specweaver.workflows.implementation.generator.Generator.generate_tests",
-            ),
-        ):
-            client.post(
-                "/api/v1/implement",
-                json={
-                    "file": str(spec.relative_to(proj)),
-                    "project": "testproj",
-                },
-            )
-
-        mock_collector.flush_async.assert_called_once()
