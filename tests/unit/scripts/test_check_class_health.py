@@ -121,6 +121,27 @@ class TestAttributeCount:
 
         assert _analyse(ch, source).attributes == {"id"}
 
+    def test_a_table_class_is_as_wide_as_its_table(self, ch: ModuleType) -> None:
+        """A mapped table's columns are its schema, not a god object's state: one ledger row per
+        call needs every field it records `[agreed 2026-10-16]`."""
+        table = "class T(Base):\n    __tablename__ = 't'\n" + "".join(
+            f"    c{i}: Mapped[int] = mapped_column()\n" for i in range(16)
+        )
+
+        assert not _analyse(ch, table).too_many_attributes(15)
+
+    def test_only_a_real_table_class_gets_that_room(self, ch: ModuleType) -> None:
+        """No `__tablename__`, no exemption: `Mapped` annotations alone are not a loophole, and a
+        table class's own non-column state still counts."""
+        no_table = "class T:\n" + "".join(f"    c{i}: Mapped[int]\n" for i in range(16))
+        extra_state = (
+            "class T(Base):\n    __tablename__ = 't'\n    c: Mapped[int] = mapped_column()\n"
+            "    def m(self):\n        return " + ", ".join(f"self.s{i}" for i in range(16)) + "\n"
+        )
+
+        assert _analyse(ch, no_table).too_many_attributes(15)
+        assert _analyse(ch, extra_state).too_many_attributes(15)
+
     def test_a_dunder_that_is_not_orm_wiring_is_still_counted(self, ch: ModuleType) -> None:
         """The exemption is a named list, not "ignore every dunder"."""
         source = "class T:\n    __slots__ = ('a',)\n    a: int\n"

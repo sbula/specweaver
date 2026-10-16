@@ -99,7 +99,7 @@ write, not deleted.
 
 | SF | Does | FRs | Depends on |
 |---|---|---|---|
-| SF-01 | The write: `pending` before, `ok`/`failed` after, one writer, the column | FR-1, FR-2, FR-3, FR-4, FR-8 | — |
+| SF-01 | The write: `pending` before, `ok`/`failed` after, one writer, the column ([plan](C-FLOW-01_sf01_implementation_plan.md)) | FR-1, FR-2, FR-3, FR-4, FR-8 | — |
 | SF-02 | The readers: the run summary's missing count, `sw usage`/`sw costs` lines, step history | FR-5, FR-6, FR-7 | SF-01 |
 
 ## Execution Order
@@ -110,10 +110,10 @@ SF-01, then SF-02.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The write | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The write | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The readers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design APPROVED by the user 2026-10-15.
-**Next**: on approval, the implementation-plan skill for SF-01.
+**Next**: the dev skill for SF-01 CB-1 (the column).

@@ -78,9 +78,11 @@ class ClassReport:
     lcom4: int = 0
     components: list[list[str]] = field(default_factory=list)
     method_count: int = 0
+    #: A mapped table's columns: its schema, which the size limit does not judge.
+    table_columns: set[str] = field(default_factory=set)
 
     def too_many_attributes(self, limit: int = MAX_ATTRIBUTES) -> bool:
-        return len(self.attributes) > limit
+        return len(self.attributes - self.table_columns) > limit
 
     def incohesive(self) -> bool:
         return self.lcom4 > MAX_LCOM4
@@ -277,6 +279,30 @@ def _declared_attributes(node: ast.ClassDef) -> set[str]:
     return found
 
 
+def _table_columns(node: ast.ClassDef) -> set[str]:
+    """A SQLAlchemy table class's `Mapped[...]` columns; none for any other class.
+
+    A table is as wide as what one row must record, so its columns are not a god object's state
+    `[agreed 2026-10-16]`. Only a class declaring `__tablename__` qualifies.
+    """
+    body = node.body
+    is_table = any(
+        isinstance(s, ast.Assign)
+        and any(getattr(t, "id", "") == "__tablename__" for t in s.targets)
+        for s in body
+    )
+    if not is_table:
+        return set()
+    return {
+        s.target.id
+        for s in body
+        if isinstance(s, ast.AnnAssign)
+        and isinstance(s.target, ast.Name)
+        and isinstance(s.annotation, ast.Subscript)
+        and getattr(s.annotation.value, "id", "") == "Mapped"
+    }
+
+
 def _components(nodes: list[str], edges: set[tuple[str, str]]) -> list[list[str]]:
     """Connected components by union-find — no third-party graph library needed."""
     parent = {n: n for n in nodes}
@@ -322,6 +348,7 @@ def analyse_class(node: ast.ClassDef, path: Path) -> ClassReport:
         _declared_attributes(node)
         | (set().union(*touched.values()) - method_names if touched else set())
     ) - IGNORED_ATTRIBUTES
+    report.table_columns = _table_columns(node)
 
     # LCOM4 over every method except the constructor (see module docstring).
     #

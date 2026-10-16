@@ -38,6 +38,11 @@ class LlmUsageLog(Base):
     server: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
     dal_level: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
     step_name: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
+    # `pending` from before the request until it ends; then `ok` or `failed`. Technical only:
+    # how good a result was is not recorded here.
+    call_status: Mapped[str] = mapped_column(
+        String, default="ok", server_default="ok", nullable=False
+    )
 
     __table_args__ = (Index("ix_llm_usage_history", "task_type", "model", "dal_level"),)
 
@@ -101,6 +106,29 @@ def nearest_rank(values: list[float], percentile: int) -> float:
     return ordered[max(math.ceil(percentile / 100 * len(ordered)), 1) - 1]
 
 
+_CLOSED = frozenset({"ok", "failed"})
+
+
+def _columns(record: dict[str, Any]) -> dict[str, Any]:
+    """A usage record as the ledger's columns."""
+    return {
+        "timestamp": datetime.fromisoformat(record["timestamp"]),
+        "project_name": record["project_name"],
+        "task_type": record["task_type"],
+        "model": record["model"],
+        "provider": record["provider"],
+        "prompt_tokens": record.get("prompt_tokens", 0),
+        "completion_tokens": record.get("completion_tokens", 0),
+        "total_tokens": record.get("total_tokens", 0),
+        "estimated_cost": record.get("estimated_cost_usd"),
+        "duration_ms": record.get("duration_ms", 0),
+        "run_id": record.get("run_id", ""),
+        "server": record.get("server") or None,
+        "dal_level": record.get("dal_level") or None,
+        "step_name": record.get("step_name") or None,
+    }
+
+
 class LlmRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -108,6 +136,26 @@ class LlmRepository:
     # ------------------------------------------------------------------
     # LLM Profiles
     # ------------------------------------------------------------------
+
+    async def open_call(self, record: dict[str, Any]) -> int:
+        """Write a call's row as `pending`, with its worst case, before the request is sent."""
+        log = LlmUsageLog(**_columns(record), call_status="pending")
+        self.session.add(log)
+        await self.session.flush()
+        return log.id
+
+    async def close_call(self, call_id: int, record: dict[str, Any], status: str) -> bool:
+        """Set a call's real numbers and `ok` or `failed`; False when the row is not there."""
+        if status not in _CLOSED:
+            msg = f"a call closes as ok or failed, not {status!r}"
+            raise ValueError(msg)
+        log = await self.session.get(LlmUsageLog, call_id)
+        if log is None:
+            return False
+        for name, value in _columns(record).items():
+            setattr(log, name, value)
+        log.call_status = status
+        return True
 
     async def log_usage(self, record: dict[str, Any]) -> None:
         log = LlmUsageLog(

@@ -72,6 +72,15 @@ def _add_history_columns(conn: Connection) -> None:
     )
 
 
+def _add_call_status(conn: Connection) -> None:
+    """Add `call_status` to an older `llm_usage_log`; its rows were all finished calls. Idempotent."""
+    present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(llm_usage_log)")}
+    if "call_status" not in present:
+        conn.exec_driver_sql(
+            "ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'ok'"
+        )
+
+
 def _move_default_dal_once(conn: Connection) -> None:
     """Move projects from the old default DAL_A to DAL_C, once per database.
 
@@ -113,6 +122,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(FlowBase.metadata.create_all)
             await conn.run_sync(_allow_unknown_cost)
             await conn.run_sync(_add_history_columns)
+            await conn.run_sync(_add_call_status)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)
 

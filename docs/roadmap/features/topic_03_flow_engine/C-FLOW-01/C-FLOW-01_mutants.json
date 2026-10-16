@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "feature": "C-FLOW-01",
+  "campaigns": [
+    {
+      "requirement": "FR-8",
+      "title": "Each ledger row says pending, ok or failed; older rows count as ok",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_call_status_column.py"
+      ],
+      "mutants": [
+        {
+          "id": "old-rows-not-ok",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_add_call_status",
+          "old": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'ok'\"\n",
+          "new": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'pending'\"\n",
+          "breaks": "every call made before the column reads as never finished",
+          "symbol_sha": "sha256:482e6aa5d0b3b9bc8d9d60da135fa96b32c58e077d24e8484fa13255ce77c486"
+        },
+        {
+          "id": "opened-as-ok",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.open_call",
+          "old": "        log = LlmUsageLog(**_columns(record), call_status=\"pending\")\n",
+          "new": "        log = LlmUsageLog(**_columns(record), call_status=\"ok\")\n",
+          "breaks": "a call that never finished looks finished, with its worst case as real spend",
+          "symbol_sha": "sha256:d2fe37e5a6104b80e7a945cd48577f50e5ce4564779f6a1ed50e7771a20b8189"
+        },
+        {
+          "id": "any-close-status",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.close_call",
+          "old": "        if status not in _CLOSED:\n",
+          "new": "        if False:\n",
+          "breaks": "a call can be closed as pending or a made-up status",
+          "symbol_sha": "sha256:e928df6b838ce5a86c92d8c7e53c07f3ba129b4a8f75f0db59c2560ff7b27068"
+        }
+      ]
+    }
+  ]
+}
