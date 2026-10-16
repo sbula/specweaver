@@ -136,7 +136,8 @@
       "requirement": "FR-6",
       "title": "Failed calls count in the totals; unfinished ones never do",
       "scope": [
-        "tests/integration/infrastructure/llm/test_readers_of_the_ledger.py"
+        "tests/integration/infrastructure/llm/test_readers_of_the_ledger.py",
+        "tests/e2e/capabilities/infrastructure/test_failed_and_unfinished_calls_e2e.py"
       ],
       "mutants": [
         {
@@ -168,6 +169,46 @@
           "new": ".where(LlmUsageLog.call_status.in_((\"failed\", \"pending\", \"ok\")))",
           "breaks": "finished calls are reported as failed or unfinished",
           "symbol_sha": "sha256:623b30fb0176c06525aaade0568efb6d1558c2c12942d755b954bd09010e1c9f"
+        },
+        {
+          "id": "failed-line-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_status_lines",
+          "old": "    if failed := totals.get(\"failed\"):\n",
+          "new": "    if failed := totals.get(\"never\"):\n",
+          "breaks": "a failed call's spend rises with no word why",
+          "symbol_sha": "sha256:d02938b76a472895e7c37b14e3acd666083372fcbaaf415c1f06cc8032be352e"
+        },
+        {
+          "id": "unfinished-line-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_status_lines",
+          "old": "    if pending := totals.get(\"pending\"):\n",
+          "new": "    if pending := totals.get(\"never\"):\n",
+          "breaks": "a killed call is never seen",
+          "symbol_sha": "sha256:d02938b76a472895e7c37b14e3acd666083372fcbaaf415c1f06cc8032be352e"
+        },
+        {
+          "id": "usage-shows-no-status",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "usage",
+          "old": "    for line in _status_lines(_status_totals(project, parsed_since), currency):\n",
+          "new": "    for line in []:\n",
+          "breaks": "`sw usage` says nothing of failed or unfinished calls",
+          "symbol_sha": "sha256:7cfcb1a3d0649db1722b27f29ce03c84acb09fc206075f1400d47afa03f879d4"
+        },
+        {
+          "id": "costs-shows-no-status",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs",
+          "old": "    for line in _status_lines(_status_totals(project, _month_start()), currency):\n",
+          "new": "    for line in []:\n",
+          "breaks": "`sw costs` says nothing of failed or unfinished calls",
+          "symbol_sha": "sha256:751610065f90209297606bf8aa10b5193009bab19263797204b5425ac912f9cf"
         }
       ]
     },

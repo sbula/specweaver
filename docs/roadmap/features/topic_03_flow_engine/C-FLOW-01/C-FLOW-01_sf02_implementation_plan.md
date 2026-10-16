@@ -21,7 +21,7 @@ call is counted and named, and every command that calls a model says when calls 
 | `get_status_totals(project, since)` → per status (`failed`, `pending`): calls, tokens, known USD, calls with no price | `store.py` (`LlmRepository`) | NEW |
 | step history skips `pending` rows; a step with a failed call whose tokens are unknown has no token total | `store.py` (`step_history_limit`) | MODIFY |
 | `sw usage`: under the table, *of which failed: N calls, X* and *not finished (running now, or the process was killed): N calls, at most T tokens, X* | `infrastructure/llm/interfaces/cli.py` | MODIFY |
-| `sw costs`: the same two facts on each model's line, this month only | `infrastructure/llm/interfaces/cli.py` | MODIFY |
+| `sw costs`: the same two lines after the models, this month only | `infrastructure/llm/interfaces/cli.py` | MODIFY |
 | `unwritten` counts calls, not writes: a call whose row was never opened, or never closed | `infrastructure/llm/collector.py` | MODIFY |
 | every CLI command that builds a router says at its end, on stderr: *N calls of this command are missing from the cost ledger or were not closed in it* | `infrastructure/llm/interfaces/command.py` (`command_router`, `optional_command_router`) | MODIFY |
 | `POST /review` and `POST /implement` answer with `unwritten_calls` | `interfaces/api/v1/_llm.py`, `review.py`, `implement.py`, `schemas.py` | MODIFY |
@@ -54,8 +54,10 @@ exit 130 — and no command can forget it. It goes to stderr, so `sw run --json`
 | `spend-counts-pending` | the `pending` filter of `get_spend_by_server` | CB-1 |
 | `history-counts-pending` | the `pending` filter of `step_history_limit` | CB-1 |
 | `history-counts-unknown-tokens` | the token-unknown guard of `step_history_limit` | CB-1 |
-| `failed-line-hidden` | `sw usage`'s failed line | CB-2 |
-| `unfinished-line-hidden` | `sw costs`' not-finished part | CB-2 |
+| `failed-line-hidden` | the failed line | CB-2 |
+| `unfinished-line-hidden` | the not-finished line | CB-2 |
+| `usage-shows-no-status` | `sw usage` printing the two lines | CB-2 |
+| `costs-shows-no-status` | `sw costs` printing the two lines | CB-2 |
 | `widen-counted-as-missing` | the widen write counted in `unwritten` | CB-3 |
 | `unwritten-never-told` | the `call_on_close` registration | CB-3 |
 | `rest-unwritten-dropped` | `unwritten_calls` set from the router | CB-3 |

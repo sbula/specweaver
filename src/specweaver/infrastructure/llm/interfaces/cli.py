@@ -79,10 +79,54 @@ def costs(ctx: typer.Context) -> None:
         if where is None:  # recorded before the server was stored
             month = _month(old_spent, old_unpriced, currency)
             _say(f"{old_model}, server not recorded: this month {month}")
+    for line in _status_lines(_status_totals(project, _month_start()), currency):
+        _say(line)
 
 
 def _month(spent: float | None, unpriced: int, currency: Currency | None) -> str:
     return format_money(spent or 0.0, currency) + (f" + {unpriced} unknown" if unpriced else "")
+
+
+def _amount(totals: dict[str, Any], currency: Currency | None) -> str:
+    """Known money, and how many calls had none; all unknown stays `unknown`, never 0."""
+    unpriced = totals["unpriced_calls"] or 0
+    if totals["cost"] is None:
+        return "unknown"
+    known = format_money(totals["cost"], currency)
+    return f"{known} + {unpriced} unknown" if unpriced else known
+
+
+def _calls(n: int) -> str:
+    return f"{n} call" if n == 1 else f"{n} calls"
+
+
+def _status_lines(totals: dict[str, dict[str, Any]], currency: Currency | None) -> list[str]:
+    """Failed calls, which the totals hold; unfinished ones, which they do not."""
+    lines = []
+    if failed := totals.get("failed"):
+        lines.append(f"  of which failed: {_calls(failed['calls'])}, {_amount(failed, currency)}")
+    if pending := totals.get("pending"):
+        lines.append(
+            "  not finished (running now, or the process was killed): "
+            f"{_calls(pending['calls'])}, at most {pending['tokens'] or 0:,} tokens, "
+            f"{_amount(pending, currency)}"
+        )
+    return lines
+
+
+def _status_totals(project: str | None, since: datetime | None) -> dict[str, dict[str, Any]]:
+    db = _core.get_db()
+
+    async def _read() -> dict[str, dict[str, Any]]:
+        async with db.async_session_scope() as session:
+            return await LlmRepository(session).get_status_totals(project, since)
+
+    return anyio.run(_read)
+
+
+def _month_start() -> datetime:
+    """The start of this calendar month, UTC."""
+    return datetime.now(UTC).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
 @costs_app.command("set")
@@ -181,8 +225,7 @@ def _price_source(kind: str, model: str, facts: ModelFacts | None, files: LlmSet
 
 def _month_spend(project: str) -> dict[tuple[str, str | None], tuple[float | None, int]]:
     """This calendar month's spend per model and server (UTC): USD known, and calls with no price."""
-    now = datetime.now(UTC)
-    since = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    since = _month_start()
     db = _core.get_db()
 
     async def _read() -> list[dict[str, Any]]:
@@ -313,6 +356,8 @@ def usage(
             _core.console.print(table)
 
     anyio.run(_get_usage)
+    for line in _status_lines(_status_totals(project, parsed_since), currency):
+        _core.console.print(line, markup=False, highlight=False)
 
 
 def _usage_cost(row: dict[str, Any], currency: Currency | None) -> str:
