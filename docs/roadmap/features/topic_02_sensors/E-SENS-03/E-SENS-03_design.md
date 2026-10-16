@@ -106,4 +106,4 @@ Single feature — no decomposition. `TECH-073` may land before or after; both r
 ## Session Handoff
 
 **Now**: design approved 2026-10-16, from the grilling's Q1–Q8.
-**Next**: dev, CB-2 `task_files(context)` ([plan](E-SENS-03_implementation_plan.md)).
+**Next**: dev, CB-3 removes `workspace_roots` ([plan](E-SENS-03_implementation_plan.md)).

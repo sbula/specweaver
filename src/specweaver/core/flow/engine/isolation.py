@@ -100,6 +100,16 @@ def apply_isolation_policy(
         logger.debug("Could not apply worktree isolation policy; defaults (off) will be used.")
 
 
+def task_files(context: RunContext) -> list[str]:
+    """The files a run's task may write: the session's allow-list, else the ones its spec names.
+
+    One list for the coder's write grant and the worktree merge, with session isolation on or off.
+    """
+    if context.isolation.allowed_paths:
+        return list(context.isolation.allowed_paths)
+    return derive_allowed_paths(context.spec_path)
+
+
 def apply_session_policy(
     context: RunContext,
     settings: Any,
