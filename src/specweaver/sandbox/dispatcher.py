@@ -14,6 +14,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 #: Roles that read and never write.
 _READ_ONLY_ROLES = frozenset({"reviewer", "planner", "arbiter_agent"})
+#: Roles that write their task's files and read the rest.
+_TASK_WRITING_ROLES = frozenset({"implementer"})
 
 
 def _folder_grant(path: Any, mode: Any) -> Any:
@@ -116,6 +120,7 @@ class ToolDispatcher:
         topology: Any | None = None,
         parsers: Any | None = None,
         search_key: str | None = None,
+        task_files: Sequence[str] = (),
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -124,6 +129,8 @@ class ToolDispatcher:
             role: The agent's pipeline role ("reviewer", "planner", etc.).
             allowed_tools: List of tool subsets to enable (e.g., ["fs", "web"]).
             search_key: The web-search key; "web" without it searches nothing.
+            task_files: The repo-relative paths or globs the task may write; only a writing
+                role uses them.
 
         Returns:
             A configured ToolDispatcher encompassing all allowed intents.
@@ -137,6 +144,7 @@ class ToolDispatcher:
             analyzer_factory=analyzer_factory,
             topology=topology,
             parsers=parsers,
+            task_files=task_files,
         )
         kwargs["search_key"] = search_key
 
@@ -160,13 +168,15 @@ class ToolDispatcher:
         return exclude_dirs, exclude_patterns
 
     @classmethod
-    def _compute_role_grants(cls, role: str, boundary: Any) -> list[Any]:
+    def _compute_role_grants(
+        cls, role: str, boundary: Any, task_files: Sequence[str] = ()
+    ) -> list[Any]:
         """The filesystem grants one agent role gets over a workspace boundary.
 
         Each role is a rule — which roots, at what access, and whether the API paths come with
-        them — so a fourth role is a table entry rather than a fourth branch.
+        them. A role with no rule gets no grant, so a new role starts with nothing.
         """
-        from specweaver.sandbox.security import AccessMode, ReadOnlyWorkspaceBoundary
+        from specweaver.sandbox.security import AccessMode, ReadOnlyWorkspaceBoundary, TaskGrant
 
         if role == "scenario_agent":
             # It writes nothing: its scenarios are kept by the engine, outside the project.
@@ -187,10 +197,13 @@ class ToolDispatcher:
                 *[_folder_grant(api, AccessMode.READ) for api in boundary.api_paths],
             ]
 
-        return [
-            *[_folder_grant(root, AccessMode.FULL) for root in boundary.roots],
-            *[_folder_grant(api, AccessMode.READ) for api in boundary.api_paths],
-        ]
+        if role in _TASK_WRITING_ROLES:
+            paths = [*boundary.roots, *boundary.api_paths]
+            reads = [_folder_grant(path, AccessMode.READ) for path in paths]
+            files = tuple(task_files)
+            return [*reads, *[TaskGrant(str(root), files) for root in boundary.roots if files]]
+
+        return []
 
     @classmethod
     def _build_ast_kwargs(
@@ -244,10 +257,11 @@ class ToolDispatcher:
         analyzer_factory: Any | None = None,
         topology: Any | None = None,
         parsers: Any | None = None,
+        task_files: Sequence[str] = (),
     ) -> dict[str, Any]:
         """Build the shared configuration kwargs required by tool registry factories."""
         exclude_dirs, exclude_patterns = cls._compute_fs_excludes(analyzer_factory)
-        grants = cls._compute_role_grants(role, boundary)
+        grants = cls._compute_role_grants(role, boundary, task_files)
         cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
         atom, hidden_intents = cls._build_ast_kwargs(boundary, cwd_path, allowed_tools, parsers)
         if atom is not None:

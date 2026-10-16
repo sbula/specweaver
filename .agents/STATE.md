@@ -22,6 +22,9 @@ retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md
 `C-FLOW-01` was reopened on 2026-10-15 and signed off `✅` on 2026-10-16: every call is in the cost
 ledger from the moment it is sent, and its readers count finished calls only — [design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-01/C-FLOW-01_design.md).
 
+`E-SENS-03` is in work (design approved 2026-10-16). Parked for the user: which docs each project
+protects from agents — one settings line is not enough ([plan](../docs/roadmap/features/topic_02_sensors/E-SENS-03/E-SENS-03_implementation_plan.md), Q2).
+
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
 

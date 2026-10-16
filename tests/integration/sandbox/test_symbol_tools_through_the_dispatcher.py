@@ -57,7 +57,7 @@ def call(tmp_path: Path):  # type: ignore[no-untyped-def]
         RunContext(project_path=tmp_path, spec_path=tmp_path / "s.md")
     )
     dispatcher = ToolDispatcher.create_standard_set(
-        boundary, role="implementer", allowed_tools=["ast"]
+        boundary, role="implementer", allowed_tools=["ast"], task_files=["**"]
     )
 
     def _call(name: str, **args: Any) -> dict[str, Any]:

@@ -6,11 +6,11 @@
 import logging
 import shutil
 import time
-from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import AtomResult, AtomStatus
+from specweaver.sandbox.security import merge_keeps
 
 if TYPE_CHECKING:
     from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
@@ -122,23 +122,6 @@ def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
     )
 
 
-def path_allowed(path: str, patterns: list[str]) -> bool:
-    """Whether a repo-relative path matches an allow-list entry: a path, or a glob in which `*`
-    stays inside one folder and `**` spans any number of folders."""
-    parts = path.split("/")
-    if ".." in parts:
-        return False
-    return any(_match(parts, pattern.split("/")) for pattern in patterns)
-
-
-def _match(parts: list[str], pattern: list[str]) -> bool:
-    if not pattern:
-        return not parts
-    if pattern[0] == "**":
-        return any(_match(parts[i:], pattern[1:]) for i in range(len(parts) + 1))
-    return bool(parts) and fnmatchcase(parts[0], pattern[0]) and _match(parts[1:], pattern[1:])
-
-
 def _strip_forbidden_files(
     executor: "EngineGitExecutor", cwd: Path, changed_files: list[str], allowed_paths: list[str]
 ) -> list[str]:
@@ -150,9 +133,7 @@ def _strip_forbidden_files(
     """
     stripped: list[str] = []
     for file in changed_files:
-        if file.endswith("doc_updates.md"):
-            continue
-        if file == "README.md" or file.startswith("docs/") or not path_allowed(file, allowed_paths):
+        if not merge_keeps(file, allowed_paths):
             stripped.append(file)
             executor.run("reset", "HEAD", file)
             checkout_res = executor.run("checkout", "--", file)

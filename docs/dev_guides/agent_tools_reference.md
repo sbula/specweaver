@@ -38,6 +38,13 @@ traversal beyond the project root returns an error, for `grep` and `find_files` 
 a symlink, or with `:` in a segment, is refused.
 Grant matching is `sandbox.security.grant_mode_for`, shared with the AST tool.
 
+**Grants by role** (`ToolDispatcher._compute_role_grants`, `E-SENS-03`): reviewer, planner and
+arbiter read the project; the scenario agent reads `specs/` and `contracts/`; the `implementer`
+reads the project and gets a `TaskGrant` — FULL on the files its task may write, the
+`task_files` given to `create_standard_set`, matched by the worktree merge's own rule
+(`merge_keeps`: globs, `doc_updates.md` always, `README.md` and `docs/` never). A role with no
+rule gets no grant at all.
+
 ## CodeStructureTool
 
 Reads and changes code by symbol, never by raw text: `read_file_structure`, `read_symbol`,

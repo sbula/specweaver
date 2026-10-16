@@ -50,7 +50,7 @@ def project(tmp_path: Path) -> Path:
 
 def _dispatcher(root: Path, role: str = "implementer") -> ToolDispatcher:
     return ToolDispatcher.create_standard_set(
-        WorkspaceBoundary(roots=[root]), role=role, allowed_tools=["ast"]
+        WorkspaceBoundary(roots=[root]), role=role, allowed_tools=["ast"], task_files=["**"]
     )
 
 

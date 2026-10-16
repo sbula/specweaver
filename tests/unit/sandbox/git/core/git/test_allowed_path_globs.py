@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.sandbox.git.core.worktree_ops import path_allowed
+from specweaver.sandbox.security import path_allowed
 
 
 @pytest.mark.parametrize(

@@ -56,7 +56,7 @@
           "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
           "new": "        check_path = posixpath.normpath(f\"/{normalized_path}\")\n",
           "breaks": "a relative path never matches a dispatcher grant, so the agent AST tool can neither read nor write any file",
-          "symbol_sha": "sha256:1d0f9014a49e6fd8b158b3ee32c4cc92710cacd9393534a0e0a7949511435732"
+          "symbol_sha": "sha256:a95a4f4f1e85053dccd8f7db10363fbf99d05483baba787e881eab58d8e47c54"
         }
       ]
     },
@@ -134,7 +134,7 @@
           "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
           "new": "        check_path = f\"{cwd_str}/{normalized_path}\"\n",
           "breaks": "grep and find_files with path='..' read and list files above the project root",
-          "symbol_sha": "sha256:1d0f9014a49e6fd8b158b3ee32c4cc92710cacd9393534a0e0a7949511435732"
+          "symbol_sha": "sha256:a95a4f4f1e85053dccd8f7db10363fbf99d05483baba787e881eab58d8e47c54"
         }
       ]
     }

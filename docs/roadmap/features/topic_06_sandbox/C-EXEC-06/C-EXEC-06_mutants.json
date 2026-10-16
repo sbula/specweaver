@@ -25,10 +25,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
           "symbol": "_strip_forbidden_files",
-          "old": "        if file == \"README.md\" or file.startswith(\"docs/\") or not path_allowed(file, allowed_paths):\n",
+          "old": "        if not merge_keeps(file, allowed_paths):\n",
           "new": "        if False:\n",
           "breaks": "every file the run wrote lands in the real repo",
-          "symbol_sha": "sha256:0173606d0dc5540c56b23f73a1b41e5d90daa41c59d6cedac8eebd4be5477625"
+          "symbol_sha": "sha256:6d34a2cd3c73c254b034e529fc1440e7ffd5ea93eeffaedd9ed2085c5312cd8c"
         },
         {
           "id": "empty-folder-kept",
@@ -38,7 +38,7 @@
           "old": "                _remove_empty_parents(fpath.parent, cwd)\n",
           "new": "                pass\n",
           "breaks": "a stripped file's folder stays behind, empty",
-          "symbol_sha": "sha256:0173606d0dc5540c56b23f73a1b41e5d90daa41c59d6cedac8eebd4be5477625"
+          "symbol_sha": "sha256:6d34a2cd3c73c254b034e529fc1440e7ffd5ea93eeffaedd9ed2085c5312cd8c"
         }
       ]
     },
@@ -53,7 +53,7 @@
         {
           "id": "star-crosses-folders",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "file": "src/specweaver/sandbox/security.py",
           "symbol": "path_allowed",
           "old": "    return any(_match(parts, pattern.split(\"/\")) for pattern in patterns)\n",
           "new": "    return any(fnmatchcase(path, pattern) for pattern in patterns)\n",

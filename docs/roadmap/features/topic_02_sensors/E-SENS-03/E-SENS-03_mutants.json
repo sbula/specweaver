@@ -1,0 +1,108 @@
+{
+  "schema": 2,
+  "feature": "E-SENS-03",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "The coder writes its task's files and reads the rest",
+      "scope": [
+        "tests/integration/sandbox/test_task_write_grant.py",
+        "tests/unit/sandbox/test_read_only_role_grants.py",
+        "tests/unit/sandbox/git/core/git/test_allowed_path_globs.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "task-grant-everywhere",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "TaskGrant.covers",
+          "old": "        return merge_keeps(absolute[len(root) + 1 :], list(self.files))\n",
+          "new": "        return True\n",
+          "breaks": "the coder may write any file of the project",
+          "symbol_sha": "sha256:7d1fc7085768e312c6a2596e02f70d7731ada57fe3f57e26173d141d0d208b70"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A write outside the task is refused",
+      "scope": [
+        "tests/integration/sandbox/test_task_write_grant.py",
+        "tests/unit/sandbox/test_read_only_role_grants.py",
+        "tests/unit/sandbox/git/core/git/test_allowed_path_globs.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "readme-writable",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "merge_keeps",
+          "old": "    if path == \"README.md\" or path.startswith(\"docs/\"):\n        return False\n",
+          "new": "    if path == \"never\":\n        return False\n",
+          "breaks": "the coder writes README and docs, which the merge then drops",
+          "symbol_sha": "sha256:ba00e9a56c917c94cb4f958ceb5c5f87a7cf43c922ea95c5a779318632fcd3a0"
+        },
+        {
+          "id": "glob-not-matched",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "merge_keeps",
+          "old": "    return path_allowed(path, allowed)\n",
+          "new": "    return path in allowed\n",
+          "breaks": "a glob entry grants nothing and keeps nothing",
+          "symbol_sha": "sha256:ba00e9a56c917c94cb4f958ceb5c5f87a7cf43c922ea95c5a779318632fcd3a0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A role with no rule gets no grant",
+      "scope": [
+        "tests/integration/sandbox/test_task_write_grant.py",
+        "tests/unit/sandbox/test_read_only_role_grants.py",
+        "tests/unit/sandbox/git/core/git/test_allowed_path_globs.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-role-gets-full",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._compute_role_grants",
+          "old": "        return []\n",
+          "new": "        return [_folder_grant(root, AccessMode.FULL) for root in boundary.roots]\n",
+          "breaks": "a new role starts with full access",
+          "symbol_sha": "sha256:a593392cad1d1db26a4a6f41d8b3e7d5319170021925ec08503529e6a4753373"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "A task entry cannot reach past the project",
+      "scope": [
+        "tests/integration/sandbox/test_task_write_grant.py",
+        "tests/unit/sandbox/test_read_only_role_grants.py",
+        "tests/unit/sandbox/git/core/git/test_allowed_path_globs.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "dotdot-entry-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "TaskGrant.__post_init__",
+          "old": "            if not entry.strip() or os.path.isabs(entry) or entry[1:2] == \":\" or \"..\" in parts:\n",
+          "new": "            if not entry.strip():\n",
+          "breaks": "an entry with .. or an absolute path widens the grant",
+          "symbol_sha": "sha256:be9b05bfd3f58135305cab97d3a7b6c290eeb2c3857bccf182440c7532c5bac0"
+        }
+      ]
+    }
+  ]
+}

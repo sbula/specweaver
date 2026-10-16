@@ -101,9 +101,9 @@ Single feature — no decomposition. `TECH-073` may land before or after; both r
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Workspace Boundaries | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| — | Workspace Boundaries | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-16, from the grilling's Q1–Q8.
-**Next**: the implementation-plan skill.
+**Next**: dev, CB-2 `task_files(context)` ([plan](E-SENS-03_implementation_plan.md)).

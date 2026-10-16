@@ -47,7 +47,9 @@ def project(tmp_path: Path) -> Path:
 
 def _implementer(project: Path) -> ToolDispatcher:
     boundary = WorkspaceBoundary(roots=[project])
-    return ToolDispatcher.create_standard_set(boundary, role="implementer", allowed_tools=["ast"])
+    return ToolDispatcher.create_standard_set(
+        boundary, role="implementer", allowed_tools=["ast"], task_files=["**"]
+    )
 
 
 def _replace(path: str) -> dict:

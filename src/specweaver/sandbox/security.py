@@ -10,10 +10,13 @@ import os
 import posixpath
 from dataclasses import dataclass
 from enum import StrEnum
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -173,6 +176,62 @@ class ReadOnlyWorkspaceBoundary(WorkspaceBoundary):
 # Grant matching — the one copy every agent tool uses
 # ---------------------------------------------------------------------------
 
+
+@dataclass(frozen=True)
+class TaskGrant:
+    """FULL on the files under `root` that one task may write: the ones the merge would keep.
+
+    `files` are repo-relative entries, paths or globs (`path_allowed`). An entry that is empty,
+    absolute or holds `..` stops the grant from being built: it would reach past the project.
+    """
+
+    root: str
+    files: tuple[str, ...]
+    mode: AccessMode = AccessMode.FULL
+
+    def __post_init__(self) -> None:
+        for entry in self.files:
+            parts = entry.replace("\\", "/").split("/")
+            if not entry.strip() or os.path.isabs(entry) or entry[1:2] == ":" or ".." in parts:
+                msg = f"task file {entry!r} must be a path inside the project"
+                raise ValueError(msg)
+
+    def covers(self, absolute: str) -> bool:
+        root = self.root.replace("\\", "/").rstrip("/")
+        if not absolute.startswith(root + "/"):
+            return False
+        return merge_keeps(absolute[len(root) + 1 :], list(self.files))
+
+
+def path_allowed(path: str, patterns: list[str]) -> bool:
+    """Whether a repo-relative path matches an allow-list entry: a path, or a glob in which `*`
+    stays inside one folder and `**` spans any number of folders."""
+    parts = path.split("/")
+    if ".." in parts:
+        return False
+    return any(_match(parts, pattern.split("/")) for pattern in patterns)
+
+
+def _match(parts: list[str], pattern: list[str]) -> bool:
+    if not pattern:
+        return not parts
+    if pattern[0] == "**":
+        return any(_match(parts[i:], pattern[1:]) for i in range(len(parts) + 1))
+    return bool(parts) and fnmatchcase(parts[0], pattern[0]) and _match(parts[1:], pattern[1:])
+
+
+def merge_keeps(path: str, allowed: list[str]) -> bool:
+    """Whether a task's change to `path` survives the worktree merge — and so may be written.
+
+    Proposed doc changes (`doc_updates.md`) always survive; `README.md` and `docs/` never do.
+    """
+    if path.endswith("doc_updates.md"):
+        return True
+    if path == "README.md" or path.startswith("docs/"):
+        return False
+    return path_allowed(path, allowed)
+
+
 _MODE_PRIORITY = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}
 
 
@@ -186,7 +245,9 @@ def normalize_grant_path(path: str) -> str:
     return "" if normalized == "." else normalized
 
 
-def grant_mode_for(normalized_path: str, grants: list[FolderGrant], cwd: Path) -> AccessMode | None:
+def grant_mode_for(
+    normalized_path: str, grants: Sequence[FolderGrant | TaskGrant], cwd: Path
+) -> AccessMode | None:
     """The most permissive grant covering `normalized_path`, or None when no grant covers it.
 
     Grants from the dispatcher are absolute, while tools are told to send paths relative to the
@@ -204,10 +265,13 @@ def grant_mode_for(normalized_path: str, grants: list[FolderGrant], cwd: Path) -
 
     best: AccessMode | None = None
     for grant in grants:
-        grant_path = grant.path.replace("\\", "/").rstrip("/")
-        covered = _path_under_grant(normalized_path, grant_path, grant.recursive) or (
-            _path_under_grant(check_path, grant_path, grant.recursive)
-        )
+        if isinstance(grant, TaskGrant):
+            covered = grant.covers(check_path)
+        else:
+            grant_path = grant.path.replace("\\", "/").rstrip("/")
+            covered = _path_under_grant(normalized_path, grant_path, grant.recursive) or (
+                _path_under_grant(check_path, grant_path, grant.recursive)
+            )
         if covered and (best is None or _MODE_PRIORITY[grant.mode] > _MODE_PRIORITY[best]):
             best = grant.mode
     return best
