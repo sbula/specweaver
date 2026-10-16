@@ -2,7 +2,7 @@
 - **Feature ID**: E-SENS-03
 - **Design Document**: docs/roadmap/features/topic_02_sensors/E-SENS-03/E-SENS-03_design.md
 - **Implementation Plan**: docs/roadmap/features/topic_02_sensors/E-SENS-03/E-SENS-03_implementation_plan.md
-- **Status**: APPROVED by the user 2026-10-16
+- **Status**: APPROVED by the user 2026-10-16 · built: CB-1 `9dfe74d7`, CB-2 `81edf348`, CB-3
 
 **FRs owned**: FR-1 … FR-5, NFR-1, NFR-2 · **Depends on**: none · **Paths**: P1 … P5
 
@@ -48,10 +48,11 @@ create, delete) refuses below the mode it needs, naming the path.
 | `unknown-role-gets-full` | the no-rule branch returns FULL on the roots | CB-1 |
 | `task-grant-everywhere` | the task grant matches every path | CB-1 |
 | `readme-writable` | the `README.md` / `docs/` exclusion | CB-1 |
+| `glob-not-matched` | the shared matcher compares text, not globs | CB-1 |
 | `dotdot-entry-accepted` | the NFR-2 check | CB-1 |
-| `glob-not-matched` | the task grant compares text, not the matcher | CB-1 |
 | `isolation-off-no-files` | `task_files` falls back to nothing | CB-2 |
 | `settings-list-ignored` | `task_files` always derives | CB-2 |
+| `root-not-the-project` | a boundary's root is the spec's folder | CB-3 |
 
 ## Research Notes
 

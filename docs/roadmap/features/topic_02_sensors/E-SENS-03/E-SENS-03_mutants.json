@@ -111,6 +111,26 @@
       ]
     },
     {
+      "requirement": "FR-5",
+      "title": "A boundary has one root, the project's",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_one_source_of_roots.py",
+        "tests/unit/sandbox/test_security.py"
+      ],
+      "mutants": [
+        {
+          "id": "root-not-the-project",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.from_run_context",
+          "old": "        roots = [context.project_path]\n",
+          "new": "        roots = [context.spec_path.parent]\n",
+          "breaks": "an agent's boundary shrinks to the spec's folder",
+          "symbol_sha": "sha256:026851d5e334dd7680e4d75c3cfa69bb2cd90229a1cc49d7f46345affcb48d7f"
+        }
+      ]
+    },
+    {
       "requirement": "NFR-2",
       "title": "A task entry cannot reach past the project",
       "scope": [

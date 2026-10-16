@@ -128,11 +128,8 @@ class WorkspaceBoundary:
 
     @classmethod
     def from_run_context(cls, context: RunContext) -> WorkspaceBoundary:
-        """Build boundary from pipeline context."""
-        if context.graph.workspace_roots:
-            roots = [Path(r) for r in context.graph.workspace_roots]
-        else:
-            roots = [context.project_path]
+        """Build boundary from pipeline context: the project root, and its API paths read-only."""
+        roots = [context.project_path]
 
         api_paths: list[Path] | None = None
         if context.graph.api_contract_paths:

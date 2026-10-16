@@ -92,11 +92,6 @@ def _inject_resolved_mentions(messages: list[Any], context: RunContext) -> None:
     resolved = _resolve_mentions(
         candidates,
         context.project_path,
-        workspace_roots=(
-            [context.project_path / r for r in context.graph.workspace_roots]
-            if context.graph.workspace_roots
-            else None
-        ),
     )
     for r in resolved or []:
         with contextlib.suppress(OSError):
@@ -334,7 +329,7 @@ def _scan_and_store_mentions(
     """Scan LLM response for file mentions and store in context.feedback.
 
     Resolution respects workspace boundaries: only files within
-    ``context.project_path`` (or ``context.graph.workspace_roots``) are included.
+    ``context.project_path`` are included.
     """
     from specweaver.infrastructure.llm.mention_scanner.scanner import extract_mentions
 
@@ -345,11 +340,6 @@ def _scan_and_store_mentions(
     resolved = _resolve_mentions(
         candidates,
         context.project_path,
-        workspace_roots=(
-            [context.project_path / r for r in context.graph.workspace_roots]
-            if context.graph.workspace_roots
-            else None
-        ),
     )
 
     if resolved:
@@ -366,19 +356,16 @@ def _resolve_mentions(
     candidates: list[str],
     project_path: Path,
     *,
-    workspace_roots: list[Path] | None = None,
     max_files: int = 5,
 ) -> list[ResolvedMention]:
     """Resolve candidate path strings to actual files on disk.
 
-    Only files within the project or workspace boundaries are included.
+    Only files within the project are included.
     Spec files (kind="spec") are prioritized over other kinds.
     """
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
 
     roots = [project_path]
-    if workspace_roots:
-        roots.extend(workspace_roots)
 
     resolved: list[ResolvedMention] = []
     seen_paths: set[Path] = set()

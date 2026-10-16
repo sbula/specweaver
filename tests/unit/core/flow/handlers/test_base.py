@@ -415,7 +415,6 @@ class TestGraphContext:
     def test_defaults_are_all_none(self) -> None:
         graph = GraphContext()
         assert graph.topology is None
-        assert graph.workspace_roots is None
         assert graph.api_contract_paths is None
 
     def test_run_context_gets_a_default_graph_context(self, tmp_path: Path) -> None:
@@ -452,12 +451,12 @@ class TestGraphContext:
         assert context.graph.api_contract_paths == expected
 
     def test_replacing_one_field_leaves_the_others(self, tmp_path: Path) -> None:
-        original = GraphContext(topology="topo", workspace_roots=["src"])
+        original = GraphContext(topology="topo", api_contract_paths=["a.py"])
 
-        updated = original.model_copy(update={"api_contract_paths": ["x.py"]})
+        updated = original.model_copy(update={"topology": "other"})
 
-        assert updated.topology == "topo"
-        assert updated.workspace_roots == ["src"]
+        assert updated.topology == "other"
+        assert updated.api_contract_paths == ["a.py"]
 
     # --- [Hostile / Wrong Input] ------------------------------------------
 
@@ -472,7 +471,7 @@ class TestGraphContext:
 
     def test_old_flat_paths_are_gone(self, tmp_path: Path) -> None:
         context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-        for gone in ("topology", "workspace_roots", "api_contract_paths"):
+        for gone in ("topology", "api_contract_paths"):
             with pytest.raises(AttributeError):
                 getattr(context, gone)
             with pytest.raises(ValidationError):

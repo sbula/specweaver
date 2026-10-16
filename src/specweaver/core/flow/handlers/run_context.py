@@ -112,16 +112,11 @@ class AnalysisContext(BaseModel):
 
 
 class GraphContext(BaseModel):
-    """What this run knows about the project's dependency graph.
-
-    ``workspace_roots`` is read by code but written by nothing, so it is always ``None`` in
-    production.
-    """
+    """What this run knows about the project's dependency graph."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     topology: Any = None
-    workspace_roots: list[str] | None = None
     api_contract_paths: list[str] | None = None
 
 

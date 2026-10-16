@@ -101,9 +101,9 @@ Single feature — no decomposition. `TECH-073` may land before or after; both r
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | Workspace Boundaries | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| — | Workspace Boundaries | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-16, from the grilling's Q1–Q8.
-**Next**: dev, CB-3 removes `workspace_roots` ([plan](E-SENS-03_implementation_plan.md)).
+**Now**: built and committed — the coder's write grant comes from its task; a role with no rule gets nothing; `workspace_roots` is gone.
+**Next**: the user's sign-off. Parked for the laptop: which docs each project protects (plan Q2).

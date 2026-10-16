@@ -101,20 +101,12 @@ class TestResolveMentions:
         result = _resolve_mentions(["valid.py"], tmp_path)
         assert result == []  # file doesn't exist, no crash
 
-    def test_multiple_workspace_roots(self, tmp_path: Path) -> None:
-        root1 = tmp_path / "root1"
-        root1.mkdir()
-        root2 = tmp_path / "root2"
-        root2.mkdir()
-        f = root2 / "util.py"
-        f.write_text("code")
-        result = _resolve_mentions(
-            ["util.py"],
-            root1,
-            workspace_roots=[root2],
-        )
-        assert len(result) == 1
-        assert result[0].resolved_path == f.resolve()
+    def test_a_file_outside_the_project_is_not_resolved(self, tmp_path: Path) -> None:
+        project = tmp_path / "project"
+        project.mkdir()
+        (tmp_path / "util.py").write_text("code")
+
+        assert _resolve_mentions(["../util.py", "util.py"], project) == []
 
 
 # ===========================================================================
@@ -149,7 +141,6 @@ class TestScanAndStoreMentions:
     def _make_context(project_path: Path) -> MagicMock:
         ctx = MagicMock()
         ctx.project_path = project_path
-        ctx.graph = ctx.graph.model_copy(update={"workspace_roots": None})
         ctx.feedback = {}
         return ctx
 

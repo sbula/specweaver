@@ -53,12 +53,7 @@ PIPELINES = REPO_ROOT / "src" / "specweaver" / "workflows" / "pipelines"
 
 #: Fields documented as "(set by X)" that legitimately have no writer yet, with the reason.
 #: An entry here is a TRACKED exception, not a silent pass — each must name why and who owns it.
-DEAD_PROMISE_ALLOWLIST = {
-    "workspace_roots": (
-        "INT-US-21 design: per-component boundary scoping is an execution concern, deliberately "
-        "deferred to the C-FLOW-12 / INT-US-21-SF02 add-on. Consumed (read) by review.py today."
-    ),
-}
+DEAD_PROMISE_ALLOWLIST: dict[str, str] = {}
 
 
 class Report:
