@@ -8,6 +8,8 @@ Proves: C-FLOW-01 FR-2
 Proves: C-FLOW-01 FR-3
 Proves: C-FLOW-01 FR-4
 Proves: C-FLOW-01 FR-5
+Proves: C-FLOW-01 NFR-2
+Proves: C-FLOW-01 NFR-3
 
 A real collector over a real SQLite ledger; the provider double reads the ledger while the call
 is still running.
@@ -17,6 +19,8 @@ is still running.
 | Happy | a call is `pending` while it runs and `ok` with its real numbers after; a stream likewise |
 | Boundary | a tool loop's `pending` row grows with each round's worst case; a call the brake refuses leaves no row |
 | Degradation | a ledger that cannot be written: the call still returns, and the miss is counted once per call |
+| Boundary (NFR) | an unpriced call's cost stays unknown, never 0; a row from years ago is still there |
+| Hostile (NFR) | no row holds a word of the prompt or the answer |
 | Hostile | a call that raises is `failed` with the usage it reported, else with tokens unknown; nothing writes rows but the collector |
 """
 
@@ -265,6 +269,46 @@ def test_a_call_whose_open_and_close_both_fail_counts_once(
     asyncio.run(collector.generate(_ASK, _CONFIG))
 
     assert collector.unwritten == 1
+
+
+def test_an_unpriced_calls_cost_stays_unknown(ledger: tuple[Database, Path]) -> None:
+    db, path = ledger
+
+    asyncio.run(_collector(db, _Provider(path)).generate(_ASK, _CONFIG))
+
+    with sqlite3.connect(path) as conn:
+        assert conn.execute("SELECT estimated_cost FROM llm_usage_log").fetchall() == [(None,)]
+
+
+def test_no_row_holds_the_prompt_or_the_answer(ledger: tuple[Database, Path]) -> None:
+    db, path = ledger
+    secret = [Message(role=Role.USER, content="the-launch-code-is-4711 " * 20)]
+
+    asyncio.run(_collector(db, _Provider(path)).generate(secret, _CONFIG))
+
+    with sqlite3.connect(path) as conn:
+        cells = [str(cell) for row in conn.execute("SELECT * FROM llm_usage_log") for cell in row]
+    assert cells
+    assert not any("launch-code" in cell or cell == "hi" for cell in cells)
+
+
+def test_a_row_from_years_ago_is_kept(ledger: tuple[Database, Path]) -> None:
+    db, path = ledger
+    with sqlite3.connect(path) as conn:
+        conn.execute(
+            "INSERT INTO llm_usage_log (timestamp, project_name, task_type, model, provider,"
+            " prompt_tokens, completion_tokens, total_tokens, duration_ms)"
+            " VALUES ('2020-01-01T00:00:00+00:00', 'greeter', 'draft', 'old', 'x', 1, 1, 2, 1)"
+        )
+
+    bootstrap_database(str(path))
+    asyncio.run(_collector(db, _Provider(path)).generate(_ASK, _CONFIG))
+
+    with sqlite3.connect(path) as conn:
+        assert conn.execute("SELECT model FROM llm_usage_log ORDER BY id").fetchall() == [
+            ("old",),
+            ("coder-a",),
+        ]
 
 
 def test_only_the_collector_writes_rows() -> None:

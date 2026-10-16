@@ -342,6 +342,25 @@
           "symbol_sha": "sha256:dc80f751f33b209d9b371d43c83f5fc479f37e8187389cb0ff513f49cb18c90c"
         }
       ]
+    },
+    {
+      "requirement": "NFR-3",
+      "title": "An unknown price is stored as unknown, never 0",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-cost-stored-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "_columns",
+          "old": "        \"estimated_cost\": record.get(\"estimated_cost_usd\"),\n",
+          "new": "        \"estimated_cost\": record.get(\"estimated_cost_usd\") or 0.0,\n",
+          "breaks": "an unpriced call reads as free",
+          "symbol_sha": "sha256:0aeb709f3e71e347fa031b25616f8246b11b6b5d0e6a6a2f2ac0563fc4f93682"
+        }
+      ]
     }
   ]
 }
