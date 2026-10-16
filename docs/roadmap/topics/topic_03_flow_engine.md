@@ -72,7 +72,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-C: Enterprise Standard
 
-* **`C-FLOW-01` 🔧: Cost Telemetry** (Legacy: 3.12)
+* **`C-FLOW-01` ✅: Cost Telemetry** (Legacy: 3.12)
   > - **Purpose:** Record what every LLM call cost and which task it served, so spend can be seen rather than guessed
   > - **Trigger:** On every LLM call
   > - **Precondition:** `C-FLOW-13` → prices · `E-FLOW-03` → the adapters

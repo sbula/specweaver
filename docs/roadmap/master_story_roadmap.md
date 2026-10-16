@@ -372,7 +372,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config DB)*
     *   `✅` **Step 9a:** Token Tracking
-    *   `🔧` **C-FLOW-01:** Telemetry DB
+    *   `✅` **C-FLOW-01:** Telemetry DB
     *   ⚰️ **D-FLOW-03:** *(retired 2026-10-11 — replaced by `C-FLOW-13`)*
 *   **Sub-Story Add-Ons:**
     *   🟢 **Centralized Model Table:**

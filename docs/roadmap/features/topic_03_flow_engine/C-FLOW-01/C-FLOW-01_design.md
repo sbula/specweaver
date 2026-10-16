@@ -1,7 +1,7 @@
 # C-FLOW-01 — Cost Telemetry
 
-**Status**: APPROVED by the user 2026-10-15 — backfilled for a repair; the capability is `🔧` until the repair is
-proven and signed off `[agreed 2026-10-15]`. · **Feature ID**: C-FLOW-01 (Legacy 3.12) · **DAL**: C
+**Status**: APPROVED by the user 2026-10-15 — backfilled for a repair; repaired and signed off `✅` by the user
+2026-10-16. · **Feature ID**: C-FLOW-01 (Legacy 3.12) · **DAL**: C
 · **Plan of 2026-03**: [C-FLOW-01_implementation_plan.md](C-FLOW-01_implementation_plan.md)
 
 | | |
@@ -116,4 +116,4 @@ SF-01, then SF-02.
 ## Session Handoff
 
 **Now**: SF-02 committed — the readers count finished calls only, name failed and unfinished ones, and every command says how many calls the ledger misses.
-**Next**: the closure gate, then the user's sign-off of C-FLOW-01.
+**Next**: none — C-FLOW-01 signed off 2026-10-16.
