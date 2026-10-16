@@ -41,7 +41,7 @@ any test.
 | P2 | a REST call → the same, once | `interfaces.api` |
 | P3 | a call that fails → its row `failed`, with the usage the provider reported or *tokens unknown* | `B-FLOW-05` brake |
 | P4 | a run killed during a call → its row stays `pending`; `sw usage` shows it as not finished, at most the worst case | `infrastructure.llm` |
-| P5 | the ledger cannot be written → the run goes on; `sw run` ends saying how many calls are missing | `core.flow.interfaces` |
+| P5 | the ledger cannot be written → the run goes on; the command ends saying how many calls are missing | `infrastructure.llm.interfaces`, `interfaces.api` |
 | P6 | `sw usage`, `sw costs` → failed calls in the totals and on their own line; interrupted ones apart | `infrastructure.llm` |
 | P7 | step limits read the history → `ok` and `failed` rows of passed steps count, `pending` ones never | `B-FLOW-07` (`US-04` L1) |
 | P8 | `sw implement` → `sw usage` still shows the run's tokens and cost | `INT-US-16` FR-1 |
@@ -54,7 +54,7 @@ any test.
 | FR-2 | Written as it happens | Collector | SHALL write the row as `pending`, with the brake's worst case, before the request is sent, and SHALL update it to `ok` or `failed` with the real numbers when the call ends `[agreed 2026-10-15]` | a killed process loses no row |
 | FR-3 | Failed calls count | Collector | SHALL mark a call that raised `failed`, with the usage the provider reported, else *tokens unknown*, and with its duration and step `[agreed 2026-10-15]` | a billed failure is visible spend |
 | FR-4 | One writer | Collector, runner, REST | The collector SHALL be the only writer of `llm_usage_log`; no end-of-run write remains `[agreed 2026-10-15]` | a lost write cannot hide behind a second one |
-| FR-5 | A missing row is told | Collector, run summary | A write that fails SHALL never stop the run; the end of `sw run` SHALL say how many calls could not be written `[agreed 2026-10-15]` | a gap in the ledger is never silent |
+| FR-5 | A missing row is told | Collector, command end, REST | A write that fails SHALL never stop the run; the end of every command that calls a model SHALL say how many calls could not be written, and `POST /review` and `POST /implement` SHALL answer with `unwritten_calls` `[agreed 2026-10-16]` | a gap in the ledger is never silent |
 | FR-6 | Failures and interruptions are shown | `sw usage`, `sw costs` | SHALL count `failed` rows in the totals and show them on their own line — *of which failed: N calls, X*; a `pending` row SHALL show as *not finished (running now, or the process was killed): N calls, at most X*, outside the totals — the usage commands do not read the run store `[agreed 2026-10-15]` | the person sees why spend rose |
 | FR-7 | History reads real spend | Step limits | SHALL count `ok` and `failed` rows of passed steps and never `pending` ones | a limit is never set from a guess |
 | FR-8 | The status column | Store | `llm_usage_log.call_status` SHALL hold `pending`, `ok` or `failed`, added like the other history columns; rows from before get `ok` `[agreed 2026-10-15]` | the status is queryable, not encoded in another field |
@@ -70,7 +70,7 @@ there `[agreed 2026-10-15]`.
 | FR-1, FR-2, FR-3 | `TelemetryCollector.generate`, `.generate_with_tools`, `.generate_stream`; `create_usage_record(...)`; `_reserve` → the brake's worst case | read `infrastructure/llm/collector.py:81-232` |
 | FR-2, FR-4 | the database the resolver already holds (`RoleResolver(..., history=db)`) | read `infrastructure/llm/resolve.py:64,211` |
 | FR-4 | the runner's `_flush_telemetry` and REST's `run_steps` flush, both removed | read `core/flow/engine/runner.py:333`, `interfaces/api/v1/_llm.py:75` |
-| FR-5 | `show_run_summary(final_run)` | read `core/flow/interfaces/run_summary.py` |
+| FR-5 | `command_router`, `optional_command_router`; `run_steps` | read `infrastructure/llm/interfaces/command.py`, `interfaces/api/v1/_llm.py` |
 | FR-6 | `LlmRepository.get_usage_summary`, `.get_usage_by_task_type`, the `sw costs` query | read `infrastructure/llm/store.py:135-200`; `infrastructure.llm.interfaces` may not depend on `core.flow` (`tach.toml`) |
 | FR-7 | `step_history_limit` | read `infrastructure/llm/store.py:65-100` |
 | FR-8 | `_add_history_columns` | read `core/config/bootstrap/db_bootstrap.py:57-71` |
@@ -100,7 +100,7 @@ write, not deleted.
 | SF | Does | FRs | Depends on |
 |---|---|---|---|
 | SF-01 | The write: `pending` before, `ok`/`failed` after, one writer, the column ([plan](C-FLOW-01_sf01_implementation_plan.md)) | FR-1, FR-2, FR-3, FR-4, FR-8 | — |
-| SF-02 | The readers: the run summary's missing count, `sw usage`/`sw costs` lines, step history | FR-5, FR-6, FR-7 | SF-01 |
+| SF-02 | The readers: the missing count at every command's end, `sw usage`/`sw costs` lines, step history ([plan](C-FLOW-01_sf02_implementation_plan.md)) | FR-5, FR-6, FR-7 | SF-01 |
 
 ## Execution Order
 
@@ -111,9 +111,9 @@ SF-01, then SF-02.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The write | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The readers | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The readers | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: SF-01 committed — every call is in the ledger from the moment it is sent; the collector is its only writer.
-**Next**: the implementation-plan skill for SF-02 (the readers).
+**Next**: SF-02 dev, CB-1 the queries ([plan](C-FLOW-01_sf02_implementation_plan.md)).

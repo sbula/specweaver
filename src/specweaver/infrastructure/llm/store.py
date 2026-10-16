@@ -78,18 +78,24 @@ def step_history_limit(
     percentile: int,
 ) -> float | None:
     """The `percentile` value of the newest `steps` passed steps of one group, in `unit`;
-    None while the group has fewer. A step with an unpriced call has no money total."""
+    None while the group has fewer. Only finished calls count: a step with an unpriced call has no
+    money total, and a step with a failed call of unknown tokens has no token total."""
     query = """
     SELECT SUM(l.total_tokens), SUM(l.estimated_cost), SUM(l.estimated_cost IS NULL)
     FROM llm_usage_log l
     JOIN llm_step_outcome o ON o.run_id = l.run_id AND o.step_name = l.step_name
     WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?
+      AND l.call_status != 'pending'
     GROUP BY l.run_id, l.step_name
     {having}
     ORDER BY MAX(l.timestamp) DESC
     LIMIT ?
     """
-    having = "HAVING SUM(l.estimated_cost IS NULL) = 0" if unit == "usd" else ""
+    having = (
+        "HAVING SUM(l.estimated_cost IS NULL) = 0"
+        if unit == "usd"
+        else "HAVING SUM(l.call_status = 'failed' AND l.total_tokens = 0) = 0"
+    )
     with db.connect() as conn:
         rows = conn.execute(
             query.format(having=having), (task_type, model, dal_level, steps)
@@ -107,6 +113,8 @@ def nearest_rank(values: list[float], percentile: int) -> float:
 
 
 _CLOSED = frozenset({"ok", "failed"})
+#: A call that has not ended is never spend: its row holds a worst case.
+_FINISHED = LlmUsageLog.call_status != "pending"
 
 
 def _columns(record: dict[str, Any]) -> dict[str, Any]:
@@ -194,11 +202,33 @@ class LlmRepository:
                 func.sum(LlmUsageLog.estimated_cost).label("total_cost"),
                 func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
             )
-            .where(LlmUsageLog.project_name == project, LlmUsageLog.timestamp >= since)
+            .where(LlmUsageLog.project_name == project, LlmUsageLog.timestamp >= since, _FINISHED)
             .group_by(LlmUsageLog.model, LlmUsageLog.server)
         )
         result = await self.session.execute(stmt)
         return [dict(row._mapping) for row in result]
+
+    async def get_status_totals(
+        self, project: str | None, since: datetime | None
+    ) -> dict[str, dict[str, Any]]:
+        """Calls, tokens, known USD and unpriced calls of the `failed` and the `pending` rows."""
+        stmt = (
+            select(
+                LlmUsageLog.call_status,
+                func.count().label("calls"),
+                func.sum(LlmUsageLog.total_tokens).label("tokens"),
+                func.sum(LlmUsageLog.estimated_cost).label("cost"),
+                func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
+            )
+            .where(LlmUsageLog.call_status.in_(("failed", "pending")))
+            .group_by(LlmUsageLog.call_status)
+        )
+        if project is not None:
+            stmt = stmt.where(LlmUsageLog.project_name == project)
+        if since is not None:
+            stmt = stmt.where(LlmUsageLog.timestamp >= since)
+        result = await self.session.execute(stmt)
+        return {row.call_status: dict(row._mapping) for row in result}
 
     async def get_usage_summary(
         self,
@@ -217,6 +247,7 @@ class LlmRepository:
                 func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
                 func.sum(LlmUsageLog.duration_ms).label("total_duration_ms"),
             )
+            .where(_FINISHED)
             .group_by(LlmUsageLog.task_type, LlmUsageLog.model)
             .order_by(func.sum(LlmUsageLog.estimated_cost).desc())
         )
@@ -249,7 +280,7 @@ class LlmRepository:
                 func.sum(LlmUsageLog.total_tokens).label("total_tokens"),
                 func.sum(LlmUsageLog.estimated_cost).label("total_cost"),
             )
-            .where(LlmUsageLog.project_name == project)
+            .where(LlmUsageLog.project_name == project, _FINISHED)
             .group_by(LlmUsageLog.task_type)
             .order_by(func.sum(LlmUsageLog.estimated_cost).desc())
         )

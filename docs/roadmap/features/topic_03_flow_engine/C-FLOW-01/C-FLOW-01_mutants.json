@@ -131,6 +131,74 @@
           "symbol_sha": "sha256:d8972a2935e05ac3069a725bbda9a0134c03ea034d218f1febda9d61832d65bc"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Failed calls count in the totals; unfinished ones never do",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_readers_of_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "summary-counts-pending",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.get_usage_summary",
+          "old": "            .where(_FINISHED)\n",
+          "new": "            .where(LlmUsageLog.id > 0)\n",
+          "breaks": "`sw usage` adds a killed call's worst case to the spend",
+          "symbol_sha": "sha256:3c9db22db6695c6ba4d88cabdcb8d0b517cf626aa7121712a3001e0edd82dff8"
+        },
+        {
+          "id": "spend-counts-pending",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.get_spend_by_server",
+          "old": "LlmUsageLog.timestamp >= since, _FINISHED)",
+          "new": "LlmUsageLog.timestamp >= since)",
+          "breaks": "`sw costs` adds a killed call's worst case to this month",
+          "symbol_sha": "sha256:c4e9023f47c97ab3bef6785f904ada1f5e8ad8d23d3ba9d67f74e8af61ab72ca"
+        },
+        {
+          "id": "status-totals-take-ok",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.get_status_totals",
+          "old": ".where(LlmUsageLog.call_status.in_((\"failed\", \"pending\")))",
+          "new": ".where(LlmUsageLog.call_status.in_((\"failed\", \"pending\", \"ok\")))",
+          "breaks": "finished calls are reported as failed or unfinished",
+          "symbol_sha": "sha256:623b30fb0176c06525aaade0568efb6d1558c2c12942d755b954bd09010e1c9f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Step history reads finished calls of passed steps only",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_readers_of_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "history-counts-pending",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "      AND l.call_status != 'pending'\n",
+          "new": "\n",
+          "breaks": "a step limit is learnt from a killed call's worst case",
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
+        },
+        {
+          "id": "history-counts-unknown-tokens",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "step_history_limit",
+          "old": "        else \"HAVING SUM(l.call_status = 'failed' AND l.total_tokens = 0) = 0\"\n",
+          "new": "        else \"\"\n",
+          "breaks": "a failed call of unknown tokens counts as 0 tokens in a limit",
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
+        }
+      ]
     }
   ]
 }
