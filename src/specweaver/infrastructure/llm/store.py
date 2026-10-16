@@ -174,25 +174,6 @@ class LlmRepository:
         log.call_status = status
         return True
 
-    async def log_usage(self, record: dict[str, Any]) -> None:
-        log = LlmUsageLog(
-            timestamp=datetime.fromisoformat(record["timestamp"]),
-            project_name=record["project_name"],
-            task_type=record["task_type"],
-            model=record["model"],
-            provider=record["provider"],
-            prompt_tokens=record.get("prompt_tokens", 0),
-            completion_tokens=record.get("completion_tokens", 0),
-            total_tokens=record.get("total_tokens", 0),
-            estimated_cost=record.get("estimated_cost_usd"),
-            duration_ms=record.get("duration_ms", 0),
-            run_id=record.get("run_id", ""),
-            server=record.get("server") or None,
-            dal_level=record.get("dal_level") or None,
-            step_name=record.get("step_name") or None,
-        )
-        self.session.add(log)
-
     async def get_spend_by_server(self, project: str, since: datetime) -> list[dict[str, Any]]:
         """Spend per model and server since `since`: USD known, and calls with no price."""
         stmt = (

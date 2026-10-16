@@ -111,9 +111,9 @@ SF-01, then SF-02.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The write | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The readers | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The readers | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Now**: SF-01 committed — every call is in the ledger from the moment it is sent; the collector is its only writer.
-**Next**: SF-02 dev, CB-1 the queries ([plan](C-FLOW-01_sf02_implementation_plan.md)).
+**Now**: SF-02 committed — the readers count finished calls only, name failed and unfinished ones, and every command says how many calls the ledger misses.
+**Next**: the closure gate, then the user's sign-off of C-FLOW-01.

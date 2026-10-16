@@ -42,24 +42,21 @@ def _create_project(db, name: str = "testproj") -> str:
 
 
 def _seed_usage(db, project, *, n=3):
-    """Insert n dummy usage records."""
+    """Insert n finished calls, written as the collector writes them."""
     for i in range(n):
-        _run_llm_op(
-            db,
-            "log_usage",
-            {
-                "timestamp": f"2026-03-27T{10 + i:02d}:00:00Z",
-                "project_name": project,
-                "task_type": "review",
-                "model": "gemini-2.0-flash",
-                "provider": "google",
-                "prompt_tokens": 100 * (i + 1),
-                "completion_tokens": 50 * (i + 1),
-                "total_tokens": 150 * (i + 1),
-                "estimated_cost_usd": 0.001 * (i + 1),
-                "duration_ms": 500 * (i + 1),
-            },
-        )
+        record = {
+            "timestamp": f"2026-03-27T{10 + i:02d}:00:00Z",
+            "project_name": project,
+            "task_type": "review",
+            "model": "gemini-2.0-flash",
+            "provider": "google",
+            "prompt_tokens": 100 * (i + 1),
+            "completion_tokens": 50 * (i + 1),
+            "total_tokens": 150 * (i + 1),
+            "estimated_cost_usd": 0.001 * (i + 1),
+            "duration_ms": 500 * (i + 1),
+        }
+        _run_llm_op(db, "close_call", _run_llm_op(db, "open_call", record), record, "ok")
 
 
 class TestUsageCommand:

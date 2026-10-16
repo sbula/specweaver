@@ -23,45 +23,6 @@
       ]
     },
     {
-      "requirement": "FR-8",
-      "title": "Each ledger row says pending, ok or failed; older rows count as ok",
-      "scope": [
-        "tests/integration/infrastructure/llm/test_call_status_column.py"
-      ],
-      "mutants": [
-        {
-          "id": "old-rows-not-ok",
-          "origin": "authored",
-          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
-          "symbol": "_add_call_status",
-          "old": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'ok'\"\n",
-          "new": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'pending'\"\n",
-          "breaks": "every call made before the column reads as never finished",
-          "symbol_sha": "sha256:482e6aa5d0b3b9bc8d9d60da135fa96b32c58e077d24e8484fa13255ce77c486"
-        },
-        {
-          "id": "opened-as-ok",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/store.py",
-          "symbol": "LlmRepository.open_call",
-          "old": "        log = LlmUsageLog(**_columns(record), call_status=\"pending\")\n",
-          "new": "        log = LlmUsageLog(**_columns(record), call_status=\"ok\")\n",
-          "breaks": "a call that never finished looks finished, with its worst case as real spend",
-          "symbol_sha": "sha256:d2fe37e5a6104b80e7a945cd48577f50e5ce4564779f6a1ed50e7771a20b8189"
-        },
-        {
-          "id": "any-close-status",
-          "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/store.py",
-          "symbol": "LlmRepository.close_call",
-          "old": "        if status not in _CLOSED:\n",
-          "new": "        if False:\n",
-          "breaks": "a call can be closed as pending or a made-up status",
-          "symbol_sha": "sha256:e928df6b838ce5a86c92d8c7e53c07f3ba129b4a8f75f0db59c2560ff7b27068"
-        }
-      ]
-    },
-    {
       "requirement": "FR-2",
       "title": "A call is written pending before it is sent",
       "scope": [
@@ -115,20 +76,102 @@
       "requirement": "FR-4",
       "title": "The collector is the ledger's only writer; a failed write is counted",
       "scope": [
+        "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py",
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "close-writes-a-second-row",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._close",
+          "old": "repo.close_call(call_id, row, status)) is not True",
+          "new": "repo.open_call(row)) is not True",
+          "breaks": "every call leaves a second row beside its pending one",
+          "symbol_sha": "sha256:ea8a932c34b923f4dc645a1e1732b1449d53bd2c80db48dfed7e1489e9d0c468"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A call missing from the ledger is told at the end of its command",
+      "scope": [
         "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py",
-        "tests/unit/infrastructure/llm/test_collector.py",
+        "tests/integration/infrastructure/llm/interfaces/test_missing_calls_told.py",
+        "tests/e2e/capabilities/infrastructure/test_missing_calls_e2e.py",
+        "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py",
         "tests/unit/core/flow/engine/test_runner_telemetry.py"
       ],
       "mutants": [
         {
-          "id": "write-failure-uncounted",
+          "id": "open-miss-uncounted",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
-          "symbol": "TelemetryCollector._write",
-          "old": "            self.unwritten += 1\n",
-          "new": "            pass\n",
-          "breaks": "a gap in the ledger is never reported",
-          "symbol_sha": "sha256:d8972a2935e05ac3069a725bbda9a0134c03ea034d218f1febda9d61832d65bc"
+          "symbol": "TelemetryCollector._open",
+          "old": "            self.unwritten += 1\n            return None\n",
+          "new": "            return None\n",
+          "breaks": "a call never written is never told",
+          "symbol_sha": "sha256:f7fd3f15d7558ea1d99cf36fcddcdd432052c5eb4e483fcf8a78452d91a89cdb"
+        },
+        {
+          "id": "gone-row-uncounted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._close",
+          "old": "repo.close_call(call_id, row, status)) is not True",
+          "new": "repo.close_call(call_id, row, status)) is None",
+          "breaks": "a row gone before its call ends is never told",
+          "symbol_sha": "sha256:ea8a932c34b923f4dc645a1e1732b1449d53bd2c80db48dfed7e1489e9d0c468"
+        },
+        {
+          "id": "widen-counted-as-missing",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._widen",
+          "old": "        await self._write(lambda repo: repo.widen_call(call_id, row))\n",
+          "new": "        if not await self._write(lambda repo: repo.widen_call(call_id, row)):\n            self.unwritten += 1\n",
+          "breaks": "a call written and closed is told as missing",
+          "symbol_sha": "sha256:22f9219c40bda55752b37c604ef914125cc9825ae6f0fb1b984200c6eec3ef13"
+        },
+        {
+          "id": "unwritten-never-told",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "_tell_missing_at_end",
+          "old": "        context.call_on_close(lambda: _tell_missing(router))\n",
+          "new": "        pass\n",
+          "breaks": "no command says its ledger missed calls",
+          "symbol_sha": "sha256:48dcbc81fc2ee28d2cf28549465eb1755c3d601956c8926317270dc09ac4d74e"
+        },
+        {
+          "id": "optional-router-never-tells",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
+          "symbol": "optional_command_router",
+          "old": "        return _tell_missing_at_end(\n            build_router(\n                files,\n                project=project,\n                roles=roles,\n                ask=_core.spend_asker(),\n                db=",
+          "new": "        return (\n            build_router(\n                files,\n                project=project,\n                roles=roles,\n                ask=_core.spend_asker(),\n                db=",
+          "breaks": "sw standards never says its ledger missed calls",
+          "symbol_sha": "sha256:0697479eb69cd52e554d39923b0f6d4aad241652c53f51eb626a396dc14cd2db"
+        },
+        {
+          "id": "rest-unwritten-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/_llm.py",
+          "symbol": "run_steps",
+          "old": "    return run, router.unwritten()\n",
+          "new": "    return run, 0\n",
+          "breaks": "REST always answers that nothing is missing",
+          "symbol_sha": "sha256:050a72a38ccddf8fd25255103dc9d1638a718b1e614c11da8f37b7c162bc95e1"
+        },
+        {
+          "id": "run-end-not-logged",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/telemetry.py",
+          "symbol": "flush_telemetry",
+          "old": "    _log_missing_calls(context, logger, run)\n",
+          "new": "    pass\n",
+          "breaks": "a background run's missing calls leave no trace",
+          "symbol_sha": "sha256:d0578f22a74d08075cf5fc3d7758e7a0aa0e6c6e28402f600a8e736875537629"
         }
       ]
     },
@@ -238,6 +281,65 @@
           "new": "        else \"\"\n",
           "breaks": "a failed call of unknown tokens counts as 0 tokens in a limit",
           "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Each ledger row says pending, ok or failed; older rows count as ok",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_call_status_column.py"
+      ],
+      "mutants": [
+        {
+          "id": "old-rows-not-ok",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_add_call_status",
+          "old": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'ok'\"\n",
+          "new": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'pending'\"\n",
+          "breaks": "every call made before the column reads as never finished",
+          "symbol_sha": "sha256:482e6aa5d0b3b9bc8d9d60da135fa96b32c58e077d24e8484fa13255ce77c486"
+        },
+        {
+          "id": "opened-as-ok",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.open_call",
+          "old": "        log = LlmUsageLog(**_columns(record), call_status=\"pending\")\n",
+          "new": "        log = LlmUsageLog(**_columns(record), call_status=\"ok\")\n",
+          "breaks": "a call that never finished looks finished, with its worst case as real spend",
+          "symbol_sha": "sha256:d2fe37e5a6104b80e7a945cd48577f50e5ce4564779f6a1ed50e7771a20b8189"
+        },
+        {
+          "id": "any-close-status",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.close_call",
+          "old": "        if status not in _CLOSED:\n",
+          "new": "        if False:\n",
+          "breaks": "a call can be closed as pending or a made-up status",
+          "symbol_sha": "sha256:e928df6b838ce5a86c92d8c7e53c07f3ba129b4a8f75f0db59c2560ff7b27068"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-1",
+      "title": "A ledger that refuses writes never breaks the run",
+      "scope": [
+        "tests/integration/workflows/implementation/test_implement_collector_wiring.py",
+        "tests/integration/infrastructure/llm/test_every_call_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "write-failure-raised",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._write",
+          "old": "        except Exception:\n            logger.warning(\"A call could not be written to the cost ledger\", exc_info=True)\n            return None\n",
+          "new": "        except ZeroDivisionError:\n            return None\n",
+          "breaks": "a broken ledger stops every run",
+          "symbol_sha": "sha256:dc80f751f33b209d9b371d43c83f5fc479f37e8187389cb0ff513f49cb18c90c"
         }
       ]
     }

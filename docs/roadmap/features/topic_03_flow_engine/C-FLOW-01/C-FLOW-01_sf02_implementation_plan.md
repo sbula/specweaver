@@ -25,7 +25,7 @@ call is counted and named, and every command that calls a model says when calls 
 | `unwritten` counts calls, not writes: a call whose row was never opened, or never closed | `infrastructure/llm/collector.py` | MODIFY |
 | every CLI command that builds a router says at its end, on stderr: *N calls of this command are missing from the cost ledger or were not closed in it* | `infrastructure/llm/interfaces/command.py` (`command_router`, `optional_command_router`) | MODIFY |
 | `POST /review` and `POST /implement` answer with `unwritten_calls` | `interfaces/api/v1/_llm.py`, `review.py`, `implement.py`, `schemas.py` | MODIFY |
-| a run's end logs a warning with the count; the only report a background REST run can give | `core/flow/engine/telemetry.py` (`flush_telemetry`) | MODIFY |
+| a run's end logs its count (INFO, the log file); each failed write already logs a warning — a background REST run has no reply to carry it | `core/flow/engine/telemetry.py` (`flush_telemetry`) | MODIFY |
 
 The CLI line is registered once, in the two router builders, with `click.get_current_context(silent=True)
 .call_on_close(...)`. It then runs at the end of every command that has a router — also on exit 1 and
@@ -58,9 +58,14 @@ exit 130 — and no command can forget it. It goes to stderr, so `sw run --json`
 | `unfinished-line-hidden` | the not-finished line | CB-2 |
 | `usage-shows-no-status` | `sw usage` printing the two lines | CB-2 |
 | `costs-shows-no-status` | `sw costs` printing the two lines | CB-2 |
-| `widen-counted-as-missing` | the widen write counted in `unwritten` | CB-3 |
+| `open-miss-uncounted` | the count of a row never opened | CB-3 |
+| `gone-row-uncounted` | the count of a row gone or never closed | CB-3 |
+| `widen-counted-as-missing` | a failed widen counted in `unwritten` | CB-3 |
 | `unwritten-never-told` | the `call_on_close` registration | CB-3 |
+| `optional-router-never-tells` | `optional_command_router`'s registration | CB-3 |
 | `rest-unwritten-dropped` | `unwritten_calls` set from the router | CB-3 |
+| `run-end-not-logged` | the run-end warning | CB-3 |
+| `close-writes-a-second-row` | FR-4's mutant, re-pointed: the counted write moved to `_open` and `_close` | CB-3 |
 
 ## Research Notes
 

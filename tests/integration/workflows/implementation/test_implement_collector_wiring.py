@@ -4,7 +4,7 @@
 
 """`sw implement` installs a TelemetryCollector, and the runner drains it. INT-US-16 CB-1.
 
-Proves: INT-US-16 FR-3, INT-US-16 FR-2, INT-US-16 NFR-1
+Proves: INT-US-16 FR-3, INT-US-16 FR-2, INT-US-16 NFR-1, C-FLOW-01 NFR-1
 
 The seam has three links and this file pins all of them at the boundary the `implement` command
 owns: the command builds a router from the settings files, every adapter that router hands out
@@ -342,22 +342,15 @@ class TestHostileProjectNameIsRejectedBeforeTheSeam:
 class TestTelemetryFailureDoesNotBreakTheRun:
     """NFR-1 — telemetry observes the work; it is never a precondition for it."""
 
-    def test_a_flush_that_raises_is_swallowed(self, tmp_path: Path, _isolated_db) -> None:
-        """[Graceful degradation] the DB refuses the write and the command still finishes.
+    def test_a_ledger_that_refuses_writes_never_breaks_the_run(
+        self, tmp_path: Path, _isolated_db
+    ) -> None:
+        """[Graceful degradation] the DB refuses every row and the command still finishes.
 
-        `TelemetryCollector.flush` documents *"Never raises"* and `test_collector.py` proves that
-        of the collector in isolation. This asserts the property that actually matters to a user:
-        that the guarantee survives the whole way out through `PipelineRunner`'s `finally` and the
-        command, so a broken telemetry table costs you a cost report and not your run.
+        The collector writes each call's row as it happens (`C-FLOW-01` FR-2) and never raises
+        when a write fails. This asserts the property that matters to a user: a broken telemetry
+        table costs you a cost report and not your run.
 
-        **No single-line mutant kills this, and that is the finding rather than a gap.** The
-        guarantee is held **twice**: `TelemetryCollector.flush` catches (`collector.py:178-190`)
-        and `flush_telemetry` catches again (`core/flow/engine/telemetry.py:32-35`). Neutralising
-        either alone changes nothing observable, so `_mutate.py` reports SURVIVED for both — not
-        because the test is weak but because the property is redundantly protected. Killing it
-        requires removing both guards, which is not a mutation this repo's runner expresses.
-        Recorded here so the next reader does not mistake the survival for an unproven claim, and
-        does not "fix" it by deleting one of the two guards.
         """
         from specweaver.infrastructure.llm.store import LlmRepository
 
@@ -371,7 +364,10 @@ class TestTelemetryFailureDoesNotBreakTheRun:
 
         control = _run_for_real(tmp_path, project="tele_control", payload=_COLLECTABLE)
 
-        with patch.object(LlmRepository, "log_usage", _explode):
+        with (
+            patch.object(LlmRepository, "open_call", _explode),
+            patch.object(LlmRepository, "close_call", _explode),
+        ):
             broken = _run_for_real(second, project="tele_broken", payload=_COLLECTABLE)
 
         # The claim is that the outcome is UNCHANGED, not that the failure is invisible: NFR-1 says

@@ -55,7 +55,7 @@ async def implement_spec(
             ),
         ],
     )
-    run = await run_steps(
+    run, unwritten = await run_steps(
         pipeline,
         project_root=project_root,
         spec_path=spec_path,
@@ -77,4 +77,5 @@ async def implement_spec(
     return ImplementResponse(
         code_path=str(code_path),
         test_path=str(test_path),
+        unwritten_calls=unwritten,
     )

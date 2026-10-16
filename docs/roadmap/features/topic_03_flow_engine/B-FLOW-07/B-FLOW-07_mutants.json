@@ -39,17 +39,17 @@
           "old": "                server=server_name,\n",
           "new": "                server=\"\",\n",
           "breaks": "spend on the GB10 and on DashScope is mixed",
-          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
+          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
         },
         {
           "id": "step-not-stored",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/store.py",
-          "symbol": "LlmRepository.log_usage",
-          "old": "            step_name=record.get(\"step_name\") or None,\n",
-          "new": "            step_name=None,\n",
+          "symbol": "_columns",
+          "old": "        \"step_name\": record.get(\"step_name\") or None,\n",
+          "new": "        \"step_name\": None,\n",
           "breaks": "the step is known in memory and lost in the database",
-          "symbol_sha": "sha256:27011f44a120a5dcf6bb68a4a9c779abd016cf0f82d68653af4bfc607741d213"
+          "symbol_sha": "sha256:0aeb709f3e71e347fa031b25616f8246b11b6b5d0e6a6a2f2ac0563fc4f93682"
         },
         {
           "id": "rest-run-id-lost",
@@ -170,7 +170,7 @@
           "old": "            record_step_outcomes(db, run.run_id, step_outcomes(run))\n",
           "new": "            pass\n",
           "breaks": "no step ever counts as finished, so no history forms",
-          "symbol_sha": "sha256:a859da158bbaafc8c2111948f400b026c8921aaf9625a98d30022e15943abc46"
+          "symbol_sha": "sha256:d0578f22a74d08075cf5fc3d7758e7a0aa0e6c6e28402f600a8e736875537629"
         },
         {
           "id": "failed-counts-as-passed",
@@ -219,7 +219,7 @@
           "old": "        spent, unpriced = spend.get((model, server), (None, 0))\n",
           "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
           "breaks": "the same model on two servers shows one server's spend on both",
-          "symbol_sha": "sha256:12bfec0af18b030d203f1818891d642fc3abb05c225843744c6a8e898fed7ff4"
+          "symbol_sha": "sha256:751610065f90209297606bf8aa10b5193009bab19263797204b5425ac912f9cf"
         },
         {
           "id": "old-spend-hidden",
@@ -229,7 +229,7 @@
           "old": "        if where is None:  # recorded before the server was stored\n",
           "new": "        if False:\n",
           "breaks": "spend from before the upgrade disappears from sw costs",
-          "symbol_sha": "sha256:12bfec0af18b030d203f1818891d642fc3abb05c225843744c6a8e898fed7ff4"
+          "symbol_sha": "sha256:751610065f90209297606bf8aa10b5193009bab19263797204b5425ac912f9cf"
         }
       ]
     },
@@ -296,7 +296,7 @@
           "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "new": "    WHERE o.outcome != 'x' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "breaks": "failed attempts lower the limit",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         },
         {
           "id": "dal-ignored",
@@ -306,7 +306,7 @@
           "old": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND l.dal_level = ?\n",
           "new": "    WHERE o.outcome = 'passed' AND l.task_type = ? AND l.model = ? AND ? IS NOT NULL\n",
           "breaks": "DAL_E history sets a DAL_A step's limit",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         },
         {
           "id": "oldest-first",
@@ -316,17 +316,17 @@
           "old": "    ORDER BY MAX(l.timestamp) DESC\n",
           "new": "    ORDER BY MAX(l.timestamp) ASC\n",
           "breaks": "the limit follows the oldest work, not the newest",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         },
         {
           "id": "unpriced-step-counted",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/store.py",
           "symbol": "step_history_limit",
-          "old": "    having = \"HAVING SUM(l.estimated_cost IS NULL) = 0\" if unit == \"usd\" else \"\"\n",
-          "new": "    having = \"\"\n",
+          "old": "        \"HAVING SUM(l.estimated_cost IS NULL) = 0\"\n        if unit == \"usd\"\n",
+          "new": "        \"\"\n        if unit == \"usd\"\n",
           "breaks": "a step with an unknown cost lowers a money limit",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         },
         {
           "id": "zero-limit",
@@ -336,7 +336,7 @@
           "old": "    return value if value > 0 else None\n",
           "new": "    return value\n",
           "breaks": "a history that cost nothing gives a limit of 0 and the brake divides by it",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         }
       ]
     },
@@ -355,7 +355,7 @@
           "old": "    if len(rows) < steps:\n",
           "new": "    if not rows:\n",
           "breaks": "a step is limited by one or two past steps",
-          "symbol_sha": "sha256:cfcdd679b53065ee1075a3ee6475e2699caf70ace933415dda6df8ba1fdd2b99"
+          "symbol_sha": "sha256:6af5a4c87efa09ff0e503476a2dcc895c034d30a0773243dc4a84a19c2cebac4"
         }
       ]
     },
@@ -383,10 +383,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
           "symbol": "command_router",
-          "old": "            run_model=run_model,\n            db=_core.get_db(),\n",
-          "new": "            run_model=run_model,\n",
+          "old": "                run_model=run_model,\n                db=_core.get_db(),\n",
+          "new": "                run_model=run_model,\n",
           "breaks": "sw run and sw implement never apply step limits",
-          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
+          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
         },
         {
           "id": "step-limit-on-worst-case",

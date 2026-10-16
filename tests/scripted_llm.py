@@ -147,6 +147,10 @@ class FixedRouter:
     def collectors(self) -> list[Any]:
         return [self.adapter] if hasattr(self.adapter, "flush") else []
 
+    def unwritten(self) -> int:
+        """No collector here, so no call is missing from a ledger."""
+        return 0
+
 
 #: Generation settings for tests that build a workflow class by hand. Production code gets its
 #: settings from the resolver; there is no default model to fall back on.

@@ -280,22 +280,24 @@ class TelemetryCollector:
         ).model_dump()
 
     async def _write(self, action: Callable[[LlmRepository], Any]) -> Any:
-        """One ledger write; a failure is logged and counted, never raised."""
-        if self._ledger is None:
-            return None
+        """One ledger write; a failure is logged and gives None, never raised."""
         try:
             async with self._ledger.async_session_scope() as session:
                 return await action(LlmRepository(session))
         except Exception:
-            self.unwritten += 1
             logger.warning("A call could not be written to the cost ledger", exc_info=True)
             return None
 
     async def _open(self, config: GenerationConfig, prompt_tokens: int) -> int | None:
         """The call's `pending` row, with its worst case, before the request is sent."""
+        if self._ledger is None:
+            return None
         row = self._row(config, _worst_usage(prompt_tokens, config), 0.0)
         result = await self._write(lambda repo: repo.open_call(row))
-        return result if isinstance(result, int) else None
+        if not isinstance(result, int):
+            self.unwritten += 1
+            return None
+        return result
 
     async def _widen(
         self, call_id: int | None, config: GenerationConfig, prompt_tokens: list[int]
@@ -313,8 +315,12 @@ class TelemetryCollector:
         await self._write(lambda repo: repo.widen_call(call_id, row))
 
     async def _close(self, call_id: int | None, row: dict[str, Any], status: str) -> None:
-        if call_id is not None:
-            await self._write(lambda repo: repo.close_call(call_id, row, status))
+        """A call whose row cannot be closed, or is gone, counts as missing."""
+        if (
+            call_id is not None
+            and await self._write(lambda repo: repo.close_call(call_id, row, status)) is not True
+        ):
+            self.unwritten += 1
 
     async def _close_failed(
         self, call_id: int | None, config: GenerationConfig, exc: BaseException, elapsed: float

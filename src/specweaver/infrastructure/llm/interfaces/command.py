@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
+import click
 import typer
 from pydantic import ValidationError
+from rich.console import Console
 
 from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError, SettingsFileError
 from specweaver.infrastructure.llm.router import build_router
@@ -21,6 +24,8 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.infrastructure.llm.router import ModelRouter
 
+logger = logging.getLogger(__name__)
+
 
 def run_model_option(value: str | None) -> RoleEntry | None:
     """The `--model <model@server>` value; a malformed one stops the command before any call."""
@@ -32,6 +37,34 @@ def run_model_option(value: str | None) -> RoleEntry | None:
         message = err.errors()[0]["msg"].removeprefix("Value error, ")
         _core.console.print(f"Error: --model {value}: {message}", style="red", markup=False)
         raise typer.Exit(code=1) from err
+
+
+def _tell_missing_at_end(router: ModelRouter) -> ModelRouter:
+    """At the command's end, also after an exit, say on stderr how many calls the ledger misses."""
+    context = click.get_current_context(silent=True)
+    if context is not None:
+        context.call_on_close(lambda: _tell_missing(router))
+    return router
+
+
+def _tell_missing(router: ModelRouter) -> None:
+    try:
+        missing = router.unwritten()
+    except Exception:
+        logger.warning("Could not count the calls missing from the cost ledger")
+        return
+    if missing:
+        calls = (
+            "1 call of this command is" if missing == 1 else f"{missing} calls of this command are"
+        )
+        was = "was" if missing == 1 else "were"
+        Console(stderr=True).print(
+            f"{calls} missing from the cost ledger or {was} not closed in it; "
+            "sw usage and sw costs do not show their full spend.",
+            style="yellow",
+            markup=False,
+            highlight=False,
+        )
 
 
 def command_router(
@@ -51,13 +84,15 @@ def command_router(
     else:
         files = _core.load_active_llm_settings(project)
     try:
-        return build_router(
-            files,
-            project=project,
-            roles=roles,
-            ask=_core.spend_asker(),
-            run_model=run_model,
-            db=_core.get_db(),
+        return _tell_missing_at_end(
+            build_router(
+                files,
+                project=project,
+                roles=roles,
+                ask=_core.spend_asker(),
+                run_model=run_model,
+                db=_core.get_db(),
+            )
         )
     except SettingsFileError as err:
         _core.refuse_llm_settings(err)
@@ -71,12 +106,14 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
     """
     files = _core.load_active_llm_settings(project)
     try:
-        return build_router(
-            files,
-            project=project,
-            roles=roles,
-            ask=_core.spend_asker(),
-            db=_core.get_db(),
+        return _tell_missing_at_end(
+            build_router(
+                files,
+                project=project,
+                roles=roles,
+                ask=_core.spend_asker(),
+                db=_core.get_db(),
+            )
         )
     except SettingNotSetError as err:
         _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)

@@ -17,7 +17,7 @@
           "old": "        result = await self._write(lambda repo: repo.open_call(row))\n",
           "new": "        result = None\n",
           "breaks": "no call is ever written to the ledger, so `sw usage` shows nothing for a run that really did spend tokens",
-          "symbol_sha": "sha256:5c8c8e3ab354cd7460a620e818f25bd825020451c5e5fb2a91374ad6e172a5d2"
+          "symbol_sha": "sha256:f7fd3f15d7558ea1d99cf36fcddcdd432052c5eb4e483fcf8a78452d91a89cdb"
         }
       ]
     },

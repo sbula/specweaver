@@ -8,6 +8,7 @@ The collector writes every call to the cost ledger itself, as the call happens. 
 run() and resume() the runner records only how its steps ended, and never touches the collector.
 
 Proves: TECH-051 FR-4
+Proves: C-FLOW-01 FR-5
 
 **This file collected ZERO tests until 2026-08-16.** Its six tests for the runner's telemetry flush were
 hidden behind a class without the `Test` prefix, so pytest never saw them. Renamed by `TECH-051`
@@ -231,3 +232,34 @@ class TestQARunnerTelemetryFlush:
 
         assert len(outcomes) == 1
         assert mock_collector.method_calls == []  # the collector wrote its own rows
+
+
+class _Missing(FixedRouter):
+    """A router whose ledger missed `n` calls."""
+
+    def __init__(self, n: int) -> None:
+        super().__init__(MagicMock())
+        self.n = n
+
+    def unwritten(self) -> int:
+        return self.n
+
+
+@pytest.mark.parametrize(("missing", "warned"), [(2, True), (0, False)])
+@pytest.mark.asyncio
+async def test_a_run_whose_ledger_missed_calls_logs_how_many(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, missing: int, warned: bool
+) -> None:
+    """C-FLOW-01 FR-5: a run started in the background has its total in the log file."""
+    ctx = RunContext(
+        model=ModelAccess(llm_router=_Missing(missing)),
+        project_path=tmp_path,
+        spec_path=tmp_path / "spec.md",
+    )
+    runner = PipelineRunner(_pipeline(1), ctx, registry=_registry(PassHandler()))
+
+    with caplog.at_level("INFO"):
+        run = await runner.run()
+
+    said = f"Run {run.run_id}: 2 calls are missing from the cost ledger"
+    assert (said in caplog.text) is warned

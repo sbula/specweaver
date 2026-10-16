@@ -50,8 +50,10 @@ async def run_steps(
     db: Database,
     roles: Iterable[TaskType],
     memory_task: bool = False,
-) -> PipelineRun:
-    """Run an endpoint's steps through the same handlers as the CLI; a spend stop is a 402."""
+) -> tuple[PipelineRun, int]:
+    """Run an endpoint's steps through the same handlers as the CLI; a spend stop is a 402.
+
+    Gives the run and how many of its calls the cost ledger misses."""
     from specweaver.assurance.standards.loader import load_standards_content_async
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.run_context import GuidanceContent, ModelAccess, RunContext
@@ -75,4 +77,4 @@ async def run_steps(
     stopped = getattr(getattr(router, "budget", None), "stopped", None)
     if isinstance(stopped, SpendLimitReachedError):
         raise SpecWeaverAPIError(detail=str(stopped), error_code="SPEND_LIMIT", status_code=402)
-    return run
+    return run, router.unwritten()

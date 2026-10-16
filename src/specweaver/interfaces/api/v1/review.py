@@ -44,7 +44,7 @@ async def review_spec(
         target=StepTarget.SPEC,
         description=f"Review {abs_path.name}",
     )
-    run = await run_steps(
+    run, unwritten = await run_steps(
         pipeline,
         project_root=project_root,
         spec_path=abs_path,
@@ -52,4 +52,4 @@ async def review_spec(
         db=db,
         roles=[TaskType.REVIEW],
     )
-    return result_from_run(run).model_dump()
+    return {**result_from_run(run).model_dump(), "unwritten_calls": unwritten}

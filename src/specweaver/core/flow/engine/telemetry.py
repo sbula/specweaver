@@ -24,8 +24,9 @@ def flush_telemetry(
     """Record how the run's steps ended, so its calls join the cost history.
 
     The calls themselves are already in the ledger: each collector writes its own row as the call
-    happens.
+    happens. Each failed write logs its own warning; the run's total is logged here, for the log file.
     """
+    _log_missing_calls(context, logger, run)
     db = getattr(context, "db", None)
     if db is None:
         return
@@ -34,6 +35,19 @@ def flush_telemetry(
             record_step_outcomes(db, run.run_id, step_outcomes(run))
         except Exception:
             logger.warning("Failed to record step outcomes", exc_info=True)
+
+
+def _log_missing_calls(
+    context: RunContext, logger: logging.Logger, run: PipelineRun | None
+) -> None:
+    router = getattr(getattr(context, "model", None), "llm_router", None)
+    try:
+        missing = router.unwritten() if router is not None else 0
+    except Exception:
+        return
+    if missing:
+        run_id = run.run_id if run is not None else "?"
+        logger.info("Run %s: %d calls are missing from the cost ledger", run_id, missing)
 
 
 def step_outcomes(run: PipelineRun) -> dict[str, str]:

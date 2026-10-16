@@ -163,7 +163,7 @@
           "old": "        files = _core.load_llm_settings_at(project_root)\n",
           "new": "        files = _core.load_active_llm_settings(project)\n",
           "breaks": "a private-only project's code goes to a hosted server while another project is active",
-          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
+          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
         },
         {
           "id": "target-name-is-active-project",
@@ -262,7 +262,7 @@
           "old": "    _say(_catalogue_line(shipped_catalogue().source))\n",
           "new": "    pass\n",
           "breaks": "sw costs shows prices without saying how old the catalogue is",
-          "symbol_sha": "sha256:19ecc8430ff49d578ae8705df9f51ae4020cda6ff8015152d7823c080b7f972c"
+          "symbol_sha": "sha256:751610065f90209297606bf8aa10b5193009bab19263797204b5425ac912f9cf"
         },
         {
           "id": "tier-price-dropped",
@@ -653,7 +653,7 @@
           "old": "    currency = _currency_or_usd()\n",
           "new": "    currency = _machine_currency()\n",
           "breaks": "a broken settings file hides past spend from sw usage",
-          "symbol_sha": "sha256:2d99824175e8b7bd157a48a37816c29aed1f35723fc424fb27f9ab6a9b7f8106"
+          "symbol_sha": "sha256:7cfcb1a3d0649db1722b27f29ce03c84acb09fc206075f1400d47afa03f879d4"
         }
       ]
     },
@@ -836,7 +836,7 @@
           "old": "            run_model=run_model,\n",
           "new": "            run_model=None,\n",
           "breaks": "every CLI command ignores --model",
-          "symbol_sha": "sha256:24b43850992d3f4112dda8918850bf21f4329678cb48b894463bdd0885f28909"
+          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
         },
         {
           "id": "implement-drops-run-model",
@@ -1014,7 +1014,7 @@
           "old": "        _core.console.print(f\"No model used: {err.key}: {err.message}\", style=\"dim\", markup=False)\n",
           "new": "        _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
           "breaks": "a scan skips the model and never says which key would turn it on",
-          "symbol_sha": "sha256:edba43ed87f37344f94e75a747c7b3cf9a46b76ff8a48039adf0e1cf6f996de9"
+          "symbol_sha": "sha256:0697479eb69cd52e554d39923b0f6d4aad241652c53f51eb626a396dc14cd2db"
         },
         {
           "id": "scan-skips-wrong-settings",
@@ -1024,7 +1024,7 @@
           "old": "    except SettingNotSetError as err:\n",
           "new": "    except SettingsFileError as err:\n",
           "breaks": "a scan with a server typo says 'No model used' and goes on",
-          "symbol_sha": "sha256:edba43ed87f37344f94e75a747c7b3cf9a46b76ff8a48039adf0e1cf6f996de9"
+          "symbol_sha": "sha256:0697479eb69cd52e554d39923b0f6d4aad241652c53f51eb626a396dc14cd2db"
         },
         {
           "id": "unset-brake-is-an-error",

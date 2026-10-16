@@ -34,7 +34,7 @@
           "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            self._record_failure(scope, reservation, exc)\n",
           "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            pass\n",
           "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
-          "symbol_sha": "sha256:e0e8358390e753fa81a77fb8324967c6f35e1ba07989c79984e3640d8131aa46"
+          "symbol_sha": "sha256:bba95b34312f50d1fe125c056ec57a3c11d3d544cd6ac5f251f64184ae40734c"
         },
         {
           "id": "stream-input-dropped",
@@ -44,7 +44,7 @@
           "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
           "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
           "breaks": "a streamed call's prompt is never counted",
-          "symbol_sha": "sha256:93454b36ebeae0cd5f84ad06f91484aa490fcef7c7debcb6efe8ef8d4c28f745"
+          "symbol_sha": "sha256:1991e7bf9aff8cebf739ef454893bfee476bdfda5a2dffef6d19da845c044f03"
         },
         {
           "id": "failed-tool-call-not-counted",
@@ -54,7 +54,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -71,8 +71,8 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
           "symbol": "TelemetryCollector._record_failure",
-          "old": "        usage = getattr(exc, \"usage\", None)\n",
-          "new": "        usage = None\n",
+          "old": "        \"\"\"Count a failed call's usage if the adapter attached it, else its reserved worst case.\"\"\"\n        usage = getattr(exc, \"usage\", None)\n",
+          "new": "        \"\"\"Count a failed call's usage if the adapter attached it, else its reserved worst case.\"\"\"\n        usage = None\n",
           "breaks": "a failed loop counts its worst case even when its real usage is known",
           "symbol_sha": "sha256:cc9de3a207e34b1e4621404c4483f8dcad6c1708f50ac225f8242055088d1259"
         },
@@ -94,7 +94,7 @@
           "old": "            if response.usage == TokenUsage()\n",
           "new": "            if False\n",
           "breaks": "a server that reports no usage never fills the token limit",
-          "symbol_sha": "sha256:2e31ae77f38d267aff2aa4bc2b8c2677b2f961c009d207519157eaa1ade51a8b"
+          "symbol_sha": "sha256:34d8e96b32c8f80dfbce57aea29b1bbd297680d2d24541ee1457d1ff7cdf419d"
         }
       ]
     },
@@ -137,21 +137,21 @@
           "id": "margin-dropped",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
-          "symbol": "TelemetryCollector._worst_of",
-          "old": "        prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)\n",
-          "new": "        prompt = prompt_tokens\n",
+          "symbol": "_worst_usage",
+          "old": "    prompt = math.ceil(prompt_tokens * _PROMPT_MARGIN)\n",
+          "new": "    prompt = prompt_tokens\n",
           "breaks": "an underestimated prompt lets a call cross the line",
-          "symbol_sha": "sha256:f891ee3f0b8ab61d2ba6b52d4ae7c091871758fdc62765ec14ae32769931ab6b"
+          "symbol_sha": "sha256:7270c8e5931782bd91af6f6766b2f978955d268e52a1abc092f04210c4440a0e"
         },
         {
           "id": "output-cap-dropped",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
-          "symbol": "TelemetryCollector._reserve",
-          "old": "            completion_tokens=config.max_output_tokens,\n",
-          "new": "            completion_tokens=0,\n",
+          "symbol": "_worst_usage",
+          "old": "        completion_tokens=config.max_output_tokens,\n",
+          "new": "        completion_tokens=0,\n",
           "breaks": "the worst case ignores the answer, which is most of the cost",
-          "symbol_sha": "sha256:b937794fc7fdc5144f8a9474a9b1b7c3aec5d66bef2e086ad5029ab42a6d4114"
+          "symbol_sha": "sha256:7270c8e5931782bd91af6f6766b2f978955d268e52a1abc092f04210c4440a0e"
         },
         {
           "id": "unknown-price-passes",
@@ -171,7 +171,7 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
         },
         {
           "id": "round-payload-ignored",
@@ -475,7 +475,7 @@
           "old": "    if isinstance(stopped, SpendLimitReachedError):\n",
           "new": "    if False:\n",
           "breaks": "a spent budget looks to an API client like an ordinary result",
-          "symbol_sha": "sha256:99fafcb89c2ceae1599b5b86025f7174a61a309695bd82a4dfa76ef722fa3fbd"
+          "symbol_sha": "sha256:050a72a38ccddf8fd25255103dc9d1638a718b1e614c11da8f37b7c162bc95e1"
         }
       ]
     },

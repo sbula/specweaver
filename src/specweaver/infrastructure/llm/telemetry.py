@@ -5,7 +5,7 @@
 
 Provides data models and cost estimation for LLM usage tracking.
 The ``TelemetryCollector`` (in ``collector.py``) uses these to build
-``UsageRecord`` instances; callers persist them via ``Database.log_usage()``.
+``UsageRecord`` instances and writes each call's row through ``LlmRepository``.
 
 """
 

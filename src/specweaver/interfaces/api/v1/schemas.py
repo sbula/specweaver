@@ -134,6 +134,7 @@ class ImplementResponse(BaseModel):
 
     code_path: str
     test_path: str
+    unwritten_calls: int = Field(0, description="Calls the cost ledger is missing or never closed.")
 
 
 # ---------------------------------------------------------------------------

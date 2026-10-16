@@ -7,6 +7,7 @@ Proves: C-FLOW-01 FR-1
 Proves: C-FLOW-01 FR-2
 Proves: C-FLOW-01 FR-3
 Proves: C-FLOW-01 FR-4
+Proves: C-FLOW-01 FR-5
 
 A real collector over a real SQLite ledger; the provider double reads the ledger while the call
 is still running.
@@ -15,7 +16,7 @@ is still running.
 |---|---|
 | Happy | a call is `pending` while it runs and `ok` with its real numbers after; a stream likewise |
 | Boundary | a tool loop's `pending` row grows with each round's worst case; a call the brake refuses leaves no row |
-| Degradation | a ledger that cannot be written: the call still returns, and the miss is counted |
+| Degradation | a ledger that cannot be written: the call still returns, and the miss is counted once per call |
 | Hostile | a call that raises is `failed` with the usage it reported, else with tokens unknown; nothing writes rows but the collector |
 """
 
@@ -38,6 +39,7 @@ from specweaver.infrastructure.llm.models import (
     Role,
     TokenUsage,
 )
+from specweaver.infrastructure.llm.store import LlmRepository
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -204,6 +206,65 @@ def test_a_call_that_raises_is_failed(
         asyncio.run(_collector(db, _Provider(path, fail=error)).generate(_ASK, _CONFIG))
 
     assert _rows(path) == [("failed", *tokens, "greeter", "r1", "generate_code")]
+
+
+def _refuse(monkeypatch: pytest.MonkeyPatch, write: str) -> None:
+    async def _refused(*_args: Any) -> Any:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(LlmRepository, write, _refused)
+
+
+@pytest.mark.parametrize(
+    ("write", "missing", "left"),
+    [("open_call", 1, []), ("close_call", 1, ["pending"]), ("widen_call", 0, ["ok"])],
+    ids=["never-opened", "never-closed", "not-widened"],
+)
+def test_a_call_counts_as_missing_only_when_its_row_is_missing_or_never_closed(
+    ledger: tuple[Database, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    write: str,
+    missing: int,
+    left: list[str],
+) -> None:
+    db, path = ledger
+    _refuse(monkeypatch, write)
+    collector = _collector(db, _Provider(path))
+
+    asyncio.run(collector.generate_with_tools(_ASK, _CONFIG, tool_executor=object()))
+
+    assert collector.unwritten == missing
+    assert [row[0] for row in _rows(path)] == left
+
+
+def test_a_row_gone_before_its_call_ends_counts_as_missing(
+    ledger: tuple[Database, Path],
+) -> None:
+    db, path = ledger
+
+    class _Deleting(_Provider):
+        def _answer(self) -> LLMResponse:
+            with sqlite3.connect(self.ledger) as conn:
+                conn.execute("DELETE FROM llm_usage_log")
+            return super()._answer()
+
+    collector = _collector(db, _Deleting(path))
+    asyncio.run(collector.generate(_ASK, _CONFIG))
+
+    assert collector.unwritten == 1
+
+
+def test_a_call_whose_open_and_close_both_fail_counts_once(
+    ledger: tuple[Database, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db, path = ledger
+    _refuse(monkeypatch, "open_call")
+    _refuse(monkeypatch, "close_call")
+    collector = _collector(db, _Provider(path))
+
+    asyncio.run(collector.generate(_ASK, _CONFIG))
+
+    assert collector.unwritten == 1
 
 
 def test_only_the_collector_writes_rows() -> None:

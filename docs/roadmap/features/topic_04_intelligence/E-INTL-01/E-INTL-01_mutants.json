@@ -37,7 +37,7 @@
           "old": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n        messages = self._redactor.messages(messages)\n",
           "new": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n",
           "breaks": "an API key pasted into a prompt reaches the provider",
-          "symbol_sha": "sha256:e0e8358390e753fa81a77fb8324967c6f35e1ba07989c79984e3640d8131aa46"
+          "symbol_sha": "sha256:bba95b34312f50d1fe125c056ec57a3c11d3d544cd6ac5f251f64184ae40734c"
         },
         {
           "id": "tool-result-raw",
@@ -47,7 +47,7 @@
           "old": "        messages = self._redactor.messages(messages)\n        tool_executor = self._redactor.tools(tool_executor)\n",
           "new": "        messages = self._redactor.messages(messages)\n",
           "breaks": "a tool that reads the vault hands its secrets to the model",
-          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
         },
         {
           "id": "stream-sent-raw",
@@ -57,7 +57,7 @@
           "old": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n        messages = self._redactor.messages(messages)\n",
           "new": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n",
           "breaks": "a streamed prompt carries secrets",
-          "symbol_sha": "sha256:93454b36ebeae0cd5f84ad06f91484aa490fcef7c7debcb6efe8ef8d4c28f745"
+          "symbol_sha": "sha256:1991e7bf9aff8cebf739ef454893bfee476bdfda5a2dffef6d19da845c044f03"
         },
         {
           "id": "vault-ignored",
@@ -67,7 +67,7 @@
           "old": "                redactor=Redactor([*keys, *self._vault]),\n",
           "new": "                redactor=Redactor([*keys]),\n",
           "breaks": "vault values reach the model",
-          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
+          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
         },
         {
           "id": "api-keys-ignored",
@@ -77,7 +77,7 @@
           "old": "                redactor=Redactor([*keys, *self._vault]),\n",
           "new": "                redactor=Redactor([*self._vault]),\n",
           "breaks": "the server's own API key reaches the model",
-          "symbol_sha": "sha256:a20438b6f02ddf47bdcb7f8374db09f273bb87738f8caac39cdc45c0fab15a4f"
+          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
         },
         {
           "id": "shorter-secret-first",
@@ -107,7 +107,7 @@
           "old": "        on_tool_round = self._redactor.rounds(on_tool_round)\n",
           "new": "        on_tool_round = on_tool_round\n",
           "breaks": "a file a review adds between tool rounds reaches the model unmasked",
-          "symbol_sha": "sha256:86fb0dee3b436fe5654275a31d512c96afa7360f5166ad2cec47c0ba8ee23698"
+          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
         }
       ]
     }

@@ -3,6 +3,8 @@
 
 """The REST endpoints that call a model really call it, through the same steps as the CLI.
 
+Proves: C-FLOW-01 FR-5
+
 Settings file → `POST /review` and `POST /implement` → the pipeline handlers → a real adapter.
 Only HTTP is faked.
 
@@ -10,7 +12,7 @@ Only HTTP is faked.
 |---|---|
 | Happy | `POST /review` returns the model's verdict; `POST /implement` writes the code and the tests; each call is one `ok` row in the cost ledger (`C-FLOW-01` FR-1, FR-4) |
 | Boundary | not applicable — the request shapes are proven by the endpoint unit tests |
-| Degradation | not applicable — a model failure is proven by the review and generation handlers |
+| Degradation | a ledger that refuses rows: both endpoints still answer, with `unwritten_calls` (`C-FLOW-01` FR-5) |
 | Hostile | not applicable — paths are proven by `resolve_file_in_project`'s own tests |
 """
 
@@ -137,3 +139,28 @@ def test_every_api_model_call_is_one_ledger_row(
 
     assert response.status_code == 200, response.text
     assert _ledger(tmp_path) == [("api", task_type, "ok", 10, 10)] * calls
+    assert response.json()["unwritten_calls"] == 0
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "reply", "calls"),
+    [("review", "VERDICT: ACCEPTED\nFine.", 1), ("implement", "def greet():\n    pass\n", 2)],
+)
+def test_an_endpoint_whose_ledger_refuses_rows_answers_how_many_are_missing(
+    client: TestClient, tmp_path: Path, monkeypatch, endpoint: str, reply: str, calls: int
+) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    async def _refused(*_args: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(LlmRepository, "open_call", _refused)
+
+    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(reply))):
+        response = client.post(
+            f"/api/v1/{endpoint}", json={"file": "specs/greeter_spec.md", "project": "api"}
+        )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["unwritten_calls"] == calls
+    assert _ledger(tmp_path) == []
