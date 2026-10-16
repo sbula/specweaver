@@ -229,8 +229,9 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Reads:** the vector store
   > - **Produces:** memory → ranked candidates, scored by semantic similarity, recency decay and importance
   > - **Enables:** `B-SENS-09` → exact graph closure over the candidates · `B-FLOW-01` FR-20 → spec review
+  > - **Owes:** `E-SENS-03`'s read scope — a task reads its candidates after that closure `[agreed 2026-10-16]`
   > - **Done when:** 🔴
-  > - **Note:** its output never feeds a gate or a blast radius. No correctness decision consumes vector output (`ADR-006` decision 3)
+  > - **Note:** never feeds a gate or a blast radius (`ADR-006` decision 3)
 
 * **`B-FLOW-05` ✅: Spend Brake**
   > - **Purpose:** No run spends past the user's limits unasked: it pauses and asks, or parks

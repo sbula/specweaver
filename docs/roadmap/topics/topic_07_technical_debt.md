@@ -142,6 +142,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-073` 🔴: A Task's Target Files Are Named for Python Only**
+  > [Description](../features/topic_07_technical_debt/TECH-073/TECH-073_design.md) | _Status: stub. Origin: 2026-10-16, `E-SENS-03` design._ |
+  > Generation, the worktree allow-list and the task write grant all name `src/<stem>.py` and `tests/test_<stem>.py`, so a non-Python
+  > project gets wrong targets. Fix: one derivation from the project's language, used by all three.
+
 * **`TECH-072` 🔴: Two Agent Tools Skip the Sandbox's Own Guards**
   > [Description](../features/topic_07_technical_debt/TECH-072/TECH-072_design.md) | _Status: built and committed (`9492dcb1`), open until the user closes it. Origin: 2026-09-26._ |
   > The agent AST tool writes through `EngineFileExecutor`, which protects nothing, so it can rewrite `context.yaml`. `MCPExplorerTool` starts the project's MCP
