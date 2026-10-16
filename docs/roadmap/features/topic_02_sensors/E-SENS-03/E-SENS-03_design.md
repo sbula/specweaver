@@ -1,7 +1,7 @@
 # E-SENS-03 — Workspace Boundaries
 
-**Status**: APPROVED by the user 2026-10-16 — backfilled for a repair; the capability is `🔧` until the
-repair is proven and signed off. · **Feature ID**: E-SENS-03 · **DAL**: E (its matrix row) ·
+**Status**: APPROVED by the user 2026-10-16 — backfilled for a repair; repaired and signed off `✅` by the
+user 2026-10-16. · **Feature ID**: E-SENS-03 · **DAL**: E (its matrix row) ·
 **Epic**: Topic 02 (Sensors)
 
 | | |
@@ -106,4 +106,4 @@ Single feature — no decomposition. `TECH-073` may land before or after; both r
 ## Session Handoff
 
 **Now**: built and committed — the coder's write grant comes from its task; a role with no rule gets nothing; `workspace_roots` is gone.
-**Next**: the user's sign-off. Parked for the laptop: which docs each project protects (plan Q2).
+**Next**: none — signed off 2026-10-16. Parked for the laptop: which docs each project protects (plan Q2).

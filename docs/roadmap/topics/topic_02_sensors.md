@@ -25,7 +25,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Enables:** Reviewer · code generation
   > - **Done when:** six tools — four filesystem, two web — resolve through one provider-agnostic call
 
-* **`E-SENS-03` 🔧: Workspace Boundaries**
+* **`E-SENS-03` ✅: Workspace Boundaries**
   > - **Purpose:** Restrict what an agent can see to the scope of its assigned task, not the whole repo
   > - **Trigger:** When a task is dispatched to an agent
   > - **Precondition:** —

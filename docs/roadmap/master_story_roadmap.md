@@ -190,7 +190,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **User Benefit:** SpecWeaver natively understands the deep syntax of my codebase across multiple languages, allowing it to extract symbols securely instead of guessing at raw text.
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Config & Flow Engine)*
-    *   `🔧` **E-SENS-03:** Workspace Boundaries
+    *   `✅` **E-SENS-03:** Workspace Boundaries
     *   `✅` **D-SENS-02:** Base Tree-Sitter AST Skeleton Extractor
     *   `✅` **C-FLOW-02:** Router-based flow control
     *   `✅` **D-EXEC-02:** Git Worktree Bouncer (Safe diff striping)

@@ -90,7 +90,7 @@ proven through `/review`, not `/implement`).
 | D-EXEC-02, INT-US-09 FR-5 | Per-step worktree isolation discards all output (no commit before strip-merge, empty allow-list); run says COMPLETED. **Fixed** 2026-10-08 (user chose the session rule): commit, then merge only a passed step's targets; FR-7 micro-sync withdrawn | `sandboxed_execution.py:96-112` |
 | E-SENS-01 | grep/find follow symlinks out of the root. **Fixed** 2026-10-08: the search path is contained, symlinks are skipped | `sandbox/filesystem/interfaces/tool.py:189-234`; `core/search.py:223` |
 | E-SENS-02 | `web_search` dead: WebTool built with no key | `sandbox/registry.py:87`. **Fixed** 2026-10-13: Tavily, its key named by `[search]`; `read_url` reads only public addresses |
-| E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access. **Partly fixed** 2026-10-08: reviewer and planner get read grants; task-scoped roots still unbuilt | `run_context.py:114-123`; `security.py:128` |
+| E-SENS-03 | Workspace boundaries never set: reviewer and planner get full access. **Partly fixed** 2026-10-08: reviewer and planner get read grants; task-scoped write grants **Fixed** 2026-10-16 (`9dfe74d7`..`34c630c0`) | `run_context.py:114-123`; `security.py:128` |
 | E-INTL-01 FR-3 | No secret redaction before prompts. **Fixed** 2026-10-08: known secret values are masked in every prompt and tool result | only MCP `scrub_secrets` exists |
 | E-INTL-03 | Review verdict parsing: DENIED text mentioning "VERDICT: ACCEPTED" parses ACCEPTED. **Fixed** 2026-10-08: the first verdict line decides | `reviewer.py:224-227` |
 | B-INTL-01 FR-1/4 | Archetype spec pipeline never loaded; S12 list params crash. **Fixed** 2026-10-09: the handler loads `validation_spec_<archetype>`; the spring-boot bounds are a map of header levels; S12 reads the Markdown headings the reader really gives (it expected JSON, so it never worked), and fails on a wrong shape | `handlers/validation.py:228` |
@@ -122,5 +122,5 @@ pass); `check_story_preconditions.py` passes stories whose FR ledgers are blocke
 
 Fixed or decided rows are marked in the tables. Nothing is waiting on the user (2026-10-13).
 
-Not yet looked at: `B-FLOW-01` FR-2..8 proofs (measured 2026-10-15: [b_flow_01_isolation_2026-10-15.md](b_flow_01_isolation_2026-10-15.md); its design is reopened), `D-FLOW-04`, `C-FLOW-01` REST tests,
-`E-SENS-03` task-scoped roots. `TECH-004` signed off 2026-10-15.
+Not yet looked at: `B-FLOW-01` FR-2..8 proofs (measured 2026-10-15: [b_flow_01_isolation_2026-10-15.md](b_flow_01_isolation_2026-10-15.md); its design is reopened), `D-FLOW-04`.
+`C-FLOW-01` signed off 2026-10-16, `E-SENS-03` signed off 2026-10-16, `TECH-004` signed off 2026-10-15.
