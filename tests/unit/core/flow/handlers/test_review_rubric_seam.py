@@ -39,7 +39,7 @@ def _write_rubric(tmp_path: Path, name: str, body: str) -> None:
 
 
 def test_the_shipped_criteria_reach_the_model(tmp_path: Path) -> None:
-    instructions = resolve_review_instructions(_context(tmp_path), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path), "spec_review")
 
     assert "Single Responsibility" in instructions
 
@@ -48,7 +48,7 @@ def test_a_project_rubric_replaces_the_criteria(tmp_path: Path) -> None:
     """FR-2 at the seam. Editing a file is the whole delivery mechanism."""
     _write_rubric(tmp_path, "spec_review.md", "Only ever ask whether it rhymes.\n")
 
-    instructions = resolve_review_instructions(_context(tmp_path), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path), "spec_review")
 
     assert "Only ever ask whether it rhymes." in instructions
     assert "Single Responsibility" not in instructions
@@ -58,7 +58,7 @@ def test_the_output_contract_survives_a_project_rubric(tmp_path: Path) -> None:
     """FR-5. The parser's contract is code; no override can drop it."""
     _write_rubric(tmp_path, "spec_review.md", "Only ever ask whether it rhymes.\n")
 
-    instructions = resolve_review_instructions(_context(tmp_path), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path), "spec_review")
 
     assert "VERDICT: ACCEPTED" in instructions
     assert 'starting with "- "' in instructions
@@ -66,20 +66,20 @@ def test_the_output_contract_survives_a_project_rubric(tmp_path: Path) -> None:
 
 def test_the_output_contract_is_present_without_any_override(tmp_path: Path) -> None:
     """The control for FR-5: it must come from code, not from the shipped rubric's text."""
-    instructions = resolve_review_instructions(_context(tmp_path), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path), "spec_review")
 
     assert "VERDICT: ACCEPTED" in instructions
 
 
 def test_a_dal_a_run_is_judged_by_the_strict_rubric(tmp_path: Path) -> None:
     """FR-3 at the seam. The run's own DAL picks the criteria, with no step parameter to forget."""
-    instructions = resolve_review_instructions(_context(tmp_path, DALLevel.DAL_A), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path, DALLevel.DAL_A), "spec_review")
 
     assert "catastrophic" in instructions
 
 
 def test_an_ordinary_run_is_not_judged_by_the_strict_rubric(tmp_path: Path) -> None:
     """The control for FR-3. Applying DAL-A criteria everywhere would bury every review."""
-    instructions = resolve_review_instructions(_context(tmp_path, DALLevel.DAL_D), "spec_review")
+    instructions, _ = resolve_review_instructions(_context(tmp_path, DALLevel.DAL_D), "spec_review")
 
     assert "catastrophic" not in instructions

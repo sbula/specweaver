@@ -114,5 +114,5 @@ a rule class.
 
 ## Session Handoff
 
-**Now**: Phase 6 review done 2026-10-17; the user answered Q1–Q3.
-**Next**: the plan for K-1..K-3 ([plan](C-VAL-05_corrections_plan.md)).
+**Now**: K-1..K-3 committed 2026-10-17 — a project's rubric wins at every DAL, the verdict names its rubric, seven mutants killed.
+**Next**: the user's sign-off of C-VAL-05.

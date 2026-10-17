@@ -3,7 +3,7 @@
 - **Design Document**: docs/roadmap/features/topic_05_validation/C-VAL-05/C-VAL-05_design.md
 - **Design Section**: §Corrections (Phase 6, 2026-10-17)
 - **Implementation Plan**: docs/roadmap/features/topic_05_validation/C-VAL-05/C-VAL-05_corrections_plan.md
-- **Status**: APPROVED by the user 2026-10-17
+- **Status**: APPROVED by the user 2026-10-17 · built: CB-1 `be9b8f9b`, CB-2 `38bc1a41`, CB-3
 
 **Owns**: K-1 (NFR-2), K-2 (FR-4), K-3 (FR-1, FR-3 mutants)
 

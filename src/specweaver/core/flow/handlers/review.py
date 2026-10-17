@@ -106,8 +106,9 @@ def _inject_resolved_mentions(messages: list[Any], context: RunContext) -> None:
             )
 
 
-def resolve_review_instructions(context: RunContext, rubric_id: str) -> str:
-    """Load the criteria that should judge this run and join them to the parser's contract.
+def resolve_review_instructions(context: RunContext, rubric_id: str) -> tuple[str, Any]:
+    """Load the criteria that should judge this run and join them to the parser's contract; also
+    give back the rubric, so the verdict can name it.
 
     The project's own `.specweaver/rubrics/` wins over the shipped defaults, and the run's DAL
     selects a stricter variant where one exists. A rubric that cannot be found is not silently
@@ -116,7 +117,8 @@ def resolve_review_instructions(context: RunContext, rubric_id: str) -> str:
     """
     from specweaver.workflows.review.reviewer import review_instructions
 
-    return review_instructions(_load_review_rubric(context, rubric_id).criteria)
+    rubric = _load_review_rubric(context, rubric_id)
+    return review_instructions(rubric.criteria), rubric
 
 
 def _load_review_rubric(context: RunContext, rubric_id: str) -> Any:
@@ -166,7 +168,6 @@ async def _build_review_prompt(
     from specweaver.core.flow.handlers.context_assembler import (
         evaluate_and_fetch_skeleton_context,
     )
-    from specweaver.workflows.review.reviewer import review_instructions
 
     targets: list[str] = list(context.graph.api_contract_paths or [])
     for target in extra_targets or []:
@@ -174,10 +175,10 @@ async def _build_review_prompt(
             targets.append(target)
     skeleton_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
-    rubric = _load_review_rubric(context, rubric_id)
+    instructions, rubric = resolve_review_instructions(context, rubric_id)
     base_prompt = await _build_base_prompt(
         context,
-        review_instructions(rubric.criteria),
+        instructions,
         profile=resolve_profile(step.params.get("render_profile"), default=FULL),
         skeleton_files=skeleton_files,
     )

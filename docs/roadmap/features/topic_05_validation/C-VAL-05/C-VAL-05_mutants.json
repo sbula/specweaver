@@ -3,6 +3,26 @@
   "feature": "C-VAL-05",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "Criteria are content; a missing rubric is an error, not empty criteria",
+      "scope": [
+        "tests/unit/assurance/validation/test_rubrics.py",
+        "tests/unit/core/flow/handlers/test_review_rubric_seam.py"
+      ],
+      "mutants": [
+        {
+          "id": "missing-rubric-is-empty",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "symbol": "load_rubric",
+          "old": "    raise RubricNotFoundError(f\"No rubric named {rubric_id!r} in: {', '.join(map(str, ordered))}\")\n",
+          "new": "    return Rubric(id=rubric_id, version=\"0\", criteria=\"\", checksum=\"\", source=Path(), dal=None)\n",
+          "breaks": "a review with no standard still returns a verdict",
+          "symbol_sha": "sha256:30688bcad3ff29d75d45ee068de909f73bcbc447dc9521941043e50cdd0a3224"
+        }
+      ]
+    },
+    {
       "requirement": "FR-2",
       "title": "A project's rubric outranks the shipped default",
       "scope": [
@@ -19,6 +39,26 @@
           "old": "roots.insert(0, (project_dir / \".specweaver\" / \"rubrics\", True))",
           "new": "pass",
           "breaks": "the project directory is never searched, so an override is silently ignored"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "The run's DAL selects a stricter variant",
+      "scope": [
+        "tests/unit/assurance/validation/test_rubrics.py",
+        "tests/unit/core/flow/handlers/test_review_rubric_seam.py"
+      ],
+      "mutants": [
+        {
+          "id": "dal-variant-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "symbol": "_candidates",
+          "old": "        if dal is not None:\n            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n",
+          "new": "        if False:\n            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n",
+          "breaks": "a DAL-A spec is judged by the everyday criteria",
+          "symbol_sha": "sha256:2c55b5948b73ed0d7901c7a016c09002672c96c7330d4cd6fbc225d41fa389fa"
         }
       ]
     },
@@ -65,9 +105,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/review.py",
           "symbol": "resolve_review_instructions",
-          "old": "return review_instructions(rubric.criteria)",
-          "new": "return rubric.criteria",
-          "breaks": "the output format never reaches the model, so the verdict parser has nothing to read"
+          "old": "    return review_instructions(rubric.criteria), rubric",
+          "new": "    return rubric.criteria, rubric",
+          "breaks": "the output format never reaches the model, so the verdict parser has nothing to read",
+          "symbol_sha": "sha256:f68d13e88ca6c14dc237b652cf018c29e137c5905ada3dbe301cb253047e8fe5"
         }
       ]
     },
