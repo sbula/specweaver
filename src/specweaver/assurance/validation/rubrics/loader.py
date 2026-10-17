@@ -49,13 +49,12 @@ def _candidates(rubric_id: str, project_dir: Path | None, dal: DALLevel | None) 
     if project_dir is not None:
         roots.insert(0, (project_dir / ".specweaver" / "rubrics", True))
 
+    # Root by root, so a project's plain rubric outranks a shipped variant: an override that named no
+    # DAL still means *use mine*, and silently preferring the shipped stricter file would ignore it.
     ordered: list[Path] = []
     for root, _ in roots:
         if dal is not None:
             ordered.append(root / f"{rubric_id}.{dal.value}.md")
-    # A project's plain rubric outranks a shipped variant: an override that named no DAL still
-    # means *use mine*, and silently preferring the shipped stricter file would ignore it.
-    for root, _ in roots:
         ordered.append(root / f"{rubric_id}.md")
     return ordered
 

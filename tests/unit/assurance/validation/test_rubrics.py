@@ -109,6 +109,32 @@ def test_a_project_variant_beats_a_shipped_variant(tmp_path: Path) -> None:
     assert "Project strictness." in rubric.criteria
 
 
+def test_a_project_plain_rubric_beats_a_shipped_variant(tmp_path: Path) -> None:
+    """NFR-2: an override that names no DAL still means *use mine*, also at DAL-A."""
+    directory = tmp_path / ".specweaver" / "rubrics"
+    directory.mkdir(parents=True)
+    (directory / "spec_review.md").write_text(
+        "---\nid: spec_review\nversion: 9\n---\nOur own criteria.\n", encoding="utf-8"
+    )
+
+    rubric = load_rubric("spec_review", project_dir=tmp_path, dal=DALLevel.DAL_A)
+
+    assert "Our own criteria." in rubric.criteria
+    assert rubric.source == directory / "spec_review.md"
+    assert rubric.dal is None
+
+
+def test_a_project_variant_still_beats_its_own_plain_rubric(tmp_path: Path) -> None:
+    directory = tmp_path / ".specweaver" / "rubrics"
+    directory.mkdir(parents=True)
+    (directory / "spec_review.md").write_text("Plain.\n", encoding="utf-8")
+    (directory / "spec_review.DAL_A.md").write_text("Strict.\n", encoding="utf-8")
+
+    rubric = load_rubric("spec_review", project_dir=tmp_path, dal=DALLevel.DAL_A)
+
+    assert "Strict." in rubric.criteria
+
+
 def test_the_rubric_records_which_file_judged_the_run(tmp_path: Path) -> None:
     """FR-4. DAL-C auditability: *which* criteria produced this verdict must be answerable."""
     path = _override(tmp_path, "spec_review", "---\nid: spec_review\nversion: 9.9\n---\nBody.\n")

@@ -58,6 +58,25 @@
           "breaks": "the output format never reaches the model, so the verdict parser has nothing to read"
         }
       ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "A project's plain rubric outranks a shipped DAL variant",
+      "scope": [
+        "tests/unit/assurance/validation/test_rubrics.py"
+      ],
+      "mutants": [
+        {
+          "id": "shipped-variant-first",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "symbol": "_candidates",
+          "old": "            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n        ordered.append(root / f\"{rubric_id}.md\")\n    return ordered\n",
+          "new": "            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n    ordered += [root / f\"{rubric_id}.md\" for root, _ in roots]\n    return ordered\n",
+          "breaks": "a DAL-A project's own rubric is silently ignored",
+          "symbol_sha": "sha256:2c55b5948b73ed0d7901c7a016c09002672c96c7330d4cd6fbc225d41fa389fa"
+        }
+      ]
     }
   ]
 }
