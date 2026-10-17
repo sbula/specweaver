@@ -84,8 +84,8 @@ def constitution_check(
             max_size_kwargs["max_size"] = _core.run_repo_op(
                 lambda r: r.get_constitution_max_size(active)
             )
-    except Exception:
-        pass  # Fall back to default if DB unavailable
+    except Exception as exc:
+        logger.debug("The constitution size limit is unreadable, so the default is used: %s", exc)
 
     errors = check_constitution(info.path, **max_size_kwargs)
 

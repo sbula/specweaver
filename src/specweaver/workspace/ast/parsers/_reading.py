@@ -324,7 +324,7 @@ class SymbolReadingMixin:
             return ""
         try:
             declaration = self.extract_symbol(code, symbol_name)
-        except CodeStructureError:
+        except CodeStructureError:  # expected: a symbol that is not there has no signature
             return ""
 
         body = self._raw_body(code, symbol_name)

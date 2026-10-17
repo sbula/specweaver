@@ -28,7 +28,7 @@ class NoBareExceptRule(Rule):
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
         try:
             tree = ast.parse(spec_text)
-        except SyntaxError:
+        except SyntaxError:  # expected: the rule reports itself skipped
             return self._skip("Cannot parse file (syntax error)")
 
         findings: list[Finding] = []

@@ -1,9 +1,12 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+import logging
 from typing import Any
 
 from specweaver.graph.lineage.repository import LineageRepositoryProtocol
+
+logger = logging.getLogger(__name__)
 
 
 class LineageEngine:
@@ -22,8 +25,10 @@ class LineageEngine:
             visited.add(current)
             try:
                 history = self.repo.get_artifact_history(current)
-            except Exception:
-                # If repository is disconnected or corrupted, fail gracefully
+            except Exception as exc:
+                logger.warning(
+                    "The lineage history is unreadable, so the root is not found: %s", exc
+                )
                 history = []
             if not history:
                 break
@@ -49,7 +54,10 @@ class LineageEngine:
             try:
                 hist = self.repo.get_artifact_history(node_uid)
                 children_rows = self.repo.get_children(node_uid)
-            except Exception:
+            except Exception as exc:
+                logger.warning(
+                    "The lineage of %s is unreadable, so the tree is cut: %s", node_uid, exc
+                )
                 hist = []
                 children_rows = []
 

@@ -330,7 +330,7 @@ def _file_in_scope(
     """
     try:
         file_path.relative_to(scope_path)
-    except ValueError:
+    except ValueError:  # expected: not in this scope
         return False
 
     if scope_name == ".":
@@ -342,7 +342,7 @@ def _file_in_scope(
             try:
                 file_path.relative_to(other_path)
                 return False  # File belongs to a more specific scope
-            except ValueError:
+            except ValueError:  # expected: not in that scope
                 continue
         return True
 

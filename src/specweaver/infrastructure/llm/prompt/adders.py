@@ -452,7 +452,8 @@ class PromptBuilderAddersMixin:
         """
         try:
             content = mention.resolved_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except (OSError, UnicodeDecodeError) as exc:
+            logger.debug("Mention %s is unreadable: %s", mention.resolved_path, exc)
             return None
 
         if not skeleton:
@@ -463,7 +464,7 @@ class PromptBuilderAddersMixin:
             return self._skeleton_files[path_str]
         try:
             from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
-        except ImportError:
+        except ImportError:  # expected: skeletons are optional; the whole file is sent
             return content
         return str(extract_ast_skeleton(mention.resolved_path, content))
 

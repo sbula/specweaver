@@ -24,6 +24,6 @@ def healthz() -> HealthResponse:
     logger.debug("Executing healthz API endpoint")
     try:
         ver = version("specweaver")
-    except Exception:
+    except Exception:  # expected: not installed as a package, so 'dev'
         ver = "dev"
     return HealthResponse(status="ok", version=ver)

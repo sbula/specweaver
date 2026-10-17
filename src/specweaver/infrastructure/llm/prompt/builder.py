@@ -227,7 +227,7 @@ class PromptBuilder(PromptBuilderAddersMixin):
             return block.text[:char_limit] + "\n[truncated]"
         try:
             return str(block.source.get_prompt_content(char_limit=char_limit))
-        except TypeError:
+        except TypeError:  # expected: a source with no limit is cut as text
             return block.text[:char_limit] + "\n[truncated]"
 
     def _truncated_block(self, block: _ContentBlock, share: int) -> _ContentBlock:

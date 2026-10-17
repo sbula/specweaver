@@ -249,7 +249,8 @@ def _infer_subdirs(project_path: Path, inferrer: ContextInferrer) -> tuple[int, 
                 f"  [yellow]\u26a0[/yellow] {rel}/ \u2014 AUTO-GENERATED (review recommended)"
             )
             generated += 1
-        except Exception:
+        except Exception as exc:
+            logger.debug("Inferring %s failed: %s", subdir, exc)
             rel = subdir.relative_to(project_path)
             _core.console.print(f"  [red]\u2717[/red] {rel}/ \u2014 failed to infer")
 

@@ -67,7 +67,11 @@ def _headings(structure: Any) -> dict[str, list[str]]:
         return structure
     try:
         parsed = json.loads(structure)
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except (
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+    ):  # expected: not a JSON map, so it is read as Markdown
         parsed = None
     if isinstance(parsed, dict):
         return parsed

@@ -168,7 +168,7 @@ def _apply_specweaverignore(
     for f in files:
         try:
             rel = f.relative_to(project_path.resolve())
-        except ValueError:
+        except ValueError:  # expected: a file outside the project is never ignored
             result.append(f)
             continue
         if not spec.match_file(str(rel)):

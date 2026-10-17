@@ -136,7 +136,8 @@ def list_rules() -> list[RuleInfo]:
     ]:
         try:
             resolved = load_pipeline_yaml(pname)
-        except FileNotFoundError:
+        except FileNotFoundError as exc:
+            logger.debug("Pipeline %s is not listed: %s", pname, exc)
             continue
         for step in resolved.steps:
             if step.rule not in seen:

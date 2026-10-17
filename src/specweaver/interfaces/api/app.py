@@ -50,7 +50,7 @@ def create_app(
     logger.info("Initializing create_app")
     try:
         ver = version("specweaver")
-    except Exception:
+    except Exception:  # expected: not installed as a package, so 'dev'
         ver = "dev"
 
     app = FastAPI(

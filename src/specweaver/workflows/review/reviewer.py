@@ -262,7 +262,7 @@ def result_from_run(run_state: Any) -> ReviewResult:
     out = last_record.result.output
     try:
         verdict = ReviewVerdict(out.get("verdict", "error"))
-    except ValueError:
+    except ValueError:  # expected: an unknown verdict counts as an error
         verdict = ReviewVerdict.ERROR
 
     return ReviewResult(

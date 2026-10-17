@@ -96,7 +96,7 @@
           "old": "    if pipeline is None and level != \"feature\":\n",
           "new": "    if False:\n",
           "breaks": "sw check judges a Spring file by the default rules",
-          "symbol_sha": "sha256:768af9a8e948e291aee88c1d90b97fbe8d8976c611a994b7da5a28dfbe60e067"
+          "symbol_sha": "sha256:518824d24d65d184edac307e3b9a24000a1ac565b2f3c8fc7ac996e60a821fa9"
         },
         {
           "id": "pipeline-flag-ignored",
@@ -106,7 +106,7 @@
           "old": "    if pipeline is None and level != \"feature\":\n",
           "new": "    if level != \"feature\":\n",
           "breaks": "--pipeline is overruled by the archetype",
-          "symbol_sha": "sha256:768af9a8e948e291aee88c1d90b97fbe8d8976c611a994b7da5a28dfbe60e067"
+          "symbol_sha": "sha256:518824d24d65d184edac307e3b9a24000a1ac565b2f3c8fc7ac996e60a821fa9"
         }
       ]
     }

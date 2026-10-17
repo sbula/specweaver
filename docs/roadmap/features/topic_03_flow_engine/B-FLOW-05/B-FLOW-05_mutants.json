@@ -502,7 +502,7 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/drift.py",
           "symbol": "DriftCheckHandler._analyze_drift",
-          "old": "        except SpendLimitReachedError:\n            return None\n        except Exception as exc:\n",
+          "old": "        except SpendLimitReachedError:  # expected: the brake stopped the run, which reports it\n            return None\n        except Exception as exc:\n",
           "new": "        except Exception as exc:\n",
           "breaks": "a brake stop is shown as a failed analysis with a traceback",
           "symbol_sha": "sha256:b68fe819bb96ef07570c84f08d742b753b072d6ddb335bdec16e070654f2e002"
@@ -632,8 +632,8 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/cli/_core.py",
           "symbol": "ask_to_spend",
-          "old": "    except EOFError:\n",
-          "new": "    except ZeroDivisionError:\n",
+          "old": "    except EOFError:  # expected: no answer means no\n",
+          "new": "    except ZeroDivisionError:  # expected: no answer means no\n",
           "breaks": "Ctrl-D at the question is an error, not a stop",
           "symbol_sha": "sha256:7e8dabf9708253125161d6ed339d189cef3c4ba4c728de2e67d753e2f67dcbd2"
         },

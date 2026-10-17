@@ -90,6 +90,7 @@ def default_dal_at(db: Any, root: Path) -> DALLevel | None:
             try:
                 return DALLevel(dal)
             except ValueError:
+                logger.warning("The project's stored DAL %r is not a DAL, so it is ignored", dal)
                 return None
     return None
 

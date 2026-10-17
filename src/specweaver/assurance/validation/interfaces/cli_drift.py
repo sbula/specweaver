@@ -184,7 +184,7 @@ def _plan_declaring(
     target_posix = target_path.as_posix()
     try:
         rel_posix = target_path.resolve().relative_to(project_path.resolve()).as_posix()
-    except ValueError:
+    except ValueError:  # expected: a target outside the project stays whole
         rel_posix = target_posix
 
     for plan_path in all_plans:

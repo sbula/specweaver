@@ -85,8 +85,10 @@ class FilePromptAdapter:
                     from specweaver.infrastructure.llm._skeleton import extract_ast_skeleton
 
                     content = extract_ast_skeleton(self._path, content)
-                except Exception:
-                    pass  # Graceful fallback to raw file content if AST parser fails
+                except Exception as exc:
+                    _LOGGER.debug(
+                        "No skeleton for %s, so the whole file is sent: %s", self._path, exc
+                    )
 
         if char_limit is not None:
             content = content[:char_limit] + "\n[truncated]"

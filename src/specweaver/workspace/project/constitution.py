@@ -254,7 +254,8 @@ def is_unmodified_starter(path: Path) -> bool:
 
     try:
         content = path.read_text(encoding="utf-8-sig")
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s is unreadable, so it is not the starter: %s", path, exc)
         return False
 
     # The starter template has ~13 TODO markers.  If only a few remain,

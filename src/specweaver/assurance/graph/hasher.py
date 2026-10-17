@@ -53,7 +53,7 @@ def _relative_to(path: Path, base: Path) -> str:
     """`path` relative to `base` as posix, or its absolute posix form when it is outside."""
     try:
         return path.relative_to(base).as_posix()
-    except ValueError:
+    except ValueError:  # expected: a path outside the base stays whole
         return path.as_posix()
 
 

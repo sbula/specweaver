@@ -45,7 +45,8 @@ def _app_callback(
     if active:
         try:
             level = _core.run_repo_op(lambda r: r.get_log_level(active))
-        except (ValueError, Exception):
+        except (ValueError, Exception) as exc:
+            logger.debug("The project's log level is unreadable, so DEBUG is used: %s", exc)
             level = "DEBUG"
     else:
         level = "DEBUG"
@@ -131,7 +132,7 @@ def _stdin_isatty() -> bool:
 
     try:
         return sys.stdin.isatty()
-    except Exception:
+    except Exception:  # expected: stdin is not a terminal
         return False
 
 

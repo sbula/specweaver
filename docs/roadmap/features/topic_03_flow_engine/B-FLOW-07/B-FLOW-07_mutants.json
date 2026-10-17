@@ -100,7 +100,7 @@
           "old": "        rows = conn.execute(\"SELECT root_path, default_dal FROM workspace_projects\").fetchall()\n",
           "new": "        rows = conn.execute(\"SELECT name, default_dal FROM workspace_projects\").fetchall()\n",
           "breaks": "a project registered under another name than its folder loses its default DAL",
-          "symbol_sha": "sha256:7d2972f0db209f2cc9a66485a5160fc330545e6c8cc22ad892a76fa5c4559b3e"
+          "symbol_sha": "sha256:b43be4a43e88eaa4916679e36861f6a1fac645999861666847c0d3b5cec05a0e"
         },
         {
           "id": "no-default-dal-fallback",

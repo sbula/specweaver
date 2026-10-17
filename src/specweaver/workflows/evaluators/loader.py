@@ -49,7 +49,12 @@ def _packaged_schemas(schemas: dict[str, dict[str, Any]]) -> None:
                     "package",
                     yaml_file.name,
                 )
-    except (FileNotFoundError, ModuleNotFoundError, TypeError, OSError):
+    except (
+        FileNotFoundError,
+        ModuleNotFoundError,
+        TypeError,
+        OSError,
+    ):  # expected: no packaged schemas
         pass
 
 

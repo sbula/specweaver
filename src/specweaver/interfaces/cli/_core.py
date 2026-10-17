@@ -149,7 +149,7 @@ def stdin_is_interactive() -> bool:
 
     try:
         return sys.stdin.isatty()
-    except (AttributeError, ValueError):
+    except (AttributeError, ValueError):  # expected: stdin is not a terminal
         return False
 
 
@@ -165,7 +165,7 @@ def ask_to_spend(question: str) -> bool:
         answer = Prompt.ask(
             f"Spend brake: {question} [y/N]", default="", console=Console(stderr=True)
         )
-    except EOFError:
+    except EOFError:  # expected: no answer means no
         return False
     return answer.strip().lower() in ("y", "yes")
 

@@ -37,8 +37,8 @@ class LineageRepository:
                 conn.commit()
             finally:
                 conn.close()
-        except sqlite3.OperationalError:
-            pass  # e.g. db_path is a directory — the error re-surfaces on real use
+        except sqlite3.OperationalError:  # expected: the error comes back on real use
+            pass
 
     def _get_connection(self) -> sqlite3.Connection:
         # ``timeout`` installs SQLite's busy handler from connection creation; combined with

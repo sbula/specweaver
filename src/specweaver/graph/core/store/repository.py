@@ -1,14 +1,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 # mypy: ignore-errors
 import json
+import logging
 import sqlite3
 from typing import Any
 
 import networkx as nx
 
 from specweaver.graph.core.engine.models import EDGE_KIND_ATTR, EdgeKind
+
+logger = logging.getLogger(__name__)
 
 
 def _edge_kind(source_hash: str, target_hash: str, data: dict[str, Any]) -> str:
@@ -248,7 +250,8 @@ class SqliteGraphRepository:
 
                 try:
                     metadata = json.loads(meta_str) if meta_str else {}
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as exc:
+                    logger.debug("Stored metadata is not JSON, so it is left empty: %s", exc)
                     metadata = {}
 
                 semantic_digraph.add_node(
@@ -287,7 +290,8 @@ class SqliteGraphRepository:
             for source_hash, target_hash, edge_type, meta_str in cursor.fetchall():
                 try:
                     metadata = json.loads(meta_str) if meta_str else {}
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as exc:
+                    logger.debug("Stored metadata is not JSON, so it is left empty: %s", exc)
                     metadata = {}
 
                 # Under `EDGE_KIND_ATTR`, not under the column's name. The column is called

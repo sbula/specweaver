@@ -84,7 +84,8 @@ def _resolve_target_uuid(target: str) -> str:
         if not path.is_file():
             return target
         return extract_artifact_uuid(path.read_text(encoding="utf-8")) or target
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s is unreadable, so the target is used as given: %s", path, exc)
         return target
 
 

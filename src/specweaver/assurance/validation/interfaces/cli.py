@@ -263,8 +263,8 @@ def check(
     # Ensure project resolution handles implicit CWD and active project logic
     try:
         project_dir: Path | None = resolve_project_path(project)
-    except Exception:
-        # Fallback to None if not inside a valid project
+    except Exception as exc:
+        logger.debug("Not inside a registered project, so the path is used as given: %s", exc)
         project_dir = Path(project) if project else None
 
     pipeline_name = _resolve_pipeline_name(
@@ -337,7 +337,7 @@ def list_rules(
     for pname in pipeline_names:
         try:
             resolved = load_pipeline_yaml(pname, project_dir=project_dir)
-        except FileNotFoundError:
+        except FileNotFoundError:  # expected: the user is told and it is skipped
             _core.console.print(f"[yellow]Pipeline '{pname}' not found, skipping.[/yellow]")
             continue
 

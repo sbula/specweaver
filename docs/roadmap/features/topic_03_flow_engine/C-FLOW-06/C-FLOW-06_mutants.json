@@ -108,7 +108,7 @@
           "old": "    if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):\n",
           "new": "    if final_run.status == RunStatus.COMPLETED:\n",
           "breaks": "a run that tested nothing marks the code as tested",
-          "symbol_sha": "sha256:14b982aab88d66dbbefe4ddabb045b0f3e32edcf0717da69df1c84e21e8649df"
+          "symbol_sha": "sha256:2e7ad58c10c3d3f2247255dab1e02c1861a6b86ca6b9ce84bdccfe10fd22a438"
         },
         {
           "id": "folder-step-covers-all",
@@ -118,7 +118,7 @@
           "old": "\"tests_cover_project\": target in _WHOLE_PROJECT",
           "new": "\"tests_cover_project\": True",
           "breaks": "tests of one folder mark the whole project as tested",
-          "symbol_sha": "sha256:1f6c418795f6300d90898d5d459b3feb66a97760dc7c71ebfdd111c392527ecf"
+          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
         }
       ]
     },
@@ -137,7 +137,7 @@
           "old": "    effective_strict = strict or (dal_level.is_strict if dal_level else False)\n",
           "new": "    effective_strict = strict\n",
           "breaks": "DAL_A code passes with warnings",
-          "symbol_sha": "sha256:768af9a8e948e291aee88c1d90b97fbe8d8976c611a994b7da5a28dfbe60e067"
+          "symbol_sha": "sha256:518824d24d65d184edac307e3b9a24000a1ac565b2f3c8fc7ac996e60a821fa9"
         }
       ]
     },

@@ -49,7 +49,7 @@
     "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:41",
     "second": "src/specweaver/assurance/validation/rules/code/c04_coverage.py:49"
   },
-  "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @9fb4379f35ac": {
+  "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @ec4c87116c22": {
     "lines": 9,
     "first": "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py:28",
     "second": "src/specweaver/assurance/validation/rules/code/c08_type_hints.py:28"
@@ -66,13 +66,13 @@
   },
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
     "lines": 10,
-    "first": "src/specweaver/interfaces/api/event_bridge.py:105",
+    "first": "src/specweaver/interfaces/api/event_bridge.py:102",
     "second": "src/specweaver/core/flow/engine/display.py:369"
   },
   "src/specweaver/core/flow/engine/store.py <-> src/specweaver/graph/core/store/repository.py @521d1386da74": {
     "lines": 14,
     "first": "src/specweaver/core/flow/engine/store.py:148",
-    "second": "src/specweaver/graph/core/store/repository.py:67"
+    "second": "src/specweaver/graph/core/store/repository.py:69"
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
     "lines": 7,
@@ -546,12 +546,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:443",
-    "second": "src/specweaver/workspace/store.py:411"
+    "first": "src/specweaver/workspace/store.py:444",
+    "second": "src/specweaver/workspace/store.py:412"
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @9b9e6b544999": {
     "lines": 16,
-    "first": "src/specweaver/workspace/store.py:173",
-    "second": "src/specweaver/workspace/store.py:152"
+    "first": "src/specweaver/workspace/store.py:174",
+    "second": "src/specweaver/workspace/store.py:153"
   }
 }

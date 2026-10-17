@@ -17,9 +17,6 @@ from specweaver.commons import json
 
 logger = logging.getLogger(__name__)
 
-
-logger = logging.getLogger(__name__)
-
 MAX_CONCURRENT_RUNS = 3
 
 
@@ -129,8 +126,8 @@ class EventBridge:
                 loop = asyncio.get_running_loop()
                 task = loop.create_task(self._broadcast(run_id, record))
                 task.add_done_callback(lambda t: None)  # prevent GC
-            except RuntimeError:
-                pass  # No loop running (e.g. during tests)
+            except RuntimeError:  # expected: no event loop runs, so nothing is broadcast
+                pass
 
         return _on_event
 

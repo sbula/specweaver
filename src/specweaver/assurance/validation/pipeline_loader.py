@@ -88,7 +88,11 @@ def _load_raw_yaml(
             text = resource.read_text(encoding="utf-8")
             logger.debug("Loading pipeline '%s' from package", name)
             return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
-    except (FileNotFoundError, ModuleNotFoundError, TypeError):
+    except (
+        FileNotFoundError,
+        ModuleNotFoundError,
+        TypeError,
+    ):  # expected: not packaged there; the next source is tried
         pass
 
     # 3. Framework Plugins
@@ -103,7 +107,11 @@ def _load_raw_yaml(
                         "Loading pipeline '%s' from framework %s", name, framework_pkg.name
                     )
                     return cast("dict[str, Any]", _yaml.load(io.StringIO(text)))
-    except (FileNotFoundError, ModuleNotFoundError, TypeError):
+    except (
+        FileNotFoundError,
+        ModuleNotFoundError,
+        TypeError,
+    ):  # expected: not packaged there; the next source is tried
         pass
 
     msg = f"Validation pipeline '{name}' not found. Searched in: packaged defaults, frameworks"
