@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 try:
     from ruamel.yaml.error import YAMLError
-except ImportError:
+except ImportError:  # expected: ruamel is optional; a stand-in keeps the except clauses valid
 
     class YAMLError(Exception):  # type: ignore
         pass

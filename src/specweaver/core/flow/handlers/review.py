@@ -37,9 +37,8 @@ def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]
 def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> ToolDispatcher | None:
     """Build a ToolDispatcher from RunContext if workspace boundaries exist.
 
-    Returns None when research tools should not be available, preserving
-    backwards compatibility with contexts that don't set workspace roots
-    or when the LLM doesn't support tool use.
+    Returns None when research tools should not be available: no workspace boundary, or an LLM
+    without tool use.
     """
     from specweaver.sandbox.dispatcher import ToolDispatcher
     from specweaver.sandbox.security import WorkspaceBoundary
@@ -50,7 +49,8 @@ def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> Tool
 
     try:
         boundary = WorkspaceBoundary.from_run_context(context)
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError) as exc:
+        logger.warning("The reviewer gets no file tools: no workspace boundary (%s)", exc)
         return None
 
     search_key = context.model.llm_router.search_key
@@ -376,7 +376,8 @@ def _resolve_mentions(
             try:
                 # Resolve symlinks and normalize
                 resolved_path = candidate_path.resolve(strict=False)
-            except (OSError, ValueError):
+            except (OSError, ValueError) as exc:
+                logger.debug("Mention %s does not resolve: %s", candidate_path, exc)
                 continue
 
             # Workspace boundary check: must be within a root
@@ -404,7 +405,7 @@ def _is_within(path: Path, root: Path) -> bool:
     """Check if path is within root directory."""
     try:
         path.resolve().relative_to(root.resolve())
-    except ValueError:
+    except ValueError:  # expected: not inside the root
         return False
     return True
 

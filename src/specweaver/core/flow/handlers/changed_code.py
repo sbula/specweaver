@@ -64,7 +64,7 @@ def _test_dir_for(module_dir: Path, src_dir: Path, project_path: Path, kind: str
     tier_root = str(Path(_TESTS) / kind)
     try:
         parts = module_dir.relative_to(src_dir).parts
-    except ValueError:
+    except ValueError:  # expected: a module outside src/ has its tests at the tier root
         return tier_root
     if len(parts) <= 1:
         return tier_root

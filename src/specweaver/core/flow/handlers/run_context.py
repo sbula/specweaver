@@ -178,7 +178,8 @@ class RunContext(BaseModel):
             from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
             return get_default_parsers()
-        except BaseException:
+        except BaseException as exc:
+            logger.debug("The AST parsers could not be loaded: %r", exc)
             return None
 
     def _build_project_metadata(self) -> Any:
@@ -195,7 +196,8 @@ class RunContext(BaseModel):
 
         try:
             target = f"Python {sys.version.split()[0]} on {platform.platform()}"
-        except Exception:
+        except Exception as exc:
+            logger.debug("The platform could not be described: %s", exc)
             target = "Unknown Environment"
 
         archetype = self._read_archetype()
@@ -228,7 +230,8 @@ class RunContext(BaseModel):
             from specweaver.infrastructure.llm.models import TaskType
 
             routed = router.get_for_task(TaskType.UNKNOWN)
-        except Exception:
+        except Exception as exc:
+            logger.debug("The default model is unknown: %s", exc)
             return "unknown", "unknown"
         return str(getattr(routed.adapter, "provider_name", "unknown")), routed.config.model
 
@@ -243,5 +246,6 @@ class RunContext(BaseModel):
             with ctx_path.open("r", encoding="utf-8") as f:
                 data = ruamel.yaml.YAML(typ="safe").load(f)
             return data.get("archetype", "generic") if isinstance(data, dict) else "generic"
-        except Exception:
+        except Exception as exc:
+            logger.warning("The archetype is unreadable, so 'generic' is used: %s", exc)
             return "generic"

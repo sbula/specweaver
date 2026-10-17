@@ -43,7 +43,8 @@ def _log_missing_calls(
     router = getattr(getattr(context, "model", None), "llm_router", None)
     try:
         missing = router.unwritten() if router is not None else 0
-    except Exception:
+    except Exception as exc:
+        logger.debug("Could not count the calls missing from the cost ledger: %s", exc)
         return
     if missing:
         run_id = run.run_id if run is not None else "?"

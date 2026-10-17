@@ -65,7 +65,7 @@ def run_sync(make_coroutine: Callable[[], Coroutine[object, object, T]]) -> T:
     """
     try:
         loop: asyncio.AbstractEventLoop | None = asyncio.get_running_loop()
-    except RuntimeError:
+    except RuntimeError:  # expected: no event loop runs in this thread
         loop = None
 
     if loop is not None and loop.is_running():

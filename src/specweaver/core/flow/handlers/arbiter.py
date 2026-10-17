@@ -405,7 +405,7 @@ class ArbitrateVerdictHandler(StepHandler):
                 if match:
                     json_str = match.group(0)
                 data = json.loads(json_str)
-            except json.JSONDecodeError:
+            except json.JSONDecodeError:  # expected: the step fails, quoting the raw verdict
                 return _error_result(f"Failed to parse LLM verdict: {raw_response}", started)
 
             result = ArbitrateResult(**data)

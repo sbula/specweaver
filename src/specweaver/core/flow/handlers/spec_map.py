@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.flow.handlers.run_context import RunContext
+
+logger = logging.getLogger(__name__)
 
 _REQUIREMENT_ROW = re.compile(r"^\|\s*((?:N)?FR-\d+[a-z]?)\s*\|\s*([^|\n]*)\|", re.MULTILINE)
 _NAMED_FILE = re.compile(r"[\w./-]+\.(?:md|py|java|kt|ts|rs)\b")
@@ -68,7 +71,8 @@ def signature_conflicts(context: RunContext) -> list[str]:
     """A contract method this spec declares with other parameters than another spec or contract."""
     try:
         mine = _methods_in(context.spec_path.read_text(encoding="utf-8"), code=False)
-    except OSError:
+    except OSError as exc:
+        logger.debug("The spec is unreadable, so no signature conflicts are checked: %s", exc)
         return []
     others = [(p, False) for p in _other_specs(context)]
     contracts = context.project_path / "contracts"

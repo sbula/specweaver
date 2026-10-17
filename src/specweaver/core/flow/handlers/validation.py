@@ -292,8 +292,8 @@ class ValidateCodeHandler:
             candidate = (context.project_path / target).resolve()
             try:
                 candidate.relative_to(base)
-            except ValueError:
-                return None  # target escapes the project root — reject
+            except ValueError:  # expected: a target outside the project root is refused
+                return None
             return candidate if candidate.is_file() else None
 
         if context.output_dir and context.output_dir.exists():
@@ -370,7 +370,8 @@ def _requirement_coverage(context: RunContext) -> dict[str, str]:
 
     try:
         spec_text = context.spec_path.read_text(encoding="utf-8")
-    except OSError:
+    except OSError as exc:
+        logger.warning("The spec is unreadable, so coverage per requirement is not shown: %s", exc)
         return {}
     coder_root = context.isolation.execution_root or context.project_path
     return requirement_coverage(spec_text, coder_root, _scenarios_root(context))

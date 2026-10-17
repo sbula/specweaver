@@ -176,7 +176,8 @@ def _is_contract(path: Path) -> bool:
         return False
     try:
         head = path.read_text(encoding="utf-8", errors="replace")[:4096]
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s is unreadable, so it is not a contract: %s", path, exc)
         return False
     return any(marker in head for marker in _YAML_MARKERS)
 

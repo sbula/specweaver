@@ -43,7 +43,8 @@ def derive_artifact_uuid(path: Path) -> str:
     """
     try:
         existing = extract_artifact_uuid(path.read_text(encoding="utf-8"))
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s has no readable lineage tag: %s", path, exc)
         existing = None
     return existing or str(_uuid.uuid4())
 
@@ -71,7 +72,8 @@ def ensure_file_tagged(path: Path, language: str) -> str:
     """
     try:
         content = path.read_text(encoding="utf-8")
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s is unreadable; it gets a new lineage id: %s", path, exc)
         return str(_uuid.uuid4())
 
     existing = extract_artifact_uuid(content)

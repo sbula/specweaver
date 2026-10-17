@@ -54,7 +54,7 @@ def _title(context: RunContext) -> str:
     spec = context.spec_path.resolve()
     try:
         return spec.relative_to(context.project_path.resolve()).as_posix()
-    except ValueError:
+    except ValueError:  # expected: a spec outside the project keeps its full path
         return spec.as_posix()
 
 

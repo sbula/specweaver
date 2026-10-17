@@ -14,6 +14,7 @@ packaging rather than a way to execute anything.
 
 from __future__ import annotations
 
+import logging
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -23,6 +24,8 @@ from specweaver.commons.tooling_sources import ToolingSource, declared_pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 #: The QA runner invokes `python -m pytest` and nothing else, so this is the entire predicate: a
@@ -65,7 +68,8 @@ def _manifest_declares_a_runner(manifest_text: str) -> bool:
     """
     try:
         manifest = tomllib.loads(manifest_text)
-    except (tomllib.TOMLDecodeError, ValueError):
+    except (tomllib.TOMLDecodeError, ValueError) as exc:
+        logger.debug("The manifest is not valid TOML, so it declares no runner: %s", exc)
         return False
     runtime = (manifest.get("project") or {}).get("dependencies")
     return bool(_groups_holding_a_runner(manifest_text)) or (
@@ -94,7 +98,8 @@ def _groups_holding_a_runner(manifest_text: str) -> list[str]:
     """
     try:
         manifest = tomllib.loads(manifest_text)
-    except (tomllib.TOMLDecodeError, ValueError):
+    except (tomllib.TOMLDecodeError, ValueError) as exc:
+        logger.debug("The manifest is not valid TOML, so no group holds a runner: %s", exc)
         return []
     groups = manifest.get("dependency-groups")
     if not isinstance(groups, dict):

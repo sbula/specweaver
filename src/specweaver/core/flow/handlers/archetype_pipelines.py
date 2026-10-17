@@ -182,5 +182,5 @@ def relative_to_root(path: Path, root: Path) -> str:
     """`path` relative to `root`, as the sandboxed atoms take it; unchanged when it lies outside."""
     try:
         return path.resolve().relative_to(root.resolve()).as_posix()
-    except ValueError:
+    except ValueError:  # expected: a path outside the root keeps its full form
         return str(path)

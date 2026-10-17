@@ -33,7 +33,8 @@ def _requirements_of(test_file: Path) -> dict[str, list[str]]:
     """Each test function's requirement ids, from its `@trace` tags."""
     try:
         text = test_file.read_text(encoding="utf-8")
-    except OSError:
+    except OSError as exc:
+        logger.warning("%s is unreadable, so its requirements are left out: %s", test_file, exc)
         return {}
     return {m.group(1): _TRACE.findall(m.group(0)) for m in _TEST_DEF.finditer(text)}
 

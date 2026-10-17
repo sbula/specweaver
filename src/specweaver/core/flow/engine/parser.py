@@ -107,7 +107,7 @@ def _resolve_path(path: Path) -> Path:
         with importlib.resources.as_file(template) as real_path:
             if real_path.exists():
                 return real_path
-    except (FileNotFoundError, TypeError, ModuleNotFoundError):
+    except (FileNotFoundError, TypeError, ModuleNotFoundError):  # expected: not a bundled pipeline
         pass
 
     msg = f"Pipeline not found: '{path}'. Checked: {path}, {with_suffix}, bundled templates."

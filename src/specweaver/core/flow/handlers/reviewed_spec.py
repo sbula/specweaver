@@ -25,7 +25,8 @@ def spec_sha(spec_path: Path) -> str:
     """The spec's SHA-256; "" when it cannot be read."""
     try:
         return hashlib.sha256(spec_path.read_text(encoding="utf-8").encode()).hexdigest()
-    except OSError:
+    except OSError as exc:
+        logger.debug("%s is unreadable, so it has no hash: %s", spec_path, exc)
         return ""
 
 
@@ -47,7 +48,8 @@ def _write_whole(target: Path, record: dict[str, str]) -> None:
 def _read(target: Path) -> dict[str, str]:
     try:
         record = json.loads(target.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except (OSError, ValueError) as exc:
+        logger.warning("%s is unreadable, so no spec counts as reviewed: %s", target, exc)
         return {}
     return record if isinstance(record, dict) else {}
 
@@ -78,7 +80,7 @@ def _relative(path: Path | None, root: Path) -> str:
         return ""
     try:
         return path.resolve().relative_to(root.resolve()).as_posix()
-    except ValueError:
+    except ValueError:  # expected: a path outside the root has no relative form
         return ""
 
 

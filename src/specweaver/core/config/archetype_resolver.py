@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import yaml
@@ -13,6 +14,8 @@ from specweaver.core.config._context_walk import resolve_up_tree
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class ArchetypeResolver:
@@ -46,7 +49,10 @@ class ArchetypeResolver:
         try:
             with context_file.open("r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "%s is unreadable, so its archetype is not applied: %s", context_file, exc
+            )
             return None
 
         if not isinstance(data, dict):
@@ -77,7 +83,10 @@ class ArchetypeResolver:
         try:
             with context_file.open("r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "%s is unreadable, so its plugins are not applied: %s", context_file, exc
+            )
             return None
 
         if not isinstance(data, dict):

@@ -66,7 +66,7 @@ class DriftCheckHandler:
 
         try:
             content = target_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
+        except UnicodeDecodeError:  # expected: the step fails and says so
             return _error_result("Target file is not valid UTF-8.", started)
 
         if target_path.suffix != ".py":
@@ -102,7 +102,7 @@ class DriftCheckHandler:
         try:
             rel_path = target_path.relative_to(context.project_path)
             file_path_str = str(rel_path).replace("\\", "/")
-        except ValueError:
+        except ValueError:  # expected: a file outside the project is named alone
             file_path_str = target_path.name
 
         return await self._run_drift_detect(
@@ -174,7 +174,7 @@ class DriftCheckHandler:
             adapter, config = llm_for(context, TaskType.REVIEW)
             response = await adapter.generate(messages, config)
             return str(response.text)
-        except SpendLimitReachedError:
+        except SpendLimitReachedError:  # expected: the brake stopped the run, which reports it
             return None
         except Exception as exc:
             logger.exception("DriftCheckHandler: Failed LLM root-cause analysis.")

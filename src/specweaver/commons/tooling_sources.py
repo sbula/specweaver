@@ -69,7 +69,8 @@ def declared_pytest(root: Path) -> ToolingSource | None:
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    except OSError as exc:
+        logger.debug("Could not read %s: %s", path, exc)
         return ""
 
 
@@ -110,9 +111,8 @@ def _from_tox(tox: Path) -> ToolingSource | None:
     parser = configparser.ConfigParser(interpolation=None)
     try:
         parser.read_string(_read(tox))
-    except configparser.Error:
-        # Reading a foreign format is best-effort. A malformed tox.ini is the project's problem to
-        # fix, never a reason for the prepare phase to stop building an environment.
+    except configparser.Error:  # expected: a malformed tox.ini is the project's to fix
+        # Reading a foreign format is best-effort; it never stops the prepare phase.
         return None
 
     buckets: dict[str, list[str]] = {"package": [], "include": [], "skip": []}

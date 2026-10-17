@@ -144,8 +144,7 @@ class CQRSQueueManager:
                     await callback()
                 else:
                     callback()
-            except asyncio.CancelledError:
-                # If cancelled while processing, exit cleanly
+            except asyncio.CancelledError:  # expected: the queue is stopped
                 break
             except Exception as e:
                 self._record_to_dlx(e)
@@ -218,7 +217,7 @@ def get_global_write_queue() -> CQRSQueueManager:
     global _global_write_queue, _global_write_queue_loop
     try:
         current_loop = asyncio.get_running_loop()
-    except RuntimeError:
+    except RuntimeError:  # expected: no event loop runs in this thread
         current_loop = None
 
     if _global_write_queue is None or _global_write_queue_loop is not current_loop:

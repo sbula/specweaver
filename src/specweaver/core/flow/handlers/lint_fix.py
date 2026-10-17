@@ -213,8 +213,8 @@ class LintFixHandler:
             candidate = (context.project_path / target).resolve()
             try:
                 candidate.relative_to(base)
-            except ValueError:
-                return []  # target escapes the project root — reject
+            except ValueError:  # expected: a target outside the project root is refused
+                return []
             if candidate.is_file():
                 return [candidate]
 
