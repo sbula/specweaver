@@ -39,7 +39,7 @@ settles them. Pick one; do not start another until it is done.*
 | 2 | `A-FLOW-01` model choice by cost | high — the cheapest model that is good enough, per kind of task | high and unknown — no meaningful way yet to measure and compare cost per kind of task | research the measure first; no build |
 | 3 | `C-EXEC-07` isolation for pipeline runs | medium — the strongest isolation where execution is least trusted: since `INT-US-24`, LLM-written scenario tests run over LLM-generated code | medium-high — allow-list derivation for any pipeline | design (stub) |
 | 4 | `B-FLOW-06` loop detection | medium — stops a repeating agent early; money and token limits catch it late | unknown — loops can span several steps; weigh effort against result first | design |
-| 5 | `E-VAL-04` multi-stage reviews | medium — separate review questions, each a rubric file | low once `C-VAL-05` is approved; blocked until then | approve `C-VAL-05` |
+| 5 | `E-VAL-04` multi-stage reviews | medium — separate review questions, each a rubric file | low — `C-VAL-05` is approved (2026-10-17) | design |
 
 Not on the list: items whose main effect is closing a story (`D-UI-01`, `B-VAL-05`, `A-INTL-01`
 and the rest of the former "one item from green" table). `A-SENS-02` (GraphRAG) pays only on very
@@ -107,8 +107,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
         *   `✅` **E-VAL-02:** Auto-discover Standards
         *   `[ ]` **E-VAL-04:** Multi-stage Reviews
         *   `✅` **B-VAL-02:** Spec Rot Interceptor
-    *   🟡 **Rubrics-as-Content:**
-        *   `🔧` **C-VAL-05:** Rubrics-as-Content Validation
+    *   🟢 **Rubrics-as-Content:**
+        *   `✅` **C-VAL-05:** Rubrics-as-Content Validation
     *   ⚰️ **Speed & Security (Rust):** *(retired 2026-08-20 — `A-VAL-04` optimized a non-bottleneck; see the [benefit review](../analysis/benefit_chain_analysis_2026-08-20.md))*
 
 ### 🟢 US-2: The Interactive Drafter

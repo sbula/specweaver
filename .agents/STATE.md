@@ -4,9 +4,10 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**Three capabilities are `🔧`, not `✅`, awaiting approval.**
+**Two capabilities are `🔧`, not `✅`, awaiting approval.**
 
-`C-VAL-05` · `C-FLOW-11` · `D-UI-01`
+`C-FLOW-11` · `D-UI-01`
+(`C-VAL-05` left the list 2026-10-17: reviewed at Phase 6, corrected and signed off.)
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
 They are built and tested; the `specweaver-design` **Phase 6 approval gate has never run for any
@@ -38,7 +39,7 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
 **Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `B-INTL-09`
-(memory tasks), `C-FLOW-11` (design never approved), `C-VAL-05`, `D-UI-01`.
+(memory tasks), `C-FLOW-11` (design never approved), `D-UI-01`.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

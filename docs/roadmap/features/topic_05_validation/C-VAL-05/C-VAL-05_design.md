@@ -1,6 +1,6 @@
 # C-VAL-05 — Rubrics-as-Content Validation (Rules as Code, Rubrics as Content)
 
-**Status**: APPROVED by the user 2026-10-17 — 🔧 built, then reviewed at Phase 6 that day: NFR-2 did not hold and FR-4 recorded
+**Status**: APPROVED and signed off `✅` by the user 2026-10-17 — built, then reviewed at Phase 6 that day: NFR-2 did not hold and FR-4 recorded
 only a log line. Status returns to ✅ after those corrections and the user's sign-off. · **DAL**: C (Enterprise Standard) · **Epic**: Topic 05 (Validation Engine) ·
 **Feature ID**: C-VAL-05
 
@@ -115,4 +115,4 @@ a rule class.
 ## Session Handoff
 
 **Now**: K-1..K-3 committed 2026-10-17 — a project's rubric wins at every DAL, the verdict names its rubric, seven mutants killed.
-**Next**: the user's sign-off of C-VAL-05.
+**Next**: none — signed off 2026-10-17. `E-VAL-04` is unblocked.

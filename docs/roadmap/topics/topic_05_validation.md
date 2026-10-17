@@ -137,7 +137,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** a requirement with no test fails the pipeline
   > - **Limits:** does not vouch for test *quality*. The tag is written by the same model as the test, so a hallucinated test carries a well-formed tag. Quality is `A-VAL-03`'s job
 
-* **`C-VAL-05` 🔧: Rubrics-as-Content Validation**
+* **`C-VAL-05` ✅: Rubrics-as-Content Validation**
   > - **Purpose:** Change what a review asks for by editing a file, not by changing code and releasing
   > - **Trigger:** When a review step loads its criteria
   > - **Precondition:** `E-INTL-03` → the review engine · the run's DAL
