@@ -93,6 +93,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "tach": "all",
         "suppressions": "all",
         "lost_errors": "all",
+        "logger_names": "all",
         "class_health": "changed",
         "cycles": "all",
         # `TECH-037`. Cross-file by definition -- a clone's twin may be in a file the commit never
@@ -114,6 +115,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "tach": "all",
         "suppressions": "all",
         "lost_errors": "all",
+        "logger_names": "all",
         "class_health": "module",
         "cycles": "all",
         "duplication": "all",
@@ -133,6 +135,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "tach": "all",
         "suppressions": "all",
         "lost_errors": "all",
+        "logger_names": "all",
         "class_health": "all",
         "cycles": "all",
         "duplication": "all",

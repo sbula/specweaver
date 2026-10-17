@@ -52,6 +52,9 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
         "lost_errors": make(
             "lost_errors", ("src",), _r._lost_errors, script="check_lost_errors.py"
         ),
+        "logger_names": make(
+            "logger_names", ("src",), _r._logger_names, script="check_logger_names.py"
+        ),
         "comment_provenance": make(
             "comment_provenance",
             ("src",),

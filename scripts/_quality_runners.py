@@ -110,6 +110,10 @@ def _lost_errors(paths: list[Path]) -> list[str]:
     return [*_script("check_lost_errors.py"), *(str(p) for p in paths)]
 
 
+def _logger_names(paths: list[Path]) -> list[str]:
+    return [*_script("check_logger_names.py"), *(str(p) for p in paths)]
+
+
 def _class_health(paths: list[Path]) -> list[str]:
     return [*_script("check_class_health.py"), *(str(p) for p in paths)]
 

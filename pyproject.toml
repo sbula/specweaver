@@ -96,6 +96,7 @@ select = [
     "RUF", # ruff-specific rules
     "C90", # mccabe complexity
     "G",   # logging format: lazy %s arguments, never f-strings (D-FLOW-04 NFR-3)
+    "T20", # no print(): output goes through the Rich console or a logger (D-FLOW-04 FR-9)
 ]
 ignore = [
     "E501",  # line length handled by formatter
@@ -103,12 +104,13 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "src/specweaver/sandbox/execution/*.py" = ["TID251"]
-"tests/**" = ["TID251"]
+# `T20` (no print) binds `src/`: tests and scripts print as their way of reporting.
+"tests/**" = ["TID251", "T20"]
 # Declared exemption (user, 2026-07-28): `scripts/quality.py` shells out to ruff/mypy/tach with
 # stdlib subprocess rather than SubprocessExecutor. SubprocessExecutor lives in
 # src/specweaver/sandbox/, and a quality gate that imports the product it checks cannot run when
 # that product is broken — precisely when the gate is needed.
-"scripts/**" = ["TID251"]
+"scripts/**" = ["TID251", "T20"]
 # `TECH-035`: the reading mixin restates `SCM_*` as property stubs under `TYPE_CHECKING`, purely to
 # declare what it needs from the parser it is mixed into. The names must match the abstract
 # properties they mirror, which are uppercase by long-standing convention (tree-sitter `.scm`

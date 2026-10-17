@@ -124,6 +124,7 @@ MATRIX: dict[str, dict[str, str]] = {
     "tach": {"cb": "all", "sf": "all", "feature": "all"},
     "suppressions": {"cb": "all", "sf": "all", "feature": "all"},
     "lost_errors": {"cb": "all", "sf": "all", "feature": "all"},
+    "logger_names": {"cb": "all", "sf": "all", "feature": "all"},
     # -- design metrics: widen as the design settles ----------------------
     # Diff-scoped at `cb` because a class is legitimately half-built mid-commit-boundary and an
     # unactionable finding is one that gets suppressed. Not because it is expensive.

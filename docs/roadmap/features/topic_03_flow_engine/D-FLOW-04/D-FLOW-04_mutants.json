@@ -141,6 +141,45 @@
           "symbol_sha": "sha256:69a59ddbf64c45ba8c702e9a804ac369fc64710ae3bc9a33cb66532009923ff8"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Every log line reaches the project's handlers",
+      "scope": [
+        "tests/unit/scripts/test_check_logger_names.py",
+        "tests/unit/scripts/test_quality_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "root-calls-allowed",
+          "origin": "authored",
+          "file": "scripts/check_logger_names.py",
+          "symbol": "stray_loggers",
+          "old": "        elif name in _ROOT_CALLS:\n            found.append(node.lineno)\n",
+          "new": "        elif name in _ROOT_CALLS:\n            pass\n",
+          "breaks": "logging.error(...) bypasses the project's console and file",
+          "symbol_sha": "sha256:d3a1569a181b2a9be0be5f31c0a5ae87da4a3a162e5e17105f73f9dc5b0f6c49"
+        },
+        {
+          "id": "any-name-allowed",
+          "origin": "authored",
+          "file": "scripts/check_logger_names.py",
+          "symbol": "_under_module",
+          "old": "        return arg.id == \"__name__\"\n",
+          "new": "        return True\n",
+          "breaks": "a logger named for anything else is accepted",
+          "symbol_sha": "sha256:37561eb7c61d949d8f431bc55aad902cef239f3e548ceb576ce0e3ce58637807"
+        },
+        {
+          "id": "checker-out-of-gate",
+          "origin": "authored",
+          "file": "scripts/quality.py",
+          "symbol": "MATRIX",
+          "old": "    \"logger_names\": {\"cb\": \"all\", \"sf\": \"all\", \"feature\": \"all\"},\n",
+          "new": "    \"logger_names\": {\"feature\": \"all\"},\n",
+          "breaks": "a stray logger passes every commit"
+        }
+      ]
     }
   ]
 }

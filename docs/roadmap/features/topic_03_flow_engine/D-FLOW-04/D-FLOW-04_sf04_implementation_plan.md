@@ -6,7 +6,7 @@
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf04_implementation_plan.md
 - **Status**: APPROVED by the user 2026-10-17
 
-**FRs owned**: FR-6, FR-7, FR-8, NFR-2, NFR-3 · **Depends on**: SF-01 (committed)
+**FRs owned**: FR-4, FR-6, FR-7, FR-8, FR-9, NFR-2, NFR-3; closes FR-1..FR-3 citations · **Depends on**: SF-01 (committed)
 
 ## Goal
 
@@ -33,6 +33,9 @@ it so; what the console and the log file show is each project's setting.
 | CB-4 | the rest (37): `infrastructure`, `interfaces`, `assurance`, `graph`, `workflows`, `workspace` | FR-6, FR-8 | the check names each of them |
 | CB-5 | the check joins the gates, at zero | FR-6 | a planted silent `except` fails `quality.py cb` |
 | CB-6 | the console level as a setting | FR-7, NFR-2 | `set-log-level --console` is refused today; an INFO line never reaches the console |
+| CB-7 | every logger reaches its handlers: ruff `T20`; a check that `getLogger` takes `__name__` (or a name under it) and no root-logger call (`logging.error(...)`) remains; the dead-letter logger renamed under its module, still writing its own file only | FR-9 | the check names `database.py`'s `dlx_worker_<id>` and its two `logging.critical` calls |
+| CB-8 | the flag contract: a recorded list of every command's flags, and a test that fails on any removed, renamed or unrecorded flag | FR-4 | the test fails until the list exists |
+| CB-9 | the closure: FR-1..FR-3 cited by the tests that prove them (read first), FR-5 deleted | FR-1, FR-2, FR-3 | `check_fr_coverage.py D-FLOW-04` fails today |
 
 | CB | Tier | Test |
 |---|---|---|
@@ -73,6 +76,7 @@ it so; what the console and the log file show is each project's setting.
 | # | Question | Chosen |
 |---|----------|--------|
 | — | none open: the design settled every trigger `[agreed 2026-10-17]` | — |
+| Q1–Q4 (closure) | FR-1 reworded; FR-4 gets the flag contract; FR-5 deleted; FR-9 every logger reaches its handlers | `[agreed 2026-10-17]` |
 
 ## Backlog
 

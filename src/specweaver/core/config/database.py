@@ -115,15 +115,16 @@ class CQRSQueueManager:
         """
         from logging.handlers import RotatingFileHandler
 
-        dlx_logger = logging.getLogger(f"dlx_worker_{id(self)}")
+        dlx_logger = logging.getLogger(f"{__name__}.dlx.{id(self)}")
         if dlx_logger.handlers:
             return dlx_logger
+        dlx_logger.propagate = False  # its own file only, as before
         try:
             handler = RotatingFileHandler(self._dlx_path, maxBytes=10 * 1024 * 1024, backupCount=3)
             handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s: %(message)s"))
             dlx_logger.addHandler(handler)
         except Exception as setup_error:
-            logging.critical("Failed to setup DLX RotatingFileHandler: %s", setup_error)
+            logger.critical("Failed to set up the DLX file handler: %s", setup_error)
         return dlx_logger
 
     def _record_to_dlx(self, error: Exception) -> None:
@@ -131,7 +132,7 @@ class CQRSQueueManager:
         try:
             self._dlx_logger().error("Error: %s", error)
         except Exception as dlx_error:
-            logging.critical("DLX write failed: %s", dlx_error)
+            logger.critical("DLX write failed: %s", dlx_error)
 
     async def _worker_loop(self) -> None:
         """Background worker loop that processes writes."""
