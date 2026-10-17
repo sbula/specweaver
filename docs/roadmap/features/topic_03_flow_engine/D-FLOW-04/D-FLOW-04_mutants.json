@@ -24,10 +24,10 @@
           "origin": "authored",
           "file": "scripts/check_lost_errors.py",
           "symbol": "lost_errors",
-          "old": "        and not _REASON.search(lines[node.lineno - 1])\n",
-          "new": "        and not _REASON.search(source)\n",
+          "old": "            for line in lines[node.lineno - 1 : max(node.body[0].lineno - 1, node.lineno)]\n",
+          "new": "            for line in lines\n",
           "breaks": "one reason anywhere in a file excuses every handler",
-          "symbol_sha": "sha256:b9fc9fff01675af6405a5ee71f6a7688da1971776a5c6da94f689d8344ed7f80"
+          "symbol_sha": "sha256:1d77f9103f31377e233a751f2092dab05191c8c45d6d772922e3c9187e18f951"
         },
         {
           "id": "unused-name-counts",
@@ -48,6 +48,37 @@
           "new": "    return \"log\" in name\n",
           "breaks": "a call on `catalog` counts as logging",
           "symbol_sha": "sha256:1ee8b998bb23e9c834b0e3793be4f83b44fe0381b5b0c2748de679056d72f84f"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A lost error that changes the user's result is a warning",
+      "scope": [
+        "tests/integration/sandbox/test_lost_results_warn.py",
+        "tests/integration/core/test_unreadable_inputs_warn.py",
+        "tests/unit/sandbox/language/core/language/rust/test_rust_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "rust-error-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_tests",
+          "old": "            return failed_tests(f\"cargo test could not run: {exc}\")\n",
+          "new": "            return failed_tests(\"cargo test could not run\")\n",
+          "breaks": "a crashed cargo test says nothing of why",
+          "symbol_sha": "sha256:db56370ad33482c7a7fb02f0a73b431b0d4dc8ac0188e38ea55ba6ecffc3f0b7"
+        },
+        {
+          "id": "dal-warning-silenced",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/dal_resolver.py",
+          "symbol": "DALResolver._parse_dal_from_context",
+          "old": "            logger.warning(\"%s is unreadable, so its DAL is not applied: %s\", context_file, exc)\n",
+          "new": "            logger.debug(\"%s is unreadable, so its DAL is not applied: %s\", context_file, exc)\n",
+          "breaks": "a broken context.yaml silently drops its DAL",
+          "symbol_sha": "sha256:f55eef2da18fd12a8070a1c20b61182dd65920f1611118d2a87610c5020dcf3f"
         }
       ]
     }

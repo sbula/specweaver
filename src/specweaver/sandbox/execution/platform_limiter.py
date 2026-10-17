@@ -99,7 +99,7 @@ def _threads_owned_by(entry: Path, uid: int) -> int | None:
     """
     try:
         status = (entry / "status").read_text(encoding="utf-8", errors="replace")
-    except (OSError, ValueError):
+    except (OSError, ValueError):  # expected: the thread ended while it was read
         return None
 
     entry_uid: int | None = None
@@ -247,8 +247,8 @@ class UnixLimiter(PlatformLimiter):
 
                     libc = ctypes.CDLL("libc.so.6")
                     libc.prctl(1, signal.SIGKILL)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("The parent-death signal is not set: %s", exc)
 
             if mem is not None:
                 resource.setrlimit(resource.RLIMIT_AS, (mem, mem))

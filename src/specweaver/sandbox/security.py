@@ -143,7 +143,7 @@ class WorkspaceBoundary:
         try:
             child.relative_to(parent)
             return True
-        except ValueError:
+        except ValueError:  # expected: not a subpath
             return False
 
 

@@ -5,11 +5,14 @@
 """Signal and cleanup handlers for subprocess execution (FR-7)."""
 
 import atexit
+import logging
 import signal
 import subprocess
 import sys
 import threading
 import weakref
+
+logger = logging.getLogger(__name__)
 
 _active_processes: weakref.WeakSet[subprocess.Popen[str]] = weakref.WeakSet()
 _signals_registered = False
@@ -31,10 +34,12 @@ def _cleanup_active_processes() -> None:
                     proc.terminate()
                     try:
                         proc.wait(timeout=1)
-                    except subprocess.TimeoutExpired:
+                    except (
+                        subprocess.TimeoutExpired
+                    ):  # expected: a child that ignores SIGTERM is killed
                         proc.kill()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Cleaning up child processes failed: %s", exc)
 
 
 def _register_signals_once() -> None:
@@ -70,7 +75,7 @@ def _register_signals_once() -> None:
 
             for sig in handled:
                 signal.signal(sig, sig_handler)
-        except (ValueError, OSError):
+        except (ValueError, OSError):  # expected: signals can be set only in the main thread
             pass
 
 

@@ -10,7 +10,7 @@ Proves: D-FLOW-04 FR-6
 | Bucket | Case |
 |---|---|
 | Happy | a logged, a raised, a used error and a stated reason all pass |
-| Boundary | `except*`, a nested handler, a reason on a long `except` line, a reason on the wrong line |
+| Boundary | `except*`, a nested handler, a reason in a wrapped `except` header, a reason in the body |
 | Degradation | a file that does not parse is reported, never skipped |
 | Hostile | `pass`, `return None`, an `as e` never used, a call on a name that only looks like a logger |
 """
@@ -87,6 +87,25 @@ def test_an_unused_name_is_not_use(check: ModuleType) -> None:
     source = "try:\n    work()\nexcept OSError as exc:\n    return None\n"
 
     assert check.lost_errors(source) == [3]
+
+
+def test_a_reason_in_a_wrapped_except_header_counts(check: ModuleType) -> None:
+    source = """
+    try:
+        work()
+    except (
+        OSError,
+        ValueError,
+    ):  # expected: the formatter wrapped this header
+        pass
+    """
+    assert _lost(check, source) == []
+
+
+def test_a_reason_on_a_one_line_handler_counts(check: ModuleType) -> None:
+    source = "try:\n    work()\nexcept OSError: pass  # expected: optional\n"
+
+    assert check.lost_errors(source) == []
 
 
 def test_a_reason_on_another_line_does_not_count(check: ModuleType) -> None:

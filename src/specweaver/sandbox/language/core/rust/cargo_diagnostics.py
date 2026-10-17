@@ -41,7 +41,10 @@ def parse_cargo_diagnostics(stdout: str) -> list[CargoDiagnostic]:
     for line in stdout.splitlines():
         try:
             record = json.loads(line)
-        except (json.JSONDecodeError, TypeError):
+        except (
+            json.JSONDecodeError,
+            TypeError,
+        ):  # expected: a line that is not JSON is not a diagnostic
             continue
         if not isinstance(record, dict) or record.get("reason") != _DIAGNOSTIC:
             continue

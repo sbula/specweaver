@@ -8,7 +8,7 @@
 * calls a logger — a method on a name that is `log`, `logger` or ends in `logger`;
 * raises;
 * names the error it caught (`except E as exc:` and `exc` appears in the body); or
-* its `except` line carries `# expected: <why>`, with a reason after the colon.
+* its `except` header — the lines up to its colon — carries `# expected: <why>`, with a reason.
 
 Anything else drops the error without a trace and is named as `path:line`. A file that does not parse
 fails too: an unread file is not a clean one. The count of stated reasons is printed, so their growth
@@ -60,7 +60,10 @@ def lost_errors(source: str) -> list[int]:
         for node in ast.walk(ast.parse(source))
         if isinstance(node, ast.ExceptHandler)
         and not _handled(node)
-        and not _REASON.search(lines[node.lineno - 1])
+        and not any(
+            _REASON.search(line)
+            for line in lines[node.lineno - 1 : max(node.body[0].lineno - 1, node.lineno)]
+        )
     )
 
 

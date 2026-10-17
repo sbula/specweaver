@@ -61,7 +61,7 @@
   },
   "src/specweaver/assurance/validation/rules/spec/s07_test_first.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @4717db3c6e5f": {
     "lines": 11,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:370",
+    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:371",
     "second": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py:254"
   },
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
@@ -76,18 +76,18 @@
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
     "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:308",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:129"
+    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:309",
+    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @9ced5a28b740": {
     "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:190",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:129"
+    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:191",
+    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
   },
   "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @e48a817fa7b3": {
     "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:250",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:129"
+    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:251",
+    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
   },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,
@@ -211,13 +211,13 @@
   },
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/execution/container_executor.py:566",
+    "first": "src/specweaver/sandbox/execution/container_executor.py:534",
     "second": "src/specweaver/sandbox/execution/executor.py:71"
   },
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @a91f7b2f86aa": {
     "lines": 23,
     "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
-    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:114"
+    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:139"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
@@ -246,28 +246,28 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/java/runner.py @1672fe6890f5": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:228",
-    "second": "src/specweaver/sandbox/language/core/java/runner.py:190"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:229",
+    "second": "src/specweaver/sandbox/language/core/java/runner.py:191"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @2717682f93a7": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:262",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:233"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:263",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:239"
   },
-  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @75aa9f6cbc6c": {
-    "lines": 13,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:219",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:186"
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @a516c465b635": {
+    "lines": 15,
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:218",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:188"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @c9747b237b21": {
     "lines": 8,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:96",
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:97",
     "second": "src/specweaver/sandbox/language/core/python/runner.py:92"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @8734432514bf": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:127",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:128",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
     "lines": 10,
@@ -286,8 +286,8 @@
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @d5b65f7d896b": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:195",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:156"
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:199",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:158"
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @639e7b0d7a99": {
     "lines": 10,
@@ -297,7 +297,7 @@
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4f23ce91d1f6": {
     "lines": 12,
     "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:71",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
   "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @38e6c7900e69": {
     "lines": 16,
@@ -307,27 +307,27 @@
   "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2f393c255cf8": {
     "lines": 12,
     "first": "src/specweaver/sandbox/language/core/python/runner.py:106",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @215e96f23a4f": {
     "lines": 8,
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:86",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:66"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:67"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4264be866118": {
     "lines": 12,
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:95",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
-  "src/specweaver/sandbox/language/core/sarif.py <-> src/specweaver/workspace/ast/parsers/_sarif_complexity.py @e4763546208a": {
-    "lines": 7,
+  "src/specweaver/sandbox/language/core/sarif.py <-> src/specweaver/workspace/ast/parsers/_sarif_complexity.py @1ebcd44d9751": {
+    "lines": 10,
     "first": "src/specweaver/sandbox/language/core/sarif.py:28",
-    "second": "src/specweaver/workspace/ast/parsers/_sarif_complexity.py:35"
+    "second": "src/specweaver/workspace/ast/parsers/_sarif_complexity.py:32"
   },
   "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @8cf753d0a6a4": {
     "lines": 26,
     "first": "src/specweaver/sandbox/qa_runner/core/interface.py:80",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:75"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
   "src/specweaver/sandbox/qa_runner/interfaces/facades.py <-> src/specweaver/sandbox/qa_runner/interfaces/facades.py @57b45a6ebd49": {
     "lines": 24,
@@ -366,7 +366,7 @@
   },
   "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @b7d04899b60c": {
     "lines": 11,
-    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:203",
+    "first": "src/specweaver/workflows/implementation/interfaces/cli.py:222",
     "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
@@ -546,12 +546,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:439",
-    "second": "src/specweaver/workspace/store.py:407"
+    "first": "src/specweaver/workspace/store.py:443",
+    "second": "src/specweaver/workspace/store.py:411"
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @9b9e6b544999": {
     "lines": 16,
-    "first": "src/specweaver/workspace/store.py:171",
-    "second": "src/specweaver/workspace/store.py:150"
+    "first": "src/specweaver/workspace/store.py:173",
+    "second": "src/specweaver/workspace/store.py:152"
   }
 }

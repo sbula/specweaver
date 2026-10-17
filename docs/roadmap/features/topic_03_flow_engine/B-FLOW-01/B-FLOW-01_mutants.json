@@ -807,7 +807,7 @@
           "old": "            if name in mine and \" \".join(signature.split()) != \" \".join(mine[name].split()):\n",
           "new": "            if False:\n",
           "breaks": "a contract method declared twice with other parameters passes review",
-          "symbol_sha": "sha256:9adbade53bd77c301b617be5ab49697aa703527b819ce92adfc5ae0ae12e8cf3"
+          "symbol_sha": "sha256:f6e3da3c990d2b7e59071c68abf21319e41f5668e74a089be0aa289d83342ddc"
         },
         {
           "id": "conflict-accepted",
@@ -918,7 +918,7 @@
           "old": "    return {m.group(1): _TRACE.findall(m.group(0)) for m in _TEST_DEF.finditer(text)}\n",
           "new": "    return {}\n",
           "breaks": "the report says a check failed but not which requirement",
-          "symbol_sha": "sha256:009f13e33fe68d695ea8574b8b1bfdb335169223166b01e81843c0c67c76cf6a"
+          "symbol_sha": "sha256:bb2c37a3fe030f2294300f4ec9edab3058df74dad80d0152226e4dd17f38400e"
         }
       ]
     }

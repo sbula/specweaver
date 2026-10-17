@@ -147,8 +147,10 @@ class KotlinRunner(QARunnerInterface):
                     xml = junitparser.JUnitXml.fromfile(str(xml_file))
                     failed += xml.failures + xml.errors
                     passed += xml.tests - (xml.failures + xml.errors + xml.skipped)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning(
+                        "%s is unreadable, so its tests are not counted: %s", xml_file, exc
+                    )
         return passed, failed
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
@@ -180,8 +182,10 @@ class KotlinRunner(QARunnerInterface):
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
                 errors.extend(lint_errors_from_sarif(data, skip_rules_containing="complex"))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "%s is not valid JSON, so its findings are lost: %s", sarif_path, exc
+                )
 
         return LintRunResult(
             error_count=len(errors),
@@ -217,8 +221,10 @@ class KotlinRunner(QARunnerInterface):
             try:
                 data = json.loads(sarif_path.read_text("utf-8"))
                 violations.extend(parse_detekt_complexity(data, max_complexity))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "%s is not valid JSON, so its findings are lost: %s", sarif_path, exc
+                )
 
         return ComplexityRunResult(
             violation_count=len(violations),

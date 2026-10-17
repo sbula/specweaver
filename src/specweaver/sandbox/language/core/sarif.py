@@ -16,6 +16,7 @@ reuse that turns a later edit into a silent bug.
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.qa_runner.core.interface import LintError
@@ -23,6 +24,8 @@ from specweaver.sandbox.qa_runner.core.interface import LintError
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _findings(report: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -67,6 +70,7 @@ def read_sarif_report(path: Path) -> dict[str, Any]:
     """
     try:
         report = json.loads(path.read_text("utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("%s is malformed, so its findings are lost: %s", path, exc)
         return {}
     return report if isinstance(report, dict) else {}

@@ -17,7 +17,7 @@
           "old": "        executor = FileExecutor(cwd_path)\n",
           "new": "        from specweaver.sandbox.filesystem.core.executor import EngineFileExecutor as _E\n        executor = _E(cwd_path)\n",
           "breaks": "the agent's AST tool writes through the engine executor, which protects nothing: an agent can rewrite context.yaml, .env, .git or .specweaver",
-          "symbol_sha": "sha256:3f301540bfbe0e78df19ac293b2594248c21bcd45524a86e0ff46f758a3f9911"
+          "symbol_sha": "sha256:be8d9200db83c1afc6bf366cb6fe5ab9a566ffad60907e7f1a24291f991b106b"
         }
       ]
     },

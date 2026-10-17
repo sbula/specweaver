@@ -144,7 +144,7 @@ def _grep_ripgrep(
                 file_path = match_data["path"]["text"]
                 try:
                     rel_path = str(Path(file_path).relative_to(search_dir))
-                except ValueError:
+                except ValueError:  # expected: a path outside the search root stays whole
                     rel_path = file_path
                 matches.append(
                     {
@@ -155,7 +155,7 @@ def _grep_ripgrep(
                 )
                 if len(matches) >= max_results:
                     break
-        except (json.JSONDecodeError, KeyError):
+        except (json.JSONDecodeError, KeyError):  # expected: rg prints lines that are not matches
             continue
 
     return matches, len(matches) >= max_results, ""
@@ -175,7 +175,7 @@ def _matches_with_context(
     """
     try:
         rel_path = str(file_path.relative_to(search_dir))
-    except ValueError:
+    except ValueError:  # expected: a path outside the search root stays whole
         rel_path = str(file_path)
 
     for i, line in enumerate(lines):
@@ -221,7 +221,8 @@ def _grep_python(
         files_scanned += 1
         try:
             lines = file_path.read_text(encoding="utf-8", errors="replace").splitlines()
-        except (OSError, UnicodeDecodeError):
+        except (OSError, UnicodeDecodeError) as exc:
+            logger.debug("grep skips %s: %s", file_path, exc)
             continue
 
         for match in _matches_with_context(lines, compiled, file_path, search_dir, context_lines):
@@ -253,7 +254,7 @@ def _relative_to(item: Path, search_dir: Path) -> str:
     """The path as reported to the caller — relative when it can be, absolute when it cannot."""
     try:
         return str(item.relative_to(search_dir))
-    except ValueError:
+    except ValueError:  # expected: a path outside the search root stays whole
         return str(item)
 
 
@@ -270,7 +271,8 @@ def _glob_entry(item: Path, rel_path_str: str) -> dict[str, Any]:
     if item.is_file():
         try:
             entry["size_bytes"] = item.stat().st_size
-        except OSError:
+        except OSError as exc:
+            logger.debug("No size for %s: %s", item, exc)
             entry["size_bytes"] = 0
     return entry
 
@@ -391,6 +393,6 @@ def iter_text_files(directory: Path, exclude_dirs: set[str] | None = None) -> li
                 item = root_path / f
                 if _is_text_file(item):
                     files.append(item)
-    except OSError:
-        pass
+    except OSError as exc:
+        logger.debug("Walking %s stopped early: %s", root_path, exc)
     return sorted(files)

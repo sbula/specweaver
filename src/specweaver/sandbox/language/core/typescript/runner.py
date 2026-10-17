@@ -45,7 +45,8 @@ def _restricted_import_violations(stdout: str) -> list[ArchitectureViolation]:
 
     try:
         report = json.loads(stdout)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        logger.warning("The import report is not valid JSON, so its violations are lost: %s", exc)
         return []
 
     return [
@@ -183,16 +184,14 @@ class TypeScriptRunner(QARunnerInterface):
         """
         try:
             probe = self._executor.execute([node_bin, "--version"], timeout_seconds=10)
-        except OSError:
-            # No node at all. Answering "no" hands the caller back to its own fallback and its own
-            # error handling; raising from a capability probe would replace a reported exit code
-            # with a traceback from a question nobody asked.
+        except OSError:  # expected: no node at all; the caller falls back and reports it
+            # Raising from a capability probe would replace a reported exit code with a traceback.
             return False
         if probe.exit_code != 0:
             return False
         try:
             major, minor = (int(part) for part in probe.stdout.strip().lstrip("v").split(".")[:2])
-        except ValueError:
+        except ValueError:  # expected: an unreadable version means no type stripping
             return False
         return (major, minor) >= (23, 6)
 
@@ -229,7 +228,9 @@ class TypeScriptRunner(QARunnerInterface):
                 cmd,
                 timeout_seconds=300,
             )
-        except getattr(__builtins__, "FileNotFoundError", OSError):
+        except getattr(
+            __builtins__, "FileNotFoundError", OSError
+        ):  # expected: the result says the runner is missing
             return DebugRunResult(
                 exit_code=127,
                 duration_seconds=0.0,

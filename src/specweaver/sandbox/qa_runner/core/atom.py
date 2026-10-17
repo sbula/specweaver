@@ -204,7 +204,7 @@ class QARunnerAtom(Atom):
                         status=AtomStatus.FAILED,
                         message="Target cannot traverse outside of the sandbox directory.",
                     )
-        except ValueError:
+        except ValueError:  # expected: the result says the target is invalid
             return AtomResult(
                 status=AtomStatus.FAILED,
                 message="Invalid target path provided for sandbox execution.",

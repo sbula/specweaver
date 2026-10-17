@@ -67,8 +67,7 @@ class MCPExecutor:
                 if not line:
                     break
                 self._queue.put(line)
-        except (ValueError, OSError):
-            # Happens during shutdown if file closed
+        except (ValueError, OSError):  # expected: the pipe closes at shutdown
             pass
 
     def is_alive(self) -> bool:
@@ -81,7 +80,7 @@ class MCPExecutor:
             self._process.terminate()
             try:
                 self._process.wait(timeout=2.0)
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired:  # expected: it ignored terminate, so it is killed
                 self._process.kill()
 
         if self._process.stdin:
@@ -129,8 +128,9 @@ class MCPExecutor:
                     response_payload = json.loads(line)
                     if "jsonrpc" in response_payload and response_payload.get("id") == expected_id:
                         return cast("dict[str, Any]", response_payload)
-                except json.JSONDecodeError:
-                    # Ignore non-JSON lines (e.g. Docker startup logs)
+                except (
+                    json.JSONDecodeError
+                ):  # expected: non-JSON lines, such as Docker's start-up log
                     continue
         except queue.Empty as e:
             raise MCPExecutorError(

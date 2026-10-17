@@ -47,7 +47,7 @@
           "old": "                \"source\": _generated_code(context),\n",
           "new": "                \"source\": \"\",\n",
           "breaks": "sw implement's test step cannot import the generated code",
-          "symbol_sha": "sha256:1f6c418795f6300d90898d5d459b3feb66a97760dc7c71ebfdd111c392527ecf"
+          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
         },
         {
           "id": "c03-own-search",

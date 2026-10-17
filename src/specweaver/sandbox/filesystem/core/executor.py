@@ -123,7 +123,7 @@ class FileExecutor:
             # `newline=""`: the text as it is on disk, so a write back keeps its line endings.
             with resolved.open(encoding="utf-8", newline="") as handle:
                 content = handle.read()
-        except UnicodeDecodeError:
+        except UnicodeDecodeError:  # expected: the result says the file is not UTF-8
             return ExecutorResult(status="error", error=f"File is not valid UTF-8: {path}")
         except OSError as exc:
             return ExecutorResult(status="error", error=f"Read failed: {exc}")
@@ -154,7 +154,7 @@ class FileExecutor:
                                 status="error",
                                 error=f"those lines exceed {max_bytes} bytes; read a smaller range",
                             )
-        except UnicodeDecodeError:
+        except UnicodeDecodeError:  # expected: the result says the file is not UTF-8
             return ExecutorResult(status="error", error=f"File is not valid UTF-8: {path}")
         except OSError as exc:
             return ExecutorResult(status="error", error=f"Read failed: {exc}")
@@ -387,7 +387,7 @@ class FileExecutor:
         if target.is_absolute():
             try:
                 target = target.relative_to(self._cwd)
-            except ValueError:
+            except ValueError:  # expected: a path outside the workspace is refused
                 return None
         return self._validate_path(str(target))
 
@@ -422,13 +422,13 @@ class FileExecutor:
 
         try:
             candidate = (self._cwd / path).resolve()
-        except (OSError, ValueError):
+        except (OSError, ValueError):  # expected: a path that does not resolve is refused
             return None
 
         # Must be inside cwd (traversal check)
         try:
             candidate.relative_to(self._cwd)
-        except ValueError:
+        except ValueError:  # expected: a path outside the workspace is refused
             return None
 
         # Check for symlinks anywhere in the path

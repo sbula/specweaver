@@ -254,7 +254,8 @@ class PythonQARunner(QARunnerInterface):
         try:
             data = json.loads(stdout)
             return {"errors": data if isinstance(data, list) else []}
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("ruff's report is not valid JSON, so its findings are lost: %s", exc)
             return {"errors": []}
 
     def _build_lint_result(self, stdout: str, fixed_count: int) -> LintRunResult:

@@ -229,8 +229,8 @@ class ToolDispatcher:
                 resolved_arch = resolver.resolve(project_dir / "stub")
                 active_archetype = resolved_arch if resolved_arch else "generic"
                 plugins = resolver.resolve_plugins(project_dir / "stub")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("The agent tools use the generic archetype: %s", exc)
 
         # The agent-facing executor: it refuses protected paths. `EngineFileExecutor` is for the engine.
         executor = FileExecutor(cwd_path)

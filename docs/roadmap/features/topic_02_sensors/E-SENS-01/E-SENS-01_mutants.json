@@ -25,7 +25,7 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/filesystem/core/executor.py",
           "symbol": "FileExecutor._validate_path",
-          "old": "        try:\n            candidate.relative_to(self._cwd)\n        except ValueError:\n            return None\n",
+          "old": "        try:\n            candidate.relative_to(self._cwd)\n        except ValueError:  # expected: a path outside the workspace is refused\n            return None\n",
           "new": "        pass\n",
           "breaks": "a resolved path outside the root is used; only the grant check is left",
           "symbol_sha": "sha256:67f164615e072394d1e5578304e84d4565f4900f44a4d97e3df34c6807967319"

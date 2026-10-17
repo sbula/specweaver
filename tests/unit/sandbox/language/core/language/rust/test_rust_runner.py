@@ -172,7 +172,7 @@ class TestRustRunner:
         assert "cargo build failed" in result.errors[0].message
 
     def test_run_debugger_exception(self, tmp_path: Path) -> None:
-        """G-2: run_debugger exception returns exit_code=1 with empty events."""
+        """G-2: run_debugger exception returns exit_code=1 and says why (D-FLOW-04 FR-6)."""
         (tmp_path / "Cargo.toml").write_text("")
         mock_executor = MagicMock(spec=SubprocessExecutor)
         mock_executor.execute.side_effect = Exception("process crashed")
@@ -182,7 +182,8 @@ class TestRustRunner:
 
         assert result.exit_code == 1
         assert result.duration_seconds == 0.0
-        assert result.events == []
+        assert [event.category for event in result.events] == ["stderr"]
+        assert "process crashed" in result.events[0].output
 
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = RustRunner(cwd=tmp_path)

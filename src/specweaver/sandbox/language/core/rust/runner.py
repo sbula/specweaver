@@ -135,17 +135,9 @@ class RustRunner(QARunnerInterface):
                 duration_seconds=time.time() - start_time,
                 coverage_pct=None,
             )
-        except Exception:
-            return TestRunResult(
-                passed=0,
-                failed=1,
-                errors=0,
-                skipped=0,
-                total=1,
-                failures=[],
-                duration_seconds=0.0,
-                coverage_pct=None,
-            )
+        except Exception as exc:
+            logger.warning("cargo test could not run: %s", exc)
+            return failed_tests(f"cargo test could not run: {exc}")
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         from specweaver.sandbox.qa_runner.core.interface import LintError, LintRunResult
@@ -170,8 +162,9 @@ class RustRunner(QARunnerInterface):
             return LintRunResult(
                 error_count=len(errors_list), fixable_count=0, fixed_count=0, errors=errors_list
             )
-        except Exception:
-            return LintRunResult(error_count=1, fixable_count=0, fixed_count=0, errors=[])
+        except Exception as exc:
+            logger.warning("cargo clippy could not run: %s", exc)
+            return failed_lint(f"cargo clippy could not run: {exc}")
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
         from specweaver.sandbox.qa_runner.core.interface import (
@@ -292,8 +285,13 @@ class RustRunner(QARunnerInterface):
                 if result.stdout
                 else [],
             )
-        except Exception:
-            return DebugRunResult(exit_code=1, duration_seconds=0.0, events=[])
+        except Exception as exc:
+            logger.warning("cargo run could not run: %s", exc)
+            return DebugRunResult(
+                exit_code=1,
+                duration_seconds=0.0,
+                events=[OutputEvent(category="stderr", output=f"cargo run could not run: {exc}")],
+            )
 
     def run_architecture_check(
         self,

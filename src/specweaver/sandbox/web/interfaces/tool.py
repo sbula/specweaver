@@ -222,8 +222,7 @@ def _strip_html(html: str) -> str:
         h.ignore_images = True
         h.body_width = 0  # No line wrapping
         return str(h.handle(html)).strip()
-    except ImportError:
-        # Fallback: basic regex tag removal
+    except ImportError:  # expected: html2text is optional; tags are stripped by regex
         text = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r"<[^>]+>", " ", text)

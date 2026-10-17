@@ -35,7 +35,7 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/executor.py",
           "symbol": "SubprocessExecutor._kill_process",
-          "old": "            proc.terminate()\n            try:\n                proc.wait(timeout=2)\n            except subprocess.TimeoutExpired:\n                proc.kill()\n",
+          "old": "            proc.terminate()\n            try:\n                proc.wait(timeout=2)\n            except subprocess.TimeoutExpired:  # expected: terminate was ignored, so it is killed\n                proc.kill()\n",
           "new": "            pass\n",
           "breaks": "a hung process keeps running after its timeout",
           "symbol_sha": "sha256:8e98f16f8d1c70f392e2295a86de274da8c0dd0395c8cc136e0429ba6b98dae6"
@@ -45,8 +45,8 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/executor.py",
           "symbol": "SubprocessExecutor._kill_process",
-          "old": "            except subprocess.TimeoutExpired:\n                proc.kill()\n",
-          "new": "            except subprocess.TimeoutExpired:\n                pass\n",
+          "old": "            except subprocess.TimeoutExpired:  # expected: terminate was ignored, so it is killed\n                proc.kill()\n",
+          "new": "            except subprocess.TimeoutExpired:  # expected: terminate was ignored, so it is killed\n                pass\n",
           "breaks": "a process that ignores SIGTERM is never killed",
           "symbol_sha": "sha256:8e98f16f8d1c70f392e2295a86de274da8c0dd0395c8cc136e0429ba6b98dae6"
         },
@@ -169,7 +169,7 @@
           "old": "    for proc in list(_active_processes):\n",
           "new": "    for proc in []:\n",
           "breaks": "an interrupt leaves children running",
-          "symbol_sha": "sha256:6993a9d48b84b5581e70a279623bf27bc895ec5661faf85acbfe74bd8da13659"
+          "symbol_sha": "sha256:64cb9588b2fe9252428d09ed2c262cccebbed265dd6550e4a39cfca0f68737b3"
         }
       ]
     },
@@ -208,7 +208,7 @@
           "old": "                resource.setrlimit(resource.RLIMIT_AS, (mem, mem))\n",
           "new": "                pass\n",
           "breaks": "a memory bomb takes the machine",
-          "symbol_sha": "sha256:5d6fd3b7c1a06238dd1fe1cc0e49da62807ee96b3cbb71a5b23a6be6ca4edc2d"
+          "symbol_sha": "sha256:1438bcc7ebed10e98794d5cadd29e86b1c61ed76b3c07074ded69a87c59097e2"
         },
         {
           "id": "no-file-limit",
@@ -218,7 +218,7 @@
           "old": "                resource.setrlimit(resource.RLIMIT_FSIZE, (fsize, fsize))\n",
           "new": "                pass\n",
           "breaks": "a child fills the disk",
-          "symbol_sha": "sha256:5d6fd3b7c1a06238dd1fe1cc0e49da62807ee96b3cbb71a5b23a6be6ca4edc2d"
+          "symbol_sha": "sha256:1438bcc7ebed10e98794d5cadd29e86b1c61ed76b3c07074ded69a87c59097e2"
         }
       ]
     }

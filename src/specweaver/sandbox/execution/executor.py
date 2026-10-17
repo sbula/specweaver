@@ -133,13 +133,16 @@ class SubprocessExecutor:
             )
             exit_code = proc.returncode
 
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired:  # expected: the result says it timed out
             timed_out = True
             self._kill_process(proc)
             # Collect any partial output
             try:
                 stdout, stderr = proc.communicate(timeout=2)
-            except (subprocess.TimeoutExpired, OSError):
+            except (
+                subprocess.TimeoutExpired,
+                OSError,
+            ):  # expected: a killed process may leave no output
                 stdout = ""
                 stderr = ""
             exit_code = proc.returncode if proc.returncode is not None else -1
@@ -228,7 +231,7 @@ class SubprocessExecutor:
             proc.terminate()
             try:
                 proc.wait(timeout=2)
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired:  # expected: terminate was ignored, so it is killed
                 proc.kill()
 
     @staticmethod
