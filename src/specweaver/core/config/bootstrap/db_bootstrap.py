@@ -81,6 +81,16 @@ def _add_call_status(conn: Connection) -> None:
         )
 
 
+def _add_console_log_level(conn: Connection) -> None:
+    """Add `console_log_level` to an older `workspace_projects`; every project shows warnings. Idempotent."""
+    present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(workspace_projects)")}
+    if "console_log_level" not in present:
+        conn.exec_driver_sql(
+            "ALTER TABLE workspace_projects ADD COLUMN console_log_level VARCHAR NOT NULL "
+            "DEFAULT 'WARNING'"
+        )
+
+
 def _move_default_dal_once(conn: Connection) -> None:
     """Move projects from the old default DAL_A to DAL_C, once per database.
 
@@ -123,6 +133,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(_allow_unknown_cost)
             await conn.run_sync(_add_history_columns)
             await conn.run_sync(_add_call_status)
+            await conn.run_sync(_add_console_log_level)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)
 

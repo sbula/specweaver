@@ -42,16 +42,15 @@ def _app_callback(
 
     # db = _core.get_db()
     active = _core.run_repo_op(lambda r: r.get_active_project())
+    level, console_level = "DEBUG", "WARNING"
     if active:
         try:
             level = _core.run_repo_op(lambda r: r.get_log_level(active))
+            console_level = _core.run_repo_op(lambda r: r.get_console_log_level(active))
         except (ValueError, Exception) as exc:
-            logger.debug("The project's log level is unreadable, so DEBUG is used: %s", exc)
-            level = "DEBUG"
-    else:
-        level = "DEBUG"
+            logger.debug("The project's log levels are unreadable, so the defaults apply: %s", exc)
 
-    setup_logging(project_name=active, level=level)
+    setup_logging(project_name=active, level=level, console_level=console_level)
     logger.debug("CLI invoked \u2014 active project: %s", active or "(none)")
 
 

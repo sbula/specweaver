@@ -51,20 +51,27 @@ def config_set_log_level(
     level: str = typer.Argument(
         help="Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
     ),
+    console: bool = typer.Option(
+        False, "--console", help="Set what reaches the console instead of the log file."
+    ),
 ) -> None:
-    """Set the log level for the active project."""
+    """Set the log file's level, or with --console the console's, for the active project."""
     name = _core._require_active_project()
+    where = "Console" if console else "Log file"
     try:
-        _core.run_repo_op(lambda r: r.set_log_level(name, level))
+        if console:
+            _core.run_repo_op(lambda r: r.set_console_log_level(name, level))
+        else:
+            _core.run_repo_op(lambda r: r.set_log_level(name, level))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
     _core.console.print(
-        f"[green]\u2713[/green] Log level set to [bold]{level.upper()}[/bold] "
+        f"[green]\u2713[/green] {where} level set to [bold]{level.upper()}[/bold] "
         f"for project [bold]{name}[/bold].",
     )
-    logger.info("Log level changed to %s for project %s", level.upper(), name)
+    logger.info("%s level changed to %s for project %s", where, level.upper(), name)
 
 
 @config_app.command("get-log-level")
@@ -73,6 +80,7 @@ def config_get_log_level() -> None:
     name = _core._require_active_project()
     try:
         level = _core.run_repo_op(lambda r: r.get_log_level(name))
+        console_level = _core.run_repo_op(lambda r: r.get_console_log_level(name))
     except ValueError as exc:
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -81,7 +89,8 @@ def config_get_log_level() -> None:
 
     log_path = get_log_path(name)
     _core.console.print(
-        f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\nLog file: [dim]{log_path}[/dim]",
+        f"Log level for [bold]{name}[/bold]: [cyan]{level}[/cyan]\n"
+        f"Console level: [cyan]{console_level}[/cyan]\nLog file: [dim]{log_path}[/dim]",
     )
 
 

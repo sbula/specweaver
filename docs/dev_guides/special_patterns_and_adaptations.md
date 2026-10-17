@@ -338,14 +338,30 @@ mismatch on flush), **AP-10** (ID-map corruption when loading a loaded graph), *
 
 ---
 
-## 20. Lazy `%s` logging
+## 20. Lazy `%s` logging, and no lost error
 
-Feature 3.33. Use the standard `logging` module with `%s` interpolation. No `f-strings` or `.format()`
-in `logger.debug()` / `logger.info()` calls.
+Feature 3.33, `D-FLOW-04`. Use the standard `logging` module with `%s` interpolation. No `f-strings`,
+`+` or `.format()` in log calls — ruff rule `G` in the commit gate refuses them.
 
-Every module has `logger = logging.getLogger(__name__)`.
+A module that logs has `logger = logging.getLogger(__name__)`.
 Write: `logger.debug("Parsing spec: %s", spec_path)`
 Never: `logger.debug(f"Parsing spec: {spec_path}")`
+
+**Every `except` logs the error, raises, uses it, or states why it may be dropped** —
+`scripts/check_lost_errors.py` in the commit gate, with no baseline:
+
+```python
+except OSError as exc:
+    logger.debug("Could not read %s: %s", path, exc)   # DEBUG …
+except OSError as exc:
+    logger.warning("%s is unreadable, so its findings are lost: %s", path, exc)  # … WARNING when the user gets a different result
+except ValueError:  # expected: a path outside the root stays whole
+    return str(path)
+```
+
+The reason goes in the `except` header, after `# expected:`. What reaches the console and the log file
+is each project's setting: `sw config set-log-level [--console] <LEVEL>` (file DEBUG, console WARNING
+by default).
 
 **Why:**
 

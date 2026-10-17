@@ -213,9 +213,19 @@ Nothing secret reaches a model: every value of 8 or more characters in `vault.en
 
 ## 8. Telemetry & Logs
 
-| Output | Where |
-|---|---|
-| `WARNING` level alerts and formatted stack traces | Console, rendered with Rich |
-| Verbose `DEBUG` logs, JSON lines, rotated | `~/.specweaver/logs/<project_name>/specweaver.log` |
+| Output | Where | Default level |
+|---|---|---|
+| Alerts and formatted stack traces | Console (stderr), rendered with Rich | `WARNING` |
+| JSON lines, rotated | `~/.specweaver/logs/<project_name>/specweaver.log` | `DEBUG` |
 
-Use the log file for post-mortem auditing and agent debugging.
+Both levels are per project:
+
+```bash
+sw config set-log-level INFO              # the log file
+sw config set-log-level --console INFO    # the console
+sw config get-log-level                   # shows both, and the log file's path
+```
+
+A warning on the console means a result changed because something could not be read — a report
+lost its findings, a `context.yaml` was skipped. Use the log file for post-mortem auditing and agent
+debugging.

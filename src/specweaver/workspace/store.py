@@ -48,6 +48,10 @@ class Project(Base):
     created_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
     last_used_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
     log_level: Mapped[str] = mapped_column(String, default="DEBUG", nullable=False)
+    #: What reaches the console; `log_level` is what reaches the log file.
+    console_log_level: Mapped[str] = mapped_column(
+        String, default="WARNING", server_default="WARNING", nullable=False
+    )
     constitution_max_size: Mapped[int] = mapped_column(Integer, default=5120, nullable=False)
     domain_profile: Mapped[str | None] = mapped_column(String, default=None)
     auto_bootstrap_constitution: Mapped[str] = mapped_column(
@@ -259,17 +263,28 @@ class WorkspaceRepository:
         return project.log_level
 
     async def set_log_level(self, project_name: str, level: str) -> None:
+        await self._set_level(project_name, level, "log_level")
+
+    async def get_console_log_level(self, project_name: str) -> str:
+        project = await self.session.get(Project, project_name)
+        if not project:
+            raise ValueError(f"Project '{project_name}' not found")
+        return project.console_log_level
+
+    async def set_console_log_level(self, project_name: str, level: str) -> None:
+        await self._set_level(project_name, level, "console_log_level")
+
+    async def _set_level(self, project_name: str, level: str, column: str) -> None:
+        """Store one of a project's two log levels, refusing a value that is not a level."""
         level_upper = level.upper()
         if level_upper not in self._VALID_LOG_LEVELS:
             raise ValueError(
                 f"Invalid log level '{level}'. Must be one of: {', '.join(sorted(self._VALID_LOG_LEVELS))}"
             )
-
         project = await self.session.get(Project, project_name)
         if not project:
             raise ValueError(f"Project '{project_name}' not found")
-
-        project.log_level = level_upper
+        setattr(project, column, level_upper)
         await self.session.flush()
 
     async def get_constitution_max_size(self, project_name: str) -> int:

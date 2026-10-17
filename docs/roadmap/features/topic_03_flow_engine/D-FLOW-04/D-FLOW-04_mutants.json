@@ -91,6 +91,56 @@
           "symbol_sha": "sha256:f55eef2da18fd12a8070a1c20b61182dd65920f1611118d2a87610c5020dcf3f"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "What reaches the console is a project setting",
+      "scope": [
+        "tests/integration/core/config/test_console_log_level.py",
+        "tests/e2e/capabilities/core/test_console_log_level_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "console-level-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/telemetry_logger.py",
+          "symbol": "setup_logging",
+          "old": "    console_handler = RichHandler(console=Console(stderr=True), level=shown, rich_tracebacks=True)\n",
+          "new": "    console_handler = RichHandler(console=Console(stderr=True), level=logging.WARNING, rich_tracebacks=True)\n",
+          "breaks": "the console shows WARNING+ whatever the project set",
+          "symbol_sha": "sha256:fa99f28faf1982c56117f26bb0a936b61e7aca38a1bf2b5db4e11a650301a8ed"
+        },
+        {
+          "id": "repeat-keeps-old-console",
+          "origin": "authored",
+          "file": "src/specweaver/telemetry_logger.py",
+          "symbol": "setup_logging",
+          "old": "            elif isinstance(handler, RichHandler):\n                handler.setLevel(shown)\n",
+          "new": "            elif isinstance(handler, RichHandler):\n                pass\n",
+          "breaks": "a changed console level is ignored for the rest of the process",
+          "symbol_sha": "sha256:fa99f28faf1982c56117f26bb0a936b61e7aca38a1bf2b5db4e11a650301a8ed"
+        },
+        {
+          "id": "quiet-file-silences-console",
+          "origin": "authored",
+          "file": "src/specweaver/telemetry_logger.py",
+          "symbol": "setup_logging",
+          "old": "        root_logger.setLevel(min(file_level, shown))\n",
+          "new": "        root_logger.setLevel(file_level)\n",
+          "breaks": "a quiet log file hides what the console was asked to show",
+          "symbol_sha": "sha256:fa99f28faf1982c56117f26bb0a936b61e7aca38a1bf2b5db4e11a650301a8ed"
+        },
+        {
+          "id": "old-projects-not-warning",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_add_console_log_level",
+          "old": "            \"DEFAULT 'WARNING'\"\n",
+          "new": "            \"DEFAULT 'DEBUG'\"\n",
+          "breaks": "every existing project floods the console with debug lines",
+          "symbol_sha": "sha256:69a59ddbf64c45ba8c702e9a804ac369fc64710ae3bc9a33cb66532009923ff8"
+        }
+      ]
     }
   ]
 }

@@ -102,14 +102,15 @@ def get_log_path(project_name: str) -> Path:
 def setup_logging(
     project_name: str | None = None,
     level: str = "DEBUG",
+    console_level: str = "WARNING",
 ) -> None:
     """Configure SpecWeaver logging for *project_name*.
 
     * **File handler**: ``RotatingFileHandler`` at
       ``~/.specweaver/logs/<project>/specweaver.log``.
       Receives all messages at *level* (DEBUG by default).
-    * **Console handler**: ``StreamHandler`` on stderr.
-      Receives WARNING+ only, so the terminal stays clean.
+    * **Console handler**: ``RichHandler`` on stderr, at *console_level* (WARNING by default),
+      so the terminal stays clean unless the project asks for more.
 
     This function is **idempotent** — calling it twice with the same
     project name does not add duplicate handlers.
@@ -119,10 +120,12 @@ def setup_logging(
             ``_global`` if None.
         level: Minimum log level for the *file* handler.
             Must be one of DEBUG, INFO, WARNING, ERROR, CRITICAL.
+        console_level: Minimum log level for the *console* handler, from the same set.
     """
     project_name = project_name or _GLOBAL_PROJECT
     level_upper = level.upper()
     file_level = LOG_LEVELS.get(level_upper, logging.DEBUG)
+    shown = LOG_LEVELS.get(console_level.upper(), logging.WARNING)
 
     # Get the root specweaver logger
     root_logger = logging.getLogger("specweaver")
@@ -131,11 +134,14 @@ def setup_logging(
     # We tag the logger with an attribute to detect repeated calls.
     configured_project = getattr(root_logger, "_sw_project", None)
     if configured_project == project_name:
-        # Already configured for this project — just update level
-        root_logger.setLevel(file_level)
+        # Already configured for this project — just update both levels. The logger itself lets
+        # through the lower of the two, so a quiet file never silences a loud console.
+        root_logger.setLevel(min(file_level, shown))
         for handler in root_logger.handlers:
             if isinstance(handler, RotatingFileHandler):
                 handler.setLevel(file_level)
+            elif isinstance(handler, RichHandler):
+                handler.setLevel(shown)
         return
 
     # Clear previous handlers (project change or first call)
@@ -157,14 +163,12 @@ def setup_logging(
     file_handler.setFormatter(json_formatter)
     root_logger.addHandler(file_handler)
 
-    # --- Console handler (stderr, WARNING+ only) ---
+    # --- Console handler (stderr, at the project's console level) ---
     # The stderr Console is load-bearing: a bare `RichHandler()` builds one on **stdout**, which
     # puts every warning and error into the command's own output — including inside
     # `sw run --json`, whose stream is machine-readable NDJSON and unparseable past the first log
     # record.
-    console_handler = RichHandler(
-        console=Console(stderr=True), level=logging.WARNING, rich_tracebacks=True
-    )
+    console_handler = RichHandler(console=Console(stderr=True), level=shown, rich_tracebacks=True)
     console_formatter = logging.Formatter("%(message)s", datefmt="[%X]")
     console_handler.setFormatter(console_formatter)
     root_logger.addHandler(console_handler)
