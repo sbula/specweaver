@@ -1,7 +1,7 @@
 # D-FLOW-04 — Unified Runner Architecture & Universal Logging
 
 **Status**: APPROVED by the user 2026-10-17 — reopened that day by the done-audit (FR-6 never held);
-SF-01..03 committed, SF-04 to build. · **Feature ID**: 3.13a · **Phase**: 3
+SF-04 built, and D-FLOW-04 signed off `✅` by the user 2026-10-17. · **Feature ID**: 3.13a · **Phase**: 3
 
 | | |
 |---|---|
@@ -99,4 +99,4 @@ could run in parallel with SF-02.
 ## Session Handoff
 
 **Now**: SF-04 committed — no caught error is lost, levels are settings, every logger reaches its handlers, the flag contract holds; FR-5 deleted.
-**Next**: the user's sign-off of D-FLOW-04. Every FR is cited by a test (`check_fr_coverage.py D-FLOW-04`).
+**Next**: none — signed off 2026-10-17.

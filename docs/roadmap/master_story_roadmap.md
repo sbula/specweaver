@@ -163,7 +163,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **E-FLOW-02:** YAML Pipeline Models
     *   `✅` **D-FLOW-01:** SQLite Pipeline Runner & State Persistence
     *   `✅` **D-FLOW-02:** `sw run` CLI & Enterprise Logging
-    *   `🔧` **D-FLOW-04:** Unified Runner Architecture
+    *   `✅` **D-FLOW-04:** Unified Runner Architecture
     *   `✅` **E-FLOW-03:** Provider Adapters
 *   **Sub-Story Add-Ons:**
     *   🟢 **Security Defenses:**

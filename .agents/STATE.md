@@ -22,7 +22,8 @@ retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md
 `C-FLOW-01` was reopened on 2026-10-15 and signed off `✅` on 2026-10-16: every call is in the cost
 ledger from the moment it is sent, and its readers count finished calls only — [design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-01/C-FLOW-01_design.md).
 
-`E-SENS-03` was signed off `✅` on 2026-10-16. Which docs each project protects from agents is
+`E-SENS-03` was signed off `✅` on 2026-10-16 and `D-FLOW-04` on 2026-10-17 (no caught error is lost,
+gate-enforced). Which docs each project protects from agents is
 `C-EXEC-08` (Project Doc Policy), to design with the user before `C-FLOW-11` lets a coder write.
 
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
@@ -36,7 +37,8 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 (pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
-**Waiting on the user:** nothing; the audit's *What happens next* lists what is not yet looked at.
+**Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `B-INTL-09`
+(memory tasks), `C-FLOW-11` (design never approved), `C-VAL-05`, `D-UI-01`.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

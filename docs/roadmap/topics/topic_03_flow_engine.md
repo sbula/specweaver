@@ -57,7 +57,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 * **`D-FLOW-03` ⚰️ RETIRED:** *(Static Model Routing — replaced by `C-FLOW-13`, 2026-10-11: each role names its model in `settings.toml`)*
 
-* **`D-FLOW-04` 🔧: Unified Runner Architecture** (Legacy: 3.16)
+* **`D-FLOW-04` ✅: Unified Runner Architecture** (Legacy: 3.16)
   > - **Purpose:** Make every command run through the same machinery, so telemetry and state work identically whether it is one step or twenty
   > - **Trigger:** When any single-shot command runs
   > - **Precondition:** `D-FLOW-01` → the runner
