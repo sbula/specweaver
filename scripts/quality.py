@@ -123,8 +123,7 @@ MATRIX: dict[str, dict[str, str]] = {
     "mypy": {"cb": "all", "sf": "all", "feature": "all"},
     "tach": {"cb": "all", "sf": "all", "feature": "all"},
     "suppressions": {"cb": "all", "sf": "all", "feature": "all"},
-    # `feature` only until every handler is fixed (D-FLOW-04 SF-04 CB-5 adds `cb` and `sf`).
-    "lost_errors": {"feature": "all"},
+    "lost_errors": {"cb": "all", "sf": "all", "feature": "all"},
     # -- design metrics: widen as the design settles ----------------------
     # Diff-scoped at `cb` because a class is legitimately half-built mid-commit-boundary and an
     # unactionable finding is one that gets suppressed. Not because it is expensive.

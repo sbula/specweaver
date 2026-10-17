@@ -6,7 +6,8 @@
       "requirement": "FR-6",
       "title": "No caught error is lost, and the gate keeps it so",
       "scope": [
-        "tests/unit/scripts/test_check_lost_errors.py"
+        "tests/unit/scripts/test_check_lost_errors.py",
+        "tests/unit/scripts/test_quality_runner.py"
       ],
       "mutants": [
         {
@@ -48,6 +49,15 @@
           "new": "    return \"log\" in name\n",
           "breaks": "a call on `catalog` counts as logging",
           "symbol_sha": "sha256:1ee8b998bb23e9c834b0e3793be4f83b44fe0381b5b0c2748de679056d72f84f"
+        },
+        {
+          "id": "gate-without-check",
+          "origin": "authored",
+          "file": "scripts/quality.py",
+          "symbol": "MATRIX",
+          "old": "    \"lost_errors\": {\"cb\": \"all\", \"sf\": \"all\", \"feature\": \"all\"},\n",
+          "new": "    \"lost_errors\": {\"feature\": \"all\"},\n",
+          "breaks": "a lost error passes every commit and is found only at feature close"
         }
       ]
     },
