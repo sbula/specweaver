@@ -180,6 +180,25 @@
           "breaks": "a stray logger passes every commit"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Every sw command keeps its arguments and flags",
+      "scope": [
+        "tests/unit/interfaces/cli/test_cli_flag_contract.py"
+      ],
+      "mutants": [
+        {
+          "id": "flag-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/interfaces/cli.py",
+          "symbol": "config_set_log_level",
+          "old": "        False, \"--console\", help=\"Set what reaches the console instead of the log file.\"\n",
+          "new": "        False, \"--screen\", help=\"Set what reaches the console instead of the log file.\"\n",
+          "breaks": "a renamed flag breaks every script that uses it, unseen",
+          "symbol_sha": "sha256:d7ad88bb62b59f3977703b7ebbf672682a2727ad3634c2b8d19e0ff53178d7e2"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,210 @@
+{
+  "sw": [
+    "--install-completion",
+    "--show-completion",
+    "--version",
+    "-V"
+  ],
+  "sw check": [
+    "--level",
+    "--lineage",
+    "--pipeline",
+    "--project",
+    "--strict",
+    "-l",
+    "-p",
+    "<target>"
+  ],
+  "sw config": [],
+  "sw config get-auto-bootstrap": [],
+  "sw config get-constitution-max-size": [],
+  "sw config get-log-level": [],
+  "sw config get-profile": [],
+  "sw config list": [],
+  "sw config profiles": [],
+  "sw config reset-profile": [],
+  "sw config set-auto-bootstrap": [
+    "<mode>"
+  ],
+  "sw config set-constitution-max-size": [
+    "<size>"
+  ],
+  "sw config set-log-level": [
+    "--console",
+    "<level>"
+  ],
+  "sw config set-profile": [
+    "<profile_name>"
+  ],
+  "sw config set-role": [
+    "--project",
+    "<model>",
+    "<role>"
+  ],
+  "sw config show": [],
+  "sw config show-profile": [
+    "<profile_name>"
+  ],
+  "sw constitution": [],
+  "sw constitution bootstrap": [
+    "--force",
+    "--project",
+    "-f",
+    "-p"
+  ],
+  "sw constitution check": [
+    "--project",
+    "-p"
+  ],
+  "sw constitution init": [
+    "--force",
+    "--project",
+    "-f",
+    "-p"
+  ],
+  "sw constitution show": [
+    "--project",
+    "-p"
+  ],
+  "sw costs": [],
+  "sw costs reset": [
+    "<model>"
+  ],
+  "sw costs set": [
+    "<input_price>",
+    "<model>",
+    "<output_price>"
+  ],
+  "sw draft": [
+    "--project",
+    "--selector",
+    "-p",
+    "<name>"
+  ],
+  "sw drift": [],
+  "sw drift check": [
+    "--analyze",
+    "--plan",
+    "--project",
+    "-p",
+    "<target>"
+  ],
+  "sw drift check-rot": [
+    "--staged"
+  ],
+  "sw graph": [],
+  "sw graph build": [
+    "--project-path",
+    "-p",
+    "<target>"
+  ],
+  "sw hooks": [],
+  "sw hooks install": [
+    "--no-pre-commit",
+    "--pre-commit",
+    "--project",
+    "-p"
+  ],
+  "sw implement": [
+    "--model",
+    "--project",
+    "--selector",
+    "-p",
+    "<spec>"
+  ],
+  "sw init": [
+    "--mcp",
+    "--path",
+    "-p",
+    "<name>"
+  ],
+  "sw lineage": [],
+  "sw lineage tag": [
+    "--author",
+    "<target>"
+  ],
+  "sw lineage tree": [
+    "<target>"
+  ],
+  "sw list-rules": [
+    "--pipeline",
+    "--project",
+    "-p"
+  ],
+  "sw pipelines": [],
+  "sw projects": [],
+  "sw remove": [
+    "--force",
+    "-f",
+    "<name>"
+  ],
+  "sw resume": [
+    "--json",
+    "--model",
+    "--verbose",
+    "-v",
+    "<run_id>"
+  ],
+  "sw review": [
+    "--project",
+    "--selector",
+    "--spec",
+    "-p",
+    "-s",
+    "<target>"
+  ],
+  "sw run": [
+    "--json",
+    "--model",
+    "--project",
+    "--resume",
+    "--selector",
+    "--verbose",
+    "-p",
+    "-v",
+    "<pipeline>",
+    "<spec_or_module>"
+  ],
+  "sw sandbox": [],
+  "sw sandbox preflight": [
+    "<path>"
+  ],
+  "sw scan": [],
+  "sw serve": [
+    "--cors-origins",
+    "--host",
+    "--port",
+    "--reload",
+    "-p"
+  ],
+  "sw standards": [],
+  "sw standards clear": [
+    "--scope",
+    "-s"
+  ],
+  "sw standards scan": [
+    "--compare",
+    "--no-review",
+    "--scope",
+    "-s"
+  ],
+  "sw standards scopes": [],
+  "sw standards show": [
+    "--language",
+    "--scope",
+    "-l",
+    "-s"
+  ],
+  "sw update": [
+    "<field>",
+    "<name>",
+    "<value>"
+  ],
+  "sw usage": [
+    "--all",
+    "--since"
+  ],
+  "sw use": [
+    "<name>"
+  ]
+}
