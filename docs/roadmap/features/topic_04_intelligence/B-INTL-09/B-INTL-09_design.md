@@ -1,7 +1,11 @@
 # B-INTL-09 — Agent Memory Bank
 
-**Status**: APPROVED. **COMPLETE** — SF-01, SF-02, SF-03, SF-04 committed (🟢 Completed). ·
-**Phase**: 3 · **Feature ID**: B-INTL-09
+**Status**: APPROVED by the user 2026-10-17 — reopened by the done-audit; SF-01..SF-04 committed, the
+corrections of 2026-10-17 below to build. · **Phase**: 3 · **Feature ID**: B-INTL-09
+
+**In production today:** a run opens its spec's task, moves it between states and keeps its handover
+notes (FR-1, FR-6). **No production caller yet** for FR-2 to FR-5, FR-7 (nothing archives a task), FR-8, FR-9, epics and defects —
+the multi-agent work of `C-FLOW-12` and `B-INTL-06` is their first caller `[agreed 2026-10-17]`.
 
 | | |
 |---|---|
@@ -141,22 +145,22 @@ All marked architectural switches were approved by User on 2026-05-05.
 | FR-5 | Zombie Recovery | Flow Engine | Query tasks where `now() - last_heartbeat_at > 15_minutes` and reset to `PENDING`. Increment `attempt_count`. | Dead locks are automatically recycled. |
 | FR-6 | Alembic Integration | System | Add `from specweaver.workspace.memory.store import Task, Epic, TaskDependency, StateTransition, Defect` to `alembic/env.py` so models register to `WorkspaceBase.metadata` before autogeneration. Register a `@event.listens_for(engine.sync_engine, "connect")` callback that executes `PRAGMA foreign_keys=ON` on every new async connection. Generate migration. | DB is structurally updated. FK enforcement is guaranteed in async. All memory models are discoverable by Alembic. |
 | FR-7 | Cleanup Strategy | System | When a `Task` status transitions to terminal `ARCHIVED`, execute a trigger/update to set `handover_context = NULL`. | Prevents JSON bloat over time while preserving relational history. Data is not lost during `DONE` rejection cycles. |
-| FR-8 | Circuit Breaker | System | If `attempt_count > 3` upon Zombie Recovery, auto-transition task to `BLOCKED` and raise a `Defect` with reason `"circuit_breaker: max retries exceeded"`. | Prevents infinite retry loops from burning LLM API credits. |
+| FR-8 | Circuit Breaker | System | When `attempt_count` reaches 3 upon Zombie Recovery `[agreed 2026-10-17]`, auto-transition task to `BLOCKED` and raise a `Defect` with reason `"circuit_breaker: max retries exceeded"`. | Prevents infinite retry loops from burning LLM API credits. |
 | FR-9 | Deadlock Propagation | System | When a task becomes `BLOCKED`, dynamically flag all upstream parent tasks as `UPSTREAM_BLOCKED`. When the blocker is resolved and transitions back to `PENDING`, reverse-propagate to clear `UPSTREAM_BLOCKED` on parents. | Prevents silent queue deadlocks and surfaces critical paths to the user. |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Concurrency | `database is locked` errors must be mitigated using `AsyncSession`, the CQRS engine, and Optimistic Concurrency Control (`version` column). OCC read-then-write must execute within a single `async with session.begin()` transaction. Retry logic must use exponential backoff with jitter (`sleep(random(0.1, 0.5) * 2^attempt)`). |
+| NFR-1 | Concurrency | `database is locked` errors must be mitigated using `AsyncSession`, the CQRS engine, and Optimistic Concurrency Control (`version` column). OCC read-then-write runs in one session's transaction. A lost race raises `StaleTaskVersionError` and logs a warning; the caller decides whether to retry — `C-FLOW-12`, the first caller, owns the retry policy `[agreed 2026-10-17]` |
 | NFR-2 | Architectural Placement | Code MUST reside in `src/specweaver/workspace/memory/store.py`. Must import `Base` from `workspace.store`, not define a new `DeclarativeBase`. **[proof: arch — tach/lint gate, not pytest]** |
-| NFR-3 | Type Safety | All SQLAlchemy mapped columns must use Mapped[T] strict typing (SQLAlchemy 2.0 style). |
+| NFR-3 | Type Safety | All SQLAlchemy mapped columns must use Mapped[T] strict typing (SQLAlchemy 2.0 style). **[proof: arch — mypy strict in the commit gate, not pytest]** |
 | NFR-4 | Zombie Timeout | Lock heartbeat timeout is strictly 15 minutes. |
-| NFR-5 | Context Structure | `handover_context` must be strictly typed JSON, bounded to factual telemetry (files touched, errors hit) to prevent hallucination transfer. |
+| NFR-5 | Context Structure | `handover_context` must be strictly typed JSON, bounded to factual telemetry (files touched, errors hit) to prevent hallucination transfer; an unknown field is refused (`extra="forbid"`), so such a note reads as unreadable, with a warning `[agreed 2026-10-17]` |
 | NFR-6 | Token Protection | `MemoryRepository` must enforce an 8KB hard limit on `handover_context` writes, truncating stack traces to the last 2000 chars to prevent 400 Payload LLM crashes. |
 | NFR-7 | FK Enforcement | Every async SQLite connection must execute `PRAGMA foreign_keys=ON` via a SQLAlchemy engine event listener. Without this, all CASCADE rules are silently ignored. |
-| NFR-8 | Observability | Every critical `MemoryRepository` operation must emit structured logs: `WARNING` on OCC retry, `ERROR` on circuit breaker activation, `INFO` on upstream propagation, `DEBUG` on heartbeat pulses. |
-| NFR-9 | Query Performance | All hot-path queries (zombie scan, task acquisition, dependency traversal) must use explicit composite indexes. Zero full table scans at 50K+ rows per project. |
+| NFR-8 | Observability | Every critical `MemoryRepository` operation must emit structured logs: `WARNING` on an OCC collision, `ERROR` on circuit breaker activation, `INFO` on upstream propagation, `DEBUG` on heartbeat pulses. |
+| NFR-9 | Query Performance | All hot-path queries (zombie scan, task acquisition, dependency traversal) must use explicit composite indexes. Zero full table scans at 50K+ rows per project — proven by SQLite's query plan, which shows the index without 50K rows `[agreed 2026-10-17]` |
 
 ## Developer guide
 
@@ -209,3 +213,18 @@ Each test was read against each requirement before it was cited. The `Proves:` c
   citing harder here. "Uncited" is not "untested".
 - **FR-1 (schema definition) and FR-6 (alembic integration) remain uncited**, not yet assessed
   either way, and are left visible: `check_fr_coverage.py B-INTL-09` reports `BLOCKED`.
+
+## Corrections (2026-10-17)
+
+| # | Correction | Owns |
+|---|---|---|
+| K-1 | cite the tests that prove FR-1, NFR-1, NFR-4, NFR-6, NFR-7 (read first); NFR-3 `[proof: arch — mypy strict]` | FR-1, NFR-1, NFR-3, NFR-4, NFR-6, NFR-7 |
+| K-2 | tests for the untested: the 15-minute default, an oversized note through the repository, NFR-8's propagation, heartbeat and collision lines | NFR-4, NFR-6, NFR-8 |
+| K-3 | `HandoverContext` refuses unknown fields | NFR-5 |
+| K-4 | a query-plan test of the three hot queries; an index for the zombie scan if it scans the table | NFR-9 |
+| K-5 | a mutant corpus: the used half first, then FR-2..FR-5, FR-8, FR-9 | all |
+
+## Session Handoff
+
+**Now**: reviewed 2026-10-17; the user answered Q1–Q5.
+**Next**: the plan for K-1..K-5, then build.

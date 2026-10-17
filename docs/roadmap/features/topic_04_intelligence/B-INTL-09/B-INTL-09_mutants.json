@@ -1,0 +1,74 @@
+{
+  "schema": 2,
+  "feature": "B-INTL-09",
+  "campaigns": [
+    {
+      "requirement": "NFR-4",
+      "title": "A silent worker is a zombie after 15 minutes, by default",
+      "scope": [
+        "tests/integration/workspace/test_memory_bank_promises.py"
+      ],
+      "mutants": [
+        {
+          "id": "default-timeout-30",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/resilience.py",
+          "symbol": "MemoryRepositoryResilienceMixin.recycle_zombies",
+          "old": "        timeout_minutes: int = 15,\n",
+          "new": "        timeout_minutes: int = 30,\n",
+          "breaks": "a dead worker's task waits twice as long",
+          "symbol_sha": "sha256:5ab5a6c1fe51f49614e91ca994e50e31d3f938cc5ac7db02fed116dad96dcfe8"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-6",
+      "title": "A note over 8 KB never reaches the database",
+      "scope": [
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/unit/workspace/test_memory_models.py"
+      ],
+      "mutants": [
+        {
+          "id": "size-cap-off",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/models.py",
+          "symbol": "HandoverContext.to_json_str",
+          "old": "        if len(serialized.encode(\"utf-8\")) > _MAX_CONTEXT_BYTES:\n",
+          "new": "        if False:\n",
+          "breaks": "an oversized note floods the next agent's prompt",
+          "symbol_sha": "sha256:a398db4049ed9044a5bf5397b0f02cb898b21ce5929a9422eae568d6d44130f8"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-8",
+      "title": "The operator's log lines are at their levels",
+      "scope": [
+        "tests/integration/workspace/test_memory_bank_promises.py"
+      ],
+      "mutants": [
+        {
+          "id": "propagation-silent",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/resilience.py",
+          "symbol": "MemoryRepositoryResilienceMixin._process_blocked_parent",
+          "old": "        logger.info(\"Upstream propagation: parent=%s blocked by child=%s\", parent_id, child_id)\n",
+          "new": "        logger.debug(\"Upstream propagation: parent=%s blocked by child=%s\", parent_id, child_id)\n",
+          "breaks": "a cascading block leaves no trace at INFO",
+          "symbol_sha": "sha256:9890831d88bedd5947e63bf8fc77f5453c98b4cf4878e5562cde3a01a6ab6b9e"
+        },
+        {
+          "id": "collision-quiet",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/core.py",
+          "symbol": "MemoryRepositoryCoreMixin.acquire_task",
+          "old": "        logger.warning(\n            \"OCC collision:",
+          "new": "        logger.info(\n            \"OCC collision:",
+          "breaks": "a lost race is not a warning",
+          "symbol_sha": "sha256:3ae04b42cf277f5521fcfa8edea0b59c20d750cc8e39c362072d5465a256f71b"
+        }
+      ]
+    }
+  ]
+}

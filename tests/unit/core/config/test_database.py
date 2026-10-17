@@ -1,6 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The database layer: sessions, the write queue, and foreign keys on in every product session.
+
+Proves: B-INTL-09 FR-6, NFR-7
+"""
+
 import sqlite3
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path

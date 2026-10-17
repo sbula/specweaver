@@ -2,6 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The Memory Bank's schema: Task, Epic, StateTransition (its reason an enum), Defect, and cascades.
+
+Proves: B-INTL-09 FR-1
+"""
+
 import uuid
 from datetime import UTC, datetime
 

@@ -2,6 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The handover note's shape: typed fields, primitive metadata, the 8 KB cap, stack traces cut to 2000.
+
+Proves: B-INTL-09 NFR-6
+"""
+
 import pytest
 from pydantic import ValidationError
 
