@@ -378,6 +378,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **Sub-Story Add-Ons:**
     *   🟢 **Centralized Model Table:**
         *   `[x]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
+        *   `[ ]` **C-FLOW-14:** Cached Input Tokens — needs `TECH-074`
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations — needs `C-FLOW-13`
         *   `[ ]` **B-INTL-04:** Dynamic AI Arbiter — needs `C-FLOW-13`
@@ -620,3 +621,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-070:** [Every Graph Build Re-Ingests Every File](features/topic_07_technical_debt/TECH-070/TECH-070_design.md)
     *   `🔴` **TECH-071:** [Docs and Code Disagree in 60 Places](features/topic_07_technical_debt/TECH-071/TECH-071_design.md)
     *   `🔴` **TECH-072:** [Two Agent Tools Skip the Sandbox's Own Guards](features/topic_07_technical_debt/TECH-072/TECH-072_design.md)
+    *   `🔴` **TECH-073:** [A Task's Target Files Are Named for Python Only](features/topic_07_technical_debt/TECH-073/TECH-073_design.md)
+    *   `🔴` **TECH-074:** [The Cost Ledger Prices Cached Input at the Full Price](features/topic_07_technical_debt/TECH-074/TECH-074_design.md)

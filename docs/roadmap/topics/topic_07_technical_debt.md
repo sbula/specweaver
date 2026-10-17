@@ -142,6 +142,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-074` 🔴: The Cost Ledger Prices Cached Input at the Full Price**
+  > [Description](../features/topic_07_technical_debt/TECH-074/TECH-074_design.md) | _Status: stub. Origin: 2026-10-17, [prompt caching](../../analysis/prompt_caching_2026-10-17.md)._ |
+  > Providers bill cached input at about a tenth; SpecWeaver reads no cache field, so `sw usage` overstates
+  > OpenAI and Gemini spend, and Anthropic's input price is its cache-write price. Before `C-FLOW-14`.
+
 * **`TECH-073` 🔴: A Task's Target Files Are Named for Python Only**
   > [Description](../features/topic_07_technical_debt/TECH-073/TECH-073_design.md) | _Status: stub. Origin: 2026-10-16, `E-SENS-03` design._ |
   > Generation, the worktree allow-list and the task write grant all name `src/<stem>.py` and `tests/test_<stem>.py`, so a non-Python
