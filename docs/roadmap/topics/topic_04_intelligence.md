@@ -256,7 +256,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Limits:** does not replace text diffs — that wording named a consumer that cannot exist — nobody reads a dataflow-graph diff instead of code
 
-* **`B-INTL-09` 🟡: Agent Memory Bank**
+* **`B-INTL-09` ✅: Agent Memory Bank**
   > - **Purpose:** Give agents a durable place to keep tasks, dependencies and defects, so work survives a session ending
   > - **Trigger:** When an agent records or reads task state
   > - **Precondition:** —

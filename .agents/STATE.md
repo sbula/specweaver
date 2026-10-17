@@ -38,8 +38,8 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 (pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
-**Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `B-INTL-09`
-(memory tasks), `C-FLOW-11` (design never approved), `D-UI-01`.
+**Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `C-FLOW-11`
+(design never approved), `D-UI-01`. `B-INTL-09` signed off 2026-10-17.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

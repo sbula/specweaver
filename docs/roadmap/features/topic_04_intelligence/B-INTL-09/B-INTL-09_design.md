@@ -1,7 +1,7 @@
 # B-INTL-09 — Agent Memory Bank
 
-**Status**: APPROVED by the user 2026-10-17 — reopened by the done-audit; SF-01..SF-04 committed, the
-corrections of 2026-10-17 below to build. · **Phase**: 3 · **Feature ID**: B-INTL-09
+**Status**: APPROVED and signed off `✅` by the user 2026-10-17 — reopened by the done-audit; corrected
+the same day. · **Phase**: 3 · **Feature ID**: B-INTL-09
 
 **In production today:** a run opens its spec's task, moves it between states and keeps its handover
 notes (FR-1, FR-6). **No production caller yet** for FR-2 to FR-5, FR-7 (nothing archives a task), FR-8, FR-9, epics and defects —
@@ -227,4 +227,4 @@ Each test was read against each requirement before it was cited. The `Proves:` c
 ## Session Handoff
 
 **Now**: K-1..K-5 committed 2026-10-17 — every FR and NFR cited, NFR-5 strict, NFR-9 by query plan, 15 mutants killed.
-**Next**: the user's sign-off of B-INTL-09.
+**Next**: none — signed off 2026-10-17.
