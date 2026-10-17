@@ -49,7 +49,7 @@ class SpecWeaverIgnoreParser:
 
         if to_append:
             self.io_handler.append_lines(to_append)
-            logger.info(f"Scaffolded new exclusion directories: {to_append}")
+            logger.info("Scaffolded new exclusion directories: %s", to_append)
 
     def get_compiled_spec(self, runtime_patterns: list[str]) -> pathspec.PathSpec:
         """

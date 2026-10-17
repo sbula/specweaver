@@ -364,7 +364,7 @@ def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) ->
             logger.info("Pipeline completed successfully, saved staleness topology cache.")
             _core.console.print("[dim]Topology staleness cache saved successfully.[/dim]")
         except Exception as e:
-            logger.warning(f"Failed to save staleness cache: {e}")
+            logger.warning("Failed to save staleness cache: %s", e)
             if warn_on_console:
                 _core.console.print(f"[yellow]Failed to save staleness cache: {e}[/yellow]")
 

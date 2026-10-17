@@ -269,7 +269,9 @@ class OntologyMapper:
 
             logger = logging.getLogger(__name__)
             logger.warning(
-                f"AST Bomb Protection: exceeded MAX_AST_DEPTH ({self.MAX_AST_DEPTH}) in {filepath}"
+                "AST Bomb Protection: exceeded MAX_AST_DEPTH (%s) in %s",
+                self.MAX_AST_DEPTH,
+                filepath,
             )
             # Mark the root file node as partial
             for node in nodes:

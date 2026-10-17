@@ -47,7 +47,7 @@ SF-01..03 committed, SF-04 to build. · **Feature ID**: 3.13a · **Phase**: 3
 | FR-3 | Implement Persistent JSON Logs | System | Add a JSON formatter to the `RotatingFileHandler` writing to `~/.specweaver/logs/<project_name>/specweaver.log` | DEBUG and higher logs are captured on disk in a machine-parseable JSON format without spamming the terminal. |
 | FR-4 | Preserve Existing CLI Contracts | User | Call existing `sw` CLI commands with their current flags | The UI arguments and flags remain functionally identical. |
 | FR-5 | Automatic Telemetry & Context | System | Delegate context resolution and telemetry flushing to `PipelineRunner` | The manual cleanup in CLI command modules is removed in favor of the unified runner hooks. |
-| FR-6 | No error is lost | Every `except` in `src/specweaver/` | SHALL log the error, raise, use the caught error, or carry `# expected: <why>` on its line; a check in the commit gate fails any other, with no baseline — today's 209 are fixed `[agreed 2026-10-17]` | a swallowed failure always leaves a trace or a stated reason |
+| FR-6 | No error is lost | Every `except` in `src/specweaver/` | SHALL log the error, raise, use the caught error, or carry `# expected: <why>` on its line; a check in the commit gate fails any other, with no baseline — every offender is fixed `[agreed 2026-10-17]` (measured: 116; the other 93 of the 209 that neither log nor raise use their error) | a swallowed failure always leaves a trace or a stated reason |
 | FR-7 | Levels are settings | `sw config set-log-level` | SHALL set the file level (default DEBUG) and, with `--console`, the console level (default WARNING), per project `[agreed 2026-10-17]` | what the console and the file show is chosen, not coded |
 | FR-8 | The level of a caught error | Every log line FR-6 adds | SHALL be DEBUG, or WARNING when the lost error changes what the user gets — a test result, a report, a file `[agreed 2026-10-17]` | a console warning still means *look here* |
 
@@ -89,10 +89,10 @@ could run in parallel with SF-02.
 | SF-01 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Logging Rollout | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | No error is lost | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | No error is lost | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: reopened 2026-10-17. Measured that day: 425 `except` blocks, 209 neither log nor raise (93 use the
 error, 56 drop it silently, 60 do something else); 18 log calls use f-strings.
-**Next**: the implementation-plan skill for SF-04.
+**Next**: SF-04 dev, CB-1 the check ([plan](D-FLOW-04_sf04_implementation_plan.md)).

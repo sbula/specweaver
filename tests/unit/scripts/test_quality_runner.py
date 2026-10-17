@@ -130,6 +130,7 @@ EXPECTED: dict[str, dict[str, str]] = {
         "mypy": "all",
         "tach": "all",
         "suppressions": "all",
+        "lost_errors": "all",
         "class_health": "all",
         "cycles": "all",
         "duplication": "all",

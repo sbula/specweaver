@@ -115,7 +115,7 @@ def _handover_summary(task: Any) -> str | None:
         ctx = HandoverContext.from_json_str(task.handover_context)
     except Exception as e:
         logger.warning(
-            f"Failed to parse handover context for task {task.id}: {e} Schema validation failed"
+            "Failed to parse handover context for task %s: %s Schema validation failed", task.id, e
         )
         return None
     # What went wrong is the part of a handover the next agent needs most.
@@ -227,7 +227,7 @@ class MemoryHydrator:
 
         final_result = self._apply_truncation(result)
 
-        logger.info(f"Hydrated memory context with {final_result.task_count} tasks")
+        logger.info("Hydrated memory context with %s tasks", final_result.task_count)
         return final_result
 
     def _apply_truncation(self, result: HydrationResult) -> HydrationResult:
@@ -239,11 +239,13 @@ class MemoryHydrator:
         estimate = get_estimate()
         if estimate <= self._TOKEN_LIMIT:
             result.token_estimate = estimate
-            logger.debug(f"Token estimate {estimate} is within budget. No truncation needed.")
+            logger.debug("Token estimate %s is within budget. No truncation needed.", estimate)
             return result
 
         result.truncated = True
-        logger.debug(f"Token estimate {estimate} exceeds budget {self._TOKEN_LIMIT}. Truncating.")
+        logger.debug(
+            "Token estimate %s exceeds budget %s. Truncating.", estimate, self._TOKEN_LIMIT
+        )
 
         # Stage 1: Drop handover notes iteratively from oldest to newest
         while result.handover_notes and get_estimate() > self._TOKEN_LIMIT:
@@ -271,5 +273,5 @@ class MemoryHydrator:
             task.handover_summary = None
 
         result.token_estimate = get_estimate()
-        logger.debug(f"Final token estimate after all truncation stages: {result.token_estimate}")
+        logger.debug("Final token estimate after all truncation stages: %s", result.token_estimate)
         return result

@@ -95,6 +95,7 @@ select = [
     "TID", # flake8-tidy-imports
     "RUF", # ruff-specific rules
     "C90", # mccabe complexity
+    "G",   # logging format: lazy %s arguments, never f-strings (D-FLOW-04 NFR-3)
 ]
 ignore = [
     "E501",  # line length handled by formatter

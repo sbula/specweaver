@@ -51,7 +51,7 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
                 }
             )
             if res.status != AtomStatus.SUCCESS:
-                logger.warning(f"Could not symlink {cache} into worktree: {res.message}")
+                logger.warning("Could not symlink %s into worktree: %s", cache, res.message)
 
 
 async def execute_in_sandbox(

@@ -33,6 +33,6 @@ def log_step_failure(log: logging.Logger, message: str, *args: Any) -> None:
     line, since the run reports the stop itself."""
     exc = sys.exc_info()[1]
     if isinstance(exc, BudgetExceededError):
-        log.debug(message + ": %s", *args, exc)
+        log.debug("%s: %s", message % args, exc)
     else:
         log.exception(message, *args)

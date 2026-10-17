@@ -1,0 +1,55 @@
+{
+  "schema": 2,
+  "feature": "D-FLOW-04",
+  "campaigns": [
+    {
+      "requirement": "FR-6",
+      "title": "No caught error is lost, and the gate keeps it so",
+      "scope": [
+        "tests/unit/scripts/test_check_lost_errors.py"
+      ],
+      "mutants": [
+        {
+          "id": "raise-not-seen",
+          "origin": "authored",
+          "file": "scripts/check_lost_errors.py",
+          "symbol": "_handled",
+          "old": "        if isinstance(node, ast.Raise):\n",
+          "new": "        if isinstance(node, ast.Pass):\n",
+          "breaks": "a re-raised error is reported as lost",
+          "symbol_sha": "sha256:277ec62c90c121d99d35da6d5442812e8353eb1a82c44d66a5571379292a1cc7"
+        },
+        {
+          "id": "reason-anywhere",
+          "origin": "authored",
+          "file": "scripts/check_lost_errors.py",
+          "symbol": "lost_errors",
+          "old": "        and not _REASON.search(lines[node.lineno - 1])\n",
+          "new": "        and not _REASON.search(source)\n",
+          "breaks": "one reason anywhere in a file excuses every handler",
+          "symbol_sha": "sha256:b9fc9fff01675af6405a5ee71f6a7688da1971776a5c6da94f689d8344ed7f80"
+        },
+        {
+          "id": "unused-name-counts",
+          "origin": "authored",
+          "file": "scripts/check_lost_errors.py",
+          "symbol": "_handled",
+          "old": "        if isinstance(node, ast.Name) and handler.name and node.id == handler.name:\n",
+          "new": "        if handler.name:\n",
+          "breaks": "an `as e` never used hides a lost error",
+          "symbol_sha": "sha256:277ec62c90c121d99d35da6d5442812e8353eb1a82c44d66a5571379292a1cc7"
+        },
+        {
+          "id": "lookalike-logger",
+          "origin": "authored",
+          "file": "scripts/check_lost_errors.py",
+          "symbol": "_is_logger",
+          "old": "    return name in {\"log\", \"logger\"} or name.endswith(\"logger\")\n",
+          "new": "    return \"log\" in name\n",
+          "breaks": "a call on `catalog` counts as logging",
+          "symbol_sha": "sha256:1ee8b998bb23e9c834b0e3793be4f83b44fe0381b5b0c2748de679056d72f84f"
+        }
+      ]
+    }
+  ]
+}

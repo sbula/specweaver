@@ -49,6 +49,9 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
         "suppressions": make(
             "suppressions", ("src",), _r._suppressions, script="check_suppressions.py"
         ),
+        "lost_errors": make(
+            "lost_errors", ("src",), _r._lost_errors, script="check_lost_errors.py"
+        ),
         "comment_provenance": make(
             "comment_provenance",
             ("src",),

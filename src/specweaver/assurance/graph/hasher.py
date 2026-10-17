@@ -46,7 +46,7 @@ def _ensure_gitignore(project_root: Path) -> None:
             f.write(f"{separator}{entry}\n")
         logger.info("Added %s to %s", entry, gitignore_path)
     except Exception as e:
-        logger.warning(f"Failed to ensure the topology cache is ignored by Git: {e}")
+        logger.warning("Failed to ensure the topology cache is ignored by Git: %s", e)
 
 
 def _relative_to(path: Path, base: Path) -> str:
@@ -76,7 +76,7 @@ class DependencyHasher:
                     hasher.update(chunk)
             return hasher.hexdigest()
         except OSError as e:
-            logger.debug(f"DependencyHasher failed to read {filepath}: {e}")
+            logger.debug("DependencyHasher failed to read %s: %s", filepath, e)
             return ""
 
     def _ignore_rules(self) -> tuple[set[str], Any]:
@@ -156,7 +156,7 @@ class DependencyHasher:
             raw = self.cache_path.read_text(encoding="utf-8")
             return cast("dict[str, dict[str, str]]", json.loads(raw))
         except Exception as e:
-            logger.warning(f"Failed to load semantic cache {self.cache_path}: {e}")
+            logger.warning("Failed to load semantic cache %s: %s", self.cache_path, e)
             return {}
 
     def save_cache(self, cache_state: dict[str, dict[str, str]] | None = None) -> None:
@@ -171,7 +171,7 @@ class DependencyHasher:
             payload = json.dumps(cache_state, sort_keys=True)
             self.cache_path.write_text(payload, encoding="utf-8")
         except Exception as e:
-            logger.debug(f"Failed to persist topology cache: {e}")
+            logger.debug("Failed to persist topology cache: %s", e)
 
     def compute_hashes(self, manifests: list[Path]) -> dict[str, dict[str, str]]:
         """Compute semantic hashes across all active manifests and prune orphans.

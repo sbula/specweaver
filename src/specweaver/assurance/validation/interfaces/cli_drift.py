@@ -196,7 +196,7 @@ def _plan_declaring(
                 if rel_posix in sigs or target_posix in sigs or str(target_path) in sigs:
                     return plan_path
         except Exception as e:
-            logger.warning(f"Failed to validate plan {plan_path} against {target}: {e}")
+            logger.warning("Failed to validate plan %s against %s: %s", plan_path, target, e)
     return None
 
 
@@ -338,5 +338,5 @@ def _resolve_plan_by_lineage(
                         if p_uuid == parent_uuid:
                             return p
     except Exception as e:
-        logger.debug(f"Lineage lookup failed for {target_posix}: {e}")
+        logger.debug("Lineage lookup failed for %s: %s", target_posix, e)
     return None

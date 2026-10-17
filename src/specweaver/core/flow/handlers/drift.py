@@ -70,7 +70,7 @@ class DriftCheckHandler:
             return _error_result("Target file is not valid UTF-8.", started)
 
         if target_path.suffix != ".py":
-            logger.info(f"Skipping AST drift parsing for non-python file: {target_path}")
+            logger.info("Skipping AST drift parsing for non-python file: %s", target_path)
             # `PASSED` with `drift_count: 0` and nothing else is what a CHECKED, clean file returns,
             # so a caller could not tell "no drift" from "never looked". The step still passes — a
             # language this tool does not parse is not the project's fault, and failing here would

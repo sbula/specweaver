@@ -179,7 +179,7 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
                     if imp:
                         imports.add(imp)
             except Exception as e:
-                logger.debug(f"Failed to extract imports from {file_path}: {e}")
+                logger.debug("Failed to extract imports from %s: %s", file_path, e)
         return sorted(list(imports))
 
     def extract_public_symbols(self, directory: Path) -> list[str]:
@@ -191,7 +191,7 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
                 for sym in self.parser.list_symbols(code_text, visibility=["public"]):
                     symbols.add(sym)
             except Exception as e:
-                logger.debug(f"Failed to extract symbols from {file_path}: {e}")
+                logger.debug("Failed to extract symbols from %s: %s", file_path, e)
         return sorted(list(symbols))
 
     def infer_archetype(self, directory: Path) -> str:
