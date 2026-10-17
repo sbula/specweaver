@@ -10,6 +10,8 @@ mocking only the LLM adapter and the loaded settings, and capturing the RunConte
 pipeline itself is not executed). Proves: a DAL_B project auto-enables session isolation with
 the derived allow-list; a small/low-DAL project stays on host; and `auto_isolate_min_dal="off"`
 disables escalation.
+
+Proves: D-FLOW-04 FR-1
 """
 
 from __future__ import annotations

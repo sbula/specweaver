@@ -2,7 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for specweaver.telemetry_logger module."""
+"""Tests for specweaver.telemetry_logger module.
+
+Proves: D-FLOW-04 FR-2
+Proves: D-FLOW-04 FR-3
+"""
 
 from __future__ import annotations
 

@@ -4,7 +4,7 @@
 - **Design Document**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_design.md
 - **Design Section**: §Sub-features → SF-04
 - **Implementation Plan**: docs/roadmap/features/topic_03_flow_engine/D-FLOW-04/D-FLOW-04_sf04_implementation_plan.md
-- **Status**: APPROVED by the user 2026-10-17
+- **Status**: APPROVED by the user 2026-10-17 · built: CB-1 `d2816fc3` … CB-9
 
 **FRs owned**: FR-4, FR-6, FR-7, FR-8, FR-9, NFR-2, NFR-3; closes FR-1..FR-3 citations · **Depends on**: SF-01 (committed)
 

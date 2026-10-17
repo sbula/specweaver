@@ -5,6 +5,7 @@
 """A pipeline runs, and its state survives into a resume. TECH-054 CB-1.
 
 Proves: TECH-054 FR-1
+Proves: D-FLOW-04 NFR-1
 
 `D-FLOW-01` — *"SQLite Pipeline Runner & State Persistence"* — is the capability underneath every
 `sw run`, `sw resume` and `sw implement`, and that sentence is its **entire** written record: no

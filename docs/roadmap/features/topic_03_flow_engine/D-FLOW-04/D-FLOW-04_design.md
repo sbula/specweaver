@@ -94,10 +94,9 @@ could run in parallel with SF-02.
 | SF-01 | Universal Logging Reform | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Unified CLI Runner | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Logging Rollout | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | No error is lost | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | No error is lost | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Now**: reopened 2026-10-17. Measured that day: 425 `except` blocks, 209 neither log nor raise (93 use the
-error, 56 drop it silently, 60 do something else); 18 log calls use f-strings.
-**Next**: SF-04 dev, CB-1 the check ([plan](D-FLOW-04_sf04_implementation_plan.md)).
+**Now**: SF-04 committed — no caught error is lost, levels are settings, every logger reaches its handlers, the flag contract holds; FR-5 deleted.
+**Next**: the user's sign-off of D-FLOW-04. Every FR is cited by a test (`check_fr_coverage.py D-FLOW-04`).

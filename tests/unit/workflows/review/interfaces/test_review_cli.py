@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests — CLI review module."""
+"""Unit tests — CLI review module.
+
+Proves: D-FLOW-04 FR-1
+"""
 
 from __future__ import annotations
 

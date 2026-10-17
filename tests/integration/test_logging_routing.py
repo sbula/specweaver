@@ -2,7 +2,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Integration test for SpecWeaver logging routing."""
+"""Integration test for SpecWeaver logging routing.
+
+Proves: D-FLOW-04 FR-2
+Proves: D-FLOW-04 FR-3
+"""
 
 from __future__ import annotations
 
@@ -100,5 +104,6 @@ def test_logging_routing_and_format(tmp_path, monkeypatch, capsys):
     assert "Test debug message" not in out_err
     assert "Test info message" not in out_err
 
-    # Traceback should be rendered
+    # Traceback should be rendered, by Rich: its frame, not the plain one
     assert "ZeroDivisionError" in out_err
+    assert "╭" in out_err

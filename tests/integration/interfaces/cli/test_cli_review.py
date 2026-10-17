@@ -6,6 +6,8 @@
 
 Covers: review error paths, draft error paths, display formatting.
 LLM calls are mocked — these are not e2e tests.
+
+Proves: D-FLOW-04 FR-1
 """
 
 from __future__ import annotations

@@ -4,6 +4,7 @@
 """Every log line reaches the project's handlers (`scripts/check_logger_names.py`).
 
 Proves: D-FLOW-04 FR-9
+Proves: D-FLOW-04 NFR-3
 
 A logger named `__name__`, or a name under it, sits below `specweaver`, which `setup_logging`
 configures; any other name, and the root logger, bypass the project's console and file.
