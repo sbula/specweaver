@@ -59,7 +59,7 @@ async def test_code_generation_sees_the_contract_outline(tmp_path: Path) -> None
 async def test_code_review_sees_the_contract_outline(tmp_path: Path) -> None:
     # Proves: C-FLOW-06 FR-1
     context = _context(tmp_path, "api/users.py")
-    prompt = (await _build_review_prompt(context, _STEP, "code_review")).build()
+    prompt = (await _build_review_prompt(context, _STEP, "code_review"))[0].build()
 
     assert "def fetch_user(user_id: int) -> dict" in prompt
     assert "SECRET_BODY" not in prompt
@@ -68,7 +68,7 @@ async def test_code_review_sees_the_contract_outline(tmp_path: Path) -> None:
 async def test_the_code_under_review_is_not_added_as_an_outline(tmp_path: Path) -> None:
     context = _context(tmp_path)
     (tmp_path / "users.py").write_text("def handler_under_review() -> None:\n    pass\n")
-    base = await _build_review_prompt(context, _STEP, "code_review", extra_targets=["users.py"])
+    base, _ = await _build_review_prompt(context, _STEP, "code_review", extra_targets=["users.py"])
 
     assert "users.py" in base._skeleton_files  # its outline exists, for the files it mentions
     assert "handler_under_review" not in base.build()

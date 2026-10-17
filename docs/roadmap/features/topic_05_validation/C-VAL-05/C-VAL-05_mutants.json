@@ -26,7 +26,9 @@
       "requirement": "FR-4",
       "title": "A verdict is traceable to the criteria that produced it",
       "scope": [
-        "tests/unit/assurance/validation/test_rubrics.py"
+        "tests/unit/assurance/validation/test_rubrics.py",
+        "tests/e2e/capabilities/assurance/test_project_rubric_reaches_the_reviewer_e2e.py",
+        "tests/e2e/capabilities/assurance/test_rubric_saved_with_the_run_e2e.py"
       ],
       "mutants": [
         {
@@ -37,6 +39,16 @@
           "old": "checksum=hashlib.sha256(criteria.encode(\"utf-8\")).hexdigest(),",
           "new": "checksum=\"constant\",",
           "breaks": "an edited rubric reports the same checksum, so the audit trail records nothing"
+        },
+        {
+          "id": "rubric-left-out-of-the-result",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_review_step_result",
+          "old": "            \"rubric\": _rubric_record(rubric),\n",
+          "new": "            \"rubric\": {},\n",
+          "breaks": "a saved verdict cannot say which criteria judged it",
+          "symbol_sha": "sha256:bf0e0b6b700f2639d078a6d8c93ad5b40798fd9fc04e3910588ca2d5815fc974"
         }
       ]
     },

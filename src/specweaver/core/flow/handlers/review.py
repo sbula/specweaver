@@ -114,8 +114,14 @@ def resolve_review_instructions(context: RunContext, rubric_id: str) -> str:
     replaced by empty criteria — an unjudged review that reports a verdict is worse than a
     failure.
     """
-    from specweaver.assurance.validation.rubrics import load_rubric
     from specweaver.workflows.review.reviewer import review_instructions
+
+    return review_instructions(_load_review_rubric(context, rubric_id).criteria)
+
+
+def _load_review_rubric(context: RunContext, rubric_id: str) -> Any:
+    """The rubric that judges this run: the project's own first, then the run DAL's variant."""
+    from specweaver.assurance.validation.rubrics import load_rubric
 
     rubric = load_rubric(
         rubric_id,
@@ -129,7 +135,17 @@ def resolve_review_instructions(context: RunContext, rubric_id: str) -> str:
         rubric.checksum[:12],
         rubric.source,
     )
-    return review_instructions(rubric.criteria)
+    return rubric
+
+
+def _rubric_record(rubric: Any) -> dict[str, str]:
+    """Which criteria judged a verdict, saved beside it."""
+    return {
+        "id": rubric.id,
+        "version": rubric.version,
+        "checksum": rubric.checksum,
+        "source": str(rubric.source),
+    }
 
 
 async def _build_review_prompt(
@@ -138,8 +154,9 @@ async def _build_review_prompt(
     rubric_id: str,
     *,
     extra_targets: list[str] | None = None,
-) -> Any:
-    """Assemble what a review step sends: skeleton context, criteria, topology.
+) -> tuple[Any, Any]:
+    """Assemble what a review step sends — skeleton context, criteria, topology — and the rubric
+    whose criteria it carries.
 
     Raises `ValueError` when the step names a render profile that does not exist; the caller turns
     that into a step failure.
@@ -149,6 +166,7 @@ async def _build_review_prompt(
     from specweaver.core.flow.handlers.context_assembler import (
         evaluate_and_fetch_skeleton_context,
     )
+    from specweaver.workflows.review.reviewer import review_instructions
 
     targets: list[str] = list(context.graph.api_contract_paths or [])
     for target in extra_targets or []:
@@ -156,15 +174,16 @@ async def _build_review_prompt(
             targets.append(target)
     skeleton_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
 
+    rubric = _load_review_rubric(context, rubric_id)
     base_prompt = await _build_base_prompt(
         context,
-        resolve_review_instructions(context, rubric_id),
+        review_instructions(rubric.criteria),
         profile=resolve_profile(step.params.get("render_profile"), default=FULL),
         skeleton_files=skeleton_files,
     )
     if context.graph.topology:
         base_prompt.add_topology([context.graph.topology])
-    return base_prompt
+    return base_prompt, rubric
 
 
 class ReviewSpecHandler:
@@ -191,7 +210,7 @@ class ReviewSpecHandler:
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
             try:
-                base_prompt = await _build_review_prompt(context, step, "spec_review")
+                base_prompt, rubric = await _build_review_prompt(context, step, "spec_review")
             except ValueError as e:
                 return _error_result(str(e), started)
             from specweaver.core.flow.handlers.spec_map import signature_conflicts, spec_map
@@ -222,7 +241,7 @@ class ReviewSpecHandler:
                 from specweaver.core.flow.handlers.reviewed_spec import record_review
 
                 record_review(context)
-            return _review_step_result(result, started)
+            return _review_step_result(result, started, rubric)
         except Exception as exc:
             log_step_failure(logger, "ReviewSpecHandler: unhandled exception during spec review")
             return _error_result(str(exc), started)
@@ -267,7 +286,7 @@ class ReviewCodeHandler:
             mcp_env = await evaluate_and_fetch_mcp_context(context)
 
             try:
-                base_prompt = await _build_review_prompt(
+                base_prompt, rubric = await _build_review_prompt(
                     context,
                     step,
                     "code_review",
@@ -293,7 +312,7 @@ class ReviewCodeHandler:
             # 3.11: Scan LLM response for file mentions
             _scan_and_store_mentions(result.raw_response, context)
 
-            return _review_step_result(result, started)
+            return _review_step_result(result, started, rubric)
         except Exception as exc:
             log_step_failure(logger, "ReviewCodeHandler: unhandled exception during code review")
             return _error_result(str(exc), started)
@@ -431,7 +450,7 @@ def _judge_conflicts(result: Any, clashes: list[str], context: RunContext) -> An
     return result.model_copy(update={"findings": findings, "verdict": verdict})
 
 
-def _review_step_result(result: Any, started: str) -> StepResult:
+def _review_step_result(result: Any, started: str, rubric: Any) -> StepResult:
     """Accepted passes, denied fails; a review that could not run is an error that says why."""
     verdict = result.verdict.value
     status = {"accepted": StepStatus.PASSED, "error": StepStatus.ERROR}.get(
@@ -446,6 +465,7 @@ def _review_step_result(result: Any, started: str) -> StepResult:
             # The finding TEXTS, not just a count: the inline report and the loop_back
             # feedback to the re-draft both need them.
             "findings": [f.model_dump() for f in result.findings],
+            "rubric": _rubric_record(rubric),
         },
         error_message="" if status is StepStatus.PASSED else _failure_reason(verdict, result),
         started_at=started,

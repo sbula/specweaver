@@ -4,6 +4,7 @@
 """A rubric a team edits on disk is what the model is actually asked to judge by.
 
 Proves: C-VAL-05 FR-2, C-VAL-05 FR-5
+Proves: C-VAL-05 FR-4
 
 The unit tests prove the loader resolves a file and the seam joins two halves. Neither watches the
 result travel: `resolve_review_instructions` could return perfect text that the handler then never
@@ -15,13 +16,15 @@ the only test here that would notice the wiring being dropped.
 
 from __future__ import annotations
 
+import hashlib
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.review import ReviewSpecHandler
+from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
 from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
+from specweaver.infrastructure.llm.models import LLMResponse
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
@@ -42,7 +45,9 @@ class _RecordingLLM:
                 str(m.get("content", "")) if isinstance(m, dict) else str(m) for m in messages
             )
         )
-        return "VERDICT: ACCEPTED\n- Nothing found [confidence: 90]\nLooks fine."
+        return LLMResponse(
+            text="VERDICT: ACCEPTED\n- Nothing found [confidence: 90]\nLooks fine.", model="m"
+        )
 
 
 @pytest.fixture
@@ -112,3 +117,51 @@ async def test_the_parser_contract_travels_with_the_override(project: Path) -> N
     )
 
     assert "VERDICT: ACCEPTED" in llm.prompts[0]
+
+
+def _context(project: Path, llm: Any) -> RunContext:
+    return RunContext(
+        analysis=AnalysisContext(parsers={}),
+        model=ModelAccess(llm_router=FixedRouter(llm)),
+        project_path=project,
+        spec_path=project / "spec.md",
+    )
+
+
+def _expected(project: Path, name: str, criteria: str, version: str) -> dict[str, str]:
+    return {
+        "id": name,
+        "version": version,
+        "checksum": hashlib.sha256(criteria.encode("utf-8")).hexdigest(),
+        "source": str(project / ".specweaver" / "rubrics" / f"{name}.md"),
+    }
+
+
+@pytest.mark.e2e
+async def test_a_spec_reviews_result_names_the_rubric_that_judged_it(project: Path) -> None:
+    """FR-4: the run itself answers *which criteria produced this verdict*."""
+    result = await ReviewSpecHandler().execute(
+        PipelineStep(name="review", action=StepAction.REVIEW, target=StepTarget.SPEC, params={}),
+        _context(project, _RecordingLLM()),
+    )
+
+    assert result.output["rubric"] == _expected(project, "spec_review", f"{CRITERIA}\n", "3.0")
+
+
+@pytest.mark.e2e
+async def test_a_code_reviews_result_names_the_rubric_that_judged_it(project: Path) -> None:
+    code = project / "widget.py"
+    code.write_text("def widget() -> int:\n    return 1\n", encoding="utf-8")
+    (project / ".specweaver" / "rubrics" / "code_review.md").write_text(
+        "---\nid: code_review\nversion: 7\n---\nCheck the widget.\n", encoding="utf-8"
+    )
+    step = PipelineStep(
+        name="review",
+        action=StepAction.REVIEW,
+        target=StepTarget.CODE,
+        params={"target_path": str(code)},
+    )
+
+    result = await ReviewCodeHandler().execute(step, _context(project, _RecordingLLM()))
+
+    assert result.output["rubric"] == _expected(project, "code_review", "Check the widget.\n", "7")
