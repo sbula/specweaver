@@ -78,7 +78,7 @@ create, delete) refuses below the mode it needs, naming the path.
 | # | Question | Chosen |
 |---|----------|--------|
 | Q1 | The task grant and `README.md` / `docs/`, which the merge always strips | refused, as the merge strips them; `doc_updates.md` allowed, as the merge keeps it `[agreed 2026-10-16]` |
-| Q2 | Each project chooses its protected docs, not code | parked for the laptop: one settings line does not cover per-role, per-task or generated-block rules `[agreed 2026-10-16]` |
+| Q2 | Each project chooses its protected docs, not code | moved to `C-EXEC-08` Project Doc Policy, a precondition of `C-FLOW-11` `[agreed 2026-10-17]` |
 
 ## Backlog
 

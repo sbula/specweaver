@@ -7,7 +7,7 @@ produces. · **DAL**: C (Enterprise Standard) — the dial is itself assurance p
 
 | | |
 |---|---|
-| Uses | `C-VAL-03` (DAL) · `C-EXEC-06` (composition root) · `E-INTL-01` (tool loop) · `E-SENS-01` (tool execution) · `B-FLOW-05` (spend) · `E-SENS-03` (the task's write grant an agentic coder's tools run under — wired here, when `sw implement` reaches `agentic` `[agreed 2026-10-16]`) |
+| Uses | `C-VAL-03` (DAL) · `C-EXEC-06` (composition root) · `E-INTL-01` (tool loop) · `E-SENS-01` (tool execution) · `B-FLOW-05` (spend) · `E-SENS-03` (the task's write grant an agentic coder's tools run under — wired here, when `sw implement` reaches `agentic` `[agreed 2026-10-16]`) · `C-EXEC-08` (which docs that coder may write — designed before it may write `[agreed 2026-10-17]`) |
 | Not touched | the one-shot handlers; multi-agent orchestration (`B-INTL-06`) |
 
 ## What it does

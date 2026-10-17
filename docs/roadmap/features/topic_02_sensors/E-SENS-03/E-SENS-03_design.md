@@ -106,4 +106,4 @@ Single feature — no decomposition. `TECH-073` may land before or after; both r
 ## Session Handoff
 
 **Now**: built and committed — the coder's write grant comes from its task; a role with no rule gets nothing; `workspace_roots` is gone.
-**Next**: none — signed off 2026-10-16. Parked for the laptop: which docs each project protects (plan Q2).
+**Next**: none — signed off 2026-10-16. Which docs each project protects is `C-EXEC-08`.

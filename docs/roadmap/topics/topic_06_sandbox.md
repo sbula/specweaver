@@ -107,6 +107,14 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Limits:** not a one-line flip — `_derive_allowed_paths` is implement-shaped, so scenario artifacts would be silently dropped by the reconcile gate
 
+* **`C-EXEC-08` 🔜: Project Doc Policy**
+  > - **Purpose:** Let each project say which docs agents may change — a README's counts update with no person, a roadmap may stay human-only — instead of one rule in code
+  > - **Trigger:** When an agent's write grant and the worktree merge are built
+  > - **Precondition:** `E-SENS-03` → the task grant · `D-EXEC-02` → the merge, both sharing `sandbox.security.merge_keeps`
+  > - **Produces:** 🔴
+  > - **Enables:** `C-FLOW-11` → an agentic coder that may write
+  > - **Done when:** 🔴 — one settings line is not enough: per-role or per-task rules, generated blocks, step-only files `[agreed 2026-10-16]`
+
 ## DAL-B: High-Assurance
 
 * **`B-EXEC-01` ✅: Ephemeral Podman Sub-Containers** (Legacy: 3.45)

@@ -166,7 +166,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`C-FLOW-11` 🔧: Graduated Autonomy — DAL-Driven Execution-Mode Dial**
   > - **Purpose:** Let how much freedom the agent gets be a setting, not a constant — tight on critical work, loose on cheap work
   > - **Trigger:** When a step runs and its mode is read
-  > - **Precondition:** `D-FLOW-01` → the runner · the run's DAL · `B-FLOW-05` → the spend ceiling
+  > - **Precondition:** `D-FLOW-01` → the runner · the run's DAL · `B-FLOW-05` → the spend ceiling · `C-EXEC-08` → which docs an agentic coder may write
   > - **Reads:** the step's `mode: oneshot | agentic` · `[autonomy]` install settings
   > - **Produces:** either a single-shot call, or a bounded tool loop behind a replaceable `AgentRuntime`
   > - **Enables:** agentic execution where the DAL permits it
