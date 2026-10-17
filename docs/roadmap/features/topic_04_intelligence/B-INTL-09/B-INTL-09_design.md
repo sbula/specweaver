@@ -221,7 +221,7 @@ Each test was read against each requirement before it was cited. The `Proves:` c
 | K-1 | cite the tests that prove FR-1, NFR-1, NFR-4, NFR-6, NFR-7 (read first); NFR-3 `[proof: arch — mypy strict]` | FR-1, NFR-1, NFR-3, NFR-4, NFR-6, NFR-7 |
 | K-2 | tests for the untested: the 15-minute default, an oversized note through the repository, NFR-8's propagation, heartbeat and collision lines | NFR-4, NFR-6, NFR-8 |
 | K-3 | `HandoverContext` refuses unknown fields | NFR-5 |
-| K-4 | a query-plan test of the three hot queries; an index for the zombie scan if it scans the table | NFR-9 |
+| K-4 | a query-plan test of the three hot queries — measured 2026-10-17: all three search by an index, so none was added; a scan or an automatic index fails the test | NFR-9 |
 | K-5 | a mutant corpus: the used half first, then FR-2..FR-5, FR-8, FR-9 | all |
 
 ## Session Handoff

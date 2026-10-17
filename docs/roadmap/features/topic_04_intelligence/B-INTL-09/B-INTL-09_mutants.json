@@ -89,6 +89,25 @@
           "symbol_sha": "sha256:9ce50dd694101269decf14e7dc2034122916bbe1d890bbf1621bb0ddbef7e6fc"
         }
       ]
+    },
+    {
+      "requirement": "NFR-9",
+      "title": "The hot queries search by an index",
+      "scope": [
+        "tests/integration/workspace/test_memory_query_plans.py"
+      ],
+      "mutants": [
+        {
+          "id": "dependency-index-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/store.py",
+          "symbol": "TaskDependency",
+          "old": "        Index(\"idx_dep_child\", \"child_task_id\"),\n",
+          "new": "        Index(\"idx_dep_parent_only\", \"parent_task_id\"),\n",
+          "breaks": "every dependency walk reads the whole dependency table",
+          "symbol_sha": "sha256:535c04421f0537979aa31e28ed71a1b7fcf2a821a639db5c0150ae4802949b90"
+        }
+      ]
     }
   ]
 }
