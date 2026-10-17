@@ -176,7 +176,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`C-FLOW-12` 🔜: Autonomous DAG Execution**
   > - **Purpose:** Actually execute the decomposed DAG — `INT-US-21` produces the plan and deliberately stops before running it
   > - **Trigger:** 🟡 When a decomposition has produced a component DAG
-  > - **Precondition:** `C-EXEC-07` · `TECH-014` → **sequenced behind both**
+  > - **Precondition:** `C-EXEC-07` · `TECH-014` → **sequenced behind both** · `B-INTL-09` → task claiming, heartbeats, zombies, the DAG — built, first called here
   > - **Reads:** the decomposition output
   > - **Produces:** 🟡 per-component specs, race-hardened fan-out, `proposed_dal`-driven isolation
   > - **Enables:** 🔴

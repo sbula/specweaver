@@ -237,7 +237,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 * **`B-INTL-06` 🔜: Multi-Agent Isolation Patterns** (Legacy: 4.5)
   > - **Purpose:** Keep agents reviewing the same thing from contaminating each other, so several opinions stay independent
   > - **Trigger:** 🟡 When more than one agent works on one subject
-  > - **Precondition:** `C-FLOW-11` → single-agent work units · `C-EXEC-06` → session isolation
+  > - **Precondition:** `C-FLOW-11` → single-agent work units · `C-EXEC-06` → session isolation · `B-INTL-09` → the multi-agent half, built
   > - **Reads:** —
   > - **Produces:** 🟡 N isolated work units
   > - **Enables:** multi-agent review without collective hallucination
@@ -263,7 +263,8 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Reads:** —
   > - **Produces:** db → Task, Epic, TaskDependency (DAG), StateTransition and Defect entities in SQLite
   > - **Enables:** `D-INTL-06` → context hydration · `US-28`
-  > - **Done when:** 🟡 SF-01 schema and migration shipped; the repository half — OCC, state machine, circuit breakers, zombie recovery, DAG propagation — is not marked complete
+  > - **Done when:** a run's task, states and handover notes survive the session; the multi-agent half is
+  >   built and proven, first called by `C-FLOW-12` / `B-INTL-06` `[agreed 2026-10-17]`
   > - **Note:** absorbs the former `C-EXEC-05` and `B-INTL-10`
 
 * **`B-INTL-10` 🔮: Declarative Prompt Optimization**

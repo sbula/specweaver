@@ -3,6 +3,294 @@
   "feature": "B-INTL-09",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "The schema: a task's dependencies go with it",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "task-delete-orphans-dependencies",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/store.py",
+          "symbol": "TaskDependency",
+          "old": "        ForeignKey(\"memory_tasks.id\", ondelete=\"CASCADE\"),\n        primary_key=True,\n    )\n    child_task_id",
+          "new": "        ForeignKey(\"memory_tasks.id\"),\n        primary_key=True,\n    )\n    child_task_id",
+          "breaks": "deleting a task leaves its dependency rows behind",
+          "symbol_sha": "sha256:535c04421f0537979aa31e28ed71a1b7fcf2a821a639db5c0150ae4802949b90"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A dependency that closes a cycle is refused",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "cycle-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/dag.py",
+          "symbol": "MemoryRepositoryDAGMixin.insert_dependency",
+          "old": "                raise CyclicDependencyError(parent_id, child_id)\n",
+          "new": "                pass\n",
+          "breaks": "a cycle makes two tasks wait on each other for ever",
+          "symbol_sha": "sha256:8438ae373a6414e78d1482572074697767afa6efcd8f8d753176ffabab2ff794"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A heartbeat moves the task's last sign of life",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "heartbeat-frozen",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/core.py",
+          "symbol": "MemoryRepositoryCoreMixin.pulse_heartbeat",
+          "old": "        task.last_heartbeat_at = datetime.now(UTC)\n",
+          "new": "        task.last_heartbeat_at = task.last_heartbeat_at\n",
+          "breaks": "a live worker is reaped as a zombie",
+          "symbol_sha": "sha256:cc80f860c906ae6189325efa51bf10ac6d8d10bd6dae8953b4905b534cf052a8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Only one worker wins a task",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "version-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/core.py",
+          "symbol": "MemoryRepositoryCoreMixin.acquire_task",
+          "old": "            .where(Task.id == task_id, Task.version == expected_version)\n",
+          "new": "            .where(Task.id == task_id)\n",
+          "breaks": "two workers both claim one task",
+          "symbol_sha": "sha256:3ae04b42cf277f5521fcfa8edea0b59c20d750cc8e39c362072d5465a256f71b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A zombie goes back to PENDING and counts the attempt",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "attempt-not-counted",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/resilience.py",
+          "symbol": "MemoryRepositoryResilienceMixin.recycle_zombies",
+          "old": "            zombie.attempt_count += 1\n",
+          "new": "            zombie.attempt_count += 0\n",
+          "breaks": "a dying task is retried for ever",
+          "symbol_sha": "sha256:5ab5a6c1fe51f49614e91ca994e50e31d3f938cc5ac7db02fed116dad96dcfe8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Every product session enforces foreign keys",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "fk-off",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/database.py",
+          "symbol": "register_fk_pragma_listener",
+          "old": "        cursor.execute(\"PRAGMA foreign_keys=ON\")\n",
+          "new": "        cursor.execute(\"PRAGMA foreign_keys=OFF\")\n",
+          "breaks": "cascades are silently ignored",
+          "symbol_sha": "sha256:f28e8d4d386bf8ca9e9235455fb54150a97c2895523a4f6b85be517700e24f1b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "An archived task drops its handover note",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "archive-keeps-note",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/core.py",
+          "symbol": "MemoryRepositoryCoreMixin.transition_state",
+          "old": "        elif to_status == TaskStatus.ARCHIVED:\n            task.handover_context = None\n",
+          "new": "        elif to_status == TaskStatus.ARCHIVED:\n            pass\n",
+          "breaks": "old notes pile up in every archived task",
+          "symbol_sha": "sha256:d71776e1f3706955764b66a455cfca7545acde418899d5d6b6158c7633348f1b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "After three attempts the breaker blocks the task",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "breaker-at-four",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/resilience.py",
+          "symbol": "MemoryRepositoryResilienceMixin.recycle_zombies",
+          "old": "            if zombie.attempt_count >= 3:\n",
+          "new": "            if zombie.attempt_count >= 4:\n",
+          "breaks": "a failing task burns a fourth round of model calls",
+          "symbol_sha": "sha256:5ab5a6c1fe51f49614e91ca994e50e31d3f938cc5ac7db02fed116dad96dcfe8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A block propagates to every upstream task",
+      "scope": [
+        "tests/e2e/capabilities/workspace/test_runs_keep_memory_e2e.py",
+        "tests/integration/workspace/test_memory_bank_promises.py",
+        "tests/integration/workspace/test_memory_hydration_flow.py",
+        "tests/integration/workspace/test_memory_integration.py",
+        "tests/integration/workspace/test_memory_query_plans.py",
+        "tests/unit/core/config/test_database.py",
+        "tests/unit/workspace/test_memory_errors.py",
+        "tests/unit/workspace/test_memory_hydrator.py",
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_queries.py",
+        "tests/unit/workspace/test_memory_repository_core.py",
+        "tests/unit/workspace/test_memory_repository_dag.py",
+        "tests/unit/workspace/test_memory_repository_resilience.py",
+        "tests/unit/workspace/test_memory_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-upstream-block",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/repository/resilience.py",
+          "symbol": "MemoryRepositoryResilienceMixin._process_blocked_parent",
+          "old": "        parent.status = TaskStatus.UPSTREAM_BLOCKED\n",
+          "new": "        parent.status = parent.status\n",
+          "breaks": "a parent keeps waiting on a child that cannot finish",
+          "symbol_sha": "sha256:9890831d88bedd5947e63bf8fc77f5453c98b4cf4878e5562cde3a01a6ab6b9e"
+        }
+      ]
+    },
+    {
       "requirement": "NFR-4",
       "title": "A silent worker is a zombie after 15 minutes, by default",
       "scope": [
@@ -18,6 +306,26 @@
           "new": "        timeout_minutes: int = 30,\n",
           "breaks": "a dead worker's task waits twice as long",
           "symbol_sha": "sha256:5ab5a6c1fe51f49614e91ca994e50e31d3f938cc5ac7db02fed116dad96dcfe8"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-5",
+      "title": "A handover note refuses an unknown field",
+      "scope": [
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_hydrator.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-fields-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/models.py",
+          "symbol": "HandoverContext",
+          "old": "    model_config = ConfigDict(extra=\"forbid\")\n",
+          "new": "    model_config = ConfigDict(extra=\"ignore\")\n",
+          "breaks": "free text rides along in a note, unseen",
+          "symbol_sha": "sha256:9ce50dd694101269decf14e7dc2034122916bbe1d890bbf1621bb0ddbef7e6fc"
         }
       ]
     },
@@ -67,26 +375,6 @@
           "new": "        logger.info(\n            \"OCC collision:",
           "breaks": "a lost race is not a warning",
           "symbol_sha": "sha256:3ae04b42cf277f5521fcfa8edea0b59c20d750cc8e39c362072d5465a256f71b"
-        }
-      ]
-    },
-    {
-      "requirement": "NFR-5",
-      "title": "A handover note refuses an unknown field",
-      "scope": [
-        "tests/unit/workspace/test_memory_models.py",
-        "tests/unit/workspace/test_memory_hydrator.py"
-      ],
-      "mutants": [
-        {
-          "id": "unknown-fields-ignored",
-          "origin": "authored",
-          "file": "src/specweaver/workspace/memory/models.py",
-          "symbol": "HandoverContext",
-          "old": "    model_config = ConfigDict(extra=\"forbid\")\n",
-          "new": "    model_config = ConfigDict(extra=\"ignore\")\n",
-          "breaks": "free text rides along in a note, unseen",
-          "symbol_sha": "sha256:9ce50dd694101269decf14e7dc2034122916bbe1d890bbf1621bb0ddbef7e6fc"
         }
       ]
     },

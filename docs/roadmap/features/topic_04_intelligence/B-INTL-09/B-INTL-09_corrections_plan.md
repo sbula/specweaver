@@ -3,7 +3,7 @@
 - **Design Document**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_design.md
 - **Design Section**: §Corrections (2026-10-17)
 - **Implementation Plan**: docs/roadmap/features/topic_04_intelligence/B-INTL-09/B-INTL-09_corrections_plan.md
-- **Status**: APPROVED by the user 2026-10-17
+- **Status**: APPROVED by the user 2026-10-17 · built: CB-1 `c2afe191`, CB-2 `ea951f1a`, CB-3 `050f4f55`, CB-4
 
 ## Commit boundaries
 

@@ -226,5 +226,5 @@ Each test was read against each requirement before it was cited. The `Proves:` c
 
 ## Session Handoff
 
-**Now**: reviewed 2026-10-17; the user answered Q1–Q5.
-**Next**: the plan for K-1..K-5, then build.
+**Now**: K-1..K-5 committed 2026-10-17 — every FR and NFR cited, NFR-5 strict, NFR-9 by query plan, 15 mutants killed.
+**Next**: the user's sign-off of B-INTL-09.
