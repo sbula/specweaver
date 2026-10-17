@@ -41,26 +41,6 @@
       ]
     },
     {
-      "requirement": "FR-5",
-      "title": "The agent AST tool resolves relative paths against the project root",
-      "scope": [
-        "tests/integration/sandbox/test_agent_ast_tool_protected_paths.py",
-        "tests/unit/sandbox/test_grant_matching_agreement.py"
-      ],
-      "mutants": [
-        {
-          "id": "relative-path-not-resolved",
-          "origin": "authored",
-          "file": "src/specweaver/sandbox/security.py",
-          "symbol": "grant_mode_for",
-          "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
-          "new": "        check_path = posixpath.normpath(f\"/{normalized_path}\")\n",
-          "breaks": "a relative path never matches a dispatcher grant, so the agent AST tool can neither read nor write any file",
-          "symbol_sha": "sha256:a95a4f4f1e85053dccd8f7db10363fbf99d05483baba787e881eab58d8e47c54"
-        }
-      ]
-    },
-    {
       "requirement": "FR-2",
       "title": "The MCP explorer runs only guarded commands",
       "scope": [
@@ -75,7 +55,7 @@
           "old": "            full_command = resolved_runtime_command(declared)\n",
           "new": "            full_command = declared\n",
           "breaks": "a project's MCP config makes the explorer start any program, host-escape flags and host mounts included",
-          "symbol_sha": "sha256:f7323f1a72aad8d4b5727e4a138280fb5beec9fc4f04c7fdbb7279c455bac12f"
+          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
         }
       ]
     },
@@ -94,7 +74,7 @@
           "old": "            result_data = scrub_secrets(response.get(\"result\", {}), env)\n",
           "new": "            result_data = response.get(\"result\", {})\n",
           "breaks": "a secret passed to the MCP server comes back to the agent in plain text",
-          "symbol_sha": "sha256:f7323f1a72aad8d4b5727e4a138280fb5beec9fc4f04c7fdbb7279c455bac12f"
+          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
         }
       ]
     },
@@ -119,6 +99,45 @@
       ]
     },
     {
+      "requirement": "FR-5",
+      "title": "The agent AST tool resolves relative paths against the project root",
+      "scope": [
+        "tests/integration/sandbox/test_agent_ast_tool_protected_paths.py",
+        "tests/unit/sandbox/test_grant_matching_agreement.py"
+      ],
+      "mutants": [
+        {
+          "id": "relative-path-not-resolved",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "grant_mode_for",
+          "old": "        check_path = posixpath.normpath(f\"{cwd_str}/{normalized_path}\")\n",
+          "new": "        check_path = posixpath.normpath(f\"/{normalized_path}\")\n",
+          "breaks": "a relative path never matches a dispatcher grant, so the agent AST tool can neither read nor write any file",
+          "symbol_sha": "sha256:a95a4f4f1e85053dccd8f7db10363fbf99d05483baba787e881eab58d8e47c54"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "One grant matcher for both tools",
+      "scope": [
+        "tests/unit/sandbox/test_grant_matching_agreement.py"
+      ],
+      "mutants": [
+        {
+          "id": "file-tool-own-root",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/interfaces/tool.py",
+          "symbol": "FileSystemTool._resolve_mode",
+          "old": "        return grant_mode_for(normalized_path, self._grants, self._executor.cwd)\n",
+          "new": "        return grant_mode_for(normalized_path, self._grants, self._executor.cwd.parent)\n",
+          "breaks": "the file tool and the AST tool judge one path differently",
+          "symbol_sha": "sha256:83e2c942115567cb305310e86072bd59c276d0fcc0bd70c058505d2b48ec4a15"
+        }
+      ]
+    },
+    {
       "requirement": "FR-7",
       "title": "No path outside the root is covered",
       "scope": [
@@ -135,6 +154,64 @@
           "new": "        check_path = f\"{cwd_str}/{normalized_path}\"\n",
           "breaks": "grep and find_files with path='..' read and list files above the project root",
           "symbol_sha": "sha256:a95a4f4f1e85053dccd8f7db10363fbf99d05483baba787e881eab58d8e47c54"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "No loader variable reaches the container runtime",
+      "scope": [
+        "tests/unit/sandbox/mcp/interfaces/mcp/test_mcp_loader_env_refused.py"
+      ],
+      "mutants": [
+        {
+          "id": "explorer-passes-loader",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/interfaces/tool.py",
+          "symbol": "MCPExplorerTool._execute_mcp_query",
+          "old": "            refuse_loader_env(env)\n",
+          "new": "            pass\n",
+          "breaks": "LD_PRELOAD loads a project's library into the docker client",
+          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
+        },
+        {
+          "id": "atom-passes-loader",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/core/atom.py",
+          "symbol": "MCPAtom.__init__",
+          "old": "        refuse_loader_env(env)\n",
+          "new": "        pass\n",
+          "breaks": "LD_PRELOAD loads a project's library into the docker client",
+          "symbol_sha": "sha256:661093d5252ac2ec4ced0b549eea451ba1eb1c1f288f10091dec7ece104e5d10"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Protected names in any case",
+      "scope": [
+        "tests/unit/sandbox/test_protected_names_ignore_case.py"
+      ],
+      "mutants": [
+        {
+          "id": "executor-case-sensitive",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/executor.py",
+          "symbol": "FileExecutor._is_protected",
+          "old": "        return any(part.lower() in protected for part in normalized.split(\"/\"))\n",
+          "new": "        return any(part in protected for part in normalized.split(\"/\"))\n",
+          "breaks": ".ENV/x reaches .env on a case-insensitive disk",
+          "symbol_sha": "sha256:3891ea69582224aee6598e2289339fe70e2bfe8288c331fb62cbd025d6482d84"
+        },
+        {
+          "id": "merge-rule-case-sensitive",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "merge_keeps",
+          "old": "    lowered = path.lower()  # case-blind, as a case-insensitive disk is\n",
+          "new": "    lowered = path\n",
+          "breaks": "ReadMe.md is written and merged",
+          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
         }
       ]
     }

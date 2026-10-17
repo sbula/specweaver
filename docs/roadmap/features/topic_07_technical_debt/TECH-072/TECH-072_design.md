@@ -57,6 +57,8 @@ The file tool is in use today, so this one was not latent. Fixed in the shared m
 | FR-5 | The agent AST tool works | AST tool | SHALL read and write a file named by a path relative to the project root, within the role's grants | An agent can use the tool it is given |
 | FR-6 | One grant matcher | File tool, AST tool | SHALL decide grant coverage with the same function | The same path gets the same verdict from both tools |
 | FR-7 | No path outside the root is covered | Grant matcher | SHALL resolve `..` after joining a relative path to the project root, so `../x` is judged as the parent's `x` | `grep` and `find_files` — which walk the disk themselves — cannot read beside or above the project |
+| FR-8 | No loader variable reaches the runtime client | Both MCP paths | SHALL refuse, before starting any process, an MCP env naming `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT` or any `DYLD_*`, in any case, and name it `[agreed 2026-10-17]` | a project's config cannot load code into the docker/podman client |
+| FR-9 | Protected names in any case | File executor, the merge rule | SHALL match protected names (`context.yaml`, `.env`, `.git`, `.specweaver`) and the merge's `README.md`, `docs/`, `doc_updates.md` without regard to case `[agreed 2026-10-17]` | `.ENV/x` cannot reach `.env` on a case-insensitive disk |
 
 ## Tests
 
@@ -78,16 +80,12 @@ Each test is written first and seen to fail on today's code.
   consistency issues, not a bypass of an existing guard.
 - Changing which paths are protected, or which runtimes are allowed. Both lists stay as they are.
 
-## Open — the user's call (red/blue review, 2026-09-26)
+## Decided — the open calls of the 2026-09-26 red/blue review
 
-1. **MCP config env reaches the container runtime client.** A project's MCP `env` is merged into the
-   environment of the `docker`/`podman` process (`build_child_env` merges extras after the allowlist),
-   so `LD_PRELOAD`, `LD_LIBRARY_PATH` or `DYLD_*` could run code in the client. Both MCP paths share
-   it; it predates this ticket. Which variables to refuse is `T-BOUNDARY`.
-2. **Protected names are case-sensitive.** `FileExecutor._is_protected` compares path parts exactly,
-   so on a case-insensitive disk `.ENV/x` reaches `.env`. Predates this ticket; `T-BOUNDARY`.
+Both were answered by the user on 2026-10-17 and are now FR-8 and FR-9.
 
 ## Progress Tracker
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Both guards applied | — | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-02 | The two open calls | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |

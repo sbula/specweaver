@@ -459,9 +459,9 @@ class FileExecutor:
         Protected patterns block write/delete/move but not read.
         """
         normalized = path.replace("\\", "/")
-        parts = normalized.split("/")
-
-        return any(part in self._PROTECTED_PATTERNS for part in parts)
+        # Case-blind: on a disk that ignores case, `.ENV` is `.env`.
+        protected = {pattern.lower() for pattern in self._PROTECTED_PATTERNS}
+        return any(part.lower() in protected for part in normalized.split("/"))
 
 
 class EngineFileExecutor(FileExecutor):

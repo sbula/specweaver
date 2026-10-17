@@ -86,6 +86,19 @@ def _reject_escaping_arguments(arguments: list[str]) -> None:
                 _refuse(f"Mount '{value}' exposes host path '{source}' to the container.")
 
 
+#: Variables that make the runtime client itself load a library of the config's choosing, on the host.
+_LOADER_VARIABLES = ("LD_PRELOAD", "LD_LIBRARY_PATH", "LD_AUDIT")
+_LOADER_PREFIX = "DYLD_"
+
+
+def refuse_loader_env(env: dict[str, str] | None) -> None:
+    """Refuse an MCP env that would make the container runtime client load a chosen library."""
+    for name in env or {}:
+        upper = name.upper()
+        if upper in _LOADER_VARIABLES or upper.startswith(_LOADER_PREFIX):
+            _refuse(f"Variable '{name}' would load code into the container runtime client.")
+
+
 def resolved_runtime_command(command: list[str]) -> list[str]:
     """The command to execute, with the runtime resolved from the TRUSTED environment.
 
@@ -132,6 +145,7 @@ class MCPAtom(Atom):
             )
 
         self._command = resolved_runtime_command(command)
+        refuse_loader_env(env)
         self._env = env
         self._executor: MCPExecutor | None = None
 

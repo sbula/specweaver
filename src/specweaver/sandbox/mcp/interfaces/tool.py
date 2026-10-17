@@ -10,7 +10,11 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons import json
 from specweaver.sandbox.base import BaseTool
-from specweaver.sandbox.mcp.core.atom import resolved_runtime_command, scrub_secrets
+from specweaver.sandbox.mcp.core.atom import (
+    refuse_loader_env,
+    resolved_runtime_command,
+    scrub_secrets,
+)
 from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 from specweaver.sandbox.mcp.interfaces.models import ToolResult
 
@@ -69,6 +73,7 @@ class MCPExplorerTool(BaseTool):
         # the same guard `MCPAtom` applies before any process starts.
         try:
             full_command = resolved_runtime_command(declared)
+            refuse_loader_env(env)
         except ValueError as e:
             return ToolResult(status="error", message=str(e))
 

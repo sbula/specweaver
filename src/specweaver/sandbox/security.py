@@ -222,9 +222,10 @@ def merge_keeps(path: str, allowed: list[str]) -> bool:
 
     Proposed doc changes (`doc_updates.md`) always survive; `README.md` and `docs/` never do.
     """
-    if path.endswith("doc_updates.md"):
+    lowered = path.lower()  # case-blind, as a case-insensitive disk is
+    if lowered.endswith("doc_updates.md"):
         return True
-    if path == "README.md" or path.startswith("docs/"):
+    if lowered == "readme.md" or lowered.startswith("docs/"):
         return False
     return path_allowed(path, allowed)
 

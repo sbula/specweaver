@@ -70,10 +70,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
           "symbol": "merge_keeps",
-          "old": "    if path == \"README.md\" or path.startswith(\"docs/\"):\n        return False\n",
-          "new": "    if path == \"never\":\n        return False\n",
+          "old": "    if lowered == \"readme.md\" or lowered.startswith(\"docs/\"):\n        return False\n",
+          "new": "    if lowered == \"never\":\n        return False\n",
           "breaks": "the coder writes README and docs, which the merge then drops",
-          "symbol_sha": "sha256:ba00e9a56c917c94cb4f958ceb5c5f87a7cf43c922ea95c5a779318632fcd3a0"
+          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
         },
         {
           "id": "glob-not-matched",
@@ -83,7 +83,7 @@
           "old": "    return path_allowed(path, allowed)\n",
           "new": "    return path in allowed\n",
           "breaks": "a glob entry grants nothing and keeps nothing",
-          "symbol_sha": "sha256:ba00e9a56c917c94cb4f958ceb5c5f87a7cf43c922ea95c5a779318632fcd3a0"
+          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
         }
       ]
     },
