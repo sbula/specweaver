@@ -69,6 +69,26 @@
           "symbol_sha": "sha256:3ae04b42cf277f5521fcfa8edea0b59c20d750cc8e39c362072d5465a256f71b"
         }
       ]
+    },
+    {
+      "requirement": "NFR-5",
+      "title": "A handover note refuses an unknown field",
+      "scope": [
+        "tests/unit/workspace/test_memory_models.py",
+        "tests/unit/workspace/test_memory_hydrator.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-fields-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/models.py",
+          "symbol": "HandoverContext",
+          "old": "    model_config = ConfigDict(extra=\"forbid\")\n",
+          "new": "    model_config = ConfigDict(extra=\"ignore\")\n",
+          "breaks": "free text rides along in a note, unseen",
+          "symbol_sha": "sha256:9ce50dd694101269decf14e7dc2034122916bbe1d890bbf1621bb0ddbef7e6fc"
+        }
+      ]
     }
   ]
 }

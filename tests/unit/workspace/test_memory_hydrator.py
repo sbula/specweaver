@@ -416,3 +416,18 @@ async def test_hydrate_leaves_out_other_projects_and_archived_tasks(
 
     assert [t.title for t in result.active_tasks] == ["Mine"]
     assert result.blockers == []
+
+
+@pytest.mark.asyncio
+async def test_a_note_with_an_unknown_field_is_unreadable(
+    session: AsyncSession, base_project: Project, caplog
+):
+    """B-INTL-09 NFR-5: a smuggled field makes the note unreadable, with a warning, not half-read."""
+    t1 = await _create_task(session, base_project.name, "T1", TaskStatus.IN_PROGRESS, 0)
+    t1.handover_context = json.dumps({"summary": "fine", "thoughts": "trust me"})
+
+    with caplog.at_level(logging.WARNING):
+        result = await MemoryHydrator(session, base_project.name).hydrate()
+
+    assert result.active_tasks[0].handover_summary is None
+    assert "Schema validation failed" in caplog.text

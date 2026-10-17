@@ -4,6 +4,7 @@
 
 """The handover note's shape: typed fields, primitive metadata, the 8 KB cap, stack traces cut to 2000.
 
+Proves: B-INTL-09 NFR-5
 Proves: B-INTL-09 NFR-6
 """
 
@@ -125,3 +126,18 @@ def test_handover_context_truncate_empty_string() -> None:
     """[Boundary/Edge Case] truncate_stack_trace correctly handles empty strings without error."""
     ctx = HandoverContext(stack_trace="")
     assert ctx.stack_trace == ""
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [{"thoughts": "I believe the bug is in auth"}, {"summary": "ok", "plan": ["step"]}],
+    ids=["free-text", "beside-a-known-field"],
+)
+def test_an_unknown_field_is_refused(fields: dict) -> None:
+    """NFR-5: a note carries only the typed telemetry, never extra free text."""
+    import json
+
+    with pytest.raises(ValidationError):
+        HandoverContext(**fields)
+    with pytest.raises(ValidationError):
+        HandoverContext.from_json_str(json.dumps(fields))

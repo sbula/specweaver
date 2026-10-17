@@ -9,7 +9,7 @@ of the handover_context field (NFR-5, NFR-6).
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _MAX_CONTEXT_BYTES = 8192  # 8KB hard limit (NFR-6)
 _MAX_STACK_TRACE_CHARS = 2000  # Truncation limit for stack traces
@@ -20,8 +20,11 @@ class HandoverContext(BaseModel):
     """Strict schema for task handover context.
 
     Bounded to factual telemetry to prevent hallucination transfer (NFR-5).
-    Total serialized size must not exceed 8KB (NFR-6).
+    Total serialized size must not exceed 8KB (NFR-6). An unknown field is refused, so no free text
+    rides along into the next agent's context.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     files_touched: list[str] = Field(
         default_factory=list, description="Files modified during this task"
