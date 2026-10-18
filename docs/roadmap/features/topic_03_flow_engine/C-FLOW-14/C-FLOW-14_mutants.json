@@ -30,6 +30,44 @@
           "breaks": "the reminder after the clock is never cached"
         }
       ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "Anthropic caches every request",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_anthropic_caches.py"
+      ],
+      "mutants": [
+        {
+          "id": "tool-rounds-uncached",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "            \"tools\": self._to_anthropic_tools(config.tools),\n            \"cache_control\": AUTOMATIC_CACHE,\n",
+          "new": "            \"tools\": self._to_anthropic_tools(config.tools),\n",
+          "breaks": "every tool round pays the full price again for the whole history it resends",
+          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
+        },
+        {
+          "id": "single-call-uncached",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate",
+          "old": "            \"max_tokens\": config.max_output_tokens,\n            \"cache_control\": AUTOMATIC_CACHE,\n        }\n",
+          "new": "            \"max_tokens\": config.max_output_tokens,\n        }\n",
+          "breaks": "a step without tools never reads its stable start from the cache",
+          "symbol_sha": "sha256:b641cd4531484014c931adcf64a6c8fd87eda9e7c2bbd9f4c170f21df21afe35"
+        },
+        {
+          "id": "one-hour-cache",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AUTOMATIC_CACHE",
+          "old": "AUTOMATIC_CACHE: dict[str, str] = {\"type\": \"ephemeral\"}\n",
+          "new": "AUTOMATIC_CACHE: dict[str, str] = {\"type\": \"ephemeral\", \"ttl\": \"1h\"}\n",
+          "breaks": "every cache write costs twice the input price, not 1.25 times"
+        }
+      ]
     }
   ]
 }

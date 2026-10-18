@@ -336,7 +336,7 @@
           "old": "                cumulative_usage = cumulative_usage + _usage_of(getattr(response, \"usage\", None))\n",
           "new": "                cumulative_usage = _usage_of(getattr(response, \"usage\", None))\n",
           "breaks": "an Anthropic tool loop counts only its last round",
-          "symbol_sha": "sha256:faee57578c3399199887cc6c4dedf45af1fe86d9ce7543f1b4a102ae40fee5b2"
+          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
         },
         {
           "id": "mistral-unknown-as-zero",

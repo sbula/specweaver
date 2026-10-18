@@ -925,7 +925,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:faee57578c3399199887cc6c4dedf45af1fe86d9ce7543f1b4a102ae40fee5b2"
+          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
         },
         {
           "id": "mistral-fake-answer",

@@ -37,6 +37,11 @@ if TYPE_CHECKING:
     )
 
 
+#: Automatic caching: one breakpoint that moves to the end of each request, so every tool round
+#: reads the rounds before it from the cache. No `ttl`: the 5-minute lifetime.
+AUTOMATIC_CACHE: dict[str, str] = {"type": "ephemeral"}
+
+
 def _usage_of(usage: Any) -> TokenUsage:
     """One response's token counts.
 
@@ -112,6 +117,7 @@ class AnthropicAdapter(LLMAdapter):
             "model": config.model,
             "messages": anthropic_messages,
             "max_tokens": config.max_output_tokens,
+            "cache_control": AUTOMATIC_CACHE,
         }
 
         if config.system_instruction:
@@ -233,6 +239,7 @@ class AnthropicAdapter(LLMAdapter):
             "messages": anthropic_messages,
             "max_tokens": config.max_output_tokens,
             "tools": self._to_anthropic_tools(config.tools),
+            "cache_control": AUTOMATIC_CACHE,
         }
 
         if config.system_instruction:
