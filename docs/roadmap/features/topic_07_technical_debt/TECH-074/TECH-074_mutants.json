@@ -1,0 +1,95 @@
+{
+  "schema": 2,
+  "feature": "TECH-074",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "Every call meets exactly one price per token kind",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_prices.py"
+      ],
+      "mutants": [
+        {
+          "id": "two-defaults-at-one-time-pass",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "check_prices",
+          "old": "        if count > 1\n",
+          "new": "        if count > 2\n",
+          "breaks": "two prices for one kind at one time are stored, and which one a call is billed at depends on row order",
+          "symbol_sha": "sha256:590ed59f02ce79276cf650f09a3ca4bf0d33aaad809089a403fdb1bd9d4a3550"
+        },
+        {
+          "id": "local-model-may-carry-a-price",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "check_prices",
+          "old": "        return [\"a local model has no prices\"] if prices else []\n",
+          "new": "        return []\n",
+          "breaks": "a local model is given a price, so a call that costs nothing is counted as spend",
+          "symbol_sha": "sha256:590ed59f02ce79276cf650f09a3ca4bf0d33aaad809089a403fdb1bd9d4a3550"
+        },
+        {
+          "id": "empty-rule-is-a-second-default",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "_rule_problem",
+          "old": "    if not rule.sets_a_condition():\n",
+          "new": "    if False:\n",
+          "breaks": "a special price with no condition is stored, so the kind has two prices that always apply",
+          "symbol_sha": "sha256:9a3de99adeb0846873fe299c20408e958fd561d7d86cf20e0461530d971d28f2"
+        },
+        {
+          "id": "unknown-requirement-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "_rule_problem",
+          "old": "    if rule.requires not in REQUIREMENTS:\n",
+          "new": "    if False:\n",
+          "breaks": "a rule requiring something no request sends is stored, and its price never or always applies by accident",
+          "symbol_sha": "sha256:9a3de99adeb0846873fe299c20408e958fd561d7d86cf20e0461530d971d28f2"
+        },
+        {
+          "id": "negative-price-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "check_prices",
+          "old": "        if p.usd_per_million < 0 or not math.isfinite(p.usd_per_million)\n",
+          "new": "        if p.usd_per_million < -1 or not math.isfinite(p.usd_per_million)\n",
+          "breaks": "a negative price is stored, and spend goes down as calls are made",
+          "symbol_sha": "sha256:590ed59f02ce79276cf650f09a3ca4bf0d33aaad809089a403fdb1bd9d4a3550"
+        },
+        {
+          "id": "hosted-model-without-input-price",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "_gaps",
+          "old": "    problems = [f\"{kind.value}: no default price\" for kind, day in starts.items() if day is None]\n",
+          "new": "    problems = []\n",
+          "breaks": "a hosted model with no input or output price is stored, and its calls read as free",
+          "symbol_sha": "sha256:ee565c8f0fb707f3d1ab4fef585da4b71494dce5a085a65a799fd70a690c075d"
+        },
+        {
+          "id": "cached-price-before-its-input",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "_gaps",
+          "old": "        if day is not None and earliest is not None and earliest < day:\n",
+          "new": "        if False:\n",
+          "breaks": "a price starts before its model's input price, so calls in between have no input price",
+          "symbol_sha": "sha256:ee565c8f0fb707f3d1ab4fef585da4b71494dce5a085a65a799fd70a690c075d"
+        },
+        {
+          "id": "not-a-number-price-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "check_prices",
+          "old": " or not math.isfinite(p.usd_per_million)\n",
+          "new": "\n",
+          "breaks": "a NaN or infinite price is stored, and every cost it touches becomes NaN or infinite",
+          "symbol_sha": "sha256:590ed59f02ce79276cf650f09a3ca4bf0d33aaad809089a403fdb1bd9d4a3550"
+        }
+      ]
+    }
+  ]
+}

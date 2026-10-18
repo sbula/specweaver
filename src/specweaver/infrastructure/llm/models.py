@@ -99,6 +99,15 @@ def tool_rounds(config: GenerationConfig) -> range:
     return range(config.max_tool_rounds)
 
 
+class TokenKind(enum.StrEnum):
+    """What a token is billed as. A fixed list: each kind has its own price."""
+
+    INPUT = "input"
+    OUTPUT = "output"
+    CACHED_READ = "cached_read"
+    CACHE_WRITE = "cache_write"
+
+
 class TokenUsage(BaseModel):
     """Token usage information from a generation."""
 

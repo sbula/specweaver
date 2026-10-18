@@ -2,10 +2,20 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 import math
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Float, Index, Integer, String, func, select
+from sqlalchemy import (
+    Date,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+    select,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -55,6 +65,46 @@ class LlmStepOutcome(Base):
     run_id: Mapped[str] = mapped_column(String, primary_key=True)
     step_name: Mapped[str] = mapped_column(String, primary_key=True)
     outcome: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class LlmOffering(Base):
+    """One model at one host: the same model costs differently at different hosts."""
+
+    __tablename__ = "llm_offering"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    model: Mapped[str] = mapped_column(String, nullable=False)
+    host: Mapped[str] = mapped_column(String, nullable=False)
+
+    __table_args__ = (UniqueConstraint("model", "host"),)
+
+
+class LlmPriceRule(Base):
+    """What must be true for a special price to apply; a `None` limit sets no condition."""
+
+    __tablename__ = "llm_price_rule"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    min_prefix_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_age_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    requires: Mapped[str] = mapped_column(String, default="nothing", nullable=False)
+
+
+class LlmPrice(Base):
+    """A price of one token kind; the default when it has no rule."""
+
+    __tablename__ = "llm_price"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    offering_id: Mapped[int] = mapped_column(
+        ForeignKey("llm_offering.id"), index=True, nullable=False
+    )
+    token_kind: Mapped[str] = mapped_column(String, nullable=False)
+    usd_per_million: Mapped[float] = mapped_column(Float, nullable=False)
+    valid_from: Mapped[date] = mapped_column(Date, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    rule_id: Mapped[int | None] = mapped_column(ForeignKey("llm_price_rule.id"), nullable=True)
 
 
 def record_step_outcomes(db: Any, run_id: str, outcomes: dict[str, str]) -> None:
