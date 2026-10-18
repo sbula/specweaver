@@ -3,7 +3,7 @@
 - **Feature ID**: TECH-074
 - **Epic**: Topic 07 (Technical Debt)
 - **Kind**: bugfix, with the price model it needs
-- **Status**: APPROVED by the user 2026-10-18
+- **Status**: CLOSED by the user 2026-10-18 — approved the same day; SF-01..03 delivered
 - **Origin**: 2026-10-17, the user's question on cached input tokens; measurements in
   [prompt_caching_2026-10-17.md](../../../../analysis/prompt_caching_2026-10-17.md). A defect in delivered
   work (`C-FLOW-01` ✅ the cost ledger, `C-FLOW-13` ✅ the prices), so it is not an edit to either.
@@ -120,5 +120,5 @@ and the brake wrong.
 
 ## Session Handoff
 
-**Now**: SF-01..03 committed 2026-10-18; every FR is cited by a test, every NFR too.
-**Next**: the user's sign-off, then the close.
+**Now**: closed by the user 2026-10-18.
+**Next**: `C-FLOW-14` (prompts that hit the caches) can start; the cached counts it needs are read and priced.

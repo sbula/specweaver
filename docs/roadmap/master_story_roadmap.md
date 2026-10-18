@@ -622,4 +622,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-071:** [Docs and Code Disagree in 60 Places](features/topic_07_technical_debt/TECH-071/TECH-071_design.md)
     *   `🟢` **TECH-072:** [Two Agent Tools Skip the Sandbox's Own Guards](features/topic_07_technical_debt/TECH-072/TECH-072_design.md)
     *   `🔴` **TECH-073:** [A Task's Target Files Are Named for Python Only](features/topic_07_technical_debt/TECH-073/TECH-073_design.md)
-    *   `🔴` **TECH-074:** [The Cost Ledger Prices Cached Input at the Full Price](features/topic_07_technical_debt/TECH-074/TECH-074_design.md)
+    *   `🟢` **TECH-074:** [The Cost Ledger Prices Cached Input at the Full Price](features/topic_07_technical_debt/TECH-074/TECH-074_design.md)
