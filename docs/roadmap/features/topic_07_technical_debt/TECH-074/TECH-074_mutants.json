@@ -156,7 +156,7 @@
           "old": "            await conn.run_sync(_seed_prices)\n",
           "new": "            pass\n",
           "breaks": "no price or cache rule is ever stored, so the rules C-FLOW-14 needs do not exist",
-          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
+          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
         },
         {
           "id": "seed-repeats-every-start",
@@ -166,17 +166,17 @@
           "old": "    new = [price for price in listed if price not in stored]\n",
           "new": "    new = listed\n",
           "breaks": "every start-up tries to store the list again and warns that it breaks the check",
-          "symbol_sha": "sha256:a0fca3a9938fb1724bd9a1c2006c493e558126dca1c819d4fde26650cdb24ea7"
+          "symbol_sha": "sha256:8e047de46c57fca5a7c49524753fe1b5e4d8c1b5279e0ba7fe52cea8e13d952f"
         },
         {
           "id": "seed-ignores-the-check",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/price_store.py",
           "symbol": "_seed_one",
-          "old": "    if problems:\n",
-          "new": "    if False:\n",
+          "old": "    if problems:\n        logger.warning(\"Prices of %s@%s not stored: %s\", model, host, \"; \".join(problems))\n",
+          "new": "    if False:\n        logger.warning(\"Prices of %s@%s not stored: %s\", model, host, \"; \".join(problems))\n",
           "breaks": "a list that breaks the exactly-one check is stored, and a call meets two prices or none",
-          "symbol_sha": "sha256:a0fca3a9938fb1724bd9a1c2006c493e558126dca1c819d4fde26650cdb24ea7"
+          "symbol_sha": "sha256:8e047de46c57fca5a7c49524753fe1b5e4d8c1b5279e0ba7fe52cea8e13d952f"
         },
         {
           "id": "stored-prices-ignored",
@@ -484,7 +484,7 @@
           "old": "            await conn.run_sync(_add_cached_columns)\n",
           "new": "            pass\n",
           "breaks": "an existing database never gains the cached columns, and every write to it fails",
-          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
+          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
         },
         {
           "id": "cached-count-not-stored",
@@ -663,6 +663,113 @@
           "new": "        if not usage.cached_read_tokens or prices is None:\n",
           "breaks": "the warning repeats on every call and drowns the log",
           "symbol_sha": "sha256:aa4a220e123e7fbaed80576e77c869e0fdad426a7e374bc4e302aada0a518842"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A downloaded price that cannot be right is refused",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_price_refresh_rows.py"
+      ],
+      "mutants": [
+        {
+          "id": "zero-price-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_table",
+          "old": "        elif not math.isfinite(value) or value <= 0:\n",
+          "new": "        elif not math.isfinite(value) or value < 0:\n",
+          "breaks": "a download that says 0 makes a hosted model free",
+          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+        },
+        {
+          "id": "boolean-price-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_table",
+          "old": "        if isinstance(value, bool) or not isinstance(value, int | float):\n",
+          "new": "        if not isinstance(value, int | float):\n",
+          "breaks": "a true in the price field is stored as 1 USD",
+          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+        },
+        {
+          "id": "missing-input-silent",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_table",
+          "old": "            if kind in _NEEDED:\n",
+          "new": "            if False:\n",
+          "breaks": "a download without an input price is not reported",
+          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A download becomes rows under the shipped rules",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_price_refresh_rows.py"
+      ],
+      "mutants": [
+        {
+          "id": "tier-loses-its-minimum",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_rule",
+          "old": "    return Rule(base.min_prefix_tokens, base.max_age_seconds, tier, base.requires)\n",
+          "new": "    return Rule(base.min_prefix_tokens, base.max_age_seconds, None, base.requires)\n",
+          "breaks": "a long-prompt price applies to every prompt",
+          "symbol_sha": "sha256:c10b7f1b2725207273646640e407e3e07871c060bfa493c9b098377b62679dc8"
+        },
+        {
+          "id": "cached-price-loses-its-rule",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_table",
+          "old": "            rows.append(Price(kind, float(value), day, SOURCE, _rule(rules.get(kind), tier)))\n",
+          "new": "            rows.append(Price(kind, float(value), day, SOURCE, _rule(None, tier)))\n",
+          "breaks": "a downloaded cached price no longer replaces the shipped one, which bills forever",
+          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Only a good, changed price is stored, once",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_refresh_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "broken-set-stored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "store_downloaded",
+          "old": "    if problems:\n        return [], problems\n",
+          "new": "    if False:\n        return [], problems\n",
+          "breaks": "a download that breaks the exactly-one check is stored, and calls meet two prices",
+          "symbol_sha": "sha256:5ef6b19891500be21551a48afa120da1259ba37d9cc1cc39379fe91bc4615c4c"
+        },
+        {
+          "id": "unchanged-price-stored-daily",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "store_downloaded",
+          "old": "        or held.usd_per_million != price.usd_per_million\n",
+          "new": "        or True\n",
+          "breaks": "every refresh stores every price again, and reports changes that are none",
+          "symbol_sha": "sha256:5ef6b19891500be21551a48afa120da1259ba37d9cc1cc39379fe91bc4615c4c"
+        },
+        {
+          "id": "price-index-never-added",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "bootstrap_database",
+          "old": "            await conn.run_sync(_add_price_index)\n",
+          "new": "            pass\n",
+          "breaks": "two commands refreshing at once store a price twice, and the check refuses every later price",
+          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
         }
       ]
     }

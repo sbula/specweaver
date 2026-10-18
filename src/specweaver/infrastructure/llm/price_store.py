@@ -15,6 +15,7 @@ from datetime import date
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import insert, select
+from sqlalchemy.exc import IntegrityError
 
 from specweaver.infrastructure.llm.catalogue import corrections
 from specweaver.infrastructure.llm.models import TokenKind
@@ -53,9 +54,7 @@ def seed_prices(conn: Connection, catalogue: Catalogue) -> None:
 
 
 def _seed_one(conn: Connection, model: str, host: str, listed: list[Price]) -> None:
-    offering = conn.execute(
-        select(_OFFERING.c.id).where(_OFFERING.c.model == model, _OFFERING.c.host == host)
-    ).scalar()
+    offering = _offering_id(conn, model, host)
     stored = _stored_rows(conn, offering) if offering is not None else []
     new = [price for price in listed if price not in stored]
     if not new:
@@ -64,6 +63,57 @@ def _seed_one(conn: Connection, model: str, host: str, listed: list[Price]) -> N
     if problems:
         logger.warning("Prices of %s@%s not stored: %s", model, host, "; ".join(problems))
         return
+    _insert(conn, model, host, offering, new)
+
+
+def store_downloaded(
+    conn: Connection, model: str, host: str, downloaded: list[Price]
+) -> tuple[list[str], list[str]]:
+    """Store each downloaded price that differs from the one holding today; the changes, old → new,
+    and why nothing was stored when the set breaks the exactly-one check.
+
+    Two commands refreshing at once never store a price twice: the database refuses the second,
+    and the loser stores nothing.
+    """
+    offering = _offering_id(conn, model, host)
+    stored = _stored_rows(conn, offering) if offering is not None else []
+    book = PriceBook(tuple(stored), local=False)
+    holding = {(p.kind, p.rule): p for kind in TokenKind for p in book.current(kind)}
+    new = [
+        price
+        for price in downloaded
+        if (held := holding.get((price.kind, price.rule))) is None
+        or held.usd_per_million != price.usd_per_million
+    ]
+    if not new:
+        return [], []
+    problems = check_prices([*stored, *new], local=False)
+    if problems:
+        return [], problems
+    try:
+        with conn.begin_nested():
+            _insert(conn, model, host, offering, new)
+    except IntegrityError:  # expected: another command stored the same prices first
+        logger.debug("Prices of %s@%s already stored by another command", model, host)
+        return [], []
+    return [_change(model, host, holding.get((p.kind, p.rule)), p) for p in new], []
+
+
+def _change(model: str, host: str, old: Price | None, new: Price) -> str:
+    kind = new.kind.value + (" (special)" if new.rule else "")
+    before = "none" if old is None else f"{old.usd_per_million}"
+    return f"{model}@{host} {kind}: {before} → {new.usd_per_million} USD per 1M"
+
+
+def _offering_id(conn: Connection, model: str, host: str) -> int | None:
+    return conn.execute(
+        select(_OFFERING.c.id).where(_OFFERING.c.model == model, _OFFERING.c.host == host)
+    ).scalar()
+
+
+def _insert(
+    conn: Connection, model: str, host: str, offering: int | None, new: list[Price]
+) -> None:
     if offering is None:
         offering = conn.execute(insert(LlmOffering).values(model=model, host=host)).lastrowid
     for price in new:

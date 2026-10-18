@@ -131,6 +131,15 @@ def _move_default_dal_once(conn: Connection) -> None:
     )
 
 
+def _add_price_index(conn: Connection) -> None:
+    """One price per offering, kind, rule and start date, held by the database itself, so two
+    commands storing the same download at once cannot both succeed. Idempotent."""
+    conn.exec_driver_sql(
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_llm_price_once ON llm_price "
+        "(offering_id, token_kind, IFNULL(rule_id, 0), valid_from)"
+    )
+
+
 def _seed_prices(conn: Connection) -> None:
     """Store the shipped list's prices. A list that cannot be read changes nothing, and warns."""
     try:
@@ -166,6 +175,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(_add_console_log_level)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)
+            await conn.run_sync(_add_price_index)
             await conn.run_sync(_seed_prices)
 
         await engine.dispose()

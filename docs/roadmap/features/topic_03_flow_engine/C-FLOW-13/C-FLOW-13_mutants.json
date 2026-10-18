@@ -645,7 +645,7 @@
           "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
+          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
         },
         {
           "id": "role-table-overwritten",
