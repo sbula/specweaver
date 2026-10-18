@@ -196,7 +196,13 @@ class PromptBuilderAddersMixin:
         from specweaver.infrastructure.llm.prompt.adapter import ProjectMetadataPromptAdapter
 
         adapter = ProjectMetadataPromptAdapter(metadata)
-        return self.add_context(adapter, priority=priority, slot=PromptSlot.METADATA)
+        self.add_context(adapter, priority=priority, slot=PromptSlot.METADATA)
+        return self.add_context(
+            f"Run started: {metadata.date_iso}",
+            "run_clock",
+            priority=priority,
+            slot=PromptSlot.RUN_CLOCK,
+        )
 
     def add_file(
         self,

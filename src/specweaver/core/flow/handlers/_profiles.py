@@ -42,6 +42,7 @@ _STANDARD_ORDER: tuple[PromptSlot, ...] = (
     PromptSlot.CONTEXT,
     PromptSlot.AGENT_MEMORY,
     PromptSlot.REMINDER,
+    PromptSlot.RUN_CLOCK,
 )
 
 _ALL_SLOTS = frozenset(PromptSlot)
@@ -64,12 +65,14 @@ MINIMAL = RenderProfile(
             PromptSlot.INSTRUCTIONS,
             PromptSlot.METADATA,
             PromptSlot.TOPOLOGY,
+            PromptSlot.RUN_CLOCK,
         }
     ),
     order=(
         PromptSlot.INSTRUCTIONS,
         PromptSlot.METADATA,
         PromptSlot.TOPOLOGY,
+        PromptSlot.RUN_CLOCK,
     ),
 )
 """Minimal profile — instructions + metadata + topology only.

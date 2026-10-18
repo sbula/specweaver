@@ -28,12 +28,13 @@ class TestPolicyProfiles:
         assert FULL.order == _STANDARD_ORDER
 
     def test_minimal_profile_exact_slots(self) -> None:
-        """P3: MINIMAL has exactly 3 slots."""
+        """P3: MINIMAL has exactly 4 slots: the run clock goes wherever the metadata does."""
         assert MINIMAL.active_slots == frozenset(
             {
                 PromptSlot.INSTRUCTIONS,
                 PromptSlot.METADATA,
                 PromptSlot.TOPOLOGY,
+                PromptSlot.RUN_CLOCK,
             }
         )
 
@@ -51,8 +52,8 @@ class TestPolicyProfiles:
         assert PromptSlot.AGENT_MEMORY in INTERACTIVE.active_slots
 
     def test_interactive_slot_count(self) -> None:
-        """P7: INTERACTIVE has exactly 10 slots."""
-        assert len(INTERACTIVE.active_slots) == 10
+        """P7: INTERACTIVE has exactly 11 slots."""
+        assert len(INTERACTIVE.active_slots) == 11
 
     def test_arbiter_exact_slots(self) -> None:
         """P8: ARBITER has exactly 2 slots."""

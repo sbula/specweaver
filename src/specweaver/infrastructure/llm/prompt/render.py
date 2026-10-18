@@ -136,6 +136,7 @@ _DEFAULT_TAG_ORDER = (
     "context",
     "reminder",
     "agent_memory",
+    "run_clock",
 )
 
 

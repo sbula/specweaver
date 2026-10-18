@@ -37,8 +37,8 @@ class TestPromptSlot:
         assert PromptSlot.AGENT_MEMORY.value == "agent_memory"
 
     def test_prompt_slot_total_count(self) -> None:
-        """T4: Ensure exactly 12 members are defined."""
-        assert len(PromptSlot) == 12
+        """T4: Ensure exactly 13 members are defined."""
+        assert len(PromptSlot) == 13
 
     def test_prompt_slot_values_unique(self) -> None:
         """T14: No two enum members share the same string value."""

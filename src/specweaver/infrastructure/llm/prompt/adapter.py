@@ -114,7 +114,9 @@ class ProjectMetadataPromptAdapter:
     def get_prompt_content(self, char_limit: int | None = None) -> str:
         import json
 
-        raw_dict = self._metadata.model_dump()
+        # The timestamp is the run clock's, at the end: here it would differ from run to run and
+        # keep everything after it out of a provider's cache.
+        raw_dict = self._metadata.model_dump(exclude={"date_iso"})
         yaml_content = f"project_metadata:\n{json.dumps(raw_dict, indent=2)}"
         if char_limit is not None:
             yaml_content = yaml_content[:char_limit] + "\n[truncated]"

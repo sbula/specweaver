@@ -1,0 +1,35 @@
+{
+  "schema": 2,
+  "feature": "C-FLOW-14",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "The run's timestamp stands at the end of the prompt",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_run_clock_slot.py",
+        "tests/integration/core/flow/handlers/test_prompt_start_is_stable.py"
+      ],
+      "mutants": [
+        {
+          "id": "timestamp-left-in-metadata",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prompt/adapter.py",
+          "symbol": "ProjectMetadataPromptAdapter.get_prompt_content",
+          "old": "        raw_dict = self._metadata.model_dump(exclude={\"date_iso\"})\n",
+          "new": "        raw_dict = self._metadata.model_dump()\n",
+          "breaks": "every run's prompt differs at its third part, and the constitution and standards after it are never read from a cache",
+          "symbol_sha": "sha256:094afe1420884cd2231439b3b8d0d26e50cbe69631204807696db79edb76bf8e"
+        },
+        {
+          "id": "clock-not-last",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/_profiles.py",
+          "symbol": "_STANDARD_ORDER",
+          "old": "    PromptSlot.REMINDER,\n    PromptSlot.RUN_CLOCK,\n)\n",
+          "new": "    PromptSlot.RUN_CLOCK,\n    PromptSlot.REMINDER,\n)\n",
+          "breaks": "the reminder after the clock is never cached"
+        }
+      ]
+    }
+  ]
+}

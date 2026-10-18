@@ -38,6 +38,9 @@ class PromptSlot(StrEnum):
     CONTEXT = "context"
     AGENT_MEMORY = "agent_memory"
     REMINDER = "reminder"
+    #: The run's timestamp, last: the only part that differs from run to run, so everything before
+    #: it can be read from a provider's cache.
+    RUN_CLOCK = "run_clock"
 
 
 @dataclass(frozen=True)
