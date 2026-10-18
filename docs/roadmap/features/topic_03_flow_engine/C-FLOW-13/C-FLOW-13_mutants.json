@@ -193,7 +193,7 @@
           "old": "        return _merge(_merge(self.kinds.get(kind), known), override)\n",
           "new": "        return _merge(override, _merge(self.kinds.get(kind), known))\n",
           "breaks": "a price the user corrected in the machine file is overwritten by the shipped one",
-          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
+          "symbol_sha": "sha256:afb73c2b34751deec7723fdee5a2c7a2ef1195da22e75c808ad41fa58dc12ca4"
         },
         {
           "id": "local-loses-to-generated",
@@ -203,7 +203,7 @@
           "old": "        return _merge(_merge(self.kinds.get(kind), known), override)\n",
           "new": "        return _merge(override, _merge(self.kinds.get(kind), known))\n",
           "breaks": "a hand-checked fact in local.toml is silently replaced by the generated file",
-          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
+          "symbol_sha": "sha256:afb73c2b34751deec7723fdee5a2c7a2ef1195da22e75c808ad41fa58dc12ca4"
         },
         {
           "id": "machine-only-model-unknown",
@@ -213,17 +213,17 @@
           "old": "        if known is None and override is None:\n",
           "new": "        if known is None:\n",
           "breaks": "a model the user describes only in the machine file has no facts",
-          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
+          "symbol_sha": "sha256:afb73c2b34751deec7723fdee5a2c7a2ef1195da22e75c808ad41fa58dc12ca4"
         },
         {
           "id": "kind-entry-ignored",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/catalogue.py",
-          "symbol": "Catalogue.facts",
-          "old": "        override = _merge(overrides.get(model), overrides.get(f\"{kind}/{model}\"))\n",
-          "new": "        override = overrides.get(model)\n",
+          "symbol": "corrections",
+          "old": "    return _merge(overrides.get(model), overrides.get(f\"{kind}/{model}\"))\n",
+          "new": "    return overrides.get(model)\n",
           "breaks": "[models.\"anthropic/claude-sonnet-5\"] is silently ignored",
-          "symbol_sha": "sha256:a44552964c7b6f30c0482a38c841a7228de33dc3c5dd89bb30203aee2b83f3fc"
+          "symbol_sha": "sha256:b2b17dfdeda54df6d9bb68254b12356062d2ee0285d5c07c06f8e32931b16f96"
         }
       ]
     },
@@ -235,64 +235,14 @@
       ],
       "mutants": [
         {
-          "id": "deprecated-models-kept",
-          "origin": "authored",
-          "file": "scripts/update_model_catalogue.py",
-          "symbol": "convert",
-          "old": "            if model.get(\"status\") == \"deprecated\":\n",
-          "new": "            if False:\n",
-          "breaks": "deprecated models ship in the catalogue and can be chosen",
-          "symbol_sha": "sha256:19b0b9c671bec6c8acd498a718d0eb2b85d13ea40d9ed950c0d9ae26b50af1ee"
-        },
-        {
-          "id": "zero-limit-shipped",
-          "origin": "authored",
-          "file": "scripts/update_model_catalogue.py",
-          "symbol": "_facts",
-          "old": "        \"context\": limit.get(\"context\") or None,\n",
-          "new": "        \"context\": limit.get(\"context\"),\n",
-          "breaks": "a zero context from models.dev makes the whole shipped catalogue refuse to load",
-          "symbol_sha": "sha256:a55aa263cf4f2a74e0b99a0c184ccd62bfb4070f922f2bd8e107934464622ea8"
-        },
-        {
           "id": "costs-unstamped",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
           "symbol": "costs",
-          "old": "    _say(_catalogue_line(shipped_catalogue().source))\n",
+          "old": "    _say(_catalogue_line(shipped_catalogue().checked))\n",
           "new": "    pass\n",
           "breaks": "sw costs shows prices without saying how old the catalogue is",
-          "symbol_sha": "sha256:751610065f90209297606bf8aa10b5193009bab19263797204b5425ac912f9cf"
-        },
-        {
-          "id": "tier-price-dropped",
-          "origin": "authored",
-          "file": "scripts/update_model_catalogue.py",
-          "symbol": "_highest",
-          "old": "    tables = [cost, *(value for value in cost.values() if isinstance(value, dict))]\n",
-          "new": "    tables = [cost]\n",
-          "breaks": "a long prompt on a tiered model is counted at the cheaper base price",
-          "symbol_sha": "sha256:cafb426c96ab06be33acc5e030b1b77538aa729ea61d945f0f360464e2c02989"
-        },
-        {
-          "id": "reasoning-price-dropped",
-          "origin": "authored",
-          "file": "scripts/update_model_catalogue.py",
-          "symbol": "_facts",
-          "old": "        \"usd_per_million_output\": _highest(cost, (\"output\", \"reasoning\")),\n",
-          "new": "        \"usd_per_million_output\": _highest(cost, (\"output\",)),\n",
-          "breaks": "thinking billed above the output price is counted at the output price",
-          "symbol_sha": "sha256:f7dd24c6882b59de833723046dedabaa22940bad5715b00defc96f66f6215173"
-        },
-        {
-          "id": "cache-write-price-dropped",
-          "origin": "authored",
-          "file": "scripts/update_model_catalogue.py",
-          "symbol": "_facts",
-          "old": "        \"usd_per_million_input\": _highest(cost, (\"input\", \"cache_write\")),\n",
-          "new": "        \"usd_per_million_input\": _highest(cost, (\"input\",)),\n",
-          "breaks": "a cache write billed above the input price is under-counted",
-          "symbol_sha": "sha256:f7dd24c6882b59de833723046dedabaa22940bad5715b00defc96f66f6215173"
+          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
         }
       ],
       "retired": {
@@ -606,12 +556,12 @@
         {
           "id": "kind-price-shown-as-catalogue",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
-          "symbol": "_price_source",
-          "old": "    for key in (f\"{kind}/{model}\", model):\n",
-          "new": "    for key in (model,):\n",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "price_book",
+          "old": "    own = corrections(server.kind, model, overrides)\n",
+          "new": "    own = overrides.get(model)\n",
           "breaks": "a price you set for one kind is shown as the catalogue's",
-          "symbol_sha": "sha256:5815aaf5ad879236b746de0573fadca52cf46f82be8dce00221147d245cd0eb1"
+          "symbol_sha": "sha256:35179cade77938058a6ff5f91eacf6d265a7650edf71569b49cb181abd8050f8"
         }
       ]
     },
@@ -695,7 +645,7 @@
           "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:4cfc820d4ce395d200e63cd2152a3feaa105dcecc181b2c91941c8acfd975745"
+          "symbol_sha": "sha256:95a2064b3d5d63bd8daea62e62d43d8b736e4a3ea7bfeb2b60fb9ce719979683"
         },
         {
           "id": "role-table-overwritten",
@@ -785,7 +735,7 @@
           "old": "    usd_per_million_input: float | None = Field(default=None, ge=0, allow_inf_nan=False)\n",
           "new": "    usd_per_million_input: float | None = Field(default=None, ge=0)\n",
           "breaks": "a price of inf is stored, and every hosted call stops",
-          "symbol_sha": "sha256:ca1e34006e29ffaeda0e6fcc61f51dba552d2c1544a54d950b4b80fee3c465b6"
+          "symbol_sha": "sha256:538c61926905c1fd0760a96d2c90938afef80be34829c1c8681c70b8ab05b5b4"
         },
         {
           "id": "future-rate",

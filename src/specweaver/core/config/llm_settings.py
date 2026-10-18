@@ -127,6 +127,8 @@ class ModelFacts(_Strict):
     tool_calls: bool | None = None
     usd_per_million_input: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     usd_per_million_output: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    usd_per_million_cached_read: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    usd_per_million_cache_write: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     #: One output limit also bounds the model's hidden thinking, so a call's cost has a ceiling.
     thinking_in_output_cap: bool | None = None
     sampling: Sampling | None = None

@@ -11,13 +11,14 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import date
 from typing import TYPE_CHECKING
 
 from specweaver.infrastructure.llm.models import TokenKind
 
 if TYPE_CHECKING:
-    from datetime import date
+    from specweaver.core.config.llm_settings import ModelFacts
 
 REQUIREMENTS: frozenset[str] = frozenset({"nothing", "breakpoint", "cache_key"})
 #: Every hosted model needs these two; a cached kind with no price falls back to input.
@@ -92,3 +93,48 @@ def _gaps(prices: list[Price]) -> list[str]:
 
 def _first_default(prices: list[Price], kind: TokenKind) -> date | None:
     return min((p.valid_from for p in prices if p.kind == kind and p.rule is None), default=None)
+
+
+#: The settings-file field that sets each kind's price.
+SETTING_OF = {
+    TokenKind.INPUT: "usd_per_million_input",
+    TokenKind.OUTPUT: "usd_per_million_output",
+    TokenKind.CACHED_READ: "usd_per_million_cached_read",
+    TokenKind.CACHE_WRITE: "usd_per_million_cache_write",
+}
+
+
+@dataclass(frozen=True)
+class PriceBook:
+    """The prices of one model at one host. A local model has none: its cost is not applicable."""
+
+    prices: tuple[Price, ...]
+    local: bool
+
+    def current(self, kind: TokenKind, today: date | None = None) -> list[Price]:
+        """The prices of `kind` that hold today: the newest per rule."""
+        day = today or date.today()
+        newest: dict[Rule | None, Price] = {}
+        for price in self.prices:
+            if price.kind != kind or price.valid_from > day:
+                continue
+            held = newest.get(price.rule)
+            if held is None or price.valid_from > held.valid_from:
+                newest[price.rule] = price
+        return list(newest.values())
+
+    def default(self, kind: TokenKind) -> Price | None:
+        return next((p for p in self.current(kind) if p.rule is None), None)
+
+    def with_settings(self, facts: ModelFacts | None) -> PriceBook:
+        """Each price the settings file sets replaces every price of its kind, rules included."""
+        if facts is None:
+            return self
+        own = {
+            kind: value
+            for kind, field in SETTING_OF.items()
+            if (value := getattr(facts, field)) is not None
+        }
+        kept = [p for p in self.prices if p.kind not in own]
+        mine = [Price(kind, usd, date.min, "settings") for kind, usd in own.items()]
+        return replace(self, prices=(*kept, *mine))

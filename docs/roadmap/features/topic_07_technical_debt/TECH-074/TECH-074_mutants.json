@@ -90,6 +90,134 @@
           "symbol_sha": "sha256:590ed59f02ce79276cf650f09a3ca4bf0d33aaad809089a403fdb1bd9d4a3550"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Your settings win",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_store.py",
+        "tests/unit/infrastructure/llm/test_price_book.py"
+      ],
+      "mutants": [
+        {
+          "id": "settings-price-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "price_book",
+          "old": "    return PriceBook(tuple(prices), local=False).with_settings(own)\n",
+          "new": "    return PriceBook(tuple(prices), local=False)\n",
+          "breaks": "a price you set is ignored and the shipped or downloaded one is billed",
+          "symbol_sha": "sha256:35179cade77938058a6ff5f91eacf6d265a7650edf71569b49cb181abd8050f8"
+        },
+        {
+          "id": "settings-price-beside-the-old",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "PriceBook.with_settings",
+          "old": "        kept = [p for p in self.prices if p.kind not in own]\n",
+          "new": "        kept = list(self.prices)\n",
+          "breaks": "a price you set sits beside the old ones, so a special price still overrides your correction",
+          "symbol_sha": "sha256:ff965569ed4849074984f7718cc4d45359fd7968a55273fae5f55aff488d6531"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "sw costs shows the price the ledger uses",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_costs_price_book_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "costs-shows-the-write-price",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "costs",
+          "old": "        price_in, price_out = (book.default(TokenKind.INPUT), book.default(TokenKind.OUTPUT))\n",
+          "new": "        price_in, price_out = (book.default(TokenKind.CACHE_WRITE), book.default(TokenKind.OUTPUT))\n",
+          "breaks": "sw costs shows the cache-write price as the input price, 25% above what an uncached token costs",
+          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "The shipped prices and rules reach the database once",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_store.py",
+        "tests/unit/infrastructure/llm/test_price_book.py"
+      ],
+      "mutants": [
+        {
+          "id": "seed-never-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "bootstrap_database",
+          "old": "            await conn.run_sync(_seed_prices)\n",
+          "new": "            pass\n",
+          "breaks": "no price or cache rule is ever stored, so the rules C-FLOW-14 needs do not exist",
+          "symbol_sha": "sha256:95a2064b3d5d63bd8daea62e62d43d8b736e4a3ea7bfeb2b60fb9ce719979683"
+        },
+        {
+          "id": "seed-repeats-every-start",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "_seed_one",
+          "old": "    new = [price for price in listed if price not in stored]\n",
+          "new": "    new = listed\n",
+          "breaks": "every start-up tries to store the list again and warns that it breaks the check",
+          "symbol_sha": "sha256:a0fca3a9938fb1724bd9a1c2006c493e558126dca1c819d4fde26650cdb24ea7"
+        },
+        {
+          "id": "seed-ignores-the-check",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "_seed_one",
+          "old": "    if problems:\n",
+          "new": "    if False:\n",
+          "breaks": "a list that breaks the exactly-one check is stored, and a call meets two prices or none",
+          "symbol_sha": "sha256:a0fca3a9938fb1724bd9a1c2006c493e558126dca1c819d4fde26650cdb24ea7"
+        },
+        {
+          "id": "stored-prices-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "price_book",
+          "old": "    prices = stored or catalogue.prices(server.kind, model)\n",
+          "new": "    prices = catalogue.prices(server.kind, model)\n",
+          "breaks": "a newer stored price is never used; the shipped one is billed forever",
+          "symbol_sha": "sha256:35179cade77938058a6ff5f91eacf6d265a7650edf71569b49cb181abd8050f8"
+        },
+        {
+          "id": "oldest-price-holds",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "PriceBook.current",
+          "old": "            if held is None or price.valid_from > held.valid_from:\n",
+          "new": "            if True:\n",
+          "breaks": "which price holds depends on row order, so an old price can bill after a newer one",
+          "symbol_sha": "sha256:df6d3c4f96f97b9b2d0ae995fb9f4e22d0fb82b7349db10a78e91aebbd950e8b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "A price belongs to a model at one host",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "every-host-priced-as-its-kind",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "offering_host",
+          "old": "    return server_name if server.kind == \"openai-compatible\" else server.kind\n",
+          "new": "    return server.kind\n",
+          "breaks": "every openai-compatible host shares one price, so Together and Fireworks bill as each other",
+          "symbol_sha": "sha256:7c8648f65a1bfdc57535ecc8b4272c434a94d6c19fda453a61e9cad9ab1da62d"
+        }
+      ]
     }
   ]
 }

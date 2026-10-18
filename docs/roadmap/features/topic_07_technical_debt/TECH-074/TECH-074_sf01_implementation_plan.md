@@ -80,6 +80,17 @@ it (NFR-2).
 | Q1 | The names of the two new prices in the settings file | `usd_per_million_cached_read`, `usd_per_million_cache_write` — the token kinds' names `[agreed 2026-10-18]` |
 | Q2 | How a changed cache rule is found | from the calls: a cached count that breaks the rule warns — design FR-11, built in SF-02 `[agreed 2026-10-18]` |
 
+## Dev notes
+
+- CB-2: `schema_version` stays 1. `specials` is an addition, and the list ships with the code that
+  reads it.
+- CB-2: a list with no `checked` date gives prices valid from always. Refusing it broke every test list.
+- CB-2: a price you set for a model on a local server still applies (`sw costs set`, `C-FLOW-13`
+  FR-12). The database stores no prices for local models. Whether a local call shows a cost or
+  *not applicable* (FR-10) is a question for the SF-02 plan.
+- CB-2: five `C-FLOW-13` mutants aimed at `scripts/update_model_catalogue.py`, deleted in `e39ebd7e`,
+  were removed. Three were re-anchored to the code that replaced theirs.
+
 ## Backlog
 
 none

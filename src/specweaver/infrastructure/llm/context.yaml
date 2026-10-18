@@ -37,6 +37,9 @@ exposes:
   - PromptBuilder
   - TaskType
   - TelemetryCollector
+  - TokenKind
+  - price_book
+  - seed_prices
   - UsageRecord
   - PromptSlot
   - RenderProfile

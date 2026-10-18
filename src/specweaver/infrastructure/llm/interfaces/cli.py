@@ -22,16 +22,17 @@ from specweaver.core.config.llm_settings import (
     to_usd,
 )
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
+from specweaver.infrastructure.llm.models import TokenKind
+from specweaver.infrastructure.llm.price_store import price_book
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
 
 if TYPE_CHECKING:
     from specweaver.core.config.llm_settings import (
         Currency,
-        LlmSettingsFiles,
-        ModelFacts,
         ResolvedRole,
     )
+    from specweaver.infrastructure.llm.prices import Price
 
 logger = logging.getLogger(__name__)
 
@@ -60,17 +61,23 @@ def costs(ctx: typer.Context) -> None:
     _say(_currency_line(currency))
     _say(_catalogue_line(shipped_catalogue().checked))
     spend = _month_spend(project)
+    db = _core.get_db()
     for (model, server), role_names in sorted(_models_in_use(roles).items()):
-        kind = files.machine.servers[server].kind
-        facts = shipped_catalogue().facts(kind, model, files.machine.models)
-        price_in = facts.usd_per_million_input if facts else None
-        price_out = facts.usd_per_million_output if facts else None
+        book = price_book(
+            db,
+            shipped_catalogue(),
+            server_name=server,
+            server=files.machine.servers[server],
+            model=model,
+            overrides=files.machine.models,
+        )
+        price_in, price_out = (book.default(TokenKind.INPUT), book.default(TokenKind.OUTPUT))
         spent, unpriced = spend.get((model, server), (None, 0))
         _say(
             f"{model}@{server} ({', '.join(role_names)}): "
-            f"input {format_money(price_in, currency, places=4)}, "
-            f"output {format_money(price_out, currency, places=4)} per 1M tokens"
-            f" — {_price_source(kind, model, facts, files)}; this month "
+            f"input {format_money(_usd(price_in), currency, places=4)}, "
+            f"output {format_money(_usd(price_out), currency, places=4)} per 1M tokens"
+            f" — {_price_source(price_in)}; this month "
             f"{_month(spent, unpriced, currency)}"
         )
     for (old_model, where), (old_spent, old_unpriced) in sorted(
@@ -213,14 +220,14 @@ def _catalogue_line(checked: str) -> str:
     return f"Prices from the shipped list, checked {checked}."
 
 
-def _price_source(kind: str, model: str, facts: ModelFacts | None, files: LlmSettingsFiles) -> str:
-    for key in (f"{kind}/{model}", model):
-        own = files.machine.models.get(key)
-        if own is not None and own.usd_per_million_input is not None:
-            return "your settings file"
-    if facts is not None and facts.usd_per_million_input is not None:
-        return "catalogue"
-    return "no price known"
+def _usd(price: Price | None) -> float | None:
+    return price.usd_per_million if price else None
+
+
+def _price_source(price: Price | None) -> str:
+    if price is None:
+        return "no price known"
+    return "your settings file" if price.source == "settings" else "catalogue"
 
 
 def _month_spend(project: str) -> dict[tuple[str, str | None], tuple[float | None, int]]:

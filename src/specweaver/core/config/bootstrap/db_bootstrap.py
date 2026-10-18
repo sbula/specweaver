@@ -4,13 +4,17 @@
 import logging
 
 from sqlalchemy import Connection
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import specweaver.workspace.memory.store  # noqa: F401
 from specweaver.commons.async_bridge import run_sync
 from specweaver.core.config.database import Database
+from specweaver.core.config.llm_settings import SettingsFileError
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.flow.store import Base as FlowBase
+from specweaver.infrastructure.llm.catalogue import shipped_catalogue
+from specweaver.infrastructure.llm.price_store import seed_prices
 from specweaver.infrastructure.llm.store import Base as LlmBase
 from specweaver.workspace.store import Base as WorkspaceBase
 
@@ -111,6 +115,15 @@ def _move_default_dal_once(conn: Connection) -> None:
     )
 
 
+def _seed_prices(conn: Connection) -> None:
+    """Store the shipped list's prices. A list that cannot be read changes nothing, and warns."""
+    try:
+        with conn.begin_nested():
+            seed_prices(conn, shipped_catalogue())
+    except (SettingsFileError, SQLAlchemyError) as exc:
+        logger.warning("Shipped prices not stored, the stored ones stay: %s", exc)
+
+
 def bootstrap_database(db_path: str) -> None:
     """Create tables and apply defaults natively. Idempotent."""
     import pathlib
@@ -136,6 +149,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(_add_console_log_level)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)
+            await conn.run_sync(_seed_prices)
 
         await engine.dispose()
 

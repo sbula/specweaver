@@ -2,11 +2,16 @@
 # settings file wins over it ([models."<id>"]). A fact left out is unknown, never false or 0.
 #
 # Prices are USD per 1M tokens, taken from models.dev (MIT licence, Copyright (c) 2025 models.dev).
-# Where a model has tiers (long prompts, cache writes, reasoning), the highest price is written, so
-# a call is never under-counted. Add a model by copying an entry and checking its provider's price.
+# Where a model has long-prompt tiers, the highest price is written, so a call is never under-counted.
+# Add a model by copying an entry and checking its provider's price.
+#
+# Cached input is priced on its own. `specials` are prices that apply only while their rule holds:
+# the shortest cached prefix (min_prefix_tokens), how long a cache lives (max_age_seconds), and what
+# the request must send (requires: breakpoint or cache_key). The rules are from each provider's
+# caching page, read 2026-10-17 (docs/analysis/prompt_caching_2026-10-17.md); models.dev has none.
 
 schema_version = 1
-checked = "2026-10-08"
+checked = "2026-10-17"
 
 # Whether the one output limit a call sends also bounds the model's hidden thinking.
 # Checked against each provider's documentation on 2026-09-27. Mistral and Qwen do not say, so
@@ -24,22 +29,37 @@ thinking_in_output_cap = true   # max_output_tokens includes thought tokens
 context = 1000000
 max_output = 128000
 tool_calls = true
-usd_per_million_input = 5
+usd_per_million_input = 4
 usd_per_million_output = 20
+usd_per_million_cache_write = 5   # a 5-minute cache
+specials = [
+  { kind = "cache_write", usd_per_million = 8, max_age_seconds = 3600 },
+  { kind = "cached_read", usd_per_million = 0.2, min_prefix_tokens = 512, max_age_seconds = 300, requires = "breakpoint" },
+]
 
 [models."anthropic/claude-sonnet-5"]
 context = 1000000
 max_output = 128000
 tool_calls = true
-usd_per_million_input = 2.5
+usd_per_million_input = 2
 usd_per_million_output = 10
+usd_per_million_cache_write = 2.5   # a 5-minute cache
+specials = [
+  { kind = "cache_write", usd_per_million = 4, max_age_seconds = 3600 },
+  { kind = "cached_read", usd_per_million = 0.2, min_prefix_tokens = 1024, max_age_seconds = 300, requires = "breakpoint" },
+]
 
 [models."anthropic/claude-haiku-4-5"]
 context = 200000
 max_output = 64000
 tool_calls = true
-usd_per_million_input = 1.25
+usd_per_million_input = 1
 usd_per_million_output = 5
+usd_per_million_cache_write = 1.25   # a 5-minute cache
+specials = [
+  { kind = "cache_write", usd_per_million = 2, max_age_seconds = 3600 },
+  { kind = "cached_read", usd_per_million = 0.1, min_prefix_tokens = 4096, max_age_seconds = 300, requires = "breakpoint" },
+]
 
 [models."openai/gpt-5.6"]
 context = 1050000
@@ -47,6 +67,7 @@ max_output = 128000
 tool_calls = true
 usd_per_million_input = 10
 usd_per_million_output = 30
+specials = [{ kind = "cached_read", usd_per_million = 1, min_prefix_tokens = 1024, max_age_seconds = 1800 }]
 
 [models."openai/gpt-5.6-luna"]
 context = 1050000
@@ -54,6 +75,7 @@ max_output = 128000
 tool_calls = true
 usd_per_million_input = 0.5
 usd_per_million_output = 1.8
+specials = [{ kind = "cached_read", usd_per_million = 0.05, min_prefix_tokens = 1024, max_age_seconds = 1800 }]
 
 [models."gemini/gemini-3.1-pro-preview"]
 context = 1048576
@@ -61,6 +83,7 @@ max_output = 65536
 tool_calls = true
 usd_per_million_input = 4
 usd_per_million_output = 18
+specials = [{ kind = "cached_read", usd_per_million = 0.4, min_prefix_tokens = 4096 }]
 
 [models."gemini/gemini-3.8-flash"]
 context = 1048576
@@ -68,6 +91,7 @@ max_output = 65536
 tool_calls = true
 usd_per_million_input = 0.75
 usd_per_million_output = 3.75
+specials = [{ kind = "cached_read", usd_per_million = 0.075, min_prefix_tokens = 4096 }]
 
 [models."mistral/mistral-large-latest"]
 context = 262144
@@ -75,6 +99,7 @@ max_output = 262144
 tool_calls = true
 usd_per_million_input = 0.5
 usd_per_million_output = 1.5
+specials = [{ kind = "cached_read", usd_per_million = 0.05, requires = "cache_key" }]
 
 [models."mistral/codestral-latest"]
 context = 256000
@@ -82,6 +107,7 @@ max_output = 4096
 tool_calls = true
 usd_per_million_input = 0.3
 usd_per_million_output = 0.9
+specials = [{ kind = "cached_read", usd_per_million = 0.03, requires = "cache_key" }]
 
 [models."qwen/qwen3-coder-plus"]
 context = 1048576
