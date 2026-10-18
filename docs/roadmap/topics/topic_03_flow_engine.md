@@ -187,7 +187,8 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Purpose:** Make prompts hit the providers' caches, where reused input costs about a tenth — [research](../../analysis/prompt_caching_2026-10-17.md)
   > - **Precondition:** `TECH-074` → cached tokens read and priced first, or Anthropic caching under-counts
   > - **Produces:** 🔴 Anthropic breakpoints · Mistral's cache key · a stable prompt prefix (no early timestamp) · vLLM's cached count · the cache-lifetime warning (`TECH-074` FR-11)
-  > - **Done when:** 🔴 — seven decisions open: lifetime, breakpoints, cache key, timestamp, slot order, token limit, prices
+  > - **Done when:** a tool loop on Anthropic reads its earlier rounds from the cache; runs of one step type
+  >   share a cached start — [design](../features/topic_03_flow_engine/C-FLOW-14/C-FLOW-14_design.md)
 
 * **`C-FLOW-13` ✅: Model Catalogue**
   > - **Purpose:** One central place for every LLM setting — machine `settings.toml` + project `[llm]` `[agreed 2026-09-26]`

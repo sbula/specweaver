@@ -76,3 +76,5 @@ Q29 layers 2–3 and Q30–Q32 (blame across chains and manager/worker roles): t
 
 - 2026-10-18: a local model's indirect price, its share of the machine × time, for choosing a model
   (`A-FLOW-01`) — [note](local_model_price_2026-10-18.md).
+- 2026-10-18: putting the prompt's stable parts (constitution, standards) before the instructions, so
+  step types share a cache, waits for a way to measure answer quality (`C-FLOW-14` AD-1).
