@@ -137,10 +137,10 @@ SF-01, then SF-02 (FR-4 needs the caches SF-01 creates to be testable end to end
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Prompts that hit the cache | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Prompts that hit the cache | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The cache warnings | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-18.
-**Next**: the SF-01 plan.
+**Next**: SF-01 dev, CB-1 (plan approved 2026-10-18).
