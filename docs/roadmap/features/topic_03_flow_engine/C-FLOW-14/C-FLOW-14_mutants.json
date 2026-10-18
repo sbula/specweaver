@@ -68,6 +68,93 @@
           "breaks": "every cache write costs twice the input price, not 1.25 times"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "One cache key per project and step type, sent where it is known",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cache_key.py"
+      ],
+      "mutants": [
+        {
+          "id": "key-ignores-the-step",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._keyed",
+          "old": "        digest = hashlib.sha256(f\"{self._project}\\0{config.task_type}\".encode()).hexdigest()\n",
+          "new": "        digest = hashlib.sha256(f\"{self._project}\".encode()).hexdigest()\n",
+          "breaks": "every step type of a project shares one cache key, and their caches push each other out",
+          "symbol_sha": "sha256:fadb9b7b96d8cb0bcb24eeb5980d35fa74701d0748b691fc96907ba572b452a8"
+        },
+        {
+          "id": "openai-compatible-gets-the-key",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAICompatibleAdapter",
+          "old": "    sends_cache_key: ClassVar[bool] = False\n\n    def __init__",
+          "new": "    sends_cache_key: ClassVar[bool] = True\n\n    def __init__",
+          "breaks": "a vLLM or Together server gets a field it may refuse",
+          "symbol_sha": "sha256:08bbf3a12a82d1dbfa54fd8c531f785c1f8697f5562ccb43b28b0efb1f19007c"
+        },
+        {
+          "id": "qwen-gets-the-key",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/qwen.py",
+          "symbol": "QwenAdapter",
+          "old": "    sends_cache_key: ClassVar[bool] = False\n",
+          "new": "    sends_cache_key: ClassVar[bool] = True\n",
+          "breaks": "DashScope gets a field it does not document",
+          "symbol_sha": "sha256:59393628ff28e5de4969d032ecf2562a946c740c6884a675f2a7b875b7755940"
+        },
+        {
+          "id": "mistral-never-caches",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "_request",
+          "old": "        request[\"prompt_cache_key\"] = config.cache_key\n",
+          "new": "        pass\n",
+          "breaks": "Mistral never caches: it needs the key",
+          "symbol_sha": "sha256:2117f55a89a19dc76d728511840821cf4b6f03b3896306c5bba936ec5ad62fc1"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "A cache key names nothing",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cache_key.py"
+      ],
+      "mutants": [
+        {
+          "id": "key-in-clear",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._keyed",
+          "old": "        return config.model_copy(update={\"cache_key\": f\"sw-{digest[:32]}\"})\n",
+          "new": "        return config.model_copy(update={\"cache_key\": f\"sw-{self._project}-{config.task_type}\"})\n",
+          "breaks": "the project's name and the step go to the provider in every request",
+          "symbol_sha": "sha256:fadb9b7b96d8cb0bcb24eeb5980d35fa74701d0748b691fc96907ba572b452a8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Two reviews share one key and one start",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_review_cache_key_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "tool-path-unkeyed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "        config = self._keyed(config)\n        scope, first = self._reserve(messages, config)\n",
+          "new": "        scope, first = self._reserve(messages, config)\n",
+          "breaks": "an agent step never shares its provider's cache with the run before",
+          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+        }
+      ]
     }
   ]
 }

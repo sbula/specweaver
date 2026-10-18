@@ -61,6 +61,13 @@
 |---|----------|--------|
 | — | "Step type" in the agreed key (design FR-2) | `task_type`, the step's kind; a step's name differs per pipeline |
 
+## Dev notes
+
+- CB-1: `_DEFAULT_TAG_ORDER` in `prompt/render.py` also ends with `run_clock`, but nothing reaches it:
+  the builder always passes a profile's order. A mutant there is equivalent and is not in the corpus.
+- CB-3: the key is set in the collector on all three call paths (`generate`, the tool loop, the
+  stream); `sw review` runs its agent step through the tool loop.
+
 ## Backlog
 
 none

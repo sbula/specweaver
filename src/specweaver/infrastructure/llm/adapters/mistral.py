@@ -78,12 +78,16 @@ def _request(messages: list[Message], config: GenerationConfig) -> dict[str, Any
         mistral_messages.append({"role": "system", "content": config.system_instruction})
     for msg in messages:
         mistral_messages.append({"role": str(msg.role.value), "content": msg.content})
-    return {
+    request: dict[str, Any] = {
         "model": config.model,
         "messages": mistral_messages,
         "max_tokens": config.max_output_tokens,
         **_sampling(config),
     }
+    if config.cache_key:
+        # Mistral caches only for a request that names its cache.
+        request["prompt_cache_key"] = config.cache_key
+    return request
 
 
 #: Mistral has no `top_k`.

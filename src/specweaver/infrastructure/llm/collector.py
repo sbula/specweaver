@@ -15,6 +15,7 @@ typing.  Works because ``RunContext.llm`` is typed ``Any``.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import math
@@ -103,6 +104,23 @@ class TelemetryCollector:
             return self._scope_of(config)
         return CallScope(prices=self._prices(config.model))
 
+    async def _begin(
+        self, messages: list[Message], config: GenerationConfig
+    ) -> tuple[list[Message], GenerationConfig, CallScope, Reservation, int | None]:
+        """How a single call starts: redact, key, check the limits, and open its ledger row."""
+        messages = self._redactor.messages(messages)
+        config = self._keyed(config)
+        scope, reservation = self._reserve(messages, config)
+        call_id = await self._open(config, self._prompt_tokens(messages, config))
+        return messages, config, scope, reservation, call_id
+
+    def _keyed(self, config: GenerationConfig) -> GenerationConfig:
+        """The config with its cache key: calls of one step type in one project share a cache."""
+        if config.cache_key:
+            return config
+        digest = hashlib.sha256(f"{self._project}\0{config.task_type}".encode()).hexdigest()
+        return config.model_copy(update={"cache_key": f"sw-{digest[:32]}"})
+
     def _reserve(
         self, messages: list[Message], config: GenerationConfig
     ) -> tuple[CallScope, Reservation]:
@@ -144,9 +162,7 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> LLMResponse:
         """Proxy ``generate()`` — captures timing and usage."""
-        messages = self._redactor.messages(messages)
-        scope, reservation = self._reserve(messages, config)
-        call_id = await self._open(config, self._prompt_tokens(messages, config))
+        messages, config, scope, reservation, call_id = await self._begin(messages, config)
         start = time.monotonic()
         try:
             response = await self._adapter.generate(messages, config)
@@ -168,6 +184,7 @@ class TelemetryCollector:
         messages = self._redactor.messages(messages)
         tool_executor = self._redactor.tools(tool_executor)
         on_tool_round = self._redactor.rounds(on_tool_round)
+        config = self._keyed(config)
         scope, first = self._reserve(messages, config)
         held = [first]
         prompt_tokens = [self._prompt_tokens(messages, config)]
@@ -202,9 +219,7 @@ class TelemetryCollector:
         config: GenerationConfig,
     ) -> AsyncIterator[str]:
         """Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text."""
-        messages = self._redactor.messages(messages)
-        scope, reservation = self._reserve(messages, config)
-        call_id = await self._open(config, self._prompt_tokens(messages, config))
+        messages, config, scope, reservation, call_id = await self._begin(messages, config)
         start = time.monotonic()
         total_text: list[str] = []
         try:

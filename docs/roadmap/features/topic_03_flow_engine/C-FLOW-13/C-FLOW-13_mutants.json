@@ -291,7 +291,7 @@
           "old": "    output_limit_field: ClassVar[str] = \"max_completion_tokens\"\n",
           "new": "    output_limit_field: ClassVar[str] = \"max_tokens\"\n",
           "breaks": "OpenAI reasoning models refuse the call, and the limit does not cap reasoning tokens",
-          "symbol_sha": "sha256:4e9edc86cf20017efe61216f8dcbf0acc4895692838b8d7242851e79664d2add"
+          "symbol_sha": "sha256:81d403bb55aedb8bd4fcf1a25d444afb6656863d32cf08df71a594ab8d13a99d"
         },
         {
           "id": "qwen-legacy-default-address",
@@ -301,7 +301,7 @@
           "old": "    default_base_url: ClassVar[str | None] = None\n",
           "new": "    default_base_url: ClassVar[str | None] = \"https://dashscope.aliyuncs.com/compatible-mode/v1\"\n",
           "breaks": "a Qwen server without an address silently goes to DashScope's legacy domain",
-          "symbol_sha": "sha256:d28c472e047298634b5d1a05485137c5d7f70bfbed9a655bd60e0290f7afdcaf"
+          "symbol_sha": "sha256:59393628ff28e5de4969d032ecf2562a946c740c6884a675f2a7b875b7755940"
         },
         {
           "id": "openai-sends-temperature",
@@ -311,7 +311,7 @@
           "old": "    sent_sampling: ClassVar[frozenset[str]] = frozenset()\n",
           "new": "    sent_sampling: ClassVar[frozenset[str]] = frozenset({\"temperature\", \"top_p\"})\n",
           "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
-          "symbol_sha": "sha256:4e9edc86cf20017efe61216f8dcbf0acc4895692838b8d7242851e79664d2add"
+          "symbol_sha": "sha256:81d403bb55aedb8bd4fcf1a25d444afb6656863d32cf08df71a594ab8d13a99d"
         },
         {
           "id": "cloud-server-without-key-variable",
@@ -915,7 +915,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
         },
         {
           "id": "anthropic-fake-answer",

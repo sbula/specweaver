@@ -306,7 +306,7 @@
           "old": "                cumulative_usage = cumulative_usage + _usage_of(response)\n",
           "new": "                cumulative_usage = _usage_of(response)\n",
           "breaks": "a tool loop counts only its last round; the brake and the ledger miss the rest",
-          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
         },
         {
           "id": "anthropic-prompt-misses-cache",

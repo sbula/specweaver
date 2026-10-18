@@ -85,6 +85,9 @@ class GenerationConfig(BaseModel):
     # Where the call belongs, for the cost history.
     dal_level: str = ""
     step_name: str = ""
+    #: Calls that should share a provider's cache: one per project and step type, a hash that
+    #: names neither. Set by the collector; empty sends none.
+    cache_key: str = ""
 
 
 def payload_chars(payload: object) -> int:

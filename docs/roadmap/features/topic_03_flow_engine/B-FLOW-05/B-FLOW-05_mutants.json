@@ -34,7 +34,7 @@
           "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            self._record_failure(scope, reservation, exc)\n",
           "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            pass\n",
           "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
-          "symbol_sha": "sha256:bba95b34312f50d1fe125c056ec57a3c11d3d544cd6ac5f251f64184ae40734c"
+          "symbol_sha": "sha256:43a9229329fffea871ecb6879f81c635d2f319f07c4375b39ae131e452f604e7"
         },
         {
           "id": "stream-input-dropped",
@@ -44,7 +44,7 @@
           "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
           "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
           "breaks": "a streamed call's prompt is never counted",
-          "symbol_sha": "sha256:1991e7bf9aff8cebf739ef454893bfee476bdfda5a2dffef6d19da845c044f03"
+          "symbol_sha": "sha256:f9141a2e8c7b586fad1fec24f6c45463cb15d79ee7e292fa1b77f3bd09311343"
         },
         {
           "id": "failed-tool-call-not-counted",
@@ -54,7 +54,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
+          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -64,7 +64,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
         },
         {
           "id": "failure-usage-ignored",
@@ -171,7 +171,7 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:6b0b9e483e5dde0cb2423d89af6a28d80a8ade650be38a25b3f172fc09ec24be"
+          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
         },
         {
           "id": "round-payload-ignored",
@@ -181,7 +181,7 @@
           "old": "                    before_request(round_num, payload_chars(kwargs))\n",
           "new": "                    before_request(round_num, 0)\n",
           "breaks": "a tool round's growing prompt is never counted before it is sent",
-          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
         }
       ]
     },
@@ -707,7 +707,7 @@
           "old": "before_request(round_num, payload_chars(kwargs))",
           "new": "before_request(round_num, payload_chars(oai_messages))",
           "breaks": "a tool round's check leaves out the tool schemas and system prompt",
-          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
         },
         {
           "id": "system-instruction-free",

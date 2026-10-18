@@ -92,6 +92,9 @@ class OpenAIAdapter(LLMAdapter):
     output_limit_field: ClassVar[str] = "max_completion_tokens"
     #: OpenAI's current models (GPT-5 and later) refuse a non-default temperature with a 400.
     sent_sampling: ClassVar[frozenset[str]] = frozenset()
+    #: Sends `prompt_cache_key`: OpenAI's own servers know it; a server that only speaks its API
+    #: may refuse a field it does not know.
+    sends_cache_key: ClassVar[bool] = True
 
     def _sampling_kwargs(self, config: GenerationConfig) -> dict[str, Any]:
         """The sampling values that are set, for a server that accepts them."""
@@ -105,6 +108,12 @@ class OpenAIAdapter(LLMAdapter):
                 "top_k": config.top_k
             }  # not an OpenAI field; vLLM and DashScope read it
         return kwargs
+
+    def _cache_kwargs(self, config: GenerationConfig) -> dict[str, Any]:
+        """The cache key, for a server known to take it."""
+        if self.sends_cache_key and config.cache_key:
+            return {"prompt_cache_key": config.cache_key}
+        return {}
 
     def _get_client(self) -> Any:
         if self._client is None:
@@ -165,6 +174,7 @@ class OpenAIAdapter(LLMAdapter):
             self.output_limit_field: config.max_output_tokens,
         }
         kwargs.update(self._sampling_kwargs(config))
+        kwargs.update(self._cache_kwargs(config))
 
         if config.response_format == "json":
             kwargs["response_format"] = {"type": "json_object"}
@@ -260,6 +270,7 @@ class OpenAIAdapter(LLMAdapter):
             "tools": self._to_openai_tools(config.tools),
         }
         kwargs.update(self._sampling_kwargs(config))
+        kwargs.update(self._cache_kwargs(config))
 
         cumulative_usage = TokenUsage()
 
@@ -317,6 +328,7 @@ class OpenAICompatibleAdapter(OpenAIAdapter):
     provider_name = "openai-compatible"
     default_base_url: ClassVar[str | None] = None
     sent_sampling: ClassVar[frozenset[str]] = frozenset({"temperature", "top_p", "top_k"})
+    sends_cache_key: ClassVar[bool] = False
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
         super().__init__(api_key=_NO_KEY if api_key is None else api_key, base_url=base_url)
