@@ -94,7 +94,7 @@
           "old": "            if response.usage == TokenUsage()\n",
           "new": "            if False\n",
           "breaks": "a server that reports no usage never fills the token limit",
-          "symbol_sha": "sha256:34d8e96b32c8f80dfbce57aea29b1bbd297680d2d24541ee1457d1ff7cdf419d"
+          "symbol_sha": "sha256:a1ab8ad247a776cdd3e72db0f92954201c0c41b6c13c17e3983e1984a642cab6"
         }
       ]
     },

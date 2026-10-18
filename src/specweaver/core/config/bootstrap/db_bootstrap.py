@@ -85,6 +85,22 @@ def _add_call_status(conn: Connection) -> None:
         )
 
 
+#: The cached-token columns of `llm_usage_log`; NULL is unknown on every older row.
+_CACHED_COLUMNS = (
+    ("cached_read_tokens", "INTEGER"),
+    ("cache_write_tokens", "INTEGER"),
+    ("local", "BOOLEAN"),
+)
+
+
+def _add_cached_columns(conn: Connection) -> None:
+    """Add the cached-token columns to an older `llm_usage_log`. Keeps every row. Idempotent."""
+    present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(llm_usage_log)")}
+    for name, kind in _CACHED_COLUMNS:
+        if name not in present:
+            conn.exec_driver_sql(f"ALTER TABLE llm_usage_log ADD COLUMN {name} {kind}")
+
+
 def _add_console_log_level(conn: Connection) -> None:
     """Add `console_log_level` to an older `workspace_projects`; every project shows warnings. Idempotent."""
     present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(workspace_projects)")}
@@ -146,6 +162,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(_allow_unknown_cost)
             await conn.run_sync(_add_history_columns)
             await conn.run_sync(_add_call_status)
+            await conn.run_sync(_add_cached_columns)
             await conn.run_sync(_add_console_log_level)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)

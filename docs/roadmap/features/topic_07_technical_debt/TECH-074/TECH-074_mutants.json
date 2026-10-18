@@ -156,7 +156,7 @@
           "old": "            await conn.run_sync(_seed_prices)\n",
           "new": "            pass\n",
           "breaks": "no price or cache rule is ever stored, so the rules C-FLOW-14 needs do not exist",
-          "symbol_sha": "sha256:95a2064b3d5d63bd8daea62e62d43d8b736e4a3ea7bfeb2b60fb9ce719979683"
+          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
         },
         {
           "id": "seed-repeats-every-start",
@@ -397,6 +397,143 @@
           "new": "    if not isinstance(value, int):\n",
           "breaks": "a negative count from a server lowers the cost",
           "symbol_sha": "sha256:c7993f43b478db6557f1c9ce2c7c93c41f67c1c4b09b03b6a6471be704f09877"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Each token kind at its own price",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_cached_cost.py"
+      ],
+      "mutants": [
+        {
+          "id": "cached-billed-as-uncached",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "bill",
+          "old": "    cost = (prompt - read - write) * price_in.usd_per_million\n",
+          "new": "    cost = prompt * price_in.usd_per_million\n",
+          "breaks": "cached tokens are billed twice, once at the input price",
+          "symbol_sha": "sha256:83c96c98ec991b04f803cd36166a48cdff68882a29214a84d0e2756a31e03568"
+        },
+        {
+          "id": "cached-read-at-input-price",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "bill",
+          "old": "                _line(own)\n",
+          "new": "                _line(price_in)\n",
+          "breaks": "a cached read is billed at the full input price; the ledger overstates by ten times",
+          "symbol_sha": "sha256:83c96c98ec991b04f803cd36166a48cdff68882a29214a84d0e2756a31e03568"
+        },
+        {
+          "id": "missing-cached-price-is-free",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "bill",
+          "old": "                else BillLine(kind, price_in.usd_per_million, f\"{price_in.source}, as input\")\n",
+          "new": "                else BillLine(kind, 0.0, f\"{price_in.source}, as input\")\n",
+          "breaks": "a cached kind with no price is free, so the ledger under-states",
+          "symbol_sha": "sha256:83c96c98ec991b04f803cd36166a48cdff68882a29214a84d0e2756a31e03568"
+        },
+        {
+          "id": "cached-above-prompt-goes-negative",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "bill",
+          "old": "    read = min(usage.cached_read_tokens or 0, prompt)\n",
+          "new": "    read = usage.cached_read_tokens or 0\n",
+          "breaks": "a server reporting more cached than sent makes the uncached part negative and the cost too low",
+          "symbol_sha": "sha256:83c96c98ec991b04f803cd36166a48cdff68882a29214a84d0e2756a31e03568"
+        },
+        {
+          "id": "longest-lifetime-billed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "PriceBook.price_for",
+          "old": "        return max(fits, key=lambda p: (_tier(p), -_lifetime(p)), default=None)\n",
+          "new": "        return max(fits, key=lambda p: (_tier(p), _lifetime(p)), default=None)\n",
+          "breaks": "every cache write is billed at the 1-hour price nobody asked for",
+          "symbol_sha": "sha256:3e1abafae841ff17a27aef0e110920351ef48b13699a25395a93ad247a262d17"
+        },
+        {
+          "id": "tier-ignores-prompt-length",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "PriceBook.price_for",
+          "old": "        fits = [p for p in self.current(kind) if _tier(p) <= prompt_tokens]\n",
+          "new": "        fits = list(self.current(kind))\n",
+          "breaks": "a short prompt is billed at the long-prompt tier",
+          "symbol_sha": "sha256:3e1abafae841ff17a27aef0e110920351ef48b13699a25395a93ad247a262d17"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The ledger row keeps its counts and its prices",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cached_cost_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "cached-columns-never-added",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "bootstrap_database",
+          "old": "            await conn.run_sync(_add_cached_columns)\n",
+          "new": "            pass\n",
+          "breaks": "an existing database never gains the cached columns, and every write to it fails",
+          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
+        },
+        {
+          "id": "cached-count-not-stored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "_columns",
+          "old": "        \"cached_read_tokens\": record.get(\"billed\", {}).get(\"cached_read_tokens\"),\n",
+          "new": "        \"cached_read_tokens\": None,\n",
+          "breaks": "the ledger never knows what was cached",
+          "symbol_sha": "sha256:a0aa010ef2269224100651c21a51904f8a989228d24e090eac76a584f82f7cab"
+        },
+        {
+          "id": "price-lines-not-stored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.close_call",
+          "old": "            for line in record.get(\"billed\", {}).get(\"price_lines\", [])\n",
+          "new": "            for line in []\n",
+          "breaks": "an old row cannot be explained once a price changes",
+          "symbol_sha": "sha256:6b3db814544cc6c3f019a46cef225a0a7bdc2fbb4d28230960e12c6f2ec60b19"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "A local call is local, not unpriced",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cached_cost_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "local-marker-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/telemetry.py",
+          "symbol": "create_usage_record",
+          "old": "            local=prices.local if prices else None,\n",
+          "new": "            local=None,\n",
+          "breaks": "a local call reads as unpriced",
+          "symbol_sha": "sha256:484f5811c591340c4f37712a02ad9f796405a1a0869d96affbeb06376c4046e5"
+        },
+        {
+          "id": "local-call-warns-unpriced",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._capture",
+          "old": "        unpriced = record.estimated_cost_usd is None and not record.billed.local\n",
+          "new": "        unpriced = record.estimated_cost_usd is None\n",
+          "breaks": "every local call warns that it has no known price",
+          "symbol_sha": "sha256:a1ab8ad247a776cdd3e72db0f92954201c0c41b6c13c17e3983e1984a642cab6"
         }
       ]
     }

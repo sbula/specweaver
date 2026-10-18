@@ -517,11 +517,11 @@
           "id": "unknown-priced-as-zero",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/telemetry.py",
-          "symbol": "_cost",
-          "old": "    if price_in is None or price_out is None:\n        return None\n",
-          "new": "    if price_in is None or price_out is None:\n        return 0.0\n",
+          "symbol": "bill",
+          "old": "    if price_in is None or price_out is None:\n        return Bill(None)\n",
+          "new": "    if price_in is None or price_out is None:\n        return Bill(0.0)\n",
           "breaks": "an unpriced call is recorded as free",
-          "symbol_sha": "sha256:fe515db09ab5d8d381d25a052a8cb5e9664ba7a1ef7314a90665dcd266e3df75"
+          "symbol_sha": "sha256:83c96c98ec991b04f803cd36166a48cdff68882a29214a84d0e2756a31e03568"
         },
         {
           "id": "old-db-not-rebuilt",
@@ -645,7 +645,7 @@
           "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:95a2064b3d5d63bd8daea62e62d43d8b736e4a3ea7bfeb2b60fb9ce719979683"
+          "symbol_sha": "sha256:a7e2bc25dd63dfb43b64cd05405a0cdeea78de76c0baf18fa07bb55e8553b8d2"
         },
         {
           "id": "role-table-overwritten",

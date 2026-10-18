@@ -49,7 +49,7 @@
           "old": "        \"step_name\": record.get(\"step_name\") or None,\n",
           "new": "        \"step_name\": None,\n",
           "breaks": "the step is known in memory and lost in the database",
-          "symbol_sha": "sha256:0aeb709f3e71e347fa031b25616f8246b11b6b5d0e6a6a2f2ac0563fc4f93682"
+          "symbol_sha": "sha256:a0aa010ef2269224100651c21a51904f8a989228d24e090eac76a584f82f7cab"
         },
         {
           "id": "rest-run-id-lost",

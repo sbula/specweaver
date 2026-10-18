@@ -126,6 +126,16 @@ class PriceBook:
     def default(self, kind: TokenKind) -> Price | None:
         return next((p for p in self.current(kind) if p.rule is None), None)
 
+    def price_for(self, kind: TokenKind, prompt_tokens: int) -> Price | None:
+        """The price of `kind` for a call with this prompt: the highest prompt-length tier it
+        reaches, and of those the shortest cache lifetime, as no call asks for a longer one yet.
+
+        A cached count the provider reported already met its rule, so the rule's cache conditions
+        are not checked again here.
+        """
+        fits = [p for p in self.current(kind) if _tier(p) <= prompt_tokens]
+        return max(fits, key=lambda p: (_tier(p), -_lifetime(p)), default=None)
+
     def highest_prompt_price(self) -> float | None:
         """The most a prompt token can cost: uncached, read from or written to a cache. `None`
         while the input price is unknown."""
@@ -151,3 +161,11 @@ class PriceBook:
         kept = [p for p in self.prices if p.kind not in own]
         mine = [Price(kind, usd, date.min, "settings") for kind, usd in own.items()]
         return replace(self, prices=(*kept, *mine))
+
+
+def _tier(price: Price) -> int:
+    return (price.rule.min_prompt_tokens or 0) if price.rule else 0
+
+
+def _lifetime(price: Price) -> int:
+    return (price.rule.max_age_seconds or 0) if price.rule else 0

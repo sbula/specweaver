@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     Date,
     Float,
     ForeignKey,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    delete,
     func,
     select,
 )
@@ -53,8 +55,27 @@ class LlmUsageLog(Base):
     call_status: Mapped[str] = mapped_column(
         String, default="ok", server_default="ok", nullable=False
     )
+    # `None`: not reported, unknown — and on every row written before these existed.
+    cached_read_tokens: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
+    cache_write_tokens: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
+    #: A call to a local server, whose missing cost is *not applicable*.
+    local: Mapped[bool | None] = mapped_column(Boolean, default=None, nullable=True)
 
     __table_args__ = (Index("ix_llm_usage_history", "task_type", "model", "dal_level"),)
+
+
+class LlmUsagePrice(Base):
+    """The price one token kind of a call was billed at: the call's invoice line."""
+
+    __tablename__ = "llm_usage_price"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usage_id: Mapped[int] = mapped_column(
+        ForeignKey("llm_usage_log.id"), index=True, nullable=False
+    )
+    token_kind: Mapped[str] = mapped_column(String, nullable=False)
+    usd_per_million: Mapped[float] = mapped_column(Float, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class LlmStepOutcome(Base):
@@ -184,6 +205,9 @@ def _columns(record: dict[str, Any]) -> dict[str, Any]:
         "server": record.get("server") or None,
         "dal_level": record.get("dal_level") or None,
         "step_name": record.get("step_name") or None,
+        "cached_read_tokens": record.get("billed", {}).get("cached_read_tokens"),
+        "cache_write_tokens": record.get("billed", {}).get("cache_write_tokens"),
+        "local": record.get("billed", {}).get("local"),
     }
 
 
@@ -222,6 +246,16 @@ class LlmRepository:
         for name, value in _columns(record).items():
             setattr(log, name, value)
         log.call_status = status
+        await self.session.execute(delete(LlmUsagePrice).where(LlmUsagePrice.usage_id == call_id))
+        self.session.add_all(
+            LlmUsagePrice(
+                usage_id=call_id,
+                token_kind=line["kind"],
+                usd_per_million=line["usd_per_million"],
+                source=line["source"],
+            )
+            for line in record.get("billed", {}).get("price_lines", [])
+        )
         return True
 
     async def get_spend_by_server(self, project: str, since: datetime) -> list[dict[str, Any]]:

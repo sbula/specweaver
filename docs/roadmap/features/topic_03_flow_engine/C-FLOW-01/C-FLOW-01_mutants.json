@@ -319,7 +319,7 @@
           "old": "        if status not in _CLOSED:\n",
           "new": "        if False:\n",
           "breaks": "a call can be closed as pending or a made-up status",
-          "symbol_sha": "sha256:e928df6b838ce5a86c92d8c7e53c07f3ba129b4a8f75f0db59c2560ff7b27068"
+          "symbol_sha": "sha256:6b3db814544cc6c3f019a46cef225a0a7bdc2fbb4d28230960e12c6f2ec60b19"
         }
       ]
     },
@@ -358,7 +358,7 @@
           "old": "        \"estimated_cost\": record.get(\"estimated_cost_usd\"),\n",
           "new": "        \"estimated_cost\": record.get(\"estimated_cost_usd\") or 0.0,\n",
           "breaks": "an unpriced call reads as free",
-          "symbol_sha": "sha256:0aeb709f3e71e347fa031b25616f8246b11b6b5d0e6a6a2f2ac0563fc4f93682"
+          "symbol_sha": "sha256:a0aa010ef2269224100651c21a51904f8a989228d24e090eac76a584f82f7cab"
         }
       ]
     }

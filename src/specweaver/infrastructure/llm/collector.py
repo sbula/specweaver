@@ -254,7 +254,8 @@ class TelemetryCollector:
             server=self._server,
         )
         await self._close(call_id, record.model_dump(), "ok")
-        if record.estimated_cost_usd is None and config.model not in self._unpriced_warned:
+        unpriced = record.estimated_cost_usd is None and not record.billed.local
+        if unpriced and config.model not in self._unpriced_warned:
             self._unpriced_warned.add(config.model)
             logger.warning(
                 "%s has no known price: its tokens are counted, its money is not", config.model
