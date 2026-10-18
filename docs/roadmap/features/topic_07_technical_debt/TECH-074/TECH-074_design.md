@@ -75,6 +75,7 @@ and the brake wrong.
 | FR-8 | A bad download changes nothing | Price refresh | SHALL refuse a downloaded price that is missing, zero, negative or breaks the exactly-one check, keep the last good price, and warn; offline, the last prices stay, with a warning | a broken source never corrupts the money figures |
 | FR-9 | Cache rules are kept | Price store | SHALL hold each offering's cache rule — minimum prefix, lifetime, what the request must send — from the shipped catalogue, which models.dev does not carry | `C-FLOW-14` can tell before a call whether a token will count as cached |
 | FR-10 | Local models are covered | Ledger, store | SHALL record cached tokens for local calls and their cost as *not applicable*; a hosted offering without a default price is refused, a local one needs none | the GB10's cache is visible; local calls never read as unpriced |
+| FR-11 | A changed rule is noticed | Ledger | SHALL warn when a response's cached count disagrees with the offering's rule — cached tokens below its minimum prefix, or after its lifetime `[agreed 2026-10-18]` | a rule a provider changed is found from the calls, without a release |
 
 ## Non-Functional Requirements
 
@@ -100,7 +101,7 @@ and the brake wrong.
 | SF | Does | FRs | Depends on |
 |---|---|---|---|
 | SF-01 | The price model: offerings, prices, rules, the check, seeded from the shipped catalogue; settings win; the brake's highest price | FR-1, FR-2, FR-5, FR-9 | — |
-| SF-02 | The cached counts: adapters, `TokenUsage`, the ledger, each kind priced, the *Cached* column, local calls | FR-3, FR-4, FR-6, FR-10 | SF-01 |
+| SF-02 | The cached counts: adapters, `TokenUsage`, the ledger, each kind priced, the *Cached* column, local calls | FR-3, FR-4, FR-6, FR-10, FR-11 | SF-01 |
 | SF-03 | The refresh: models.dev for the offerings in use, 24 hours, reported, refused when bad, offline | FR-7, FR-8 | SF-01 |
 
 ## Non-Goals
@@ -113,11 +114,11 @@ and the brake wrong.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The price model | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The price model | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The cached counts | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The refresh | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-18.
-**Next**: the user's approval, then the plan for SF-01.
+**Now**: SF-01 plan approved 2026-10-18.
+**Next**: SF-01 dev, CB-1.
