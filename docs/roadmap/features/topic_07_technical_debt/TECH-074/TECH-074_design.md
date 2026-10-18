@@ -108,7 +108,7 @@ and the brake wrong.
 
 - Shaping prompts to hit a cache, and per-model cache lifetimes beyond the shipped rules — `C-FLOW-14`.
 - Reconciling against the provider's invoice.
-- Downloading models nobody's roles use.
+- Storing models nobody's roles use: models.dev offers only its whole list, downloaded at most once a day with its ETag `[agreed 2026-10-18]`.
 
 ## Progress Tracker
 
@@ -116,9 +116,9 @@ and the brake wrong.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The price model | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The cached counts | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The refresh | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The refresh | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: SF-02 committed 2026-10-18 — every adapter reads its cached counts, each kind billed at its own price, *Cached* in `sw usage`, the rule warning.
-**Next**: the SF-03 plan (the refresh from models.dev).
+**Next**: SF-03 dev, CB-1 (plan approved 2026-10-18).
