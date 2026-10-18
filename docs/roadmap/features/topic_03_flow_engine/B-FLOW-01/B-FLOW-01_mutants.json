@@ -627,7 +627,7 @@
           "old": "                record_review(context)\n",
           "new": "                pass\n",
           "breaks": "an accepted review leaves no record, so no dual run can start",
-          "symbol_sha": "sha256:149b7ecb6f28d937ec02c425168612e6df7bfbe026106e3b3dc4e6663779cff3"
+          "symbol_sha": "sha256:c281ae5c4f167a40248c56db54cd601ba2ea4b4bf3e45482e705711a82f4f7ec"
         },
         {
           "id": "unreviewed-spec-runs",
@@ -757,7 +757,7 @@
           "old": "        if run_model is not None:\n",
           "new": "        if False:\n",
           "breaks": "--model gives the scenario agent the coder's model",
-          "symbol_sha": "sha256:6eca5a03eef058d12887045b5f83c7daaa62df172d3dd7f6380ba9ea681ebd24"
+          "symbol_sha": "sha256:8adb9f3465bef88fca91177e3d2d5b3f36e3ff0772a7cc52f3a41e640aaee06b"
         },
         {
           "id": "side-roles-unchecked",
@@ -797,7 +797,7 @@
           "old": "            base_prompt.add_context(spec_map(context), \"other_specs\")\n",
           "new": "            pass\n",
           "breaks": "the reviewer never learns which other specs exist",
-          "symbol_sha": "sha256:149b7ecb6f28d937ec02c425168612e6df7bfbe026106e3b3dc4e6663779cff3"
+          "symbol_sha": "sha256:c281ae5c4f167a40248c56db54cd601ba2ea4b4bf3e45482e705711a82f4f7ec"
         },
         {
           "id": "signature-conflict-missed",

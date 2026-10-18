@@ -17,7 +17,8 @@ from specweaver.core.config.llm_settings import format_money
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from specweaver.core.config.llm_settings import Currency, ModelFacts
+    from specweaver.core.config.llm_settings import Currency
+    from specweaver.infrastructure.llm.prices import PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +53,10 @@ class Cost:
 
 @dataclass(frozen=True)
 class CallScope:
-    """The limits one call counts against, and the facts that price it."""
+    """The limits one call counts against, and the prices of its model."""
 
     limits: tuple[Limit, ...] = ()
-    facts: ModelFacts | None = None
+    prices: PriceBook | None = None
 
 
 @dataclass(frozen=True)

@@ -20,6 +20,7 @@ import pytest
 from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.catalogue import Catalogue
+from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.resolve import RoleResolver
 
 _MACHINE = """\
@@ -138,17 +139,18 @@ class TestRoleResolverSharing:
 
 
 class TestRoleResolverPrices:
-    def test_a_call_is_priced_from_the_catalogue_and_the_machine_file(self) -> None:
+    def test_a_local_model_is_priced_from_the_machine_file_only(self) -> None:
         machine = _MACHINE + '\n[models."qwen3-coder-next"]\nusd_per_million_input = 2.0\n'
         local = _LOCAL.replace(
             "max_output = 65536\n", "max_output = 65536\nusd_per_million_output = 8.0\n"
         )
         adapter, _config = _resolver(machine, local).for_role("draft")
 
-        facts = adapter._prices("qwen3-coder-next")
+        book = adapter._prices("qwen3-coder-next")
 
-        assert facts is not None
-        assert (facts.usd_per_million_input, facts.usd_per_million_output) == (2.0, 8.0)
+        price_in, price_out = book.default(TokenKind.INPUT), book.default(TokenKind.OUTPUT)
+        assert price_in is not None and price_in.usd_per_million == 2.0
+        assert price_out is None
 
 
 class TestTheSearchKey:

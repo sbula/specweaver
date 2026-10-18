@@ -24,6 +24,7 @@ from specweaver.infrastructure.llm.models import (
     TaskType,
     TokenUsage,
 )
+from specweaver.infrastructure.llm.prices import PriceBook
 from specweaver.infrastructure.llm.store import LlmRepository
 from tests.scripted_llm import FixedRouter
 
@@ -166,7 +167,9 @@ class TestUnknownPriceFlow:
 
     @pytest.mark.asyncio
     async def test_an_unpriced_call_is_stored_and_summed_as_unknown(self, db):
-        priced = ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
+        priced = PriceBook.of(
+            ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
+        )
         collector = TelemetryCollector(
             FakeAdapter(), project="proj", prices={"priced-model": priced}.get, ledger=db
         )

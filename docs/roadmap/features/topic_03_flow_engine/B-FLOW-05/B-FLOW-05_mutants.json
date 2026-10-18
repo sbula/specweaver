@@ -74,7 +74,7 @@
           "old": "        \"\"\"Count a failed call's usage if the adapter attached it, else its reserved worst case.\"\"\"\n        usage = getattr(exc, \"usage\", None)\n",
           "new": "        \"\"\"Count a failed call's usage if the adapter attached it, else its reserved worst case.\"\"\"\n        usage = None\n",
           "breaks": "a failed loop counts its worst case even when its real usage is known",
-          "symbol_sha": "sha256:cc9de3a207e34b1e4621404c4483f8dcad6c1708f50ac225f8242055088d1259"
+          "symbol_sha": "sha256:f5502de47a2c79d517330d318b19696c145b2628043964e26f4b7386ddd1e347"
         },
         {
           "id": "gemini-thinking-free",
@@ -224,7 +224,7 @@
           "old": "        if server.private:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "new": "        if False:\n            unit, field = \"tokens\", \"tokens_per_run\"\n",
           "breaks": "a GB10 run is limited by money it never spends, so nothing stops it",
-          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
+          "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
         },
         {
           "id": "task-not-stamped",
@@ -291,10 +291,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._check_bounded",
-          "old": "        if facts is None or None in (facts.usd_per_million_input, facts.usd_per_million_output):\n",
+          "old": "        if book.default(TokenKind.INPUT) is None or book.default(TokenKind.OUTPUT) is None:\n",
           "new": "        if False:\n",
           "breaks": "a hosted model with no price runs, and its money is never counted",
-          "symbol_sha": "sha256:9f7df301ce3593d9433f7cea2735894e2c6c60d8c4f996425825e3826a023055"
+          "symbol_sha": "sha256:248c17670a3bfb115b0d270b23290361db993ef25537a1c17c4b080fb1e0d4d3"
         },
         {
           "id": "uncapped-silent",
@@ -304,7 +304,7 @@
           "old": "        if facts is not None and facts.thinking_in_output_cap is not True:\n",
           "new": "        if False:\n",
           "breaks": "a model whose thinking may not be bounded by its output cap runs without a warning",
-          "symbol_sha": "sha256:9f7df301ce3593d9433f7cea2735894e2c6c60d8c4f996425825e3826a023055"
+          "symbol_sha": "sha256:248c17670a3bfb115b0d270b23290361db993ef25537a1c17c4b080fb1e0d4d3"
         }
       ]
     },

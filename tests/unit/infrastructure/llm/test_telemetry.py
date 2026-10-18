@@ -10,6 +10,7 @@ import pytest
 
 from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
+from specweaver.infrastructure.llm.prices import PriceBook
 from specweaver.infrastructure.llm.telemetry import create_usage_record, estimate_cost
 
 
@@ -43,13 +44,13 @@ class TestEstimateCost:
     """Prices are USD per 1M tokens, from the catalogue; an unknown price is unknown, never 0."""
 
     def test_a_known_price_is_per_million_tokens(self):
-        facts = ModelFacts(usd_per_million_input=3.0, usd_per_million_output=15.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=3.0, usd_per_million_output=15.0))
         usage = TokenUsage(prompt_tokens=1000, completion_tokens=500)
 
         assert estimate_cost(usage, facts) == pytest.approx(0.003 + 0.0075)
 
     def test_a_free_model_costs_zero(self):
-        facts = ModelFacts(usd_per_million_input=0.0, usd_per_million_output=0.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=0.0, usd_per_million_output=0.0))
 
         assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), facts) == 0.0
 
@@ -57,7 +58,7 @@ class TestEstimateCost:
         assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), None) is None
 
     def test_half_a_price_is_an_unknown_cost(self):
-        facts = ModelFacts(usd_per_million_input=3.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=3.0))
 
         assert estimate_cost(TokenUsage(prompt_tokens=10, completion_tokens=10), facts) is None
 
@@ -77,7 +78,7 @@ class TestCreateUsageRecord:
             model="gemini-3-flash-preview",
             usage=TokenUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
         )
-        facts = ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0))
         record = create_usage_record(config, response, "gemini", "myproject", 1234, facts)
         assert record.timestamp  # Non-empty ISO string
         assert record.project_name == "myproject"
@@ -132,7 +133,7 @@ class TestCreateUsageRecord:
             model="my-model",
             usage=TokenUsage(prompt_tokens=1000, completion_tokens=1000, total_tokens=2000),
         )
-        facts = ModelFacts(usd_per_million_input=10.0, usd_per_million_output=20.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=10.0, usd_per_million_output=20.0))
 
         record = create_usage_record(config, response, "custom", "proj", 100, facts)
 
@@ -148,7 +149,7 @@ class TestCreateUsageRecord:
             model="gemini-3-flash-preview",
             usage=TokenUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
-        facts = ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=1.0, usd_per_million_output=2.0))
         record = create_usage_record(config, response, "gemini", "proj", 42, facts)
         assert record.prompt_tokens == 0
         assert record.completion_tokens == 0

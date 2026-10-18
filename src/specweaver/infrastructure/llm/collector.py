@@ -25,14 +25,18 @@ from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, S
 from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
 from specweaver.infrastructure.llm.redaction import Redactor
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.infrastructure.llm.telemetry import create_usage_record, estimate_cost
+from specweaver.infrastructure.llm.telemetry import (
+    create_usage_record,
+    estimate_cost,
+    worst_cost,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
-    from specweaver.core.config.llm_settings import ModelFacts
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.models import GenerationConfig, Message
+    from specweaver.infrastructure.llm.prices import PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +64,14 @@ class TelemetryCollector:
     Args:
         adapter: The LLMAdapter instance to wrap.
         project: Project name for grouping usage records.
-        prices: Looks up a model's facts (its price) by the model name a call asked for.
+        prices: Looks up a model's price book by the model name a call asked for.
     """
 
     def __init__(
         self,
         adapter: LLMAdapter,
         project: str,
-        prices: Callable[[str], ModelFacts | None] | None = None,
+        prices: Callable[[str], PriceBook | None] | None = None,
         budget: SpendBudget | None = None,
         scope_of: Callable[[GenerationConfig], CallScope] | None = None,
         redactor: Redactor | None = None,
@@ -95,7 +99,7 @@ class TelemetryCollector:
         """The limits a call with this config counts against."""
         if self._scope_of is not None:
             return self._scope_of(config)
-        return CallScope(facts=self._prices(config.model))
+        return CallScope(prices=self._prices(config.model))
 
     def _reserve(
         self, messages: list[Message], config: GenerationConfig
@@ -108,7 +112,7 @@ class TelemetryCollector:
 
     def _worst_of(self, prompt_tokens: int, config: GenerationConfig, scope: CallScope) -> Cost:
         worst = _worst_usage(prompt_tokens, config)
-        return Cost(usd=estimate_cost(worst, scope.facts), tokens=worst.total_tokens)
+        return Cost(usd=worst_cost(worst, scope.prices), tokens=worst.total_tokens)
 
     def _record_failure(
         self, scope: CallScope, reservation: Reservation, exc: BaseException
@@ -116,7 +120,7 @@ class TelemetryCollector:
         """Count a failed call's usage if the adapter attached it, else its reserved worst case."""
         usage = getattr(exc, "usage", None)
         cost = (
-            Cost(usd=estimate_cost(usage, scope.facts), tokens=usage.total_tokens)
+            Cost(usd=estimate_cost(usage, scope.prices), tokens=usage.total_tokens)
             if isinstance(usage, TokenUsage)
             else None
         )

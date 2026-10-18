@@ -37,7 +37,7 @@
           "old": "            self._by_server[server_name] = TelemetryCollector(\n",
           "new": "            self._by_server[server_name] = adapter\n            _unused = TelemetryCollector(\n",
           "breaks": "the adapter reaching RunContext.model.llm is never a TelemetryCollector, so flush_telemetry returns at its isinstance guard and nothing is ever recorded — the exact silent-no-op shape this contract exists to catch",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         }
       ]
     }

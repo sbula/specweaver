@@ -24,7 +24,8 @@ from specweaver.core.config.toml_lines import line_of
 from specweaver.infrastructure.llm.budget import STEP_LIMIT_PREFIX, CallScope, Limit, Unit
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.collector import TelemetryCollector
-from specweaver.infrastructure.llm.models import GenerationConfig
+from specweaver.infrastructure.llm.models import GenerationConfig, TokenKind
+from specweaver.infrastructure.llm.price_store import price_book
 from specweaver.infrastructure.llm.redaction import Redactor, vault_values
 from specweaver.infrastructure.llm.servers import adapter_for_server
 from specweaver.infrastructure.llm.store import step_history_limit
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     )
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.catalogue import Catalogue
+    from specweaver.infrastructure.llm.prices import PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,7 @@ class RoleResolver:
         self._history = history
         self._step_limits: dict[tuple[str, ...], float | None] = {}
         self._uncapped: set[str] = set()
+        self._books: dict[tuple[str, str], PriceBook] = {}
 
     @property
     def budget(self) -> SpendBudget:
@@ -138,7 +141,8 @@ class RoleResolver:
             return
         facts = self._catalogue.facts(server.kind, setting.model, self._files.machine.models)
         table = f'models."{setting.model}"'
-        if facts is None or None in (facts.usd_per_million_input, facts.usd_per_million_output):
+        book = self._prices(setting.server, setting.model)
+        if book.default(TokenKind.INPUT) is None or book.default(TokenKind.OUTPUT) is None:
             self._refuse(
                 f"{table}.usd_per_million_input",
                 f"the hosted model '{setting.model}' has no known price; set usd_per_million_input "
@@ -205,13 +209,12 @@ class RoleResolver:
     def _adapter(self, server_name: str) -> TelemetryCollector:
         if server_name not in self._by_server:
             server = self._files.machine.servers[server_name]
-            corrections = self._files.machine.models
             adapter = adapter_for_server(server_name, server, self._files.keys)
             keys = list(self._files.keys.values())
             self._by_server[server_name] = TelemetryCollector(
                 adapter,
                 self._project,
-                prices=lambda model: self._catalogue.facts(server.kind, model, corrections),
+                prices=lambda model: self._prices(server_name, model),
                 budget=self._budget,
                 scope_of=lambda config: self._scope(server_name, config),
                 redactor=Redactor([*keys, *self._vault]),
@@ -219,6 +222,20 @@ class RoleResolver:
                 ledger=self._history,
             )
         return self._by_server[server_name]
+
+    def _prices(self, server_name: str, model: str) -> PriceBook:
+        """The model's prices at this server, read once per command."""
+        key = (server_name, model)
+        if key not in self._books:
+            self._books[key] = price_book(
+                self._history,
+                self._catalogue,
+                server_name=server_name,
+                server=self._files.machine.servers[server_name],
+                model=model,
+                overrides=self._files.machine.models,
+            )
+        return self._books[key]
 
     def _scope(self, server_name: str, config: GenerationConfig) -> CallScope:
         """The limits a call counts against: money on a hosted server, tokens on a private one."""
@@ -242,7 +259,10 @@ class RoleResolver:
             for key, value in candidates
             if value is not None
         )
-        return CallScope(limits=(*limits, *self._step_limit(config, unit)), facts=facts)
+        return CallScope(
+            limits=(*limits, *self._step_limit(config, unit)),
+            prices=self._prices(server_name, config.model),
+        )
 
     def _step_limit(self, config: GenerationConfig, unit: Unit) -> tuple[Limit, ...]:
         """The step's limit from the history of its group, read once per run and group."""

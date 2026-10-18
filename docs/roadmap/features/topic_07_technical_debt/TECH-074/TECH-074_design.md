@@ -114,11 +114,11 @@ and the brake wrong.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The price model | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The price model | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The cached counts | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The refresh | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-01 plan approved 2026-10-18.
-**Next**: SF-01 dev, CB-1.
+**Now**: SF-01 committed 2026-10-18 — prices per model at a host, seeded at start-up, settings win, brake at the highest prompt price.
+**Next**: the SF-02 plan. Open for it: whether a local call with a price you set shows that cost or *not applicable* (FR-10); see the SF-01 plan's dev notes.

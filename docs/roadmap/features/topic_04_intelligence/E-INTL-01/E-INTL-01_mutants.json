@@ -67,7 +67,7 @@
           "old": "                redactor=Redactor([*keys, *self._vault]),\n",
           "new": "                redactor=Redactor([*keys]),\n",
           "breaks": "vault values reach the model",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "api-keys-ignored",
@@ -77,7 +77,7 @@
           "old": "                redactor=Redactor([*keys, *self._vault]),\n",
           "new": "                redactor=Redactor([*self._vault]),\n",
           "breaks": "the server's own API key reaches the model",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "shorter-secret-first",

@@ -17,10 +17,16 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TaskType, TokenUsage
+from specweaver.infrastructure.llm.models import (
+    GenerationConfig,
+    LLMResponse,
+    TaskType,
+    TokenKind,
+    TokenUsage,
+)
 
 if TYPE_CHECKING:
-    from specweaver.core.config.llm_settings import ModelFacts
+    from specweaver.infrastructure.llm.prices import PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -49,18 +55,26 @@ class UsageRecord(BaseModel):
     step_name: str = ""
 
 
-def estimate_cost(usage: TokenUsage, facts: ModelFacts | None) -> float | None:
+def estimate_cost(usage: TokenUsage, prices: PriceBook | None) -> float | None:
     """The call's cost in USD, or `None` when the model's price is not fully known.
 
-    Prices are USD per 1M tokens, from the catalogue (and the machine file's corrections). Unknown is
-    never reported as 0: a free model and an unpriced one are different facts.
+    Prices are USD per 1M tokens, from the price book (the settings file over the stored prices).
+    Unknown is never reported as 0: a free model and an unpriced one are different facts.
     """
-    if facts is None:
-        return None
-    price_in, price_out = facts.usd_per_million_input, facts.usd_per_million_output
+    price_in = prices.default(TokenKind.INPUT) if prices else None
+    return _cost(usage, price_in.usd_per_million if price_in else None, prices)
+
+
+def worst_cost(usage: TokenUsage, prices: PriceBook | None) -> float | None:
+    """The most `usage` can cost: every prompt token at its highest price, cached or not."""
+    return _cost(usage, prices.highest_prompt_price() if prices else None, prices)
+
+
+def _cost(usage: TokenUsage, price_in: float | None, prices: PriceBook | None) -> float | None:
+    price_out = prices.default(TokenKind.OUTPUT) if prices else None
     if price_in is None or price_out is None:
         return None
-    cost = usage.prompt_tokens * price_in + usage.completion_tokens * price_out
+    cost = usage.prompt_tokens * price_in + usage.completion_tokens * price_out.usd_per_million
     return round(cost / 1_000_000, 8)
 
 
@@ -70,7 +84,7 @@ def create_usage_record(
     provider: str,
     project: str,
     duration_ms: int,
-    facts: ModelFacts | None = None,
+    prices: PriceBook | None = None,
     server: str = "",
 ) -> UsageRecord:
     """Build a ``UsageRecord`` from generation config and response.
@@ -81,7 +95,7 @@ def create_usage_record(
         provider: Provider name (e.g. ``"gemini"``).
         project: Project name for grouping.
         duration_ms: Wall-clock time of the call in milliseconds.
-        facts: The requested model's catalogue facts, for its price; `None` if unknown.
+        prices: The requested model's price book; `None` if unknown.
 
     Returns:
         A fully populated ``UsageRecord``.
@@ -93,7 +107,7 @@ def create_usage_record(
         response.model,
         project,
     )
-    cost = estimate_cost(response.usage, facts)
+    cost = estimate_cost(response.usage, prices)
 
     return UsageRecord(
         timestamp=datetime.now(UTC).isoformat(),

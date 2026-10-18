@@ -28,7 +28,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.infrastructure.llm.collector import TelemetryCollector
-from specweaver.infrastructure.llm.models import LLMResponse, TaskType
+from specweaver.infrastructure.llm.models import LLMResponse, TaskType, TokenKind
 from specweaver.infrastructure.llm.router import ModelRouter, build_router
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
@@ -100,8 +100,8 @@ def test_routed_calls_are_priced_from_the_catalogue() -> None:
     res = _router(_HOSTED, [TaskType.IMPLEMENT]).get_for_task(TaskType.IMPLEMENT)
 
     assert isinstance(res.adapter, TelemetryCollector)
-    facts = res.adapter._prices("claude-sonnet-5")
-    assert facts is not None and facts.usd_per_million_input > 0
+    price = res.adapter._prices("claude-sonnet-5").default(TokenKind.INPUT)
+    assert price is not None and price.usd_per_million > 0
 
 
 def test_memory_leak_check_caching() -> None:

@@ -90,6 +90,11 @@ it (NFR-2).
   *not applicable* (FR-10) is a question for the SF-02 plan.
 - CB-2: five `C-FLOW-13` mutants aimed at `scripts/update_model_catalogue.py`, deleted in `e39ebd7e`,
   were removed. Three were re-anchored to the code that replaced theirs.
+- CB-3: `CallScope.facts` became `CallScope.prices`, a `PriceBook`. A price in the shipped list for a
+  model on a local server no longer applies; only your settings do. The shipped list prices no local
+  model, so only a test changed (`test_resolve.py`, now
+  `test_a_local_model_is_priced_from_the_machine_file_only`).
+- CB-3: four older mutants (`B-FLOW-05`, `B-FLOW-07`, `C-FLOW-13`) re-anchored to the price book.
 
 ## Backlog
 

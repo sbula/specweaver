@@ -28,13 +28,18 @@ from specweaver.core.config.llm_settings import ModelFacts
 from specweaver.infrastructure.llm.budget import BudgetExceededError, CallScope, Limit, SpendBudget
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.prices import PriceBook
 from specweaver.workflows.review.reviewer import Reviewer, ReviewVerdict
 
 pytestmark = pytest.mark.integration
 
 #: One call costs USD 2 at these rates; its worst case before sending is about USD 1, the
 #: 1,000-token output cap. A USD 2.50 limit lets the first through and stops the second.
-PRICED = {"stub-model": ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)}
+PRICED = {
+    "stub-model": PriceBook.of(
+        ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
+    )
+}
 
 
 class _Adapter:
@@ -66,7 +71,7 @@ def _reviewer(adapter: _Adapter, limit: float) -> Reviewer:
         "proj",
         prices=PRICED.get,
         budget=SpendBudget(),
-        scope_of=lambda _config: CallScope(limits=(run,), facts=PRICED["stub-model"]),
+        scope_of=lambda _config: CallScope(limits=(run,), prices=PRICED["stub-model"]),
     )
     return Reviewer(
         llm=collector, config=GenerationConfig(model="stub-model", max_output_tokens=1000)

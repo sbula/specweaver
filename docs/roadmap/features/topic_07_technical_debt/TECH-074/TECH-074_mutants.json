@@ -218,6 +218,55 @@
           "symbol_sha": "sha256:7c8648f65a1bfdc57535ecc8b4272c434a94d6c19fda453a61e9cad9ab1da62d"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The brake reserves at the highest prompt price",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_brake_at_the_highest_price.py"
+      ],
+      "mutants": [
+        {
+          "id": "worst-case-at-the-input-price",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._worst_of",
+          "old": "        return Cost(usd=worst_cost(worst, scope.prices), tokens=worst.total_tokens)\n",
+          "new": "        return Cost(usd=estimate_cost(worst, scope.prices), tokens=worst.total_tokens)\n",
+          "breaks": "the brake reserves a prompt at the input price, so a cache write can spend past the run's limit",
+          "symbol_sha": "sha256:b7e1ff4eadcb48b8a5dbd6af38837e8d367a6ddce3bf2ccb22395d2ce3a66b21"
+        },
+        {
+          "id": "cache-write-left-out-of-the-highest",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "PriceBook.highest_prompt_price",
+          "old": "        kinds = (TokenKind.INPUT, TokenKind.CACHED_READ, TokenKind.CACHE_WRITE)\n",
+          "new": "        kinds = (TokenKind.INPUT, TokenKind.CACHED_READ)\n",
+          "breaks": "the brake ignores the cache-write price, the dearest a prompt token can cost",
+          "symbol_sha": "sha256:f8e44d68c8b899a709a463f7c6d8995cc975232b2141f610fff54c534e37ffda"
+        },
+        {
+          "id": "hosted-model-without-input-runs",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._check_bounded",
+          "old": "        if book.default(TokenKind.INPUT) is None or book.default(TokenKind.OUTPUT) is None:\n",
+          "new": "        if book.default(TokenKind.OUTPUT) is None:\n",
+          "breaks": "a hosted model with no input price runs, and the brake cannot price its prompts",
+          "symbol_sha": "sha256:248c17670a3bfb115b0d270b23290361db993ef25537a1c17c4b080fb1e0d4d3"
+        },
+        {
+          "id": "call-scope-unpriced",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/resolve.py",
+          "symbol": "RoleResolver._scope",
+          "old": "            prices=self._prices(server_name, config.model),\n",
+          "new": "            prices=None,\n",
+          "breaks": "every call's worst case is unpriced, so the money limit never stops anything",
+          "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
+        }
+      ]
     }
   ]
 }

@@ -413,7 +413,7 @@
           "old": "                budget=self._budget,\n",
           "new": "\n",
           "breaks": "each server gets its own unlimited budget, so the run's spend brake never sees those calls",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "adapter-per-call",
@@ -423,7 +423,7 @@
           "old": "        if server_name not in self._by_server:\n",
           "new": "        if True:\n",
           "breaks": "every role builds its own adapter, so the server's parallel limit and the flush list split",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "catalogue-sampling-ignored",
@@ -453,7 +453,7 @@
           "old": "                ledger=self._history,\n",
           "new": "                ledger=None,\n",
           "breaks": "no role's usage is ever written to the database: the collectors get no ledger",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         }
       ]
     },
@@ -517,11 +517,11 @@
           "id": "unknown-priced-as-zero",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/telemetry.py",
-          "symbol": "estimate_cost",
-          "old": "    if facts is None:\n        return None\n",
-          "new": "    if facts is None:\n        return 0.0\n",
+          "symbol": "_cost",
+          "old": "    if price_in is None or price_out is None:\n        return None\n",
+          "new": "    if price_in is None or price_out is None:\n        return 0.0\n",
           "breaks": "an unpriced call is recorded as free",
-          "symbol_sha": "sha256:4a7846fe23be78772a9a845413c4ad460bb49beb8b63833e5d47b75cae03cb5c"
+          "symbol_sha": "sha256:fe515db09ab5d8d381d25a052a8cb5e9664ba7a1ef7314a90665dcd266e3df75"
         },
         {
           "id": "old-db-not-rebuilt",
@@ -548,10 +548,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._adapter",
-          "old": "                prices=lambda model: self._catalogue.facts(server.kind, model, corrections),\n",
+          "old": "                prices=lambda model: self._prices(server_name, model),\n",
           "new": "\n",
           "breaks": "every call through the one path is stored as unpriced, whatever the catalogue or the user set",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "kind-price-shown-as-catalogue",
@@ -864,7 +864,7 @@
           "old": "            Limit(key, unit, value if unit == \"tokens\" else to_usd(value, currency))\n",
           "new": "            Limit(key, unit, value)\n",
           "breaks": "a limit set in CHF is applied as USD",
-          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
+          "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
         },
         {
           "id": "token-limit-dropped",
@@ -874,7 +874,7 @@
           "old": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", brake.tokens_per_run)\n",
           "new": "            run: tuple[str, float | None] = (\"brake.tokens_per_run\", None)\n",
           "breaks": "the run's token limit is read and never applied",
-          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
+          "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
         },
         {
           "id": "unset-brake-passes",

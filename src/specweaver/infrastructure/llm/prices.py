@@ -126,6 +126,19 @@ class PriceBook:
     def default(self, kind: TokenKind) -> Price | None:
         return next((p for p in self.current(kind) if p.rule is None), None)
 
+    def highest_prompt_price(self) -> float | None:
+        """The most a prompt token can cost: uncached, read from or written to a cache. `None`
+        while the input price is unknown."""
+        if self.default(TokenKind.INPUT) is None:
+            return None
+        kinds = (TokenKind.INPUT, TokenKind.CACHED_READ, TokenKind.CACHE_WRITE)
+        return max(p.usd_per_million for kind in kinds for p in self.current(kind))
+
+    @classmethod
+    def of(cls, facts: ModelFacts) -> PriceBook:
+        """A hosted model's book holding only the prices `facts` sets."""
+        return cls((), local=False).with_settings(facts)
+
     def with_settings(self, facts: ModelFacts | None) -> PriceBook:
         """Each price the settings file sets replaces every price of its kind, rules included."""
         if facts is None:

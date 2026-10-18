@@ -35,6 +35,7 @@ from specweaver.infrastructure.llm.models import (
     Role,
     TokenUsage,
 )
+from specweaver.infrastructure.llm.prices import PriceBook
 from tests.ledger import Ledger
 
 if TYPE_CHECKING:
@@ -79,7 +80,7 @@ class _StubAdapter:
 
 
 #: USD 1 per 1,000 tokens either way, so a worst case is easy to read off.
-_FACTS = ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0)
+_FACTS = PriceBook.of(ModelFacts(usd_per_million_input=1000.0, usd_per_million_output=1000.0))
 _RUN = Limit("brake.hosted_spend_per_run", "usd", 10.0)
 _CONFIG = GenerationConfig(model="stub-model", max_output_tokens=1000)
 #: 4,000 characters → 1,000 estimated tokens → 1,250 with the margin.
@@ -94,7 +95,7 @@ def _collector(
         "proj",
         prices=lambda _model: _FACTS,
         budget=budget or SpendBudget(),
-        scope_of=lambda _config: CallScope(limits=(_RUN,), facts=_FACTS),
+        scope_of=lambda _config: CallScope(limits=(_RUN,), prices=_FACTS),
         ledger=ledger,
     )
 

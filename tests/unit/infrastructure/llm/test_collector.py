@@ -326,16 +326,17 @@ class TestTelemetryCollectorPrices:
     async def test_a_known_price_is_recorded_and_spent(self, ledger) -> None:
         from specweaver.core.config.llm_settings import ModelFacts
         from specweaver.infrastructure.llm.budget import CallScope, Limit, SpendBudget
+        from specweaver.infrastructure.llm.prices import PriceBook
 
         budget = SpendBudget()
-        facts = ModelFacts(usd_per_million_input=2.0, usd_per_million_output=10.0)
+        facts = PriceBook.of(ModelFacts(usd_per_million_input=2.0, usd_per_million_output=10.0))
         run = Limit("brake.hosted_spend_per_run", "usd", 100.0)
         collector = TelemetryCollector(
             FakeAdapter(),
             "p",
             prices={"m": facts}.get,
             budget=budget,
-            scope_of=lambda _config: CallScope(limits=(run,), facts=facts),
+            scope_of=lambda _config: CallScope(limits=(run,), prices=facts),
             ledger=ledger.db,
         )
 

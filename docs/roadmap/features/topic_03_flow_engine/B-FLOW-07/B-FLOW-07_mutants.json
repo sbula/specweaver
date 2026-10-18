@@ -39,7 +39,7 @@
           "old": "                server=server_name,\n",
           "new": "                server=\"\",\n",
           "breaks": "spend on the GB10 and on DashScope is mixed",
-          "symbol_sha": "sha256:ead3a1e907fca98ab805e577c59a5c6ba1afedd128e9dd457b424e16e6918d52"
+          "symbol_sha": "sha256:0604274f7f57930f0273ee45027be87d057d76be0079dc1149279c70e3b97400"
         },
         {
           "id": "step-not-stored",
@@ -120,7 +120,7 @@
           "old": "    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)\n",
           "new": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_A\", nullable=False)\n",
           "breaks": "a new project defaults to DAL_A instead of the agreed DAL_C",
-          "symbol_sha": "sha256:f5d72483232ccc990d7c988d11f422f645a1585b4f819ced2e0bf56917298340"
+          "symbol_sha": "sha256:0bb2edc6f83e4d89ca9775107ddd649e687294c033f649f873920ed0a1f7ba69"
         }
       ]
     },
@@ -373,10 +373,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/resolve.py",
           "symbol": "RoleResolver._scope",
-          "old": "        return CallScope(limits=(*limits, *self._step_limit(config, unit)), facts=facts)\n",
-          "new": "        return CallScope(limits=limits, facts=facts)\n",
+          "old": "            limits=(*limits, *self._step_limit(config, unit)),\n",
+          "new": "            limits=limits,\n",
           "breaks": "a step that costs far more than usual is never asked about",
-          "symbol_sha": "sha256:336f888c800d925589227137d6693cea58b39453f068a679271d78bac5c9947d"
+          "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
         },
         {
           "id": "command-without-history",
