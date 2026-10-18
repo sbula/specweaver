@@ -455,16 +455,26 @@ class TestGenerateWithTools:
         mock_fc.name = "grep"
         mock_fc.args = {"pattern": "hello"}
 
+        from google.genai import types as genai_types
+
+        def _meta(prompt: int, cached: int) -> genai_types.GenerateContentResponseUsageMetadata:
+            return genai_types.GenerateContentResponseUsageMetadata(
+                prompt_token_count=prompt,
+                cached_content_token_count=cached,
+                candidates_token_count=5,
+                total_token_count=prompt + 5,
+            )
+
         mock_response_1 = MagicMock()
         mock_response_1.text = ""
-        mock_response_1.usage_metadata = None
+        mock_response_1.usage_metadata = _meta(100, 60)
         mock_response_1.candidates = [MagicMock(content=MagicMock())]
         mock_response_1.function_calls = [mock_fc]
 
         # Round 2: final text
         mock_response_2 = MagicMock()
         mock_response_2.text = "Found 3 matches"
-        mock_response_2.usage_metadata = None
+        mock_response_2.usage_metadata = _meta(200, 150)
         mock_response_2.candidates = [MagicMock(finish_reason="STOP")]
         mock_response_2.function_calls = None
 
@@ -490,6 +500,8 @@ class TestGenerateWithTools:
         result = await adapter.generate_with_tools(messages, config, mock_executor)
         assert result.text == "Found 3 matches"
         mock_executor.execute.assert_called_once_with("grep", {"pattern": "hello"})
+        # Both rounds' usage is counted, cached part included.
+        assert (result.usage.prompt_tokens, result.usage.cached_read_tokens) == (300, 210)
 
     @pytest.mark.asyncio
     async def test_no_tools_config_falls_back_to_generate(self) -> None:

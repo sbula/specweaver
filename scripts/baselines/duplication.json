@@ -107,62 +107,62 @@
   "src/specweaver/core/flow/store.py <-> src/specweaver/infrastructure/llm/store.py @066b17a9cd13": {
     "lines": 13,
     "first": "src/specweaver/core/flow/store.py:5",
-    "second": "src/specweaver/infrastructure/llm/store.py:9"
+    "second": "src/specweaver/infrastructure/llm/store.py:19"
   },
   "src/specweaver/infrastructure/llm/adapters/_rate_limit.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @d1e4b04c872c": {
     "lines": 11,
     "first": "src/specweaver/infrastructure/llm/adapters/_rate_limit.py:85",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:219"
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:238"
   },
-  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @8e39de85bc6d": {
-    "lines": 31,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:11",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:9"
+  "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @3a2ccccbb3b2": {
+    "lines": 24,
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:22",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:21"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/mistral.py @f08d014e3f57": {
     "lines": 9,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:197",
-    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:154"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:204",
+    "second": "src/specweaver/infrastructure/llm/adapters/mistral.py:162"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @288f0451cd08": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:206",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:219"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:213",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:238"
   },
   "src/specweaver/infrastructure/llm/adapters/anthropic.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
     "lines": 12,
-    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:268",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:274"
+    "first": "src/specweaver/infrastructure/llm/adapters/anthropic.py:275",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:293"
   },
   "src/specweaver/infrastructure/llm/adapters/base.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @c19c8fbcd910": {
     "lines": 16,
     "first": "src/specweaver/infrastructure/llm/adapters/base.py:158",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:221"
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:240"
   },
   "src/specweaver/infrastructure/llm/adapters/gemini.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @fccde4636f0a": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/gemini.py:265",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:219"
-  },
-  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @4998873b8200": {
-    "lines": 28,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:11",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:14"
+    "first": "src/specweaver/infrastructure/llm/adapters/gemini.py:270",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:238"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @aabfcc2d4963": {
     "lines": 14,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:166",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:119"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:174",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:142"
+  },
+  "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @cb011380712c": {
+    "lines": 29,
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:11",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:14"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @d3fd4acd3676": {
     "lines": 17,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:202",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:219"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:210",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:238"
   },
   "src/specweaver/infrastructure/llm/adapters/mistral.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @df6cfd281de8": {
     "lines": 12,
-    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:252",
-    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:274"
+    "first": "src/specweaver/infrastructure/llm/adapters/mistral.py:260",
+    "second": "src/specweaver/infrastructure/llm/adapters/openai.py:293"
   },
   "src/specweaver/infrastructure/llm/prompt/adders.py <-> src/specweaver/infrastructure/llm/prompt/adders.py @1cf4d76d07d0": {
     "lines": 12,
@@ -546,12 +546,12 @@
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
     "lines": 14,
-    "first": "src/specweaver/workspace/store.py:444",
-    "second": "src/specweaver/workspace/store.py:412"
+    "first": "src/specweaver/workspace/store.py:459",
+    "second": "src/specweaver/workspace/store.py:427"
   },
   "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @9b9e6b544999": {
     "lines": 16,
-    "first": "src/specweaver/workspace/store.py:174",
-    "second": "src/specweaver/workspace/store.py:153"
+    "first": "src/specweaver/workspace/store.py:178",
+    "second": "src/specweaver/workspace/store.py:157"
   }
 }

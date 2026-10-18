@@ -109,19 +109,50 @@ class TokenKind(enum.StrEnum):
 
 
 class TokenUsage(BaseModel):
-    """Token usage information from a generation."""
+    """Token usage information from a generation.
+
+    `prompt_tokens` is the whole prompt, cached part included. A cached count the provider did not
+    report is `None`, unknown — never 0, which would claim nothing was cached.
+    """
 
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+    cached_read_tokens: int | None = None
+    cache_write_tokens: int | None = None
 
     def __add__(self, other: TokenUsage) -> TokenUsage:
-        """Accumulate token usage across multiple LLM calls."""
+        """Accumulate token usage across multiple LLM calls; a cached count with an unknown part is
+        unknown."""
+        if self == TokenUsage():
+            return other
+        if other == TokenUsage():
+            return self
         return TokenUsage(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
             completion_tokens=self.completion_tokens + other.completion_tokens,
             total_tokens=self.total_tokens + other.total_tokens,
+            cached_read_tokens=_known_sum(self.cached_read_tokens, other.cached_read_tokens),
+            cache_write_tokens=_known_sum(self.cache_write_tokens, other.cache_write_tokens),
         )
+
+
+def count_or_unknown(value: object) -> int | None:
+    """A token count a provider reported, or `None` when it is missing or not a whole number."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+def field_of(source: object, name: str) -> object:
+    """`source.name`, or `source[name]` for a field an SDK keeps as a plain dict; `None` if absent."""
+    if isinstance(source, dict):
+        return source.get(name)
+    return getattr(source, name, None)
+
+
+def _known_sum(a: int | None, b: int | None) -> int | None:
+    return None if a is None or b is None else a + b
 
 
 class LLMResponse(BaseModel):

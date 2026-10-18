@@ -15,7 +15,13 @@ from specweaver.infrastructure.llm.errors import (
     ToolRoundsExceededError,
     attach_usage,
 )
-from specweaver.infrastructure.llm.models import payload_chars, tool_rounds
+from specweaver.infrastructure.llm.models import (
+    TokenUsage,
+    count_or_unknown,
+    field_of,
+    payload_chars,
+    tool_rounds,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +36,23 @@ if TYPE_CHECKING:
     )
 
 
-def _accumulate_usage(cumulative: Any, usage: Any) -> None:
-    """Add one response's token counts to the running total.
+def _usage_of(usage: Any) -> TokenUsage:
+    """One response's token counts.
 
     Every field is read defensively: Mistral's usage object has varied across SDK versions, and a
-    missing count should not abort a run that otherwise succeeded.
+    missing count should not abort a run that otherwise succeeded. The SDK keeps the cached count
+    as an extra field; a cache write costs nothing extra, so it is 0 wherever the read is known.
     """
     if not usage:
-        return
-    cumulative.prompt_tokens += getattr(usage, "prompt_tokens", 0)
-    cumulative.completion_tokens += getattr(usage, "completion_tokens", 0)
-    cumulative.total_tokens += getattr(usage, "total_tokens", 0)
+        return TokenUsage()
+    read = count_or_unknown(field_of(field_of(usage, "prompt_tokens_details"), "cached_tokens"))
+    return TokenUsage(
+        prompt_tokens=getattr(usage, "prompt_tokens", 0) or 0,
+        completion_tokens=getattr(usage, "completion_tokens", 0) or 0,
+        total_tokens=getattr(usage, "total_tokens", 0) or 0,
+        cached_read_tokens=read,
+        cache_write_tokens=None if read is None else 0,
+    )
 
 
 def _assistant_message(msg: Any) -> dict[str, Any]:
@@ -115,7 +127,7 @@ class MistralAdapter(LLMAdapter):
         raise GenerationError(str(e)) from e
 
     async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
-        from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+        from specweaver.infrastructure.llm.models import LLMResponse
 
         client = self._get_client()
         logger.debug("MistralAdapter.generate: model=%s, messages=%d", config.model, len(messages))
@@ -129,11 +141,7 @@ class MistralAdapter(LLMAdapter):
         choice = response.choices[0]
         text = choice.message.content or ""
 
-        usage = TokenUsage()
-        if hasattr(response, "usage") and response.usage:
-            usage.prompt_tokens = getattr(response.usage, "prompt_tokens", 0)
-            usage.completion_tokens = getattr(response.usage, "completion_tokens", 0)
-            usage.total_tokens = getattr(response.usage, "total_tokens", 0)
+        usage = _usage_of(getattr(response, "usage", None))
 
         return LLMResponse(
             text=text,
@@ -234,7 +242,7 @@ class MistralAdapter(LLMAdapter):
                 except Exception as e:
                     self._handle_error(e)
 
-                _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
+                cumulative_usage = cumulative_usage + _usage_of(getattr(response, "usage", None))
 
                 choice = response.choices[0]
                 msg = choice.message

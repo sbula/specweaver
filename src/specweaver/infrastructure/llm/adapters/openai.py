@@ -18,7 +18,13 @@ from specweaver.infrastructure.llm.errors import (
     ToolRoundsExceededError,
     attach_usage,
 )
-from specweaver.infrastructure.llm.models import payload_chars, tool_rounds
+from specweaver.infrastructure.llm.models import (
+    TokenUsage,
+    count_or_unknown,
+    field_of,
+    payload_chars,
+    tool_rounds,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +39,30 @@ if TYPE_CHECKING:
     )
 
 
-def _accumulate_usage(cumulative: Any, usage: Any) -> None:
-    """Add one response's token counts to the running total, if the provider reported any."""
+def _usage_of(response: Any) -> TokenUsage:
+    """One response's token counts, if the server reported any.
+
+    The cached count is `prompt_tokens_details.cached_tokens` (OpenAI, Qwen, vLLM when started with
+    `--enable-prompt-tokens-details`), or llama.cpp's `timings.cache_n`, outside `usage`. A cache
+    write costs nothing extra on these servers, so it is 0 wherever the read is known.
+    """
+    usage = getattr(response, "usage", None)
     if not usage:
-        return
-    cumulative.prompt_tokens += usage.prompt_tokens
-    cumulative.completion_tokens += usage.completion_tokens
-    cumulative.total_tokens += usage.total_tokens
+        return TokenUsage()
+    details = field_of(usage, "prompt_tokens_details")
+    read = count_or_unknown(field_of(details, "cached_tokens"))
+    if read is None:
+        read = count_or_unknown(field_of(field_of(response, "timings"), "cache_n"))
+    write = count_or_unknown(field_of(details, "cache_write_tokens"))
+    if write is None and read is not None:
+        write = 0
+    return TokenUsage(
+        prompt_tokens=usage.prompt_tokens,
+        completion_tokens=usage.completion_tokens,
+        total_tokens=usage.total_tokens,
+        cached_read_tokens=read,
+        cache_write_tokens=write,
+    )
 
 
 def _assistant_message(msg: Any) -> dict[str, Any]:
@@ -130,7 +153,7 @@ class OpenAIAdapter(LLMAdapter):
         ]
 
     async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
-        from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+        from specweaver.infrastructure.llm.models import LLMResponse
 
         client = self._get_client()
         oai_messages = self._convert_messages(messages, config)
@@ -154,11 +177,7 @@ class OpenAIAdapter(LLMAdapter):
         choice = response.choices[0]
         text = choice.message.content or ""
 
-        usage = TokenUsage()
-        if response.usage:
-            usage.prompt_tokens = response.usage.prompt_tokens
-            usage.completion_tokens = response.usage.completion_tokens
-            usage.total_tokens = response.usage.total_tokens
+        usage = _usage_of(response)
 
         return LLMResponse(
             text=text,
@@ -256,7 +275,7 @@ class OpenAIAdapter(LLMAdapter):
                 except Exception as e:
                     self._handle_error(e)
 
-                _accumulate_usage(cumulative_usage, response.usage)
+                cumulative_usage = cumulative_usage + _usage_of(response)
 
                 choice = response.choices[0]
                 msg = choice.message

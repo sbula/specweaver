@@ -17,7 +17,12 @@ from specweaver.infrastructure.llm.errors import (
     ToolRoundsExceededError,
     attach_usage,
 )
-from specweaver.infrastructure.llm.models import payload_chars, tool_rounds
+from specweaver.infrastructure.llm.models import (
+    TokenUsage,
+    count_or_unknown,
+    payload_chars,
+    tool_rounds,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,18 +37,24 @@ if TYPE_CHECKING:
     )
 
 
-def _accumulate_usage(cumulative: Any, usage: Any) -> None:
-    """Add one response's token counts to the running total.
+def _usage_of(usage: Any) -> TokenUsage:
+    """One response's token counts.
 
-    Anthropic reports `input_tokens`/`output_tokens` and no total, so the total is derived — the
-    other adapters read a provider-supplied `total_tokens`, which is why this is per-adapter rather
-    than shared.
+    Anthropic reports no total, and its `input_tokens` leaves out the cached part: what was read
+    from and written to the cache is added back, so the prompt total is the whole prompt.
     """
     if not usage:
-        return
-    cumulative.prompt_tokens += usage.input_tokens
-    cumulative.completion_tokens += usage.output_tokens
-    cumulative.total_tokens += usage.input_tokens + usage.output_tokens
+        return TokenUsage()
+    read = count_or_unknown(getattr(usage, "cache_read_input_tokens", None))
+    write = count_or_unknown(getattr(usage, "cache_creation_input_tokens", None))
+    prompt = usage.input_tokens + (read or 0) + (write or 0)
+    return TokenUsage(
+        prompt_tokens=prompt,
+        completion_tokens=usage.output_tokens,
+        total_tokens=prompt + usage.output_tokens,
+        cached_read_tokens=read,
+        cache_write_tokens=write,
+    )
 
 
 def _finish_reason(response: Any) -> str:
@@ -87,7 +98,7 @@ class AnthropicAdapter(LLMAdapter):
         return anthropic_messages
 
     async def generate(self, messages: list[Message], config: GenerationConfig) -> LLMResponse:
-        from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+        from specweaver.infrastructure.llm.models import LLMResponse
 
         client = self._get_client()
         anthropic_messages = self._convert_messages(messages)
@@ -116,11 +127,7 @@ class AnthropicAdapter(LLMAdapter):
             if hasattr(block, "text"):
                 text += block.text
 
-        usage = TokenUsage()
-        if hasattr(response, "usage") and response.usage:
-            usage.prompt_tokens = response.usage.input_tokens
-            usage.completion_tokens = response.usage.output_tokens
-            usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        usage = _usage_of(getattr(response, "usage", None))
 
         finish_reason = "stop"
         if getattr(response, "stop_reason", None) == "max_tokens":
@@ -247,7 +254,7 @@ class AnthropicAdapter(LLMAdapter):
                 except Exception as e:
                     self._handle_error(e)
 
-                _accumulate_usage(cumulative_usage, getattr(response, "usage", None))
+                cumulative_usage = cumulative_usage + _usage_of(getattr(response, "usage", None))
 
                 # Anthropic signals tool use via stop_reason, not a tool_calls field.
                 if getattr(response, "stop_reason", None) != "tool_use":

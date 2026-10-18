@@ -165,9 +165,16 @@ class TestMistralAdapter:
 
         mock_msg = MagicMock()
         mock_msg.choices = [mock_choice]
-        mock_msg.usage.prompt_tokens = 10
-        mock_msg.usage.completion_tokens = 20
-        mock_msg.usage.total_tokens = 30
+        from mistralai.client.models import UsageInfo
+
+        mock_msg.usage = UsageInfo.model_validate(
+            {
+                "prompt_tokens": 10,
+                "completion_tokens": 20,
+                "total_tokens": 30,
+                "prompt_tokens_details": {"cached_tokens": 4},
+            }
+        )
 
         mock_client = MagicMock()
         mock_client.chat.complete_async = AsyncMock(return_value=mock_msg)
@@ -189,7 +196,9 @@ class TestMistralAdapter:
 
         with pytest.raises(ToolRoundsExceededError, match=r"brake\.agent_turns") as caught:
             await adapter.generate_with_tools([], config, mock_exec)
-        assert caught.value.usage.total_tokens >= 0  # the rounds' usage goes to the brake
+        # Both rounds' usage goes to the brake, cached part included.
+        usage = caught.value.usage
+        assert (usage.total_tokens, usage.cached_read_tokens) == (60, 8)
 
         assert mock_exec.execute.call_count == 2
 

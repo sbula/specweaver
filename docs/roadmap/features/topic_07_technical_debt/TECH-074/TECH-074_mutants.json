@@ -267,6 +267,138 @@
           "symbol_sha": "sha256:5274372fc175780718b45b95de1557882372a624852b672737a5182e75bd23b8"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Each adapter reads its provider's cached counts",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_cached_token_counts.py",
+        "tests/integration/infrastructure/llm/test_cached_counts_through_the_router.py",
+        "tests/unit/infrastructure/llm/test_mistral.py",
+        "tests/unit/infrastructure/llm/test_adapters.py"
+      ],
+      "mutants": [
+        {
+          "id": "openai-cache-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "_usage_of",
+          "old": "    read = count_or_unknown(field_of(details, \"cached_tokens\"))\n",
+          "new": "    read = None\n",
+          "breaks": "OpenAI, Qwen and vLLM cached reads are never seen, so they are billed at the full input price",
+          "symbol_sha": "sha256:f38cac5a3f6f1aa2d99160c63eb4b1cc2cad760c5d30206162e58678145dbbd6"
+        },
+        {
+          "id": "llama-cpp-cache-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "_usage_of",
+          "old": "        read = count_or_unknown(field_of(field_of(response, \"timings\"), \"cache_n\"))\n",
+          "new": "        read = None\n",
+          "breaks": "the GB10's llama.cpp cache is invisible",
+          "symbol_sha": "sha256:f38cac5a3f6f1aa2d99160c63eb4b1cc2cad760c5d30206162e58678145dbbd6"
+        },
+        {
+          "id": "openai-loop-keeps-last-round",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "                cumulative_usage = cumulative_usage + _usage_of(response)\n",
+          "new": "                cumulative_usage = _usage_of(response)\n",
+          "breaks": "a tool loop counts only its last round; the brake and the ledger miss the rest",
+          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
+        },
+        {
+          "id": "anthropic-prompt-misses-cache",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "_usage_of",
+          "old": "    prompt = usage.input_tokens + (read or 0) + (write or 0)\n",
+          "new": "    prompt = usage.input_tokens\n",
+          "breaks": "once caching is on, Anthropic's prompt total shrinks to the part after the breakpoint and every limit under-counts",
+          "symbol_sha": "sha256:c16af94cfd212fc7761b8fc6b79a12d78c8b10a47168ada52d6115bfcdfaf1b1"
+        },
+        {
+          "id": "anthropic-cache-read-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "_usage_of",
+          "old": "    read = count_or_unknown(getattr(usage, \"cache_read_input_tokens\", None))\n",
+          "new": "    read = 0\n",
+          "breaks": "Anthropic cache reads are recorded as none",
+          "symbol_sha": "sha256:c16af94cfd212fc7761b8fc6b79a12d78c8b10a47168ada52d6115bfcdfaf1b1"
+        },
+        {
+          "id": "anthropic-loop-keeps-last-round",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "                cumulative_usage = cumulative_usage + _usage_of(getattr(response, \"usage\", None))\n",
+          "new": "                cumulative_usage = _usage_of(getattr(response, \"usage\", None))\n",
+          "breaks": "an Anthropic tool loop counts only its last round",
+          "symbol_sha": "sha256:faee57578c3399199887cc6c4dedf45af1fe86d9ce7543f1b4a102ae40fee5b2"
+        },
+        {
+          "id": "mistral-unknown-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "_usage_of",
+          "old": "    read = count_or_unknown(field_of(field_of(usage, \"prompt_tokens_details\"), \"cached_tokens\"))\n",
+          "new": "    read = 0\n",
+          "breaks": "a Mistral reply without a cached count claims nothing was cached",
+          "symbol_sha": "sha256:8d6cc898653aabe5cc153be96acef46129c187a517402e874d90f158d6f9531f"
+        },
+        {
+          "id": "mistral-loop-keeps-last-round",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "        cumulative_usage = cumulative_usage + _usage_of(getattr(response, \"usage\", None))\n",
+          "new": "        cumulative_usage = _usage_of(getattr(response, \"usage\", None))\n",
+          "breaks": "a Mistral tool loop counts only its last round",
+          "symbol_sha": "sha256:c188973626ca88ec2c666120630ff8a9cbcb62b68662bf838f429094ed6131bd"
+        },
+        {
+          "id": "gemini-unknown-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter._extract_usage",
+          "old": "        read = count_or_unknown(getattr(meta, \"cached_content_token_count\", None))\n",
+          "new": "        read = 0\n",
+          "breaks": "a Gemini reply without a cached count claims nothing was cached",
+          "symbol_sha": "sha256:423098925464c949330f6d5fc09521768a11a75438cf7c1ffcd383d37dbc5aab"
+        },
+        {
+          "id": "gemini-loop-keeps-last-round",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "                cumulative_usage = cumulative_usage + self._extract_usage(response)\n",
+          "new": "                cumulative_usage = self._extract_usage(response)\n",
+          "breaks": "a Gemini tool loop counts only its last round",
+          "symbol_sha": "sha256:80fa41f880fcc06258fc3572fe92d1ec548a0cab18123566cf2d1856019a3d07"
+        },
+        {
+          "id": "unknown-part-summed-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/models.py",
+          "symbol": "_known_sum",
+          "old": "    return None if a is None or b is None else a + b\n",
+          "new": "    return (a or 0) + (b or 0)\n",
+          "breaks": "a loop with one unreported round claims a cached total it does not know",
+          "symbol_sha": "sha256:e118c17a4c49929839a08a714e4ed1b0a5c73d781cac8ffc05b18ab25e9559c9"
+        },
+        {
+          "id": "bad-count-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/models.py",
+          "symbol": "count_or_unknown",
+          "old": "    if isinstance(value, bool) or not isinstance(value, int) or value < 0:\n",
+          "new": "    if not isinstance(value, int):\n",
+          "breaks": "a negative count from a server lowers the cost",
+          "symbol_sha": "sha256:c7993f43b478db6557f1c9ce2c7c93c41f67c1c4b09b03b6a6471be704f09877"
+        }
+      ]
     }
   ]
 }

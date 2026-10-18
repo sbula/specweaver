@@ -32,6 +32,7 @@ from specweaver.infrastructure.llm.models import (
     TokenUsage,
     ToolCall,
     ToolDefinition,
+    count_or_unknown,
     payload_chars,
     tool_rounds,
 )
@@ -239,12 +240,16 @@ class GeminiAdapter(LLMAdapter):
         meta = getattr(response, "usage_metadata", None)
         if not meta:
             return TokenUsage()
-        # Thinking is billed as output.
+        # Thinking is billed as output. The cached part is inside the prompt count; a cache write
+        # costs nothing extra, so it is 0 wherever the read is known.
+        read = count_or_unknown(getattr(meta, "cached_content_token_count", None))
         return TokenUsage(
             prompt_tokens=_count(meta, "prompt_token_count"),
             completion_tokens=_count(meta, "candidates_token_count")
             + _count(meta, "thoughts_token_count"),
             total_tokens=_count(meta, "total_token_count"),
+            cached_read_tokens=read,
+            cache_write_tokens=None if read is None else 0,
         )
 
     def _apply_on_tool_round(

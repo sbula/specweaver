@@ -64,7 +64,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
+          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
         },
         {
           "id": "failure-usage-ignored",
@@ -84,7 +84,7 @@
           "old": "            completion_tokens=_count(meta, \"candidates_token_count\")\n            + _count(meta, \"thoughts_token_count\"),\n",
           "new": "            completion_tokens=_count(meta, \"candidates_token_count\"),\n",
           "breaks": "Gemini's thinking tokens are spent and never counted against the limits",
-          "symbol_sha": "sha256:fdf9b8a9dec325ba521eece3b633ef27b9e82527fb5c9c9890a95e70c90c22ae"
+          "symbol_sha": "sha256:423098925464c949330f6d5fc09521768a11a75438cf7c1ffcd383d37dbc5aab"
         },
         {
           "id": "no-usage-is-free",
@@ -181,7 +181,7 @@
           "old": "                    before_request(round_num, payload_chars(kwargs))\n",
           "new": "                    before_request(round_num, 0)\n",
           "breaks": "a tool round's growing prompt is never counted before it is sent",
-          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
+          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
         }
       ]
     },
@@ -707,7 +707,7 @@
           "old": "before_request(round_num, payload_chars(kwargs))",
           "new": "before_request(round_num, payload_chars(oai_messages))",
           "breaks": "a tool round's check leaves out the tool schemas and system prompt",
-          "symbol_sha": "sha256:12fccf36562021eea911de02cdf6a5202593f239694baddf04b7a3f23c172d97"
+          "symbol_sha": "sha256:741d485dd8f6c3485a8d65c2c3c4143c90f84f5ea9d082c5a9fab7a6943f3c48"
         },
         {
           "id": "system-instruction-free",
