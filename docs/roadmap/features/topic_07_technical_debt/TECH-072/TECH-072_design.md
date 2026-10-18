@@ -3,7 +3,8 @@
 - **Feature ID**: TECH-072
 - **Epic**: Topic 07 (Technical Debt)
 - **Kind**: bugfix
-- **Status**: APPROVED — approved by Steve Bula `[agreed 2026-09-26]` ("do not forget TDD")
+- **Status**: CLOSED by the user 2026-10-18 — approved `[agreed 2026-09-26]` ("do not forget TDD"); SF-02
+  answered the review's two open calls
 - **Origin**: 2026-09-26, the subject-scatter audit behind the backlog dependency map. Both verified
   in code the same day.
 
