@@ -76,6 +76,8 @@ class LlmPriceRefresh(Base):
     etag: Mapped[str | None] = mapped_column(String, nullable=True)
     #: The offerings the refresh covered; a new one means the ETag no longer speaks for it.
     offerings: Mapped[str] = mapped_column(String, nullable=False, default="")
+    #: When models.dev last answered; a failed attempt sets `checked_at` only.
+    reached_at: Mapped[datetime | None] = mapped_column(StrictISODateTime, nullable=True)
 
 
 class LlmUsagePrice(Base):

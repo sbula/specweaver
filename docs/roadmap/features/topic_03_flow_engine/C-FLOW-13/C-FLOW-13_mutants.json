@@ -231,7 +231,8 @@
       "requirement": "FR-18",
       "title": "The catalogue is regenerated from models.dev, filtered and stamped",
       "scope": [
-        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py"
+        "tests/e2e/capabilities/infrastructure/test_costs_currency_e2e.py",
+        "tests/e2e/capabilities/infrastructure/test_costs_refresh_e2e.py"
       ],
       "mutants": [
         {
@@ -239,10 +240,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
           "symbol": "costs",
-          "old": "    _say(_catalogue_line(shipped_catalogue().checked))\n",
+          "old": "    _say(_sources_line(shipped_catalogue().checked, last_reached(_core.get_db())))\n",
           "new": "    pass\n",
           "breaks": "sw costs shows prices without saying how old the catalogue is",
-          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
+          "symbol_sha": "sha256:a38861ce4608d91c4ee59ed3f3ebdc630d99e2935893367267cf2aac0b7c3d1c"
         }
       ],
       "retired": {
@@ -645,7 +646,7 @@
           "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
           "new": "            pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
         },
         {
           "id": "role-table-overwritten",

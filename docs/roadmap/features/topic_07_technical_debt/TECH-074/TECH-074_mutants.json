@@ -136,7 +136,7 @@
           "old": "        price_in, price_out = (book.default(TokenKind.INPUT), book.default(TokenKind.OUTPUT))\n",
           "new": "        price_in, price_out = (book.default(TokenKind.CACHE_WRITE), book.default(TokenKind.OUTPUT))\n",
           "breaks": "sw costs shows the cache-write price as the input price, 25% above what an uncached token costs",
-          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
+          "symbol_sha": "sha256:a38861ce4608d91c4ee59ed3f3ebdc630d99e2935893367267cf2aac0b7c3d1c"
         }
       ]
     },
@@ -156,7 +156,7 @@
           "old": "            await conn.run_sync(_seed_prices)\n",
           "new": "            pass\n",
           "breaks": "no price or cache rule is ever stored, so the rules C-FLOW-14 needs do not exist",
-          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
         },
         {
           "id": "seed-repeats-every-start",
@@ -484,7 +484,7 @@
           "old": "            await conn.run_sync(_add_cached_columns)\n",
           "new": "            pass\n",
           "breaks": "an existing database never gains the cached columns, and every write to it fails",
-          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
         },
         {
           "id": "cached-count-not-stored",
@@ -769,7 +769,7 @@
           "old": "            await conn.run_sync(_add_price_index)\n",
           "new": "            pass\n",
           "breaks": "two commands refreshing at once store a price twice, and the check refuses every later price",
-          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
         }
       ]
     },
@@ -788,7 +788,7 @@
           "old": "            if last and not force and moment - last.checked_at < EVERY:\n",
           "new": "            if False:\n",
           "breaks": "every command waits on models.dev, not one a day",
-          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
         },
         {
           "id": "etag-never-sent",
@@ -798,7 +798,7 @@
           "old": "            etag = last.etag if last and last.offerings == covered else None\n",
           "new": "            etag = None\n",
           "breaks": "an unchanged list is downloaded whole every day",
-          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
         },
         {
           "id": "etag-sent-for-new-models",
@@ -808,7 +808,7 @@
           "old": "            etag = last.etag if last and last.offerings == covered else None\n",
           "new": "            etag = last.etag if last else None\n",
           "breaks": "a model newly in use is never priced while models.dev's list is unchanged",
-          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
         },
         {
           "id": "local-server-refreshed",
@@ -838,7 +838,7 @@
           "old": "        logger.warning(\"Price changed: %s\", line)\n",
           "new": "        pass\n",
           "breaks": "a price changes without anybody being told",
-          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
         },
         {
           "id": "refresh-waits-a-minute",
@@ -877,7 +877,7 @@
           "old": "    except (httpx2.HTTPError, ValueError) as exc:\n",
           "new": "    except ValueError as exc:\n",
           "breaks": "a slow or missing models.dev stops the command",
-          "symbol_sha": "sha256:86155558e40566d7bd247517949d90f805bffb21da1414eac0a0f133b44619d5"
+          "symbol_sha": "sha256:54ab26a31a4c2c89fcc4582520ba3a3bd92059b66270f2b15a14da5fdb8a3577"
         },
         {
           "id": "same-day-price-not-replaced",
@@ -907,6 +907,26 @@
           "new": "    return {\"settings\": \"your settings file\"}.get(price.source, \"catalogue\")\n",
           "breaks": "a downloaded price reads as the shipped one",
           "symbol_sha": "sha256:432b7bd558b6a5d62a13155ffcd67934d814cc4bc3fb3584db484e19fa551e22"
+        },
+        {
+          "id": "failed-refresh-counts-as-reached",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_record",
+          "old": "    if reached:\n",
+          "new": "    if True:\n",
+          "breaks": "sw costs says models.dev was reached on a day it never answered",
+          "symbol_sha": "sha256:53ed4498dcbe00729cfde5d394fe93761090210f71f9eb31179605ef3923fe87"
+        },
+        {
+          "id": "reach-never-shown",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_sources_line",
+          "old": "        f\"models.dev reached {reached.date().isoformat()}\"\n        if reached\n",
+          "new": "        \"models.dev not reached yet\"\n        if reached\n",
+          "breaks": "sw costs never says that prices came from models.dev",
+          "symbol_sha": "sha256:aace75077bfbe72346f5fff632fda149f1b21a6c2f14ca182c7542e3f8b4b635"
         }
       ]
     }

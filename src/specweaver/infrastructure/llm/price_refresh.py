@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 from sqlalchemy import create_engine, insert, select, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from specweaver.commons.async_bridge import run_sync
 from specweaver.core.config.llm_settings import resolve_roles
@@ -171,7 +172,13 @@ def refresh_prices(
             covered = " ".join(sorted(o.key for o in offerings))
             etag = last.etag if last and last.offerings == covered else None
             result = _download_and_store(conn, offerings, etag, moment.date())
-            _record(conn, moment, result.etag if result.etag is not None else etag, covered)
+            _record(
+                conn,
+                moment,
+                result.etag if result.etag is not None else etag,
+                covered,
+                reached=result.reached,
+            )
     finally:
         engine.dispose()
     for line in result.refresh.changes:
@@ -202,6 +209,8 @@ def offerings_in_use(files: LlmSettingsFiles) -> list[Offering]:
 class _Outcome:
     refresh: Refresh
     etag: str | None = None
+    #: models.dev answered: with its list, or with "unchanged".
+    reached: bool = False
 
 
 def _download_and_store(
@@ -214,7 +223,7 @@ def _download_and_store(
             Refresh(ran=True, problems=[f"models.dev unreachable, the last prices stay: {exc}"])
         )
     if status == 304:
-        return _Outcome(Refresh(ran=True), etag)
+        return _Outcome(Refresh(ran=True), etag, reached=True)
     refresh = Refresh(ran=True)
     for offering in offerings:
         entry = api.get(offering.provider, {}).get("models", {}).get(offering.model)
@@ -229,7 +238,7 @@ def _download_and_store(
         changes, problems = store_downloaded(conn, offering.model, offering.host, rows)
         refresh.changes += changes
         refresh.problems += problems
-    return _Outcome(refresh, new_etag)
+    return _Outcome(refresh, new_etag, reached=True)
 
 
 async def _fetch(etag: str | None) -> tuple[int, dict[str, Any], str | None]:
@@ -246,8 +255,25 @@ async def _fetch(etag: str | None) -> tuple[int, dict[str, Any], str | None]:
     return 200, body, response.headers.get("ETag")
 
 
-def _record(conn: Connection, moment: datetime, etag: str | None, covered: str) -> None:
-    values = {"checked_at": moment, "etag": etag, "offerings": covered}
+def last_reached(db: Any) -> datetime | None:
+    """When models.dev last answered a refresh; `None` if it never did."""
+    engine = create_engine("sqlite://", creator=db.connect)
+    try:
+        with engine.connect() as conn:
+            return conn.execute(select(_STATE.c.reached_at).where(_STATE.c.id == 1)).scalar()
+    except SQLAlchemyError as exc:
+        logger.warning("When models.dev last answered is unreadable: %s", exc)
+        return None
+    finally:
+        engine.dispose()
+
+
+def _record(
+    conn: Connection, moment: datetime, etag: str | None, covered: str, *, reached: bool
+) -> None:
+    values: dict[str, object] = {"checked_at": moment, "etag": etag, "offerings": covered}
+    if reached:
+        values["reached_at"] = moment
     if conn.execute(select(_STATE.c.id).where(_STATE.c.id == 1)).first():
         conn.execute(update(LlmPriceRefresh).where(_STATE.c.id == 1).values(**values))
     else:

@@ -53,7 +53,7 @@ must not be able to send code to its own server.
 | AD-4 | Every client gets its address explicitly from its server entry, or its adapter's own default; `OPENAI_BASE_URL` is ignored | one stray env var would send private code to the cloud or cloud calls to the GB10 |
 | AD-5 | Read with `tomllib`, write with `tomlkit` | tomlkit keeps the user's comments; tomllib is stdlib |
 | AD-6 | Each file is validated alone, strictly (`extra="forbid"`), before layering | every error can name its own file; a typo cannot pass as a default |
-| AD-7 | Model list: short, kept by hand, prices from models.dev (MIT, credited), never fetched at runtime `[agreed 2026-10-09]` | a price change is a reviewed one-line edit |
+| AD-7 | Model list: short, kept by hand, prices from models.dev (MIT, credited) `[agreed 2026-10-09]`; since `TECH-074` the list is the offline start, and prices are refreshed from models.dev once a day `[agreed 2026-10-18]` | a provider's new price reaches the ledger without a release |
 | AD-8 | Prices stored in USD per 1M tokens; converted only at display, to the one configured currency, with the dated manual rate `[agreed 2026-09-26]`; the currency is configurable `[agreed 2026-09-27]` | the providers' unit; history does not shift when the rate changes |
 | AD-9 | No migration from the database `[agreed 2026-09-27]` | the old DB held nothing worth moving |
 
@@ -79,7 +79,7 @@ FR-14 (migration) was dropped `[agreed 2026-09-27]`.
 | FR-15 | Commands write the files | `sw config set-role`, `sw costs set`, `sw costs reset` | SHALL write the machine or project file with `tomlkit`, keeping comments, line endings and file mode | the commands and the file are one truth |
 | FR-16 | Model for one run | `sw implement`, `sw run`, `sw resume` | SHALL accept `--model <model@server>` for this run only | a quick trial needs no file edit |
 | FR-17 | Brake values handed over | Resolver → brake | SHALL provide the `[brake]` values (`hosted_spend_per_run`, `tokens_per_run`, `agent_turns`) to the brake — **seam with `B-FLOW-05`** | the values live here; the behaviour lives there |
-| FR-18 | Model list upkeep | `catalogue_data/models.toml` | SHALL ship a short list kept by hand: every hosted model on it has both prices, at the highest tier, and an output limit, and the list states the date its prices were checked `[agreed 2026-10-09]` | a price change is a one-line, reviewable edit, never a runtime fetch |
+| FR-18 | Model list upkeep | `catalogue_data/models.toml` | SHALL ship a short list kept by hand: every hosted model on it has both prices and an output limit, and the list states the date its prices were checked `[agreed 2026-10-09]`; it carries base, cached-read and cache-write prices and the cache rules, the highest long-prompt tier, and `sw costs` names the day models.dev was last reached (`TECH-074`) `[agreed 2026-10-18]` | the list starts the prices offline and is the only source of cache rules |
 
 ## Non-Functional Requirements
 
@@ -123,7 +123,7 @@ The nightly live run (`B-FLOW-05` NFR-4) makes its calls through these settings.
 | One file's list could wipe another's in a merge | one source per file, explicit layering (AD-6) |
 | TOML errors carry no line number on Python 3.11–3.13 | the line is found by scanning the text (`toml_lines.py`) |
 | A stale env var overrides the file invisibly | `sw config show` prints each value's origin (FR-3) |
-| Prices go stale | `sw costs` shows the date the list was checked; the list is edited by hand |
+| Prices go stale | refreshed from models.dev once a day (`TECH-074`); `sw costs` shows the list's date and the day models.dev was last reached |
 | Qwen tool calling on vLLM | parser `qwen3_xml`, not `qwen3_coder` (loops on long tool inputs); noted in the model list |
 
 ## Sub-features

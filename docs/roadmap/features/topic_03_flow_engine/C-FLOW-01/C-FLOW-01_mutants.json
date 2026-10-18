@@ -251,7 +251,7 @@
           "old": "    for line in _status_lines(_status_totals(project, _month_start()), currency):\n",
           "new": "    for line in []:\n",
           "breaks": "`sw costs` says nothing of failed or unfinished calls",
-          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
+          "symbol_sha": "sha256:a38861ce4608d91c4ee59ed3f3ebdc630d99e2935893367267cf2aac0b7c3d1c"
         }
       ]
     },

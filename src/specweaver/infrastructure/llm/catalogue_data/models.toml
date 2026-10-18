@@ -1,6 +1,10 @@
 # The models SpecWeaver is used with, and what each costs and can do. Edited by hand; the machine
 # settings file wins over it ([models."<id>"]). A fact left out is unknown, never false or 0.
 #
+# The prices here are the offline start: at start-up they go into the database, and once a day the
+# models the roles use are refreshed from models.dev (`sw costs refresh` does it now). The cache
+# rules come only from here; models.dev has none.
+#
 # Prices are USD per 1M tokens, taken from models.dev (MIT licence, Copyright (c) 2025 models.dev).
 # Where a model has long-prompt tiers, the highest price is written, so a call is never under-counted.
 # Add a model by copying an entry and checking its provider's price.

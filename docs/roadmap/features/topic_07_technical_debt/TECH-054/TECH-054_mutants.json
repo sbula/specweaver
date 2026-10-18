@@ -78,7 +78,7 @@
           "old": "            logger.debug(\"LlmBase tables: %s\", LlmBase.metadata.tables.keys())",
           "new": "            print(\"LlmBase tables:\", LlmBase.metadata.tables.keys())",
           "breaks": "the config DB writes its schema to stdout on every bootstrap, so `sw run --json` is unparseable from its first line — the state it shipped in, undetected, through a full green suite",
-          "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
         },
         {
           "id": "log-records-return-to-stdout",

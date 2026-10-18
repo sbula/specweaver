@@ -101,6 +101,14 @@ def _add_cached_columns(conn: Connection) -> None:
             conn.exec_driver_sql(f"ALTER TABLE llm_usage_log ADD COLUMN {name} {kind}")
 
 
+def _add_refresh_reached(conn: Connection) -> None:
+    """Add `reached_at` to an older `llm_price_refresh`: unknown until models.dev next answers.
+    Idempotent."""
+    present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(llm_price_refresh)")}
+    if "reached_at" not in present:
+        conn.exec_driver_sql("ALTER TABLE llm_price_refresh ADD COLUMN reached_at VARCHAR")
+
+
 def _add_console_log_level(conn: Connection) -> None:
     """Add `console_log_level` to an older `workspace_projects`; every project shows warnings. Idempotent."""
     present = {col[1] for col in conn.exec_driver_sql("PRAGMA table_info(workspace_projects)")}
@@ -172,6 +180,7 @@ def bootstrap_database(db_path: str) -> None:
             await conn.run_sync(_add_history_columns)
             await conn.run_sync(_add_call_status)
             await conn.run_sync(_add_cached_columns)
+            await conn.run_sync(_add_refresh_reached)
             await conn.run_sync(_add_console_log_level)
             await conn.run_sync(_move_default_dal_once)
             await conn.run_sync(_drop_retired_llm_tables)

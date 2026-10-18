@@ -23,7 +23,7 @@ from specweaver.core.config.llm_settings import (
 )
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
-from specweaver.infrastructure.llm.price_refresh import SOURCE, refresh_prices
+from specweaver.infrastructure.llm.price_refresh import SOURCE, last_reached, refresh_prices
 from specweaver.infrastructure.llm.price_store import price_book
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
@@ -60,7 +60,7 @@ def costs(ctx: typer.Context) -> None:
         raise typer.Exit(code=1) from err
     currency = files.machine.currency
     _say(_currency_line(currency))
-    _say(_catalogue_line(shipped_catalogue().checked))
+    _say(_sources_line(shipped_catalogue().checked, last_reached(_core.get_db())))
     spend = _month_spend(project)
     db = _core.get_db()
     for (model, server), role_names in sorted(_models_in_use(roles).items()):
@@ -234,8 +234,14 @@ def _models_in_use(roles: dict[str, ResolvedRole]) -> dict[tuple[str, str], list
     return used
 
 
-def _catalogue_line(checked: str) -> str:
-    return f"Prices from the shipped list, checked {checked}."
+def _sources_line(checked: str, reached: datetime | None) -> str:
+    """Where prices come from: the shipped list, and models.dev once it has answered."""
+    fetched = (
+        f"models.dev reached {reached.date().isoformat()}"
+        if reached
+        else "models.dev not reached yet"
+    )
+    return f"Prices: the shipped list checked {checked}; {fetched}; a price you set wins."
 
 
 def _usd(price: Price | None) -> float | None:
