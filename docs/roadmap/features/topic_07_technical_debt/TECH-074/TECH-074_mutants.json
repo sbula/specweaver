@@ -681,7 +681,7 @@
           "old": "        elif not math.isfinite(value) or value <= 0:\n",
           "new": "        elif not math.isfinite(value) or value < 0:\n",
           "breaks": "a download that says 0 makes a hosted model free",
-          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+          "symbol_sha": "sha256:2a08f8eae8d58f3d97fdf05cd74b2d15a996d96cd2c7d7a858f126bf69b64c50"
         },
         {
           "id": "boolean-price-accepted",
@@ -691,7 +691,7 @@
           "old": "        if isinstance(value, bool) or not isinstance(value, int | float):\n",
           "new": "        if not isinstance(value, int | float):\n",
           "breaks": "a true in the price field is stored as 1 USD",
-          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+          "symbol_sha": "sha256:2a08f8eae8d58f3d97fdf05cd74b2d15a996d96cd2c7d7a858f126bf69b64c50"
         },
         {
           "id": "missing-input-silent",
@@ -701,7 +701,7 @@
           "old": "            if kind in _NEEDED:\n",
           "new": "            if False:\n",
           "breaks": "a download without an input price is not reported",
-          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+          "symbol_sha": "sha256:2a08f8eae8d58f3d97fdf05cd74b2d15a996d96cd2c7d7a858f126bf69b64c50"
         }
       ]
     },
@@ -730,7 +730,7 @@
           "old": "            rows.append(Price(kind, float(value), day, SOURCE, _rule(rules.get(kind), tier)))\n",
           "new": "            rows.append(Price(kind, float(value), day, SOURCE, _rule(None, tier)))\n",
           "breaks": "a downloaded cached price no longer replaces the shipped one, which bills forever",
-          "symbol_sha": "sha256:b7798a82d2b75f8b8b4cbd35b7df1746cce0412899671ffe0641dcdcfa2e72f9"
+          "symbol_sha": "sha256:2a08f8eae8d58f3d97fdf05cd74b2d15a996d96cd2c7d7a858f126bf69b64c50"
         }
       ]
     },
@@ -749,7 +749,7 @@
           "old": "    if problems:\n        return [], problems\n",
           "new": "    if False:\n        return [], problems\n",
           "breaks": "a download that breaks the exactly-one check is stored, and calls meet two prices",
-          "symbol_sha": "sha256:5ef6b19891500be21551a48afa120da1259ba37d9cc1cc39379fe91bc4615c4c"
+          "symbol_sha": "sha256:5c479fb87f192cbcdad7c97a686e3a6d03b98a3d141831f52ab75448b0ad12ba"
         },
         {
           "id": "unchanged-price-stored-daily",
@@ -759,7 +759,7 @@
           "old": "        or held.usd_per_million != price.usd_per_million\n",
           "new": "        or True\n",
           "breaks": "every refresh stores every price again, and reports changes that are none",
-          "symbol_sha": "sha256:5ef6b19891500be21551a48afa120da1259ba37d9cc1cc39379fe91bc4615c4c"
+          "symbol_sha": "sha256:5c479fb87f192cbcdad7c97a686e3a6d03b98a3d141831f52ab75448b0ad12ba"
         },
         {
           "id": "price-index-never-added",
@@ -770,6 +770,143 @@
           "new": "            pass\n",
           "breaks": "two commands refreshing at once store a price twice, and the check refuses every later price",
           "symbol_sha": "sha256:148f6458e3f2f24795e83d120a53a8ea376eb76bc52f328f7ad1b28012200a10"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Prices follow models.dev, once a day, for the models in use",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_refresh_download.py"
+      ],
+      "mutants": [
+        {
+          "id": "downloads-every-command",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "refresh_prices",
+          "old": "            if last and not force and moment - last.checked_at < EVERY:\n",
+          "new": "            if False:\n",
+          "breaks": "every command waits on models.dev, not one a day",
+          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+        },
+        {
+          "id": "etag-never-sent",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "refresh_prices",
+          "old": "            etag = last.etag if last and last.offerings == covered else None\n",
+          "new": "            etag = None\n",
+          "breaks": "an unchanged list is downloaded whole every day",
+          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+        },
+        {
+          "id": "etag-sent-for-new-models",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "refresh_prices",
+          "old": "            etag = last.etag if last and last.offerings == covered else None\n",
+          "new": "            etag = last.etag if last else None\n",
+          "breaks": "a model newly in use is never priced while models.dev's list is unchanged",
+          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+        },
+        {
+          "id": "local-server-refreshed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "offerings_in_use",
+          "old": "        if server is None or server.private:\n",
+          "new": "        if server is None:\n",
+          "breaks": "a local model gets downloaded prices and stops being not applicable",
+          "symbol_sha": "sha256:7c53db1c6164e32d92f0bee11b0cc45dd5e48ff07dca51318e52c3abde96fc46"
+        },
+        {
+          "id": "models-dev-name-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "offerings_in_use",
+          "old": "        provider = server.models_dev or PROVIDER_OF_KIND.get(server.kind)\n",
+          "new": "        provider = PROVIDER_OF_KIND.get(server.kind)\n",
+          "breaks": "a hosted openai-compatible server's prices never follow its provider",
+          "symbol_sha": "sha256:7c53db1c6164e32d92f0bee11b0cc45dd5e48ff07dca51318e52c3abde96fc46"
+        },
+        {
+          "id": "change-never-reported",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "refresh_prices",
+          "old": "        logger.warning(\"Price changed: %s\", line)\n",
+          "new": "        pass\n",
+          "breaks": "a price changes without anybody being told",
+          "symbol_sha": "sha256:e512183cfea129d76ef0e7ff81ff59345694f300f4e1e87d6b9bc156a77c821a"
+        },
+        {
+          "id": "refresh-waits-a-minute",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "old": "TIMEOUT_SECONDS = 5\n",
+          "new": "TIMEOUT_SECONDS = 60\n",
+          "breaks": "a slow models.dev holds the first command of the day for a minute",
+          "symbol": "TIMEOUT_SECONDS"
+        },
+        {
+          "id": "no-refresh-at-command-start",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/router.py",
+          "symbol": "build_router",
+          "old": "        price_refresh.refresh_at_start(db, files)\n",
+          "new": "        pass\n",
+          "breaks": "prices change only when the user asks, and the ledger falls behind the provider",
+          "symbol_sha": "sha256:75f2091437daced25ac37571ff49f6f05ac1dea0a20d39e6297309ad41f2edd6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A failed download changes nothing",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_price_refresh_download.py",
+        "tests/integration/infrastructure/llm/test_price_refresh_store.py"
+      ],
+      "mutants": [
+        {
+          "id": "timeout-escapes",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_refresh.py",
+          "symbol": "_download_and_store",
+          "old": "    except (httpx2.HTTPError, ValueError) as exc:\n",
+          "new": "    except ValueError as exc:\n",
+          "breaks": "a slow or missing models.dev stops the command",
+          "symbol_sha": "sha256:86155558e40566d7bd247517949d90f805bffb21da1414eac0a0f133b44619d5"
+        },
+        {
+          "id": "same-day-price-not-replaced",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/price_store.py",
+          "symbol": "_replace",
+          "old": "            _delete_same_day(conn, offering, price)\n",
+          "new": "            pass\n",
+          "breaks": "a price downloaded on the day of a shipped one is never stored",
+          "symbol_sha": "sha256:ed96a230c894f8cbcbd277880eb24ba375667c9d4a78bb28d3e9bcea0d636d02"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "sw costs names models.dev as the source",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_costs_refresh_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "source-shown-as-catalogue",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_price_source",
+          "old": "    return {\"settings\": \"your settings file\", SOURCE: SOURCE}.get(price.source, \"catalogue\")\n",
+          "new": "    return {\"settings\": \"your settings file\"}.get(price.source, \"catalogue\")\n",
+          "breaks": "a downloaded price reads as the shipped one",
+          "symbol_sha": "sha256:432b7bd558b6a5d62a13155ffcd67934d814cc4bc3fb3584db484e19fa551e22"
         }
       ]
     }

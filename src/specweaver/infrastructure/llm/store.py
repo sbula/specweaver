@@ -66,6 +66,18 @@ class LlmUsageLog(Base):
     __table_args__ = (Index("ix_llm_usage_history", "task_type", "model", "dal_level"),)
 
 
+class LlmPriceRefresh(Base):
+    """The last price refresh: when it was tried, what models.dev's ETag was, and for which models."""
+
+    __tablename__ = "llm_price_refresh"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    checked_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
+    etag: Mapped[str | None] = mapped_column(String, nullable=True)
+    #: The offerings the refresh covered; a new one means the ETag no longer speaks for it.
+    offerings: Mapped[str] = mapped_column(String, nullable=False, default="")
+
+
 class LlmUsagePrice(Base):
     """The price one token kind of a call was billed at: the call's invoice line."""
 

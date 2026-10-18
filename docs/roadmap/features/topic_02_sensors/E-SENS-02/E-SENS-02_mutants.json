@@ -128,7 +128,7 @@
           "old": "    resolver.search_key()\n",
           "new": "    pass\n",
           "breaks": "a broken search setting is found only when a review runs",
-          "symbol_sha": "sha256:7b3bd106854bac213499e44da189d37070dc31368b28aaa32aeae7907b338bbc"
+          "symbol_sha": "sha256:75f2091437daced25ac37571ff49f6f05ac1dea0a20d39e6297309ad41f2edd6"
         },
         {
           "id": "pasted-key-accepted",

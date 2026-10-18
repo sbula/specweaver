@@ -88,6 +88,18 @@ def _baselines_are_read_only() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
+def _no_price_refresh_at_start(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A command's start-up price refresh is off unless a test is marked `price_refresh`: every other
+    test that builds a router would otherwise ask models.dev, and be slowed or warned by the refusal."""
+    if not request.node.get_closest_marker("price_refresh"):
+        from specweaver.infrastructure.llm import price_refresh
+
+        monkeypatch.setattr(price_refresh, "refresh_at_start", lambda *_a, **_k: None)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_network(request: pytest.FixtureRequest) -> Iterator[None]:
     """A test not marked `live` never reaches a real server through `httpx2` (openai, anthropic).
 

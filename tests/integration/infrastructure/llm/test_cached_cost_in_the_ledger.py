@@ -3,7 +3,7 @@
 
 """Each token kind is billed at its own price, and the ledger row keeps the prices it was billed at.
 
-Proves: TECH-074 FR-4, FR-6, FR-10
+Proves: TECH-074 FR-4, FR-6, FR-10, NFR-1
 
 Settings file → `build_router` with a real SQLite ledger → a real adapter → its collector. Only HTTP
 is faked. Prices, USD per 1M: input 1,000, cached read 100, output 1,000.

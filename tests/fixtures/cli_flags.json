@@ -67,6 +67,7 @@
     "-p"
   ],
   "sw costs": [],
+  "sw costs refresh": [],
   "sw costs reset": [
     "<model>"
   ],

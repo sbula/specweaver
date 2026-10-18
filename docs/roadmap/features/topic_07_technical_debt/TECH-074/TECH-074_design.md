@@ -116,9 +116,9 @@ and the brake wrong.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The price model | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The cached counts | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The refresh | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The refresh | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Now**: SF-02 committed 2026-10-18 — every adapter reads its cached counts, each kind billed at its own price, *Cached* in `sw usage`, the rule warning.
-**Next**: SF-03 dev, CB-1 (plan approved 2026-10-18).
+**Now**: SF-01..03 committed 2026-10-18; every FR is cited by a test, every NFR too.
+**Next**: the user's sign-off, then the close.

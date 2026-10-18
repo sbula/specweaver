@@ -23,6 +23,7 @@ from specweaver.core.config.llm_settings import (
 )
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
+from specweaver.infrastructure.llm.price_refresh import SOURCE, refresh_prices
 from specweaver.infrastructure.llm.price_store import price_book
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
@@ -157,6 +158,23 @@ def costs_set(
     )
 
 
+@costs_app.command("refresh")
+def costs_refresh() -> None:
+    """Fetch the prices of the models your roles use from models.dev now, and say what changed.
+
+    A command that calls a model does this by itself once a day.
+    """
+    project = _core._require_active_project()
+    files = _core.load_active_llm_settings(project)
+    result = refresh_prices(_core.get_db(), files, force=True)
+    for line in result.changes:
+        _say(f"Changed: {line}")
+    for line in result.problems:
+        _say(f"Not refreshed: {line}")
+    if not result.changes and not result.problems:
+        _say("No price changed.")
+
+
 @costs_app.command("reset")
 def costs_reset(
     model: str = typer.Argument(help="Model whose price to remove."),
@@ -234,7 +252,7 @@ def _cached_note(book: PriceBook) -> str:
 def _price_source(price: Price | None) -> str:
     if price is None:
         return "no price known"
-    return "your settings file" if price.source == "settings" else "catalogue"
+    return {"settings": "your settings file", SOURCE: SOURCE}.get(price.source, "catalogue")
 
 
 def _month_spend(project: str) -> dict[tuple[str, str | None], tuple[float | None, int]]:

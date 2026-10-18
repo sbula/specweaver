@@ -74,6 +74,7 @@ markers = [
     "live: tests that require real external API keys and network access",
     "integration: tests that exercise multiple layers but mock external dependencies",
     "e2e: end-to-end tests that simulate full real-world scenarios",
+    "price_refresh: lets a command's start-up price refresh run (off in every other test)",
 ]
 
 [tool.ruff]

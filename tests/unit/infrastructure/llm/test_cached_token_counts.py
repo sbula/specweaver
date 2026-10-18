@@ -3,7 +3,7 @@
 
 """Each adapter reads its provider's cached-token counts; an unreported count is unknown, never 0.
 
-Proves: TECH-074 FR-3
+Proves: TECH-074 FR-3, NFR-1
 
 The usage objects are the SDKs' own types, so a wrong field name fails here.
 

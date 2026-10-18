@@ -73,6 +73,9 @@ class ServerEntry(_Strict):
     api_key_env: str | None = None
     private: bool
     max_parallel: int = Field(ge=1)
+    #: The models.dev provider id of a hosted `openai-compatible` server, whose prices are then
+    #: refreshed from it; without it, only your settings price the server's models.
+    models_dev: str | None = None
 
     @model_validator(mode="after")
     def _key_variable_and_address(self) -> ServerEntry:

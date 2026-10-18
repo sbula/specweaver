@@ -3,14 +3,14 @@
 
 """Downloaded prices are stored through the one writer: a change is a new row, the rest nothing.
 
-Proves: TECH-074 FR-7, FR-8
+Proves: TECH-074 FR-7, FR-8, NFR-3
 
 A real SQLite file, created and seeded by the same start-up every command runs.
 
 | Bucket | Case |
 |---|---|
 | Happy | a changed price is stored from today, reported old → new, and read back with its source |
-| Boundary | an unchanged price stores nothing; the same download twice stores once |
+| Boundary | an unchanged price stores nothing; the same download twice stores once; a download on the day of a stored price replaces it |
 | Degradation | a set that breaks the exactly-one check stores nothing, and the stored price stays |
 | Hostile | a second default for one kind on one day is refused by the database itself |
 """
@@ -128,3 +128,15 @@ def test_the_database_refuses_a_second_default_on_one_day(tmp_path: Path) -> Non
             " SELECT offering_id, token_kind, 9.0, valid_from, 'x' FROM llm_price"
             " WHERE token_kind = 'input' AND rule_id IS NULL LIMIT 1"
         )
+
+
+def test_a_download_on_the_day_of_a_stored_price_replaces_it(tmp_path: Path) -> None:
+    path = _db(tmp_path)
+    shipped_day = date.fromisoformat(shipped_catalogue().checked)
+
+    changes, problems = _store(path, [Price(TokenKind.INPUT, 4.5, shipped_day, "models.dev")])
+
+    assert problems == []
+    assert changes == ["claude-opus-5-5@anthropic input: 4.0 → 4.5 USD per 1M"]
+    price = _input(path)
+    assert price is not None and (price.usd_per_million, price.source) == (4.5, "models.dev")

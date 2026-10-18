@@ -14,7 +14,7 @@ import sqlite3
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import insert, select
+from sqlalchemy import delete, insert, select
 from sqlalchemy.exc import IntegrityError
 
 from specweaver.infrastructure.llm.catalogue import corrections
@@ -77,8 +77,7 @@ def store_downloaded(
     """
     offering = _offering_id(conn, model, host)
     stored = _stored_rows(conn, offering) if offering is not None else []
-    book = PriceBook(tuple(stored), local=False)
-    holding = {(p.kind, p.rule): p for kind in TokenKind for p in book.current(kind)}
+    holding = _holding(stored)
     new = [
         price
         for price in downloaded
@@ -87,12 +86,12 @@ def store_downloaded(
     ]
     if not new:
         return [], []
-    problems = check_prices([*stored, *new], local=False)
+    problems = check_prices([*_not_replaced(stored, new), *new], local=False)
     if problems:
         return [], problems
     try:
         with conn.begin_nested():
-            _insert(conn, model, host, offering, new)
+            _replace(conn, model, host, offering, new)
     except IntegrityError:  # expected: another command stored the same prices first
         logger.debug("Prices of %s@%s already stored by another command", model, host)
         return [], []
@@ -103,6 +102,39 @@ def _change(model: str, host: str, old: Price | None, new: Price) -> str:
     kind = new.kind.value + (" (special)" if new.rule else "")
     before = "none" if old is None else f"{old.usd_per_million}"
     return f"{model}@{host} {kind}: {before} → {new.usd_per_million} USD per 1M"
+
+
+def _holding(stored: list[Price]) -> dict[tuple[TokenKind, Rule | None], Price]:
+    """Each kind and rule's price that holds today."""
+    book = PriceBook(tuple(stored), local=False)
+    return {(p.kind, p.rule): p for kind in TokenKind for p in book.current(kind)}
+
+
+def _not_replaced(stored: list[Price], new: list[Price]) -> list[Price]:
+    """The stored prices a newer one of the same day, kind and rule does not replace."""
+    replaced = {(p.kind, p.rule, p.valid_from) for p in new}
+    return [p for p in stored if (p.kind, p.rule, p.valid_from) not in replaced]
+
+
+def _replace(
+    conn: Connection, model: str, host: str, offering: int | None, new: list[Price]
+) -> None:
+    if offering is not None:
+        for price in new:
+            _delete_same_day(conn, offering, price)
+    _insert(conn, model, host, offering, new)
+
+
+def _delete_same_day(conn: Connection, offering: int, price: Price) -> None:
+    rule = _rule_id(conn, price.rule)
+    conn.execute(
+        delete(LlmPrice).where(
+            _PRICE.c.offering_id == offering,
+            _PRICE.c.token_kind == price.kind.value,
+            _PRICE.c.valid_from == price.valid_from,
+            _PRICE.c.rule_id.is_(None) if rule is None else _PRICE.c.rule_id == rule,
+        )
+    )
 
 
 def _offering_id(conn: Connection, model: str, host: str) -> int | None:

@@ -82,14 +82,18 @@ def build_router(
     """A command's router: its limits and every role it will use checked now, before any call.
 
     One spend budget covers every role of the command, its limits from `[brake]` in the machine
-    file. `db` holds the cost history the step limits come from; without it there are none.
+    file. `db` holds the cost history the step limits come from, and the prices, refreshed first
+    when a day old; without it there are neither.
     Raises `SettingsFileError` naming the role or key a settings file is missing.
     """
     from specweaver.core.config.llm_settings import brake_limits
+    from specweaver.infrastructure.llm import price_refresh
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.resolve import RoleResolver
 
     brake_limits(files)
+    if db is not None:
+        price_refresh.refresh_at_start(db, files)
     budget = SpendBudget(currency=files.machine.currency, ask=ask)
     resolver = RoleResolver(
         files, telemetry_project=project, budget=budget, run_model=run_model, history=db

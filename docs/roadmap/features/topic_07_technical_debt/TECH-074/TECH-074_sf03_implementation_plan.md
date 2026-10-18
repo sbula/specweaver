@@ -61,6 +61,14 @@
 | Q2 | How a hosted `openai-compatible` server names its models.dev provider | an optional `models_dev = "<provider id>"` in its server entry; without it, no refresh `[agreed 2026-10-18]` |
 | Q3 | How long a refresh at command start may wait | 5 seconds, then the last prices with a warning `[agreed 2026-10-18]` |
 
+## Dev notes
+
+- CB-2: a download on the day of a stored price (for example the shipped list's check date) replaces
+  that day's price; without it, the exactly-one check refused the download for good.
+- CB-2: the ETag is sent only while the models in use are the ones it was fetched for; a new model
+  would otherwise never be priced while models.dev's list is unchanged.
+- CB-2: `tests/conftest.py` turns the start-up refresh off unless a test is marked `price_refresh`.
+
 ## Backlog
 
 none

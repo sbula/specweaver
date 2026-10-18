@@ -3,7 +3,7 @@
 
 """The shipped list's prices reach the database at start-up, and a model's prices are read back.
 
-Proves: TECH-074 FR-1, FR-2, FR-9
+Proves: TECH-074 FR-1, FR-2, FR-9, NFR-2, NFR-3
 
 A real SQLite file, created by the same start-up every command runs.
 

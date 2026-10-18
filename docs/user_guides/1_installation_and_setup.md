@@ -109,6 +109,13 @@ rate_date = 2026-09-26
   `sw costs set <model> <input> <output>` corrects a price, in your currency.
   `sw costs set <kind>/<model> ...` (e.g. `anthropic/claude-sonnet-5`) prices it on one kind of
   server only; a bare model name prices it on every kind.
+- Prices follow the providers by themselves: the first command of a day that calls a model fetches
+  them from models.dev (waiting at most 5 seconds) for the models your roles use, and says which
+  price changed. `sw costs refresh` does it now. Offline, the last prices stay, with a warning. A
+  price in your settings file always wins. A hosted `openai-compatible` server (Together,
+  Fireworks) is refreshed only if its entry names its models.dev provider:
+  `models_dev = "togetherai"`. Cached input has its own prices too: `usd_per_million_cached_read`
+  and `usd_per_million_cache_write`, and `sw usage` shows the cached tokens.
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
 - Every cloud server names its key variable in `api_key_env`; a key goes only to the server that
   names it. A server that needs no key is `kind = "openai-compatible"`.
