@@ -68,14 +68,14 @@ and the brake wrong.
 | FR-1 | Prices per model at a host | Price store | SHALL hold offerings, prices and rules as above, with the exactly-one check refusing any insert or update that breaks it `[agreed 2026-10-18]` | every call meets exactly one price per token kind |
 | FR-2 | Your settings win | Price store | SHALL apply a price from the machine or project settings file over a downloaded or shipped one `[agreed 2026-10-18]` | a deliberate correction is never overwritten |
 | FR-3 | Cached tokens are read | Each adapter | SHALL fill `cached_read` and `cache_write` from its provider's fields — Anthropic `cache_read_input_tokens` / `cache_creation_input_tokens` (and add them to the prompt total, which Anthropic leaves out), OpenAI and Mistral `prompt_tokens_details.cached_tokens`, Gemini `cached_content_token_count`, vLLM likewise when reported, llama.cpp `timings.cache_n`; a server that does not report it records *unknown*, never 0 | the ledger knows what was billed as cached |
-| FR-4 | Each kind at its own price | Ledger | SHALL price uncached input, cached reads, cache writes and output each at its own price; a cached kind with no price of its own is priced at the input price, which can only overstate, and `sw costs` says so; each ledger row records the price rows that priced it `[agreed 2026-10-18]` | `sw usage` and `sw costs` show what was really billed, and an old row stays explainable after a price change |
+| FR-4 | Each kind at its own price | Ledger | SHALL price uncached input, cached reads, cache writes and output each at its own price; a cached kind with no price of its own is priced at the input price, which can only overstate, and `sw costs` says so; each ledger row keeps the prices that priced it and where each came from, as an invoice line does `[agreed 2026-10-18]` | `sw usage` and `sw costs` show what was really billed, and an old row stays explainable after a price change |
 | FR-5 | The brake reserves the most | Spend brake | SHALL reserve a call's worst case at the highest price among its prompt token kinds; a token limit counts every token, cached included `[agreed 2026-10-18]` | turning a cache on never lets the brake reserve too little |
 | FR-6 | Cached tokens are shown | `sw usage` | SHALL show a *Cached* column beside the prompt tokens `[agreed 2026-10-18]` | the user sees whether the cache works |
 | FR-7 | Prices follow the providers | Price refresh | SHALL refresh the prices of the offerings the roles use from models.dev when they are older than 24 hours, at the start of a command that calls a model, and on `sw costs refresh`; a change is reported, never held for approval `[agreed 2026-10-18]` | the ledger and the brake use the price the provider bills |
 | FR-8 | A bad download changes nothing | Price refresh | SHALL refuse a downloaded price that is missing, zero, negative or breaks the exactly-one check, keep the last good price, and warn; offline, the last prices stay, with a warning | a broken source never corrupts the money figures |
 | FR-9 | Cache rules are kept | Price store | SHALL hold each offering's cache rule — minimum prefix, lifetime, what the request must send — from the shipped catalogue, which models.dev does not carry | `C-FLOW-14` can tell before a call whether a token will count as cached |
-| FR-10 | Local models are covered | Ledger, store | SHALL record cached tokens for local calls and their cost as *not applicable*; a hosted offering without a default price is refused, a local one needs none | the GB10's cache is visible; local calls never read as unpriced |
-| FR-11 | A changed rule is noticed | Ledger | SHALL warn when a response's cached count disagrees with the offering's rule — cached tokens below its minimum prefix, or after its lifetime `[agreed 2026-10-18]` | a rule a provider changed is found from the calls, without a release |
+| FR-10 | Local models are covered | Ledger, store | SHALL record cached tokens for local calls and their cost as *not applicable*, or at the price you set for the model `[agreed 2026-10-18]`; a hosted offering without a default price is refused, a local one needs none | the GB10's cache is visible; local calls never read as unpriced |
+| FR-11 | A changed rule is noticed | Ledger | SHALL warn when a response's cached count disagrees with the offering's rule — cached tokens below its minimum prefix, or without the breakpoint or key it requires; the lifetime check is `C-FLOW-14`'s, which tracks prompt prefixes `[agreed 2026-10-18]` | a rule a provider changed is found from the calls, without a release |
 
 ## Non-Functional Requirements
 
@@ -115,10 +115,10 @@ and the brake wrong.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The price model | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The cached counts | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The cached counts | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The refresh | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: SF-01 committed 2026-10-18 — prices per model at a host, seeded at start-up, settings win, brake at the highest prompt price.
-**Next**: the SF-02 plan. Open for it: whether a local call with a price you set shows that cost or *not applicable* (FR-10); see the SF-01 plan's dev notes.
+**Next**: SF-02 dev, CB-1 (plan approved 2026-10-18).

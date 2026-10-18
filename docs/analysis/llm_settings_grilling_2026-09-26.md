@@ -71,3 +71,8 @@ Q29 layers 2–3 and Q30–Q32 (blame across chains and manager/worker roles): t
 - Codex CLI refuses project-level `base_url` for the same reason as Q35.
 - Qwen3-Coder-Next on vLLM: prefer `--tool-call-parser qwen3_xml`; `qwen3_coder` loops on long
   inputs with tools.
+
+## Added later
+
+- 2026-10-18: a local model's indirect price, its share of the machine × time, for choosing a model
+  (`A-FLOW-01`) — [note](local_model_price_2026-10-18.md).
