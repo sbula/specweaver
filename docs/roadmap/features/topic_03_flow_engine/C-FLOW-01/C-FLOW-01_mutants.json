@@ -191,7 +191,7 @@
           "old": "            .where(_FINISHED)\n",
           "new": "            .where(LlmUsageLog.id > 0)\n",
           "breaks": "`sw usage` adds a killed call's worst case to the spend",
-          "symbol_sha": "sha256:3c9db22db6695c6ba4d88cabdcb8d0b517cf626aa7121712a3001e0edd82dff8"
+          "symbol_sha": "sha256:b62c8ab6e45fe2f8eba3fe7c6b261bdd37a724bb06ff168b40a5ee8384a6f341"
         },
         {
           "id": "spend-counts-pending",
@@ -241,7 +241,7 @@
           "old": "    for line in _status_lines(_status_totals(project, parsed_since), currency):\n",
           "new": "    for line in []:\n",
           "breaks": "`sw usage` says nothing of failed or unfinished calls",
-          "symbol_sha": "sha256:7cfcb1a3d0649db1722b27f29ce03c84acb09fc206075f1400d47afa03f879d4"
+          "symbol_sha": "sha256:de7196d3d334debcd76cd5916c62ca77ea693cab86464fc39b94fcfed6d5bf1c"
         },
         {
           "id": "costs-shows-no-status",
@@ -251,7 +251,7 @@
           "old": "    for line in _status_lines(_status_totals(project, _month_start()), currency):\n",
           "new": "    for line in []:\n",
           "breaks": "`sw costs` says nothing of failed or unfinished calls",
-          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
         }
       ]
     },

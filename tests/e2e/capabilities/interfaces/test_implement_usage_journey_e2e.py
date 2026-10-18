@@ -137,11 +137,11 @@ class _FakeGeminiAdapter:
 
 
 def _total_token_cells(output: str) -> list[int]:
-    """Every `Total Tokens` value in a rendered `sw usage` table.
+    """Every `Total` value in a rendered `sw usage` table.
 
-    The column sits between `Completion Tokens` and `Cost (USD)`, so it is the third of the four
-    comma-formatted integers on a data row. Parsing beats asserting a literal: the row is an
-    aggregate over however many calls the pipeline happened to make.
+    The column is the last whole number on a data row: cost and duration carry a currency or a
+    decimal point, and the *Cached* cell may say "unknown". Parsing beats asserting a literal: the
+    row is an aggregate over however many calls the pipeline happened to make.
     """
     found: list[int] = []
     for line in output.splitlines():
@@ -150,23 +150,25 @@ def _total_token_cells(output: str) -> list[int]:
         cells = [c.strip() for c in line.strip("│").split("│")]
         numbers = [c for c in cells if re.fullmatch(r"[\d,]+", c)]
         if len(numbers) >= 4:
-            found.append(int(numbers[3].replace(",", "")))
+            found.append(int(numbers[-1].replace(",", "")))
     return found
 
 
 def _cost_cells(output: str) -> list[str]:
     """Every cost cell in a rendered `sw usage` table, as printed (`USD …` or `unknown`).
 
-    Returned raw rather than parsed: Rich truncates the column, so `USD 0.0000` and `USD 12408.0`
-    both arrive shortened. The LEADING characters survive, which is why FR-4's rate is chosen large
-    enough that a priced row and a zero one differ in their first five characters.
+    The cost is the cell before the last, the duration; read by position, as the *Cached* cell can
+    say "unknown" too. Returned raw rather than parsed: Rich truncates the column, so `USD 0.0000`
+    and `USD 12408.0` both arrive shortened. The LEADING characters survive, which is why FR-4's
+    rate is chosen large enough that a priced row and a zero one differ in their first characters.
     """
     found: list[str] = []
     for line in output.splitlines():
         if not line.startswith("│"):
             continue
         cells = [c.strip() for c in line.strip("│").split("│")]
-        found.extend(c for c in cells if c.startswith(("USD", "unknown")))
+        if len(cells) >= 2 and cells[-2].startswith(("USD", "unknown")):
+            found.append(cells[-2])
     return found
 
 
@@ -203,7 +205,7 @@ class TestImplementSpendIsVisibleInUsage:
         # exact multiple of it — which a zero row, a truncated row, or a row from anywhere else
         # cannot satisfy, and which no terminal width can change.
         totals = _total_token_cells(usage.output)
-        assert totals, f"no Total Tokens cell parsed from:\n{usage.output}"
+        assert totals, f"no Total cell parsed from:\n{usage.output}"
         assert all(n > 0 and n % _TOTAL_TOKENS == 0 for n in totals), totals
 
     def test_usage_attributes_the_run_to_the_active_project_only(self, tmp_path: Path) -> None:

@@ -32,7 +32,7 @@ if TYPE_CHECKING:
         Currency,
         ResolvedRole,
     )
-    from specweaver.infrastructure.llm.prices import Price
+    from specweaver.infrastructure.llm.prices import Price, PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def costs(ctx: typer.Context) -> None:
             f"{model}@{server} ({', '.join(role_names)}): "
             f"input {format_money(_usd(price_in), currency, places=4)}, "
             f"output {format_money(_usd(price_out), currency, places=4)} per 1M tokens"
-            f" — {_price_source(price_in)}; this month "
+            f" — {_price_source(price_in)}{_cached_note(book)}; this month "
             f"{_month(spent, unpriced, currency)}"
         )
     for (old_model, where), (old_spent, old_unpriced) in sorted(
@@ -224,6 +224,13 @@ def _usd(price: Price | None) -> float | None:
     return price.usd_per_million if price else None
 
 
+def _cached_note(book: PriceBook) -> str:
+    """Says so when a hosted model's cached reads have no price of their own."""
+    if book.local or book.current(TokenKind.CACHED_READ):
+        return ""
+    return ", cached reads billed as input"
+
+
 def _price_source(price: Price | None) -> str:
     if price is None:
         return "no price known"
@@ -338,14 +345,15 @@ def usage(
             table = Table(
                 title=f"LLM Usage — {project or 'all projects'} ({code})",
             )
-            table.add_column("Task Type", style="cyan")
+            table.add_column("Task", style="cyan")
             table.add_column("Model")
             table.add_column("Calls", justify="right")
-            table.add_column("Prompt Tokens", justify="right")
-            table.add_column("Completion Tokens", justify="right")
-            table.add_column("Total Tokens", justify="right")
+            table.add_column("Prompt", justify="right")
+            table.add_column("Cached", justify="right")
+            table.add_column("Output", justify="right")
+            table.add_column("Total", justify="right")
             table.add_column(f"Cost ({code})", justify="right")
-            table.add_column("Duration (s)", justify="right")
+            table.add_column("Secs", justify="right")
 
             for r in rows:
                 duration_s = (r["total_duration_ms"] or 0) / 1000
@@ -354,6 +362,7 @@ def usage(
                     str(r["model"]),
                     str(r["call_count"]),
                     f"{r['total_prompt_tokens'] or 0:,}",
+                    _cached_cell(r),
                     f"{r['total_completion_tokens'] or 0:,}",
                     f"{r['total_tokens'] or 0:,}",
                     _usage_cost(r, currency),
@@ -367,10 +376,24 @@ def usage(
         _core.console.print(line, markup=False, highlight=False)
 
 
+def _cached_cell(row: dict[str, Any]) -> str:
+    """The prompt tokens the group read from a cache, and how many calls did not say — never 0."""
+    unknown = row.get("unknown_cached") or 0
+    if row.get("total_cached") is None:
+        return "unknown"
+    known = f"{row['total_cached']:,}"
+    return f"{known} + {unknown} unknown" if unknown else known
+
+
 def _usage_cost(row: dict[str, Any], currency: Currency | None) -> str:
-    """The row's known cost, and how many of its calls had no price — never 0 for unknown."""
+    """The row's known cost, and how many of its calls had no price — never 0 for unknown.
+
+    A local call with no price costs *not applicable*, which is not unknown.
+    """
     unpriced = row["unpriced_calls"] or 0
     if row["total_cost"] is None:
-        return "unknown" if unpriced else format_money(0.0, currency, places=4)
+        if unpriced:
+            return "unknown"
+        return "n/a" if row.get("local_calls") else format_money(0.0, currency, places=4)
     known = format_money(row["total_cost"], currency, places=4)
     return f"{known} + {unpriced} unknown" if unpriced else known

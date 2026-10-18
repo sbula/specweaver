@@ -219,7 +219,7 @@
           "old": "        spent, unpriced = spend.get((model, server), (None, 0))\n",
           "new": "        spent, unpriced = next((v for (m, _s), v in spend.items() if m == model), (None, 0))\n",
           "breaks": "the same model on two servers shows one server's spend on both",
-          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
         },
         {
           "id": "old-spend-hidden",
@@ -229,7 +229,7 @@
           "old": "        if where is None:  # recorded before the server was stored\n",
           "new": "        if False:\n",
           "breaks": "spend from before the upgrade disappears from sw costs",
-          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
         }
       ]
     },

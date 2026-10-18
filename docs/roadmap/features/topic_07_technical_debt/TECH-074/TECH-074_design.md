@@ -115,10 +115,10 @@ and the brake wrong.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The price model | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The cached counts | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The cached counts | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The refresh | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Now**: SF-01 committed 2026-10-18 — prices per model at a host, seeded at start-up, settings win, brake at the highest prompt price.
-**Next**: SF-02 dev, CB-1 (plan approved 2026-10-18).
+**Now**: SF-02 committed 2026-10-18 — every adapter reads its cached counts, each kind billed at its own price, *Cached* in `sw usage`, the rule warning.
+**Next**: the SF-03 plan (the refresh from models.dev).

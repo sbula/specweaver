@@ -242,7 +242,7 @@
           "old": "    _say(_catalogue_line(shipped_catalogue().checked))\n",
           "new": "    pass\n",
           "breaks": "sw costs shows prices without saying how old the catalogue is",
-          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
         }
       ],
       "retired": {
@@ -538,10 +538,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
           "symbol": "_usage_cost",
-          "old": "        return \"unknown\" if unpriced else format_money(0.0, currency, places=4)\n",
-          "new": "        return format_money(0.0, currency, places=4)\n",
+          "old": "        if unpriced:\n            return \"unknown\"\n",
+          "new": "        if False:\n            return \"unknown\"\n",
           "breaks": "sw usage shows unpriced calls as costing nothing",
-          "symbol_sha": "sha256:415a63faaff17a6dce2f071833e2dd7b4463c84d186dc715844d9c4f4691456e"
+          "symbol_sha": "sha256:06fef32c31dcb94950cb22fa1a29d04c0be0357d077c9a131874a6adac02cf7f"
         },
         {
           "id": "resolver-calls-unpriced",
@@ -603,7 +603,7 @@
           "old": "    currency = _currency_or_usd()\n",
           "new": "    currency = _machine_currency()\n",
           "breaks": "a broken settings file hides past spend from sw usage",
-          "symbol_sha": "sha256:7cfcb1a3d0649db1722b27f29ce03c84acb09fc206075f1400d47afa03f879d4"
+          "symbol_sha": "sha256:de7196d3d334debcd76cd5916c62ca77ea693cab86464fc39b94fcfed6d5bf1c"
         }
       ]
     },

@@ -136,7 +136,7 @@
           "old": "        price_in, price_out = (book.default(TokenKind.INPUT), book.default(TokenKind.OUTPUT))\n",
           "new": "        price_in, price_out = (book.default(TokenKind.CACHE_WRITE), book.default(TokenKind.OUTPUT))\n",
           "breaks": "sw costs shows the cache-write price as the input price, 25% above what an uncached token costs",
-          "symbol_sha": "sha256:bf6a9a0c7bab7b12e6410af101a4a6032025d50106cc806aada6d05d506f2a37"
+          "symbol_sha": "sha256:ebe9b913658bc2a735b4721bc67bf739bc5ddb1fce0475488b51180a1e92e04a"
         }
       ]
     },
@@ -533,7 +533,136 @@
           "old": "        unpriced = record.estimated_cost_usd is None and not record.billed.local\n",
           "new": "        unpriced = record.estimated_cost_usd is None\n",
           "breaks": "every local call warns that it has no known price",
-          "symbol_sha": "sha256:a1ab8ad247a776cdd3e72db0f92954201c0c41b6c13c17e3983e1984a642cab6"
+          "symbol_sha": "sha256:5886c426fd1f52938e027f15b429efa2cb51524e9f135c1173137569d193d48d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "sw usage shows the cached tokens",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_cached_column_e2e.py",
+        "tests/unit/infrastructure/llm/interfaces/test_usage_cells.py",
+        "tests/integration/infrastructure/llm/test_cached_cost_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "cached-column-missing",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "usage",
+          "old": "            table.add_column(\"Cached\", justify=\"right\")\n",
+          "new": "            pass\n",
+          "breaks": "sw usage gives the cached count no header, so nobody can read it",
+          "symbol_sha": "sha256:de7196d3d334debcd76cd5916c62ca77ea693cab86464fc39b94fcfed6d5bf1c"
+        },
+        {
+          "id": "unknown-count-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_cached_cell",
+          "old": "    return f\"{known} + {unknown} unknown\" if unknown else known\n",
+          "new": "    return known\n",
+          "breaks": "a sum with unreported calls reads as complete",
+          "symbol_sha": "sha256:71ba1d16946e3316de2a9c69e2cc7417dd4e4c7453cd0e79ba1c1142165ef2cf"
+        },
+        {
+          "id": "unknown-shown-as-zero",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_cached_cell",
+          "old": "    if row.get(\"total_cached\") is None:\n        return \"unknown\"\n",
+          "new": "    if row.get(\"total_cached\") is None:\n        return \"0\"\n",
+          "breaks": "a model that never reports its cache reads as never caching",
+          "symbol_sha": "sha256:71ba1d16946e3316de2a9c69e2cc7417dd4e4c7453cd0e79ba1c1142165ef2cf"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "A local call costs n/a, not unknown",
+      "scope": [
+        "tests/unit/infrastructure/llm/interfaces/test_usage_cells.py",
+        "tests/integration/infrastructure/llm/test_cached_cost_in_the_ledger.py"
+      ],
+      "mutants": [
+        {
+          "id": "local-shown-as-free",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_usage_cost",
+          "old": "        return \"n/a\" if row.get(\"local_calls\") else format_money(0.0, currency, places=4)\n",
+          "new": "        return format_money(0.0, currency, places=4)\n",
+          "breaks": "a local call with no price reads as free",
+          "symbol_sha": "sha256:06fef32c31dcb94950cb22fa1a29d04c0be0357d077c9a131874a6adac02cf7f"
+        },
+        {
+          "id": "local-counted-as-unpriced",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.get_usage_summary",
+          "old": "                func.count().filter(_NOT_APPLICABLE).label(\"local_calls\"),\n",
+          "new": "                func.count().filter(_UNPRICED).label(\"local_calls\"),\n",
+          "breaks": "local calls are counted as hosted calls with no price",
+          "symbol_sha": "sha256:b62c8ab6e45fe2f8eba3fe7c6b261bdd37a724bb06ff168b40a5ee8384a6f341"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "sw costs says when cached reads are billed as input",
+      "scope": [
+        "tests/e2e/capabilities/infrastructure/test_costs_price_book_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "fallback-never-said",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/interfaces/cli.py",
+          "symbol": "_cached_note",
+          "old": "    if book.local or book.current(TokenKind.CACHED_READ):\n",
+          "new": "    if True:\n",
+          "breaks": "sw costs hides that a model's cached reads are billed at the full input price",
+          "symbol_sha": "sha256:67abfdfbe0568fe8ab79f4daac5b9ac83a0cf6c45e337c8af261ecfe84a8b98d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "A cache that breaks its rule warns once",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cache_rule_warning.py"
+      ],
+      "mutants": [
+        {
+          "id": "prefix-check-inverted",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "rule_break",
+          "old": "    if rule.min_prefix_tokens is not None and prompt_tokens < rule.min_prefix_tokens:\n",
+          "new": "    if rule.min_prefix_tokens is not None and prompt_tokens > rule.min_prefix_tokens:\n",
+          "breaks": "every cache within its rule warns, and one under it says nothing",
+          "symbol_sha": "sha256:9eeaedd6a3a0420de12001cf9934e88df6af8340800a5bdbe4193b2d30c3799a"
+        },
+        {
+          "id": "requirement-never-checked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prices.py",
+          "symbol": "rule_break",
+          "old": "    if rule.requires != \"nothing\" and rule.requires not in sent:\n",
+          "new": "    if False:\n",
+          "breaks": "a provider that starts caching without its breakpoint or key goes unnoticed",
+          "symbol_sha": "sha256:9eeaedd6a3a0420de12001cf9934e88df6af8340800a5bdbe4193b2d30c3799a"
+        },
+        {
+          "id": "rule-warns-every-call",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._check_cache_rule",
+          "old": "        if not usage.cached_read_tokens or prices is None or model in self._rule_warned:\n",
+          "new": "        if not usage.cached_read_tokens or prices is None:\n",
+          "breaks": "the warning repeats on every call and drowns the log",
+          "symbol_sha": "sha256:aa4a220e123e7fbaed80576e77c869e0fdad426a7e374bc4e302aada0a518842"
         }
       ]
     }

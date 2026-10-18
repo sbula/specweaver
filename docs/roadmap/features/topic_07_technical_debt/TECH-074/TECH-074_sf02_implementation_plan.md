@@ -67,6 +67,20 @@
 | Q2 | The cost of a local call when you set a price for its model | that price; with none, *not applicable* `[agreed 2026-10-18]` |
 | Q3 | Where the lifetime part of FR-11 is checked | `C-FLOW-14`, which tracks prompt prefixes; SF-02 checks the minimum prefix and the requirement `[agreed 2026-10-18]` |
 
+## Dev notes
+
+- CB-1: OpenAI also reports `cache_write_tokens` in `prompt_tokens_details`; it is read. Mistral's SDK
+  keeps `prompt_tokens_details` as an extra field. Gemini without `cached_content_token_count` is
+  unknown, not 0 (NFR-1).
+- CB-1: nothing proved that the Anthropic, Gemini and Mistral tool loops add up every round; each has a
+  test now, and a Mistral assertion that could not fail (`total_tokens >= 0`) is exact.
+- CB-2: the four new record fields are grouped as `UsageRecord.billed`, to keep the class under the
+  15-attribute limit.
+- CB-3: the `sw usage` headers are shorter (`Task`, `Prompt`, `Output`, `Total`, `Secs`) so the extra
+  column fits 80 characters. Two older journey parsers read cells by count and were fixed to read by
+  position. The *Cached* text and the `n/a` cost are checked by cell tests, as a table cell is
+  width-bound.
+
 ## Backlog
 
 none

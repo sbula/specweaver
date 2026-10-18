@@ -169,3 +169,14 @@ def _tier(price: Price) -> int:
 
 def _lifetime(price: Price) -> int:
     return (price.rule.max_age_seconds or 0) if price.rule else 0
+
+
+def rule_break(rule: Rule, *, prompt_tokens: int, sent: frozenset[str] = frozenset()) -> str:
+    """Why a cached read breaks `rule`, or "" when it does not: a prefix under the rule's minimum,
+    or a cache without the breakpoint or key the rule requires, of which `sent` names what the
+    request did send."""
+    if rule.min_prefix_tokens is not None and prompt_tokens < rule.min_prefix_tokens:
+        return f"a {prompt_tokens}-token prompt is under its minimum prefix of {rule.min_prefix_tokens}"
+    if rule.requires != "nothing" and rule.requires not in sent:
+        return f"it requires a {rule.requires.replace('_', ' ')}, which the request did not send"
+    return ""

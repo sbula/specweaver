@@ -22,7 +22,8 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, SpendBudget
-from specweaver.infrastructure.llm.models import LLMResponse, TokenUsage
+from specweaver.infrastructure.llm.models import LLMResponse, TokenKind, TokenUsage
+from specweaver.infrastructure.llm.prices import rule_break
 from specweaver.infrastructure.llm.redaction import Redactor
 from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.infrastructure.llm.telemetry import (
@@ -85,6 +86,7 @@ class TelemetryCollector:
         self._prices = prices or (lambda _model: None)
         self._scope_of = scope_of
         self._unpriced_warned: set[str] = set()
+        self._rule_warned: set[str] = set()
         self._budget = budget or SpendBudget()
         self._ledger = ledger
         #: Ledger writes that failed. Counted, never raised: a cost row never stops the work.
@@ -260,6 +262,7 @@ class TelemetryCollector:
             logger.warning(
                 "%s has no known price: its tokens are counted, its money is not", config.model
             )
+        self._check_cache_rule(config.model, response.usage, scope.prices)
         # A reply that reports no usage counts its reserved worst case.
         cost = (
             None
@@ -267,6 +270,25 @@ class TelemetryCollector:
             else Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
         )
         self._budget.record(scope, cost, reservation)
+
+    def _check_cache_rule(self, model: str, usage: TokenUsage, prices: PriceBook | None) -> None:
+        """Warn once per model when a cache hit breaks the offering's rule: the provider's rule
+        may have changed, and the shipped list with it."""
+        if not usage.cached_read_tokens or prices is None or model in self._rule_warned:
+            return
+        price = prices.price_for(TokenKind.CACHED_READ, usage.prompt_tokens)
+        if price is None or price.rule is None:
+            return
+        reason = rule_break(price.rule, prompt_tokens=usage.prompt_tokens)
+        if reason:
+            self._rule_warned.add(model)
+            logger.warning(
+                "%s cached %d tokens against its cache rule: %s. The provider may have changed "
+                "the rule; check catalogue_data/models.toml",
+                model,
+                usage.cached_read_tokens,
+                reason,
+            )
 
     # ------------------------------------------------------------------
     # The ledger: the one writer of `llm_usage_log`

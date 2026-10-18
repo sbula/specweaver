@@ -3,7 +3,7 @@
 
 """Each token kind is billed at its own price, and the ledger row keeps the prices it was billed at.
 
-Proves: TECH-074 FR-4, FR-10
+Proves: TECH-074 FR-4, FR-6, FR-10
 
 Settings file → `build_router` with a real SQLite ledger → a real adapter → its collector. Only HTTP
 is faked. Prices, USD per 1M: input 1,000, cached read 100, output 1,000.
@@ -185,3 +185,26 @@ def test_an_older_database_gains_the_columns_and_keeps_its_rows(tmp_path: Path) 
             "SELECT prompt_tokens, cached_read_tokens, cache_write_tokens, local FROM llm_usage_log"
         ).fetchone()
     assert row == (10, None, None, None)
+
+
+async def test_the_usage_summary_counts_cached_unknown_and_local_calls(tmp_path: Path) -> None:
+    from specweaver.infrastructure.llm.store import LlmRepository
+
+    path = tmp_path / "specweaver.db"
+    bootstrap_database(str(path))
+    with sqlite3.connect(path) as conn:
+        rows = ((800, 0.1, 0), (None, 0.1, 0), (300, None, 1), (None, None, 0), (None, None, None))
+        for cached, cost, local in rows:
+            conn.execute(
+                "INSERT INTO llm_usage_log (timestamp, project_name, task_type, model, provider,"
+                " prompt_tokens, completion_tokens, total_tokens, estimated_cost, duration_ms,"
+                " cached_read_tokens, local) VALUES ('2026-10-18T00:00:00+00:00', 'p', 'review',"
+                " 'm', 'x', 1000, 1, 1001, ?, 10, ?, ?)",
+                (cost, cached, local),
+            )
+
+    async with Database(path).async_session_scope() as session:
+        [row] = await LlmRepository(session).get_usage_summary(project="p")
+
+    assert (row["total_cached"], row["unknown_cached"]) == (1100, 3)
+    assert (row["unpriced_calls"], row["local_calls"]) == (2, 1)

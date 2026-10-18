@@ -14,8 +14,10 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    and_,
     delete,
     func,
+    or_,
     select,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -186,6 +188,12 @@ def nearest_rank(values: list[float], percentile: int) -> float:
 _CLOSED = frozenset({"ok", "failed"})
 #: A call that has not ended is never spend: its row holds a worst case.
 _FINISHED = LlmUsageLog.call_status != "pending"
+#: A local call with no price costs *not applicable*; only a hosted one is *unknown*.
+_NOT_APPLICABLE = and_(LlmUsageLog.estimated_cost.is_(None), LlmUsageLog.local.is_(True))
+_UNPRICED = and_(
+    LlmUsageLog.estimated_cost.is_(None),
+    or_(LlmUsageLog.local.is_(None), LlmUsageLog.local.is_(False)),
+)
 
 
 def _columns(record: dict[str, Any]) -> dict[str, Any]:
@@ -309,7 +317,12 @@ class LlmRepository:
                 func.sum(LlmUsageLog.completion_tokens).label("total_completion_tokens"),
                 func.sum(LlmUsageLog.total_tokens).label("total_tokens"),
                 func.sum(LlmUsageLog.estimated_cost).label("total_cost"),
-                func.count().filter(LlmUsageLog.estimated_cost.is_(None)).label("unpriced_calls"),
+                func.count().filter(_UNPRICED).label("unpriced_calls"),
+                func.count().filter(_NOT_APPLICABLE).label("local_calls"),
+                func.sum(LlmUsageLog.cached_read_tokens).label("total_cached"),
+                func.count()
+                .filter(LlmUsageLog.cached_read_tokens.is_(None))
+                .label("unknown_cached"),
                 func.sum(LlmUsageLog.duration_ms).label("total_duration_ms"),
             )
             .where(_FINISHED)
@@ -332,6 +345,9 @@ class LlmRepository:
                 "total_tokens": row.total_tokens,
                 "total_cost": row.total_cost,
                 "unpriced_calls": row.unpriced_calls,
+                "local_calls": row.local_calls,
+                "total_cached": row.total_cached,
+                "unknown_cached": row.unknown_cached,
                 "total_duration_ms": row.total_duration_ms,
             }
             for row in result.all()
