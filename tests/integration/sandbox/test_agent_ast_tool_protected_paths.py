@@ -96,3 +96,22 @@ class TestTheAgentAstToolRespectsItsBoundary:
 
         assert "error" in result
         assert target.read_text(encoding="utf-8") == _ORIGINAL
+
+
+async def test_the_executor_refuses_even_when_a_grant_would_allow(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The second wall: the task grant already refuses a protected path, so this widens the grant
+    to FULL on the root and checks the agent's executor still refuses."""
+    from specweaver.sandbox.security import AccessMode, FolderGrant
+
+    monkeypatch.setattr(
+        ToolDispatcher,
+        "_compute_role_grants",
+        classmethod(lambda cls, *_args: [FolderGrant(str(project), AccessMode.FULL, True)]),
+    )
+
+    result = await _implementer(project).execute("replace_symbol", _replace(".env/hook.py"))
+
+    assert "error" in result, result
+    assert (project / ".env" / "hook.py").read_text(encoding="utf-8") == _ORIGINAL

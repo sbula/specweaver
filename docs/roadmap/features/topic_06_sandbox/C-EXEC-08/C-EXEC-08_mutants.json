@@ -83,8 +83,8 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
           "symbol": "doc_access",
-          "old": "    if any(part in PROTECTED_NAMES for part in lowered.split(\"/\")):\n",
-          "new": "    if False:\n",
+          "old": "    if any(part in PROTECTED_NAMES for part in lowered.split(\"/\")):\n        return \"refuse\"\n",
+          "new": "    if False:\n        return \"refuse\"\n",
           "breaks": "a rule can let an agent rewrite context.yaml or .specweaver",
           "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
         },
@@ -97,6 +97,118 @@
           "new": "            if rule.access in (\"open\", \"step\"):\n",
           "breaks": "a step-only path is changed by any step",
           "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "The grant and the merge decide by one verdict",
+      "scope": [
+        "tests/unit/sandbox/test_write_verdict.py",
+        "tests/integration/sandbox/test_doc_policy_grant.py",
+        "tests/unit/sandbox/test_protected_names_ignore_case.py"
+      ],
+      "mutants": [
+        {
+          "id": "grant-ignores-the-step",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._compute_role_grants",
+          "old": "policy=policy, step=step)",
+          "new": "policy=policy, step=None)",
+          "breaks": "a step rule never lets its own step write",
+          "symbol_sha": "sha256:92ceea93ec75f99cae12202e6f905ae19e54d23b2348ba41e606ca4f400d139e"
+        },
+        {
+          "id": "grant-ignores-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._compute_role_grants",
+          "old": "policy=policy, step=step)",
+          "new": "policy=DocPolicy(), step=step)",
+          "breaks": "a project's open rule never opens anything",
+          "symbol_sha": "sha256:92ceea93ec75f99cae12202e6f905ae19e54d23b2348ba41e606ca4f400d139e"
+        },
+        {
+          "id": "refusal-is-stripped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "write_verdict",
+          "old": "    return \"keep\" if access == \"keep\" else \"propose\"\n",
+          "new": "    return \"keep\" if access == \"keep\" else \"strip\"\n",
+          "breaks": "a refused doc change is lost instead of proposed",
+          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+        },
+        {
+          "id": "doc-updates-anywhere",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "write_verdict",
+          "old": "    if lowered == \"doc_updates.md\":\n",
+          "new": "    if lowered.endswith(\"doc_updates.md\"):\n",
+          "breaks": "docs/doc_updates.md slips past the docs/ protection",
+          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+        },
+        {
+          "id": "protected-proposed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "write_verdict",
+          "old": "    if any(part in PROTECTED_NAMES for part in lowered.split(\"/\")):\n        return \"strip\"\n",
+          "new": "    if False:\n        return \"strip\"\n",
+          "breaks": "a .env change could be copied into doc_updates.md",
+          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "Every run root reads the project's policy",
+      "scope": [
+        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
+        "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
+        "tests/integration/core/flow/test_cli_config_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "sw-run-skips-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_build_run_context",
+          "old": "        isolation=IsolationPolicy(doc_policy=_core.load_doc_policy_at(project_path)),\n",
+          "new": "        isolation=IsolationPolicy(),\n",
+          "breaks": "sw run and sw resume use the built-in rules whatever the project says",
+          "symbol_sha": "sha256:57c0bc81d675fff26dd07b6899075cdc34984598ecef014980872c43c76c11cf"
+        },
+        {
+          "id": "sw-implement-drops-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "        isolation=IsolationPolicy(doc_policy=doc_policy),\n",
+          "new": "        isolation=IsolationPolicy(),\n",
+          "breaks": "sw implement reads the policy but runs on the built-in rules",
+          "symbol_sha": "sha256:e3fdec87885c7fdce4bda8f6bb5034f244a98f028e444d13dd32b03eb12f2763"
+        },
+        {
+          "id": "api-start-skips-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "        isolation=_doc_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "new": "        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "breaks": "an API run ignores a broken [docs] and the project's rules",
+          "symbol_sha": "sha256:cb90512a28aa67e8775597013440c6a113c0c2a18503d359544af4d0a7de3165"
+        },
+        {
+          "id": "api-resume-skips-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_resume_existing_run",
+          "old": "        isolation=_doc_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
+          "new": "        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
+          "breaks": "a resumed API run ignores a [docs] broken since its start",
+          "symbol_sha": "sha256:1c70dcb261d5a85a1ff27556549f51bb8edae6826892245136f9d7782591d976"
         }
       ]
     }

@@ -17,7 +17,7 @@
           "old": "    _apply_isolation_policy(context, db, active or project_path.name)\n",
           "new": "    _apply_isolation_policy(context, db, project_path.name)\n",
           "breaks": "a project named unlike its folder runs without the worktree isolation it asked for",
-          "symbol_sha": "sha256:67cf5c3522fa63f73cd9c7ffbb1ba915ab1eee185fcedde7b7eec6c33d3d0e00"
+          "symbol_sha": "sha256:57c0bc81d675fff26dd07b6899075cdc34984598ecef014980872c43c76c11cf"
         }
       ]
     },

@@ -73,7 +73,7 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
   which resolves `..` after joining a relative path to the project root. `grep` and `find_files`
   walk the disk themselves, so this check is the only thing keeping them inside the root.
 - **Writes are task-scoped, reads are not** (`E-SENS-03`) — a writing role may change only the
-  files the worktree merge would keep for its task (`security.merge_keeps`, one rule for both); a
+  files the worktree merge would keep for its task (`security.write_verdict`, one rule for both, with the project's doc policy — `C-EXEC-08`); a
   role with no rule gets no grant. What an agent may read is owed by `B-FLOW-04`.
 
 ## Layer 7: Standards Auto-Discovery

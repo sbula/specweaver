@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import posixpath
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -187,6 +187,9 @@ class TaskGrant:
     root: str
     files: tuple[str, ...]
     mode: AccessMode = AccessMode.FULL
+    #: The project's doc rules and the step the grant serves: the merge judges by the same two.
+    policy: DocPolicy = field(default_factory=DocPolicy, compare=False)
+    step: str | None = None
 
     def __post_init__(self) -> None:
         for entry in self.files:
@@ -199,7 +202,8 @@ class TaskGrant:
         root = self.root.replace("\\", "/").rstrip("/")
         if not absolute.startswith(root + "/"):
             return False
-        return merge_keeps(absolute[len(root) + 1 :], list(self.files))
+        relative = absolute[len(root) + 1 :]
+        return write_verdict(self.policy, relative, self.step, list(self.files)) == "keep"
 
 
 def path_allowed(path: str, patterns: list[str]) -> bool:
@@ -248,17 +252,26 @@ def doc_access(policy: DocPolicy, path: str, step: str | None) -> DocAccess:
     return "task"
 
 
-def merge_keeps(path: str, allowed: list[str]) -> bool:
-    """Whether a task's change to `path` survives the worktree merge — and so may be written.
+WriteVerdict = Literal["keep", "propose", "strip"]
 
-    Proposed doc changes (`doc_updates.md`) always survive; `README.md` and `docs/` never do.
+
+def write_verdict(
+    policy: DocPolicy, path: str, step: str | None, allowed: list[str]
+) -> WriteVerdict:
+    """What becomes of `step`'s change to the repo-relative `path`, for the grant and the merge alike.
+
+    `keep`: it stands. `propose`: a doc change a rule refuses — the merge keeps it in
+    `doc_updates.md`. `strip`: a protected file, or a file outside the task's list.
     """
-    lowered = path.lower()  # case-blind, as a case-insensitive disk is
-    if lowered.endswith("doc_updates.md"):
-        return True
-    if lowered == "readme.md" or lowered.startswith("docs/"):
-        return False
-    return path_allowed(path, allowed)
+    lowered = path.replace("\\", "/").lower()
+    if any(part in PROTECTED_NAMES for part in lowered.split("/")):
+        return "strip"
+    if lowered == "doc_updates.md":
+        return "keep"
+    access = doc_access(policy, path, step)
+    if access == "task":
+        return "keep" if path_allowed(path, allowed) else "strip"
+    return "keep" if access == "keep" else "propose"
 
 
 _MODE_PRIORITY = {AccessMode.READ: 0, AccessMode.WRITE: 1, AccessMode.FULL: 2}

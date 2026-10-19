@@ -191,7 +191,7 @@ expose = [ "cli", "cli.config_app",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.bootstrap",]
-expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "settings_loader.load_settings_for_active", "llm_settings_loader.load_llm_settings", "llm_settings_loader.machine_settings_path", "llm_settings_writer.set_model_price", "llm_settings_writer.clear_model_price", "llm_settings_writer.set_role",]
+expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "settings_loader.load_settings_for_active", "llm_settings_loader.load_llm_settings", "doc_policy_loader.load_doc_policy", "llm_settings_loader.machine_settings_path", "llm_settings_writer.set_model_price", "llm_settings_writer.clear_model_price", "llm_settings_writer.set_role",]
 
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]

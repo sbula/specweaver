@@ -9,8 +9,9 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.config.doc_policy import DocPolicy
 from specweaver.sandbox.base import AtomResult, AtomStatus
-from specweaver.sandbox.security import merge_keeps
+from specweaver.sandbox.security import write_verdict
 
 if TYPE_CHECKING:
     from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
@@ -133,7 +134,7 @@ def _strip_forbidden_files(
     """
     stripped: list[str] = []
     for file in changed_files:
-        if not merge_keeps(file, allowed_paths):
+        if write_verdict(DocPolicy(), file, None, allowed_paths) != "keep":
             stripped.append(file)
             executor.run("reset", "HEAD", file)
             checkout_res = executor.run("checkout", "--", file)

@@ -25,10 +25,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
           "symbol": "_strip_forbidden_files",
-          "old": "        if not merge_keeps(file, allowed_paths):\n",
+          "old": "        if write_verdict(DocPolicy(), file, None, allowed_paths) != \"keep\":\n",
           "new": "        if False:\n",
           "breaks": "every file the run wrote lands in the real repo",
-          "symbol_sha": "sha256:6d34a2cd3c73c254b034e529fc1440e7ffd5ea93eeffaedd9ed2085c5312cd8c"
+          "symbol_sha": "sha256:67f5cdd75827dee387edc78980b488816c2012ec5f287749fb5566ccc5b06c6d"
         },
         {
           "id": "empty-folder-kept",
@@ -38,7 +38,7 @@
           "old": "                _remove_empty_parents(fpath.parent, cwd)\n",
           "new": "                pass\n",
           "breaks": "a stripped file's folder stays behind, empty",
-          "symbol_sha": "sha256:6d34a2cd3c73c254b034e529fc1440e7ffd5ea93eeffaedd9ed2085c5312cd8c"
+          "symbol_sha": "sha256:67f5cdd75827dee387edc78980b488816c2012ec5f287749fb5566ccc5b06c6d"
         }
       ]
     },

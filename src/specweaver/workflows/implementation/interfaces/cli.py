@@ -235,11 +235,13 @@ def implement(
         AnalysisContext,
         GraphContext,
         GuidanceContent,
+        IsolationPolicy,
         ModelAccess,
         RunContext,
     )
 
     db = _core.get_db()
+    doc_policy = _core.load_doc_policy_at(project_path)
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
     # failure. The models come from the settings files through `command_router`.
@@ -288,6 +290,7 @@ def implement(
         project_path=project_path,
         spec_path=spec_path,
         model=ModelAccess(config=settings, llm_router=router),
+        isolation=IsolationPolicy(doc_policy=doc_policy),
         graph=GraphContext(topology=topo_contexts),
         db=_core.get_db(),
         guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),

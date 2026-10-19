@@ -15,7 +15,12 @@ import typer
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
+from specweaver.core.flow.handlers.run_context import (
+    AnalysisContext,
+    GuidanceContent,
+    IsolationPolicy,
+    RunContext,
+)
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
@@ -262,6 +267,7 @@ def _build_run_context(
         spec_path=spec_path,
         output_dir=project_path / "src",
         db=db,
+        isolation=IsolationPolicy(doc_policy=_core.load_doc_policy_at(project_path)),
         guidance=GuidanceContent(
             constitution=info.content if info else None,
             standards=(

@@ -66,7 +66,7 @@
           "old": "        parts.append(\"Errors: \" + \"; \".join(ctx.errors_encountered))\n",
           "new": "        pass\n",
           "breaks": "the next agent learns a run failed but not why",
-          "symbol_sha": "sha256:38634c19875129081ccd2cad7d9a925064b66e04a3083239490ef974c8164bbc"
+          "symbol_sha": "sha256:cc3ef4b3393d8f0cd6984ecb220f67ada843558775737aec488a842084d417ae"
         }
       ]
     }

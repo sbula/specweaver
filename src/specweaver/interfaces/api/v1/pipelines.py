@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Query
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_project_root
 from specweaver.interfaces.api.v1.schemas import (
@@ -59,6 +59,7 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
         spec_path=Path(run.spec_path),
         output_dir=project_root / "src",
         db=db,
+        isolation=_doc_policy(project_root),
         model=_models_for(pipeline_def, project_root, run.project_name, db),
     )
     await _apply_isolation(context, db, run.project_name)
@@ -104,6 +105,18 @@ def _max_runs(project_root: Path) -> int:
             status_code=409,
         )
     return limit
+
+
+def _doc_policy(project_root: Path) -> IsolationPolicy:
+    """A run's isolation policy holding the project's doc policy; a broken `[docs]` refuses it."""
+    from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
+    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
+
+    try:
+        return IsolationPolicy(doc_policy=load_doc_policy(project_root))
+    except SettingsFileError as exc:
+        raise SpecWeaverAPIError(detail=str(exc), error_code="DOC_POLICY", status_code=500) from exc
 
 
 def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:
@@ -188,6 +201,7 @@ async def start_pipeline_run(
         spec_path=spec_path,
         output_dir=project_root / "src",
         db=db,
+        isolation=_doc_policy(project_root),
         model=_models_for(pipeline_def, project_root, body.project, db),
     )
     await _apply_isolation(context, db, body.project)

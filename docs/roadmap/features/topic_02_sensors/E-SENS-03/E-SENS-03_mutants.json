@@ -47,10 +47,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
           "symbol": "TaskGrant.covers",
-          "old": "        return merge_keeps(absolute[len(root) + 1 :], list(self.files))\n",
+          "old": "        return write_verdict(self.policy, relative, self.step, list(self.files)) == \"keep\"\n",
           "new": "        return True\n",
           "breaks": "the coder may write any file of the project",
-          "symbol_sha": "sha256:7d1fc7085768e312c6a2596e02f70d7731ada57fe3f57e26173d141d0d208b70"
+          "symbol_sha": "sha256:06f1e903017ab371838efafa3f4ca5ae5845f28c202fa3a9cf3e021277cb1fea"
         }
       ]
     },
@@ -69,21 +69,21 @@
           "id": "readme-writable",
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
-          "symbol": "merge_keeps",
-          "old": "    if lowered == \"readme.md\" or lowered.startswith(\"docs/\"):\n        return False\n",
-          "new": "    if lowered == \"never\":\n        return False\n",
+          "symbol": "write_verdict",
+          "old": "    return \"keep\" if access == \"keep\" else \"propose\"\n",
+          "new": "    return \"keep\"\n",
           "breaks": "the coder writes README and docs, which the merge then drops",
-          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
+          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
         },
         {
           "id": "glob-not-matched",
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
-          "symbol": "merge_keeps",
-          "old": "    return path_allowed(path, allowed)\n",
-          "new": "    return path in allowed\n",
+          "symbol": "write_verdict",
+          "old": "        return \"keep\" if path_allowed(path, allowed) else \"strip\"\n",
+          "new": "        return \"keep\" if path in allowed else \"strip\"\n",
           "breaks": "a glob entry grants nothing and keeps nothing",
-          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
+          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
         }
       ]
     },
@@ -106,7 +106,7 @@
           "old": "        return []\n",
           "new": "        return [_folder_grant(root, AccessMode.FULL) for root in boundary.roots]\n",
           "breaks": "a new role starts with full access",
-          "symbol_sha": "sha256:a593392cad1d1db26a4a6f41d8b3e7d5319170021925ec08503529e6a4753373"
+          "symbol_sha": "sha256:92ceea93ec75f99cae12202e6f905ae19e54d23b2348ba41e606ca4f400d139e"
         }
       ]
     },

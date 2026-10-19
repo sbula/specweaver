@@ -13,7 +13,7 @@
 
 | Piece | Where | Tag |
 |---|---|---|
-| `IsolationPolicy.doc_policy: DocPolicy` (default: empty policy = the built-in rules, today's behaviour); `with_doc_policy(context, policy)` sets it (no I/O) | `core/flow/handlers/run_context.py`, `core/flow/engine/isolation.py` | MODIFY |
+| `IsolationPolicy.doc_policy: DocPolicy` (default: empty policy = the built-in rules, today's behaviour); each root passes it when it builds the `RunContext` | `core/flow/handlers/run_context.py` | MODIFY |
 | The run roots call `load_doc_policy(project_path)` **strictly**: a broken `[docs]` stops the command, naming the line (NFR-1). Outside the best-effort settings block. The API answers `SpecWeaverAPIError(error_code="DOC_POLICY", status_code=500)`, as `_max_runs` does for a broken settings file | `core/flow/interfaces/cli.py` `_build_run_context` (`sw run`, `sw resume`), `interfaces/api/v1/pipelines.py` (both `_apply_isolation` call sites, `:64` gate/resume and `:193` start), `workflows/implementation/interfaces/cli.py` (`sw implement`) | MODIFY |
 | `write_verdict(policy, path, step, allowed) -> "keep" \| "propose" \| "strip"` replaces `merge_keeps`, in order: a protected name → `strip`; the root `doc_updates.md` → `keep`; `doc_access` `keep` → `keep`, `refuse` → `propose`; `task` → `keep` when `path_allowed(path, allowed)`, else `strip`. The grant writes only on `keep`; the merge acts on all three — one decider, so FR-8 holds by construction | `sandbox/security.py` | MODIFY (`merge_keeps` removed) |
 | `TaskGrant` gains `policy` and `step`; `covers` is `write_verdict(...) == "keep"` | `sandbox/security.py` | MODIFY |
@@ -62,9 +62,9 @@ So a merge whose only change was a refused doc no longer aborts as "nothing merg
 > `core.flow` may not import `core.config.bootstrap` (bootstrap depends on `core.flow`: a cycle).
 > The interface modules load the policy; `core.flow` only receives it.
 
-> [!WARNING]
-> `TaskGrant` is a frozen dataclass: its generated `__hash__` covers every field, and a pydantic
-> `DocPolicy` is not hashable. Nothing hashes a grant today; do not start to.
+> [!NOTE]
+> `TaskGrant` is a frozen dataclass and a pydantic `DocPolicy` is not hashable, so `policy` is a
+> `field(compare=False)`: it stays out of the generated `__eq__` and `__hash__`.
 
 > [!NOTE]
 > A `strip_merge` context with no `doc_policy` uses the empty policy, and with no step uses `None`:

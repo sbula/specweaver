@@ -90,7 +90,7 @@
           "old": "full_sweep = bool(args.corpus_dir) and not args.corpus",
           "new": "full_sweep = True",
           "breaks": "every invocation tells the ledger it looked everywhere, so `--corpus <one file>` clears findings it never examined",
-          "symbol_sha": "sha256:518e9b03d7a8fb099291759b9e5f4e72c1d81b23b1ab61665345ceec75c08404"
+          "symbol_sha": "sha256:22e0333b41c4316005dcc2130992a45ab00ab927b39bf1b33cc9f0bb0c315881"
         },
         {
           "id": "the-nightly-stops-claiming-its-sweep",
@@ -100,7 +100,7 @@
           "old": "full_sweep = bool(args.corpus_dir) and not args.corpus",
           "new": "full_sweep = False",
           "breaks": "no run can ever withdraw, so a deleted campaign's findings stay open for ever and the morning gate can never clear",
-          "symbol_sha": "sha256:518e9b03d7a8fb099291759b9e5f4e72c1d81b23b1ab61665345ceec75c08404"
+          "symbol_sha": "sha256:22e0333b41c4316005dcc2130992a45ab00ab927b39bf1b33cc9f0bb0c315881"
         }
       ]
     }

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, NoReturn, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from specweaver.core.config.doc_policy import DocPolicy
     from specweaver.core.config.llm_settings import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
 
@@ -120,6 +121,17 @@ def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
 
     try:
         return load_llm_settings(path)
+    except SettingsFileError as err:
+        refuse_llm_settings(err)
+
+
+def load_doc_policy_at(path: Path) -> DocPolicy:
+    """The doc policy of the project at `path`, or exit naming the file, key and line."""
+    from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
+    from specweaver.core.config.llm_settings import SettingsFileError
+
+    try:
+        return load_doc_policy(path)
     except SettingsFileError as err:
         refuse_llm_settings(err)
 

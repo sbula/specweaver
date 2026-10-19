@@ -6,7 +6,8 @@
 Proves: TECH-072 FR-9
 
 On a disk that ignores case (macOS, Windows), `.ENV/x` is `.env/x`. The file executor's protected
-names and the merge's own rule (`README.md`, `docs/`, `doc_updates.md`) both compare without case.
+names and the merge's own rule (`README.md`, `docs/`, the root `doc_updates.md`) both compare
+without case.
 
 | Bucket | Case |
 |---|---|
@@ -22,8 +23,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.core.config.doc_policy import DocPolicy
 from specweaver.sandbox.filesystem.core.executor import FileExecutor
-from specweaver.sandbox.security import merge_keeps
+from specweaver.sandbox.security import write_verdict
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -43,9 +45,9 @@ def test_an_ordinary_file_is_still_written(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("path", ["ReadMe.md", "README.MD", "DOCS/guide.md", "Docs/x.md"])
 def test_the_merge_rule_ignores_case(path: str) -> None:
-    assert merge_keeps(path, ["**"]) is False
+    assert write_verdict(DocPolicy(), path, None, ["**"]) != "keep"
 
 
-@pytest.mark.parametrize("path", ["src/Doc_Updates.md", "DOC_UPDATES.MD"])
+@pytest.mark.parametrize("path", ["Doc_Updates.md", "DOC_UPDATES.MD"])
 def test_doc_updates_is_kept_in_any_case(path: str) -> None:
-    assert merge_keeps(path, []) is True
+    assert write_verdict(DocPolicy(), path, None, []) == "keep"

@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from specweaver.commons.timestamps import now_iso as _now_iso
+from specweaver.core.config.doc_policy import DocPolicy
 
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult  # noqa: F401
@@ -49,6 +50,8 @@ class IsolationPolicy(BaseModel):
     #: The install's `AutonomySettings`, frozen here at the composition root. `None` means
     #: policy never resolved, which the dial treats as `oneshot`.
     autonomy: Any = None
+    #: The project's `[docs]` rules, read at the composition root; the grant and the merge use them.
+    doc_policy: DocPolicy = Field(default_factory=DocPolicy)
 
 
 class PlanContext(BaseModel):

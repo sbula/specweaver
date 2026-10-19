@@ -834,7 +834,7 @@ class TestStripMerge:
         assert atom.run({"intent": "strip_merge", "branch": "foo"}).status == AtomStatus.FAILED
 
     def test_strip_merge_preserves_doc_updates(self, tmp_path: Path) -> None:
-        """doc_updates.md is explicitly preserved (FR-8) regardless of allowed_paths."""
+        """The root doc_updates.md is preserved (FR-8) regardless of allowed_paths."""
         with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 # git merge
@@ -842,7 +842,7 @@ class TestStripMerge:
                 # git diff
                 SubprocessResult(
                     exit_code=0,
-                    stdout="src/good.py\ncomponent/doc_updates.md\nsrc/bad.py\n",
+                    stdout="src/good.py\ndoc_updates.md\nsrc/bad.py\n",
                     stderr="",
                     duration_seconds=0.0,
                 ),

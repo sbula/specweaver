@@ -557,7 +557,7 @@
           "old": "                    _folder_grant(root / \"specs\", AccessMode.READ),\n",
           "new": "                    _folder_grant(root, AccessMode.FULL),\n",
           "breaks": "the scenario agent can read and write the whole project, the coder's code too",
-          "symbol_sha": "sha256:a593392cad1d1db26a4a6f41d8b3e7d5319170021925ec08503529e6a4753373"
+          "symbol_sha": "sha256:92ceea93ec75f99cae12202e6f905ae19e54d23b2348ba41e606ca4f400d139e"
         },
         {
           "id": "scenario-agent-has-git",

@@ -13,6 +13,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.config.doc_policy import DocPolicy
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -121,6 +123,8 @@ class ToolDispatcher:
         parsers: Any | None = None,
         search_key: str | None = None,
         task_files: Sequence[str] = (),
+        doc_policy: DocPolicy | None = None,
+        step: str | None = None,
     ) -> ToolDispatcher:
         """Factory method to assemble standard tools for an agent.
 
@@ -131,6 +135,8 @@ class ToolDispatcher:
             search_key: The web-search key; "web" without it searches nothing.
             task_files: The repo-relative paths or globs the task may write; only a writing
                 role uses them.
+            doc_policy: The project's `[docs]` rules; none means the built-in ones.
+            step: The pipeline step the agent runs in, which a `step` rule names.
 
         Returns:
             A configured ToolDispatcher encompassing all allowed intents.
@@ -145,6 +151,8 @@ class ToolDispatcher:
             topology=topology,
             parsers=parsers,
             task_files=task_files,
+            doc_policy=doc_policy,
+            step=step,
         )
         kwargs["search_key"] = search_key
 
@@ -169,7 +177,12 @@ class ToolDispatcher:
 
     @classmethod
     def _compute_role_grants(
-        cls, role: str, boundary: Any, task_files: Sequence[str] = ()
+        cls,
+        role: str,
+        boundary: Any,
+        task_files: Sequence[str] = (),
+        doc_policy: DocPolicy | None = None,
+        step: str | None = None,
     ) -> list[Any]:
         """The filesystem grants one agent role gets over a workspace boundary.
 
@@ -201,7 +214,11 @@ class ToolDispatcher:
             paths = [*boundary.roots, *boundary.api_paths]
             reads = [_folder_grant(path, AccessMode.READ) for path in paths]
             files = tuple(task_files)
-            return [*reads, *[TaskGrant(str(root), files) for root in boundary.roots if files]]
+            policy = doc_policy or DocPolicy()
+            grants = [
+                TaskGrant(str(root), files, policy=policy, step=step) for root in boundary.roots
+            ]
+            return [*reads, *(grants if files else [])]
 
         return []
 
@@ -258,10 +275,12 @@ class ToolDispatcher:
         topology: Any | None = None,
         parsers: Any | None = None,
         task_files: Sequence[str] = (),
+        doc_policy: DocPolicy | None = None,
+        step: str | None = None,
     ) -> dict[str, Any]:
         """Build the shared configuration kwargs required by tool registry factories."""
         exclude_dirs, exclude_patterns = cls._compute_fs_excludes(analyzer_factory)
-        grants = cls._compute_role_grants(role, boundary, task_files)
+        grants = cls._compute_role_grants(role, boundary, task_files, doc_policy, step)
         cwd_path = boundary.roots[0] if boundary.roots else boundary.api_paths[0]
         atom, hidden_intents = cls._build_ast_kwargs(boundary, cwd_path, allowed_tools, parsers)
         if atom is not None:

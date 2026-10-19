@@ -16,6 +16,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.interfaces.cli.main import app
+from tests.rendering import shows
 from tests.scripted_llm import doubled_llm
 
 if TYPE_CHECKING:
@@ -159,13 +160,27 @@ def test_toml_no_sandbox_section_keeps_session_isolation_off(tmp_path: Path) -> 
     assert context.isolation.allowed_paths == []
 
 
-def test_toml_malformed_sandbox_keeps_session_isolation_off(tmp_path: Path) -> None:
-    """[Graceful Degradation] a malformed specweaver.toml must not crash the run and must
-    leave per-run isolation off (the composition wiring is best-effort)."""
+def test_a_malformed_specweaver_toml_stops_the_run(tmp_path: Path) -> None:
+    """[Hostile] a specweaver.toml that is not TOML stops `sw run`, naming the file.
+
+    The isolation wiring is best-effort, but the file also holds the doc policy, and a policy
+    that cannot be read refuses (C-EXEC-08 NFR-1): no step may run on rules nobody can read.
+    """
     project_dir = _init_project(tmp_path, "cexec06-malformed", "not valid toml [[[")
-    context = _run_and_capture(project_dir)
-    assert context.isolation.session_isolation is False
-    assert context.isolation.allowed_paths == []
+    with patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner:
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                "validate_only",
+                str(project_dir / "specs" / "test_spec.md"),
+                "--project",
+                str(project_dir),
+            ],
+        )
+    assert result.exit_code == 1
+    assert shows(result.output, "not valid TOML")
+    assert not mock_runner.called
 
 
 def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> None:

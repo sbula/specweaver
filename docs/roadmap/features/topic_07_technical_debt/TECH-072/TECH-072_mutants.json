@@ -207,11 +207,11 @@
           "id": "merge-rule-case-sensitive",
           "origin": "authored",
           "file": "src/specweaver/sandbox/security.py",
-          "symbol": "merge_keeps",
-          "old": "    lowered = path.lower()  # case-blind, as a case-insensitive disk is\n",
-          "new": "    lowered = path\n",
+          "symbol": "doc_access",
+          "old": "        if path_allowed(lowered, [pattern.lower() for pattern in rule.paths]):\n",
+          "new": "        if path_allowed(path, rule.paths):\n",
           "breaks": "ReadMe.md is written and merged",
-          "symbol_sha": "sha256:879dbdcefbaaa185a2178c97616f838c9c1b66d856be6f16d716f67f36e7924c"
+          "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
         }
       ]
     }
