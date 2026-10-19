@@ -1,8 +1,8 @@
 # D-UI-01 — Core Orchestration API (`sw serve`)
 
-**Status**: 🔧 IN WORK — built and proven, **not approved**. The `specweaver-design` Phase 6 gate
-was never run for this capability. Status returns to ✅ only after that review and any corrections
-it produces. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
+**Status**: 🔧 IN WORK — the Phase 6 review ran 2026-10-19 and found the API open to web pages; the
+corrections (FR-6, FR-7) are decided and planned. Status returns to ✅ only after they are built and
+signed off. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
 
 | | |
 |---|---|
@@ -15,8 +15,9 @@ Plan: [D-UI-01_implementation_plan.md](D-UI-01_implementation_plan.md).
 ## What it does
 
 `sw serve` starts a FastAPI server exposing the SpecWeaver operations an external UI needs, plus a
-WebSocket that streams a run's progress as it happens. 23 routes across projects, pipelines, runs,
-review, check, constitution and standards.
+WebSocket that streams a run's progress as it happens: 23 API routes across projects, pipelines,
+runs, review, check, implement, constitution and standards, plus the health check and the dashboard's
+four pages, 28 in all.
 
 ## Why
 
@@ -60,14 +61,17 @@ The full decision table (26 rows, with audit Qs) is in the plan. The ones that s
 
 | Decision | Why |
 |---|---|
-| **No authentication in Phase 1**; bind `127.0.0.1` by default | Local-only. The default bind is therefore the entire access-control story — `0.0.0.0` would expose every endpoint, including the ones that start runs and execute generated code, to the network. `FR-3` tests it. |
+| **A token on every request** `[agreed 2026-10-19]`: `sw serve` makes a random token each start, prints the address with it, and writes it to a file only its owner can read; programs send it in a header, the browser gets it as a cookie on its first visit | Binding `127.0.0.1` keeps the network out but not a web page: DNS rebinding and cross-site form posts reach a local server through the browser. A token closes both, and other programs and users on the machine too (Phase 6 review, 2026-10-19). |
+| **Bind `127.0.0.1` by default** | `0.0.0.0` would expose every endpoint, including the ones that start runs and execute generated code, to the network. `FR-3` tests it. |
+| **How many runs at once is a setting** `[agreed 2026-10-19]`: `[serve] max_runs` in `settings.toml`; starting a run without it is refused, naming the key | No hidden number decides how much work a server takes on. |
 | **Fire-and-forget runs**: `POST /run` returns a `run_id`, a background task runs the pipeline | A run lasts minutes; clients poll `GET /runs/{run_id}` or subscribe via WebSocket. |
 | **Runner terminates on park**; the gate endpoint resumes | Same as `sw resume`: the context is rebuilt from stored state. |
 | **WebSocket emits the CLI's NDJSON events** | The two front ends cannot describe the same run differently. |
 | **Handlers call core modules directly**, no service layer | Core logic already lives outside `cli/`. |
 
-A CORS regex is not access control: it governs which browser origins may call a server the caller
-can already reach.
+A CORS regex is not access control: it governs which browser origins may read a server's answers,
+not which requests run. Allowed origins are the local ones, plus any named in `--cors-origins` or
+the `CORS_ORIGINS` environment variable.
 
 ## Functional Requirements
 
@@ -78,6 +82,8 @@ can already reach.
 | FR-3 | The server reaches the network only when asked | System | Binds `127.0.0.1` by default and forwards whatever `--host` was given to the server | An install with no authentication is not remotely reachable by default, and a deliberate `--host` still works for a container or a LAN |
 | FR-4 | An HTTP-started run is the run the CLI would start | System | Applies the same `[sandbox]` isolation policy at the API composition root, and stores the run under the project's registered name, so a gate answer or a resume finds it `[agreed 2026-10-13]` | Untrusted generated code is bounded identically whichever root launched it, and a parked run can be finished |
 | FR-5 | A failure is a typed error, not a traceback | System | Returns `{detail, error_code}` with the declared status, defaulting to a client error | A program can branch on the failure, and no response carries module paths or a stack trace |
+| FR-6 | Only the token's holder is served | System | Refuses every request without the server's token — HTTP header, browser cookie, or the WebSocket's query — with 401, except the health check `[agreed 2026-10-19]` | A web page, another program or another user cannot start a run or change a project |
+| FR-7 | Runs at once follow the settings | System | Takes the number of concurrent runs from `[serve] max_runs`; without it a run is refused, naming the key `[agreed 2026-10-19]` | The load a server accepts is the user's number |
 
 `FR-4` is a **seam FR** — the policy is resolved in `core.flow.engine.isolation` and consumed here
 — and is proven at integration tier.
@@ -100,12 +106,12 @@ so `check_fr_coverage.py` can judge the coverage.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | No authentication in Phase 1 | Justified **only** by the local-only bind, which `FR-3` is the test for. Any change to the default bind reopens this and requires the `X-API-Key` phase the plan describes |
+| NFR-1 | The token never leaks | It is compared in constant time; it appears in no log line, error or response body; its file is readable by its owner only, like `keys.env` |
 | NFR-2 | Optional dependency | FastAPI and Uvicorn are an extra; `sw serve` reports the install command and exits 1 rather than raising an `ImportError` **[proof: meta — a rule about the failure message, not about product behaviour]** |
 | NFR-3 | Layer placement | The API lives in `interfaces.api` and reaches the engine through the same surfaces the CLI does **[proof: arch — `tach check`, not pytest]** |
 
 ## Non-Goals
 
-- Authentication. Phase 2 territory, and gated on the bind default changing.
+- User accounts and roles: one token, one owner.
 - Rendering. Structured output schemas are `D-UI-02`; the dashboard is its own capability.
 - Replacing the CLI. Both are front ends over the same engine.
