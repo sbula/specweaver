@@ -21,6 +21,10 @@ from tests.fixtures.db_utils import register_test_project
 def _data_root_follows_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """These tests move `Path.home()` to `tmp_path`; the data root must follow it there."""
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / ".specweaver"))
+    (tmp_path / ".specweaver").mkdir(exist_ok=True)
+    (tmp_path / ".specweaver" / "settings.toml").write_text(
+        "[serve]\nmax_runs = 3\n", encoding="utf-8"
+    )
 
 
 @pytest.fixture()
@@ -713,10 +717,13 @@ class TestMaxConcurrent:
         self, client, _project_with_spec, tmp_path
     ) -> None:
         """POST /pipelines/{name}/run at max concurrent → 429."""
+        from unittest.mock import MagicMock
+
         from specweaver.interfaces.api.app import set_event_bridge
         from specweaver.interfaces.api.event_bridge import EventBridge
 
-        bridge = EventBridge(max_concurrent=0)
+        bridge = EventBridge()
+        bridge.start_run = MagicMock(side_effect=RuntimeError("Max concurrent runs reached (1)."))
         set_event_bridge(bridge)
 
         try:

@@ -56,10 +56,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "        bridge.start_run(run_id, runner.run(run_id=run_id))\n",
-          "new": "        bridge.start_run(run_id, runner.run())\n",
+          "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
+          "new": "        bridge.start_run(run_id, runner.run(), limit=limit)\n",
           "breaks": "GET /runs/{id} never finds a run started over REST",
-          "symbol_sha": "sha256:a4081853ee5b6f10a43f77daa1b12899d9e56a7ab09c7438f3af04b4c2ebd45a"
+          "symbol_sha": "sha256:93c3061c1e14bc674354fa6b40db9fbd1fbf047b86083f459ba11132d5013314"
         },
         {
           "id": "rest-run-without-models",
@@ -69,7 +69,7 @@
           "old": "        db=db,\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
           "new": "        db=db,\n",
           "breaks": "a REST pipeline step that needs a model fails",
-          "symbol_sha": "sha256:a4081853ee5b6f10a43f77daa1b12899d9e56a7ab09c7438f3af04b4c2ebd45a"
+          "symbol_sha": "sha256:93c3061c1e14bc674354fa6b40db9fbd1fbf047b86083f459ba11132d5013314"
         },
         {
           "id": "rest-resume-without-models",
@@ -79,7 +79,7 @@
           "old": "        db=db,\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
           "new": "        db=db,\n",
           "breaks": "a REST resume of a step that needs a model fails",
-          "symbol_sha": "sha256:6d4649004a54d31d4fe4bc6987c23df8b9b86f6e03a6ba01b7fba39f8dac063b"
+          "symbol_sha": "sha256:5e5217c2e9369b6b6e89f03eeeaaaef1d8b0c731b02503b508fd67b2b48ee930"
         }
       ]
     },

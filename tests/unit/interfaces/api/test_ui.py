@@ -32,6 +32,10 @@ from tests.api_token import AUTH, TEST_TOKEN
 def _data_root_follows_home(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     """These tests move `Path.home()` to `tmp_path`; the data root must follow it there."""
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path / ".specweaver"))
+    (tmp_path / ".specweaver").mkdir(exist_ok=True)
+    (tmp_path / ".specweaver" / "settings.toml").write_text(
+        "[serve]\nmax_runs = 3\n", encoding="utf-8"
+    )
 
 
 @pytest.fixture()

@@ -180,6 +180,55 @@
           "symbol_sha": "sha256:e4af243970d4bf3658270a20c2ff337d536954c85cb266ff0f32460ed32b1b17"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Runs at once follow [serve] max_runs",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_max_runs.py"
+      ],
+      "mutants": [
+        {
+          "id": "limit-fixed-again",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
+          "new": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=3)\n",
+          "breaks": "the user's number is read and ignored",
+          "symbol_sha": "sha256:93c3061c1e14bc674354fa6b40db9fbd1fbf047b86083f459ba11132d5013314"
+        },
+        {
+          "id": "unset-limit-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_max_runs",
+          "old": "    if limit is None:\n",
+          "new": "    if False:\n",
+          "breaks": "a run starts with no limit set",
+          "symbol_sha": "sha256:f302e5477cc274fa3cb5eba14e7cffa9b7b017e2b74d0c254484b991cdfe7d69"
+        },
+        {
+          "id": "one-run-too-many",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/event_bridge.py",
+          "symbol": "EventBridge.start_run",
+          "old": "        if self.active_count >= limit:\n",
+          "new": "        if self.active_count > limit:\n",
+          "breaks": "one run more than the limit is taken",
+          "symbol_sha": "sha256:0bd1d2172119d531a26ad43db48d3045e001e40790a92a64524d58e255d67db1"
+        },
+        {
+          "id": "zero-runs-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "ServeValues",
+          "old": "    max_runs: int | None = Field(default=None, gt=0)\n",
+          "new": "    max_runs: int | None = Field(default=None)\n",
+          "breaks": "a limit of 0 is accepted and no run can ever start",
+          "symbol_sha": "sha256:a0de15f57a51c5ad635b9a5be2e2c8d0816b66c7c2eff80241c332c5300285d1"
+        }
+      ]
     }
   ]
 }

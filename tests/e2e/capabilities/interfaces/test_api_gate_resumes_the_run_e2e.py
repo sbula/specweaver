@@ -66,6 +66,7 @@ def test_approving_the_gate_finishes_the_run(
     data = tmp_path / "data"
     data.mkdir()
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
+    (data / "settings.toml").write_text("[serve]\nmax_runs = 3\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     (tmp_path / "two_steps.yaml").write_text(_PIPELINE, encoding="utf-8")
     bootstrap_database(str(data / "specweaver.db"))

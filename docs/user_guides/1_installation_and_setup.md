@@ -125,6 +125,11 @@ rate_date = 2026-09-26
   `read_url`. Without the section they get neither. If `keys.env` lacks the variable, every LLM
   command stops at the start and names `search.api_key_env`. `read_url` reads only `http` and
   `https` pages on public addresses: never `localhost`, a private network or `169.254.169.254`.
+- **The API and dashboard** (`sw serve`, needs `specweaver[serve]`): every request needs the token
+  `sw serve` makes at each start. Open the dashboard address it prints, which carries the token once;
+  a program reads the token from `~/.specweaver/serve.token` (readable by you only) and sends it as
+  `Authorization: Bearer <token>`. Runs started through the API need `[serve] max_runs = <n>`, how
+  many may run at once; without it a run is refused, naming the key.
 
 ## 4. Initializing your First Project
 

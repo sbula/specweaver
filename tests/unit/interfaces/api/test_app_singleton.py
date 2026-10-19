@@ -44,7 +44,7 @@ class TestEventBridgeSingleton:
     def test_set_event_bridge_overrides_singleton(self) -> None:
         """set_event_bridge replaces the global singleton."""
         original = app_module.get_event_bridge()
-        replacement = EventBridge(max_concurrent=1)
+        replacement = EventBridge()
         app_module.set_event_bridge(replacement)
 
         assert app_module.get_event_bridge() is replacement

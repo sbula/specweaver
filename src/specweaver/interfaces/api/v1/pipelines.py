@@ -53,6 +53,7 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
 
     project_root = await resolve_project_root(run.project_name, db)
     pipeline_def = load_pipeline(Path(run.pipeline_name))
+    limit = _max_runs(project_root)
     context = RunContext(
         project_path=project_root,
         spec_path=Path(run.spec_path),
@@ -74,13 +75,35 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     )
 
     try:
-        bridge.start_run(run_id, runner.resume(run_id))
+        bridge.start_run(run_id, runner.resume(run_id), limit=limit)
     except RuntimeError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),
             error_code="MAX_CONCURRENT_RUNS",
             status_code=429,
         ) from exc
+
+
+def _max_runs(project_root: Path) -> int:
+    """`[serve] max_runs`, the runs the API takes at once; a run is refused while it is unset."""
+    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
+
+    try:
+        limit = load_llm_settings(project_root).machine.serve.max_runs
+    except SettingsFileError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc), error_code="LLM_SETTINGS", status_code=500
+        ) from exc
+    if limit is None:
+        raise SpecWeaverAPIError(
+            detail="serve.max_runs is not set in settings.toml — how many runs the API takes at "
+            "once; there is no default",
+            error_code="SETTING_NOT_SET",
+            status_code=409,
+        )
+    return limit
 
 
 def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:
@@ -157,6 +180,7 @@ async def start_pipeline_run(
             error_code="FILE_NOT_FOUND",
             status_code=404,
         )
+    limit = _max_runs(project_root)
 
     # Build context
     context = RunContext(
@@ -190,7 +214,7 @@ async def start_pipeline_run(
 
     # Start background run
     try:
-        bridge.start_run(run_id, runner.run(run_id=run_id))
+        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)
     except RuntimeError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc),

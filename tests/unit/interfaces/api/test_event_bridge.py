@@ -26,7 +26,7 @@ class TestEventBridge:
             result_holder.append("done")
             return "ok"
 
-        bridge.start_run("r1", _dummy())
+        bridge.start_run("r1", _dummy(), limit=2)
         assert bridge.active_count == 1
 
         # Let the task complete
@@ -36,16 +36,16 @@ class TestEventBridge:
     @pytest.mark.asyncio
     async def test_max_concurrent_enforced(self) -> None:
         """start_run raises RuntimeError when at max concurrent."""
-        bridge = EventBridge(max_concurrent=2)
+        bridge = EventBridge()
 
         async def _slow() -> None:
             await asyncio.sleep(10)
 
-        bridge.start_run("r1", _slow())
-        bridge.start_run("r2", _slow())
+        bridge.start_run("r1", _slow(), limit=2)
+        bridge.start_run("r2", _slow(), limit=2)
 
         with pytest.raises(RuntimeError, match="Max concurrent"):
-            bridge.start_run("r3", _slow())
+            bridge.start_run("r3", _slow(), limit=2)
 
         # Cleanup
         for task in bridge._tasks.values():
@@ -70,7 +70,7 @@ class TestEventBridge:
         async def _quick() -> str:
             return "done"
 
-        bridge.start_run("r1", _quick())
+        bridge.start_run("r1", _quick(), limit=2)
         await asyncio.sleep(0.1)
 
         # Should have received None (completion signal)
@@ -111,10 +111,10 @@ class TestEventBridge:
         async def _slow() -> None:
             await asyncio.sleep(10)
 
-        bridge.start_run("r1", _slow())
+        bridge.start_run("r1", _slow(), limit=2)
 
         with pytest.raises(ValueError, match="already active"):
-            bridge.start_run("r1", _slow())
+            bridge.start_run("r1", _slow(), limit=2)
 
         # Cleanup
         for task in bridge._tasks.values():
@@ -123,16 +123,16 @@ class TestEventBridge:
     @pytest.mark.asyncio
     async def test_cleanup_done_frees_slots(self) -> None:
         """Completed tasks are cleaned up, freeing concurrency slots."""
-        bridge = EventBridge(max_concurrent=1)
+        bridge = EventBridge()
 
         async def _quick() -> str:
             return "ok"
 
-        bridge.start_run("r1", _quick())
+        bridge.start_run("r1", _quick(), limit=1)
         await asyncio.sleep(0.1)
 
         # r1 is done, we should be able to start another
-        bridge.start_run("r2", _quick())
+        bridge.start_run("r2", _quick(), limit=1)
         assert bridge.active_count <= 1
 
     def test_is_active_false_when_no_run(self) -> None:
@@ -174,7 +174,7 @@ class TestEventBridge:
             msg = "boom"
             raise RuntimeError(msg)
 
-        bridge.start_run("r1", _failing())
+        bridge.start_run("r1", _failing(), limit=2)
         await asyncio.sleep(0.1)
 
         # Subscriber should receive None (completion signal despite error)
@@ -191,7 +191,7 @@ class TestEventBridge:
         async def _returning() -> str:
             return "my_result"
 
-        bridge.start_run("r1", _returning())
+        bridge.start_run("r1", _returning(), limit=2)
         await asyncio.sleep(0.1)
 
         assert bridge.get_result("r1") == "my_result"
@@ -284,7 +284,7 @@ class TestEventBridge:
         async def _quick() -> str:
             return "ok"
 
-        bridge.start_run("r1", _quick())
+        bridge.start_run("r1", _quick(), limit=2)
         await asyncio.sleep(0.1)
 
         # Task is done, active_count should be 0

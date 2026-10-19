@@ -47,6 +47,9 @@ default = { model = "qwen3-coder-next@gb10", max_output_tokens = 1000 }
 hosted_spend_per_run = 10
 tokens_per_run = 1000000
 agent_turns = 5
+
+[serve]
+max_runs = 3
 """
 
 _ONE_REVIEW = """\

@@ -17,8 +17,6 @@ from specweaver.commons import json
 
 logger = logging.getLogger(__name__)
 
-MAX_CONCURRENT_RUNS = 3
-
 
 class EventBridge:
     """Central registry for background pipeline runs.
@@ -29,8 +27,7 @@ class EventBridge:
     - Auto-cleanup of completed tasks
     """
 
-    def __init__(self, max_concurrent: int = MAX_CONCURRENT_RUNS) -> None:
-        self._max_concurrent = max_concurrent
+    def __init__(self) -> None:
         self._tasks: dict[str, asyncio.Task[Any]] = {}
         self._subscribers: dict[str, list[asyncio.Queue[dict[str, Any] | None]]] = {}
         self._results: dict[str, Any] = {}
@@ -44,12 +41,15 @@ class EventBridge:
         self,
         run_id: str,
         coro: Any,
+        *,
+        limit: int,
     ) -> None:
         """Start a pipeline run as a background task.
 
         Args:
             run_id: Unique run identifier.
             coro: The awaitable coroutine (e.g. ``runner.run()``).
+            limit: Runs allowed at once, from `[serve] max_runs`.
 
         Raises:
             RuntimeError: If at max concurrent limit.
@@ -58,10 +58,8 @@ class EventBridge:
         # Clean up finished tasks first
         self._cleanup_done()
 
-        if self.active_count >= self._max_concurrent:
-            msg = (
-                f"Max concurrent runs reached ({self._max_concurrent}). Wait for a run to complete."
-            )
+        if self.active_count >= limit:
+            msg = f"Max concurrent runs reached ({limit}). Wait for a run to complete."
             raise RuntimeError(msg)
 
         if run_id in self._tasks and not self._tasks[run_id].done():
@@ -87,7 +85,7 @@ class EventBridge:
             "Started background run %s (%d/%d active)",
             run_id,
             self.active_count,
-            self._max_concurrent,
+            limit,
         )
 
     def make_event_callback(self, run_id: str) -> Any:

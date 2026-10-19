@@ -1,8 +1,7 @@
 # D-UI-01 — Core Orchestration API (`sw serve`)
 
 **Status**: 🔧 IN WORK — the Phase 6 review ran 2026-10-19 and found the API open to web pages; the
-corrections (FR-6, FR-7) are decided and planned. Status returns to ✅ only after they are built and
-signed off. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
+corrections (FR-6, FR-7) are built and committed. Status returns to ✅ only after the user's sign-off. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
 
 | | |
 |---|---|
@@ -10,7 +9,8 @@ signed off. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
 | Used by | Web Dashboard (3.8) · VS Code extension (3.23) · IntelliJ plugin |
 | Not touched | authentication (Phase 2) · output schemas (`D-UI-02`) · the CLI |
 
-Plan: [D-UI-01_implementation_plan.md](D-UI-01_implementation_plan.md).
+Plans: [D-UI-01_implementation_plan.md](D-UI-01_implementation_plan.md) · corrections after the Phase 6
+review: [D-UI-01_corrections_implementation_plan.md](D-UI-01_corrections_implementation_plan.md).
 
 ## What it does
 

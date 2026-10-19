@@ -228,6 +228,13 @@ class SearchEntry(_Strict):
         return self
 
 
+class ServeValues(_Strict):
+    """`sw serve`'s limits. Unset is refused where it is needed, never filled in."""
+
+    #: Runs the API takes at once.
+    max_runs: int | None = Field(default=None, gt=0)
+
+
 class MachineLlmFile(_Strict):
     """`~/.specweaver/settings.toml`."""
 
@@ -239,6 +246,7 @@ class MachineLlmFile(_Strict):
     models: dict[str, ModelFacts] = Field(default_factory=dict)
     step_limits: StepLimits | None = None
     search: SearchEntry | None = None
+    serve: ServeValues = Field(default_factory=ServeValues)
 
 
 class ProjectLlmSection(_Strict):

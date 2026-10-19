@@ -1,7 +1,7 @@
 # Implementation Plan: Core Orchestration API [Corrections from the Phase 6 review]
 - **Feature ID**: D-UI-01
 - **Design Document**: docs/roadmap/features/topic_01_ui_glass/D-UI-01/D-UI-01_design.md
-- **Implementation Plan**: docs/roadmap/features/topic_01_ui_glass/D-UI-01/D-UI-01_corrections_plan.md
+- **Implementation Plan**: docs/roadmap/features/topic_01_ui_glass/D-UI-01/D-UI-01_corrections_implementation_plan.md
 - **Status**: APPROVED by the user 2026-10-19
 
 **FRs owned**: FR-6, FR-7, NFR-1 (new, from the review of 2026-10-19)
