@@ -219,8 +219,12 @@ collides on the branch name (`TECH-012`). Use per-run mode for that.
 - **Strip-merge (FR-4)**: `strip_merge` (`sandbox/git/core/worktree_ops.py`) runs
   `git merge --no-commit --no-ff <branch> -X ours`, then restores or deletes every changed file that
   is not in `allowed_paths` (a repo-relative path, or a glob: `*` inside one folder, `**` across
-  folders), and removes the folders a deleted file leaves empty. `README.md` and `docs/` are
-  hard-blocked even when allow-listed. `doc_updates.md` always survives. A merge that fails (e.g. a dirty real working
+  folders), and removes the folders a deleted file leaves empty. Each file is judged by
+  `security.write_verdict` with the project's `[docs]` policy (`C-EXEC-08`) and the step that
+  changed it: `README.md` and `docs/` stay closed unless a rule opens them, and a doc change a rule
+  refuses is appended to the root `doc_updates.md` as a diff. The root `doc_updates.md` always
+  survives. In a session run each step's snapshot commit carries a `SW-Step` trailer, and a file is
+  kept only when every step that changed it may. A merge that fails (e.g. a dirty real working
   tree) is `git merge --abort`ed and reported with "commit or stash them first".
 - **Teardown**: `_intent_worktree_teardown` runs `git worktree remove --force`; if that fails (Windows
   file locks, e.g. Defender), it retries `shutil.rmtree` with a 5-step backoff (0.05 → 0.75 s, under
@@ -244,7 +248,8 @@ collides on the branch name (`TECH-012`). Use per-run mode for that.
   execute it.
 - **What comes back**: the step's work is committed in the worktree, then only a **passed** step's
   generation targets (`src/<stem>.py`, `tests/test_<stem>.py`) and `doc_updates.md` merge into the
-  current branch; `README.md` and `docs/` never do. On a conflict the branch's own version wins.
+  current branch; `README.md` and `docs/` only as the project's `[docs]` rules allow that step, and a
+  refused doc change is kept in `doc_updates.md`. On a conflict the branch's own version wins.
 - **What the user sees**: `.worktrees/` is added to `.gitignore`; the merge leaves a "session
   snapshot" and a "diff strip merge" commit on the current branch. A worktree holds committed files
   only, so a script must be committed to run there.

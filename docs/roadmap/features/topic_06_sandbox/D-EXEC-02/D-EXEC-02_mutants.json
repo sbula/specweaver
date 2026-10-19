@@ -37,7 +37,7 @@
           "old": "        commit_res = atom.run({\"intent\": \"worktree_commit\", \"path\": wt_path})\n",
           "new": "        commit_res = add_res\n",
           "breaks": "the step's output is discarded and the run says completed",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         },
         {
           "id": "step-writes-real-root",
@@ -47,7 +47,7 @@
           "old": "    isolated_context.project_path = worktree\n    isolated_context.output_dir = None\n",
           "new": "    isolated_context.output_dir = None\n",
           "breaks": "a step writing through its project path writes the real project",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         }
       ]
     },
@@ -67,7 +67,7 @@
           "old": "                \"allowed_paths\": context.isolation.allowed_paths\n                or derive_allowed_paths(context.spec_path),\n",
           "new": "                \"allowed_paths\": context.isolation.allowed_paths,\n",
           "breaks": "every file is stripped, so nothing lands",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         },
         {
           "id": "failed-step-lands",
@@ -77,7 +77,7 @@
           "old": " or result.status != StepStatus.PASSED:",
           "new": ":",
           "breaks": "a failed step's half-done work is merged",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         },
         {
           "id": "merge-failure-silent",
@@ -87,7 +87,7 @@
           "old": "            raise RuntimeError(f\"authorized strip-merge failed: {merge_res.message}\")\n",
           "new": "            return result\n",
           "breaks": "a refused merge reads as a completed step",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         }
       ]
     }

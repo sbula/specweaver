@@ -56,6 +56,7 @@ class GitAtom(Atom):
             "tag",  # tag
             "worktree",
             "ls-files",  # is_tracked
+            "log",  # which step's snapshot changed a file, at the strip-merge
             "branch",  # delete the session branch at teardown
         }
     )
@@ -430,11 +431,15 @@ class GitAtom(Atom):
         Rules:
         - Merge uses -X ours (FR-5: human wins).
         - Strips any file not explicitly passed in allowed_paths.
-        - Hard-blocks "README.md" and "docs/*" regardless of allowed_paths (NFR-4).
+        - "README.md" and "docs/*" follow the project's doc policy; a refused doc change is kept
+          as a proposal in the root doc_updates.md.
 
         Context keys:
             branch: str - the branch name of the ephemeral worktree.
             allowed_paths: list[str] - relative paths allowed to be updated.
+            doc_policy: DocPolicy - optional; the built-in rules when absent.
+            step: str - optional; the step whose changes these are.
+            steps_from_commits: bool - optional; read each file's steps from the snapshot trailers.
         """
         from specweaver.sandbox.git.core.worktree_ops import handle_strip_merge
 
@@ -445,6 +450,7 @@ class GitAtom(Atom):
 
         Context keys:
             path: str - relative path of the session worktree.
+            step: str - optional; the pipeline step the snapshot belongs to.
         """
         path = context.get("path")
         if not path:
@@ -457,7 +463,7 @@ class GitAtom(Atom):
         from specweaver.sandbox.git.core.worktree_ops import handle_worktree_commit
 
         wt_executor = EngineGitExecutor(cwd=self._cwd / path, whitelist=set(self._ENGINE_WHITELIST))
-        return handle_worktree_commit(wt_executor)
+        return handle_worktree_commit(wt_executor, context.get("step"))
 
     def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:
         """Check if a file path is explicitly tracked in the git index.

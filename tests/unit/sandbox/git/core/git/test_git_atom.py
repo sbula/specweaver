@@ -572,6 +572,7 @@ class TestEdgeCases:
             "worktree",
             "ls-files",
             "branch",  # C-EXEC-06: session-branch deletion at teardown
+            "log",  # C-EXEC-08: which step's snapshot changed a file
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 
@@ -780,6 +781,10 @@ class TestWorktreeTeardown:
 # ---------------------------------------------------------------------------
 
 
+_README_DIFF = "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-old\n+new readme\n"
+_ARCH_DIFF = "--- a/docs/arch.md\n+++ b/docs/arch.md\n@@ -1 +1 @@\n-old\n+new arch\n"
+
+
 class TestStripMerge:
     """strip_merge applies bounded allowed paths and merges using 'ours'."""
 
@@ -795,21 +800,25 @@ class TestStripMerge:
                     stderr="",
                     duration_seconds=0.0,
                 ),
-                # loops for README.md
+                # README.md: a refused doc — its diff is read, then it is restored
+                SubprocessResult(exit_code=0, stdout=_README_DIFF, stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
                 ),  # checkout
-                # loops for docs/arch.md
+                # docs/arch.md: the same
+                SubprocessResult(exit_code=0, stdout=_ARCH_DIFF, stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
                 ),  # checkout
-                # loops for src/bad.py
+                # src/bad.py: outside the task — stripped, no proposal
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # reset
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
                 ),  # checkout
+                # git add doc_updates.md
+                SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 # post-strip diff --cached --quiet: exit 1 = survivors remain → commit
                 SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
                 # git commit
@@ -827,6 +836,10 @@ class TestStripMerge:
             )
         assert result.status == AtomStatus.SUCCESS
         assert result.exports["stripped_files"] == ["README.md", "docs/arch.md", "src/bad.py"]
+        proposals = (tmp_path / "doc_updates.md").read_text(encoding="utf-8")
+        assert "+new readme" in proposals
+        assert "+new arch" in proposals
+        assert "src/bad.py" not in proposals
 
     def test_missing_keys_fails(self, tmp_path: Path) -> None:
         atom = GitAtom(cwd=tmp_path)

@@ -164,7 +164,9 @@ Feature 3.26. An LLM generating a multi-file change could delete large parts of 
 **How:** the engine creates an isolated `.worktrees/` checkout with `git worktree add`; the agent
 writes there. On reconcile, `_intent_strip_merge` merges the branch (`git merge -X ours`), then
 restores or deletes every changed file not in `RunContext.isolation.allowed_paths`. `README.md` and
-`docs/` are always stripped; `doc_updates.md` always survives. `_intent_worktree_teardown` removes the
+`docs/` follow the project's `[docs]` policy (`isolation.doc_policy`): stripped unless a rule opens
+them for the step, and a refused change is kept as a diff in the root `doc_updates.md`, which always
+survives. `_intent_worktree_teardown` removes the
 worktree and, on failure, retries `shutil.rmtree` with a 5-step backoff (`0.05, 0.1, 0.2, ...`)
 followed by `git worktree prune`. Modes and policy: `pipeline_engine_guide.md` §7.
 

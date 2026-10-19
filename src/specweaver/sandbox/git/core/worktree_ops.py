@@ -6,6 +6,7 @@
 import logging
 import shutil
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -17,6 +18,11 @@ if TYPE_CHECKING:
     from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 
 logger = logging.getLogger(__name__)
+
+#: Where a doc change the policy refuses is kept, at the repo root.
+PROPOSALS = "doc_updates.md"
+#: The commit trailer naming the pipeline step a session snapshot belongs to.
+_STEP_TRAILER = "SW-Step"
 
 
 def handle_worktree_teardown(
@@ -96,13 +102,16 @@ def _delete_branch_if_present(executor: "EngineGitExecutor", context: dict[str, 
         logger.warning("Branch delete raised for '%s': %s", branch, exc)
 
 
-def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
+def handle_worktree_commit(executor: "EngineGitExecutor", step: str | None = None) -> AtomResult:
     """Commit the session worktree's accumulated changes onto its branch.
 
     Runs INSIDE the worktree (``executor`` bound to the worktree path). Stages everything and
     commits so the reconcile (``strip_merge``) has committed changes to merge back — without this
     there is nothing to merge. A clean worktree is a no-op — no empty
     commit — after which ``strip_merge`` finds an empty diff and cleanly no-ops.
+
+    ``step`` names the pipeline step whose changes these are, in a ``SW-Step`` trailer: the merge
+    judges each file by the steps that changed it.
     """
     executor.run("add", "-A")
     diff = executor.run("diff", "--cached", "--quiet")
@@ -110,7 +119,10 @@ def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
         return AtomResult(
             status=AtomStatus.SUCCESS, message="Nothing to commit.", exports={"committed": False}
         )
-    commit = executor.run("commit", "-m", "chore(sandbox): session snapshot")
+    message = "chore(sandbox): session snapshot"
+    if step is not None:
+        message += f"\n\n{_STEP_TRAILER}: {' '.join(step.split())}"
+    commit = executor.run("commit", "-m", message)
     if getattr(commit, "exit_code", 0) != 0:
         return AtomResult(
             status=AtomStatus.FAILED,
@@ -123,27 +135,86 @@ def handle_worktree_commit(executor: "EngineGitExecutor") -> AtomResult:
     )
 
 
-def _strip_forbidden_files(
-    executor: "EngineGitExecutor", cwd: Path, changed_files: list[str], allowed_paths: list[str]
-) -> list[str]:
-    """Strip files not in ``allowed_paths`` (+ README/docs hard-block) from the staged merge.
+@dataclass(frozen=True)
+class _Proposal:
+    file: str
+    steps: frozenset[str | None]
+    diff: str
 
-    For an existing file, restore its HEAD version; for a newly-added file (no HEAD version),
-    delete it from the working tree so a stripped file never reaches the real repo.
-    ``doc_updates.md`` is always allowed to survive.
+
+def _strip_forbidden_files(
+    executor: "EngineGitExecutor",
+    cwd: Path,
+    changed_files: list[str],
+    allowed_paths: list[str],
+    steps_of: dict[str, set[str | None]],
+    policy: DocPolicy,
+) -> tuple[list[str], list[_Proposal]]:
+    """Strip each file the policy does not keep for the steps that changed it.
+
+    An existing file gets its HEAD version back; a new one is deleted, so a stripped file never
+    reaches the real repo. A doc change a rule refuses is read as a diff first: a proposal.
     """
     stripped: list[str] = []
+    proposals: list[_Proposal] = []
     for file in changed_files:
-        if write_verdict(DocPolicy(), file, None, allowed_paths) != "keep":
-            stripped.append(file)
-            executor.run("reset", "HEAD", file)
-            checkout_res = executor.run("checkout", "--", file)
-            if getattr(checkout_res, "exit_code", 0) != 0:
-                fpath = cwd / file
-                if fpath.exists():
-                    fpath.unlink()
-                _remove_empty_parents(fpath.parent, cwd)
-    return stripped
+        steps = steps_of[file]
+        verdicts = {write_verdict(policy, file, step, allowed_paths) for step in steps}
+        if verdicts == {"keep"}:
+            continue
+        if "strip" not in verdicts:
+            diff = executor.run("diff", "--cached", "HEAD", "--", file)
+            proposals.append(_Proposal(file, frozenset(steps), getattr(diff, "stdout", "")))
+        stripped.append(file)
+        _restore(executor, cwd, file)
+    return stripped, proposals
+
+
+def _restore(executor: "EngineGitExecutor", cwd: Path, file: str) -> None:
+    executor.run("reset", "HEAD", file)
+    checkout_res = executor.run("checkout", "--", file)
+    if getattr(checkout_res, "exit_code", 0) != 0:
+        fpath = cwd / file
+        if fpath.exists():
+            fpath.unlink()
+        _remove_empty_parents(fpath.parent, cwd)
+
+
+def _write_proposals(executor: "EngineGitExecutor", cwd: Path, proposals: list[_Proposal]) -> None:
+    """Append each refused doc change to the root `doc_updates.md`, created when absent; stage it."""
+    target = cwd / PROPOSALS
+    existing = target.read_text(encoding="utf-8") if target.exists() else ""
+    if existing and not existing.endswith("\n"):
+        existing += "\n"
+    text = existing + "".join(map(_section, proposals))
+    target.write_text(text.lstrip("\n"), encoding="utf-8")
+    executor.run("add", PROPOSALS)
+
+
+def _section(proposal: _Proposal) -> str:
+    steps = ", ".join(sorted(step or "(no step)" for step in proposal.steps))
+    heading = f"\n## Proposed change: `{proposal.file}` (step: {steps})\n\n"
+    lines = proposal.diff.strip().splitlines()
+    if not lines or lines[-1].startswith("Binary files"):
+        return heading + "binary change, not shown\n"
+    return heading + "````diff\n" + "\n".join(lines) + "\n````\n"
+
+
+def _steps_by_file(executor: "EngineGitExecutor", branch: str) -> dict[str, set[str | None]]:
+    """For each file the branch changed, the steps whose snapshot commits changed it."""
+    log = executor.run(
+        "log",
+        f"--format=%x1e%(trailers:key={_STEP_TRAILER},valueonly)",
+        "--name-only",
+        f"HEAD..{branch}",
+    )
+    steps: dict[str, set[str | None]] = {}
+    for record in getattr(log, "stdout", "").split("\x1e")[1:]:
+        lines = record.split("\n")
+        step = lines[0].strip() or None
+        for file in filter(None, (line.strip() for line in lines[1:])):
+            steps.setdefault(file, set()).add(step)
+    return steps
 
 
 def _remove_empty_parents(folder: Path, root: Path) -> None:
@@ -202,7 +273,14 @@ def handle_strip_merge(
             exports={"stripped_files": []},
         )
 
-    stripped_files = _strip_forbidden_files(executor, cwd, changed_files, allowed_paths)
+    policy = context.get("doc_policy") or DocPolicy()
+    by_file = _steps_by_file(executor, branch) if context.get("steps_from_commits") else {}
+    steps_of = {file: by_file.get(file) or {context.get("step")} for file in changed_files}
+    stripped_files, proposals = _strip_forbidden_files(
+        executor, cwd, changed_files, allowed_paths, steps_of, policy
+    )
+    if proposals:
+        _write_proposals(executor, cwd, proposals)
 
     # 3. If stripping removed EVERYTHING, don't create a noise merge commit — abort cleanly.
     # (git would otherwise still complete the in-progress merge with an empty commit.)

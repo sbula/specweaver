@@ -100,6 +100,9 @@ async def execute_run(
                     "intent": "strip_merge",
                     "branch": branch,
                     "allowed_paths": original.isolation.allowed_paths,
+                    "doc_policy": original.isolation.doc_policy,
+                    # Each step's snapshot names it; the merge judges a file by those steps.
+                    "steps_from_commits": True,
                 }
             )
             if merge_res.status != AtomStatus.SUCCESS:

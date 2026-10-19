@@ -19,7 +19,7 @@
           "old": "                \"step_name\": step_def.name,\n",
           "new": "                \"step_name\": None,\n",
           "breaks": "calls cannot be added up per step",
-          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
+          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
         },
         {
           "id": "dal-not-stamped",

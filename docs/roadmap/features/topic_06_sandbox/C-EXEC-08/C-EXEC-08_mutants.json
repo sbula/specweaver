@@ -104,9 +104,14 @@
       "requirement": "FR-8",
       "title": "The grant and the merge decide by one verdict",
       "scope": [
-        "tests/unit/sandbox/test_write_verdict.py",
+        "tests/e2e/capabilities/sandbox/test_doc_policy_journey_e2e.py",
+        "tests/integration/core/flow/engine/test_refused_docs_become_proposals.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py",
         "tests/integration/sandbox/test_doc_policy_grant.py",
-        "tests/unit/sandbox/test_protected_names_ignore_case.py"
+        "tests/integration/sandbox/test_grant_and_merge_agree.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/unit/sandbox/test_protected_names_ignore_case.py",
+        "tests/unit/sandbox/test_write_verdict.py"
       ],
       "mutants": [
         {
@@ -158,6 +163,56 @@
           "new": "    if False:\n        return \"strip\"\n",
           "breaks": "a .env change could be copied into doc_updates.md",
           "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+        },
+        {
+          "id": "merge-ignores-the-policy",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "handle_strip_merge",
+          "old": "    policy = context.get(\"doc_policy\") or DocPolicy()\n",
+          "new": "    policy = DocPolicy()\n",
+          "breaks": "the merge throws away what the grant allowed",
+          "symbol_sha": "sha256:d831cfe12f7818ece22092e84364c5d91de9eb1db47257a56366683c411d052e"
+        },
+        {
+          "id": "per-step-merge-names-no-step",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "                \"step\": step_def.name,\n",
+          "new": "                \"step\": None,\n",
+          "breaks": "a step rule never keeps its own step's doc",
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
+        },
+        {
+          "id": "session-judged-by-one-step",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_steps_by_file",
+          "old": "            steps.setdefault(file, set()).add(step)\n",
+          "new": "            steps[file] = {step}\n",
+          "breaks": "a doc another step changed after the named one is kept",
+          "symbol_sha": "sha256:afd535a2922452c5a4c912dd336b3c350afee64a61330bf56675ef222af830ee"
+        },
+        {
+          "id": "snapshot-only-after-a-pass",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/step_execution.py",
+          "symbol": "execute_step",
+          "old": "            if getattr(runner, \"_session_active\", False):\n",
+          "new": "            if getattr(runner, \"_session_active\", False) and result.status == StepStatus.PASSED:\n",
+          "breaks": "a failed step's leftover is merged under the next step's name",
+          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
+        },
+        {
+          "id": "session-merge-ignores-steps",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "execute_run",
+          "old": "                    \"steps_from_commits\": True,\n",
+          "new": "                    \"steps_from_commits\": False,\n",
+          "breaks": "in a session run no step rule ever keeps a doc",
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         }
       ]
     },
@@ -209,6 +264,82 @@
           "new": "        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
           "breaks": "a resumed API run ignores a [docs] broken since its start",
           "symbol_sha": "sha256:1c70dcb261d5a85a1ff27556549f51bb8edae6826892245136f9d7782591d976"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A refused doc change is a proposal",
+      "scope": [
+        "tests/integration/core/flow/engine/test_refused_docs_become_proposals.py",
+        "tests/integration/sandbox/test_grant_and_merge_agree.py",
+        "tests/e2e/capabilities/sandbox/test_doc_policy_journey_e2e.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "proposal-not-written",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "handle_strip_merge",
+          "old": "    if proposals:\n        _write_proposals(executor, cwd, proposals)\n",
+          "new": "    if False:\n        _write_proposals(executor, cwd, proposals)\n",
+          "breaks": "a refused doc change is lost, as before",
+          "symbol_sha": "sha256:d831cfe12f7818ece22092e84364c5d91de9eb1db47257a56366683c411d052e"
+        },
+        {
+          "id": "protected-file-proposed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_strip_forbidden_files",
+          "old": "        if \"strip\" not in verdicts:\n",
+          "new": "        if True:\n",
+          "breaks": "a .env change is copied into doc_updates.md",
+          "symbol_sha": "sha256:a78270feb39484e5172912ecc47b2ae0de5b5a6d542205519aeeba8a06bdc6d0"
+        },
+        {
+          "id": "binary-shown-as-text",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_section",
+          "old": "    if not lines or lines[-1].startswith(\"Binary files\"):\n",
+          "new": "    if not lines:\n",
+          "breaks": "a binary doc is written as a meaningless diff",
+          "symbol_sha": "sha256:56fd126fd0f85c48ba5fcc69cb727090a56445c7c8d6512cd793ec57391acae1"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "Nothing is lost",
+      "scope": [
+        "tests/integration/core/flow/engine/test_refused_docs_become_proposals.py",
+        "tests/integration/sandbox/test_grant_and_merge_agree.py",
+        "tests/e2e/capabilities/sandbox/test_doc_policy_journey_e2e.py",
+        "tests/unit/sandbox/git/core/git/test_git_atom.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-file-no-proposal",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_write_proposals",
+          "old": "    target = cwd / PROPOSALS\n",
+          "new": "    target = cwd / PROPOSALS\n    if not target.exists():\n        return\n",
+          "breaks": "a project without doc_updates.md loses every refused change",
+          "symbol_sha": "sha256:aa736971e74d7565f652715f3f42dee949daf0b9a48e9190c49c7a992adcff01"
+        },
+        {
+          "id": "earlier-proposals-overwritten",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_write_proposals",
+          "old": "    text = existing + \"\".join(map(_section, proposals))\n",
+          "new": "    text = \"\".join(map(_section, proposals))\n",
+          "breaks": "each merge erases the proposals before it",
+          "symbol_sha": "sha256:aa736971e74d7565f652715f3f42dee949daf0b9a48e9190c49c7a992adcff01"
         }
       ]
     }

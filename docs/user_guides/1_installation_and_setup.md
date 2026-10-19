@@ -204,6 +204,30 @@ docs/legacy_drafts/
 !important_cache.pyc
 ```
 
+## 6a. Which docs agents may change (`[docs]` in `specweaver.toml`)
+
+By default no agent changes `README.md` or anything under `docs/`. Your project's
+`specweaver.toml` can open parts of them:
+
+```toml
+[[docs.rule]]
+paths = ["docs/user_guides/**"]
+access = "open"                 # human | open | step
+
+[[docs.rule]]
+paths = ["docs/api/**"]
+access = "step"
+steps = ["update_api_docs"]     # pipeline step names
+```
+
+- `human`: no agent changes these paths. `open`: any agent step may. `step`: only the named steps.
+- The last rule that matches a path decides, as in `.gitignore`. `*` stays in one folder, `**`
+  spans folders. Your rules come after the built-in ones, so a path you do not name stays closed.
+- `context.yaml`, `.env`, `.git` and `.specweaver` are never writable, whatever a rule says.
+- A doc change a step may not make is not lost: the merge keeps it as a proposal (its diff) in
+  `doc_updates.md` at the project root, and the run goes on.
+- A broken `[docs]` section stops `sw run`, `sw resume`, `sw implement` and the API, naming the line.
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)

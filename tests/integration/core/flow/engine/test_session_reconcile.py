@@ -190,14 +190,18 @@ def _no_worktrees_or_branch(tmp_path: Path) -> None:
     assert "sf-session-" not in _git(tmp_path, "branch").stdout
 
 
-def _patch_intent_fail(intent: str):
-    """Patch GitAtom.run so a given intent returns FAILED, passing others through."""
+def _patch_intent_fail(intent: str, *, step_snapshots: bool = False):
+    """Patch GitAtom.run so a given intent returns FAILED, passing others through.
+
+    A `worktree_commit` naming a step is the snapshot after that step, not the reconcile's commit;
+    it fails only with `step_snapshots`.
+    """
     from specweaver.sandbox.base import AtomResult, AtomStatus
 
     real = __import__("specweaver.sandbox.git.core.atom", fromlist=["GitAtom"]).GitAtom.run
 
     def _run(self, context):
-        if context.get("intent") == intent:
+        if context.get("intent") == intent and (step_snapshots or "step" not in context):
             return AtomResult(status=AtomStatus.FAILED, message=f"{intent} boom")
         return real(self, context)
 
@@ -322,6 +326,21 @@ def test_a_failed_reconcile_is_stored_as_a_failed_run(tmp_path: Path, intent: st
 
     (stored,) = store.list_runs()
     assert stored.status == RunStatus.FAILED
+
+
+def test_a_failed_step_snapshot_fails_the_run(tmp_path: Path) -> None:
+    """C-EXEC-08 FR-8: a step whose changes cannot be named is not merged under another's name."""
+    _commit_project(tmp_path, ("gen.sh", _GEN))
+
+    with _patch_intent_fail("worktree_commit", step_snapshots=True):
+        run_state = _run(
+            PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
+            _ctx(tmp_path, allowed=["src/foo.py"]),
+        )
+
+    assert run_state.status == RunStatus.FAILED
+    assert "snapshot" in (run_state.step_records[0].result.error_message or "")
+    assert not (tmp_path / "src" / "foo.py").exists()
 
 
 # --- C-EXEC-06 FR-5: allowed_paths takes globs ------------------------------

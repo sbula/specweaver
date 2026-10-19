@@ -42,6 +42,8 @@ from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.engine.models import GateDefinition, PipelineStep
     from specweaver.core.flow.engine.state import PipelineRun
 
@@ -209,6 +211,8 @@ async def execute_step(
             result = await execute_in_sandbox(runner, handler, step_def, run, logger)
         else:
             result = cast("StepResult", await handler.execute(step_def, runner._context))
+            if getattr(runner, "_session_active", False):
+                _snapshot_step(runner._context.project_path, step_def.name)
     except Exception as exc:
         log_step_failure(
             logger, "[run_id=%s] Step '%s' raised unhandled exception", run.run_id, step_def.name
@@ -220,6 +224,19 @@ async def execute_step(
             completed_at=_now_iso(),
         )
     return _parked_by_brake(result) or result
+
+
+def _snapshot_step(worktree: Path, step: str) -> None:
+    """Commit what this step changed in the session worktree, naming it, whatever its result.
+
+    A failed step's leftovers stay its own, not the next step's after a loop-back.
+    """
+    from specweaver.sandbox.base import AtomStatus
+    from specweaver.sandbox.git.core.atom import GitAtom
+
+    snapshot = GitAtom(cwd=worktree).run({"intent": "worktree_commit", "path": ".", "step": step})
+    if snapshot.status != AtomStatus.SUCCESS:
+        raise RuntimeError(f"session snapshot of step '{step}' failed: {snapshot.message}")
 
 
 def _parked_by_brake(result: StepResult) -> StepResult | None:

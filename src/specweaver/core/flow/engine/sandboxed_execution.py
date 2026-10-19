@@ -109,6 +109,8 @@ async def execute_in_sandbox(
                 "branch": branch,
                 "allowed_paths": context.isolation.allowed_paths
                 or derive_allowed_paths(context.spec_path),
+                "doc_policy": context.isolation.doc_policy,
+                "step": step_def.name,
             }
         )
         if merge_res.status != AtomStatus.SUCCESS:

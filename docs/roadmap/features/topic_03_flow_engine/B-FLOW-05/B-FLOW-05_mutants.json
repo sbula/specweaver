@@ -264,7 +264,7 @@
           "old": "    track_step_refusals()\n    try:\n",
           "new": "    try:\n",
           "breaks": "a stopped step is not parked, and a sibling's stop leaks into the next step",
-          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
+          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
         },
         {
           "id": "refusal-not-recorded",
@@ -325,7 +325,7 @@
           "old": "    return _parked_by_brake(result) or result\n",
           "new": "    return result\n",
           "breaks": "a step that caught the stop reports success, and a retry gate retries into the spent limit",
-          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
+          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
         },
         {
           "id": "stop-not-remembered",
@@ -515,7 +515,7 @@
           "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
-          "symbol_sha": "sha256:f77edf99d0af7d0454887faf6e78cd3874c43283e3bcfb79a047627a8bfd9f36"
+          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
         },
         {
           "id": "worktree-merges-stopped-work",
@@ -525,7 +525,7 @@
           "old": "        if step_refusal() is not None or result.status != StepStatus.PASSED:\n",
           "new": "        if result.status != StepStatus.PASSED:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
-          "symbol_sha": "sha256:6acbe805f70afed770af572f85e5c8b17be77908e2dd2f8dd8c08a8c0e8268ce"
+          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
         }
       ]
     },
@@ -544,7 +544,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if True:\n",
           "breaks": "a parked run loses the paid work of its earlier steps",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         },
         {
           "id": "unresumable-park-leaks-worktree",
@@ -554,7 +554,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if not run.status == RunStatus.PARKED:\n",
           "breaks": "sw implement leaves a worktree behind that nothing can resume",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         },
         {
           "id": "resume-starts-fresh-worktree",
@@ -564,7 +564,7 @@
           "old": "    if approve_parked and run.current_step > 0:\n",
           "new": "    if False:\n",
           "breaks": "a resume runs the later steps without the files the earlier steps wrote",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         },
         {
           "id": "resume-without-worktree-runs",
@@ -574,7 +574,7 @@
           "old": "        if not worktree.is_dir():\n",
           "new": "        if False:\n",
           "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         }
       ]
     },

@@ -25,20 +25,20 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
           "symbol": "_strip_forbidden_files",
-          "old": "        if write_verdict(DocPolicy(), file, None, allowed_paths) != \"keep\":\n",
-          "new": "        if False:\n",
+          "old": "        if verdicts == {\"keep\"}:\n            continue\n",
+          "new": "        if True:\n            continue\n",
           "breaks": "every file the run wrote lands in the real repo",
-          "symbol_sha": "sha256:67f5cdd75827dee387edc78980b488816c2012ec5f287749fb5566ccc5b06c6d"
+          "symbol_sha": "sha256:a78270feb39484e5172912ecc47b2ae0de5b5a6d542205519aeeba8a06bdc6d0"
         },
         {
           "id": "empty-folder-kept",
           "origin": "authored",
           "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
-          "symbol": "_strip_forbidden_files",
-          "old": "                _remove_empty_parents(fpath.parent, cwd)\n",
-          "new": "                pass\n",
+          "symbol": "_restore",
+          "old": "        _remove_empty_parents(fpath.parent, cwd)\n",
+          "new": "        pass\n",
           "breaks": "a stripped file's folder stays behind, empty",
-          "symbol_sha": "sha256:67f5cdd75827dee387edc78980b488816c2012ec5f287749fb5566ccc5b06c6d"
+          "symbol_sha": "sha256:e14931ecf8758263ea66b6a86cd45b2670c121f4155130b375a3d691436d1529"
         }
       ]
     },
@@ -78,7 +78,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if False:\n",
           "breaks": "every run leaves its worktree and branch behind",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         }
       ]
     },
@@ -98,7 +98,7 @@
           "old": "    runner._context = isolated\n",
           "new": "    runner._context = original\n",
           "breaks": "steps write the real repo directly",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         }
       ]
     },
@@ -115,10 +115,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
           "symbol": "handle_worktree_commit",
-          "old": "    commit = executor.run(\"commit\", \"-m\", \"chore(sandbox): session snapshot\")\n",
+          "old": "    commit = executor.run(\"commit\", \"-m\", message)\n",
           "new": "    commit = executor.run(\"status\")\n",
           "breaks": "the run's work is never merged back",
-          "symbol_sha": "sha256:38a46a4c9ddc2812705724974e5019b7f4214441c809785009de39ec1fe0a2e1"
+          "symbol_sha": "sha256:51c197ce8eb4b3b9e7d25d3414985b0f5f6215ae3c8a94630ccff8c19e364d24"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "old": "        if add_res.status != AtomStatus.SUCCESS:\n",
           "new": "        if False:\n",
           "breaks": "a run without a worktree goes on, at the real root",
-          "symbol_sha": "sha256:bd21b6e2d01213f376929c66aa4a680a43f26e11df290ef33a7ba8df24a3e858"
+          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
         }
       ]
     }
