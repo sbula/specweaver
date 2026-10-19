@@ -4,9 +4,12 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**Two capabilities are `🔧`, not `✅`, awaiting approval.**
+**One capability is `🔧`, not `✅`, awaiting approval.**
 
-`C-FLOW-11` · `D-UI-01`
+`C-FLOW-11`
+(`D-UI-01` left the list 2026-10-19: reviewed at Phase 6 — the API was open to web pages — corrected
+with a token, `max_runs`, a WebSocket that never waits for nothing and the tablet journey, and signed
+off.)
 (`C-VAL-05` left the list 2026-10-17: reviewed at Phase 6, corrected and signed off.)
 (`E-VAL-03` left the list 2026-08-21: retired by the user, detector deleted — see Recently done.)
 
@@ -43,7 +46,7 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
 **Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `C-FLOW-11`
-(design never approved), `D-UI-01`. `B-INTL-09` signed off 2026-10-17.
+(design never approved). `B-INTL-09` signed off 2026-10-17.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 

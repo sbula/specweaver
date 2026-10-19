@@ -210,12 +210,12 @@ An item only enters the Focus Points if it satisfies one of these rules:
 
 ---
 
-### 🟡 US-6: The Remote Dashboard (Tablet on a Train)
+### 🟢 US-6: The Remote Dashboard (Tablet on a Train)
 **Benefit:** *I can review specs and control SpecWeaver pipelines from my browser on a tablet, without needing to run the heavy AI engine locally.*
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `🔧` **D-UI-01:** `sw serve` Core Orchestration API
+    *   `✅` **D-UI-01:** `sw serve` Core Orchestration API
     *   `✅` **E-UI-02:** Web dashboard
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict UI Data Contracts:**
@@ -231,7 +231,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
 *   **Core Required (MVS):**
     *   `✅` **US-4 Core** *(provides Flow Engine)*
     *   `✅` **C-FLOW-02:** Router-based flow control
-    *   `🔧` **D-UI-01:** `sw serve` Core Orchestration API
+    *   `✅` **D-UI-01:** `sw serve` Core Orchestration API
     *   `[ ]` **D-UI-03:** VS Code Extension
 *   **Sub-Story Add-Ons:**
     *   🔴 **Strict UI Data Contracts:**

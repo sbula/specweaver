@@ -1,7 +1,8 @@
 # D-UI-01 — Core Orchestration API (`sw serve`)
 
-**Status**: 🔧 IN WORK — the Phase 6 review ran 2026-10-19 and found the API open to web pages; the
-corrections (FR-6, FR-7) are built and committed. Status returns to ✅ only after the user's sign-off. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
+**Status**: ✅ Finished — signed off by the user 2026-10-19, after the Phase 6 review's corrections:
+FR-6 the token, FR-7 `max_runs`, FR-2 a WebSocket that never waits for nothing, FR-8 the tablet
+journey. · **Epic**: Topic 01 (UI Glass) · **Legacy**: 3.7 MVP
 
 | | |
 |---|---|

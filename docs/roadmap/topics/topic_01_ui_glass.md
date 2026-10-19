@@ -45,7 +45,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 ## DAL-D: Internal Tooling
 
-* **`D-UI-01` 🔧: Core Orchestration API** (Legacy: 3.7 MVP)
+* **`D-UI-01` ✅: Core Orchestration API** (Legacy: 3.7 MVP)
   > - **Purpose:** Give external front ends a contract to call, so none has to shell out to the CLI and parse its output
   > - **Trigger:** When `sw serve` is running and a request arrives
   > - **Precondition:** the CLI command layer
