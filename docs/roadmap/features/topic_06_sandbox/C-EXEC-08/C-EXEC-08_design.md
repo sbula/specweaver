@@ -165,9 +165,9 @@ SF-01, then SF-02 and SF-03.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The policy | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Grant and merge follow it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Generated blocks | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Generated blocks | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-19.
-**Next**: the SF-03 plan (generated blocks). SF-02 committed 2026-10-19.
+**Next**: SF-03 dev, CB-1 (a bash step fills its block). SF-03 plan approved 2026-10-19.
