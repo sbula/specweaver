@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 import math
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import (
@@ -78,6 +78,21 @@ class LlmPriceRefresh(Base):
     offerings: Mapped[str] = mapped_column(String, nullable=False, default="")
     #: When models.dev last answered; a failed attempt sets `checked_at` only.
     reached_at: Mapped[datetime | None] = mapped_column(StrictISODateTime, nullable=True)
+
+
+class LlmPromptStart(Base):
+    """When a prompt start was last sent: a hash of it, never its text."""
+
+    __tablename__ = "llm_prompt_start"
+
+    server: Mapped[str] = mapped_column(String, primary_key=True)
+    model: Mapped[str] = mapped_column(String, primary_key=True)
+    start_hash: Mapped[str] = mapped_column(String, primary_key=True)
+    last_sent: Mapped[datetime] = mapped_column(StrictISODateTime, index=True, nullable=False)
+
+
+#: How long a prompt start is remembered after it was last sent.
+PROMPT_START_KEPT = timedelta(days=7)
 
 
 class LlmUsagePrice(Base):
@@ -279,6 +294,24 @@ class LlmRepository:
             for line in record.get("billed", {}).get("price_lines", [])
         )
         return True
+
+    async def touch_prompt_start(
+        self, server: str, model: str, start_hash: str, sent_at: datetime
+    ) -> datetime | None:
+        """Record that a prompt start was sent now; when it was sent before, if ever. Starts unsent
+        for `PROMPT_START_KEPT` are deleted."""
+        row = await self.session.get(LlmPromptStart, (server, model, start_hash))
+        before = row.last_sent if row else None
+        if row is None:
+            self.session.add(
+                LlmPromptStart(server=server, model=model, start_hash=start_hash, last_sent=sent_at)
+            )
+        else:
+            row.last_sent = sent_at
+        await self.session.execute(
+            delete(LlmPromptStart).where(LlmPromptStart.last_sent < sent_at - PROMPT_START_KEPT)
+        )
+        return before
 
     async def get_spend_by_server(self, project: str, since: datetime) -> list[dict[str, Any]]:
         """Spend per model and server since `since`: USD known, and calls with no price."""

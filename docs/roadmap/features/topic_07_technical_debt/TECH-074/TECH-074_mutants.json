@@ -533,7 +533,7 @@
           "old": "        unpriced = record.estimated_cost_usd is None and not record.billed.local\n",
           "new": "        unpriced = record.estimated_cost_usd is None\n",
           "breaks": "every local call warns that it has no known price",
-          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
+          "symbol_sha": "sha256:eaa8abba6e8aa62753e7d74a018feff4325e9a2a605120e538aac6d2ec43bc8c"
         }
       ]
     },
@@ -662,7 +662,7 @@
           "old": "        if not usage.cached_read_tokens or prices is None or model in self._rule_warned:\n",
           "new": "        if not usage.cached_read_tokens or prices is None:\n",
           "breaks": "the warning repeats on every call and drowns the log",
-          "symbol_sha": "sha256:aa4a220e123e7fbaed80576e77c869e0fdad426a7e374bc4e302aada0a518842"
+          "symbol_sha": "sha256:34f7ad8be1828df2e18f9378e98db8b9da8c93a4d6750ecc1422fa20ac4ae532"
         }
       ]
     },

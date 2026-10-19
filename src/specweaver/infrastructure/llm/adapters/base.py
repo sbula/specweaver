@@ -109,6 +109,14 @@ class LLMAdapter(ABC):
         # Make this a valid async generator for type checking
         yield ""  # pragma: no cover
 
+    def cache_sent(self, config: GenerationConfig) -> frozenset[str]:
+        """What a request with `config` sends for a provider's cache: `breakpoint`, `cache_key`.
+
+        The cache rules require some of these; one the request sent is never a broken rule.
+        """
+        del config
+        return frozenset()
+
     def available(self) -> bool:
         """Whether this adapter is configured and ready to use.
 

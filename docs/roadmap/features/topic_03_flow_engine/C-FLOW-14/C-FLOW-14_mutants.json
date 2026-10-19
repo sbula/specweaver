@@ -152,7 +152,7 @@
           "old": "        config = self._keyed(config)\n        scope, first = self._reserve(messages, config)\n",
           "new": "        scope, first = self._reserve(messages, config)\n",
           "breaks": "an agent step never shares its provider's cache with the run before",
-          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
         }
       ]
     },
@@ -191,7 +191,7 @@
           "old": "        if reported:\n            self._hint_cache_count(response.usage, scope.prices)\n",
           "new": "        self._hint_cache_count(response.usage, scope.prices)\n",
           "breaks": "a stream, whose usage is only estimated, is mistaken for a server that hides its cache",
-          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
+          "symbol_sha": "sha256:eaa8abba6e8aa62753e7d74a018feff4325e9a2a605120e538aac6d2ec43bc8c"
         },
         {
           "id": "hint-despite-a-count",
@@ -202,6 +202,94 @@
           "new": "        if usage == TokenUsage():\n",
           "breaks": "a server that does report its cache is told it does not",
           "symbol_sha": "sha256:6522e18ce5c4290aecf04927b0f6da4c0594c3ecb7529631028c205078288501"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A cache hit long after the last send warns once",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cache_lifetime_warning.py"
+      ],
+      "mutants": [
+        {
+          "id": "lifetime-margin-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._check_cache_lifetime",
+          "old": "        if lifetime is None or gap <= 2 * lifetime:\n",
+          "new": "        if lifetime is None or gap <= lifetime / 2:\n",
+          "breaks": "an ordinary hit inside the lifetime warns, and the warning means nothing",
+          "symbol_sha": "sha256:cd528d49565517b895928ba8e6ad1af46b8aece00c805f182fa79dfdbddd3963"
+        },
+        {
+          "id": "clock-part-of-the-start",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._start_of",
+          "old": "        first = messages[0].content.split(\"<run_clock>\")[0] if messages else \"\"\n",
+          "new": "        first = messages[0].content if messages else \"\"\n",
+          "breaks": "every run is a new start, so no run is ever compared with the one before",
+          "symbol_sha": "sha256:7ae0a520c7e0b4cfab15e7d7c3c86577405b2631196fce60c91e486febcf860c"
+        },
+        {
+          "id": "lifetime-warns-every-call",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._check_cache_lifetime",
+          "old": "        self._lifetime_warned.add(model)\n",
+          "new": "        pass\n",
+          "breaks": "the warning repeats on every late hit",
+          "symbol_sha": "sha256:cd528d49565517b895928ba8e6ad1af46b8aece00c805f182fa79dfdbddd3963"
+        },
+        {
+          "id": "send-never-renewed",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.touch_prompt_start",
+          "old": "            row.last_sent = sent_at\n",
+          "new": "            pass\n",
+          "breaks": "the first send is remembered for ever, so every later hit looks late",
+          "symbol_sha": "sha256:4ca80ca4bfc145bf2a462c9e2bb641fe93505cf9da8b3db91a18759ada9b824c"
+        },
+        {
+          "id": "old-starts-kept",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/store.py",
+          "symbol": "LlmRepository.touch_prompt_start",
+          "old": "            delete(LlmPromptStart).where(LlmPromptStart.last_sent < sent_at - PROMPT_START_KEPT)\n",
+          "new": "            delete(LlmPromptStart).where(LlmPromptStart.last_sent < sent_at - PROMPT_START_KEPT * 100)\n",
+          "breaks": "the table grows with every prompt start ever sent",
+          "symbol_sha": "sha256:4ca80ca4bfc145bf2a462c9e2bb641fe93505cf9da8b3db91a18759ada9b824c"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "A cache behind what the request sent is no broken rule",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_cache_rule_warning.py"
+      ],
+      "mutants": [
+        {
+          "id": "anthropic-breakpoint-unseen",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.cache_sent",
+          "old": "        return frozenset({\"breakpoint\"})\n",
+          "new": "        return frozenset()\n",
+          "breaks": "every Anthropic cache hit warns of a broken rule",
+          "symbol_sha": "sha256:d2c56500ff25cb89c82f8d3abb258d5b3de34e9866f35fd15761664421fae7b0"
+        },
+        {
+          "id": "mistral-key-unseen",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.cache_sent",
+          "old": "        return frozenset({\"cache_key\"}) if config.cache_key else frozenset()\n",
+          "new": "        return frozenset()\n",
+          "breaks": "every Mistral cache hit warns of a broken rule",
+          "symbol_sha": "sha256:4e1d09099621aaa5cd5acea4af6143835814a6166857a9f2e118cca230379843"
         }
       ]
     }

@@ -34,7 +34,7 @@
           "old": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            self._record_failure(scope, reservation, exc)\n",
           "new": "            response = await self._adapter.generate(messages, config)\n        except BaseException as exc:\n            pass\n",
           "breaks": "a call that failed after spending costs nothing, and its reservation is never released",
-          "symbol_sha": "sha256:43a9229329fffea871ecb6879f81c635d2f319f07c4375b39ae131e452f604e7"
+          "symbol_sha": "sha256:12575f334f21936ad6cf185b290e53c6ea9858342fd9ee4e855b9a07c11dce6f"
         },
         {
           "id": "stream-input-dropped",
@@ -54,7 +54,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(held), exc)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -94,7 +94,7 @@
           "old": "            if response.usage == TokenUsage()\n",
           "new": "            if False\n",
           "breaks": "a server that reports no usage never fills the token limit",
-          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
+          "symbol_sha": "sha256:eaa8abba6e8aa62753e7d74a018feff4325e9a2a605120e538aac6d2ec43bc8c"
         }
       ]
     },
@@ -171,7 +171,7 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
         },
         {
           "id": "round-payload-ignored",

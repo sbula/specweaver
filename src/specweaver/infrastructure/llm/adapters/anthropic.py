@@ -286,6 +286,11 @@ class AnthropicAdapter(LLMAdapter):
             attach_usage(exc, cumulative_usage)
             raise
 
+    def cache_sent(self, config: GenerationConfig) -> frozenset[str]:
+        """Every request carries the automatic breakpoint (`AUTOMATIC_CACHE`)."""
+        del config
+        return frozenset({"breakpoint"})
+
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4
 

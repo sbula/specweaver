@@ -115,6 +115,9 @@ class OpenAIAdapter(LLMAdapter):
             return {"prompt_cache_key": config.cache_key}
         return {}
 
+    def cache_sent(self, config: GenerationConfig) -> frozenset[str]:
+        return frozenset({"cache_key"}) if self._cache_kwargs(config) else frozenset()
+
     def _get_client(self) -> Any:
         if self._client is None:
             self._client = openai.AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)

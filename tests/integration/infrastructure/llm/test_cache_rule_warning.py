@@ -4,17 +4,18 @@
 """A cached count the offering's rule does not allow warns once: the provider's rule may have changed.
 
 Proves: TECH-074 FR-11
+Proves: C-FLOW-14 FR-1, FR-2
 
 Settings file → `build_router` → a real adapter → its collector, with the shipped list's rules. Only
 HTTP is faked. GPT-5.6 caches prefixes of 1,024 tokens or more; Claude Opus 5.5 only behind a
-breakpoint, which SpecWeaver does not send yet.
+breakpoint, which SpecWeaver sends (C-FLOW-14), Mistral only with the cache key it sends.
 
 | Bucket | Case |
 |---|---|
 | Happy | a cache within the rule says nothing |
 | Boundary | a cache under the minimum prefix warns, once per model however often it happens |
 | Degradation | a reply with no cached count says nothing |
-| Hostile | an Anthropic cache without the breakpoint its rule requires warns |
+| Hostile | a cache behind the breakpoint or key the request sent (Anthropic, Mistral) says nothing; one without it breaks the rule |
 """
 
 from __future__ import annotations
@@ -104,7 +105,7 @@ async def test_no_cached_count_says_nothing(caplog: pytest.LogCaptureFixture) ->
     assert await _warnings(caplog, _routed("openai", "gpt-5.6"), [_openai(1000, None)]) == []
 
 
-async def test_an_anthropic_cache_without_a_breakpoint_warns(
+async def test_an_anthropic_cache_behind_the_breakpoint_it_sends_says_nothing(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     reply = {
@@ -124,5 +125,51 @@ async def test_an_anthropic_cache_without_a_breakpoint_warns(
 
     found = await _warnings(caplog, _routed("anthropic", "claude-opus-5-5"), [reply])
 
-    assert len(found) == 1
-    assert "breakpoint" in found[0]
+    assert found == []
+
+
+async def test_a_mistral_cache_behind_the_key_it_sends_says_nothing(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from mistralai.client.models import UsageInfo
+
+    from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
+    from specweaver.infrastructure.llm.catalogue import shipped_catalogue
+    from specweaver.infrastructure.llm.collector import TelemetryCollector
+    from specweaver.infrastructure.llm.models import GenerationConfig
+    from specweaver.infrastructure.llm.prices import PriceBook
+
+    reply = MagicMock()
+    reply.choices = [MagicMock(message=MagicMock(content="ok"), finish_reason="stop")]
+    reply.usage = UsageInfo.model_validate(
+        {
+            "prompt_tokens": 3000,
+            "completion_tokens": 1,
+            "total_tokens": 3001,
+            "prompt_tokens_details": {"cached_tokens": 2048},
+        }
+    )
+    adapter = MistralAdapter(api_key="test-key-not-real")
+    adapter._client = MagicMock()
+    adapter._client.chat.complete_async = AsyncMock(return_value=reply)
+    book = PriceBook(
+        tuple(shipped_catalogue().prices("mistral", "mistral-large-latest")), local=False
+    )
+    collector = TelemetryCollector(adapter, "demo", prices=lambda _model: book)
+    config = GenerationConfig(model="mistral-large-latest", max_output_tokens=10)
+
+    with caplog.at_level(logging.WARNING, logger=_LOGGER):
+        await collector.generate(_PROMPT, config)
+
+    assert not [r for r in caplog.records if "cache rule" in r.getMessage()]
+
+
+def test_a_requirement_the_request_did_not_send_still_breaks_the_rule() -> None:
+    from specweaver.infrastructure.llm.prices import Rule, rule_break
+
+    rule = Rule(requires="breakpoint")
+
+    assert rule_break(rule, prompt_tokens=5000) != ""
+    assert rule_break(rule, prompt_tokens=5000, sent=frozenset({"breakpoint"})) == ""

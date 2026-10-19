@@ -291,7 +291,7 @@
           "old": "    output_limit_field: ClassVar[str] = \"max_completion_tokens\"\n",
           "new": "    output_limit_field: ClassVar[str] = \"max_tokens\"\n",
           "breaks": "OpenAI reasoning models refuse the call, and the limit does not cap reasoning tokens",
-          "symbol_sha": "sha256:81d403bb55aedb8bd4fcf1a25d444afb6656863d32cf08df71a594ab8d13a99d"
+          "symbol_sha": "sha256:36712c2f5e20e14d5d0b28c38438a9406e67b63425b46a3c7c4b08217c7d1585"
         },
         {
           "id": "qwen-legacy-default-address",
@@ -311,7 +311,7 @@
           "old": "    sent_sampling: ClassVar[frozenset[str]] = frozenset()\n",
           "new": "    sent_sampling: ClassVar[frozenset[str]] = frozenset({\"temperature\", \"top_p\"})\n",
           "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
-          "symbol_sha": "sha256:81d403bb55aedb8bd4fcf1a25d444afb6656863d32cf08df71a594ab8d13a99d"
+          "symbol_sha": "sha256:36712c2f5e20e14d5d0b28c38438a9406e67b63425b46a3c7c4b08217c7d1585"
         },
         {
           "id": "cloud-server-without-key-variable",

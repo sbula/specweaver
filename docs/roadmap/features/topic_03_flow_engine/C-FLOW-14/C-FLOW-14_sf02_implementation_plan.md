@@ -54,6 +54,15 @@
 | Q2 | Where the last-sent times are kept (design AD-2 said: in the process) | in the database, one row per server, model and start: a process forgets between runs, and runs are what the warning is for `[agreed 2026-10-19]` |
 | Q3 | How long a start's row is kept | 7 days after it was last sent, then deleted `[agreed 2026-10-19]` |
 
+## Dev notes
+
+- CB-2: SF-01 made TECH-074's rule check wrong: Anthropic now sends a breakpoint and Mistral a cache
+  key, but the check assumed nothing is sent, so every such cache hit would have warned. Each adapter
+  now says what it sent (`cache_sent`), and the check uses it; the TECH-074 test that expected the
+  warning now expects none.
+- CB-1: the hint skips streams, whose usage is estimated; a stream test with too short a text had an
+  estimate of zero and could not fail, and was lengthened.
+
 ## Backlog
 
 none

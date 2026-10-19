@@ -78,6 +78,9 @@ class AsyncRateLimiterAdapter(LLMAdapter):
     def available(self) -> bool:
         return self._wrapped.available()
 
+    def cache_sent(self, config: GenerationConfig) -> frozenset[str]:
+        return self._wrapped.cache_sent(config)
+
     async def count_tokens(self, text: str, model: str) -> int:
         return await self._wrapped.count_tokens(text, model)
 

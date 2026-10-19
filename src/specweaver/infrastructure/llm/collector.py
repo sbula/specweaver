@@ -20,6 +20,7 @@ import json
 import logging
 import math
 import time
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from specweaver.infrastructure.llm.budget import CallScope, Cost, Reservation, SpendBudget
@@ -89,6 +90,7 @@ class TelemetryCollector:
         self._unpriced_warned: set[str] = set()
         self._rule_warned: set[str] = set()
         self._count_hinted = False
+        self._lifetime_warned: set[str] = set()
         self._budget = budget or SpendBudget()
         self._ledger = ledger
         #: Ledger writes that failed. Counted, never raised: a cost row never stops the work.
@@ -171,7 +173,15 @@ class TelemetryCollector:
             self._record_failure(scope, reservation, exc)
             await self._close_failed(call_id, config, exc, time.monotonic() - start)
             raise
-        await self._capture(config, response, time.monotonic() - start, scope, reservation, call_id)
+        await self._capture(
+            config,
+            response,
+            time.monotonic() - start,
+            scope,
+            reservation,
+            call_id,
+            start=self._start_of(messages, config),
+        )
         return response
 
     async def generate_with_tools(
@@ -190,6 +200,7 @@ class TelemetryCollector:
         held = [first]
         prompt_tokens = [self._prompt_tokens(messages, config)]
         call_id = await self._open(config, prompt_tokens[0])
+        start_hash = self._start_of(messages, config)
         widening: list[asyncio.Task[Any]] = []
 
         def before_request(round_num: int, prompt_chars: int) -> None:
@@ -211,7 +222,15 @@ class TelemetryCollector:
             raise
         elapsed = time.monotonic() - start
         await asyncio.gather(*widening, return_exceptions=True)
-        await self._capture(config, response, elapsed, scope, Reservation.combined(held), call_id)
+        await self._capture(
+            config,
+            response,
+            elapsed,
+            scope,
+            Reservation.combined(held),
+            call_id,
+            start=start_hash,
+        )
         return response
 
     async def generate_stream(
@@ -258,10 +277,12 @@ class TelemetryCollector:
         call_id: int | None,
         *,
         reported: bool = True,
+        start: str | None = None,
     ) -> None:
         """Create a UsageRecord and append to the internal list.
 
         ``reported`` is false for a stream, whose usage is estimated from its text, not reported.
+        ``start`` is the hash of the prompt's start (`_start_of`), remembered for the lifetime check.
 
         ``task_type`` is read from ``config.task_type`` (set per call
         by each handler), NOT from the constructor.
@@ -282,9 +303,13 @@ class TelemetryCollector:
             logger.warning(
                 "%s has no known price: its tokens are counted, its money is not", config.model
             )
-        self._check_cache_rule(config.model, response.usage, scope.prices)
+        self._check_cache_rule(config, response.usage, scope.prices)
         if reported:
             self._hint_cache_count(response.usage, scope.prices)
+        if start is not None:
+            sent_at = datetime.now(UTC) - timedelta(seconds=elapsed)
+            before = await self._remember_start(config.model, start, sent_at)
+            self._check_cache_lifetime(config.model, response.usage, scope.prices, before, sent_at)
         # A reply that reports no usage counts its reserved worst case.
         cost = (
             None
@@ -292,6 +317,53 @@ class TelemetryCollector:
             else Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
         )
         self._budget.record(scope, cost, reservation)
+
+    @staticmethod
+    def _start_of(messages: list[Message], config: GenerationConfig) -> str:
+        """A hash of what a cache can hold from run to run: the system text and the first message
+        up to the run clock. Never the text itself."""
+        first = messages[0].content.split("<run_clock>")[0] if messages else ""
+        text = f"{config.system_instruction or ''}\0{first}"
+        return hashlib.sha256(text.encode()).hexdigest()
+
+    async def _remember_start(self, model: str, start: str, sent_at: datetime) -> datetime | None:
+        """When this start was sent before, if ever; and that it was sent now."""
+        if self._ledger is None:
+            return None
+        server = self._server
+        result = await self._write(
+            lambda repo: repo.touch_prompt_start(server, model, start, sent_at)
+        )
+        return result if isinstance(result, datetime) else None
+
+    def _check_cache_lifetime(
+        self,
+        model: str,
+        usage: TokenUsage,
+        prices: PriceBook | None,
+        before: datetime | None,
+        sent_at: datetime,
+    ) -> None:
+        """Warn once per model when a cache answers more than twice its rule's lifetime after the
+        start was last sent: the provider keeps caches longer than the shipped list says."""
+        if not usage.cached_read_tokens or prices is None or before is None:
+            return
+        if model in self._lifetime_warned:
+            return
+        price = prices.price_for(TokenKind.CACHED_READ, usage.prompt_tokens)
+        lifetime = price.rule.max_age_seconds if price and price.rule else None
+        gap = (sent_at - before).total_seconds()
+        if lifetime is None or gap <= 2 * lifetime:
+            return
+        self._lifetime_warned.add(model)
+        logger.warning(
+            "%s read %d tokens from a cache %.0f s after the prompt start was last sent; its cache "
+            "lifetime is %d s. The provider may keep caches longer; check catalogue_data/models.toml",
+            model,
+            usage.cached_read_tokens,
+            gap,
+            lifetime,
+        )
 
     def _hint_cache_count(self, usage: TokenUsage, prices: PriceBook | None) -> None:
         """Once per local server whose reply carries no cached count: how vLLM is made to report it."""
@@ -306,15 +378,19 @@ class TelemetryCollector:
             self._server or "the local server",
         )
 
-    def _check_cache_rule(self, model: str, usage: TokenUsage, prices: PriceBook | None) -> None:
+    def _check_cache_rule(
+        self, config: GenerationConfig, usage: TokenUsage, prices: PriceBook | None
+    ) -> None:
         """Warn once per model when a cache hit breaks the offering's rule: the provider's rule
         may have changed, and the shipped list with it."""
+        model = config.model
         if not usage.cached_read_tokens or prices is None or model in self._rule_warned:
             return
         price = prices.price_for(TokenKind.CACHED_READ, usage.prompt_tokens)
         if price is None or price.rule is None:
             return
-        reason = rule_break(price.rule, prompt_tokens=usage.prompt_tokens)
+        sent: frozenset[str] = getattr(self._adapter, "cache_sent", lambda _c: frozenset())(config)
+        reason = rule_break(price.rule, prompt_tokens=usage.prompt_tokens, sent=sent)
         if reason:
             self._rule_warned.add(model)
             logger.warning(

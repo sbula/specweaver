@@ -107,6 +107,9 @@ class MistralAdapter(LLMAdapter):
 
     default_base_url: ClassVar[str | None] = "https://api.mistral.ai"
 
+    def cache_sent(self, config: GenerationConfig) -> frozenset[str]:
+        return frozenset({"cache_key"}) if config.cache_key else frozenset()
+
     def _get_client(self) -> Any:
         if self._client is None:
             from mistralai.client import Mistral

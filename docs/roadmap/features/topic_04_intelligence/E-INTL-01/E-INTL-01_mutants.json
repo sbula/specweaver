@@ -37,7 +37,7 @@
           "old": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n        messages, config, scope, reservation, call_id = await self._begin(messages, config)\n",
           "new": "        \"\"\"Proxy ``generate()`` — captures timing and usage.\"\"\"\n        _, config, scope, reservation, call_id = await self._begin(messages, config)\n",
           "breaks": "an API key pasted into a prompt reaches the provider",
-          "symbol_sha": "sha256:43a9229329fffea871ecb6879f81c635d2f319f07c4375b39ae131e452f604e7"
+          "symbol_sha": "sha256:12575f334f21936ad6cf185b290e53c6ea9858342fd9ee4e855b9a07c11dce6f"
         },
         {
           "id": "tool-result-raw",
@@ -47,7 +47,7 @@
           "old": "        messages = self._redactor.messages(messages)\n        tool_executor = self._redactor.tools(tool_executor)\n",
           "new": "        messages = self._redactor.messages(messages)\n",
           "breaks": "a tool that reads the vault hands its secrets to the model",
-          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
         },
         {
           "id": "stream-sent-raw",
@@ -107,7 +107,7 @@
           "old": "        on_tool_round = self._redactor.rounds(on_tool_round)\n",
           "new": "        on_tool_round = on_tool_round\n",
           "breaks": "a file a review adds between tool rounds reaches the model unmasked",
-          "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
+          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
         }
       ]
     }
