@@ -268,6 +268,35 @@
           "symbol_sha": "sha256:628f7ef3e46b8e28cfc5ec38799ceaeb2cfe36ea4374ef742e7d0ee71cf7a9f6"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "A parked run is finished from a browser",
+      "scope": [
+        "tests/e2e/capabilities/interfaces/test_tablet_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "browser-never-gets-the-cookie",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "TokenGuard.__call__",
+          "old": "        elif scope[\"method\"] == \"GET\" and self._matches(query.get(\"token\")):\n",
+          "new": "        elif False:\n",
+          "breaks": "the printed address opens nothing on a tablet: the dashboard is unreachable from a browser",
+          "symbol_sha": "sha256:3f96f0eada4fe42ab8e0afad61e33360a0d410ac7c236c4a4e865d7c25b62f59"
+        },
+        {
+          "id": "dashboard-gate-does-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/ui/htmx.py",
+          "symbol": "submit_hitl_gate",
+          "old": "        await submit_gate_decision(run_id, body, db)\n",
+          "new": "        pass\n",
+          "breaks": "approving in the dashboard leaves the run parked",
+          "symbol_sha": "sha256:4ca4bd0c1156c088153ece838b6fd59e7cf1eeab0c7bbcd077c1ed4fb9644798"
+        }
+      ]
     }
   ]
 }

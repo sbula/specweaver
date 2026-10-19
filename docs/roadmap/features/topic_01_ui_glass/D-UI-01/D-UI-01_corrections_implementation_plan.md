@@ -4,7 +4,7 @@
 - **Implementation Plan**: docs/roadmap/features/topic_01_ui_glass/D-UI-01/D-UI-01_corrections_implementation_plan.md
 - **Status**: APPROVED by the user 2026-10-19
 
-**FRs owned**: FR-6, FR-7, NFR-1 (new, from the review of 2026-10-19)
+**FRs owned**: FR-6, FR-7, FR-8, NFR-1 (new, from the review of 2026-10-19); FR-2's WebSocket ending, found there
 
 ## Shape
 
@@ -24,11 +24,13 @@
 |---|---|---|---|
 | CB-1 | the token: guard, cookie, file, `sw serve` | FR-6, NFR-1 | a request with no token — or with `Host: evil.example`, as a rebinding page sends — starts a pipeline |
 | CB-2 | `[serve] max_runs` | FR-7 | a fourth run is refused by a number nobody set |
+| CB-3 | the WebSocket ends for a run not running and for a client that leaves; the `US-06` tablet journey | FR-2, FR-8 | a stream for an unknown run waits for ever |
 
 | CB | Tier | Test |
 |---|---|---|
 | CB-1 | integration + e2e | through `TestClient`: an API route, a dashboard page, a form post and the WebSocket without the token are refused; with the header, the cookie or the WebSocket query they answer; a wrong token is refused; the health check answers without one; a first visit with `?token=` sets a strict, HttpOnly cookie and redirects without the token. e2e: `sw serve` (uvicorn replaced) writes `serve.token` with mode 600 and prints an address carrying it, and no log line carries the token |
 | CB-2 | integration | with `[serve] max_runs = 1` a second concurrent run is refused; without the section a run is refused naming `serve.max_runs` |
+| CB-3 | integration + e2e | an unknown run answers `RUN_NOT_FOUND`, a finished one `done`, a client that leaves is unsubscribed, each failing after 10 s rather than hanging; a browser opens the printed address, approves a parked run's gate in the dashboard, and the run completes; without the cookie the gate is refused |
 
 ## Mutants (into `D-UI-01_mutants.json`)
 
@@ -54,6 +56,7 @@
 |---|----------|--------|
 | Q1 | How `sw serve` protects itself | a token per start, Jupyter-style `[agreed 2026-10-19]` |
 | Q2 | The limit of 3 concurrent runs | `[serve] max_runs`, required to start a run `[agreed 2026-10-19]` |
+| Q3 | Who owns `US-06` P-3 and P-4 | `D-UI-01` FR-8, an e2e; `US-07`'s paths go to `D-UI-03` alone `[agreed 2026-10-19]` |
 
 ## Backlog
 

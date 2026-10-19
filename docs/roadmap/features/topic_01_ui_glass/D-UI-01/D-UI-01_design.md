@@ -83,10 +83,12 @@ the `CORS_ORIGINS` environment variable.
 | FR-4 | An HTTP-started run is the run the CLI would start | System | Applies the same `[sandbox]` isolation policy at the API composition root, and stores the run under the project's registered name, so a gate answer or a resume finds it `[agreed 2026-10-13]` | Untrusted generated code is bounded identically whichever root launched it, and a parked run can be finished |
 | FR-5 | A failure is a typed error, not a traceback | System | Returns `{detail, error_code}` with the declared status, defaulting to a client error | A program can branch on the failure, and no response carries module paths or a stack trace |
 | FR-6 | Only the token's holder is served | System | Refuses every request without the server's token — HTTP header, browser cookie, or the WebSocket's query — with 401, except the health check `[agreed 2026-10-19]` | A web page, another program or another user cannot start a run or change a project |
+| FR-8 | A run is steered from a browser | Operator on a tablet | Opens the address `sw serve` printed, lists the runs, opens a parked one and approves its gate in the served dashboard, with no terminal and no other credential `[agreed 2026-10-19]` | The `US-06` journey: a run waiting for a human is finished from another device |
 | FR-7 | Runs at once follow the settings | System | Takes the number of concurrent runs from `[serve] max_runs`; without it a run is refused, naming the key `[agreed 2026-10-19]` | The load a server accepts is the user's number |
 
 `FR-4` is a **seam FR** — the policy is resolved in `core.flow.engine.isolation` and consumed here
-— and is proven at integration tier.
+— and is proven at integration tier. `FR-8` is the `US-06` journey across `E-UI-02` (the dashboard)
+and this API, proven end to end.
 
 Proof: `FR-3` and `FR-5` have dedicated tests (`test_serve_binds_locally.py`,
 `test_error_contract.py`); `FR-1`, `FR-2` and `FR-4` cite tests that already proved them. Every test names `D-UI-01`,
