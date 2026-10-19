@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.config.doc_policy import DocPolicy
+from specweaver.core.config.doc_policy import DocPolicy, outside_blocks
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from specweaver.sandbox.security import write_verdict
 
@@ -159,7 +159,7 @@ def _strip_forbidden_files(
     proposals: list[_Proposal] = []
     for file in changed_files:
         steps = steps_of[file]
-        verdicts = {write_verdict(policy, file, step, allowed_paths) for step in steps}
+        verdicts = {_verdict(executor, policy, file, step, allowed_paths) for step in steps}
         if verdicts == {"keep"}:
             continue
         if "strip" not in verdicts:
@@ -168,6 +168,34 @@ def _strip_forbidden_files(
         stripped.append(file)
         _restore(executor, cwd, file)
     return stripped, proposals
+
+
+def _verdict(
+    executor: "EngineGitExecutor",
+    policy: DocPolicy,
+    file: str,
+    step: str | None,
+    allowed: list[str],
+) -> str:
+    """The policy's verdict, except that a block's own step may change that block and nothing else."""
+    verdict = write_verdict(policy, file, step, allowed)
+    if verdict == "propose" and _only_its_blocks(executor, policy, file, step):
+        return "keep"
+    return verdict
+
+
+def _only_its_blocks(
+    executor: "EngineGitExecutor", policy: DocPolicy, file: str, step: str | None
+) -> bool:
+    """Whether `step`'s change to `file` stays inside the blocks it fills there."""
+    names = [b.name for b in policy.block if b.step == step and b.file.lower() == file.lower()]
+    if not names:
+        return False
+    before = executor.run("show", f"HEAD:{file}")
+    after = executor.run("show", f":{file}")
+    if getattr(before, "exit_code", 1) != 0 or getattr(after, "exit_code", 1) != 0:
+        return False
+    return outside_blocks(before.stdout, names) == outside_blocks(after.stdout, names)
 
 
 def _restore(executor: "EngineGitExecutor", cwd: Path, file: str) -> None:

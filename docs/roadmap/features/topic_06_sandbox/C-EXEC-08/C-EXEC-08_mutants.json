@@ -296,7 +296,7 @@
           "old": "        if \"strip\" not in verdicts:\n",
           "new": "        if True:\n",
           "breaks": "a .env change is copied into doc_updates.md",
-          "symbol_sha": "sha256:a78270feb39484e5172912ecc47b2ae0de5b5a6d542205519aeeba8a06bdc6d0"
+          "symbol_sha": "sha256:76e544d95fb09abbe91e85c88b66d3f945591be84c5427d2aa3e3ad7911deb60"
         },
         {
           "id": "binary-shown-as-text",
@@ -349,7 +349,8 @@
       "scope": [
         "tests/unit/core/config/test_doc_blocks.py",
         "tests/integration/core/flow/handlers/test_bash_step_fills_its_block.py",
-        "tests/e2e/capabilities/sandbox/test_generated_block_journey_e2e.py"
+        "tests/e2e/capabilities/sandbox/test_generated_block_journey_e2e.py",
+        "tests/integration/core/flow/engine/test_generated_block_through_the_merge.py"
       ],
       "mutants": [
         {
@@ -431,6 +432,36 @@
           "new": "        if False:\n",
           "breaks": "a block writes into .env or context.yaml",
           "symbol_sha": "sha256:af280a364cf830b7e770fe2a2aaddcfc20bacfea6df00a55af6b89c4884d2974"
+        },
+        {
+          "id": "block-never-kept",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_verdict",
+          "old": "    if verdict == \"propose\" and _only_its_blocks(executor, policy, file, step):\n",
+          "new": "    if False:\n",
+          "breaks": "under isolation a block step's block never lands",
+          "symbol_sha": "sha256:824d60a829f131d670f326d2475bcde8dcf900ca8f2e61bf326419ac076d82dd"
+        },
+        {
+          "id": "block-step-edits-anything",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_only_its_blocks",
+          "old": "    return outside_blocks(before.stdout, names) == outside_blocks(after.stdout, names)\n",
+          "new": "    return True\n",
+          "breaks": "a block step's script rewrites the human part of README",
+          "symbol_sha": "sha256:07be1f022970ddc2a1090dbb33720ab62cb960daeb0a830dd24ee48eb09e8345"
+        },
+        {
+          "id": "any-step-fills-at-merge",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "_only_its_blocks",
+          "old": "    names = [b.name for b in policy.block if b.step == step and b.file.lower() == file.lower()]\n",
+          "new": "    names = [b.name for b in policy.block if b.file.lower() == file.lower()]\n",
+          "breaks": "any step may write the block and it lands",
+          "symbol_sha": "sha256:07be1f022970ddc2a1090dbb33720ab62cb960daeb0a830dd24ee48eb09e8345"
         }
       ]
     }

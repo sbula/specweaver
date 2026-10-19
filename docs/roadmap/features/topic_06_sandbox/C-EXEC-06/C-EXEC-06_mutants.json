@@ -28,7 +28,7 @@
           "old": "        if verdicts == {\"keep\"}:\n            continue\n",
           "new": "        if True:\n            continue\n",
           "breaks": "every file the run wrote lands in the real repo",
-          "symbol_sha": "sha256:a78270feb39484e5172912ecc47b2ae0de5b5a6d542205519aeeba8a06bdc6d0"
+          "symbol_sha": "sha256:76e544d95fb09abbe91e85c88b66d3f945591be84c5427d2aa3e3ad7911deb60"
         },
         {
           "id": "empty-folder-kept",

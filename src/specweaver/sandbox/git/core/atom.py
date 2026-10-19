@@ -57,6 +57,7 @@ class GitAtom(Atom):
             "worktree",
             "ls-files",  # is_tracked
             "log",  # which step's snapshot changed a file, at the strip-merge
+            "show",  # a block file before and after, at the strip-merge
             "branch",  # delete the session branch at teardown
         }
     )

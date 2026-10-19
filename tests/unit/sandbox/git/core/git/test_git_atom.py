@@ -573,6 +573,7 @@ class TestEdgeCases:
             "ls-files",
             "branch",  # C-EXEC-06: session-branch deletion at teardown
             "log",  # C-EXEC-08: which step's snapshot changed a file
+            "show",  # C-EXEC-08: a block file before and after
         }
         assert expected == GitAtom._ENGINE_WHITELIST
 
