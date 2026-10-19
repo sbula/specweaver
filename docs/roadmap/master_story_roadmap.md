@@ -148,7 +148,7 @@ An item only enters the Focus Points if it satisfies one of these rules:
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
     *   🟡 **Graduated Autonomy:**
         *   `🔧` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
-        *   `[ ]` **C-EXEC-08:** Project Doc Policy — needed before `C-FLOW-11` lets a coder write
+        *   `✅` **C-EXEC-08:** Project Doc Policy — each project's `[docs]` rules decide what a coder may write
     *   🔴 **Graph-Invariant Verification** *([ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: verify)*:
         *   `[ ]` **B-VAL-07:** Graph-Invariant Verification — generated changes checked against unchanged dependents; `TECH-068`'s edges are built
 

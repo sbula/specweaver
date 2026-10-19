@@ -27,8 +27,10 @@ retired; the rest stay `🔧` until each is closed by the rule in `PRINCIPLES.md
 ledger from the moment it is sent, and its readers count finished calls only — [design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-01/C-FLOW-01_design.md).
 
 `E-SENS-03` was signed off `✅` on 2026-10-16 and `D-FLOW-04` on 2026-10-17 (no caught error is lost,
-gate-enforced). Which docs each project protects from agents is
-`C-EXEC-08` (Project Doc Policy), to design with the user before `C-FLOW-11` lets a coder write.
+gate-enforced). `C-EXEC-08` was signed off `✅` on 2026-10-19: each project's `[docs]` rules
+decide which docs the task grant and the worktree merge let a step change; a refused doc change is
+kept in `doc_updates.md`; a `bash` step can fill a marked block — [design](../docs/roadmap/features/topic_06_sandbox/C-EXEC-08/C-EXEC-08_design.md).
+`C-FLOW-11` is next: its design was never approved.
 
 `TECH-074` was closed on 2026-10-18 and `C-FLOW-14` signed off `✅` on 2026-10-19: cached input
 tokens are read, billed at their own price and shown; prices follow models.dev once a day; prompts

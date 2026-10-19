@@ -2,7 +2,7 @@
 
 - **Feature ID**: C-EXEC-08
 - **Epic**: Topic 06 (Sandbox)
-- **Status**: APPROVED by the user 2026-10-19
+- **Status**: ✅ Finished — signed off by the user 2026-10-19 (design approved the same day)
 - **Origin**: `E-SENS-03` plan Q2, parked 2026-10-16 for the laptop; minted 2026-10-17; grilled with
   the user 2026-10-19 (Q1–Q7).
 
@@ -169,5 +169,5 @@ SF-01, then SF-02 and SF-03.
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-19.
-**Next**: the user's sign-off. All three sub-features committed 2026-10-19.
+**Now**: signed off 2026-10-19.
+**Next**: `C-FLOW-11` may let a coder write, under these rules.
