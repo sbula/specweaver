@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _now_iso
@@ -45,6 +45,15 @@ class BashActionHandler:
 
         if result.status == AtomStatus.SUCCESS:
             logger.info("BashActionHandler: script succeeded (%s)", result.message)
+            refused = _fill_block(step.name, result.exports, context)
+            if refused:
+                return StepResult(
+                    status=StepStatus.FAILED,
+                    output=result.exports,
+                    error_message=refused,
+                    started_at=started,
+                    completed_at=_now_iso(),
+                )
             return StepResult(
                 status=StepStatus.PASSED,
                 output=result.exports,
@@ -74,3 +83,30 @@ class BashActionHandler:
         from specweaver.sandbox.execution.core.atom import BashActionAtom
 
         return BashActionAtom(cwd=context.isolation.execution_root or context.project_path)
+
+
+def _fill_block(step: str, exports: dict[str, Any], context: RunContext) -> str | None:
+    """Write the script's output into the block this step fills, if any; why it could not, if not.
+
+    SpecWeaver writes the block, not the script, so the script cannot reach past it.
+    """
+    from specweaver.core.config.doc_policy import fill_block
+
+    block = next((b for b in context.isolation.doc_policy.block if b.step == step), None)
+    if block is None:
+        return None
+    root = (context.isolation.execution_root or context.project_path).resolve()
+    target = (root / block.file).resolve()
+    if not target.is_relative_to(root):
+        return f"{block.file} lies outside the project; block {block.name!r} was not written"
+    if exports.get("stdout_truncated"):
+        return f"the output was cut at 1 MiB; block {block.name!r} in {block.file} was not written"
+    try:
+        with target.open(encoding="utf-8", newline="") as source:
+            text = source.read()
+        filled = fill_block(text, block.name, str(exports.get("stdout", "")))
+    except (OSError, ValueError) as exc:
+        return f"block {block.name!r} in {block.file}: {exc}"
+    with target.open("w", encoding="utf-8", newline="") as sink:
+        sink.write(filled)
+    return None

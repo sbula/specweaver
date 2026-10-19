@@ -228,6 +228,27 @@ steps = ["update_api_docs"]     # pipeline step names
   `doc_updates.md` at the project root, and the run goes on.
 - A broken `[docs]` section stops `sw run`, `sw resume`, `sw implement` and the API, naming the line.
 
+**Generated blocks.** A `bash` step can keep one marked part of a file current, such as the test
+counts in a README:
+
+```toml
+[[docs.block]]
+file = "README.md"
+name = "counts"
+step = "update_counts"           # a bash step; its output fills the block
+```
+
+```markdown
+<!-- sw:block counts -->
+(the script's output goes here)
+<!-- sw:end counts -->
+```
+
+- SpecWeaver writes the block from the script's output. The rest of the file stays human.
+- One step fills one block. Only a `bash` step may: a block whose step is an LLM step stops the run.
+- A missing marker, an output that holds a marker, or an output over 1 MiB fails the step, and
+  nothing is written.
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)

@@ -342,6 +342,97 @@
           "symbol_sha": "sha256:aa736971e74d7565f652715f3f42dee949daf0b9a48e9190c49c7a992adcff01"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A bash step fills its marked block, and only it",
+      "scope": [
+        "tests/unit/core/config/test_doc_blocks.py",
+        "tests/integration/core/flow/handlers/test_bash_step_fills_its_block.py",
+        "tests/e2e/capabilities/sandbox/test_generated_block_journey_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "markers-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "fill_block",
+          "old": "    if span is None:\n",
+          "new": "    if False:\n",
+          "breaks": "a file without the markers is half-written or crashes the step",
+          "symbol_sha": "sha256:ab6ab31596e155865c2f28eeaa5671cacf78f8955483da522e0fb45953326438"
+        },
+        {
+          "id": "output-escapes-the-block",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "fill_block",
+          "old": "    if start in body or end in body:\n",
+          "new": "    if False:\n",
+          "breaks": "an output can close the block and write past it",
+          "symbol_sha": "sha256:ab6ab31596e155865c2f28eeaa5671cacf78f8955483da522e0fb45953326438"
+        },
+        {
+          "id": "one-step-two-blocks",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "_one_block_each",
+          "old": "        elif block.step in steps:\n",
+          "new": "        elif False:\n",
+          "breaks": "one script's output lands in two places",
+          "symbol_sha": "sha256:01e66207a05829a1168e7f1ba9139a91609eb3a9e3de88764a80e96533a6b356"
+        },
+        {
+          "id": "cut-output-written",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/bash_action.py",
+          "symbol": "_fill_block",
+          "old": "    if exports.get(\"stdout_truncated\"):\n",
+          "new": "    if False:\n",
+          "breaks": "a cut output is written into the README with no word",
+          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+        },
+        {
+          "id": "every-step-fills",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/bash_action.py",
+          "symbol": "_fill_block",
+          "old": "    block = next((b for b in context.isolation.doc_policy.block if b.step == step), None)\n",
+          "new": "    block = next(iter(context.isolation.doc_policy.block), None)\n",
+          "breaks": "any bash step overwrites the block",
+          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+        },
+        {
+          "id": "block-follows-a-symlink-out",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/bash_action.py",
+          "symbol": "_fill_block",
+          "old": "    if not target.is_relative_to(root):\n",
+          "new": "    if False:\n",
+          "breaks": "a linked README writes a file outside the project",
+          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+        },
+        {
+          "id": "model-step-fills-a-block",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/security.py",
+          "symbol": "verify_doc_blocks",
+          "old": "        if action is not None and action != StepAction.BASH:\n",
+          "new": "        if False:\n",
+          "breaks": "a block names an LLM step and the run goes on",
+          "symbol_sha": "sha256:af280a364cf830b7e770fe2a2aaddcfc20bacfea6df00a55af6b89c4884d2974"
+        },
+        {
+          "id": "block-opens-a-protected-file",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/security.py",
+          "symbol": "verify_doc_blocks",
+          "old": "        if PROTECTED_NAMES.intersection(parts):\n",
+          "new": "        if False:\n",
+          "breaks": "a block writes into .env or context.yaml",
+          "symbol_sha": "sha256:af280a364cf830b7e770fe2a2aaddcfc20bacfea6df00a55af6b89c4884d2974"
+        }
+      ]
     }
   ]
 }

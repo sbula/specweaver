@@ -161,6 +161,7 @@ def _result(script: str, result: SubprocessResult, timeout_seconds: int) -> Atom
         exports={
             "exit_code": result.exit_code,
             "stdout": _truncate(result.stdout),
+            "stdout_truncated": len(result.stdout.encode("utf-8")) > _MAX_OUTPUT_BYTES,
             "stderr": _truncate(result.stderr),
             "duration_seconds": result.duration_seconds,
             "timed_out": result.timed_out,

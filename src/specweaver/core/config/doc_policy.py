@@ -88,7 +88,7 @@ def parse_doc_policy(text: str, source: str) -> DocPolicy:
             source, "(file)", getattr(exc, "lineno", 0), "not valid TOML"
         ) from None
     try:
-        return DocPolicy.model_validate(section)
+        policy = DocPolicy.model_validate(section)
     except ValidationError as exc:
         errors = sorted(exc.errors(), key=lambda error: error["type"] != "extra_forbidden")
         loc = tuple(str(part) for part in errors[0]["loc"])
@@ -96,6 +96,64 @@ def parse_doc_policy(text: str, source: str) -> DocPolicy:
         raise SettingsFileError(
             source, ".".join(("docs", *loc)), _line(text, loc), message
         ) from None
+    _one_block_each(policy, text, source)
+    return policy
+
+
+def _one_block_each(policy: DocPolicy, text: str, source: str) -> None:
+    """A step fills one block, and a block is filled by one step."""
+    steps: set[str] = set()
+    places: set[tuple[str, str]] = set()
+    for index, block in enumerate(policy.block):
+        place = (block.file.lower(), block.name)
+        clash = None
+        if place in places:
+            clash = ("name", f"{block.file} already has a block named {block.name!r}")
+        elif block.step in steps:
+            clash = ("step", f"step {block.step!r} already fills a block; a step fills one")
+        if clash:
+            loc = ("block", str(index), clash[0])
+            raise SettingsFileError(source, ".".join(("docs", *loc)), _line(text, loc), clash[1])
+        steps.add(block.step)
+        places.add(place)
+
+
+def _markers(name: str) -> tuple[str, str]:
+    return f"<!-- sw:block {name} -->", f"<!-- sw:end {name} -->"
+
+
+def _span(text: str, name: str) -> tuple[int, int] | None:
+    """Where the block's body lies: after its start marker, up to its end marker."""
+    start, end = _markers(name)
+    if text.count(start) != 1 or text.count(end) != 1:
+        return None
+    first, last = text.index(start) + len(start), text.index(end)
+    return (first, last) if first <= last else None
+
+
+def fill_block(text: str, name: str, body: str) -> str:
+    """`text` with the body of block `name` replaced by `body`, on its own lines."""
+    start, end = _markers(name)
+    if start in body or end in body:
+        msg = f"the output holds a marker of its own block ({start} or {end})"
+        raise ValueError(msg)
+    span = _span(text, name)
+    if span is None:
+        msg = f"needs one {start} and, after it, one {end}"
+        raise ValueError(msg)
+    newline = "\r\n" if "\r\n" in text else "\n"
+    lines = body.rstrip("\r\n").splitlines()
+    inner = newline.join(lines) + newline if lines else ""
+    return text[: span[0]] + newline + inner + text[span[1] :]
+
+
+def outside_blocks(text: str, names: list[str]) -> str:
+    """`text` with the named blocks' bodies emptied; a block without its markers is left as it is."""
+    for name in names:
+        span = _span(text, name)
+        if span is not None:
+            text = text[: span[0]] + text[span[1] :]
+    return text
 
 
 def _line(text: str, loc: tuple[str, ...]) -> int:

@@ -29,7 +29,7 @@ from specweaver.core.flow.engine.isolation import resolve_should_isolate, seed_d
 from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.run_task import close_task, open_task
 from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
-from specweaver.core.flow.engine.security import verify_vault_security
+from specweaver.core.flow.engine.security import verify_doc_blocks, verify_vault_security
 from specweaver.core.flow.engine.session import execute_run
 from specweaver.core.flow.engine.state import (
     PipelineRun,
@@ -162,6 +162,7 @@ class PipelineRunner:
         """
         self._context = isolate_sub_run_context(self._context, parent_run_id)
         verify_vault_security(self._context)
+        verify_doc_blocks(self._pipeline, self._context)
         now = _now_iso()
 
         run = PipelineRun(
@@ -216,6 +217,7 @@ class PipelineRunner:
 
         self._current_run_id = run_id
         verify_vault_security(self._context)
+        verify_doc_blocks(self._pipeline, self._context)
 
         run = self._store.load_run(run_id)
         if run is None:

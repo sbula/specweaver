@@ -47,7 +47,7 @@
           "old": "            status=StepStatus.FAILED if ran else StepStatus.ERROR,\n",
           "new": "            status=StepStatus.FAILED,\n",
           "breaks": "a step written wrong reads as a script that ran and failed",
-          "symbol_sha": "sha256:1bf594e50ac178c669f2adbd32c4cc250f5b474412e89371b7254668f3e99cb3"
+          "symbol_sha": "sha256:3697926450c6277ae6bd0f0b64bee1a3e39e832b9a2b77e5c05ceb3f06758411"
         }
       ]
     },
@@ -67,7 +67,7 @@
           "old": "AtomStatus.SUCCESS if result.exit_code == 0 and not result.timed_out else AtomStatus.FAILED",
           "new": "AtomStatus.SUCCESS",
           "breaks": "a failing script passes the run",
-          "symbol_sha": "sha256:a4d90bf7519ef53eeb8703dea53b6be12ada3f6d8d73898de7ef0bdaa7e6d332"
+          "symbol_sha": "sha256:c40d33da787fe1b68ceb4927f855986af6f603b29bdcdf0da97b2733db1f1e04"
         }
       ]
     },
@@ -116,7 +116,7 @@
           "old": "    if result.timed_out:\n",
           "new": "    if False:\n",
           "breaks": "a timeout reads as a script that exited -15",
-          "symbol_sha": "sha256:a4d90bf7519ef53eeb8703dea53b6be12ada3f6d8d73898de7ef0bdaa7e6d332"
+          "symbol_sha": "sha256:c40d33da787fe1b68ceb4927f855986af6f603b29bdcdf0da97b2733db1f1e04"
         }
       ]
     },
