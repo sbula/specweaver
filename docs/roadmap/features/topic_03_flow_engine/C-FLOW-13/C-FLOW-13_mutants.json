@@ -1141,6 +1141,36 @@
           "symbol_sha": "sha256:74066e943a79337e199af99aa117e879779f7ee9c8ac6a4dda974fc56049b319"
         }
       ]
+    },
+    {
+      "requirement": "NFR-5",
+      "title": "An unknown schema version refuses",
+      "scope": [
+        "tests/unit/core/config/test_schema_version_gate.py",
+        "tests/unit/infrastructure/llm/test_catalogue.py"
+      ],
+      "mutants": [
+        {
+          "id": "list-version-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/catalogue.py",
+          "symbol": "_check_version",
+          "old": "    if version != SCHEMA_VERSION:\n",
+          "new": "    if False:\n",
+          "breaks": "a model list of a newer schema is read as if it were the known one",
+          "symbol_sha": "sha256:6d7f86c7ea75b3c0248598e66e8ead98649dcf1f985e107760fc4520f00bc1a8"
+        },
+        {
+          "id": "machine-file-version-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/llm_settings.py",
+          "symbol": "parse_machine_file",
+          "old": "    _check_schema_version(data, text, source, prefix=())\n",
+          "new": "    pass\n",
+          "breaks": "a machine settings file of a newer schema is read as if it were the known one",
+          "symbol_sha": "sha256:ddd1cbb0b6afe1fe326ebaf52ab9067ea3b3845959561e4830707b7c252ab1fc"
+        }
+      ]
     }
   ]
 }

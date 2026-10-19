@@ -377,7 +377,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   ⚰️ **D-FLOW-03:** *(retired 2026-10-11 — replaced by `C-FLOW-13`)*
 *   **Sub-Story Add-Ons:**
     *   🟢 **Centralized Model Table:**
-        *   `[x]` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
+        *   `✅` **C-FLOW-13:** Model Catalogue — the one central place for LLM settings; absorbed `D-FLOW-05` 2026-09-26
         *   `✅` **C-FLOW-14:** Cached Input Tokens
     *   🔴 **Dynamic Data-Driven Routing:**
         *   `[ ]` **A-FLOW-01:** Data-driven routing recommendations — needs `C-FLOW-13`

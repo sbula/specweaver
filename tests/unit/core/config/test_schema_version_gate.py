@@ -3,7 +3,7 @@
 
 """Both settings files say which schema they follow, and only a known one is read.
 
-Proves: C-FLOW-13 FR-4
+Proves: C-FLOW-13 FR-4, NFR-5
 
 | Bucket | Case |
 |---|---|

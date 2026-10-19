@@ -87,7 +87,7 @@ FR-14 (migration) was dropped `[agreed 2026-09-27]`.
 |---|-----|----------------------|
 | NFR-1 | Load cost | Settings resolved once per command, under 50 ms for files under 20 KB `[agreed 2026-09-26]` |
 | NFR-2 | No secrets written | No API key value appears in any settings file, log line or error message; `keys.env` is refused unless only its owner can read it `[agreed 2026-10-11]` |
-| NFR-3 | Offline | No network access to read settings or the model list |
+| NFR-3 | Offline | No network access to read settings or the shipped model list; the daily price refresh (`TECH-074`) is a separate step that keeps the last prices offline `[agreed 2026-10-18]` |
 | NFR-4 | One reader | Only `core.config.bootstrap` reads or writes the settings files; `tach` limits the imports |
 | NFR-5 | Versioned files | Both files and the model list carry `schema_version`; an unknown version refuses with an upgrade message |
 | NFR-6 | Comments survive | A `sw` write leaves every existing comment and key order in the file unchanged |

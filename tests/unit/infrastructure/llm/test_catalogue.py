@@ -3,7 +3,7 @@
 
 """Each model's facts come from one shipped list, corrected by the machine file.
 
-Proves: C-FLOW-13 FR-6
+Proves: C-FLOW-13 FR-6, NFR-5
 
 | Bucket | Case |
 |---|---|
