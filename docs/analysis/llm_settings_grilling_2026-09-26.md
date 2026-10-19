@@ -78,3 +78,6 @@ Q29 layers 2–3 and Q30–Q32 (blame across chains and manager/worker roles): t
   (`A-FLOW-01`) — [note](local_model_price_2026-10-18.md).
 - 2026-10-18: putting the prompt's stable parts (constitution, standards) before the instructions, so
   step types share a cache, waits for a way to measure answer quality (`C-FLOW-14` AD-1).
+- 2026-10-19: models are compared on their token counts per kind, priced at today's prices and at
+  full price (no cache savings), so a price change or a lucky cache never ranks a model; a time window
+  or a run count only limits how old a run may be (`TECH-074` keeps the counts and prices) `[agreed 2026-10-19]`.
