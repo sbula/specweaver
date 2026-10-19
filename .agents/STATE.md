@@ -27,6 +27,10 @@ ledger from the moment it is sent, and its readers count finished calls only —
 gate-enforced). Which docs each project protects from agents is
 `C-EXEC-08` (Project Doc Policy), to design with the user before `C-FLOW-11` lets a coder write.
 
+`TECH-074` was closed on 2026-10-18 and `C-FLOW-14` signed off `✅` on 2026-10-19: cached input
+tokens are read, billed at their own price and shown; prices follow models.dev once a day; prompts
+hit the providers' caches — [design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-14/C-FLOW-14_design.md).
+
 `🔧` is not a softer `✅`, and it is not "not started". **Nothing automatic stops you flipping one
 to `✅`. Do not.** Only the user can give the sign-off.
 

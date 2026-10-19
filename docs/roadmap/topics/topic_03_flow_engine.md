@@ -183,7 +183,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** 🔴
   > - **Note:** writes its own seam pin as its first commit; the base ships none, `FR-9(a)` having been descoped
 
-* **`C-FLOW-14` 🔜: Cached Input Tokens**
+* **`C-FLOW-14` ✅: Cached Input Tokens**
   > - **Purpose:** Make prompts hit the providers' caches, where reused input costs about a tenth — [research](../../analysis/prompt_caching_2026-10-17.md)
   > - **Precondition:** `TECH-074` → cached tokens read and priced first, or Anthropic caching under-counts
   > - **Produces:** 🔴 Anthropic breakpoints · Mistral's cache key · a stable prompt prefix (no early timestamp) · vLLM's cached count · the cache-lifetime warning (`TECH-074` FR-11)

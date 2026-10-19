@@ -2,7 +2,7 @@
 
 - **Feature ID**: C-FLOW-14
 - **Epic**: Topic 03 (Flow Engine) · US-16 add-on "Centralized Model Table"
-- **Status**: APPROVED by the user 2026-10-18
+- **Status**: ✅ Finished — signed off by the user 2026-10-19; approved 2026-10-18
 - **Origin**: 2026-10-17, the user's question on cached input tokens —
   [research](../../../../analysis/prompt_caching_2026-10-17.md). Precondition `TECH-074` (closed
   `968e51f9`): cached counts are read, each kind is priced, the cache rules are stored.
@@ -142,5 +142,5 @@ SF-01, then SF-02 (FR-4 needs the caches SF-01 creates to be testable end to end
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-18.
-**Next**: the user's sign-off. SF-01 and SF-02 committed; every FR and NFR is cited by a test.
+**Now**: signed off 2026-10-19.
+**Next**: none — signed off 2026-10-19.
