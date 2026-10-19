@@ -111,9 +111,10 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Purpose:** Let each project say which docs agents may change — a README's counts update with no person, a roadmap may stay human-only — instead of one rule in code
   > - **Trigger:** When an agent's write grant and the worktree merge are built
   > - **Precondition:** `E-SENS-03` → the task grant · `D-EXEC-02` → the merge, both sharing `sandbox.security.merge_keeps`
-  > - **Produces:** 🔴
+  > - **Produces:** `[docs]` rules in `specweaver.toml` · generated blocks
   > - **Enables:** `C-FLOW-11` → an agentic coder that may write
-  > - **Done when:** 🔴 — one settings line is not enough: per-role or per-task rules, generated blocks, step-only files `[agreed 2026-10-16]`
+  > - **Done when:** a project's `[docs]` rules decide grant and merge alike, a README block is filled by a
+  >   script step, a refused change is kept as a proposal — [design](../features/topic_06_sandbox/C-EXEC-08/C-EXEC-08_design.md)
 
 ## DAL-B: High-Assurance
 
