@@ -682,7 +682,7 @@
           "id": "bom-breaks-reader",
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/llm_settings_loader.py",
-          "symbol": "_read",
+          "symbol": "read_settings_text",
           "old": "    return path.read_text(encoding=\"utf-8-sig\")\n",
           "new": "    return path.read_text(encoding=\"utf-8\")\n",
           "breaks": "a settings file with a byte order mark is refused as not TOML",

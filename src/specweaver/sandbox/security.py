@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from fnmatch import fnmatchcase
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
+
+from specweaver.core.config.doc_policy import DocPolicy, DocRule
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -215,6 +217,35 @@ def _match(parts: list[str], pattern: list[str]) -> bool:
     if pattern[0] == "**":
         return any(_match(parts[i:], pattern[1:]) for i in range(len(parts) + 1))
     return bool(parts) and fnmatchcase(parts[0], pattern[0]) and _match(parts[1:], pattern[1:])
+
+
+#: Files no agent may change, whatever any rule says.
+PROTECTED_NAMES: frozenset[str] = frozenset({"context.yaml", ".env", ".git", ".specweaver"})
+#: The rules every project starts from; a project's own `[docs]` rules come after them.
+_BUILT_IN_RULES = (
+    DocRule(paths=["README.md"], access="human"),
+    DocRule(paths=["docs/**"], access="human"),
+)
+
+DocAccess = Literal["keep", "refuse", "task"]
+
+
+def doc_access(policy: DocPolicy, path: str, step: str | None) -> DocAccess:
+    """Whether `step` may change the repo-relative `path`: `keep`, `refuse`, or `task` when no rule
+    names it and the task's own list decides.
+
+    The built-in rules come first, then the project's; the last matching rule decides, as in
+    `.gitignore`. Case-blind, as a case-insensitive disk is.
+    """
+    lowered = path.replace("\\", "/").lower()
+    if any(part in PROTECTED_NAMES for part in lowered.split("/")):
+        return "refuse"
+    for rule in reversed((*_BUILT_IN_RULES, *policy.rule)):
+        if path_allowed(lowered, [pattern.lower() for pattern in rule.paths]):
+            if rule.access == "open" or (rule.access == "step" and step in rule.steps):
+                return "keep"
+            return "refuse"
+    return "task"
 
 
 def merge_keeps(path: str, allowed: list[str]) -> bool:

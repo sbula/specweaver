@@ -50,6 +50,55 @@
           "symbol_sha": "sha256:f0ad4c5b0ebdad64caa93cd38c82271a3bbc11b6d6abf4c81e5cfbd93d4de3ef"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "May this step change this path?",
+      "scope": [
+        "tests/unit/sandbox/test_doc_access.py"
+      ],
+      "mutants": [
+        {
+          "id": "first-match-wins",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "doc_access",
+          "old": "    for rule in reversed((*_BUILT_IN_RULES, *policy.rule)):\n",
+          "new": "    for rule in (*_BUILT_IN_RULES, *policy.rule):\n",
+          "breaks": "a project can never open a part of a closed folder, nor close a part of an open one",
+          "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
+        },
+        {
+          "id": "built-in-rules-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "doc_access",
+          "old": "    for rule in reversed((*_BUILT_IN_RULES, *policy.rule)):\n",
+          "new": "    for rule in reversed(policy.rule):\n",
+          "breaks": "README and docs/ are open to every agent in a project that writes no rule",
+          "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
+        },
+        {
+          "id": "protected-files-openable",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "doc_access",
+          "old": "    if any(part in PROTECTED_NAMES for part in lowered.split(\"/\")):\n",
+          "new": "    if False:\n",
+          "breaks": "a rule can let an agent rewrite context.yaml or .specweaver",
+          "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
+        },
+        {
+          "id": "step-rule-for-every-step",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "doc_access",
+          "old": "            if rule.access == \"open\" or (rule.access == \"step\" and step in rule.steps):\n",
+          "new": "            if rule.access in (\"open\", \"step\"):\n",
+          "breaks": "a step-only path is changed by any step",
+          "symbol_sha": "sha256:ce0cfd3f8342a5b59a4fc41e298fc6255c9690e18ca0e67c1ffdc1ab16eaf6eb"
+        }
+      ]
     }
   ]
 }

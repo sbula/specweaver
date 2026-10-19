@@ -24,6 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from specweaver.sandbox.security import PROTECTED_NAMES
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,14 +63,7 @@ class FileExecutor:
     """
 
     # Files/directories that are NEVER writable by standard agents.
-    _PROTECTED_PATTERNS: frozenset[str] = frozenset(
-        {
-            "context.yaml",
-            ".env",
-            ".git",
-            ".specweaver",
-        }
-    )
+    _PROTECTED_PATTERNS: frozenset[str] = PROTECTED_NAMES
 
     def __init__(self, cwd: Path) -> None:
         if not cwd.exists():
