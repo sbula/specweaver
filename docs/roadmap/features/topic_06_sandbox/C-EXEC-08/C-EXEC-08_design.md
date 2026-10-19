@@ -52,7 +52,7 @@ None. The rule order is `.gitignore`'s: the last matching line wins.
 | FR-3 | Generated blocks | Policy, runner | SHALL let a named `bash` step replace one marked block inside a file — its standard output becomes the block — and no LLM step ever `[agreed 2026-10-19]`; a file without the block's markers fails the step, naming them | a README's counts update with no person, and the rest of the README stays human |
 | FR-4 | Steps by name | Policy | SHALL name the steps of a `step` rule or a block by their pipeline step name `[agreed 2026-10-19]` | exactly the intended step gets the right, not every step of a kind |
 | FR-5 | Last match wins | Policy | SHALL decide a path by the last rule whose pattern matches it `[agreed 2026-10-19]` | a folder can be opened and a part of it closed |
-| FR-6 | No section, no change | Policy | SHALL, for a project without `[docs]`, keep today's rule: `README.md` and `docs/**` human, the rest by the task's grant `[agreed 2026-10-19]` | nothing changes for a project that does not opt in |
+| FR-6 | No section, no change | Policy | SHALL, for a project without `[docs]`, keep today's rule: `README.md` and `docs/**` human, the rest by the task's grant `[agreed 2026-10-19]`; with `[docs]`, these built-in rules come first and the project's after, so a path no project rule names keeps its protection `[agreed 2026-10-19]` | nothing changes for a project that does not opt in |
 | FR-7 | A refused change is a proposal | Merge | SHALL keep each doc change an agent may not make as a proposal in `doc_updates.md`, and the run goes on `[agreed 2026-10-19]` | no wanted change is lost, and no person is interrupted |
 | FR-8 | One rule, two places | Grant, merge | SHALL decide a write through the task grant and through the worktree merge by the same policy, for the step that wrote it | an agent is never told it may write what the merge then throws away |
 
@@ -163,11 +163,11 @@ SF-01, then SF-02 and SF-03.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The policy | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The policy | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Grant and merge follow it | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Generated blocks | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-19.
-**Next**: the SF-01 plan.
+**Next**: SF-01 dev, CB-1 (plan approved 2026-10-19).
