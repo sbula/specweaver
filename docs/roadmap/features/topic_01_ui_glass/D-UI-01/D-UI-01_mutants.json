@@ -216,7 +216,7 @@
           "old": "        if self.active_count >= limit:\n",
           "new": "        if self.active_count > limit:\n",
           "breaks": "one run more than the limit is taken",
-          "symbol_sha": "sha256:0bd1d2172119d531a26ad43db48d3045e001e40790a92a64524d58e255d67db1"
+          "symbol_sha": "sha256:628f7ef3e46b8e28cfc5ec38799ceaeb2cfe36ea4374ef742e7d0ee71cf7a9f6"
         },
         {
           "id": "zero-runs-accepted",
@@ -227,6 +227,45 @@
           "new": "    max_runs: int | None = Field(default=None)\n",
           "breaks": "a limit of 0 is accepted and no run can ever start",
           "symbol_sha": "sha256:a0de15f57a51c5ad635b9a5be2e2c8d0816b66c7c2eff80241c332c5300285d1"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A run's stream never waits for nothing",
+      "scope": [
+        "tests/integration/interfaces/api/test_ws_ends.py"
+      ],
+      "mutants": [
+        {
+          "id": "stream-waits-for-a-dead-run",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/ws.py",
+          "symbol": "pipeline_ws",
+          "old": "        if not bridge.is_active(run_id):\n",
+          "new": "        if False:\n",
+          "breaks": "a stream for an unknown or finished run waits for ever, one server task per client",
+          "symbol_sha": "sha256:232f87a267d71c9520e0e1ce6fe803f306e7d5533aa3161aea019f5b50895066"
+        },
+        {
+          "id": "unknown-run-reads-as-done",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/ws.py",
+          "symbol": "pipeline_ws",
+          "old": "                if bridge.knows(run_id)\n",
+          "new": "                if True\n",
+          "breaks": "a mistyped run id looks like a run that finished",
+          "symbol_sha": "sha256:232f87a267d71c9520e0e1ce6fe803f306e7d5533aa3161aea019f5b50895066"
+        },
+        {
+          "id": "started-runs-forgotten",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/event_bridge.py",
+          "symbol": "EventBridge.start_run",
+          "old": "        self._started.add(run_id)\n",
+          "new": "        pass\n",
+          "breaks": "a finished run reads as one nobody started",
+          "symbol_sha": "sha256:628f7ef3e46b8e28cfc5ec38799ceaeb2cfe36ea4374ef742e7d0ee71cf7a9f6"
         }
       ]
     }

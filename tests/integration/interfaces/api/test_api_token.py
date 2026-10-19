@@ -116,6 +116,12 @@ class _OneEventBridge:
     def unsubscribe(self, _run_id: str, _queue: asyncio.Queue) -> None:
         pass
 
+    def is_active(self, _run_id: str) -> bool:
+        return True
+
+    def knows(self, _run_id: str) -> bool:
+        return True
+
 
 def test_the_websocket_takes_the_token_in_its_query(
     client: TestClient, monkeypatch: pytest.MonkeyPatch

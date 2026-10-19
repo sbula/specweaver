@@ -37,8 +37,9 @@ def _db(tmp_path):
 
 @pytest.fixture()
 def bridge():
-    """Fresh EventBridge for each test."""
+    """Fresh EventBridge for each test, its runs counted as running: the events are pushed by hand."""
     b = EventBridge()
+    b.is_active = lambda _run_id: True  # type: ignore[method-assign]
     set_event_bridge(b)
     return b
 

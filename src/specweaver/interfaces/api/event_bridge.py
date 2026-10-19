@@ -28,6 +28,7 @@ class EventBridge:
     """
 
     def __init__(self) -> None:
+        self._started: set[str] = set()
         self._tasks: dict[str, asyncio.Task[Any]] = {}
         self._subscribers: dict[str, list[asyncio.Queue[dict[str, Any] | None]]] = {}
         self._results: dict[str, Any] = {}
@@ -67,6 +68,7 @@ class EventBridge:
             raise ValueError(msg)
 
         self._subscribers.setdefault(run_id, [])
+        self._started.add(run_id)
 
         async def _wrapper() -> Any:
             try:
@@ -168,6 +170,10 @@ class EventBridge:
     def get_result(self, run_id: str) -> Any:
         """Get the PipelineRun result for a completed run, or None."""
         return self._results.get(run_id)
+
+    def knows(self, run_id: str) -> bool:
+        """Whether this server ever started the run."""
+        return run_id in self._started
 
     def is_active(self, run_id: str) -> bool:
         """Check if a run is currently active (not done)."""
