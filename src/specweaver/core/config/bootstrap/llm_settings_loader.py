@@ -38,9 +38,9 @@ def load_llm_settings(project_root: Path | None) -> LlmSettingsFiles:
     project_path = project_root / PROJECT_FILE_NAME if project_root else None
     keys_path = specweaver_root() / KEYS_FILE_NAME
     return LlmSettingsFiles.from_texts(
-        machine_text=_read(machine_path),
+        machine_text=read_settings_text(machine_path),
         machine_source=str(machine_path),
-        project_text=_read(project_path),
+        project_text=read_settings_text(project_path),
         project_source=str(project_path) if project_path else "(no project)",
         project_root=project_root,
         keys=load_keys(keys_path),
@@ -59,7 +59,8 @@ def load_keys(path: Path) -> dict[str, str]:
     return {name: value for name, value in dotenv_values(path).items() if value}
 
 
-def _read(path: Path | None) -> str:
+def read_settings_text(path: Path | None) -> str:
+    """A settings file's text; empty when it is missing."""
     if path is None or not path.is_file():
         return ""
     return path.read_text(encoding="utf-8-sig")

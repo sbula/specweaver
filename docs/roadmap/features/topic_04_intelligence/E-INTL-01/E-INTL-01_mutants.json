@@ -97,7 +97,7 @@
           "old": "        project_source=str(project_path) if project_path else \"(no project)\",\n        project_root=project_root,\n",
           "new": "        project_source=str(project_path) if project_path else \"(no project)\",\n",
           "breaks": "a real command never finds the project's vault",
-          "symbol_sha": "sha256:b5431d622e0d10739d946b2d550cee9b066e30d1caf1e2d31e8ed8853ed2349b"
+          "symbol_sha": "sha256:3ef20c82ef6a634d179fbec9ec0fd3a121412dcd89598c1a1834f21a49dc9463"
         },
         {
           "id": "round-text-raw",

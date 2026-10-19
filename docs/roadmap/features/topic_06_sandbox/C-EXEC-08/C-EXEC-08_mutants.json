@@ -1,0 +1,55 @@
+{
+  "schema": 2,
+  "feature": "C-EXEC-08",
+  "campaigns": [
+    {
+      "requirement": "NFR-1",
+      "title": "A broken policy refuses, naming its line",
+      "scope": [
+        "tests/unit/core/config/test_doc_policy.py"
+      ],
+      "mutants": [
+        {
+          "id": "rule-leaves-the-project",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "_inside",
+          "old": "    if not entry.strip() or entry.startswith((\"/\", \"\\\\\")) or entry[1:2] == \":\" or \"..\" in parts:\n",
+          "new": "    if not entry.strip() or entry.startswith((\"/\", \"\\\\\")) or entry[1:2] == \":\":\n",
+          "breaks": "a rule can name ../ and open files outside the project",
+          "symbol_sha": "sha256:662cbfd5d6627322f3984e4ff9de3abf2a0069abce385f2629a5ad9c5bcda29f"
+        },
+        {
+          "id": "step-rule-without-steps",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "DocRule._steps_with_step_access",
+          "old": "        if access == \"step\" and not steps:\n",
+          "new": "        if False:\n",
+          "breaks": "a step rule naming no step is accepted and nobody may write its paths",
+          "symbol_sha": "sha256:2189c4a4bc13ceafaba9b41d105594a19ee2870b84bdf437e9a89c6ee6677cb6"
+        },
+        {
+          "id": "error-names-the-first-rule",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "_line",
+          "old": "    start = starts[index]\n",
+          "new": "    start = starts[0]\n",
+          "breaks": "an error in a later rule points at the wrong line",
+          "symbol_sha": "sha256:9a12a32c6c8a92c227a9dc63e148ab0ece6e554d87042bc1b5ee44095cb15f2d"
+        },
+        {
+          "id": "block-name-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "DocBlock._plain_name",
+          "old": "        if not _BLOCK_NAME.fullmatch(name):\n",
+          "new": "        if False:\n",
+          "breaks": "a block name can close its own marker and inject text into the file",
+          "symbol_sha": "sha256:f0ad4c5b0ebdad64caa93cd38c82271a3bbc11b6d6abf4c81e5cfbd93d4de3ef"
+        }
+      ]
+    }
+  ]
+}
