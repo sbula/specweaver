@@ -115,7 +115,8 @@ rate_date = 2026-09-26
   price in your settings file always wins. A hosted `openai-compatible` server (Together,
   Fireworks) is refreshed only if its entry names its models.dev provider:
   `models_dev = "togetherai"`. Cached input has its own prices too: `usd_per_million_cached_read`
-  and `usd_per_million_cache_write`, and `sw usage` shows the cached tokens.
+  and `usd_per_million_cache_write`, and `sw usage` shows the cached tokens. A vLLM server reports
+  them only when started with `--enable-prompt-tokens-details`; without it SpecWeaver says so once.
 - A `qwen` server needs its `base_url` (DashScope's addresses carry your workspace).
 - Every cloud server names its key variable in `api_key_env`; a key goes only to the server that
   names it. A server that needs no key is `kind = "openai-compatible"`.

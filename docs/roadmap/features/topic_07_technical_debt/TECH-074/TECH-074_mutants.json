@@ -533,7 +533,7 @@
           "old": "        unpriced = record.estimated_cost_usd is None and not record.billed.local\n",
           "new": "        unpriced = record.estimated_cost_usd is None\n",
           "breaks": "every local call warns that it has no known price",
-          "symbol_sha": "sha256:5886c426fd1f52938e027f15b429efa2cb51524e9f135c1173137569d193d48d"
+          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
         }
       ]
     },

@@ -44,7 +44,7 @@
           "old": "                prompt_tokens=prompt, completion_tokens=output, total_tokens=prompt + output\n",
           "new": "                prompt_tokens=0, completion_tokens=output, total_tokens=output\n",
           "breaks": "a streamed call's prompt is never counted",
-          "symbol_sha": "sha256:f9141a2e8c7b586fad1fec24f6c45463cb15d79ee7e292fa1b77f3bd09311343"
+          "symbol_sha": "sha256:ecab38280c6d3ae3aea135d85e0690ec11b262e5c40cb15091b9dbe7885691a5"
         },
         {
           "id": "failed-tool-call-not-counted",
@@ -94,7 +94,7 @@
           "old": "            if response.usage == TokenUsage()\n",
           "new": "            if False\n",
           "breaks": "a server that reports no usage never fills the token limit",
-          "symbol_sha": "sha256:5886c426fd1f52938e027f15b429efa2cb51524e9f135c1173137569d193d48d"
+          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
         }
       ]
     },

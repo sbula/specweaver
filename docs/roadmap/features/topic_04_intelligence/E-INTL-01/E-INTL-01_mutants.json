@@ -57,7 +57,7 @@
           "old": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n        messages, config, scope, reservation, call_id = await self._begin(messages, config)\n",
           "new": "        \"\"\"Proxy ``generate_stream()`` — yields chunks; tokens are estimated from the text.\"\"\"\n        _, config, scope, reservation, call_id = await self._begin(messages, config)\n",
           "breaks": "a streamed prompt carries secrets",
-          "symbol_sha": "sha256:f9141a2e8c7b586fad1fec24f6c45463cb15d79ee7e292fa1b77f3bd09311343"
+          "symbol_sha": "sha256:ecab38280c6d3ae3aea135d85e0690ec11b262e5c40cb15091b9dbe7885691a5"
         },
         {
           "id": "vault-ignored",

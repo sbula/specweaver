@@ -155,6 +155,55 @@
           "symbol_sha": "sha256:6a1de898f57532057ac537170a99117c14d6015f6f19bef69a4463905c1d3cf3"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A local server without a cached count says how vLLM reports it",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_vllm_cache_hint.py"
+      ],
+      "mutants": [
+        {
+          "id": "hint-for-hosted-servers",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._hint_cache_count",
+          "old": "        if self._count_hinted or prices is None or not prices.local:\n",
+          "new": "        if self._count_hinted or prices is None:\n",
+          "breaks": "a hosted server is told to restart vLLM",
+          "symbol_sha": "sha256:6522e18ce5c4290aecf04927b0f6da4c0594c3ecb7529631028c205078288501"
+        },
+        {
+          "id": "hint-every-call",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._hint_cache_count",
+          "old": "        self._count_hinted = True\n",
+          "new": "        pass\n",
+          "breaks": "the hint repeats on every call and floods the console",
+          "symbol_sha": "sha256:6522e18ce5c4290aecf04927b0f6da4c0594c3ecb7529631028c205078288501"
+        },
+        {
+          "id": "hint-for-streams",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._capture",
+          "old": "        if reported:\n            self._hint_cache_count(response.usage, scope.prices)\n",
+          "new": "        self._hint_cache_count(response.usage, scope.prices)\n",
+          "breaks": "a stream, whose usage is only estimated, is mistaken for a server that hides its cache",
+          "symbol_sha": "sha256:dbfed9d11ca54b898390a4cc1f884d571ada393a8d01d9a6d100185bdd1e830a"
+        },
+        {
+          "id": "hint-despite-a-count",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._hint_cache_count",
+          "old": "        if usage == TokenUsage() or usage.cached_read_tokens is not None:\n",
+          "new": "        if usage == TokenUsage():\n",
+          "breaks": "a server that does report its cache is told it does not",
+          "symbol_sha": "sha256:6522e18ce5c4290aecf04927b0f6da4c0594c3ecb7529631028c205078288501"
+        }
+      ]
     }
   ]
 }

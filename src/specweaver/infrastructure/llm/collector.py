@@ -88,6 +88,7 @@ class TelemetryCollector:
         self._scope_of = scope_of
         self._unpriced_warned: set[str] = set()
         self._rule_warned: set[str] = set()
+        self._count_hinted = False
         self._budget = budget or SpendBudget()
         self._ledger = ledger
         #: Ledger writes that failed. Counted, never raised: a cost row never stops the work.
@@ -240,7 +241,7 @@ class TelemetryCollector:
             ),
         )
         await self._capture(
-            config, synthetic, time.monotonic() - start, scope, reservation, call_id
+            config, synthetic, time.monotonic() - start, scope, reservation, call_id, reported=False
         )
 
     # ------------------------------------------------------------------
@@ -255,8 +256,12 @@ class TelemetryCollector:
         scope: CallScope,
         reservation: Reservation,
         call_id: int | None,
+        *,
+        reported: bool = True,
     ) -> None:
         """Create a UsageRecord and append to the internal list.
+
+        ``reported`` is false for a stream, whose usage is estimated from its text, not reported.
 
         ``task_type`` is read from ``config.task_type`` (set per call
         by each handler), NOT from the constructor.
@@ -278,6 +283,8 @@ class TelemetryCollector:
                 "%s has no known price: its tokens are counted, its money is not", config.model
             )
         self._check_cache_rule(config.model, response.usage, scope.prices)
+        if reported:
+            self._hint_cache_count(response.usage, scope.prices)
         # A reply that reports no usage counts its reserved worst case.
         cost = (
             None
@@ -285,6 +292,19 @@ class TelemetryCollector:
             else Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
         )
         self._budget.record(scope, cost, reservation)
+
+    def _hint_cache_count(self, usage: TokenUsage, prices: PriceBook | None) -> None:
+        """Once per local server whose reply carries no cached count: how vLLM is made to report it."""
+        if self._count_hinted or prices is None or not prices.local:
+            return
+        if usage == TokenUsage() or usage.cached_read_tokens is not None:
+            return
+        self._count_hinted = True
+        logger.warning(
+            "%s reports no cached tokens, so `sw usage` cannot show them; if it is vLLM, start it "
+            "with --enable-prompt-tokens-details",
+            self._server or "the local server",
+        )
 
     def _check_cache_rule(self, model: str, usage: TokenUsage, prices: PriceBook | None) -> None:
         """Warn once per model when a cache hit breaks the offering's rule: the provider's rule
