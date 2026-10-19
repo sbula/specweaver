@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from specweaver.interfaces.api import deps
+from specweaver.interfaces.api.auth import TokenGuard
 from specweaver.interfaces.api.errors import SpecWeaverAPIError, specweaver_error_handler
 
 # Re-exported, not defined: the singleton lives beside the class it hands out, so the route modules
@@ -35,12 +36,14 @@ if TYPE_CHECKING:
 
 def create_app(
     *,
+    token: str,
     db: Database | None = None,
     cors_origins: list[str] | None = None,
 ) -> FastAPI:
     """Create and configure the SpecWeaver FastAPI application.
 
     Args:
+        token: The secret every request must carry (`auth.TokenGuard`); no app is built open.
         db: Optional Database instance. If None, creates a default one.
         cors_origins: Allowed CORS origins. Defaults to localhost.
 
@@ -75,6 +78,9 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Added last, so it runs first: nothing, CORS answers included, is served without the token.
+    app.add_middleware(TokenGuard, token=token)
 
     # --- Error Handlers ---
     app.add_exception_handler(SpecWeaverAPIError, specweaver_error_handler)  # type: ignore[arg-type]

@@ -48,8 +48,8 @@ def _project_with_spec(tmp_path, _db):
 @pytest.fixture()
 def client(_db):
     """TestClient for the API."""
-    app = create_app(db=_db)
-    return TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=_db)
+    return TestClient(app, headers=AUTH)
 
 
 import anyio  # noqa: E402
@@ -78,6 +78,7 @@ def _get_domain_profile_sync(db, project: str) -> str | None:
 
 
 from specweaver.commons.async_bridge import run_sync  # noqa: E402
+from tests.api_token import AUTH, TEST_TOKEN  # noqa: E402
 
 
 def _sync_run(coro):

@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from starlette.testclient import TestClient
 
+from tests.api_token import AUTH, TEST_TOKEN
 from tests.scripted_llm import FixedRouter
 
 
@@ -34,8 +35,8 @@ def client(tmp_path):
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    app = create_app(db=db)
-    return TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=db)
+    return TestClient(app, headers=AUTH)
 
 
 @pytest.fixture()

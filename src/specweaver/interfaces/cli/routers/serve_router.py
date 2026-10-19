@@ -6,10 +6,14 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import typer
 
 from specweaver.interfaces.cli import _core
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +63,26 @@ def serve(
     from specweaver.core.config.database import Database
     from specweaver.core.config.paths import config_db_path
     from specweaver.interfaces.api.app import create_app
+    from specweaver.interfaces.api.auth import make_token
 
+    token = make_token()
+    token_file = _write_token(token)
     db = Database(config_db_path())
-    app = create_app(db=db, cors_origins=cors_origins)
+    app = create_app(db=db, token=token, cors_origins=cors_origins)
 
     _core.console.print(
         f"[bold]SpecWeaver API[/bold] starting on [cyan]http://{host}:{port}[/cyan]",
     )
+    # Never wrapped or cut: an address with half a token opens nothing.
+    _core.console.print("Dashboard available at:")
     _core.console.print(
-        f"Dashboard available at: [green]http://{host}:{port}/dashboard[/green]",
+        f"http://{host}:{port}/dashboard?token={token}",
+        soft_wrap=True,
+        highlight=False,
+        markup=False,
+    )
+    _core.console.print(
+        f"[dim]Programs send the token from {token_file} as `Authorization: Bearer`.[/dim]"
     )
     _core.console.print("[dim]OpenAPI docs: /docs  |  Health: /healthz[/dim]")
 
@@ -80,3 +95,18 @@ def serve(
         reload=reload,
         log_level="info",
     )
+
+
+def _write_token(token: str) -> Path:
+    """Keep this start's token beside the settings, readable by its owner only."""
+    import os
+
+    from specweaver.core.config.paths import specweaver_root
+
+    path = specweaver_root() / "serve.token"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(token + "\n")
+    return path

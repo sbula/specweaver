@@ -92,6 +92,94 @@
           "symbol_sha": "sha256:839764e82bab47ff28f11f77c5f5ee461c05e12f5282e4a5f2e665d37b6bc4a2"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Only the token's holder is served",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_token.py"
+      ],
+      "mutants": [
+        {
+          "id": "guard-lets-everything-through",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "TokenGuard.__call__",
+          "old": "        if self._holds(connection):\n",
+          "new": "        if True:\n",
+          "breaks": "any web page, program or user can start runs and execute generated code",
+          "symbol_sha": "sha256:3f96f0eada4fe42ab8e0afad61e33360a0d410ac7c236c4a4e865d7c25b62f59"
+        },
+        {
+          "id": "every-path-open",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "TokenGuard.__call__",
+          "old": "        if scope[\"type\"] not in (\"http\", \"websocket\") or scope[\"path\"] in OPEN_PATHS:\n",
+          "new": "        if scope[\"type\"] not in (\"http\", \"websocket\") or scope[\"path\"] != \"/nothing\":\n",
+          "breaks": "the guard exempts every route, not only the health check",
+          "symbol_sha": "sha256:3f96f0eada4fe42ab8e0afad61e33360a0d410ac7c236c4a4e865d7c25b62f59"
+        },
+        {
+          "id": "websocket-unguarded",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "TokenGuard.__call__",
+          "old": "            if self._holds(connection) or self._matches(query.get(\"token\")):\n",
+          "new": "            if True:\n",
+          "breaks": "any page can watch a run's events",
+          "symbol_sha": "sha256:3f96f0eada4fe42ab8e0afad61e33360a0d410ac7c236c4a4e865d7c25b62f59"
+        },
+        {
+          "id": "any-token-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "TokenGuard._matches",
+          "old": "        return given is not None and hmac.compare_digest(given.encode(), self._token.encode())\n",
+          "new": "        return given is not None\n",
+          "breaks": "any token at all opens the server",
+          "symbol_sha": "sha256:a61963c460d56b373446fc9175f1d9e27dc5ea3b02ca30d2c2ab399b31339ef7"
+        },
+        {
+          "id": "cookie-sent-cross-site",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/auth.py",
+          "symbol": "_set_cookie",
+          "old": "    response.set_cookie(COOKIE, token, httponly=True, samesite=\"strict\", path=\"/\")\n",
+          "new": "    response.set_cookie(COOKIE, token, httponly=True, path=\"/\")\n",
+          "breaks": "a cross-site form post carries the cookie, and the dashboard's gate can be answered by another site",
+          "symbol_sha": "sha256:ae6ce980e5513fee85cc473292e372e962637b2368115be73408cfe83c337169"
+        },
+        {
+          "id": "guard-never-installed",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "    app.add_middleware(TokenGuard, token=token)\n",
+          "new": "    pass\n",
+          "breaks": "the token is made and printed but never asked for",
+          "symbol_sha": "sha256:145bf6ae41fa3f2231ba7405a2c74b4d4ea34d0c30952242d4ee0c17dc83bef6"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-1",
+      "title": "The token file is its owner's alone",
+      "scope": [
+        "tests/e2e/capabilities/interfaces/test_serve_token_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "token-file-world-readable",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
+          "symbol": "_write_token",
+          "old": "    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)\n",
+          "new": "    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)\n",
+          "breaks": "every user on the machine can read the token",
+          "symbol_sha": "sha256:e4af243970d4bf3658270a20c2ff337d536954c85cb266ff0f32460ed32b1b17"
+        }
+      ]
     }
   ]
 }

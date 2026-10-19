@@ -25,6 +25,7 @@ from starlette.testclient import TestClient
 
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app
+from tests.api_token import AUTH, TEST_TOKEN
 
 
 @pytest.fixture(autouse=True)
@@ -40,8 +41,8 @@ def client(tmp_path):
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
-    app = create_app(db=db)
-    return TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=db)
+    return TestClient(app, headers=AUTH)
 
 
 def test_root_redirects_to_dashboard(client) -> None:
@@ -299,8 +300,8 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     anyio.run(_setup_db)
 
-    app = create_app(db=db)
-    client = TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=db)
+    client = TestClient(app, headers=AUTH)
 
     # Set up pipeline definitions to prevent FileNotFoundError
     pipeline_def_dir = tmp_path / "validate_only"
@@ -368,8 +369,8 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(db_path=tmp_path / "test.db")
-    app = create_app(db=db)
-    client = TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=db)
+    client = TestClient(app, headers=AUTH)
 
     run = PipelineRun(
         run_id="test-gate-error-1",

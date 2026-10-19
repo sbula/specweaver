@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from starlette.testclient import TestClient
 
+from tests.api_token import AUTH, TEST_TOKEN
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -74,7 +76,9 @@ def test_approving_the_gate_finishes_the_run(
     scripts.mkdir(parents=True)
     (scripts / "s.sh").write_text('#!/usr/bin/env bash\necho "$1" >> steps.log\n', encoding="utf-8")
 
-    with TestClient(create_app(db=Database(data / "specweaver.db"))) as client:
+    with TestClient(
+        create_app(token=TEST_TOKEN, db=Database(data / "specweaver.db")), headers=AUTH
+    ) as client:
         client.post(
             "/api/v1/projects", json={"name": "rest", "path": str(project), "scaffold": False}
         )

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
+from tests.api_token import AUTH, TEST_TOKEN
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,8 +29,8 @@ async def test_api_execution_writes_json_telemetry(tmp_path: Path) -> None:
         log_file = get_log_path("test_project")
 
         db = Database(tmp_path / "test.db")
-        app = create_app(db=db)
-        client = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        client = TestClient(app, headers=AUTH)
 
         try:
             # Hit the health check endpoint

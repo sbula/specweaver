@@ -23,6 +23,7 @@ import pytest
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app, set_event_bridge
 from specweaver.interfaces.api.event_bridge import EventBridge
+from tests.api_token import AUTH, TEST_TOKEN
 
 
 @pytest.fixture()
@@ -47,8 +48,8 @@ def client(_db, bridge):
     """TestClient for the API."""
     from starlette.testclient import TestClient
 
-    app = create_app(db=_db)
-    return TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=_db)
+    return TestClient(app, headers=AUTH)
 
 
 class TestWebSocket:

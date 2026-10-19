@@ -9,6 +9,8 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 
+from tests.api_token import AUTH, TEST_TOKEN
+
 
 @pytest.fixture()
 def client(tmp_path):
@@ -19,12 +21,12 @@ def client(tmp_path):
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
-    app = create_app(db=db)
-    return TestClient(app)
+    app = create_app(token=TEST_TOKEN, db=db)
+    return TestClient(app, headers=AUTH)
 
 
 class TestAppFactory:
-    """Tests for create_app()."""
+    """Tests for create_app(token=TEST_TOKEN)."""
 
     def test_app_has_openapi_title(self, client: TestClient) -> None:
         """OpenAPI docs should use SpecWeaver branding."""
@@ -88,8 +90,8 @@ class TestCORSHeaders:
 
         bootstrap_database(str(tmp_path / ".sw-cors" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors" / "specweaver.db")
-        app = create_app(db=db)
-        c = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        c = TestClient(app, headers=AUTH)
 
         resp = c.options(
             "/healthz",
@@ -110,8 +112,8 @@ class TestCORSHeaders:
 
         bootstrap_database(str(tmp_path / ".sw-cors2" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors2" / "specweaver.db")
-        app = create_app(db=db)
-        c = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        c = TestClient(app, headers=AUTH)
 
         resp = c.options(
             "/healthz",
@@ -132,8 +134,8 @@ class TestCORSHeaders:
 
         bootstrap_database(str(tmp_path / ".sw-cors3" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors3" / "specweaver.db")
-        app = create_app(db=db)
-        c = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        c = TestClient(app, headers=AUTH)
 
         # Non-localhost origin should be rejected when env is empty
         resp = c.options(
@@ -155,8 +157,8 @@ class TestCORSHeaders:
 
         bootstrap_database(str(tmp_path / ".sw-cors4" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors4" / "specweaver.db")
-        app = create_app(db=db)
-        c = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        c = TestClient(app, headers=AUTH)
 
         resp = c.options(
             "/healthz",
@@ -177,8 +179,8 @@ class TestCORSHeaders:
 
         bootstrap_database(str(tmp_path / ".sw-cors5" / "specweaver.db"))
         db = Database(tmp_path / ".sw-cors5" / "specweaver.db")
-        app = create_app(db=db, cors_origins=["http://prog.example.com"])
-        c = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db, cors_origins=["http://prog.example.com"])
+        c = TestClient(app, headers=AUTH)
 
         # Env origin allowed
         resp1 = c.options(

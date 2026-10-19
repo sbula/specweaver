@@ -25,6 +25,7 @@ import httpx2
 import pytest
 from starlette.testclient import TestClient
 
+from tests.api_token import AUTH, TEST_TOKEN
 from tests.fake_http import fake_httpx2
 
 if TYPE_CHECKING:
@@ -93,7 +94,7 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
     (project / "specs" / "a_spec.md").write_text("# A\n## 1. Purpose\nDoes A.\n")
 
     with (
-        TestClient(create_app(db=Database(db_path))) as client,
+        TestClient(create_app(token=TEST_TOKEN, db=Database(db_path)), headers=AUTH) as client,
         fake_httpx2(lambda _request: httpx2.Response(200, json=_REPLY)) as seen,
     ):
         client.post(

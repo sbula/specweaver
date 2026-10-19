@@ -5,15 +5,9 @@
 
 Proves: D-UI-01 FR-3
 
-Phase 1 of this API ships **no authentication** — the plan says so outright and justifies it by
-the server being local-only. That makes the bind address the entire access control story: change
-the default from `127.0.0.1` to `0.0.0.0` and every endpoint here, including the ones that start
-pipeline runs and execute code, is reachable by anything on the network with no credential at all.
-
-Nothing tested it. The suite has 145 API tests and the closest was a CORS regex assertion, which
-governs which *browser origins* may call a server somebody can already reach — a different
-question. So this was a one-character change away from an unauthenticated remote surface, with a
-green suite either side of it.
+Every request needs the server's token (`FR-6`, `test_api_token.py`), but the bind is still the
+first wall: change the default from `127.0.0.1` to `0.0.0.0` and every endpoint, including the ones
+that start runs and execute code, is one leaked token away from anything on the network.
 """
 
 from __future__ import annotations

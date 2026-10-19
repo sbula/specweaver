@@ -22,6 +22,7 @@ from starlette.testclient import TestClient
 from specweaver.core.config.database import Database
 from specweaver.interfaces.api.app import create_app, set_event_bridge
 from specweaver.interfaces.api.event_bridge import EventBridge
+from tests.api_token import AUTH, TEST_TOKEN
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 # ---------- Helpers ----------
@@ -69,8 +70,8 @@ def _live_env():
         set_event_bridge(EventBridge())
 
         # --- App + client ---
-        app = create_app(db=db)
-        client = TestClient(app)
+        app = create_app(token=TEST_TOKEN, db=db)
+        client = TestClient(app, headers=AUTH)
 
         yield {
             "client": client,

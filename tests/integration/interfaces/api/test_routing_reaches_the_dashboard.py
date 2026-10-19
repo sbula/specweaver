@@ -45,6 +45,7 @@ from specweaver.core.flow.handlers.base import StepHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.interfaces.api.app import create_app
+from tests.api_token import AUTH, TEST_TOKEN
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -118,7 +119,9 @@ def client(data_dir: Path) -> TestClient:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
     bootstrap_database(str(data_dir / "test.db"))
-    return TestClient(create_app(db=Database(db_path=data_dir / "test.db")))
+    return TestClient(
+        create_app(token=TEST_TOKEN, db=Database(db_path=data_dir / "test.db")), headers=AUTH
+    )
 
 
 @pytest.fixture

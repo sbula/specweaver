@@ -25,6 +25,7 @@ import httpx2
 import pytest
 from starlette.testclient import TestClient
 
+from tests.api_token import AUTH, TEST_TOKEN
 from tests.fake_http import fake_httpx2
 
 if TYPE_CHECKING:
@@ -73,7 +74,9 @@ def client(tmp_path: Path, monkeypatch) -> TestClient:
     (data_dir / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
     bootstrap_database(str(data_dir / "specweaver.db"))
-    test_client = TestClient(create_app(db=Database(data_dir / "specweaver.db")))
+    test_client = TestClient(
+        create_app(token=TEST_TOKEN, db=Database(data_dir / "specweaver.db")), headers=AUTH
+    )
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
     (project / "specs" / "greeter_spec.md").write_text(
