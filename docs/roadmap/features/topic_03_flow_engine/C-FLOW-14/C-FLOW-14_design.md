@@ -54,7 +54,7 @@ conversation grows; each provider advises static content first (not adopted here
 | FR-1 | Anthropic caches | Anthropic adapter | SHALL send automatic caching (`cache_control`, one breakpoint that moves with the conversation) on every request, tool rounds included `[agreed 2026-10-18]`, with the 5-minute lifetime `[agreed 2026-10-18]` | a tool loop pays the full price for each round's new part only |
 | FR-2 | A cache key for runs that start alike | OpenAI and Mistral adapters | SHALL send `prompt_cache_key` derived from the project and the step type `[agreed 2026-10-18]`, to first-party OpenAI and Mistral servers only | runs of one step type share a cache; Mistral caches at all |
 | FR-3 | The timestamp at the end | Prompt builder | SHALL render the run's timestamp at the end of the prompt, not in the metadata at its start `[agreed 2026-10-18]`; `date_iso` stays for decomposition | everything before it is the same from run to run |
-| FR-4 | An outlived cache warns | Collector | SHALL warn, once per model, when a reply reports cached tokens although the same start was last sent longer ago than the rule's lifetime | a provider's changed lifetime is noticed from the calls (`TECH-074` FR-11) |
+| FR-4 | An outlived cache warns | Collector | SHALL warn, once per model, when a reply reports cached tokens although the same start was last sent more than twice the rule's lifetime ago `[agreed 2026-10-19]` | a provider's changed lifetime is noticed from the calls (`TECH-074` FR-11) |
 | FR-5 | vLLM's missing count is explained | Collector | SHALL warn once per local server whose reply carries no cached count, naming `--enable-prompt-tokens-details` `[agreed 2026-10-18]`; the user guide says the same | the GB10's cache is visible without reading the guide |
 
 ## Requirement–Surface Bindings
@@ -84,7 +84,7 @@ None new.
 | # | Decision | Why |
 |---|---|---|
 | AD-1 | The prompt order stays instructions first `[agreed 2026-10-18]`; moving stable parts first is left to the quality score `A-FLOW-01` lists as open | its effect on answers cannot be judged until quality can be measured |
-| AD-2 | The lifetime check keeps its memory in the process | a cache lives minutes; a run is one process |
+| AD-2 | The lifetime check keeps, in the database, when each prompt start was last sent: a hash of the start, never its text, kept 7 days after it was last sent `[agreed 2026-10-19]` | runs are separate processes, and a hit after a run is what reveals a changed lifetime |
 
 ## ROI Analysis
 
@@ -138,9 +138,9 @@ SF-01, then SF-02 (FR-4 needs the caches SF-01 creates to be testable end to end
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Prompts that hit the cache | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The cache warnings | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The cache warnings | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-18.
-**Next**: the SF-02 plan (the cache warnings). SF-01 committed 2026-10-18.
+**Next**: SF-02 dev, CB-1 (plan approved 2026-10-19).
