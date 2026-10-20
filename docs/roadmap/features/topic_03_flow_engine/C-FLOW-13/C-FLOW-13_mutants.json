@@ -112,7 +112,7 @@
           "old": "    raise typer.Exit(code=1) from err\n",
           "new": "    return\n",
           "breaks": "a broken settings file no longer stops the command cleanly; it runs on with no settings and crashes",
-          "symbol_sha": "sha256:e3b19b916c0b739130765366e2adbb3d9504ab05a5283658c4217c012690eb87"
+          "symbol_sha": "sha256:8c07bbf92229cf8ee858ca4a1ed8b50816c3afed58af268a3428b70278a5cff9"
         }
       ]
     },

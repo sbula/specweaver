@@ -254,6 +254,30 @@ def doc_access(policy: DocPolicy, path: str, step: str | None) -> DocAccess:
 
 WriteVerdict = Literal["keep", "propose", "strip"]
 
+#: Dependency manifests and lock files: a change outside the task's files is the user's decision.
+MANIFESTS: frozenset[str] = frozenset(
+    {
+        "pyproject.toml",
+        "uv.lock",
+        "package.json",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "pom.xml",
+        "build.gradle",
+        "build.gradle.kts",
+        "cargo.toml",
+        "cargo.lock",
+        "go.mod",
+        "go.sum",
+    }
+)
+
+
+def _is_manifest(lowered: str) -> bool:
+    name = lowered.rsplit("/", 1)[-1]
+    return name in MANIFESTS or (name.startswith("requirements") and name.endswith(".txt"))
+
 
 def write_verdict(
     policy: DocPolicy, path: str, step: str | None, allowed: list[str]
@@ -270,7 +294,9 @@ def write_verdict(
         return "keep"
     access = doc_access(policy, path, step)
     if access == "task":
-        return "keep" if path_allowed(path, allowed) else "strip"
+        if path_allowed(path, allowed):
+            return "keep"
+        return "propose" if _is_manifest(lowered) else "strip"
     return "keep" if access == "keep" else "propose"
 
 

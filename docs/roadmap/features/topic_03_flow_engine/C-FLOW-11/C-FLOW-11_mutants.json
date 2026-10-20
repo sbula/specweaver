@@ -67,27 +67,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/work_unit.py",
           "symbol": "InProcessAgentRuntime.run",
-          "old": "result = await self._dispatcher.execute(call.name, call.args)",
-          "new": "result = {}",
-          "breaks": "requested tools are never executed, so the agent iterates over nothing"
-        }
-      ]
-    },
-    {
-      "requirement": "FR-4",
-      "title": "The loop cannot run away",
-      "scope": [
-        "tests/unit/core/flow/engine/test_work_unit.py"
-      ],
-      "mutants": [
-        {
-          "id": "turn-ceiling-lifted",
-          "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/work_unit.py",
-          "symbol": "InProcessAgentRuntime.run",
-          "old": "for turn in range(1, self._max_turns + 1):",
-          "new": "for turn in range(1, 10_000):",
-          "breaks": "the configured turn ceiling is ignored, so an agent that never converges never stops"
+          "old": "        response = await self._llm.generate_with_tools(messages, self._config, self._dispatcher)\n",
+          "new": "        response = await self._llm.generate_with_tools(messages, self._config, None)\n",
+          "breaks": "the coder is given no tools and can only answer in text",
+          "symbol_sha": "sha256:1c8920d0834951f78c2282e81dee344aa1829f5a214d7b0abf8c44e0c619cd85"
         }
       ]
     },
@@ -183,6 +166,26 @@
           "new": "        raw = getattr(policy, \"mode\", None)\n",
           "breaks": "a project-wide agentic reaches review and contract steps",
           "symbol_sha": "sha256:82ab5cfe435b2c51f79ba0746144d2d2659702d8a328e4927b1080bc9e945937"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A new dependency is the user's decision",
+      "scope": [
+        "tests/unit/sandbox/test_write_verdict.py",
+        "tests/integration/core/flow/engine/test_refused_docs_become_proposals.py"
+      ],
+      "mutants": [
+        {
+          "id": "manifest-stripped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "write_verdict",
+          "old": "        return \"propose\" if _is_manifest(lowered) else \"strip\"\n",
+          "new": "        return \"strip\"\n",
+          "breaks": "a coder's new dependency is silently lost",
+          "symbol_sha": "sha256:381a701396e08c6acd973b8c5e9780e71f404dc0fe52bdf22d4750c7c2b52a63"
         }
       ]
     }

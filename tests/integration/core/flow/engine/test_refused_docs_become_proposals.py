@@ -6,6 +6,7 @@
 Proves: C-EXEC-08 FR-7
 Proves: C-EXEC-08 FR-8
 Proves: C-EXEC-08 NFR-2
+Proves: C-FLOW-11 FR-9
 
 Real git, real `bash` steps, the real runner: per-step worktrees (`use_worktree`) and one session
 worktree for the whole run.
@@ -228,3 +229,19 @@ def test_a_failed_steps_leftover_stays_its_own(tmp_path: Path) -> None:
     assert run.status == RunStatus.COMPLETED, run
     assert not (root / "docs" / "api" / "x.md").exists()
     assert "+stray" in _proposals(root)
+
+
+def test_a_manifest_change_outside_the_task_is_proposed(tmp_path: Path) -> None:
+    """C-FLOW-11 FR-9: adding a dependency stays the user's decision, and is not lost."""
+    root = _project(
+        tmp_path,
+        {
+            "dep.sh": 'printf "[project]\\nname = \\"p\\"\\ndependencies = [\\"left-pad\\"]\\n" > pyproject.toml\n'
+        },
+        seed={"pyproject.toml": '[project]\nname = "p"\n'},
+    )
+
+    _run(root, [_step("implement", "dep.sh", own_worktree=True)])
+
+    assert (root / "pyproject.toml").read_text(encoding="utf-8") == '[project]\nname = "p"\n'
+    assert '+dependencies = ["left-pad"]' in _proposals(root)

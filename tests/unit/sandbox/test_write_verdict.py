@@ -5,6 +5,7 @@
 
 Proves: C-EXEC-08 FR-8
 Proves: C-EXEC-08 NFR-3
+Proves: C-FLOW-11 FR-9
 
 One decider for the task grant and the merge. `keep` lets the write stand; `propose` is a doc change
 a rule refuses — the merge keeps it in `doc_updates.md`; `strip` is a change nobody may make.
@@ -81,3 +82,17 @@ def test_a_protected_file_is_stripped_whatever_opens_it(path: str) -> None:
 
     assert write_verdict(everything, path, "any", ["**"]) == "strip"
     assert write_verdict(_NONE, path, None, []) == "strip"
+
+
+@pytest.mark.parametrize("path", ["pyproject.toml", "uv.lock", "web/package-lock.json", "go.sum"])
+def test_a_manifest_outside_the_task_is_proposed(path: str) -> None:
+    """C-FLOW-11 FR-9: a new dependency is the user's decision, and the change is not lost."""
+    assert write_verdict(_NONE, path, "implement", _TASK) == "propose"
+
+
+def test_a_manifest_the_task_lists_is_kept() -> None:
+    assert write_verdict(_NONE, "pyproject.toml", "bump", ["pyproject.toml"]) == "keep"
+
+
+def test_a_file_that_merely_looks_like_a_manifest_is_stripped() -> None:
+    assert write_verdict(_NONE, "src/pyproject.toml.py", "implement", _TASK) == "strip"

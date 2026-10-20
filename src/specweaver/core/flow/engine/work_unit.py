@@ -7,9 +7,9 @@
 `AgentRuntime` because *which* agent runtime SpecWeaver should stand on is an open strategic
 question and building it into the dial would answer it by accident.
 
-The shipped implementation drives the run's own LLM adapter in a tool loop. That adapter is
-already wrapped by `TelemetryCollector`, so the run's spend ceiling applies here with no extra
-wiring.
+The shipped implementation hands the coder's tools to the run's own LLM adapter, whose tool loop
+stops at `[brake] agent_turns`. That adapter is already wrapped by `TelemetryCollector`, so the
+run's spend limits apply here with no extra wiring.
 
 An external agent CLI is a legitimate second runtime but not the first one: `_CREDENTIAL_VARS`
 strips every provider key from sandboxed children on purpose, so a subprocess runtime would need a
@@ -24,8 +24,6 @@ from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_MAX_TURNS = 10
-
 
 @dataclass(frozen=True)
 class WorkUnit:
@@ -38,16 +36,9 @@ class WorkUnit:
 
 @dataclass(frozen=True)
 class WorkUnitResult:
-    """What it produced, and whether it finished or was cut off.
-
-    `converged=False` is not an error — the output is still gated like any other step's. It
-    records that the agent was still working when a bound stopped it, which is the difference
-    between *this is done* and *this is as far as the budget went*.
-    """
+    """What the agent said when it stopped asking for tools."""
 
     output: str
-    turns: int
-    converged: bool
 
 
 class AgentRuntime(Protocol):
@@ -57,58 +48,21 @@ class AgentRuntime(Protocol):
 
 
 class InProcessAgentRuntime:
-    """Drives the run's LLM adapter in a tool loop until it stops asking for tools.
+    """Gives the run's LLM adapter the coder's tools and lets its tool loop run once.
 
-    Two bounds, and both are load-bearing. Turns stop a loop that calls cheap tools forever
-    without the spend ceiling ever noticing; the spend ceiling stops ten turns that each cost a
-    fortune. Either alone leaves the other case open.
+    Two bounds, both outside this class: the adapter's round limit (`[brake] agent_turns`) stops
+    cheap tool calls without end, and the run's spend limits stop costly ones. Neither error is
+    caught here — a stopped loop ends the step, it is not a turn that merely failed.
     """
 
-    def __init__(
-        self,
-        llm: Any,
-        dispatcher: Any,
-        *,
-        config: Any = None,
-        max_turns: int = _DEFAULT_MAX_TURNS,
-    ) -> None:
-        if max_turns < 1:
-            raise ValueError(
-                f"max_turns must be at least 1, got {max_turns}. An agent loop without a turn "
-                "ceiling is the runaway this capability exists to bound."
-            )
+    def __init__(self, llm: Any, dispatcher: Any, *, config: Any = None) -> None:
         self._llm = llm
         self._dispatcher = dispatcher
         self._config = config
-        self._max_turns = max_turns
 
     async def run(self, unit: WorkUnit) -> WorkUnitResult:
-        """Iterate until the agent stops requesting tools, or a bound stops it.
-
-        `BudgetExceededError` is deliberately not caught: the spend ceiling ends the run, and
-        swallowing it here would turn a tripped breaker into a turn that merely failed.
-        """
         messages: list[Any] = [{"role": "user", "content": unit.instructions}]
         if unit.context:
             messages.insert(0, {"role": "system", "content": unit.context})
-
-        response: Any = None
-        for turn in range(1, self._max_turns + 1):
-            response = await self._llm.generate_with_tools(messages, self._config, self._dispatcher)
-            calls = getattr(response, "tool_calls", None) or []
-            if not calls:
-                return WorkUnitResult(
-                    output=getattr(response, "text", ""), turns=turn, converged=True
-                )
-
-            for call in calls:
-                result = await self._dispatcher.execute(call.name, call.args)
-                messages.append({"role": "tool", "content": str(result)})
-
-        logger.warning(
-            "Work unit hit its turn ceiling of %d without converging; output is gated as usual",
-            self._max_turns,
-        )
-        return WorkUnitResult(
-            output=getattr(response, "text", ""), turns=self._max_turns, converged=False
-        )
+        response = await self._llm.generate_with_tools(messages, self._config, self._dispatcher)
+        return WorkUnitResult(output=getattr(response, "text", ""))

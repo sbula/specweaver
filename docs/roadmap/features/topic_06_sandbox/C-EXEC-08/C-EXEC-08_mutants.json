@@ -142,7 +142,7 @@
           "old": "    return \"keep\" if access == \"keep\" else \"propose\"\n",
           "new": "    return \"keep\" if access == \"keep\" else \"strip\"\n",
           "breaks": "a refused doc change is lost instead of proposed",
-          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+          "symbol_sha": "sha256:381a701396e08c6acd973b8c5e9780e71f404dc0fe52bdf22d4750c7c2b52a63"
         },
         {
           "id": "doc-updates-anywhere",
@@ -152,7 +152,7 @@
           "old": "    if lowered == \"doc_updates.md\":\n",
           "new": "    if lowered.endswith(\"doc_updates.md\"):\n",
           "breaks": "docs/doc_updates.md slips past the docs/ protection",
-          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+          "symbol_sha": "sha256:381a701396e08c6acd973b8c5e9780e71f404dc0fe52bdf22d4750c7c2b52a63"
         },
         {
           "id": "protected-proposed",
@@ -162,7 +162,7 @@
           "old": "    if any(part in PROTECTED_NAMES for part in lowered.split(\"/\")):\n        return \"strip\"\n",
           "new": "    if False:\n        return \"strip\"\n",
           "breaks": "a .env change could be copied into doc_updates.md",
-          "symbol_sha": "sha256:807c91527f6b00aef28bf7e5447e766fb6ab632274c4dd272814ab1cde44278c"
+          "symbol_sha": "sha256:381a701396e08c6acd973b8c5e9780e71f404dc0fe52bdf22d4750c7c2b52a63"
         },
         {
           "id": "merge-ignores-the-policy",
