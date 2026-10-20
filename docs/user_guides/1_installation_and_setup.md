@@ -274,6 +274,9 @@ A pipeline step can ask for it itself: `mode: agentic` on a `generate` step with
   proposal in `doc_updates.md`. SpecWeaver installs from the manifests; the coder never does.
 - **Bounded.** `[brake] agent_turns` in `settings.toml` limits the coder's tool rounds; reaching it
   fails the step. The spend limits apply as to every call.
+- **`sw implement` follows the dial.** With `mode = "agentic"`, its code and tests steps run the
+  coder. Each lands its file through the merge, as commits on your current branch, so the working
+  tree must be clean: otherwise the run stops and says "commit or stash first".
 
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 

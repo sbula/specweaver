@@ -182,9 +182,9 @@ SF-01, then SF-02, then SF-03.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The project's policy | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | An agentic generate step | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | `sw implement` follows the dial | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | `sw implement` follows the dial | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: SF-03 dev (the `sw implement` journey). SF-03 plan approved 2026-10-20.
+**Next**: the user's sign-off. All three sub-features committed 2026-10-20.

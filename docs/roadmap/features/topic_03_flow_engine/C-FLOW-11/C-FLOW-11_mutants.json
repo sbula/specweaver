@@ -270,6 +270,35 @@
           "symbol_sha": "sha256:e514b1730e4c939ffcc1bc58ba10c84b6c58503a1ca1fcd144cd5e2538971379"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "sw implement follows the dial",
+      "scope": [
+        "tests/e2e/capabilities/workflows/test_implement_follows_the_dial_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "project-mode-never-reaches-a-step",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/autonomy.py",
+          "symbol": "requested_mode",
+          "old": "        raw = getattr(policy, \"mode\", None) if agentic_kind in AGENTIC_STEPS else None\n",
+          "new": "        raw = None\n",
+          "breaks": "sw implement stays one-shot whatever the project says",
+          "symbol_sha": "sha256:82ab5cfe435b2c51f79ba0746144d2d2659702d8a328e4927b1080bc9e945937"
+        },
+        {
+          "id": "implement-agentic-in-place",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "resolve_should_isolate",
+          "old": "    if resolve_execution_mode(step_def, context).mode is ExecutionMode.AGENTIC:\n        return True\n",
+          "new": "    if False:\n        return True\n",
+          "breaks": "sw implement's coder writes the real repo, past the merge",
+          "symbol_sha": "sha256:e514b1730e4c939ffcc1bc58ba10c84b6c58503a1ca1fcd144cd5e2538971379"
+        }
+      ]
     }
   ]
 }

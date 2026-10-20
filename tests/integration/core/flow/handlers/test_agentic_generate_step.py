@@ -234,3 +234,17 @@ def test_a_step_rule_for_this_step_lets_the_coder_write_its_doc(tmp_path: Path) 
 
     assert "error" not in coder.answers["docs/api/greeter.py"], coder.answers
     assert (root / "docs" / "api" / "greeter.py").exists()
+
+
+def test_a_dirty_working_tree_stops_the_run_and_keeps_the_changes(tmp_path: Path) -> None:
+    """The coder's work lands through a merge, which needs a clean tree `[agreed 2026-10-20]`."""
+    root = _project(tmp_path)
+    (root / "src").mkdir()
+    (root / "src" / "greeter.py").write_text("# mine, not committed\n", encoding="utf-8")
+    _git(root, "add", "src/greeter.py")
+
+    run = _run(root, _Coder("src/greeter.py"))
+
+    assert run.status == RunStatus.FAILED
+    assert "commit or stash" in (_result(run).error_message or "")
+    assert (root / "src" / "greeter.py").read_text(encoding="utf-8") == "# mine, not committed\n"
