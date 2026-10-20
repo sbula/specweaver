@@ -6,7 +6,11 @@
       "requirement": "FR-2",
       "title": "Criticality overrules the pipeline author",
       "scope": [
-        "tests/unit/core/flow/engine/test_autonomy_dial.py"
+        "tests/e2e/capabilities/core/test_agentic_without_a_ceiling_e2e.py",
+        "tests/integration/core/flow/engine/test_agentic_needs_a_ceiling.py",
+        "tests/integration/core/flow/engine/test_autonomy_policy_integration.py",
+        "tests/unit/core/flow/engine/test_autonomy_dial.py",
+        "tests/unit/core/flow/engine/test_mode_at_load.py"
       ],
       "mutants": [
         {
@@ -16,7 +20,38 @@
           "symbol": "resolve_execution_mode",
           "old": "if DALLevel(dal).rank > DALLevel(ceiling).rank:",
           "new": "if False:",
-          "breaks": "a DAL-A target runs agentic whenever the pipeline asks for it"
+          "breaks": "a DAL-A target runs agentic whenever the pipeline asks for it",
+          "symbol_sha": "sha256:694052800f704abb2f159398b1dfae0993cbef7ec2be1ab299d4920f390c50fc"
+        },
+        {
+          "id": "missing-ceiling-runs",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/security.py",
+          "symbol": "verify_agentic_ceiling",
+          "old": "    if policy.agentic_max_dal is not None:\n",
+          "new": "    if True:\n",
+          "breaks": "an agentic run starts in a project that named no ceiling",
+          "symbol_sha": "sha256:097e576f84c56ddaaaff4751e467be7cb45fa30f020b9b1017ca11cf1317518d"
+        },
+        {
+          "id": "refusal-unexplained",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/autonomy.py",
+          "symbol": "resolve_execution_mode",
+          "old": "            f\"agentic refused: {DALLevel(dal).value} is above the ceiling {DALLevel(ceiling).value}\"\n",
+          "new": "            \"agentic refused\"\n",
+          "breaks": "a step runs one-shot and nobody can tell why",
+          "symbol_sha": "sha256:694052800f704abb2f159398b1dfae0993cbef7ec2be1ab299d4920f390c50fc"
+        },
+        {
+          "id": "error-cut-by-markup",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "print_error",
+          "old": "    console.print(\"Error:\", str(err), style=\"red\", markup=False, highlight=False, soft_wrap=True)\n",
+          "new": "    console.print(f\"[red]Error:[/red] {err}\")\n",
+          "breaks": "sw run shows a refusal with the setting's name eaten or cut",
+          "symbol_sha": "sha256:4c47dfc5d79251c9d10bbdf28b757ce4e3f31fd7423e68df504636507d455b11"
         }
       ]
     },
@@ -105,6 +140,49 @@
           "new": "        autonomy = load_autonomy(project_root / \"missing\")\n",
           "breaks": "an API run ignores the project's [autonomy]",
           "symbol_sha": "sha256:4b408d70cac17b1bbed15c1854e10ee6c5ce13869b642fd0e58f081e557e3298"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Only code and tests generation go agentic",
+      "scope": [
+        "tests/unit/core/flow/engine/test_autonomy_dial.py",
+        "tests/unit/core/flow/engine/test_mode_at_load.py",
+        "tests/integration/core/flow/engine/test_agentic_needs_a_ceiling.py",
+        "tests/integration/core/flow/engine/test_autonomy_policy_integration.py",
+        "tests/e2e/capabilities/core/test_agentic_without_a_ceiling_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "agentic-anywhere",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "_validate_mode",
+          "old": "    if (step.action, step.target) not in AGENTIC_STEPS:\n",
+          "new": "    if False:\n",
+          "breaks": "a reviewer or a bash step loads with mode: agentic",
+          "symbol_sha": "sha256:c46676246fdae5e4b5801cd379e645e67c8a17dbd4dd1a975ad21d2f49597a56"
+        },
+        {
+          "id": "any-mode-word",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "_validate_mode",
+          "old": "    if step.mode != \"agentic\":\n",
+          "new": "    if False:\n",
+          "breaks": "a typo in mode is accepted and treated as agentic",
+          "symbol_sha": "sha256:c46676246fdae5e4b5801cd379e645e67c8a17dbd4dd1a975ad21d2f49597a56"
+        },
+        {
+          "id": "project-default-everywhere",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/autonomy.py",
+          "symbol": "requested_mode",
+          "old": "        raw = getattr(policy, \"mode\", None) if agentic_kind in AGENTIC_STEPS else None\n",
+          "new": "        raw = getattr(policy, \"mode\", None)\n",
+          "breaks": "a project-wide agentic reaches review and contract steps",
+          "symbol_sha": "sha256:82ab5cfe435b2c51f79ba0746144d2d2659702d8a328e4927b1080bc9e945937"
         }
       ]
     }

@@ -89,7 +89,7 @@
           "old": "            project_name=registered_name(self._context),\n",
           "new": "            project_name=self._context.project_path.name,\n",
           "breaks": "a run parked over REST cannot be resumed when the project is named unlike its folder",
-          "symbol_sha": "sha256:136c81fc5dba874cb4fd6040c64c32ebe48352d313d1183fec3233d161d0a2b2"
+          "symbol_sha": "sha256:40be02c55a74d850eaa2b9d3e891f4337e732c2ed656946245bad72132bee0ce"
         }
       ]
     },

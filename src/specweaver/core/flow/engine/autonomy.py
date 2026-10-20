@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import enum
 import logging
-from typing import Any
+from typing import Any, NamedTuple
 
 from specweaver.commons.enums.dal import DALLevel
 
@@ -34,52 +34,48 @@ class ExecutionMode(enum.StrEnum):
     AGENTIC = "agentic"
 
 
-def _requested(step_def: Any, policy: Any) -> ExecutionMode:
-    """The mode asked for, before criticality gets a say.
+class ModeDecision(NamedTuple):
+    """The mode a step runs in and, when it asked for `agentic` and was refused, why."""
 
-    An explicit per-step `mode` wins; `None` — or a missing attribute, for a step model that
-    predates the dial — defers to the install's policy.
-    """
+    mode: ExecutionMode
+    reason: str | None
+
+
+NO_CEILING = "set [autonomy] agentic_max_dal in specweaver.toml"
+
+
+def requested_mode(step_def: Any, policy: Any) -> ExecutionMode:
+    """The mode asked for, before criticality gets a say: the step's own, else — for a code or
+    tests generation step — the project's, else `oneshot`."""
+    from specweaver.core.flow.engine.models import AGENTIC_STEPS
+
     raw = getattr(step_def, "mode", None)
     if raw is None:
-        raw = getattr(policy, "mode", None) or ExecutionMode.ONESHOT
-    try:
-        return ExecutionMode(raw)
-    except ValueError as exc:
-        raise ValueError(
-            f"Unknown execution mode {raw!r}. Valid values: "
-            f"{', '.join(m.value for m in ExecutionMode)}."
-        ) from exc
+        agentic_kind = (getattr(step_def, "action", None), getattr(step_def, "target", None))
+        raw = getattr(policy, "mode", None) if agentic_kind in AGENTIC_STEPS else None
+    return ExecutionMode(raw or ExecutionMode.ONESHOT)
 
 
-def resolve_execution_mode(step_def: Any, context: Any) -> ExecutionMode:
-    """The mode this step actually runs in.
+def resolve_execution_mode(step_def: Any, context: Any) -> ModeDecision:
+    """The mode this step actually runs in, and why agentic was refused when it was.
 
-    Criticality overrules the pipeline author, never the other way round: a DAL-A target is not a
-    place to let an agent improvise, whatever the YAML asked for. A run whose DAL could not be
-    resolved is treated as the strictest, so an unknown risk fails closed.
+    Criticality overrules the pipeline author, never the other way round. A run whose DAL is
+    unknown is treated as the strictest, and a project that named no ceiling runs nothing agentic.
     """
     isolation = getattr(context, "isolation", None)
     policy = getattr(isolation, "autonomy", None)
-
-    requested = _requested(step_def, policy)
-    if requested is ExecutionMode.ONESHOT:
-        return requested
-
-    dal = getattr(isolation, "dal_level", None)
-    if dal is None:
-        logger.debug("Autonomy: DAL unresolved, refusing agentic mode")
-        return ExecutionMode.ONESHOT
-
+    if requested_mode(step_def, policy) is ExecutionMode.ONESHOT:
+        return ModeDecision(ExecutionMode.ONESHOT, None)
     ceiling = getattr(policy, "agentic_max_dal", None)
     if ceiling is None:
-        logger.debug("Autonomy: no agentic ceiling set, refusing agentic mode")
-        return ExecutionMode.ONESHOT
+        return ModeDecision(ExecutionMode.ONESHOT, f"agentic refused: {NO_CEILING}")
+    dal = getattr(isolation, "dal_level", None)
+    if dal is None:
+        return ModeDecision(ExecutionMode.ONESHOT, "agentic refused: the run's DAL is unknown")
     if DALLevel(dal).rank > DALLevel(ceiling).rank:
-        logger.info(
-            "Autonomy: %s is stricter than the agentic ceiling %s — running oneshot",
-            DALLevel(dal).value,
-            DALLevel(ceiling).value,
+        reason = (
+            f"agentic refused: {DALLevel(dal).value} is above the ceiling {DALLevel(ceiling).value}"
         )
-        return ExecutionMode.ONESHOT
-    return ExecutionMode.AGENTIC
+        logger.info("Autonomy: %s", reason)
+        return ModeDecision(ExecutionMode.ONESHOT, reason)
+    return ModeDecision(ExecutionMode.AGENTIC, None)

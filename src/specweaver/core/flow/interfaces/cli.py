@@ -216,14 +216,14 @@ def run_pipeline(
         # exit code 1.
         raise
     except FileNotFoundError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
+        _core.print_error(exc)
         if verbose:
             import traceback
 
             _core.console.print(f"[dim]{traceback.format_exc()}[/dim]")
         raise typer.Exit(code=1) from None
     except ValueError as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
+        _core.print_error(exc)
         if verbose:
             import traceback
 

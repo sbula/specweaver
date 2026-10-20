@@ -162,9 +162,14 @@ def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFile
         refuse_llm_settings(err)
 
 
+def print_error(err: Exception) -> None:
+    """The error in full: a message naming `[autonomy]` is text, not markup, and is never cut."""
+    console.print("Error:", str(err), style="red", markup=False, highlight=False, soft_wrap=True)
+
+
 def refuse_llm_settings(err: Exception) -> NoReturn:
     """Stop a command whose LLM settings cannot be resolved, naming the file, key and line."""
-    console.print("Error:", str(err), style="red", markup=False, highlight=False)
+    print_error(err)
     raise typer.Exit(code=1) from err
 
 

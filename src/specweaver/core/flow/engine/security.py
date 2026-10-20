@@ -49,3 +49,16 @@ def verify_doc_blocks(pipeline: PipelineDefinition, context: RunContext) -> None
         if action is not None and action != StepAction.BASH:
             msg = f"{where}: step {block.step!r} is a {action.value} step; only a bash step fills a block"
             raise ValueError(msg)
+
+
+def verify_agentic_ceiling(pipeline: PipelineDefinition, context: RunContext) -> None:
+    """Refuse a run that would go agentic in a project that named no ceiling."""
+    from specweaver.core.flow.engine.autonomy import NO_CEILING, ExecutionMode, requested_mode
+
+    policy = context.isolation.autonomy
+    if policy.agentic_max_dal is not None:
+        return
+    for step in pipeline.steps:
+        if requested_mode(step, policy) is ExecutionMode.AGENTIC:
+            msg = f"step {step.name!r} asks for agentic, and the project names no ceiling: {NO_CEILING}"
+            raise ValueError(msg)

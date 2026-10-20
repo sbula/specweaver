@@ -371,6 +371,7 @@ class PipelineDefinition(BaseModel):
 
             # Required params, at load rather than when the step finally runs
             errors.extend(_validate_params(step))
+            errors.extend(_validate_mode(step))
 
         return errors
 
@@ -384,6 +385,26 @@ class PipelineDefinition(BaseModel):
 _REQUIRED_PARAMS: dict[StepAction, tuple[str, ...]] = {
     StepAction.BASH: ("script",),
 }
+
+
+#: The steps an agent may run with write tools: code and tests generation only.
+AGENTIC_STEPS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
+    {(StepAction.GENERATE, StepTarget.CODE), (StepAction.GENERATE, StepTarget.TESTS)}
+)
+
+
+def _validate_mode(step: PipelineStep) -> list[str]:
+    """A step's `mode` is `oneshot` or `agentic`, and `agentic` only where an agent may write."""
+    if step.mode is None or step.mode == "oneshot":
+        return []
+    if step.mode != "agentic":
+        return [f"Step '{step.name}' has mode {step.mode!r}; a step's mode is oneshot or agentic"]
+    if (step.action, step.target) not in AGENTIC_STEPS:
+        return [
+            f"Step '{step.name}' ({step.action.value} {step.target.value}) asks for agentic; "
+            "only code and tests generation steps may run agentic"
+        ]
+    return []
 
 
 def _validate_params(step: PipelineStep) -> list[str]:

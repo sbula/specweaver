@@ -436,7 +436,7 @@
           "old": "            budget.restore(run.spend_state)\n",
           "new": "            pass\n",
           "breaks": "a resumed run buys a fresh budget",
-          "symbol_sha": "sha256:207d78b0b1bdf534338d26c07a7b8ff45d43aedf9a3749cfbca9f72b62e1989e"
+          "symbol_sha": "sha256:d667526a14add060da65f964a8cfecd5c96c52718ce4e9928b9ad40e551b9c8c"
         },
         {
           "id": "store-drops-totals",

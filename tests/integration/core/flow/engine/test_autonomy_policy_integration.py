@@ -49,14 +49,14 @@ def _run(tmp_path: Path, dal: DALLevel, **autonomy: str) -> RunContext:
 def test_a_low_risk_run_reaches_agentic_through_the_real_chain(tmp_path: Path) -> None:
     context = _run(tmp_path, DALLevel.DAL_E, agentic_max_dal="DAL_D")
 
-    assert resolve_execution_mode(AGENTIC_STEP, context) is ExecutionMode.AGENTIC
+    assert resolve_execution_mode(AGENTIC_STEP, context).mode is ExecutionMode.AGENTIC
 
 
 def test_a_critical_run_is_refused_through_the_real_chain(tmp_path: Path) -> None:
     """The guarantee. Settings loaded from a real model, ceiling applied to a real DAL."""
     context = _run(tmp_path, DALLevel.DAL_A, agentic_max_dal="DAL_D")
 
-    assert resolve_execution_mode(AGENTIC_STEP, context) is ExecutionMode.ONESHOT
+    assert resolve_execution_mode(AGENTIC_STEP, context).mode is ExecutionMode.ONESHOT
 
 
 def test_a_configured_ceiling_travels_the_whole_way(tmp_path: Path) -> None:
@@ -64,14 +64,14 @@ def test_a_configured_ceiling_travels_the_whole_way(tmp_path: Path) -> None:
     default and this is the only test that would notice."""
     context = _run(tmp_path, DALLevel.DAL_B, agentic_max_dal="DAL_B")
 
-    assert resolve_execution_mode(AGENTIC_STEP, context) is ExecutionMode.AGENTIC
+    assert resolve_execution_mode(AGENTIC_STEP, context).mode is ExecutionMode.AGENTIC
 
 
 def test_the_ceiling_still_refuses_one_level_up(tmp_path: Path) -> None:
     """The control: a ceiling that permitted everything would also pass the test above."""
     context = _run(tmp_path, DALLevel.DAL_A, agentic_max_dal="DAL_B")
 
-    assert resolve_execution_mode(AGENTIC_STEP, context) is ExecutionMode.ONESHOT
+    assert resolve_execution_mode(AGENTIC_STEP, context).mode is ExecutionMode.ONESHOT
 
 
 def test_an_install_wide_default_reaches_a_step_that_asked_for_nothing(tmp_path: Path) -> None:
@@ -79,4 +79,4 @@ def test_an_install_wide_default_reaches_a_step_that_asked_for_nothing(tmp_path:
     plain = PipelineStep(name="g", action=StepAction.GENERATE, target=StepTarget.CODE)
     context = _run(tmp_path, DALLevel.DAL_E, mode="agentic", agentic_max_dal="DAL_E")
 
-    assert resolve_execution_mode(plain, context) is ExecutionMode.AGENTIC
+    assert resolve_execution_mode(plain, context).mode is ExecutionMode.AGENTIC
