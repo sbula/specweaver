@@ -167,11 +167,10 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Purpose:** Let how much freedom the agent gets be a setting, not a constant — tight on critical work, loose on cheap work
   > - **Trigger:** When a step runs and its mode is read
   > - **Precondition:** `D-FLOW-01` → the runner · the run's DAL · `B-FLOW-05` → the spend ceiling · `C-EXEC-08` → which docs an agentic coder may write
-  > - **Reads:** the step's `mode: oneshot | agentic` · `[autonomy]` install settings
+  > - **Reads:** a step's `mode` · the project's `[autonomy]` `[agreed 2026-10-19]`
   > - **Produces:** either a single-shot call, or a bounded tool loop behind a replaceable `AgentRuntime`
   > - **Enables:** agentic execution where the DAL permits it
-  > - **Done when:** a run refuses `agentic` above `agentic_max_dal`, and `oneshot` behaves exactly as before
-  > - **Limits:** `sw implement` still runs one-shot, so no user path reaches `agentic` mode
+  > - **Done when:** an agentic `generate` step writes its task through its tools, in a worktree; `sw implement` follows the dial
 
 * **`C-FLOW-12` 🔜: Autonomous DAG Execution**
   > - **Purpose:** Actually execute the decomposed DAG — `INT-US-21` produces the plan and deliberately stops before running it
