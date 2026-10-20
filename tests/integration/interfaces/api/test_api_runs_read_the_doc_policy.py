@@ -5,6 +5,7 @@
 
 Proves: C-EXEC-08 NFR-1
 Proves: C-EXEC-08 FR-1
+Proves: C-FLOW-11 FR-6
 
 | Bucket | Case |
 |---|---|
@@ -120,3 +121,26 @@ def test_a_resume_reads_the_policy_again(world: tuple[TestClient, Path]) -> None
     assert answer.status_code == 500, answer.json()
     assert answer.json()["error_code"] == "DOC_POLICY"
     assert (project / "steps.log").read_text(encoding="utf-8").split() == ["one"]
+
+
+def test_a_started_run_carries_the_projects_autonomy(world: tuple[TestClient, Path]) -> None:
+    """C-FLOW-11 FR-6."""
+    client, project = world
+    (project / "specweaver.toml").write_text('[autonomy]\nmode = "agentic"\n', encoding="utf-8")
+
+    with patch("specweaver.core.flow.engine.runner.PipelineRunner") as runner_class:
+        runner_class.return_value.run = AsyncMock()
+        _start(client)
+
+    assert runner_class.call_args.args[1].isolation.autonomy.mode == "agentic"
+
+
+def test_a_broken_autonomy_section_refuses_the_start(world: tuple[TestClient, Path]) -> None:
+    client, project = world
+    (project / "specweaver.toml").write_text('[autonomy]\nmode = "free"\n', encoding="utf-8")
+
+    answer = _start(client)
+
+    assert answer.status_code == 500, answer.json()
+    assert answer.json()["error_code"] == "AUTONOMY_POLICY"
+    assert "specweaver.toml:2:" in answer.json()["detail"]

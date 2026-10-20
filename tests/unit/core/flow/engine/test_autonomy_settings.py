@@ -6,14 +6,14 @@
 Proves: C-FLOW-11 FR-1, C-FLOW-11 FR-2, C-FLOW-11 NFR-1
 
 A dial nothing can turn is an architectural constant with extra steps. Two surfaces have to exist
-for the capability to be real: a pipeline step can name its mode, and an install can set the
+for the capability to be real: a pipeline step can name its mode, and a project can set the
 policy without editing any pipeline.
 """
 
 from __future__ import annotations
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.config.settings import AutonomySettings
+from specweaver.core.config.autonomy_policy import AutonomyPolicy
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 
 
@@ -32,24 +32,17 @@ def test_a_step_without_a_mode_defers_rather_than_defaulting_in_the_model() -> N
     assert step.mode is None
 
 
-def test_the_shipped_policy_is_oneshot() -> None:
+def test_the_empty_policy_is_oneshot() -> None:
     """Zero regression. Every pipeline in the repo predates the dial."""
-    assert AutonomySettings().mode == "oneshot"
+    assert AutonomyPolicy().mode == "oneshot"
 
 
-def test_the_shipped_agentic_ceiling_excludes_the_critical_levels() -> None:
-    """DAL-A and DAL-B are catastrophic and severe. Neither is a place to improvise."""
-    ceiling = DALLevel(AutonomySettings().agentic_max_dal)
-
-    assert ceiling.rank < DALLevel.DAL_B.rank
-
-
-def test_the_turn_ceiling_ships_finite() -> None:
-    assert AutonomySettings().max_turns >= 1
+def test_the_empty_policy_names_no_ceiling() -> None:
+    """No number nobody chose: agentic waits until a project names its ceiling (FR-2)."""
+    assert AutonomyPolicy().agentic_max_dal is None
 
 
 def test_the_policy_is_configurable() -> None:
-    settings = AutonomySettings(mode="agentic", agentic_max_dal=DALLevel.DAL_B, max_turns=3)
+    policy = AutonomyPolicy(mode="agentic", agentic_max_dal=DALLevel.DAL_B)
 
-    assert settings.mode == "agentic"
-    assert settings.max_turns == 3
+    assert (policy.mode, policy.agentic_max_dal) == ("agentic", DALLevel.DAL_B)

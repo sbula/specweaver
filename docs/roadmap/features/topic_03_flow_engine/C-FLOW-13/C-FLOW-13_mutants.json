@@ -797,7 +797,7 @@
           "old": "        project, roles_of(pipeline), run_model=run_model, project_root=project_path\n",
           "new": "        project, roles_of(pipeline), project_root=project_path\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:e3fdec87885c7fdce4bda8f6bb5034f244a98f028e444d13dd32b03eb12f2763"
+          "symbol_sha": "sha256:b0fe7ebac2f374bda1fa83f50e4496ca8c618984335296bd310605a69e38fd52"
         },
         {
           "id": "run-drops-run-model",
@@ -807,7 +807,7 @@
           "old": "    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)\n",
           "new": "    _wire_models(context, pipeline, active or project_path.name, run_model=None)\n",
           "breaks": "sw run and sw resume ignore --model",
-          "symbol_sha": "sha256:57c0bc81d675fff26dd07b6899075cdc34984598ecef014980872c43c76c11cf"
+          "symbol_sha": "sha256:1a2007eeacb440999cc26bf43252ce5a6f38c7b35e88fe016ab38d188820f8cf"
         },
         {
           "id": "resume-drops-run-model",

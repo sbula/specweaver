@@ -55,6 +55,58 @@
           "breaks": "the configured turn ceiling is ignored, so an agent that never converges never stops"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "The policy is the project's, read strictly",
+      "scope": [
+        "tests/unit/core/config/test_autonomy_policy.py",
+        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
+        "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
+        "tests/integration/core/flow/engine/test_autonomy_policy_integration.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-key-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/autonomy_policy.py",
+          "symbol": "AutonomyPolicy",
+          "old": "    model_config = ConfigDict(extra=\"forbid\", frozen=True)\n",
+          "new": "    model_config = ConfigDict(extra=\"ignore\", frozen=True)\n",
+          "breaks": "a typo or a stale max_turns is silently ignored",
+          "symbol_sha": "sha256:889eee5f4b11fa2850f8dda7a7402d9b92b53e3ddd650c964144c1f8bdfcdc41"
+        },
+        {
+          "id": "sw-run-reads-another-file",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_build_run_context",
+          "old": "            autonomy=_core.load_autonomy_at(project_path),\n",
+          "new": "            autonomy=_core.load_autonomy_at(project_path / \"missing\"),\n",
+          "breaks": "sw run and sw resume ignore the project's [autonomy]",
+          "symbol_sha": "sha256:1a2007eeacb440999cc26bf43252ce5a6f38c7b35e88fe016ab38d188820f8cf"
+        },
+        {
+          "id": "sw-implement-reads-another-file",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    autonomy = _core.load_autonomy_at(project_path)\n",
+          "new": "    autonomy = _core.load_autonomy_at(project_path / \"missing\")\n",
+          "breaks": "sw implement ignores the project's [autonomy]",
+          "symbol_sha": "sha256:b0fe7ebac2f374bda1fa83f50e4496ca8c618984335296bd310605a69e38fd52"
+        },
+        {
+          "id": "api-reads-another-file",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_project_policy",
+          "old": "        autonomy = load_autonomy(project_root)\n",
+          "new": "        autonomy = load_autonomy(project_root / \"missing\")\n",
+          "breaks": "an API run ignores the project's [autonomy]",
+          "symbol_sha": "sha256:4b408d70cac17b1bbed15c1854e10ee6c5ce13869b642fd0e58f081e557e3298"
+        }
+      ]
     }
   ]
 }

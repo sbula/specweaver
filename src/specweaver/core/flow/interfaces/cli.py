@@ -267,7 +267,10 @@ def _build_run_context(
         spec_path=spec_path,
         output_dir=project_path / "src",
         db=db,
-        isolation=IsolationPolicy(doc_policy=_core.load_doc_policy_at(project_path)),
+        isolation=IsolationPolicy(
+            doc_policy=_core.load_doc_policy_at(project_path),
+            autonomy=_core.load_autonomy_at(project_path),
+        ),
         guidance=GuidanceContent(
             constitution=info.content if info else None,
             standards=(

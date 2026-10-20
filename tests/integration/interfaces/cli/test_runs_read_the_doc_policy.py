@@ -5,6 +5,7 @@
 
 Proves: C-EXEC-08 NFR-1
 Proves: C-EXEC-08 FR-1
+Proves: C-FLOW-11 FR-6
 
 The policy rides on the run's isolation policy, where the grant and the merge read it. A broken
 `[docs]` stops the command naming the file and the line, and no step runs.
@@ -142,3 +143,37 @@ def test_a_broken_docs_section_stops_sw_implement(project: Path) -> None:
     assert result.exit_code == 1, result.output
     assert shows(result.output, "docs.rule.0.access")
     assert not runner_class.called
+
+
+_AUTONOMY = '[autonomy]\nmode = "agentic"\nagentic_max_dal = "DAL_D"\n'
+
+
+def test_the_run_context_carries_the_projects_autonomy(project: Path) -> None:
+    """C-FLOW-11 FR-6: `[autonomy]` rides beside `[docs]`."""
+    (project / "specweaver.toml").write_text(_AUTONOMY, encoding="utf-8")
+
+    autonomy = _context_of(project).isolation.autonomy
+
+    assert (autonomy.mode, autonomy.agentic_max_dal) == ("agentic", "DAL_D")
+
+
+def test_a_broken_autonomy_section_stops_sw_run(project: Path) -> None:
+    (project / "specweaver.toml").write_text('[autonomy]\nmode = "free"\n', encoding="utf-8")
+
+    result = runner.invoke(
+        app, ["run", "one_step.yaml", "specs/greeter_spec.md", "--project", str(project)]
+    )
+
+    assert result.exit_code == 1, result.output
+    assert shows(result.output, "specweaver.toml:2:")
+    assert shows(result.output, "autonomy.mode")
+    assert not (project / "steps.log").exists()
+
+
+def test_sw_implement_carries_the_projects_autonomy(project: Path) -> None:
+    (project / "specweaver.toml").write_text(_AUTONOMY, encoding="utf-8")
+
+    result, runner_class = _implement(project)
+
+    assert runner_class.called, result.output
+    assert runner_class.call_args.args[1].isolation.autonomy.mode == "agentic"

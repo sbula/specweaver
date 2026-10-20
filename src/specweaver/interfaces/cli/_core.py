@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, NoReturn, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from specweaver.core.config.autonomy_policy import AutonomyPolicy
     from specweaver.core.config.doc_policy import DocPolicy
     from specweaver.core.config.llm_settings import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
@@ -132,6 +133,17 @@ def load_doc_policy_at(path: Path) -> DocPolicy:
 
     try:
         return load_doc_policy(path)
+    except SettingsFileError as err:
+        refuse_llm_settings(err)
+
+
+def load_autonomy_at(path: Path) -> AutonomyPolicy:
+    """The autonomy policy of the project at `path`, or exit naming the file, key and line."""
+    from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
+    from specweaver.core.config.llm_settings import SettingsFileError
+
+    try:
+        return load_autonomy(path)
     except SettingsFileError as err:
         refuse_llm_settings(err)
 

@@ -71,7 +71,10 @@ def resolve_execution_mode(step_def: Any, context: Any) -> ExecutionMode:
         logger.debug("Autonomy: DAL unresolved, refusing agentic mode")
         return ExecutionMode.ONESHOT
 
-    ceiling = getattr(policy, "agentic_max_dal", DALLevel.DAL_D)
+    ceiling = getattr(policy, "agentic_max_dal", None)
+    if ceiling is None:
+        logger.debug("Autonomy: no agentic ceiling set, refusing agentic mode")
+        return ExecutionMode.ONESHOT
     if DALLevel(dal).rank > DALLevel(ceiling).rank:
         logger.info(
             "Autonomy: %s is stricter than the agentic ceiling %s — running oneshot",
