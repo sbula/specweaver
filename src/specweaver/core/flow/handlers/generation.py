@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.commons.lineage import extract_artifact_uuid
+from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.artifact_lineage import (
     derive_artifact_uuid,
@@ -155,16 +156,28 @@ class _GenerationHandler:
             except ValueError as e:
                 return _error_result(str(e), started)
 
-            generated = await self._generate(
-                generator,
-                context.spec_path,
-                output_path,
-                base_prompt=base_prompt,
-                artifact_uuid=artifact_uuid,
-                dictator_overrides=dictator_overrides,
-                validation_findings=validation_findings,
-                environment_context=mcp_env,
-            )
+            prompt_parts = {
+                "artifact_uuid": artifact_uuid,
+                "dictator_overrides": dictator_overrides,
+                "validation_findings": validation_findings,
+                "environment_context": mcp_env,
+            }
+            decision = resolve_execution_mode(step, context)
+            if decision.mode is ExecutionMode.AGENTIC:
+                refused = await _run_coder(
+                    step, context, output_path, adapter, config, base_prompt, prompt_parts
+                )
+                if refused:
+                    return _failed_result(refused, started)
+                generated = output_path
+            else:
+                generated = await self._generate(
+                    generator,
+                    context.spec_path,
+                    output_path,
+                    base_prompt=base_prompt,
+                    **prompt_parts,
+                )
             logger.info("%s: %s generated at '%s'", name, self.ARTEFACT, generated)
 
             await log_artifact_lineage(
@@ -175,9 +188,12 @@ class _GenerationHandler:
                 model_id=config.model,
             )
 
+            output: dict[str, Any] = {"generated_path": str(generated)}
+            if decision.reason:
+                output["agentic_refused"] = decision.reason
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"generated_path": str(generated)},
+                output=output,
                 started_at=started,
                 completed_at=_now_iso(),
                 artifact_uuid=artifact_uuid,
@@ -192,6 +208,53 @@ class _GenerationHandler:
 
                 detail += "\n" + traceback.format_exc()
             return _error_result(detail, started)
+
+
+async def _run_coder(
+    step: PipelineStep,
+    context: RunContext,
+    output_path: Path,
+    adapter: Any,
+    config: Any,
+    base_prompt: Any,
+    prompt_parts: dict[str, Any],
+) -> str | None:
+    """Let the coder write the step's target with its tools; why it could not, if it did not.
+
+    Its tools write only that one file, within the project's `[docs]` rules for this step.
+    """
+    from specweaver.core.flow.engine.isolation import task_files
+    from specweaver.core.flow.engine.work_unit import InProcessAgentRuntime, WorkUnit
+    from specweaver.sandbox.dispatcher import ToolDispatcher
+    from specweaver.sandbox.security import WorkspaceBoundary
+    from specweaver.workflows.implementation.generator import generation_prompt
+
+    target = output_path.relative_to(context.project_path).as_posix()
+    if target not in task_files(context):
+        return f"the step's target {target} is not among the run's task files"
+    dispatcher = ToolDispatcher.create_standard_set(
+        WorkspaceBoundary(roots=[context.project_path]),
+        role="implementer",
+        allowed_tools=["ast"],
+        task_files=[target],
+        doc_policy=context.isolation.doc_policy,
+        step=step.name,
+    )
+    prompt = generation_prompt(context.spec_path, base_prompt, **prompt_parts)
+    unit = WorkUnit(
+        instructions=f"{prompt}\n\nWrite `{target}` with your tools. Answer with a short note.",
+        context="You are a precise Python developer. You change files only through your tools.",
+    )
+    await InProcessAgentRuntime(adapter, dispatcher, config=config).run(unit)
+    if not (context.project_path / target).is_file():
+        return f"the coder ended without writing {target}"
+    return None
+
+
+def _failed_result(message: str, started: str) -> StepResult:
+    return StepResult(
+        status=StepStatus.FAILED, error_message=message, started_at=started, completed_at=_now_iso()
+    )
 
 
 def _spec_lineage_id(context: RunContext) -> str:

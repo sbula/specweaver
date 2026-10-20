@@ -56,6 +56,32 @@ Produce ONLY valid Python code. No markdown fences, no explanation.
 Start with imports, then test classes with test methods."""
 
 
+def generation_prompt(
+    spec_path: Path,
+    base_prompt: PromptBuilder,
+    *,
+    artifact_uuid: str | None = None,
+    dictator_overrides: list[str] | None = None,
+    validation_findings: str | None = None,
+    environment_context: str | None = None,
+) -> str:
+    """The prompt code or tests are generated from: the base, the spec, and what the run adds.
+
+    One-shot and agentic generation build it the same way, so both tag the file for lineage.
+    """
+    if artifact_uuid:
+        base_prompt.add_artifact_tagging(artifact_uuid, "python")
+    base_prompt.add_file(spec_path, priority=1, role="reference")
+    if dictator_overrides:
+        base_prompt.add_dictator_overrides(dictator_overrides)
+    if validation_findings:
+        base_prompt.add_context(validation_findings, "validation_errors", priority=2)
+    if environment_context:
+        base_prompt.add_context(environment_context, "environment_context")
+        logger.debug("generation prompt: MCP env injected (%d chars)", len(environment_context))
+    return base_prompt.build()
+
+
 class Generator:
     """LLM-driven code and test generator from specs."""
 
@@ -94,20 +120,14 @@ class Generator:
         Returns:
             Path to the generated code file.
         """
-        builder = base_prompt
-        if artifact_uuid:
-            builder.add_artifact_tagging(artifact_uuid, "python")
-
-        builder.add_file(spec_path, priority=1, role="reference")
-
-        if dictator_overrides:
-            builder.add_dictator_overrides(dictator_overrides)
-        if validation_findings:
-            builder.add_context(validation_findings, "validation_errors", priority=2)
-        if environment_context:
-            builder.add_context(environment_context, "environment_context")
-            logger.debug("generate_code: MCP env injected (%d chars)", len(environment_context))
-        prompt = builder.build()
+        prompt = generation_prompt(
+            spec_path,
+            base_prompt,
+            artifact_uuid=artifact_uuid,
+            dictator_overrides=dictator_overrides,
+            validation_findings=validation_findings,
+            environment_context=environment_context,
+        )
 
         messages = [
             Message(
@@ -153,20 +173,14 @@ class Generator:
         Returns:
             Path to the generated test file.
         """
-        builder = base_prompt
-        if artifact_uuid:
-            builder.add_artifact_tagging(artifact_uuid, "python")
-
-        builder.add_file(spec_path, priority=1, role="reference")
-
-        if dictator_overrides:
-            builder.add_dictator_overrides(dictator_overrides)
-        if validation_findings:
-            builder.add_context(validation_findings, "validation_errors", priority=2)
-        if environment_context:
-            builder.add_context(environment_context, "environment_context")
-            logger.debug("generate_tests: MCP env injected (%d chars)", len(environment_context))
-        prompt = builder.build()
+        prompt = generation_prompt(
+            spec_path,
+            base_prompt,
+            artifact_uuid=artifact_uuid,
+            dictator_overrides=dictator_overrides,
+            validation_findings=validation_findings,
+            environment_context=environment_context,
+        )
 
         messages = [
             Message(

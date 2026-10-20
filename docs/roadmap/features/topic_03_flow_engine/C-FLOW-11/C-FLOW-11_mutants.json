@@ -59,6 +59,8 @@
       "requirement": "FR-3",
       "title": "An agentic work unit actually iterates",
       "scope": [
+        "tests/e2e/capabilities/sandbox/test_coder_writes_only_its_task_e2e.py",
+        "tests/integration/core/flow/handlers/test_agentic_generate_step.py",
         "tests/unit/core/flow/engine/test_work_unit.py"
       ],
       "mutants": [
@@ -71,6 +73,66 @@
           "new": "        response = await self._llm.generate_with_tools(messages, self._config, None)\n",
           "breaks": "the coder is given no tools and can only answer in text",
           "symbol_sha": "sha256:1c8920d0834951f78c2282e81dee344aa1829f5a214d7b0abf8c44e0c619cd85"
+        },
+        {
+          "id": "agentic-never-taken",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
+          "new": "            if False:\n",
+          "breaks": "mode: agentic changes nothing; the step runs one-shot",
+          "symbol_sha": "sha256:dc43ac611b6a28a4cb38218b79e225d1a17ada950ad072954c6a5641472c3a16"
+        },
+        {
+          "id": "coder-without-its-step",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_run_coder",
+          "old": "        step=step.name,\n",
+          "new": "        step=None,\n",
+          "breaks": "a [docs] step rule never lets its own coder write",
+          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+        },
+        {
+          "id": "coder-without-the-doc-rules",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_run_coder",
+          "old": "        doc_policy=context.isolation.doc_policy,\n",
+          "new": "        doc_policy=None,\n",
+          "breaks": "the coder ignores the project's [docs] rules",
+          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+        },
+        {
+          "id": "coder-writes-both-files",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_run_coder",
+          "old": "        task_files=[target],\n",
+          "new": "        task_files=task_files(context),\n",
+          "breaks": "the tests step may rewrite the module",
+          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+        },
+        {
+          "id": "missing-target-passes",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_run_coder",
+          "old": "    if not (context.project_path / target).is_file():\n",
+          "new": "    if False:\n",
+          "breaks": "a coder that wrote nothing passes its step",
+          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+        },
+        {
+          "id": "refusal-reason-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "                output[\"agentic_refused\"] = decision.reason\n",
+          "new": "                pass\n",
+          "breaks": "a one-shot fallback hides why",
+          "symbol_sha": "sha256:dc43ac611b6a28a4cb38218b79e225d1a17ada950ad072954c6a5641472c3a16"
         }
       ]
     },
@@ -186,6 +248,26 @@
           "new": "        return \"strip\"\n",
           "breaks": "a coder's new dependency is silently lost",
           "symbol_sha": "sha256:381a701396e08c6acd973b8c5e9780e71f404dc0fe52bdf22d4750c7c2b52a63"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "An agentic step always runs in a worktree",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_agentic_generate_step.py",
+        "tests/e2e/capabilities/sandbox/test_coder_writes_only_its_task_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "agentic-in-place",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "resolve_should_isolate",
+          "old": "    if resolve_execution_mode(step_def, context).mode is ExecutionMode.AGENTIC:\n        return True\n",
+          "new": "    if False:\n        return True\n",
+          "breaks": "an agentic coder writes the real repo with only one wall",
+          "symbol_sha": "sha256:e514b1730e4c939ffcc1bc58ba10c84b6c58503a1ca1fcd144cd5e2538971379"
         }
       ]
     }

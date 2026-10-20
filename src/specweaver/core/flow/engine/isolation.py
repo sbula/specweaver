@@ -30,6 +30,11 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     so a partially-populated step or context never crashes the runner, and the result is a
     strict ``bool``.
     """
+    from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
+
+    # An agentic step always gets a worktree: the merge is its second wall.
+    if resolve_execution_mode(step_def, context).mode is ExecutionMode.AGENTIC:
+        return True
     step_val = getattr(step_def, "use_worktree", None)
     if step_val is not None:
         return bool(step_val)

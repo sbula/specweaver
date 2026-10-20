@@ -5,10 +5,12 @@
 
 Proves: E-SENS-03 FR-1
 Proves: E-SENS-03 FR-3
+Proves: C-FLOW-11 FR-3
+Proves: C-FLOW-11 FR-8
 
-US-5 paths P1 and P2: `sw run` with an `agentic` generate step; only the model is doubled, and it
-asks for two writes through its tools. No production path gives the coder tools yet — `C-FLOW-11`
-wires them — so this journey is expected to fail until it does.
+US-3 P-2: `sw run` with an `agentic` generate step in a git project whose `[autonomy]` names a
+ceiling; only the model is doubled, and it asks for two writes through its tools. The step runs in
+its own worktree, and the merge lands what the grant allowed.
 
 | Bucket | Case |
 |---|---|
@@ -20,6 +22,7 @@ wires them — so this journey is expected to fail until it does.
 
 from __future__ import annotations
 
+import subprocess
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -70,7 +73,6 @@ class _Coder:
         return LLMResponse(text=_CODE, model="test-model")
 
 
-@pytest.mark.xfail(strict=True, reason="blocked on C-FLOW-11: no step gives the coder its tools")
 @pytest.mark.usefixtures("_mock_db")
 def test_an_agentic_coder_writes_its_task_and_not_the_readme(tmp_path: Path) -> None:
     project = tmp_path / "proj"
@@ -81,13 +83,29 @@ def test_an_agentic_coder_writes_its_task_and_not_the_readme(tmp_path: Path) -> 
     (project / "agentic.yaml").write_text(_PIPELINE, encoding="utf-8")
     readme = "Greeter.\n"
     (project / "README.md").write_text(readme, encoding="utf-8")
+    (project / "specweaver.toml").write_text(
+        '[autonomy]\nagentic_max_dal = "DAL_C"\n', encoding="utf-8"
+    )
+    for args in (["init"], ["config", "user.email", "t@t"], ["config", "user.name", "t"]):
+        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)
+    subprocess.run(["git", "add", "-A"], cwd=project, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True)
     coder = _Coder()
 
     with doubled_llm(coder):
-        runner.invoke(
-            app, ["run", str(project / "agentic.yaml"), "greeter", "--project", str(project)]
+        result = runner.invoke(
+            app,
+            [
+                "run",
+                str(project / "agentic.yaml"),
+                str(project / "specs" / "greeter_spec.md"),
+                "--project",
+                str(project),
+            ],
         )
 
+    assert result.exit_code == 0, result.output
     assert "README.md" in coder.answers["README.md"]["error"]
     assert "error" not in coder.answers["src/greeter.py"]
     assert (project / "README.md").read_text(encoding="utf-8") == readme
+    assert (project / "src" / "greeter.py").read_text(encoding="utf-8") == _CODE

@@ -249,6 +249,32 @@ step = "update_counts"           # a bash step; its output fills the block
 - A missing marker, an output that holds a marker, or an output over 1 MiB fails the step, and
   nothing is written.
 
+## 6b. Agentic steps (`[autonomy]` in `specweaver.toml`)
+
+A code or tests generation step may run **agentic**: the coder reads the project and writes its
+file through tools, correcting itself, instead of answering once.
+
+```toml
+[autonomy]
+mode = "oneshot"            # oneshot | agentic — the default for this project's generate steps
+agentic_max_dal = "DAL_D"   # the riskiest DAL agentic work may run at; no default
+```
+
+A pipeline step can ask for it itself: `mode: agentic` on a `generate` step with target `code` or
+`tests`. Any other step with `mode: agentic` does not load.
+
+- **No ceiling, no agentic.** Until `agentic_max_dal` is set, a run with an agentic step stops
+  before its first step and names the setting.
+- **Riskier code stays one-shot.** A target whose DAL is above the ceiling runs one-shot, and the
+  step's result says why (`agentic_refused`). A target with no DAL marker is `DAL_C`.
+- **Two walls.** The coder writes only its own target file (the code step its module, the tests
+  step its test file), within the `[docs]` rules above. It always works in a git worktree, and the
+  merge keeps only what may land. A project that is not a git repo cannot run agentic steps.
+- **No new dependencies.** A change to `pyproject.toml`, a lock file or another manifest becomes a
+  proposal in `doc_updates.md`. SpecWeaver installs from the manifests; the coder never does.
+- **Bounded.** `[brake] agent_turns` in `settings.toml` limits the coder's tool rounds; reaching it
+  fails the step. The spend limits apply as to every call.
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)
