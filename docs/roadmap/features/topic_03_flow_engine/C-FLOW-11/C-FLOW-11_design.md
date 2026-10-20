@@ -180,11 +180,11 @@ SF-01, then SF-02, then SF-03.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The project's policy | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The project's policy | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | An agentic generate step | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | `sw implement` follows the dial | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: the SF-01 plan (the project's policy).
+**Next**: SF-01 dev, CB-1 (the `[autonomy]` reader). SF-01 plan approved 2026-10-20.
