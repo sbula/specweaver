@@ -1,6 +1,6 @@
 # C-FLOW-11 — Graduated Autonomy (DAL-Driven Execution-Mode Dial)
 
-**Status**: APPROVED by the user 2026-10-20 — re-designed with them 2026-10-19 (Q1–Q13). The dial, its DAL check and the
+**Status**: ✅ Finished — signed off by the user 2026-10-20 (re-designed with them 2026-10-19, Q1–Q13). The dial, its DAL check and the
 tool loop were built earlier and never approved; this design is what they become. · **DAL**: C
 (Enterprise Standard) — the dial is itself assurance policy. · **Epic**: Topic 03 (Flow
 Orchestration) · **Feature ID**: C-FLOW-11
@@ -186,5 +186,5 @@ SF-01, then SF-02, then SF-03.
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-20.
-**Next**: the user's sign-off. All three sub-features committed 2026-10-20.
+**Now**: signed off 2026-10-20.
+**Next**: `D-INTL-07` extends the dial to draft steps; `B-INTL-06` builds on it.

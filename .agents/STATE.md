@@ -4,9 +4,10 @@ Updated at commit boundaries. For *this session's* loose ends, see `.tmp/HANDOVE
 
 ## Read this first
 
-**One capability is `🔧`, not `✅`, awaiting approval.**
-
-`C-FLOW-11`
+**No capability is `🔧` awaiting approval.** `C-FLOW-11` was re-designed with the user and signed
+off `✅` on 2026-10-20: each project's `[autonomy]` decides how far agentic work goes; an agentic
+code or tests step runs the coder with its tools in a worktree; `sw implement` follows the dial —
+[design](../docs/roadmap/features/topic_03_flow_engine/C-FLOW-11/C-FLOW-11_design.md).
 (`D-UI-01` left the list 2026-10-19: reviewed at Phase 6 — the API was open to web pages — corrected
 with a token, `max_runs`, a WebSocket that never waits for nothing and the tablet journey, and signed
 off.)
@@ -30,7 +31,7 @@ ledger from the moment it is sent, and its readers count finished calls only —
 gate-enforced). `C-EXEC-08` was signed off `✅` on 2026-10-19: each project's `[docs]` rules
 decide which docs the task grant and the worktree merge let a step change; a refused doc change is
 kept in `doc_updates.md`; a `bash` step can fill a marked block — [design](../docs/roadmap/features/topic_06_sandbox/C-EXEC-08/C-EXEC-08_design.md).
-`C-FLOW-11` is next: its design was never approved.
+`C-FLOW-11` followed and was signed off on 2026-10-20.
 
 `TECH-074` was closed on 2026-10-18 and `C-FLOW-14` signed off `✅` on 2026-10-19: cached input
 tokens are read, billed at their own price and shown; prices follow models.dev once a day; prompts
@@ -47,8 +48,8 @@ The audit marks each fixed row **Fixed**. Fixed and seen working for real: the s
 (pipelines are now checked when they load), B-INTL-09 foreign keys, C-EXEC-06, D-VAL-05, B-INTL-01.
 D-SENS-03's Markdown/SQL traceability was removed `[agreed 2026-10-12]`.
 **Deferred on purpose, revisit:** a resume pays again for work already done (B-FLOW-05 AD-6).
-**Waiting on the user:** nothing. Every audit item has been looked at; still `🔧`: `C-FLOW-11`
-(design never approved). `B-INTL-09` signed off 2026-10-17.
+**Waiting on the user:** nothing. Every audit item has been looked at; none is still `🔧`.
+`B-INTL-09` signed off 2026-10-17, `C-FLOW-11` 2026-10-20.
 Read [done_audit_2026-10-07.md](../docs/analysis/done_audit_2026-10-07.md) before changing any
 status; which statuses to reopen is the user's decision.
 
@@ -145,8 +146,6 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 
 - **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose
   path never runs in production. Which side is wrong is decided per finding, with the user.
-- **The `C-FLOW-11` pilot is unwired.** The dial exists; `sw implement` still runs one-shot, so no
-  user path reaches `agentic` mode.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when
   somebody remembers the story. `check_stale_delivered.py` catches the *other* half — prose calling
   a `🔧` capability delivered — and `T-PROVEN` now names the flip as the user's call, but nothing

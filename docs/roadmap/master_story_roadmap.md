@@ -125,8 +125,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
         *   `[ ]` **D-SENS-05:** Markdown AST Mutators
     *   🔴 **Remote UI Integration:**
         *   `[ ]` **D-UI-04:** REST API - Interactive Authoring
-    *   🔴 **Grill-Style Agentic Drafting** *(blocked on `C-FLOW-11`)*:
-        *   `[ ]` **D-INTL-07:** Agentic Interview Drafting (Grill-Style) — needs `C-FLOW-11` (hard), `C-VAL-05` (soft)
+    *   🔴 **Grill-Style Agentic Drafting**:
+        *   `[ ]` **D-INTL-07:** Agentic Interview Drafting (Grill-Style) — extends `C-FLOW-11` ✅ to draft steps; `C-VAL-05` (soft)
 
 ### 🟢 US-3: Autonomous Implementation
 *   **User Benefit:** I can hand an approved spec to the engine, and it will generate the code, write the tests, run them, and auto-fix linting errors.
@@ -146,8 +146,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
         *   `[ ]` **D-INTL-09:** Code Step Through Structure Tools — needs `D-SENS-06`
     *   🔴 **Visual UI Drift Detection:**
         *   `[ ]` **A-VAL-05:** Multi-Modal Visual Quality Gates
-    *   🟡 **Graduated Autonomy:**
-        *   `🔧` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
+    *   🟢 **Graduated Autonomy:**
+        *   `✅` **C-FLOW-11:** Graduated Autonomy (DAL-Driven Execution-Mode Dial)
         *   `✅` **C-EXEC-08:** Project Doc Policy — each project's `[docs]` rules decide what a coder may write
     *   🔴 **Graph-Invariant Verification** *([ADR-006](../architecture/07_architectural_decision_records/adr_006_graphs_are_truth_vectors_are_discovery.md) step: verify)*:
         *   `[ ]` **B-VAL-07:** Graph-Invariant Verification — generated changes checked against unchanged dependents; `TECH-068`'s edges are built
@@ -246,7 +246,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
 *   **Core Required (MVS):**
     *   `✅` **US-2 Core** *(provides Interactive Drafter)*
     *   `✅` **D-SENS-01:** Topology Graph
-    *   `[ ]` **D-INTL-07:** Agentic Interview Drafting — greenfield `context.yaml` rubric; absorbed the former `D-INTL-04` 2026-08-27, blocked on `C-FLOW-11`
+    *   `[ ]` **D-INTL-07:** Agentic Interview Drafting — greenfield `context.yaml` rubric; absorbed the former `D-INTL-04` 2026-08-27, extends `C-FLOW-11` ✅ to draft steps
 *   **Sub-Story Add-Ons:**
     *   🔴 **Socratic Context Gathering:**
         *   `[ ]` **A-INTL-03:** Socratic drafting flow
@@ -352,7 +352,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   🔴 **Architectural Sandboxing:**
         *   `[ ]` **B-EXEC-03:** Blast radius / locality enforcement
     *   🔴 **Agent Independence Protocols:**
-        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` + `C-EXEC-06` ✅
+        *   `[ ]` **B-INTL-06:** Multi-Agent Isolation Patterns — needs `C-FLOW-11` ✅ + `C-EXEC-06` ✅
 
 ### 🟡 US-15: Enterprise Audit & Traceability
 **Benefit:** *I can hand a compliance auditor a ledger that proves exactly which LLM generated which line of code based on which business requirement.*
