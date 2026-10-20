@@ -106,7 +106,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Produces:** generated code in the target language
   > - **Enables:** every non-Python journey
   > - **Done when:** a non-Python target is implemented end to end
-  > - **Note:** paths, artifact tags and the fence stripper are hardcoded to `.py` at four points, and no `--language` flag exists. Builds no runner — routes to the ones that exist
+  > - **Note:** absorbs `TECH-073` `[agreed 2026-10-20]` — [design](../features/topic_04_intelligence/D-INTL-08/D-INTL-08_design.md)
 
 * **`D-INTL-09` 🔜: Code Step Through Structure Tools**
   > - **Purpose:** The code step changes existing files through the code-structure tools instead of rewriting them whole
