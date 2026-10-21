@@ -192,8 +192,9 @@
       "requirement": "FR-5",
       "title": "The task's own tests run",
       "scope": [
+        "tests/integration/sandbox/language/test_one_test_file_live.py",
         "tests/unit/sandbox/language/core/language/test_one_test_file.py",
-        "tests/integration/sandbox/language/test_one_test_file_live.py"
+        "tests/unit/sandbox/language/core/language/typescript/test_typescript_tests_and_lint.py"
       ],
       "mutants": [
         {
@@ -245,6 +246,65 @@
           "new": "            return path.stem\n",
           "breaks": "two classes with one name in different packages run together",
           "symbol_sha": "sha256:df273cdfd07e33c7058bcc1bae610f47a49adaab1e63a15cdc753a4a5ea82bee"
+        },
+        {
+          "id": "ts-summary-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_tests",
+          "old": "        counts = summary_counts(result.stdout)\n",
+          "new": "        counts = None\n",
+          "breaks": "Jest and Vitest results collapse to one pass or fail",
+          "symbol_sha": "sha256:48dd28d42bb8e3d15a7ee3bc4bba4633ec9659a80bb70a63388ed32178cc9794"
+        },
+        {
+          "id": "ts-failures-not-counted",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/npm_output.py",
+          "symbol": "summary_counts",
+          "old": "    passed, failed = counts.get(\"passed\", 0), counts.get(\"failed\", 0)\n",
+          "new": "    passed, failed = counts.get(\"passed\", 0), 0\n",
+          "breaks": "a failing TypeScript test counts as nothing",
+          "symbol_sha": "sha256:da706eaffabb9f17b6dbe1aab1aefd587537c41caa1ed6223cdca07bc8bbc5f5"
+        },
+        {
+          "id": "ts-colour-breaks-the-count",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/npm_output.py",
+          "symbol": "summary_counts",
+          "old": "    text = _ANSI.sub(\"\", stdout)\n",
+          "new": "    text = stdout\n",
+          "breaks": "a coloured Vitest summary is not read",
+          "symbol_sha": "sha256:da706eaffabb9f17b6dbe1aab1aefd587537c41caa1ed6223cdca07bc8bbc5f5"
+        },
+        {
+          "id": "ts-no-test-script-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_tests",
+          "old": "        if not self._has_test_script():\n",
+          "new": "        if False:\n",
+          "breaks": "a project with no tests passes as if it had some",
+          "symbol_sha": "sha256:48dd28d42bb8e3d15a7ee3bc4bba4633ec9659a80bb70a63388ed32178cc9794"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Lint in the language",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/typescript/test_typescript_tests_and_lint.py"
+      ],
+      "mutants": [
+        {
+          "id": "eslint-errors-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_linter",
+          "old": "            error_count=len(findings),\n",
+          "new": "            error_count=0,\n",
+          "breaks": "ESLint errors never reach lint_fix",
+          "symbol_sha": "sha256:33d29f58578511a560fa7347d8bb3ec90ed7091550f0ed01948a880970260f15"
         }
       ]
     }

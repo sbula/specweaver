@@ -3,6 +3,7 @@
 
 """TypeScript runner implementation."""
 
+import json
 import logging
 import shlex
 import shutil
@@ -14,6 +15,13 @@ from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
     failed_architecture,
     failed_compile,
+    failed_lint,
+    failed_tests,
+)
+from specweaver.sandbox.language.core.typescript.npm_output import (
+    TestCounts,
+    eslint_findings,
+    summary_counts,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -22,6 +30,7 @@ from specweaver.sandbox.qa_runner.core.interface import (
     CompileRunResult,
     ComplexityRunResult,
     DebugRunResult,
+    LintError,
     LintRunResult,
     OutputEvent,
     QARunnerInterface,
@@ -84,25 +93,60 @@ class TypeScriptRunner(QARunnerInterface):
         coverage_source: str = "",
         source: str = "",
     ) -> TestRunResult:
-        """Run tests using standard TS runners (npm test). STUB."""
+        """The project's own `npm test` — one file after `--` — counted from Jest's or Vitest's
+        summary line, else by the exit code alone."""
+        if not self._has_test_script():
+            return failed_tests("package.json has no test script: npm test cannot run the tests")
+        cmd = [shutil.which("npm") or "npm", "test"]
+        if target and target not in {".", "src/", "tests/"} and not target.endswith("/"):
+            cmd += ["--", target]
+        result = self._executor.execute(cmd, timeout_seconds=timeout)
+        reason = did_not_run(result, "npm test")
+        if reason:
+            return failed_tests(reason, result.duration_seconds)
+        counts = summary_counts(result.stdout)
+        if counts is None:
+            ok = result.exit_code == 0
+            counts = TestCounts(passed=int(ok), failed=int(not ok), skipped=0, total=1)
         return TestRunResult(
-            total=0,
-            passed=0,
-            failed=0,
+            total=counts.total,
+            passed=counts.passed,
+            failed=counts.failed,
             errors=0,
-            skipped=0,
-            duration_seconds=0.0,
+            skipped=counts.skipped,
+            duration_seconds=result.duration_seconds,
             failures=[],
             coverage_pct=None,
         )
 
+    def _has_test_script(self) -> bool:
+        try:
+            manifest = json.loads((self._cwd / "package.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):  # expected: an unreadable manifest declares no script
+            return False
+        return isinstance(manifest, dict) and bool(manifest.get("scripts", {}).get("test"))
+
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        """Run standard ESLint target. STUB."""
+        """ESLint over `target`, read from its JSON; an ESLint that did not run is never clean."""
+        cmd = [shutil.which("npx") or "npx", "eslint", target or ".", "--format", "json"]
+        if fix:
+            cmd.append("--fix")
+        result = self._executor.execute(cmd, timeout_seconds=120)
+        read = eslint_findings(result.stdout)
+        if read is None:
+            return failed_lint(
+                did_not_run(result, "eslint")
+                or f"eslint did not report (exit {result.exit_code}): {result.stdout.strip()[:200]}"
+            )
+        findings, fixable = read
         return LintRunResult(
-            error_count=0,
-            fixable_count=0,
+            error_count=len(findings),
+            fixable_count=fixable,
             fixed_count=0,
-            errors=[],
+            errors=[
+                LintError(file=f.file, line=f.line, code=f.code, message=f.message)
+                for f in findings
+            ],
         )
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
