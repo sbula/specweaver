@@ -200,7 +200,7 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One derivation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The runners do what they say | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The runners do what they say | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Generation speaks the language | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Frameworks | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | The journeys | SF-02, SF-03, SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -208,4 +208,4 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: the SF-02 plan (the runners do what they say). SF-01 committed 2026-10-21; it carries `TECH-073`'s fix, which closes with the feature's sign-off.
+**Next**: SF-02 dev, CB-1 (one test file per JVM and Rust run). SF-02 plan approved 2026-10-21.
