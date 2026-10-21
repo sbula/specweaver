@@ -66,7 +66,7 @@ a TypeScript `src/` + `tests/*.test.ts`.
 |---|-----|-------|--------|---------|
 | FR-1 | One stem rule | Engine | SHALL name a spec's module by `removesuffix("_spec")` everywhere `[agreed 2026-10-20]` | one spec, one module name |
 | FR-2 | The project's language | Run roots | SHALL take the language from `[implement] language` in `specweaver.toml`, else detect it in today's manifest order — `pyproject.toml` counting as Python before the default, a Gradle build with Java sources as Java `[agreed 2026-10-20]`; a mixed repository names its language | a mixed repository says what it is; Gradle Java is not Kotlin |
-| FR-3 | One derivation of a task's files | Engine | SHALL derive a task's code and test files once, per language — the layout below, the Java/Kotlin package from the existing code (the longest package prefix all its sources share) or else the build's `group`, a spec's `package:` line winning `[agreed 2026-10-20]`, and for Rust the `src/lib.rs` (or `main.rs`) that declares the module `[agreed 2026-10-20]` — and SHALL use that one derivation for generation, the merge allow-list, the coder's grant and the QA targets (**seam**: `D-EXEC-02`, `C-FLOW-11`) | generation, the merge and the grant can never disagree on a file |
+| FR-3 | One derivation of a task's files | Engine | SHALL derive a task's code and test files once, per language — the layout below, the Java/Kotlin package from the existing code (the longest package prefix all its sources share) or else the build's `group`, a spec's `package:` line winning `[agreed 2026-10-20]`, and for Rust the `src/lib.rs` that declares the module, created beside a `main.rs` because tests reach only a library crate `[agreed 2026-10-21]` — and SHALL use that one derivation for generation, the merge allow-list, the coder's grant and the QA targets (**seam**: `D-EXEC-02`, `C-FLOW-11`) | generation, the merge and the grant can never disagree on a file |
 | FR-4 | Generation speaks the language | Generator, coder | SHALL prompt in the project's language, strip that language's fences, and tag the file in its comment syntax, Kotlin included `[agreed 2026-10-20]` | a Java project gets Java, tagged for lineage |
 | FR-5 | The task's own tests run | QA runner | SHALL run only the task's test — Maven `-Dtest`, Gradle `--tests`, `cargo test --test` `[agreed 2026-10-20]` — and for TypeScript the project's `npm test` `[agreed 2026-10-20]` (**seam**: `D-VAL-03`) | an unrelated failing test never sends the coder to fix code it did not write |
 | FR-6 | Lint in the language | `lint_fix` | SHALL lint with the language's linter — `npx eslint` for TypeScript `[agreed 2026-10-20]` — and ask the model to fix "this <language> file" (**seam**: `D-VAL-03`) | lint repair stops being Python-shaped |
@@ -201,11 +201,11 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One derivation | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The runners do what they say | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Generation speaks the language | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Generation speaks the language | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Frameworks | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | The journeys | SF-02, SF-03, SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: the SF-03 plan (generation speaks the language). SF-02 committed 2026-10-21.
+**Next**: SF-03 dev, CB-1 (generation in the language). SF-03 plan approved 2026-10-21.
