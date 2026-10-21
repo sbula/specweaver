@@ -157,6 +157,9 @@ def _report_lint(mark: str, _name: str, out: dict[str, Any]) -> None:
 
 
 def _report_code_validation(mark: str, _name: str, out: dict[str, Any]) -> None:
+    if out.get("note"):
+        _core.console.print(f"  - code validation: {out['note']}", markup=False)
+        return
     _core.console.print(
         f"  {mark} code validation: {out.get('passed', 0)}/{out.get('total', 0)} rules passed"
     )

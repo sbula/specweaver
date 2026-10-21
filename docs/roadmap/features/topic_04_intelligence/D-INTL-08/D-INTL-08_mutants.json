@@ -414,6 +414,108 @@
           "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Lint repair in the language",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_lint_and_rules_in_the_language.py",
+        "tests/e2e/capabilities/workflows/test_implement_in_every_language_e2e.py",
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py"
+      ],
+      "mutants": [
+        {
+          "id": "lint-prompt-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._llm_fix",
+          "old": "f\"Fix the following lint errors in this {name} file.\\n\\n\"",
+          "new": "f\"Fix the following lint errors in this Python file.\\n\\n\"",
+          "breaks": "a Java file is fixed as Python",
+          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+        },
+        {
+          "id": "lint-fence-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._llm_fix",
+          "old": "f\"## Current Code\\n```{language}\\n{code}\\n```\\n\\n\"",
+          "new": "f\"## Current Code\\n```python\\n{code}\\n```\\n\\n\"",
+          "breaks": "the code is shown to the model as Python",
+          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+        },
+        {
+          "id": "lint-fallback-tag-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._llm_fix",
+          "old": "fixed_code = tag_content(fixed_code, artifact_uuid, language)",
+          "new": "fixed_code = tag_content(fixed_code, artifact_uuid, \"python\")",
+          "breaks": "a lost tag comes back as `#` in Rust",
+          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+        },
+        {
+          "id": "lint-fences-not-stripped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._llm_fix",
+          "old": "fixed_code = strip_fences(response.text)",
+          "new": "fixed_code = response.text.strip() + \"\\n\"",
+          "breaks": "the model's fence is written into the file",
+          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Honest code rules",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_lint_and_rules_in_the_language.py",
+        "tests/e2e/capabilities/workflows/test_implement_in_every_language_e2e.py",
+        "tests/unit/core/flow/handlers/test_handlers_di_payload.py"
+      ],
+      "mutants": [
+        {
+          "id": "python-rules-on-java",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateCodeHandler._run_validation",
+          "old": "if archetype is None and language_of(code_path) != \"python\":",
+          "new": "if False:",
+          "breaks": "C01/C02 fail every Java file",
+          "symbol_sha": "sha256:06c8163006898fc6594c96c82a93fd1d0ca118a35ef46d8b147f4a44b2c00829"
+        },
+        {
+          "id": "note-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "_report_code_validation",
+          "old": "    if out.get(\"note\"):\n",
+          "new": "    if False:\n",
+          "breaks": "sw implement shows 0/0 rules passed instead of the note",
+          "symbol_sha": "sha256:b8db93d3d89d072ee7610abe3db18126712b3ee8af3140d6ad95244980471b4b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A test file that ran nothing fails, in any language",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_lint_and_rules_in_the_language.py",
+        "tests/unit/core/flow/handlers/test_validate_tests_handler.py"
+      ],
+      "mutants": [
+        {
+          "id": "empty-run-guard-python-only",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "names_one_file",
+          "old": "    return any(suffix in endings for endings in LANGUAGE_SUFFIXES.values())\n",
+          "new": "    return suffix == \".py\"\n",
+          "breaks": "a Java test file that ran no test passes",
+          "symbol_sha": "sha256:2546b13b1520bc5d9fee493d518b47bf318eb763fcada7ce8331a6025fc0fb55"
+        }
+      ]
     }
   ]
 }

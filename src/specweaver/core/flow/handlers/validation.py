@@ -7,16 +7,25 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
-from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
+from specweaver.core.flow.handlers.qa_targets import (
+    WHOLE_PROJECT,
+    default_test_target,
+    generated_code,
+    in_scenarios_mount,
+    names_one_file,
+    requirement_coverage_of,
+    scenarios_root,
+)
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.commons.enums.dal import DALLevel
     from specweaver.core.flow.engine.models import PipelineStep
@@ -259,6 +268,8 @@ class ValidateCodeHandler:
                 sandbox_settings=coder_sandbox(context),
                 language=context.isolation.language,
             )
+            if results is None:
+                return _no_code_rules(code_path, started)
             output, failed = _validation_output(
                 results, strict=bool(dal_level and dal_level.is_strict)
             )
@@ -315,8 +326,9 @@ class ValidateCodeHandler:
         dal_level: Any | None = None,
         sandbox_settings: Any | None = None,
         language: str | None = None,
-    ) -> list[RuleResult]:
-        """Run code validation via sub-pipeline (called in thread)."""
+    ) -> list[RuleResult] | None:
+        """Run code validation via sub-pipeline (called in thread); None when no rule judges
+        the file's language."""
         # Trigger auto-registration of built-in rules
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import (
@@ -325,10 +337,17 @@ class ValidateCodeHandler:
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
-        from specweaver.core.flow.handlers.archetype_pipelines import add_payload, code_pipeline
+        from specweaver.core.flow.handlers.archetype_pipelines import (
+            add_payload,
+            code_pipeline,
+            language_of,
+        )
         from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
         pipeline, archetype = code_pipeline(code_path, project_path)
+        if archetype is None and language_of(code_path) != "python":
+            # The default rules are Python's and would fail any other language.
+            return None
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
@@ -348,69 +367,18 @@ class ValidateCodeHandler:
         )
 
 
-#: Test-step targets that mean the whole project; only these are narrowed to what changed.
-_WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
+def _no_code_rules(code_path: Path, started: str) -> StepResult:
+    """A passing step that says no rule judged the file — never a pass that looks judged."""
+    from specweaver.core.flow.handlers.archetype_pipelines import language_of
 
-
-def _scenarios_root(context: RunContext) -> Path:
-    """Where the scenario tests are kept, mounted at `/scenarios` for their run: the project's
-    store, outside the project. An unregistered project's dual run has already refused."""
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
-
-    return scenario_store(context) or context.project_path / "scenarios"
-
-
-def _in_scenarios_mount(target: str, root: Path) -> str:
-    """`target` as the container sees it: under `/scenarios` when it is in the scenario folder."""
-    path = Path(target)
-    if path.is_absolute() and path.is_relative_to(root):
-        return "/scenarios/" + path.relative_to(root).as_posix()
-    return target
-
-
-def _requirement_coverage(context: RunContext) -> dict[str, str]:
-    """Per requirement of the spec, which side's tests cover it; the coder's are the project's."""
-    from specweaver.assurance.validation.rules.code.c09_traceability import requirement_coverage
-
-    try:
-        spec_text = context.spec_path.read_text(encoding="utf-8")
-    except OSError as exc:
-        logger.warning("The spec is unreadable, so coverage per requirement is not shown: %s", exc)
-        return {}
-    coder_root = context.isolation.execution_root or context.project_path
-    return requirement_coverage(spec_text, coder_root, _scenarios_root(context))
-
-
-def _default_test_target(context: RunContext, kind: str) -> str:
-    """The file a test step runs when it names none: the scenario file for the scenario step only.
-
-    Every other step runs the coder's own tests, where `generate_tests` wrote them. Falling back to
-    the scenario file for every kind retried the coder until the hidden scenario tests passed.
-    """
-    stem = module_stem(context.spec_path)
-    if kind == "scenario":
-        from specweaver.sandbox.language.core.scenario_converter_factory import (
-            create_scenario_converter,
-        )
-
-        return str(
-            create_scenario_converter(context.project_path).output_path(
-                stem, _scenarios_root(context).parent
-            )
-        )
-    tests = _task_file(context, "tests")
-    if tests is not None:
-        return str(tests)
-    return str((context.output_dir or context.project_path / "tests") / f"test_{stem}.py")
-
-
-def _task_file(context: RunContext, which: str) -> Path | None:
-    """The task's code or tests file outside Python; None for Python, whose `output_dir` stays."""
-    from specweaver.core.flow.engine.task_files import task_files_for
-
-    files = task_files_for(context.project_path, context.spec_path, context.isolation.language)
-    relative = files.code if which == "code" else files.tests
-    return None if relative.endswith(".py") else context.project_path / relative
+    note = f"no code rules for {language_of(code_path)}"
+    logger.info("ValidateCodeHandler: %s (code=%s)", note, code_path.name)
+    return StepResult(
+        status=StepStatus.PASSED,
+        output={"note": note, "total": 0, "passed": 0, "failed": 0, "results": []},
+        started_at=started,
+        completed_at=_now_iso(),
+    )
 
 
 class ValidateTestsHandler:
@@ -433,10 +401,10 @@ class ValidateTestsHandler:
             from specweaver.core.flow.handlers.acceptance import run_acceptance
 
             return run_acceptance(context, lambda: self._get_atom(context, "scenario"))
-        target = step.params.get("target") or _default_test_target(context, kind)
+        target = step.params.get("target") or default_test_target(context, kind)
         if kind == "scenario":
             # The container sees the scenario tests only under its /scenarios mount.
-            target = _in_scenarios_mount(target, _scenarios_root(context))
+            target = in_scenarios_mount(target, scenarios_root(context))
         logger.debug("ValidateTestsHandler: resolving %s test targets for '%s'", kind, target)
 
         targets = self._resolve_targets(context, target, kind)
@@ -451,7 +419,7 @@ class ValidateTestsHandler:
         # emits no `@pytest.mark.unit`, so `-m unit` collects ZERO from an `sw implement` run and
         # the step reports `0 passed, 0 failed` as a pass. Directory runs keep their filter — that
         # is where a marker is a real selector.
-        _one_generated_file = bool(target) and str(target).endswith(".py")
+        _one_generated_file = bool(target) and names_one_file(str(target))
         atom_kind = "" if (kind == "scenario" or _one_generated_file) else kind
 
         atom = self._get_atom(context, kind)
@@ -460,7 +428,7 @@ class ValidateTestsHandler:
                 "intent": "run_tests",
                 "target": target,
                 "targets": targets,
-                "source": _generated_code(context),
+                "source": generated_code(context),
                 "kind": atom_kind,
                 "scope": step.params.get("scope", ""),
                 "timeout": step.params.get("timeout", 120),
@@ -476,7 +444,7 @@ class ValidateTestsHandler:
         output = dict(result.exports)
         if kind == "scenario":
             context.feedback["scenario_test_failures"] = result.exports
-            output["requirement_coverage"] = _requirement_coverage(context)
+            output["requirement_coverage"] = requirement_coverage_of(context)
 
         # A verification that executed zero tests proves nothing — the atom's total==0 SUCCESS is
         # legitimate only for the pristine incremental paths of the other kinds. Keyed on the same
@@ -506,7 +474,7 @@ class ValidateTestsHandler:
             logger.info("ValidateTestsHandler: tests PASSED (kind=%s, target=%s)", kind, target)
             return StepResult(
                 status=StepStatus.PASSED,
-                output={**output, "tests_cover_project": target in _WHOLE_PROJECT},
+                output={**output, "tests_cover_project": target in WHOLE_PROJECT},
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -541,7 +509,7 @@ class ValidateTestsHandler:
             return QARunnerAtom(
                 cwd=cwd,
                 language=context.isolation.language,
-                scenarios_root=_scenarios_root(context),
+                scenarios_root=scenarios_root(context),
             )
         return QARunnerAtom(
             cwd=cwd, language=context.isolation.language, sandbox_settings=coder_sandbox(context)
@@ -553,7 +521,7 @@ class ValidateTestsHandler:
         Only a step over the whole project narrows. Nothing changed, no green run yet, or any
         error: every test runs, so a step never passes having run nothing.
         """
-        if target not in _WHOLE_PROJECT:
+        if target not in WHOLE_PROJECT:
             return [target]
         code_root = context.isolation.execution_root or context.project_path
         try:
@@ -580,15 +548,3 @@ def _profile_of(context: RunContext) -> str | None:
     except Exception:
         logger.warning("Could not read the project's domain profile", exc_info=True)
         return None
-
-
-def _generated_code(context: RunContext) -> str:
-    """The run's generated module, relative to where its tests run; "" when there is none."""
-    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
-
-    stem = module_stem(context.spec_path)
-    code = _task_file(context, "code") or (
-        (context.output_dir or context.project_path / "src") / f"{stem}.py"
-    )
-    root = context.isolation.execution_root or context.project_path
-    return relative_to_root(code, root) if code.is_file() else ""

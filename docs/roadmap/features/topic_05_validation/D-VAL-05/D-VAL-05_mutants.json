@@ -44,10 +44,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "ValidateTestsHandler.execute",
-          "old": "                \"source\": _generated_code(context),\n",
+          "old": "                \"source\": generated_code(context),\n",
           "new": "                \"source\": \"\",\n",
           "breaks": "sw implement's test step cannot import the generated code",
-          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
+          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
         },
         {
           "id": "c03-own-search",

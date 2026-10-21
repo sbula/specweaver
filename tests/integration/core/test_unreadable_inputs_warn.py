@@ -99,12 +99,12 @@ def test_an_unreadable_test_file_is_left_out_of_acceptance(
 def test_an_unreadable_spec_shows_no_coverage(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
+    from specweaver.core.flow.handlers.qa_targets import requirement_coverage_of
     from specweaver.core.flow.handlers.run_context import RunContext
-    from specweaver.core.flow.handlers.validation import _requirement_coverage
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "gone_spec.md")
 
-    assert _requirement_coverage(context) == {}
+    assert requirement_coverage_of(context) == {}
     assert _warned(caplog, "coverage")
 
 

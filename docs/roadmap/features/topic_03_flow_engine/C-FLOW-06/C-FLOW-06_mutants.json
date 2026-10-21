@@ -48,7 +48,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return [target]\n",
           "breaks": "every run runs every test again",
-          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
         },
         {
           "id": "narrow-to-nothing",
@@ -58,7 +58,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return folders_to_test(context.project_path, code_root, graph, kind)\n",
           "breaks": "nothing changed runs no test and passes",
-          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
         },
         {
           "id": "no-dependents",
@@ -98,7 +98,7 @@
           "old": "        code_root = context.isolation.execution_root or context.project_path\n",
           "new": "        code_root = context.project_path\n",
           "breaks": "code a run wrote in its worktree is not seen as changed",
-          "symbol_sha": "sha256:1a520b757027b12c8385025f6ee25aa4b78a96f6b4a7ce15cb9e12c39b865bd6"
+          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
         },
         {
           "id": "save-always",
@@ -115,10 +115,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "ValidateTestsHandler.execute",
-          "old": "\"tests_cover_project\": target in _WHOLE_PROJECT",
+          "old": "\"tests_cover_project\": target in WHOLE_PROJECT",
           "new": "\"tests_cover_project\": True",
           "breaks": "tests of one folder mark the whole project as tested",
-          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
+          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
         }
       ]
     },

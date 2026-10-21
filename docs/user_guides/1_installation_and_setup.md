@@ -311,6 +311,10 @@ Kotlin tests `kotlin.test`. To change what the model is told, copy a file from
 `src/specweaver/workflows/languages/` to `.specweaver/languages/<language>.md` and edit it; keep its
 `name:` line and its five `#` sections (`Code`, `Tests`, `Code role`, `Tests role`, `Coder role`).
 
+Lint repair asks the model to fix "this Java file" (in the project's language). Code validation's
+rules (C01–C13) are Python's: for another language `sw implement` prints `no code rules for java`
+and goes on, unless the folder's archetype brings rules for that language (Spring Boot does).
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)

@@ -93,8 +93,10 @@ class LintFixHandler:
                 started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=False
             )
 
-        # Phase 1: Try ruff auto-fix first (cheaper than LLM)
-        logger.info("LintFixHandler: attempting ruff auto-fix on %d errors", last_error_count)
+        # Phase 1: the linter's own fix first (cheaper than the LLM)
+        logger.info(
+            "LintFixHandler: attempting the linter's auto-fix on %d errors", last_error_count
+        )
         fix_kwargs = dict(run_kwargs)
         fix_kwargs["fix"] = True
         atom.run(fix_kwargs)
@@ -105,7 +107,7 @@ class LintFixHandler:
         logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
 
         if last_error_count == 0:
-            logger.info("LintFixHandler: all errors resolved by ruff auto-fix")
+            logger.info("LintFixHandler: all errors resolved by the linter's auto-fix")
             return _lint_outcome(
                 started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=True
             )
@@ -233,8 +235,11 @@ class LintFixHandler:
         *,
         context: RunContext,
     ) -> None:
-        """Ask the LLM to fix lint errors in the given file."""
+        """Ask the LLM to fix lint errors in the given file, in the run's language."""
+        from specweaver.core.flow.engine.task_files import task_files_for
         from specweaver.infrastructure.llm.models import Message, Role, TaskType
+        from specweaver.workflows.implementation.generator import strip_fences
+        from specweaver.workflows.implementation.languages import language_guide
 
         code = code_path.read_text(encoding="utf-8")
         from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
@@ -246,6 +251,10 @@ class LintFixHandler:
         # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
         # and the LLM is being asked to preserve it. Minting one would fork the lineage.
         artifact_uuid = extract_artifact_uuid(code)
+        language = task_files_for(
+            context.project_path, context.spec_path, context.isolation.language
+        ).language
+        name = language_guide(language, context.project_path).name
 
         error_summary = "\n".join(
             f"- {e.get('file', '?')}:{e.get('line', '?')} [{e.get('code', '?')}] {e.get('message', '')}"
@@ -253,14 +262,14 @@ class LintFixHandler:
         )
 
         prompt = (
-            f"Fix the following lint errors in this Python file.\n\n"
+            f"Fix the following lint errors in this {name} file.\n\n"
             f"## Lint Errors\n{error_summary}\n\n"
-            f"## Current Code\n```python\n{code}\n```\n\n"
-            f"Return ONLY the fixed Python code, no explanations."
+            f"## Current Code\n```{language}\n{code}\n```\n\n"
+            f"Return ONLY the fixed {name} code, no explanations."
         )
 
         if artifact_uuid:
-            tag_str = wrap_artifact_tag(artifact_uuid, "python")
+            tag_str = wrap_artifact_tag(artifact_uuid, language)
             if tag_str:
                 prompt += f"\n\nIMPORTANT: You MUST include the exact string '{tag_str}' physically at the very top of your output file."
 
@@ -272,18 +281,12 @@ class LintFixHandler:
 
         response = await adapter.generate(messages, config)
 
-        fixed_code = response.text.strip()
-        # Strip markdown fences if present
-        if fixed_code.startswith("```"):
-            lines = fixed_code.split("\n")
-            lines = [line for line in lines if not line.startswith("```")]
-            fixed_code = "\n".join(lines)
-
+        fixed_code = strip_fences(response.text)
         # Safety fallback: the prompt asked the LLM to reproduce the tag, and it may not have.
         if artifact_uuid:
-            fixed_code = tag_content(fixed_code, artifact_uuid, "python")
+            fixed_code = tag_content(fixed_code, artifact_uuid, language)
 
-        code_path.write_text(fixed_code + "\n", encoding="utf-8")
+        code_path.write_text(fixed_code, encoding="utf-8")
 
         if artifact_uuid:
             await log_artifact_lineage(

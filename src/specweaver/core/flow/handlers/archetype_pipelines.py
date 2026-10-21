@@ -99,6 +99,15 @@ def own_pipeline(
     return _archetype_pipeline(level, archetype, project_path, code_path), archetype
 
 
+def language_of(path: Path) -> str:
+    """The language a file's ending names; the bare ending when no language claims it."""
+    suffix = path.suffix.lower()
+    return next(
+        (name for name, endings in LANGUAGE_SUFFIXES.items() if suffix in endings),
+        suffix.lstrip(".") or path.name,
+    )
+
+
 def add_payload(
     pipeline: ValidationPipeline,
     path: Path,

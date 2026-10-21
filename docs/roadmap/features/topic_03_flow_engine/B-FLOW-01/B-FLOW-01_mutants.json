@@ -141,12 +141,12 @@
         {
           "id": "coder-runs-scenario-tests",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation.py",
-          "symbol": "_default_test_target",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "default_test_target",
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:350418b58513f1d413e8c9f2c651f0ea670511c132da0cdd59052f3eeb789169"
+          "symbol_sha": "sha256:505d64eadf25e14568349859b8294a145472697429ff165dcb5537930ab12806"
         }
       ]
     },
@@ -242,10 +242,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "ValidateTestsHandler.execute",
-          "old": "            target = _in_scenarios_mount(target, _scenarios_root(context))\n",
+          "old": "            target = in_scenarios_mount(target, scenarios_root(context))\n",
           "new": "            pass\n",
           "breaks": "the container is handed a host path and collects nothing",
-          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
+          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
         }
       ]
     },
@@ -441,10 +441,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "ValidateTestsHandler.execute",
-          "old": "            output[\"requirement_coverage\"] = _requirement_coverage(context)\n",
+          "old": "            output[\"requirement_coverage\"] = requirement_coverage_of(context)\n",
           "new": "            pass\n",
           "breaks": "the scenario step reports no coverage, so the person never sees it",
-          "symbol_sha": "sha256:269e77928d3df008191c55e035704fd001df9835067a3e635a8b73676dc1cfd3"
+          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
         },
         {
           "id": "coverage-not-shown",
