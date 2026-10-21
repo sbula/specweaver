@@ -315,6 +315,16 @@ Lint repair asks the model to fix "this Java file" (in the project's language). 
 rules (C01–C13) are Python's: for another language `sw implement` prints `no code rules for java`
 and goes on, unless the folder's archetype brings rules for that language (Spring Boot does).
 
+**Frameworks.** The model also gets the framework's idioms and test style for Spring, Spring Boot,
+Quarkus, NestJS, Actix-web and FastAPI. The framework is the folder's `context.yaml` `archetype`
+when a framework file of that name exists for the project's language; else it is read from the
+build file (`io.quarkus`, `spring-boot`, `org.springframework` in `pom.xml` / Gradle; `@nestjs/core`
+in `package.json`; `actix-web` in `Cargo.toml`; `fastapi` in `pyproject.toml` or
+`requirements*.txt`). `sw implement` prints `Framework: spring-boot (build file)`. To change one,
+or to add one (say `micronaut`, named by an archetype), write `.specweaver/frameworks/<name>.md`
+with `name:` and `languages:` lines and two `#` sections, `Code` and `Tests`; the shipped files are
+in `src/specweaver/workflows/frameworks/`.
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)

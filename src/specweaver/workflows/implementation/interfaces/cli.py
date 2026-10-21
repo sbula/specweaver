@@ -192,6 +192,20 @@ _STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
 }
 
 
+def _print_framework(project_path: Path, code_path: Path, language: str) -> None:
+    """The framework the prompts follow, and where it was found; nothing when there is none."""
+    from specweaver.core.flow.engine.frameworks import project_framework
+
+    try:
+        framework = project_framework(project_path, code_path, language)
+    except ValueError as exc:
+        _core.print_error(exc)
+        raise typer.Exit(code=1) from exc
+    if framework is not None:
+        _core.console.print(f"  Framework: {framework.key} ({framework.source})", markup=False)
+    _core.console.print()
+
+
 @implement_cli.command(name="implement")
 def implement(
     spec: str = typer.Argument(
@@ -284,9 +298,8 @@ def implement(
     _core.console.print(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",
     )
-    _core.console.print(
-        f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}\n",
-    )
+    _core.console.print(f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}")
+    _print_framework(project_path, code_path, task.language)
 
     constitution_info = find_constitution(project_path, spec_path=spec_path)
     constitution_content = constitution_info.content if constitution_info else None

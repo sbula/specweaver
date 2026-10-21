@@ -1,0 +1,31 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: frameworks
+level: module
+purpose: >
+  What the code generator tells the model about a framework: its code idioms and its test style.
+
+description: |
+  One markdown file per framework, read by `workflows.implementation.languages`. Chosen from the
+  `context.yaml` archetype, else from the build file. A project's `.specweaver/frameworks/<name>.md`
+  replaces the shipped file or adds a framework. Not a Python module — only data files.
+
+archetype: data
+
+consumes: []
+
+forbids: []
+
+exposes:
+  - spring.md
+  - spring-boot.md
+  - quarkus.md
+  - nestjs.md
+  - actix-web.md
+  - fastapi.md
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

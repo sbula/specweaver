@@ -93,7 +93,7 @@
           "old": "    language = _core.language_at(project_path)\n",
           "new": "    language = None\n",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
+          "symbol_sha": "sha256:942cbf09abf348f797287b7aa632eca20a4a1eef2a8b574b6d1f5f6e333fb76c"
         },
         {
           "id": "api-names-no-language",
@@ -320,7 +320,8 @@
         "tests/unit/core/flow/handlers/test_contract_handler.py",
         "tests/unit/workflows/implementation/test_languages.py",
         "tests/unit/workflows/implementation/test_strip_fences.py",
-        "tests/unit/workflows/implementation/test_generator_tagging.py"
+        "tests/unit/workflows/implementation/test_generator_tagging.py",
+        "tests/unit/core/flow/engine/test_frameworks.py"
       ],
       "mutants": [
         {
@@ -331,7 +332,7 @@
           "old": "guide = language_guide(files.language, context.project_path)",
           "new": "guide = language_guide(\"python\", context.project_path)",
           "breaks": "a Java project is prompted for Python",
-          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
+          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
         },
         {
           "id": "tag-always-python",
@@ -381,7 +382,7 @@
           "old": "                declare_rust_module(context.project_path, files)\n",
           "new": "                pass\n",
           "breaks": "tests/<stem>.rs cannot reach the module",
-          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
+          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
         },
         {
           "id": "contract-detects-again",
@@ -397,11 +398,11 @@
           "id": "project-file-ignored",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/languages.py",
-          "symbol": "language_guide",
+          "symbol": "_content",
           "old": "own if own is not None and own.is_file()",
           "new": "own if False",
           "breaks": "a project's own language file is never read",
-          "symbol_sha": "sha256:0b9502d294294d0ffdd820a4ac3a313c8d7636360a2e3906455da79474da8d7a"
+          "symbol_sha": "sha256:f084fdf9931fab0fe6afc66f36ee63ab4ccd87c677d452e573d2b92b052dec6d"
         },
         {
           "id": "coder-role-python",
@@ -514,6 +515,77 @@
           "new": "    return suffix == \".py\"\n",
           "breaks": "a Java test file that ran no test passes",
           "symbol_sha": "sha256:2546b13b1520bc5d9fee493d518b47bf318eb763fcada7ce8331a6025fc0fb55"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Framework-aware generation",
+      "scope": [
+        "tests/unit/core/flow/engine/test_frameworks.py",
+        "tests/integration/core/flow/handlers/test_generation_follows_the_framework.py",
+        "tests/e2e/capabilities/workflows/test_implement_follows_the_framework_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "guidance-not-added",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler._instructions",
+          "old": "        if framework is None:\n            return text\n",
+          "new": "        if True:\n            return text\n",
+          "breaks": "the framework never reaches the prompt",
+          "symbol_sha": "sha256:5d85f1bcade7e5f0bffa348ab77851afaf90c00bd6806be1d5a4af513d393c92"
+        },
+        {
+          "id": "archetype-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "symbol": "project_framework",
+          "old": "    if archetype:\n",
+          "new": "    if False:\n",
+          "breaks": "a quarkus folder is judged by its build file only",
+          "symbol_sha": "sha256:ad22db43409a68cf9242e775125908d111d7709f57bdd20c07682efe6b553851"
+        },
+        {
+          "id": "detection-none",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "symbol": "_detected",
+          "old": "    return detect(project_root) if detect else None\n",
+          "new": "    return None\n",
+          "breaks": "a Spring Boot build names no framework",
+          "symbol_sha": "sha256:9427e4f94b5c540ba6a9cca0060ce207028702b0914e40e0a49686c731a3e34c"
+        },
+        {
+          "id": "spring-before-boot",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "symbol": "_jvm",
+          "old": "(key for key, mark in _JVM_RULES if mark in text)",
+          "new": "(key for key, mark in reversed(_JVM_RULES) if mark in text)",
+          "breaks": "a Spring Boot project is told plain Spring",
+          "symbol_sha": "sha256:34fe9568db10fa17779505420b1e1fb7b40768284bf5f2716b75a62930ae7319"
+        },
+        {
+          "id": "language-check-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "symbol": "project_framework",
+          "old": "if guide is not None and language in guide.languages:",
+          "new": "if guide is not None:",
+          "breaks": "a spring-boot folder makes a Python run write Spring",
+          "symbol_sha": "sha256:ad22db43409a68cf9242e775125908d111d7709f57bdd20c07682efe6b553851"
+        },
+        {
+          "id": "framework-not-shown",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "_print_framework",
+          "old": "    if framework is not None:\n",
+          "new": "    if False:\n",
+          "breaks": "sw implement does not say which framework it used",
+          "symbol_sha": "sha256:b63c197f96dc5d8e82ce03abf420fb7786da99b413050d3d228d98501d6fb950"
         }
       ]
     }

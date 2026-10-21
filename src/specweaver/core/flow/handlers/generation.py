@@ -26,6 +26,7 @@ from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.core.flow.engine.frameworks import FrameworkChoice
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.engine.task_files import TaskFiles
     from specweaver.core.flow.handlers.run_context import RunContext
@@ -114,9 +115,15 @@ class _GenerationHandler:
     #: shows the user, so it is preserved as a flag rather than quietly unified.
     INCLUDE_TRACEBACK: ClassVar[bool] = False
 
-    def _instructions(self, guide: LanguageGuide) -> str:
-        """The instruction block for this artefact, in the run's language."""
-        raise NotImplementedError
+    #: Which section of the language and framework files this artefact takes.
+    SECTION: ClassVar[str]
+
+    def _instructions(self, guide: LanguageGuide, framework: FrameworkChoice | None) -> str:
+        """The language's instructions for this artefact, then the framework's, if any."""
+        text = str(getattr(guide, self.SECTION))
+        if framework is None:
+            return text
+        return f"{text}\n\n{getattr(framework.guide, self.SECTION)}"
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
         """Invoke the generator method for this artefact."""
@@ -150,12 +157,16 @@ class _GenerationHandler:
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
+            from specweaver.core.flow.engine.frameworks import project_framework
             from specweaver.core.flow.engine.task_files import task_brief
             from specweaver.workflows.implementation.generator import Generator
             from specweaver.workflows.implementation.languages import language_guide
 
             files = self._files(context)
             guide = language_guide(files.language, context.project_path)
+            framework = project_framework(
+                context.project_path, context.project_path / files.code, files.language
+            )
             adapter, config = _resolve_generation_routing(context)
             generator = Generator(llm=adapter, config=config, guide=guide)
 
@@ -176,7 +187,7 @@ class _GenerationHandler:
 
             try:
                 base_prompt = await _generation_prompt(
-                    context, step, instructions=self._instructions(guide)
+                    context, step, instructions=self._instructions(guide, framework)
                 )
             except ValueError as e:
                 return _error_result(str(e), started)
@@ -293,9 +304,7 @@ class GenerateCodeHandler(_GenerationHandler):
     EVENT_TYPE: ClassVar[str] = "generated_code"
     ARTEFACT: ClassVar[str] = "code"
     INCLUDE_TRACEBACK: ClassVar[bool] = True
-
-    def _instructions(self, guide: LanguageGuide) -> str:
-        return guide.code
+    SECTION: ClassVar[str] = "code"
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
         return await generator.generate_code(spec_path, output_path, **kw)
@@ -308,9 +317,7 @@ class GenerateTestsHandler(_GenerationHandler):
     FILENAME_PREFIX: ClassVar[str] = "test_"
     EVENT_TYPE: ClassVar[str] = "generated_tests"
     ARTEFACT: ClassVar[str] = "tests"
-
-    def _instructions(self, guide: LanguageGuide) -> str:
-        return guide.tests
+    SECTION: ClassVar[str] = "tests"
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
         return await generator.generate_tests(spec_path, output_path, **kw)
