@@ -15,6 +15,7 @@ import typer
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.commons.spec_names import module_stem
+from specweaver.core.flow.engine.task_files import TaskFiles
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
@@ -31,12 +32,12 @@ logger = logging.getLogger(__name__)
 implement_cli = typer.Typer(no_args_is_help=True)
 
 
-def _build_implement_pipeline(stem: str) -> PipelineDefinition:
+def _build_implement_pipeline(files: TaskFiles | str) -> PipelineDefinition:
     """Build the autonomous ``implement_spec`` pipeline.
 
     Generate code + tests, then run the tests and validate the code in one loop.
-    The QA steps target this run's freshly generated files (``tests/test_<stem>.py``,
-    ``src/<stem>.py``); ``run_tests`` loops back to regenerate on failure (bounded),
+    The QA steps target this run's freshly generated files — the task's files for the project's
+    language; a bare stem means the Python layout. ``run_tests`` loops back to regenerate on failure (bounded),
     and ``validate_code`` is report-only (a C01-C08 miss never aborts the run). QA
     steps leave ``use_worktree`` unset so SF-03 can thread the US-9 isolation policy
     without touching this builder.
@@ -52,9 +53,14 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
         StepTarget,
     )
 
+    task = (
+        files
+        if isinstance(files, TaskFiles)
+        else TaskFiles(f"src/{files}.py", f"tests/test_{files}.py")
+    )
     return PipelineDefinition(
         name="implement_spec",
-        description=f"Implement + QA for {stem}",
+        description=f"Implement + QA for {task.code}",
         steps=[
             PipelineStep(
                 name="generate_code",
@@ -73,14 +79,14 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
                 name="lint_fix",
                 action=StepAction.LINT_FIX,
                 target=StepTarget.CODE,
-                params={"target": f"src/{stem}.py", "max_reflections": 3},
+                params={"target": task.code, "max_reflections": 3},
                 gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
             ),
             PipelineStep(
                 name="run_tests",
                 action=StepAction.VALIDATE,
                 target=StepTarget.TESTS,
-                params={"target": f"tests/test_{stem}.py", "kind": "unit", "coverage": True},
+                params={"target": task.tests, "kind": "unit", "coverage": True},
                 gate=GateDefinition(
                     type=GateType.AUTO,
                     condition=GateCondition.ALL_PASSED,
@@ -93,7 +99,7 @@ def _build_implement_pipeline(stem: str) -> PipelineDefinition:
                 name="validate_code",
                 action=StepAction.VALIDATE,
                 target=StepTarget.CODE,
-                params={"target": f"src/{stem}.py"},
+                params={"target": task.code},
                 gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
             ),
             # The kept scenario checks, for the person only; never stops the run.
@@ -262,12 +268,15 @@ def implement(
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
-    stem = module_stem(spec_path)
-    src_dir = project_path / "src"
-    tests_dir = project_path / "tests"
+    from specweaver.core.flow.engine.task_files import task_files_for
 
-    code_path = src_dir / f"{stem}.py"
-    test_path = tests_dir / f"test_{stem}.py"
+    try:
+        task = task_files_for(project_path, spec_path, language)
+    except ValueError as exc:
+        _core.print_error(exc)
+        raise typer.Exit(code=1) from exc
+    code_path = project_path / task.code
+    test_path = project_path / task.tests
 
     _core.console.print(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",
@@ -283,7 +292,7 @@ def implement(
         load_standards_content(db, active, project_path, target_path=spec_path) if active else None
     )
 
-    pipeline = _build_implement_pipeline(stem)
+    pipeline = _build_implement_pipeline(task)
     router = command_router(
         project, roles_of(pipeline), run_model=run_model, project_root=project_path
     )

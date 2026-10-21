@@ -14,10 +14,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/isolation.py",
           "symbol": "task_files",
-          "old": "    return derive_allowed_paths(context.spec_path)\n",
+          "old": "    return _task_paths(context)\n",
           "new": "    return []\n",
           "breaks": "with isolation off the coder can write nothing",
-          "symbol_sha": "sha256:a1fea39cfa67720ea8bc9767b838c9a7f086ffabfca3cd3c9f7d4fb70c8b2129"
+          "symbol_sha": "sha256:d3ba5c32462ab78777d683280025b8947087e2c93eebc55f5cf99fc13de6d2f5"
         },
         {
           "id": "settings-list-ignored",
@@ -27,7 +27,7 @@
           "old": "    if context.isolation.allowed_paths:\n",
           "new": "    if False:\n",
           "breaks": "the project's own list is ignored; the grant and the merge disagree",
-          "symbol_sha": "sha256:a1fea39cfa67720ea8bc9767b838c9a7f086ffabfca3cd3c9f7d4fb70c8b2129"
+          "symbol_sha": "sha256:d3ba5c32462ab78777d683280025b8947087e2c93eebc55f5cf99fc13de6d2f5"
         }
       ]
     },

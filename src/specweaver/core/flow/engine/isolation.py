@@ -13,8 +13,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.commons.spec_names import module_stem
-
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -44,23 +42,20 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
-def derive_allowed_paths(spec_path: Path) -> list[str]:
-    """The reconcile allow-list, derived from the spec stem.
-
-    Mirrors the pipeline's generation targets so the single end-of-run strip-merge
-    authorizes exactly the files the run actually generates. Inside a session,
-    ``execute_run`` nulls ``output_dir``, so the generation handlers fall back to their
-    defaults (``src/<stem>.py`` / ``tests/test_<stem>.py``) — hence the ``src/``/``tests/``
-    prefixes here, not the composition-root ``output_dir``.
-
-    The stem is ``module_stem``, the one rule the generation handlers use too, so the allow-list
-    names the file they write.
+def derive_allowed_paths(
+    spec_path: Path, project_root: Path | None = None, language: str | None = None
+) -> list[str]:
+    """The reconcile allow-list: the task's files (`task_files_for`), the same ones generation
+    writes. Without a project root, the Python layout.
 
     Paths are repo-relative with forward slashes (git ``--name-only`` form on every
     platform, including Windows) — never ``os.sep``.
     """
-    stem = module_stem(spec_path)
-    return [f"src/{stem}.py", f"tests/test_{stem}.py"]
+    from specweaver.core.flow.engine.task_files import task_files_for
+
+    if project_root is None:
+        return task_files_for(spec_path.parent, spec_path, "python").all
+    return task_files_for(project_root, spec_path, language).all
 
 
 def apply_isolation_policy(
@@ -102,7 +97,11 @@ def task_files(context: RunContext) -> list[str]:
     """
     if context.isolation.allowed_paths:
         return list(context.isolation.allowed_paths)
-    return derive_allowed_paths(context.spec_path)
+    return _task_paths(context)
+
+
+def _task_paths(context: RunContext) -> list[str]:
+    return derive_allowed_paths(context.spec_path, context.project_path, context.isolation.language)
 
 
 def apply_session_policy(
@@ -142,7 +141,7 @@ def apply_session_policy(
             context.isolation = context.isolation.model_copy(update={"session_isolation": False})
             return
         override = list(getattr(sandbox, "session_allowed_paths", None) or [])
-        allowed = override or derive_allowed_paths(context.spec_path)
+        allowed = override or _task_paths(context)
         context.isolation = context.isolation.model_copy(
             update={"session_isolation": True, "allowed_paths": allowed}
         )

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.engine.task_files import TaskFiles
     from specweaver.core.flow.handlers.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
@@ -119,6 +120,25 @@ class _GenerationHandler:
         """Invoke the generator method for this artefact."""
         raise NotImplementedError
 
+    def _files(self, context: RunContext) -> TaskFiles:
+        from specweaver.core.flow.engine.task_files import task_files_for
+
+        return task_files_for(context.project_path, context.spec_path, context.isolation.language)
+
+    def _output_path(self, context: RunContext) -> Path:
+        """Where this step writes: the task's file. Python code alone keeps a run's `output_dir`;
+        tests always go where the merge and `run_tests` look for them."""
+        files = self._files(context)
+        if self.OUTPUT_SUBDIR != "src":
+            return context.project_path / files.tests
+        if files.code.endswith(".py") and context.output_dir is not None:
+            return context.output_dir / f"{module_stem(context.spec_path)}.py"
+        return context.project_path / files.code
+
+    def _extra_files(self, context: RunContext) -> list[str]:
+        """Files the code step may also change: Rust's module declaration."""
+        return list(self._files(context).extra) if self.OUTPUT_SUBDIR == "src" else []
+
     async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
@@ -133,9 +153,7 @@ class _GenerationHandler:
             adapter, config = _resolve_generation_routing(context)
             generator = Generator(llm=adapter, config=config)
 
-            output_dir = context.output_dir or context.project_path / self.OUTPUT_SUBDIR
-            stem = module_stem(context.spec_path)
-            output_path = output_dir / f"{self.FILENAME_PREFIX}{stem}.py"
+            output_path = self._output_path(context)
             logger.debug(
                 "%s: generating %s to '%s' from spec '%s'",
                 name,
@@ -166,7 +184,14 @@ class _GenerationHandler:
             decision = resolve_execution_mode(step, context)
             if decision.mode is ExecutionMode.AGENTIC:
                 refused = await _run_coder(
-                    step, context, output_path, adapter, config, base_prompt, prompt_parts
+                    step,
+                    context,
+                    output_path,
+                    self._extra_files(context),
+                    adapter,
+                    config,
+                    base_prompt,
+                    prompt_parts,
                 )
                 if refused:
                     return _failed_result(refused, started)
@@ -215,6 +240,7 @@ async def _run_coder(
     step: PipelineStep,
     context: RunContext,
     output_path: Path,
+    extra_files: list[str],
     adapter: Any,
     config: Any,
     base_prompt: Any,
@@ -237,7 +263,7 @@ async def _run_coder(
         WorkspaceBoundary(roots=[context.project_path]),
         role="implementer",
         allowed_tools=["ast"],
-        task_files=[target],
+        task_files=[target, *extra_files],
         doc_policy=context.isolation.doc_policy,
         step=step.name,
     )

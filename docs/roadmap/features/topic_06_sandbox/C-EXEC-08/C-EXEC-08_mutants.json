@@ -182,7 +182,7 @@
           "old": "                \"step\": step_def.name,\n",
           "new": "                \"step\": None,\n",
           "breaks": "a step rule never keeps its own step's doc",
-          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
+          "symbol_sha": "sha256:fb670cff191d30d5e2df4cc6c5b3f6744e2b37356621d5ee9c61e0d456ecd9c4"
         },
         {
           "id": "session-judged-by-one-step",
@@ -243,7 +243,7 @@
           "old": "        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),\n",
           "new": "        isolation=IsolationPolicy(autonomy=autonomy, language=language),\n",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
         },
         {
           "id": "api-start-skips-the-policy",

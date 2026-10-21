@@ -797,7 +797,7 @@
           "old": "        project, roles_of(pipeline), run_model=run_model, project_root=project_path\n",
           "new": "        project, roles_of(pipeline), project_root=project_path\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
         },
         {
           "id": "run-drops-run-model",

@@ -278,6 +278,30 @@ A pipeline step can ask for it itself: `mode: agentic` on a `generate` step with
   coder. Each lands its file through the merge, as commits on your current branch, so the working
   tree must be clean: otherwise the run stops and says "commit or stash first".
 
+## 6c. Languages (`[implement]` in `specweaver.toml`)
+
+SpecWeaver works out your project's language from its manifests: `package.json` → TypeScript,
+`Cargo.toml` → Rust, a Gradle or Maven build → Kotlin when the project has Kotlin sources or the
+Kotlin plugin, else Java; otherwise Python. A mixed repository names its language:
+
+```toml
+[implement]
+language = "java"   # python | java | kotlin | typescript | rust
+```
+
+A spec `greet_service_spec.md` is the module `greet_service`; its files are:
+
+| Language | Code | Tests |
+|---|---|---|
+| Python | `src/greet_service.py` | `tests/test_greet_service.py` |
+| Java | `src/main/java/<pkg>/GreetService.java` | `src/test/java/<pkg>/GreetServiceTest.java` |
+| Kotlin | `src/main/kotlin/<pkg>/GreetService.kt` | `src/test/kotlin/<pkg>/GreetServiceTest.kt` |
+| TypeScript | `src/greet_service.ts` | `tests/greet_service.test.ts` |
+| Rust | `src/greet_service.rs` (+ `mod` in `src/lib.rs` or `main.rs`) | `tests/greet_service.rs` |
+
+The Java/Kotlin package is the spec's `> **Package**: com.example.greet` header line, else the package
+your existing sources share, else the build's `groupId`/`group`.
+
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
 SpecWeaver can pre-fetch context from external tools (e.g. Postgres databases or Atlassian APIs)

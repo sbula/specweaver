@@ -93,7 +93,7 @@
           "old": "    language = _core.language_at(project_path)\n",
           "new": "    language = None\n",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
         },
         {
           "id": "api-names-no-language",
@@ -114,6 +114,77 @@
           "new": "            language=None,\n",
           "breaks": "lint_fix runs the manifests' linter, not the named language's",
           "symbol_sha": "sha256:58c6739e386d75630ac82ed785ee9bdeecf7e33364f068fc1c6e33be0b2fa2a0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "One derivation of a task's files",
+      "scope": [
+        "tests/unit/core/flow/engine/test_task_files.py",
+        "tests/integration/core/flow/engine/test_task_files_agree.py",
+        "tests/integration/core/flow/handlers/test_agentic_generate_step.py"
+      ],
+      "mutants": [
+        {
+          "id": "header-package-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "symbol": "_jvm",
+          "old": "        _spec_package(spec_path) or _source_package(project_root, language) or _group(project_root)\n",
+          "new": "        _source_package(project_root, language) or _group(project_root)\n",
+          "breaks": "a spec's Package line is ignored",
+          "symbol_sha": "sha256:3a2a67b4f4fcaad3546c81a443f3a19bce147091e38163bc3b0a0ba087297a9e"
+        },
+        {
+          "id": "hostile-package-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "symbol": "_spec_package",
+          "old": "            if not _PACKAGE.fullmatch(package):\n",
+          "new": "            if False:\n",
+          "breaks": "a spec can write ../.. into a folder path",
+          "symbol_sha": "sha256:14f3adbdd1b3fac7b0f54eccd5f684d7ee918f5ee7424b860803c9fa6b013233"
+        },
+        {
+          "id": "first-package-wins",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "symbol": "_source_package",
+          "old": "        if len(set(parts)) != 1:\n",
+          "new": "        if False:\n",
+          "breaks": "the package is one source's, not the shared one",
+          "symbol_sha": "sha256:02b05dde50959f1efee7e4c4fc340882cda1c6605f7bafa6f648e24b80c803b2"
+        },
+        {
+          "id": "allow-list-stays-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "derive_allowed_paths",
+          "old": "    return task_files_for(project_root, spec_path, language).all\n",
+          "new": "    return task_files_for(project_root, spec_path, \"python\").all\n",
+          "breaks": "a Java project's merge strips the Java files it generated",
+          "symbol_sha": "sha256:c6b07d9c8bdb6dcd6b2c3da808d6c2c4f0d87e7264a2df99535a0d0e481e9312"
+        },
+        {
+          "id": "tests-into-output-dir",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler._output_path",
+          "old": "        if self.OUTPUT_SUBDIR != \"src\":\n",
+          "new": "        if False:\n",
+          "breaks": "sw run writes Python tests into src/, where the merge and run_tests do not look",
+          "symbol_sha": "sha256:f3c72431eea2948090930b0d1ec74fa3f95e1a9f7401c0a1bc9d4c3e252bdae3"
+        },
+        {
+          "id": "rust-module-root-not-granted",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_run_coder",
+          "old": "        task_files=[target, *extra_files],\n",
+          "new": "        task_files=[target],\n",
+          "breaks": "a Rust coder cannot declare its new module",
+          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         }
       ]
     }

@@ -405,7 +405,7 @@
           "old": "    if run_state.status == \"parked\":\n",
           "new": "    if False:\n",
           "breaks": "sw implement stopped by the spend brake says the tests did not pass",
-          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
         }
       ]
     },
@@ -525,7 +525,7 @@
           "old": "        if step_refusal() is not None or result.status != StepStatus.PASSED:\n",
           "new": "        if result.status != StepStatus.PASSED:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
-          "symbol_sha": "sha256:949a4851f2124307a7cfe02b4152e2f4cb062259bc2f6205f1b28db25ecdd8db"
+          "symbol_sha": "sha256:fb670cff191d30d5e2df4cc6c5b3f6744e2b37356621d5ee9c61e0d456ecd9c4"
         }
       ]
     },

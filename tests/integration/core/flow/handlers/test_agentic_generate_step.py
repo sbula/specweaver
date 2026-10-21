@@ -62,9 +62,13 @@ class _Coder:
 
     provider_name = "scripted"
 
-    def __init__(self, *paths: str, endless: bool = False) -> None:
+    def __init__(
+        self, *paths: str, endless: bool = False, code: str = _CODE, deletes: tuple[str, ...] = ()
+    ) -> None:
         self._paths = paths
         self._endless = endless
+        self._code = code
+        self._deletes = deletes
         self.answers: dict[str, Any] = {}
         self.prompts: list[str] = []
 
@@ -82,8 +86,10 @@ class _Coder:
             raise ToolRoundsExceededError.reached(config.max_tool_rounds)
         for path in self._paths:
             self.answers[path] = await tool_executor.execute(
-                "create_module", {"path": path, "code": _CODE}
+                "create_module", {"path": path, "code": self._code}
             )
+        for path in self._deletes:
+            self.answers[path] = await tool_executor.execute("delete_module", {"path": path})
         return LLMResponse(text="done", model="test-model")
 
 
@@ -248,3 +254,30 @@ def test_a_dirty_working_tree_stops_the_run_and_keeps_the_changes(tmp_path: Path
     assert run.status == RunStatus.FAILED
     assert "commit or stash" in (_result(run).error_message or "")
     assert (root / "src" / "greeter.py").read_text(encoding="utf-8") == "# mine, not committed\n"
+
+
+def test_a_rust_coder_may_declare_its_module(tmp_path: Path) -> None:
+    """D-INTL-08 FR-3: Rust's code step also owns `src/lib.rs`, where `mod <stem>;` goes."""
+    root = tmp_path
+    (root / "src").mkdir()
+    (root / "Cargo.toml").write_text('[package]\nname = "p"\n', encoding="utf-8")
+    (root / "src" / "main.rs").write_text("fn main() {}\n", encoding="utf-8")
+    (root / "specs").mkdir()
+    (root / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
+    for args in (["init"], ["config", "user.email", "t@t"], ["config", "user.name", "t"]):
+        _git(root, *args)
+    _git(root, "add", "-A")
+    _git(root, "commit", "-m", "init")
+    coder = _Coder(
+        "src/greeter.rs",
+        "src/other.rs",
+        code="pub fn greet() -> u8 {\n    1\n}\n",
+        deletes=("src/main.rs",),
+    )
+
+    _run(root, coder)
+
+    assert "error" not in coder.answers["src/greeter.rs"], coder.answers
+    # The grant covers `src/main.rs`: a refusal there is about the code, never about the right.
+    assert "right to" not in coder.answers["src/main.rs"].get("error", ""), coder.answers
+    assert "src/other.rs" in coder.answers["src/other.rs"]["error"]

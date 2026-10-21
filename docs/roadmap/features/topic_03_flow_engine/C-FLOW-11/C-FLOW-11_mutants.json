@@ -82,7 +82,7 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:8931af550c77c5751ef1cb753aed13a36ebecf4f4a92e4f9f7d0cd5cb76ebe6d"
+          "symbol_sha": "sha256:56359dde9bc1e8511b66becc5d050034030986fa2a2b6e4afb14fc1feb52ec20"
         },
         {
           "id": "coder-without-its-step",
@@ -92,7 +92,7 @@
           "old": "        step=step.name,\n",
           "new": "        step=None,\n",
           "breaks": "a [docs] step rule never lets its own coder write",
-          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         },
         {
           "id": "coder-without-the-doc-rules",
@@ -102,17 +102,17 @@
           "old": "        doc_policy=context.isolation.doc_policy,\n",
           "new": "        doc_policy=None,\n",
           "breaks": "the coder ignores the project's [docs] rules",
-          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         },
         {
           "id": "coder-writes-both-files",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "_run_coder",
-          "old": "        task_files=[target],\n",
+          "old": "        task_files=[target, *extra_files],\n",
           "new": "        task_files=task_files(context),\n",
           "breaks": "the tests step may rewrite the module",
-          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         },
         {
           "id": "missing-target-passes",
@@ -122,7 +122,7 @@
           "old": "    if not (context.project_path / target).is_file():\n",
           "new": "    if False:\n",
           "breaks": "a coder that wrote nothing passes its step",
-          "symbol_sha": "sha256:1b30597cf5e80a2c6092b502db3ef03eb927d1b077ca5cae0c99394815d759b3"
+          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         },
         {
           "id": "refusal-reason-dropped",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:8931af550c77c5751ef1cb753aed13a36ebecf4f4a92e4f9f7d0cd5cb76ebe6d"
+          "symbol_sha": "sha256:56359dde9bc1e8511b66becc5d050034030986fa2a2b6e4afb14fc1feb52ec20"
         }
       ]
     },
@@ -174,7 +174,7 @@
           "old": "    autonomy = _core.load_autonomy_at(project_path)\n",
           "new": "    autonomy = _core.load_autonomy_at(project_path / \"missing\")\n",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+          "symbol_sha": "sha256:07a9b8863cb4d0eb4be2013364134a1a53d566c2cae5d9bd95ed71390001a8b1"
         },
         {
           "id": "api-reads-another-file",

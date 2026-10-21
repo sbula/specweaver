@@ -146,7 +146,7 @@
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:362e00d7461abf5b0ed0f82f60eccae6a5e0aade87c26a11b15a173de50ae798"
+          "symbol_sha": "sha256:350418b58513f1d413e8c9f2c651f0ea670511c132da0cdd59052f3eeb789169"
         }
       ]
     },

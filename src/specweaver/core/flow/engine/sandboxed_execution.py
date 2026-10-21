@@ -108,7 +108,9 @@ async def execute_in_sandbox(
                 "intent": "strip_merge",
                 "branch": branch,
                 "allowed_paths": context.isolation.allowed_paths
-                or derive_allowed_paths(context.spec_path),
+                or derive_allowed_paths(
+                    context.spec_path, context.project_path, context.isolation.language
+                ),
                 "doc_policy": context.isolation.doc_policy,
                 "step": step_def.name,
             }

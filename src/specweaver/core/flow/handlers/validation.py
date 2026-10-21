@@ -398,7 +398,19 @@ def _default_test_target(context: RunContext, kind: str) -> str:
                 stem, _scenarios_root(context).parent
             )
         )
+    tests = _task_file(context, "tests")
+    if tests is not None:
+        return str(tests)
     return str((context.output_dir or context.project_path / "tests") / f"test_{stem}.py")
+
+
+def _task_file(context: RunContext, which: str) -> Path | None:
+    """The task's code or tests file outside Python; None for Python, whose `output_dir` stays."""
+    from specweaver.core.flow.engine.task_files import task_files_for
+
+    files = task_files_for(context.project_path, context.spec_path, context.isolation.language)
+    relative = files.code if which == "code" else files.tests
+    return None if relative.endswith(".py") else context.project_path / relative
 
 
 class ValidateTestsHandler:
@@ -575,6 +587,8 @@ def _generated_code(context: RunContext) -> str:
     from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
 
     stem = module_stem(context.spec_path)
-    code = (context.output_dir or context.project_path / "src") / f"{stem}.py"
+    code = _task_file(context, "code") or (
+        (context.output_dir or context.project_path / "src") / f"{stem}.py"
+    )
     root = context.isolation.execution_root or context.project_path
     return relative_to_root(code, root) if code.is_file() else ""
