@@ -90,3 +90,9 @@ def test_extract_artifact_uuid_no_space_after_colon():
 
 def test_wrap_artifact_tag_uppercase_language():
     assert wrap_artifact_tag("my-uuid-123", "PYTHON") == "# sw-artifact: my-uuid-123"
+
+
+def test_wrap_artifact_tag_kotlin():
+    """D-INTL-08 FR-4: a generated `.kt` file is tagged like Java."""
+    assert wrap_artifact_tag("my-uuid-123", "kotlin") == "// sw-artifact: my-uuid-123"
+    assert wrap_artifact_tag("my-uuid-123", "kt") == "// sw-artifact: my-uuid-123"

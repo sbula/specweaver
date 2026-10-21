@@ -23,7 +23,7 @@ from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.runner import run_rules
 from specweaver.infrastructure.llm.errors import GenerationError
 from specweaver.infrastructure.llm.models import LLMResponse
-from specweaver.workflows.implementation.generator import Generator
+from specweaver.workflows.implementation.generator import Generator, strip_fences
 
 
 def _make_mock_llm(response_text: str = "def greet(): pass\n") -> MagicMock:
@@ -139,7 +139,7 @@ class TestGeneratorBehavioral:
 
 
 # ---------------------------------------------------------------------------
-# Generator._clean_code_output — pure function tests
+# strip_fences — pure function tests
 # ---------------------------------------------------------------------------
 
 
@@ -149,31 +149,31 @@ class TestCleanCodeOutput:
     def test_removes_python_fences(self) -> None:
         """Strips ```python ... ``` wrapper."""
         raw = "```python\nprint('hello')\n```"
-        assert Generator._clean_code_output(raw) == "print('hello')\n"
+        assert strip_fences(raw) == "print('hello')\n"
 
     def test_removes_plain_fences(self) -> None:
         """Strips plain ``` ... ``` wrapper."""
         raw = "```\nprint('hello')\n```"
-        assert Generator._clean_code_output(raw) == "print('hello')\n"
+        assert strip_fences(raw) == "print('hello')\n"
 
     def test_no_fences_passthrough(self) -> None:
         """Code without fences passes through unchanged (plus trailing newline)."""
         raw = "print('hello')"
-        assert Generator._clean_code_output(raw) == "print('hello')\n"
+        assert strip_fences(raw) == "print('hello')\n"
 
     def test_only_trailing_fence(self) -> None:
         """Only trailing ``` is stripped."""
         raw = "print('hello')\n```"
-        assert Generator._clean_code_output(raw) == "print('hello')\n"
+        assert strip_fences(raw) == "print('hello')\n"
 
     def test_empty_input(self) -> None:
         """Empty string → just a newline."""
-        assert Generator._clean_code_output("") == "\n"
+        assert strip_fences("") == "\n"
 
     def test_whitespace_around_fences(self) -> None:
         """Leading/trailing whitespace around fenced code is stripped."""
         raw = "  \n```python\ncode()\n```  \n"
-        assert Generator._clean_code_output(raw) == "code()\n"
+        assert strip_fences(raw) == "code()\n"
 
 
 # ---------------------------------------------------------------------------

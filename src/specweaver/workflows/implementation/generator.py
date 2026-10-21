@@ -11,9 +11,10 @@ Reads a validated component spec and generates:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role
+from specweaver.workflows.implementation.languages import LanguageGuide, language_guide
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -22,38 +23,6 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
 logger = logging.getLogger(__name__)
-
-# Instruction constants — extracted for reuse and testability
-CODE_GEN_INSTRUCTIONS = """\
-You are a Python code generator. You are implementing a component from its specification.
-
-## Requirements:
-1. Implement ALL functions/classes described in the Contract section.
-2. Handle ALL error cases from the Policy section.
-3. Follow the Protocol section step by step.
-4. Include proper type hints on all public methods.
-5. Include docstrings for all public methods.
-6. Do NOT add functionality not described in the spec.
-
-## Output:
-Produce ONLY valid Python code. No markdown fences, no explanation.
-Start with imports, then data models, then the main implementation.
-Include a module docstring."""
-
-TEST_GEN_INSTRUCTIONS = """\
-You are a Python test generator. You are writing tests for a component from its specification.
-
-## Requirements:
-1. Write tests using pytest.
-2. Cover ALL examples from the Contract section as test cases.
-3. Cover ALL error cases from the Policy section.
-4. Cover edge cases (empty input, None, boundary values).
-5. Use descriptive test names (test_<scenario>).
-6. Group tests in classes by concern.
-
-## Output:
-Produce ONLY valid Python code. No markdown fences, no explanation.
-Start with imports, then test classes with test methods."""
 
 
 def generation_prompt(
@@ -64,14 +33,20 @@ def generation_prompt(
     dictator_overrides: list[str] | None = None,
     validation_findings: str | None = None,
     environment_context: str | None = None,
+    language: str = "python",
+    brief: str | None = None,
 ) -> str:
     """The prompt code or tests are generated from: the base, the spec, and what the run adds.
 
-    One-shot and agentic generation build it the same way, so both tag the file for lineage.
+    One-shot and agentic generation build it the same way, so both tag the file for lineage in the
+    language's comment syntax. The brief comes after the instructions, so the prompt's start stays
+    the same from task to task.
     """
     if artifact_uuid:
-        base_prompt.add_artifact_tagging(artifact_uuid, "python")
+        base_prompt.add_artifact_tagging(artifact_uuid, language)
     base_prompt.add_file(spec_path, priority=1, role="reference")
+    if brief:
+        base_prompt.add_context(brief, "task_files", priority=1)
     if dictator_overrides:
         base_prompt.add_dictator_overrides(dictator_overrides)
     if validation_findings:
@@ -89,131 +64,61 @@ class Generator:
         self,
         llm: LLMAdapter,
         config: GenerationConfig,
+        guide: LanguageGuide | None = None,
     ) -> None:
         self._llm = llm
         self._config = config
+        self._guide = guide or language_guide("python")
 
     async def generate_code(
-        self,
-        spec_path: Path,
-        output_path: Path,
-        base_prompt: PromptBuilder,
-        *,
-        artifact_uuid: str | None = None,
-        dictator_overrides: list[str] | None = None,
-        validation_findings: str | None = None,
-        environment_context: str | None = None,
+        self, spec_path: Path, output_path: Path, base_prompt: PromptBuilder, **parts: Any
     ) -> Path:
-        """Generate implementation code from a spec.
-
-        Args:
-            spec_path: Path to the validated spec file.
-            output_path: Path to write the generated code to.
-            topology_contexts: Optional topology context from the project graph.
-            constitution: Optional constitution content to inject.
-            standards: Optional project standards to inject.
-            plan: Optional implementation plan injected.
-            project_metadata: Optional explicit environment boundary target context for models.
-            artifact_uuid: Optional UUID string to tag the code with.
-            environment_context: Optional mapped string extracting physical MCP bounds.
-
-        Returns:
-            Path to the generated code file.
-        """
-        prompt = generation_prompt(
-            spec_path,
-            base_prompt,
-            artifact_uuid=artifact_uuid,
-            dictator_overrides=dictator_overrides,
-            validation_findings=validation_findings,
-            environment_context=environment_context,
+        """Write the implementation `output_path` from the spec; `parts` are `generation_prompt`'s
+        keyword arguments (the lineage id, overrides, findings, environment, language, brief)."""
+        return await self._write(
+            self._guide.code_role, spec_path, output_path, base_prompt, "generate_code", parts
         )
-
-        messages = [
-            Message(
-                role=Role.SYSTEM,
-                content="You are a precise Python code generator. Output only valid Python code.",
-            ),
-            Message(role=Role.USER, content=prompt),
-        ]
-
-        logger.info("generate_code: generating from %s", spec_path)
-        response = await self._llm.generate(messages, self._config)
-        code = self._clean_code_output(response.text)
-
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(code, encoding="utf-8")
-        logger.info("generate_code: wrote %d bytes to %s", len(code), output_path)
-        return output_path
 
     async def generate_tests(
+        self, spec_path: Path, output_path: Path, base_prompt: PromptBuilder, **parts: Any
+    ) -> Path:
+        """Write the test file `output_path` from the spec; `parts` as for `generate_code`."""
+        return await self._write(
+            self._guide.tests_role, spec_path, output_path, base_prompt, "generate_tests", parts
+        )
+
+    async def _write(
         self,
+        role: str,
         spec_path: Path,
         output_path: Path,
         base_prompt: PromptBuilder,
-        *,
-        artifact_uuid: str | None = None,
-        dictator_overrides: list[str] | None = None,
-        validation_findings: str | None = None,
-        environment_context: str | None = None,
+        label: str,
+        parts: dict[str, Any],
     ) -> Path:
-        """Generate test file from a spec.
-
-        Args:
-            spec_path: Path to the validated spec file.
-            output_path: Path to write the generated test file to.
-            topology_contexts: Optional topology context from the project graph.
-            constitution: Optional constitution content to inject.
-            standards: Optional project standards to inject.
-            plan: Optional implementation plan injected.
-            project_metadata: Optional explicit environment boundary target context for models.
-            artifact_uuid: Optional UUID string to tag the test code with.
-            environment_context: Optional mapped string extracting physical MCP bounds.
-
-        Returns:
-            Path to the generated test file.
-        """
-        prompt = generation_prompt(
-            spec_path,
-            base_prompt,
-            artifact_uuid=artifact_uuid,
-            dictator_overrides=dictator_overrides,
-            validation_findings=validation_findings,
-            environment_context=environment_context,
-        )
-
+        prompt = generation_prompt(spec_path, base_prompt, **parts)
         messages = [
-            Message(
-                role=Role.SYSTEM,
-                content=(
-                    "You are a precise Python test generator. "
-                    "Output only valid Python code using pytest."
-                ),
-            ),
+            Message(role=Role.SYSTEM, content=role),
             Message(role=Role.USER, content=prompt),
         ]
-
-        logger.info("generate_tests: generating from %s", spec_path)
+        logger.info("%s: generating from %s", label, spec_path)
         response = await self._llm.generate(messages, self._config)
-        code = self._clean_code_output(response.text)
-
+        code = strip_fences(response.text)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(code, encoding="utf-8")
-        logger.info("generate_tests: wrote %d bytes to %s", len(code), output_path)
+        logger.info("%s: wrote %d bytes to %s", label, len(code), output_path)
         return output_path
 
-    @staticmethod
-    def _clean_code_output(text: str) -> str:
-        """Remove markdown code fences if the LLM wrapped output in them."""
-        text = text.strip()
 
-        # Remove ```python ... ``` wrapper
-        if text.startswith("```python"):
-            text = text[len("```python") :].strip()
-        elif text.startswith("```"):
-            text = text[3:].strip()
+def strip_fences(text: str) -> str:
+    """The code without the fence a model wrapped it in, whatever its info string.
 
-        if text.endswith("```"):
-            text = text[:-3].strip()
-
-        return text + "\n"
+    Only the first and the last line can be the fence: one inside the code (a raw string, a doc
+    comment) is code.
+    """
+    lines = text.strip().splitlines()
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip() + "\n"

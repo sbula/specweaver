@@ -257,7 +257,8 @@ def test_a_dirty_working_tree_stops_the_run_and_keeps_the_changes(tmp_path: Path
 
 
 def test_a_rust_coder_may_declare_its_module(tmp_path: Path) -> None:
-    """D-INTL-08 FR-3: Rust's code step also owns `src/lib.rs`, where `mod <stem>;` goes."""
+    """D-INTL-08 FR-3: Rust's code step also owns `src/lib.rs`, where `mod <stem>;` goes — also
+    beside a `main.rs`, which it may not change."""
     root = tmp_path
     (root / "src").mkdir()
     (root / "Cargo.toml").write_text('[package]\nname = "p"\n', encoding="utf-8")
@@ -270,6 +271,7 @@ def test_a_rust_coder_may_declare_its_module(tmp_path: Path) -> None:
     _git(root, "commit", "-m", "init")
     coder = _Coder(
         "src/greeter.rs",
+        "src/lib.rs",
         "src/other.rs",
         code="pub fn greet() -> u8 {\n    1\n}\n",
         deletes=("src/main.rs",),
@@ -278,6 +280,7 @@ def test_a_rust_coder_may_declare_its_module(tmp_path: Path) -> None:
     _run(root, coder)
 
     assert "error" not in coder.answers["src/greeter.rs"], coder.answers
-    # The grant covers `src/main.rs`: a refusal there is about the code, never about the right.
-    assert "right to" not in coder.answers["src/main.rs"].get("error", ""), coder.answers
+    assert "error" not in coder.answers["src/lib.rs"], coder.answers
+    assert "src/main.rs" in coder.answers["src/main.rs"]["error"]
     assert "src/other.rs" in coder.answers["src/other.rs"]["error"]
+    assert (root / "src" / "main.rs").read_text(encoding="utf-8") == "fn main() {}\n"

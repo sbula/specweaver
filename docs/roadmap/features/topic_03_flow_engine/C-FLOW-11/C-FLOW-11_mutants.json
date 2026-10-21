@@ -82,47 +82,47 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:56359dde9bc1e8511b66becc5d050034030986fa2a2b6e4afb14fc1feb52ec20"
+          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
         },
         {
           "id": "coder-without-its-step",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_run_coder",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
           "old": "        step=step.name,\n",
           "new": "        step=None,\n",
           "breaks": "a [docs] step rule never lets its own coder write",
-          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         },
         {
           "id": "coder-without-the-doc-rules",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_run_coder",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
           "old": "        doc_policy=context.isolation.doc_policy,\n",
           "new": "        doc_policy=None,\n",
           "breaks": "the coder ignores the project's [docs] rules",
-          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         },
         {
           "id": "coder-writes-both-files",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_run_coder",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
           "old": "        task_files=[target, *extra_files],\n",
           "new": "        task_files=task_files(context),\n",
           "breaks": "the tests step may rewrite the module",
-          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         },
         {
           "id": "missing-target-passes",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_run_coder",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
           "old": "    if not (context.project_path / target).is_file():\n",
           "new": "    if False:\n",
           "breaks": "a coder that wrote nothing passes its step",
-          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         },
         {
           "id": "refusal-reason-dropped",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:56359dde9bc1e8511b66becc5d050034030986fa2a2b6e4afb14fc1feb52ec20"
+          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
         }
       ]
     },

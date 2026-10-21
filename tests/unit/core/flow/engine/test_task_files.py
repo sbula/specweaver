@@ -8,7 +8,7 @@ Proves: D-INTL-08 FR-3
 | Bucket | Case |
 |---|---|
 | Happy | the layout for each of the five languages |
-| Boundary | the Java package from the spec header, from the sources' shared prefix, from the build's group, none; sources sharing nothing; `greet-service` as `GreetService`; Rust with `lib.rs`, `main.rs`, neither |
+| Boundary | the Java package from the spec header, from the sources' shared prefix, from the build's group, none; sources sharing nothing; `greet-service` as `GreetService`; Rust with `lib.rs`, `main.rs`, neither — always `lib.rs`, the only crate root tests reach |
 | Degradation | an unreadable build file falls through to the default package |
 | Hostile | a header package that is not a dotted identifier (`../x`, `com/evil`) is refused, naming the line |
 """
@@ -131,7 +131,7 @@ def test_a_dashed_stem_is_pascal_case_and_a_rust_module(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("present", "extra"),
-    [(["src/lib.rs"], "src/lib.rs"), (["src/main.rs"], "src/main.rs"), ([], "src/lib.rs")],
+    [(["src/lib.rs"], "src/lib.rs"), (["src/main.rs"], "src/lib.rs"), ([], "src/lib.rs")],
 )
 def test_rust_names_the_file_that_declares_the_module(
     tmp_path: Path, present: list[str], extra: str
@@ -141,3 +141,14 @@ def test_rust_names_the_file_that_declares_the_module(
         (tmp_path / rel).write_text("", encoding="utf-8")
 
     assert task_files_for(tmp_path, _spec(tmp_path), "rust").extra == (extra,)
+
+
+@pytest.mark.parametrize("language", ["python", "java", "kotlin", "typescript", "rust"])
+def test_the_files_name_their_language(tmp_path: Path, language: str) -> None:
+    assert task_files_for(tmp_path, _spec(tmp_path), language).language == language
+
+
+def test_the_detected_language_is_named(tmp_path: Path) -> None:
+    (tmp_path / "Cargo.toml").write_text('[package]\nname = "greet"\n', encoding="utf-8")
+
+    assert task_files_for(tmp_path, _spec(tmp_path), None).language == "rust"

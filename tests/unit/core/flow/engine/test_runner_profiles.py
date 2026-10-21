@@ -12,7 +12,10 @@ from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers._profiles import MINIMAL
 from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.workflows.implementation.languages import language_guide
 from tests.scripted_llm import FixedRouter
+
+_PYTHON_GUIDE = language_guide("python")
 
 
 @pytest.mark.asyncio
@@ -63,6 +66,11 @@ async def test_pipeline_runner_passes_render_profile_to_handler():
         patch("specweaver.core.flow.handlers.generation.Generator", new=MagicMock(), create=True),
         patch("pathlib.Path.exists", return_value=True),
         patch("pathlib.Path.read_text", return_value="mock spec"),
+        # `Path` is patched wholesale, so the guide is read before the patch, not through it.
+        patch(
+            "specweaver.workflows.implementation.languages.language_guide",
+            return_value=_PYTHON_GUIDE,
+        ),
     ):
         runner = PipelineRunner(pipeline, context, registry=registry)
         # Execute the pipeline

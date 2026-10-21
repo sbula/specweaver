@@ -14,7 +14,10 @@ from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, 
 from specweaver.core.flow.handlers.base import _build_base_prompt
 from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
+from specweaver.workflows.implementation.languages import language_guide
 from tests.scripted_llm import FixedRouter
+
+_PYTHON_GUIDE = language_guide("python")
 
 
 @pytest.fixture
@@ -246,6 +249,11 @@ class TestHandlerProfileIntegration:
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
             patch("pathlib.Path.read_text", return_value="mock spec"),
+            # `Path` is patched wholesale, so the guide is read before the patch, not through it.
+            patch(
+                "specweaver.workflows.implementation.languages.language_guide",
+                return_value=_PYTHON_GUIDE,
+            ),
         ):
             result = await handler.execute(step, run_context)
             print(f"\n\nBACKWARD COMPAT RESULT: {result}\n\n")
@@ -328,6 +336,11 @@ class TestHandlerProfileIntegration:
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
             patch("pathlib.Path.read_text", return_value="mock spec"),
+            # `Path` is patched wholesale, so the guide is read before the patch, not through it.
+            patch(
+                "specweaver.workflows.implementation.languages.language_guide",
+                return_value=_PYTHON_GUIDE,
+            ),
         ):
             result = await handler.execute(step, run_context)
             print(f"\n\nRESULT: {result}\n\n")
@@ -406,6 +419,11 @@ class TestHandlerProfileIntegration:
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
             patch("pathlib.Path.read_text", return_value="mock spec"),
+            # `Path` is patched wholesale, so the guide is read before the patch, not through it.
+            patch(
+                "specweaver.workflows.implementation.languages.language_guide",
+                return_value=_PYTHON_GUIDE,
+            ),
         ):
             result = await handler.execute(step, run_context)
 

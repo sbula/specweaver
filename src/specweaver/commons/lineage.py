@@ -52,7 +52,18 @@ def wrap_artifact_tag(artifact_id: str, language: str) -> str | None:
         return f"# sw-artifact: {artifact_id}"
 
     # C-style
-    if language in ("javascript", "typescript", "java", "go", "rust", "js", "ts", "rs"):
+    if language in (
+        "javascript",
+        "typescript",
+        "java",
+        "kotlin",
+        "go",
+        "rust",
+        "js",
+        "ts",
+        "kt",
+        "rs",
+    ):
         return f"// sw-artifact: {artifact_id}"
 
     # XML/Markdown style

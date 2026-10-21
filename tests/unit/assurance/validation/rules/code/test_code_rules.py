@@ -19,7 +19,7 @@ from specweaver.assurance.validation.rules.code.c07_no_orphan_todo import NoOrph
 from specweaver.assurance.validation.rules.code.c08_type_hints import TypeHintsRule
 from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
-from specweaver.workflows.implementation.generator import Generator
+from specweaver.workflows.implementation.generator import Generator, strip_fences
 from tests.scripted_llm import TEST_CONFIG
 
 # ---------------------------------------------------------------------------
@@ -440,18 +440,18 @@ class TestGenerator:
 
     def test_clean_code_removes_markdown_fences(self) -> None:
         text = "```python\ndef foo():\n    pass\n```"
-        result = Generator._clean_code_output(text)
+        result = strip_fences(text)
         assert "```" not in result
         assert "def foo" in result
 
     def test_clean_code_removes_generic_fences(self) -> None:
         text = "```\nsome code\n```"
-        result = Generator._clean_code_output(text)
+        result = strip_fences(text)
         assert "```" not in result
 
     def test_clean_code_preserves_plain(self) -> None:
         text = "def foo():\n    pass"
-        result = Generator._clean_code_output(text)
+        result = strip_fences(text)
         assert "def foo" in result
 
     @pytest.mark.asyncio

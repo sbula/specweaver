@@ -13,6 +13,7 @@ from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.agentic_coder import declare_rust_module, run_coder
 from specweaver.core.flow.handlers.artifact_lineage import (
     derive_artifact_uuid,
     log_artifact_lineage,
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from specweaver.core.flow.handlers.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+    from specweaver.workflows.implementation.languages import LanguageGuide
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +114,8 @@ class _GenerationHandler:
     #: shows the user, so it is preserved as a flag rather than quietly unified.
     INCLUDE_TRACEBACK: ClassVar[bool] = False
 
-    def _instructions(self) -> str:
-        """The instruction block for this artefact. Imported lazily by the subclass."""
+    def _instructions(self, guide: LanguageGuide) -> str:
+        """The instruction block for this artefact, in the run's language."""
         raise NotImplementedError
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
@@ -148,10 +150,14 @@ class _GenerationHandler:
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
+            from specweaver.core.flow.engine.task_files import task_brief
             from specweaver.workflows.implementation.generator import Generator
+            from specweaver.workflows.implementation.languages import language_guide
 
+            files = self._files(context)
+            guide = language_guide(files.language, context.project_path)
             adapter, config = _resolve_generation_routing(context)
-            generator = Generator(llm=adapter, config=config)
+            generator = Generator(llm=adapter, config=config, guide=guide)
 
             output_path = self._output_path(context)
             logger.debug(
@@ -170,7 +176,7 @@ class _GenerationHandler:
 
             try:
                 base_prompt = await _generation_prompt(
-                    context, step, instructions=self._instructions()
+                    context, step, instructions=self._instructions(guide)
                 )
             except ValueError as e:
                 return _error_result(str(e), started)
@@ -180,10 +186,12 @@ class _GenerationHandler:
                 "dictator_overrides": dictator_overrides,
                 "validation_findings": validation_findings,
                 "environment_context": mcp_env,
+                "language": files.language,
+                "brief": task_brief(files, context.project_path),
             }
             decision = resolve_execution_mode(step, context)
             if decision.mode is ExecutionMode.AGENTIC:
-                refused = await _run_coder(
+                refused = await run_coder(
                     step,
                     context,
                     output_path,
@@ -192,6 +200,7 @@ class _GenerationHandler:
                     config,
                     base_prompt,
                     prompt_parts,
+                    role=guide.coder_role,
                 )
                 if refused:
                     return _failed_result(refused, started)
@@ -205,6 +214,8 @@ class _GenerationHandler:
                     **prompt_parts,
                 )
             logger.info("%s: %s generated at '%s'", name, self.ARTEFACT, generated)
+            if self.OUTPUT_SUBDIR == "src" and files.language == "rust":
+                declare_rust_module(context.project_path, files)
 
             await log_artifact_lineage(
                 context,
@@ -234,48 +245,6 @@ class _GenerationHandler:
 
                 detail += "\n" + traceback.format_exc()
             return _error_result(detail, started)
-
-
-async def _run_coder(
-    step: PipelineStep,
-    context: RunContext,
-    output_path: Path,
-    extra_files: list[str],
-    adapter: Any,
-    config: Any,
-    base_prompt: Any,
-    prompt_parts: dict[str, Any],
-) -> str | None:
-    """Let the coder write the step's target with its tools; why it could not, if it did not.
-
-    Its tools write only that one file, within the project's `[docs]` rules for this step.
-    """
-    from specweaver.core.flow.engine.isolation import task_files
-    from specweaver.core.flow.engine.work_unit import InProcessAgentRuntime, WorkUnit
-    from specweaver.sandbox.dispatcher import ToolDispatcher
-    from specweaver.sandbox.security import WorkspaceBoundary
-    from specweaver.workflows.implementation.generator import generation_prompt
-
-    target = output_path.relative_to(context.project_path).as_posix()
-    if target not in task_files(context):
-        return f"the step's target {target} is not among the run's task files"
-    dispatcher = ToolDispatcher.create_standard_set(
-        WorkspaceBoundary(roots=[context.project_path]),
-        role="implementer",
-        allowed_tools=["ast"],
-        task_files=[target, *extra_files],
-        doc_policy=context.isolation.doc_policy,
-        step=step.name,
-    )
-    prompt = generation_prompt(context.spec_path, base_prompt, **prompt_parts)
-    unit = WorkUnit(
-        instructions=f"{prompt}\n\nWrite `{target}` with your tools. Answer with a short note.",
-        context="You are a precise Python developer. You change files only through your tools.",
-    )
-    await InProcessAgentRuntime(adapter, dispatcher, config=config).run(unit)
-    if not (context.project_path / target).is_file():
-        return f"the coder ended without writing {target}"
-    return None
 
 
 def _failed_result(message: str, started: str) -> StepResult:
@@ -325,10 +294,8 @@ class GenerateCodeHandler(_GenerationHandler):
     ARTEFACT: ClassVar[str] = "code"
     INCLUDE_TRACEBACK: ClassVar[bool] = True
 
-    def _instructions(self) -> str:
-        from specweaver.workflows.implementation.generator import CODE_GEN_INSTRUCTIONS
-
-        return str(CODE_GEN_INSTRUCTIONS)
+    def _instructions(self, guide: LanguageGuide) -> str:
+        return guide.code
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
         return await generator.generate_code(spec_path, output_path, **kw)
@@ -342,10 +309,8 @@ class GenerateTestsHandler(_GenerationHandler):
     EVENT_TYPE: ClassVar[str] = "generated_tests"
     ARTEFACT: ClassVar[str] = "tests"
 
-    def _instructions(self) -> str:
-        from specweaver.workflows.implementation.generator import TEST_GEN_INSTRUCTIONS
-
-        return str(TEST_GEN_INSTRUCTIONS)
+    def _instructions(self, guide: LanguageGuide) -> str:
+        return guide.tests
 
     async def _generate(self, generator: Any, spec_path: Path, output_path: Path, **kw: Any) -> Any:
         return await generator.generate_tests(spec_path, output_path, **kw)
@@ -529,13 +494,11 @@ class GenerateContractHandler:
             stem = module_stem(context.spec_path)
             class_name = stem.replace("_", " ").title().replace(" ", "")
 
-            # Language-agnostic dispatch using Atom Proxy
-            from specweaver.sandbox.language.core.atom import LanguageAtom
+            from specweaver.core.flow.engine.task_files import task_files_for
 
-            atom = LanguageAtom(cwd=context.project_path)
-            res = atom.run({"intent": "detect_language"})
-            exports = res.exports or {}
-            language = exports.get("language", "python")
+            language = task_files_for(
+                context.project_path, context.spec_path, context.isolation.language
+            ).language
 
             contract_content = render_contract_file(language, class_name, methods)
             ext = contract_extension(language)

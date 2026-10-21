@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 from specweaver.core.flow.handlers.generation import GenerateContractHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import GraphContext
+from specweaver.core.flow.handlers.run_context import GraphContext, IsolationPolicy
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -98,6 +98,7 @@ def _make_context(tmp_path: Path, spec_content: str) -> MagicMock:
     # on a MagicMock that just returns another MagicMock, so the test below would assert
     # against a mock instead of the list the handler actually produced.
     ctx.graph = GraphContext(api_contract_paths=None)
+    ctx.isolation = IsolationPolicy()
     return ctx
 
 

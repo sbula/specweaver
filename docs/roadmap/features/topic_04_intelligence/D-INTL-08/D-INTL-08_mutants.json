@@ -134,7 +134,7 @@
           "old": "        _spec_package(spec_path) or _source_package(project_root, language) or _group(project_root)\n",
           "new": "        _source_package(project_root, language) or _group(project_root)\n",
           "breaks": "a spec's Package line is ignored",
-          "symbol_sha": "sha256:3a2a67b4f4fcaad3546c81a443f3a19bce147091e38163bc3b0a0ba087297a9e"
+          "symbol_sha": "sha256:3849597cea2da6b4cf38b2cdac37468c78eb341d6cc96cb2a2d8f4bb3e03c7f6"
         },
         {
           "id": "hostile-package-accepted",
@@ -179,12 +179,12 @@
         {
           "id": "rust-module-root-not-granted",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_run_coder",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
           "old": "        task_files=[target, *extra_files],\n",
           "new": "        task_files=[target],\n",
           "breaks": "a Rust coder cannot declare its new module",
-          "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         }
       ]
     },
@@ -305,6 +305,113 @@
           "new": "            error_count=0,\n",
           "breaks": "ESLint errors never reach lint_fix",
           "symbol_sha": "sha256:33d29f58578511a560fa7347d8bb3ec90ed7091550f0ed01948a880970260f15"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Generation speaks the language",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_generation_speaks_the_language.py",
+        "tests/integration/core/flow/handlers/test_agentic_generate_step.py",
+        "tests/unit/core/flow/engine/test_task_files.py",
+        "tests/unit/core/flow/engine/test_task_brief.py",
+        "tests/unit/commons/test_lineage.py",
+        "tests/unit/core/flow/handlers/test_contract_handler.py",
+        "tests/unit/workflows/implementation/test_languages.py",
+        "tests/unit/workflows/implementation/test_strip_fences.py",
+        "tests/unit/workflows/implementation/test_generator_tagging.py"
+      ],
+      "mutants": [
+        {
+          "id": "guide-always-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "guide = language_guide(files.language, context.project_path)",
+          "new": "guide = language_guide(\"python\", context.project_path)",
+          "breaks": "a Java project is prompted for Python",
+          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
+        },
+        {
+          "id": "tag-always-python",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/generator.py",
+          "symbol": "generation_prompt",
+          "old": "base_prompt.add_artifact_tagging(artifact_uuid, language)",
+          "new": "base_prompt.add_artifact_tagging(artifact_uuid, \"python\")",
+          "breaks": "a Java file is asked for a `#` tag",
+          "symbol_sha": "sha256:e368370cc6a1070745a23bf7609a89ed887ced3c2bc6dcaa2548d61aa6a7700f"
+        },
+        {
+          "id": "brief-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/generator.py",
+          "symbol": "generation_prompt",
+          "old": "    if brief:\n",
+          "new": "    if False:\n",
+          "breaks": "the model never learns the package, crate or import path",
+          "symbol_sha": "sha256:e368370cc6a1070745a23bf7609a89ed887ced3c2bc6dcaa2548d61aa6a7700f"
+        },
+        {
+          "id": "opening-fence-kept",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/generator.py",
+          "symbol": "strip_fences",
+          "old": "        lines = lines[1:]\n",
+          "new": "        lines = lines[0:]\n",
+          "breaks": "```java stays in the written file",
+          "symbol_sha": "sha256:3eb74cdfb3942c32300285c4005aaf2a96058aa3f609b5c6c9878e0b9b8c4d16"
+        },
+        {
+          "id": "kotlin-untagged",
+          "origin": "authored",
+          "file": "src/specweaver/commons/lineage.py",
+          "symbol": "wrap_artifact_tag",
+          "old": "        \"kotlin\",\n        \"go\",\n",
+          "new": "        \"go\",\n",
+          "breaks": "a .kt file is never tagged",
+          "symbol_sha": "sha256:c858ba051aabe625a9935561b99c505bca132d0dcc52e4549ff82955eecc2500"
+        },
+        {
+          "id": "rust-module-undeclared",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "                declare_rust_module(context.project_path, files)\n",
+          "new": "                pass\n",
+          "breaks": "tests/<stem>.rs cannot reach the module",
+          "symbol_sha": "sha256:f7d2b069d341494437ff185909e1a42fe3166bd7844f20ac930aca3b8050cd86"
+        },
+        {
+          "id": "contract-detects-again",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "GenerateContractHandler.execute",
+          "old": "(\n                context.project_path, context.spec_path, context.isolation.language",
+          "new": "(\n                context.project_path, context.spec_path, None",
+          "breaks": "[implement] language is ignored by the contract step",
+          "symbol_sha": "sha256:a4b1a0fe753ac91f32910af6eee3ab8e870bfbbc21985965466dd68dddff01c3"
+        },
+        {
+          "id": "project-file-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/languages.py",
+          "symbol": "language_guide",
+          "old": "own if own is not None and own.is_file()",
+          "new": "own if False",
+          "breaks": "a project's own language file is never read",
+          "symbol_sha": "sha256:0b9502d294294d0ffdd820a4ac3a313c8d7636360a2e3906455da79474da8d7a"
+        },
+        {
+          "id": "coder-role-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/agentic_coder.py",
+          "symbol": "run_coder",
+          "old": "        context=role,\n",
+          "new": "        context=\"You are a precise Python developer. You change files only through your tools.\",\n",
+          "breaks": "the agentic coder is told it writes Python",
+          "symbol_sha": "sha256:016694f81ecf695338b81be3d0ddb2cf20380a83d2e426e68ff580c9b6fe1e8d"
         }
       ]
     }

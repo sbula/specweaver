@@ -297,10 +297,19 @@ A spec `greet_service_spec.md` is the module `greet_service`; its files are:
 | Java | `src/main/java/<pkg>/GreetService.java` | `src/test/java/<pkg>/GreetServiceTest.java` |
 | Kotlin | `src/main/kotlin/<pkg>/GreetService.kt` | `src/test/kotlin/<pkg>/GreetServiceTest.kt` |
 | TypeScript | `src/greet_service.ts` | `tests/greet_service.test.ts` |
-| Rust | `src/greet_service.rs` (+ `mod` in `src/lib.rs` or `main.rs`) | `tests/greet_service.rs` |
+| Rust | `src/greet_service.rs` (+ `pub mod greet_service;` in `src/lib.rs`) | `tests/greet_service.rs` |
 
 The Java/Kotlin package is the spec's `> **Package**: com.example.greet` header line, else the package
 your existing sources share, else the build's `groupId`/`group`.
+
+A Rust crate with only `src/main.rs` gets a `src/lib.rs` beside it: tests in `tests/` can only reach a
+library crate. `main.rs` is not changed.
+
+The model is asked for code in that language and told where the file goes: the Java/Kotlin package
+and class, the Rust crate and module, the TypeScript import path and test tool. Java tests use JUnit 5,
+Kotlin tests `kotlin.test`. To change what the model is told, copy a file from
+`src/specweaver/workflows/languages/` to `.specweaver/languages/<language>.md` and edit it; keep its
+`name:` line and its five `#` sections (`Code`, `Tests`, `Code role`, `Tests role`, `Coder role`).
 
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 
