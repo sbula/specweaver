@@ -205,7 +205,7 @@
           "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
           "new": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else []\n",
           "breaks": "Maven runs every test, and an old failure sends the coder to fix code it did not write",
-          "symbol_sha": "sha256:f9ebd50137f6f44c36c3b00ed6329f9d058f218530a9edfee7c0390acc13a4c3"
+          "symbol_sha": "sha256:dd1d819fd90d9b4711d735d9cf688ea95925f831a8d1ccf38ae7107197a8ce84"
         },
         {
           "id": "gradle-runs-everything",
@@ -215,7 +215,7 @@
           "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
           "new": "            cmd += [] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
           "breaks": "Gradle runs every test",
-          "symbol_sha": "sha256:f9ebd50137f6f44c36c3b00ed6329f9d058f218530a9edfee7c0390acc13a4c3"
+          "symbol_sha": "sha256:dd1d819fd90d9b4711d735d9cf688ea95925f831a8d1ccf38ae7107197a8ce84"
         },
         {
           "id": "cargo-runs-everything",
@@ -586,6 +586,46 @@
           "new": "    if False:\n",
           "breaks": "sw implement does not say which framework it used",
           "symbol_sha": "sha256:b63c197f96dc5d8e82ce03abf420fb7786da99b413050d3d228d98501d6fb950"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A project's build wrapper starts",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_build_wrapper_launch.py",
+        "tests/integration/sandbox/language/test_build_wrapper_runs.py"
+      ],
+      "mutants": [
+        {
+          "id": "wrapper-looked-up-on-path",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "build_launcher",
+          "old": "return wrapper if wrapper.endswith((\".bat\", \".cmd\")) else f\"./{wrapper}\"",
+          "new": "return wrapper",
+          "breaks": "every project with a gradlew fails with 'not found'",
+          "symbol_sha": "sha256:a105bba310d00dafb976bd2e1928a411ddbeded4d35e0d8ea1f2e18118831f3e"
+        },
+        {
+          "id": "wrapper-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "build_launcher",
+          "old": "        if (project / wrapper).is_file():\n",
+          "new": "        if False:\n",
+          "breaks": "the machine's too-old Gradle builds the project",
+          "symbol_sha": "sha256:a105bba310d00dafb976bd2e1928a411ddbeded4d35e0d8ea1f2e18118831f3e"
+        },
+        {
+          "id": "kotlin-dsl-read-as-maven",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/java/runner.py",
+          "symbol": "JavaRunner._get_build_tool",
+          "old": "for name in (\"build.gradle\", \"build.gradle.kts\")",
+          "new": "for name in (\"build.gradle\",)",
+          "breaks": "a Java project on Gradle's Kotlin DSL runs mvn",
+          "symbol_sha": "sha256:f3b29c4556ae1a350fdb31fb42a0efef6b3411bdb7031c01306743c2867fdc78"
         }
       ]
     }

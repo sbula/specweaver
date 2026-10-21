@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.maven_output import compile_errors, program_output
-from specweaver.sandbox.language.core.run_targets import jvm_test_class
+from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_class
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, read_sarif_report
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -114,10 +114,9 @@ class JavaRunner(QARunnerInterface):
         if self._build_tool is not None:
             return self._build_tool
 
-        gradle_file = self._cwd / "build.gradle"
         maven_file = self._cwd / "pom.xml"
 
-        if gradle_file.exists():
+        if any((self._cwd / name).exists() for name in ("build.gradle", "build.gradle.kts")):
             self._build_tool = "gradle"
         elif maven_file.exists():
             self._build_tool = "maven"
@@ -171,14 +170,10 @@ class JavaRunner(QARunnerInterface):
         where its reports land; stale reports are deleted first."""
         tool = self._get_build_tool()
         if tool == "gradle":
-            cmd = ["gradlew", "test"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
+            cmd = [build_launcher(self._cwd, "gradle"), "test"]
             stale, reports = "build/test-results/test/*.xml", "build/test-results"
         else:
-            cmd = ["mvnw", "test"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
+            cmd = [build_launcher(self._cwd, "maven"), "test"]
             stale, reports = "target/surefire-reports/*.xml", "target/surefire-reports"
         for stale_xml in self._cwd.rglob(stale):
             stale_xml.unlink(missing_ok=True)
@@ -187,22 +182,26 @@ class JavaRunner(QARunnerInterface):
             cmd += ["--tests", test_class] if tool == "gradle" else [f"-Dtest={test_class}"]
         return cmd, report_search_paths(self._cwd, reports)
 
+    def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
+        """The PMD run that lint and complexity both read, and the SARIF report it writes."""
+        if tool == "gradle":
+            return [
+                build_launcher(self._cwd, "gradle"),
+                "pmdMain",
+            ], self._cwd / "build" / "reports" / "pmd" / "main.sarif"
+        return [
+            build_launcher(self._cwd, "maven"),
+            "pmd:pmd",
+            "-Dpmd.format=sarif",
+        ], self._cwd / "target" / "pmd.sarif"
+
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         from specweaver.sandbox.qa_runner.core.interface import LintError
 
         tool = self._get_build_tool()
         errors: list[LintError] = []
 
-        if tool == "gradle":
-            cmd = ["gradlew", "pmdMain"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-            sarif_path = self._cwd / "build" / "reports" / "pmd" / "main.sarif"
-        else:
-            cmd = ["mvnw", "pmd:pmd", "-Dpmd.format=sarif"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-            sarif_path = self._cwd / "target" / "pmd.sarif"
+        cmd, sarif_path = self._analysis_command(tool)
 
         result = self._executor.execute(cmd)
         reason = did_not_run(result, "pmd")
@@ -231,16 +230,7 @@ class JavaRunner(QARunnerInterface):
         tool = self._get_build_tool()
         violations: list[ComplexityViolation] = []
 
-        if tool == "gradle":
-            cmd = ["gradlew", "pmdMain"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-            sarif_path = self._cwd / "build" / "reports" / "pmd" / "main.sarif"
-        else:
-            cmd = ["mvnw", "pmd:pmd", "-Dpmd.format=sarif"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-            sarif_path = self._cwd / "target" / "pmd.sarif"
+        cmd, sarif_path = self._analysis_command(tool)
 
         result = self._executor.execute(cmd)
         reason = did_not_run(result, "pmd")
@@ -263,13 +253,9 @@ class JavaRunner(QARunnerInterface):
 
         tool = self._get_build_tool()
         if tool == "gradle":
-            cmd = ["gradlew", "compileJava"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
+            cmd = [build_launcher(self._cwd, "gradle"), "compileJava"]
         else:
-            cmd = ["mvnw", "compile"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
+            cmd = [build_launcher(self._cwd, "maven"), "compile"]
 
         result = self._executor.execute(cmd)
         # The count alone said a build failed, which the exit code already said. These carry the
@@ -305,13 +291,14 @@ class JavaRunner(QARunnerInterface):
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()
         if tool == "gradle":
-            cmd = ["gradlew", "build"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
+            cmd = [build_launcher(self._cwd, "gradle"), "build"]
         else:
-            cmd = ["mvnw", "compile", "exec:java", f"-Dexec.mainClass={entrypoint}"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
+            cmd = [
+                build_launcher(self._cwd, "maven"),
+                "compile",
+                "exec:java",
+                f"-Dexec.mainClass={entrypoint}",
+            ]
 
         result = self._executor.execute(cmd, timeout_seconds=self._BUILD_TIMEOUT)
 
@@ -391,9 +378,12 @@ public class SpecweaverArchUnitTest {{
 """
         test_file.write_text(test_content, encoding="utf-8")
 
-        cmd = ["mvnw", "test", "-Dtest=specweaver.SpecweaverArchUnitTest", "-q"]
-        if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-            cmd[0] = "mvn"
+        cmd = [
+            build_launcher(self._cwd, "maven"),
+            "test",
+            "-Dtest=specweaver.SpecweaverArchUnitTest",
+            "-q",
+        ]
 
         violations = []
         try:

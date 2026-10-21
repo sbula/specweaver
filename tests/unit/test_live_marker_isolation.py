@@ -71,7 +71,8 @@ def _addopts() -> str:
 
 def test_a_bare_pytest_run_deselects_live_tests() -> None:
     """The first line of defence: `pytest` with no arguments must not call a paid API."""
-    assert re.search(r"-m\s*'not live'|-m\s*\"not live\"", _addopts()), (
+    expression = re.search(r"-m\s*['\"]([^'\"]*)['\"]", _addopts())
+    assert expression and re.search(r"\bnot\s+live\b", expression.group(1)), (
         "pyproject.toml addopts no longer deselects the `live` marker — "
         "every ordinary test run will now call the real LLM APIs and bill for it"
     )

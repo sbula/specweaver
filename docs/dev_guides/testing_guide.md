@@ -239,7 +239,7 @@ for each half alone — how the split above survived twenty-two green tests. Two
 
 ## 6. Deselected: `@pytest.mark.live`
 
-`addopts = "-m 'not live'"` in `pyproject.toml` excludes them from every normal run (the full
+`addopts = "-m 'not live and not toolchain'"` in `pyproject.toml` excludes them from every normal run (the full
 `addopts` also sets `--import-mode=importlib -v --tb=short`). 31 tests as of 2026-09-25 (was 12).
 
 They need valid API keys in env vars, network access, and quota/billing on the target service (e.g.
@@ -258,6 +258,19 @@ without secrets.
 | `tests/manual/test_llm_live.py` | Gemini API connectivity |
 | `tests/manual/test_api_live.py` | live API tests |
 | `tests/integration/sandbox/{atoms,tools}/qa_runner/<lang>/` | QA runners against real Java, Kotlin, Python, Rust, TypeScript toolchains |
+
+## 6a. Deselected: `@pytest.mark.toolchain`
+
+`sw implement` with the real pytest, Maven, Gradle, npm and cargo:
+`tests/e2e/capabilities/workflows/test_implement_with_real_toolchains_e2e.py`, on the samples in
+`tests/fixtures/toolchain/`. Only the model is doubled. A first run downloads packages (JUnit 5,
+Gradle, the Kotlin plugin, detekt, Vitest, ESLint), so it needs the network. A language skips only
+when its tool is missing or its package registry cannot be reached.
+
+```bash
+pytest -m toolchain                  # Run ONLY the toolchain tier
+python scripts/toolchain.py          # the same, with the verdict the nightly session keeps
+```
 
 ## 7. Skipped tests
 

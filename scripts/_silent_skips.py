@@ -33,6 +33,10 @@ ENVIRONMENT_SKIP_REASONS = (
     # generated unit file is worth doing where systemd exists and is impossible where it does not,
     # so the skip states a genuine environment fact rather than routing around a defect.
     "systemd-analyze",
+    # The real-toolchain tier (`pytest -m toolchain`) needs a language's tool and, on a first run,
+    # its package registry. Both are facts about the machine; the repo ships neither.
+    "toolchain not installed:",
+    "package registry unreachable:",
 )
 
 

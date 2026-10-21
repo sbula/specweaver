@@ -69,12 +69,13 @@ packages = ["src/specweaver"]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 asyncio_mode = "auto"
-addopts = "--import-mode=importlib -v --tb=short -m 'not live'"
+addopts = "--import-mode=importlib -v --tb=short -m 'not live and not toolchain'"
 markers = [
     "live: tests that require real external API keys and network access",
     "integration: tests that exercise multiple layers but mock external dependencies",
     "e2e: end-to-end tests that simulate full real-world scenarios",
     "price_refresh: lets a command's start-up price refresh run (off in every other test)",
+    "toolchain: sw implement with the real Maven, Gradle, npm and cargo; nightly, via scripts/toolchain.py",
 ]
 
 [tool.ruff]

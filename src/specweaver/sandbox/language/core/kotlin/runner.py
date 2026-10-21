@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, ClassVar
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
-from specweaver.sandbox.language.core.run_targets import jvm_test_class
+from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_class
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -108,29 +108,27 @@ class KotlinRunner(QARunnerInterface):
             duration_seconds=0.0,
         )
 
-    #: Per build tool: the wrapper script, its fallback on PATH, the goal, and where reports land.
-    _TEST_INVOCATIONS: ClassVar[dict[str, tuple[tuple[str, ...], str, str, tuple[str, ...]]]] = {
-        "gradle": (("gradlew", "gradlew.bat"), "gradle", "test", ("build", "test-results")),
-        "maven": (("mvnw", "mvnw.cmd"), "mvn", "test", ("target", "surefire-reports")),
+    #: Per build tool: where its test reports land.
+    _REPORT_DIRS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "gradle": ("build", "test-results"),
+        "maven": ("target", "surefire-reports"),
     }
 
     def _test_command(self) -> tuple[list[str], list[Path]]:
         """The test command for this project's build tool, and where its reports will land.
 
-        The two build tools differed only in four values, so they are a table rather than two
-        branches — which is what took this past the complexity ceiling once a toolchain guard was
-        added above it.
+        The two build tools differ only in where reports land, so that is a table rather than two
+        branches.
         """
-        wrappers, fallback, goal, report_dir = self._TEST_INVOCATIONS[
-            "gradle" if self._get_build_tool() == "gradle" else "maven"
-        ]
-        launcher = wrappers[0] if any((self._cwd / w).exists() for w in wrappers) else fallback
+        tool = "gradle" if self._get_build_tool() == "gradle" else "maven"
+        report_dir = self._REPORT_DIRS[tool]
+        launcher = build_launcher(self._cwd, tool)
         # Both places the reports can land: inside the project on a host run, or mounted out to
         # scratch when the sandbox gave the build an overlay workspace it then discarded.
         search_paths = report_search_paths(self._cwd, "/".join(report_dir))
         for path in search_paths:
             self._clear_stale_reports(path)
-        return [launcher, goal], search_paths
+        return [launcher, "test"], search_paths
 
     @staticmethod
     def _clear_stale_reports(search_path: Path) -> None:
@@ -158,20 +156,23 @@ class KotlinRunner(QARunnerInterface):
                     )
         return passed, failed
 
+    def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
+        """The detekt run that lint and complexity both read, and the SARIF report it writes."""
+        if tool == "gradle":
+            return [
+                build_launcher(self._cwd, "gradle"),
+                "detekt",
+            ], self._cwd / "build" / "reports" / "detekt" / "detekt.sarif"
+        return [
+            build_launcher(self._cwd, "maven"),
+            "antrun:run@detekt",
+        ], self._cwd / "target" / "detekt.sarif"
+
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         tool = self._get_build_tool()
         errors: list[LintError] = []
 
-        if tool == "gradle":
-            cmd = ["gradlew", "detekt"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-            sarif_path = self._cwd / "build" / "reports" / "detekt" / "detekt.sarif"
-        else:
-            cmd = ["mvnw", "antrun:run@detekt"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-            sarif_path = self._cwd / "target" / "detekt.sarif"
+        cmd, sarif_path = self._analysis_command(tool)
 
         result = self._executor.execute(cmd)
         reason = did_not_run(result, "detekt")
@@ -203,16 +204,7 @@ class KotlinRunner(QARunnerInterface):
         tool = self._get_build_tool()
         violations: list[ComplexityViolation] = []
 
-        if tool == "gradle":
-            cmd = ["gradlew", "detekt"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-            sarif_path = self._cwd / "build" / "reports" / "detekt" / "detekt.sarif"
-        else:
-            cmd = ["mvnw", "antrun:run@detekt"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-            sarif_path = self._cwd / "target" / "detekt.sarif"
+        cmd, sarif_path = self._analysis_command(tool)
 
         result = self._executor.execute(cmd)
         reason = did_not_run(result, "detekt")
@@ -241,13 +233,9 @@ class KotlinRunner(QARunnerInterface):
         tool = self._get_build_tool()
 
         if tool == "gradle":
-            cmd = ["gradlew", "compileKotlin"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
+            cmd = [build_launcher(self._cwd, "gradle"), "compileKotlin"]
         else:
-            cmd = ["mvnw", "compile"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
+            cmd = [build_launcher(self._cwd, "maven"), "compile"]
 
         result = self._executor.execute(cmd)
 
@@ -267,13 +255,13 @@ class KotlinRunner(QARunnerInterface):
         tool = self._get_build_tool()
 
         if tool == "gradle":
-            cmd = ["gradlew", "run", "--debug-jvm"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
+            cmd = [build_launcher(self._cwd, "gradle"), "run", "--debug-jvm"]
         else:
-            cmd = ["mvnw", "exec:java", f"-Dexec.mainClass={entrypoint}"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
+            cmd = [
+                build_launcher(self._cwd, "maven"),
+                "exec:java",
+                f"-Dexec.mainClass={entrypoint}",
+            ]
 
         result = self._executor.execute(cmd, timeout_seconds=300)
 
