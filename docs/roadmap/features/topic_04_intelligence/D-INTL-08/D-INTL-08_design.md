@@ -199,7 +199,7 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One derivation | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One derivation | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The runners do what they say | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Generation speaks the language | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Frameworks | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -208,4 +208,4 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: the SF-01 plan (one derivation).
+**Next**: SF-01 dev, CB-1 (one stem rule). SF-01 plan approved 2026-10-21.
