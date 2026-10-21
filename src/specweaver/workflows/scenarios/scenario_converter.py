@@ -19,6 +19,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from specweaver.commons.spec_names import module_stem
+
 if TYPE_CHECKING:
     from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
 
@@ -115,7 +117,7 @@ class ScenarioConverter:
         """Validated fallback stem from the (LLM-authored) spec_path."""
         if not spec_path or not str(spec_path).strip():
             return None
-        candidate = Path(str(spec_path)).stem.replace("_spec", "")
+        candidate = module_stem(Path(str(spec_path)))
         return candidate or None
 
     @staticmethod

@@ -9,6 +9,8 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from specweaver.commons.spec_names import module_stem
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -76,7 +78,7 @@ def signature_conflicts(context: RunContext) -> list[str]:
         return []
     others = [(p, False) for p in _other_specs(context)]
     contracts = context.project_path / "contracts"
-    own_contract = f"{context.spec_path.stem.removesuffix('_spec')}_contract"
+    own_contract = f"{module_stem(context.spec_path)}_contract"
     if contracts.is_dir():
         others += [(p, True) for p in sorted(contracts.glob("*.py")) if p.stem != own_contract]
     found = []

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
@@ -383,7 +384,7 @@ def _default_test_target(context: RunContext, kind: str) -> str:
     Every other step runs the coder's own tests, where `generate_tests` wrote them. Falling back to
     the scenario file for every kind retried the coder until the hidden scenario tests passed.
     """
-    stem = context.spec_path.stem.replace("_spec", "")
+    stem = module_stem(context.spec_path)
     if kind == "scenario":
         from specweaver.sandbox.language.core.scenario_converter_factory import (
             create_scenario_converter,
@@ -564,7 +565,7 @@ def _generated_code(context: RunContext) -> str:
     """The run's generated module, relative to where its tests run; "" when there is none."""
     from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
 
-    stem = context.spec_path.stem.replace("_spec", "")
+    stem = module_stem(context.spec_path)
     code = (context.output_dir or context.project_path / "src") / f"{stem}.py"
     root = context.isolation.execution_root or context.project_path
     return relative_to_root(code, root) if code.is_file() else ""

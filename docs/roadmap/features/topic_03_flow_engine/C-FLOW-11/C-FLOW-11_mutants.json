@@ -82,7 +82,7 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:dc43ac611b6a28a4cb38218b79e225d1a17ada950ad072954c6a5641472c3a16"
+          "symbol_sha": "sha256:8931af550c77c5751ef1cb753aed13a36ebecf4f4a92e4f9f7d0cd5cb76ebe6d"
         },
         {
           "id": "coder-without-its-step",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:dc43ac611b6a28a4cb38218b79e225d1a17ada950ad072954c6a5641472c3a16"
+          "symbol_sha": "sha256:8931af550c77c5751ef1cb753aed13a36ebecf4f4a92e4f9f7d0cd5cb76ebe6d"
         }
       ]
     },
@@ -174,7 +174,7 @@
           "old": "    autonomy = _core.load_autonomy_at(project_path)\n",
           "new": "    autonomy = _core.load_autonomy_at(project_path / \"missing\")\n",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:b0fe7ebac2f374bda1fa83f50e4496ca8c618984335296bd310605a69e38fd52"
+          "symbol_sha": "sha256:f7258e0d1a57e75298e08ad4d40fc94056e7bfae995cffe0182e2e7987121b8a"
         },
         {
           "id": "api-reads-another-file",

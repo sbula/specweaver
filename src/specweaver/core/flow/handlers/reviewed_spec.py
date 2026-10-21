@@ -11,6 +11,7 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.commons.timestamps import now_iso
 
 if TYPE_CHECKING:
@@ -96,7 +97,7 @@ def keep_set(context: RunContext) -> None:
     target = _kept_path(context)
     if target is None:
         return
-    stem = context.spec_path.stem.removesuffix("_spec")
+    stem = module_stem(context.spec_path)
     record = {
         "spec": _relative(context.spec_path, context.project_path),
         "spec_sha256": spec_sha(context.spec_path),
@@ -117,7 +118,7 @@ def kept_set_fresh(context: RunContext) -> bool:
     if target is None or not target.is_file():
         return False
     record = _read(target)
-    stem = context.spec_path.stem.removesuffix("_spec")
+    stem = module_stem(context.spec_path)
     tests = target.parent.parent / "generated"
     return (
         record.get("spec_sha256") == spec_sha(context.spec_path)

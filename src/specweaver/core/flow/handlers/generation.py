@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.commons.lineage import extract_artifact_uuid
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.artifact_lineage import (
@@ -133,7 +134,7 @@ class _GenerationHandler:
             generator = Generator(llm=adapter, config=config)
 
             output_dir = context.output_dir or context.project_path / self.OUTPUT_SUBDIR
-            stem = context.spec_path.stem.replace("_spec", "")
+            stem = module_stem(context.spec_path)
             output_path = output_dir / f"{self.FILENAME_PREFIX}{stem}.py"
             logger.debug(
                 "%s: generating %s to '%s' from spec '%s'",
@@ -358,7 +359,7 @@ class PlanSpecHandler:
         plan_artifact = await planner.generate_plan(
             spec_content=spec_content,
             spec_path=str(context.spec_path),
-            spec_name=context.spec_path.stem.replace("_spec", "").replace("_", " ").title(),
+            spec_name=module_stem(context.spec_path).replace("_", " ").title(),
             base_prompt=base_prompt,
         )
 
@@ -499,7 +500,7 @@ class GenerateContractHandler:
 
             contracts_dir = context.project_path / "contracts"
             contracts_dir.mkdir(parents=True, exist_ok=True)
-            stem = context.spec_path.stem.replace("_spec", "")
+            stem = module_stem(context.spec_path)
             class_name = stem.replace("_", " ").title().replace(" ", "")
 
             # Language-agnostic dispatch using Atom Proxy

@@ -18,6 +18,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class RustScenarioConverter(ScenarioConverterInterface):
     def convert(self, scenario_set: ScenarioSet, stem: str | None = None) -> str:  # type: ignore[override]
         # `stem` is consumed by the python converter's real-body emission; accepted (and
         # unused) here for interface parity.
-        stem = Path(scenario_set.spec_path).stem.replace("_spec", "")
+        stem = module_stem(Path(scenario_set.spec_path))
         mod_name = _to_snake_case(stem) + "_scenarios"
 
         all_req_ids = sorted({s.req_id for s in scenario_set.scenarios})

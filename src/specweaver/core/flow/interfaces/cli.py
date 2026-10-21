@@ -14,6 +14,7 @@ import typer
 
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
@@ -425,7 +426,7 @@ def _execute_run(
     # Load topology
     topo_graph = load_topology(project_path)
     if topo_graph:
-        module_name = spec_path.stem.removesuffix("_spec")
+        module_name = module_stem(spec_path)
         topo_contexts = select_topology_contexts(
             topo_graph,
             module_name,

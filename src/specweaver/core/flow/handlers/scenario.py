@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers import scenario_store as _stores
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
@@ -86,7 +87,7 @@ class GenerateScenarioHandler:
                 return _error_result(
                     "the project is not registered, so it has no scenario store", started
                 )
-            stem = context.spec_path.stem.replace("_spec", "")
+            stem = module_stem(context.spec_path)
             output_path = store / "definitions" / f"{stem}_scenarios.yaml"
             earlier = output_path.read_text(encoding="utf-8") if output_path.is_file() else None
 
@@ -180,7 +181,7 @@ class ConvertScenarioHandler:
                     "the project is not registered, so it has no scenario store", started
                 )
             scenarios_dir = store / "definitions"
-            stem = context.spec_path.stem.replace("_spec", "")
+            stem = module_stem(context.spec_path)
             scenario_yaml_path = scenarios_dir / f"{stem}_scenarios.yaml"
 
             if not scenario_yaml_path.exists():

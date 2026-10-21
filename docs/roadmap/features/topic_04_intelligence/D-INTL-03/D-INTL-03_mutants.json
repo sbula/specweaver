@@ -18,7 +18,7 @@
           "old": "        plan_path.write_text(content, encoding=\"utf-8\")\n",
           "new": "        pass\n",
           "breaks": "the plan is never on the record",
-          "symbol_sha": "sha256:fce3f1bc77a342cd8e063bfd0bca61e2350a649db52f806f9e337197d57bc319"
+          "symbol_sha": "sha256:b64532f157db825bf148a148e34745a36c3762ea749dec9fd24e957b67e9c0e1"
         },
         {
           "id": "plan-not-used",

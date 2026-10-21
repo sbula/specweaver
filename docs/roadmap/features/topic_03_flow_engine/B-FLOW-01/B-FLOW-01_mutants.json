@@ -146,7 +146,7 @@
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:08a52a2e56256c943d1dbf07a8d04f71aaddff97f860966d40db883e8c53ada8"
+          "symbol_sha": "sha256:362e00d7461abf5b0ed0f82f60eccae6a5e0aade87c26a11b15a173de50ae798"
         }
       ]
     },
@@ -265,7 +265,7 @@
           "old": "        if not self.container_available(context.project_path):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
+          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
         },
         {
           "id": "unregistered-runs",
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
+          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
         }
       ]
     },
@@ -577,7 +577,7 @@
           "old": "                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)\n",
           "new": "                llm=adapter, config=config, tool_dispatcher=None\n",
           "breaks": "the agent cannot read the contracts it tests against",
-          "symbol_sha": "sha256:358bcf9a199304945186d7745751faeea570ab6cfe31eb65c07a1c418bc3b6d5"
+          "symbol_sha": "sha256:915be41dfa53e1f951f72028685d3ad2bc4dc9cd36856bfb415997eab57929f5"
         },
         {
           "id": "problems-not-shown",
@@ -637,7 +637,7 @@
           "old": "        if unreviewed is not None:\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
-          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
+          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
         },
         {
           "id": "changed-spec-arbitrated",
@@ -727,7 +727,7 @@
           "old": "            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)\n",
           "new": "            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED)\n",
           "breaks": "the scenario tests can run before the coder has finished",
-          "symbol_sha": "sha256:808c2bd6927430965bf9982ad61fdeab24c6b228f7fc3da3eb3dc2fe09c9e483"
+          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
         }
       ]
     },
@@ -807,7 +807,7 @@
           "old": "            if name in mine and \" \".join(signature.split()) != \" \".join(mine[name].split()):\n",
           "new": "            if False:\n",
           "breaks": "a contract method declared twice with other parameters passes review",
-          "symbol_sha": "sha256:f6e3da3c990d2b7e59071c68abf21319e41f5668e74a089be0aa289d83342ddc"
+          "symbol_sha": "sha256:57ff363aba50344aa65476b5083791176c23cc0c4ea2135f94f55b96c3b2a2bb"
         },
         {
           "id": "conflict-accepted",
@@ -868,7 +868,7 @@
           "old": "        record.get(\"spec_sha256\") == spec_sha(context.spec_path)\n",
           "new": "        True\n",
           "breaks": "a set made for an older spec keeps checking the new one",
-          "symbol_sha": "sha256:4c08e097418676055e3b3b5d3fac432462c6777d00541e85b5da543d9cc71b65"
+          "symbol_sha": "sha256:1c6b94ed4e47765b4d6974847709e7ddf9698467910bdac5513fecdedba2f4b8"
         },
         {
           "id": "changed-contract-reused",
@@ -878,7 +878,7 @@
           "old": "        and record.get(\"contract_sha256\") == _contract_sha(context)\n",
           "new": "        and True\n",
           "breaks": "a set made for an older contract keeps checking the new one",
-          "symbol_sha": "sha256:4c08e097418676055e3b3b5d3fac432462c6777d00541e85b5da543d9cc71b65"
+          "symbol_sha": "sha256:1c6b94ed4e47765b4d6974847709e7ddf9698467910bdac5513fecdedba2f4b8"
         },
         {
           "id": "acceptance-feeds-back",

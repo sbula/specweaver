@@ -14,6 +14,7 @@ import typer
 
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
+from specweaver.commons.spec_names import module_stem
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
@@ -251,7 +252,7 @@ def implement(
 
     # Load topology context for the implementation target
     topo_graph = load_topology(project_path)
-    module_name = spec_path.stem.removesuffix("_spec")
+    module_name = module_stem(spec_path)
     topo_contexts = select_topology_contexts(
         topo_graph,
         module_name,
@@ -260,7 +261,7 @@ def implement(
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
-    stem = spec_path.stem.removesuffix("_spec")
+    stem = module_stem(spec_path)
     src_dir = project_path / "src"
     tests_dir = project_path / "tests"
 

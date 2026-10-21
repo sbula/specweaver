@@ -15,6 +15,7 @@ from rich.markup import escape
 
 from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
+from specweaver.commons.spec_names import module_stem
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
@@ -292,7 +293,7 @@ def review(
 
     # Load topology context for the review target
     topo_graph = load_topology(project_path)
-    module_name = target_path.stem.removesuffix("_spec")
+    module_name = module_stem(target_path)
     topo_contexts = select_topology_contexts(
         topo_graph,
         module_name,

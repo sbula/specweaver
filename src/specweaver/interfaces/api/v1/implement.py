@@ -9,6 +9,7 @@ import logging
 
 from fastapi import APIRouter, Depends
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
@@ -44,7 +45,7 @@ async def implement_spec(
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.interfaces.api.v1._llm import run_steps
 
-    stem = spec_path.stem.removesuffix("_spec")
+    stem = module_stem(spec_path)
     pipeline = PipelineDefinition(
         name="implement_spec",
         description=f"Generate code and tests for {stem}",

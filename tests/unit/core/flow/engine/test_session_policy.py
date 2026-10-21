@@ -52,14 +52,12 @@ class TestDeriveAllowedPaths:
             "tests/test_foo.py",
         ]
 
-    def test_c1_matches_generation_replace_quirk_not_removesuffix(self):
-        # [Boundary/C1] generation.py uses .replace("_spec","") (removes EVERY "_spec"
-        # substring, including inside "_special"), NOT .removesuffix. The allow-list MUST
-        # match the path the handler actually generates, else the real file is stripped.
-        # "my_special_spec" -> .replace -> "myial" (NOT "my_special").
+    def test_c1_drops_only_the_trailing_spec(self):
+        # [Boundary/C1] D-INTL-08 FR-1: one stem rule, `removesuffix`. The old `replace` turned
+        # "my_special_spec" into "myial".
         assert derive_allowed_paths(Path("/p/my_special_spec.md")) == [
-            "src/myial.py",
-            "tests/test_myial.py",
+            "src/my_special.py",
+            "tests/test_my_special.py",
         ]
 
     def test_boundary_stem_without_spec_suffix(self):

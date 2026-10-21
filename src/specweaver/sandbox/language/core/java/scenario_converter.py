@@ -18,6 +18,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ class JavaScenarioConverter(ScenarioConverterInterface):
         """Return JUnit 5 test class content (string)."""
         from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition  # noqa: F401
 
-        stem = Path(scenario_set.spec_path).stem.replace("_spec", "")
+        stem = module_stem(Path(scenario_set.spec_path))
         class_name = _to_pascal_case(stem)
 
         # Collect unique req_ids across all scenarios

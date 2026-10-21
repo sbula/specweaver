@@ -243,7 +243,7 @@
           "old": "        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy),\n",
           "new": "        isolation=IsolationPolicy(autonomy=autonomy),\n",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:b0fe7ebac2f374bda1fa83f50e4496ca8c618984335296bd310605a69e38fd52"
+          "symbol_sha": "sha256:f7258e0d1a57e75298e08ad4d40fc94056e7bfae995cffe0182e2e7987121b8a"
         },
         {
           "id": "api-start-skips-the-policy",

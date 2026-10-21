@@ -1,0 +1,27 @@
+{
+  "schema": 2,
+  "feature": "D-INTL-08",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "One stem rule",
+      "scope": [
+        "tests/unit/commons/test_spec_names.py",
+        "tests/integration/core/flow/engine/test_one_module_name.py",
+        "tests/unit/core/flow/engine/test_session_policy.py"
+      ],
+      "mutants": [
+        {
+          "id": "replace-again",
+          "origin": "authored",
+          "file": "src/specweaver/commons/spec_names.py",
+          "symbol": "module_stem",
+          "old": "    return spec_path.stem.removesuffix(\"_spec\")\n",
+          "new": "    return spec_path.stem.replace(\"_spec\", \"\")\n",
+          "breaks": "a spec with _spec inside its name gets a mangled module name",
+          "symbol_sha": "sha256:c4e81d57b4382dfd3a71510bea4925c3d4d5077bc519d308f69eccdc2e21563c"
+        }
+      ]
+    }
+  ]
+}

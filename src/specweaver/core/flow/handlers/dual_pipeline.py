@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
@@ -206,7 +207,7 @@ class ArbitrateDualPipelineHandler:
             )
         # The run holding the dual run is marked, so its handover never reaches task memory.
         context.run = context.run.model_copy(update={"dual_side": "parent"})
-        stem = context.spec_path.stem.replace("_spec", "")
+        stem = module_stem(context.spec_path)
         logger.info("ArbitrateDualPipelineHandler: Starting dual pipeline for component '%s'", stem)
 
         try:

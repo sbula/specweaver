@@ -13,6 +13,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.spec_names import module_stem
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -51,15 +53,13 @@ def derive_allowed_paths(spec_path: Path) -> list[str]:
     defaults (``src/<stem>.py`` / ``tests/test_<stem>.py``) — hence the ``src/``/``tests/``
     prefixes here, not the composition-root ``output_dir``.
 
-    The stem transform MUST stay byte-identical to the generation handlers
-    (``generation.py``: ``spec_path.stem.replace("_spec", "")`` — note ``.replace``, NOT
-    ``.removesuffix``: it removes every ``_spec`` substring). If it drifts, the derived
-    allow-list stops matching the generated path and the real file gets stripped.
+    The stem is ``module_stem``, the one rule the generation handlers use too, so the allow-list
+    names the file they write.
 
     Paths are repo-relative with forward slashes (git ``--name-only`` form on every
     platform, including Windows) — never ``os.sep``.
     """
-    stem = spec_path.stem.replace("_spec", "")
+    stem = module_stem(spec_path)
     return [f"src/{stem}.py", f"tests/test_{stem}.py"]
 
 

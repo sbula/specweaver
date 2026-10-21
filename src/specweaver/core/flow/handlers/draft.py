@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
@@ -166,7 +167,7 @@ class DraftSpecHandler:
             base_prompt=base_prompt,
         )
 
-        name = context.spec_path.stem.removesuffix("_spec")
+        name = module_stem(context.spec_path)
         specs_dir = context.spec_path.parent
 
         topology_contexts = (
