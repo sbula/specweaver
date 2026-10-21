@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.run_targets import cargo_test_file
 from specweaver.sandbox.language.core.rust.cargo_diagnostics import parse_cargo_diagnostics
 from specweaver.sandbox.language.core.rust.cargo_output import parse_cargo_test
 from specweaver.sandbox.language.core.toolchain import (
@@ -113,6 +114,9 @@ class RustRunner(QARunnerInterface):
             # JSON libtest format is nightly-only — so asking for one produced a command cargo
             # rejects outright, piped into a converter that was never installed.
             cmd = ["cargo", "test"]
+            test_file = cargo_test_file(target)
+            if test_file:
+                cmd += ["--test", test_file]
 
             test_result = self._executor.execute(cmd, timeout_seconds=timeout)
             outcome = parse_cargo_test(test_result.stdout)

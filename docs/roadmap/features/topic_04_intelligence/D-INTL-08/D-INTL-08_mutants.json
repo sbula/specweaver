@@ -187,6 +187,66 @@
           "symbol_sha": "sha256:3fc96c50e64d3fee3c8920ff5d7e475a9072bf0db1d9feaf28c1016de4a4b55a"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The task's own tests run",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_one_test_file.py",
+        "tests/integration/sandbox/language/test_one_test_file_live.py"
+      ],
+      "mutants": [
+        {
+          "id": "maven-runs-everything",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/java/runner.py",
+          "symbol": "JavaRunner._test_command",
+          "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
+          "new": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else []\n",
+          "breaks": "Maven runs every test, and an old failure sends the coder to fix code it did not write",
+          "symbol_sha": "sha256:f9ebd50137f6f44c36c3b00ed6329f9d058f218530a9edfee7c0390acc13a4c3"
+        },
+        {
+          "id": "gradle-runs-everything",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/java/runner.py",
+          "symbol": "JavaRunner._test_command",
+          "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
+          "new": "            cmd += [] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
+          "breaks": "Gradle runs every test",
+          "symbol_sha": "sha256:f9ebd50137f6f44c36c3b00ed6329f9d058f218530a9edfee7c0390acc13a4c3"
+        },
+        {
+          "id": "cargo-runs-everything",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_tests",
+          "old": "                cmd += [\"--test\", test_file]\n",
+          "new": "                pass\n",
+          "breaks": "cargo runs every test file",
+          "symbol_sha": "sha256:0dbf53814b5f1fd7ebc2d0bb248b45ae76c451991b098cde3e655911dde94c27"
+        },
+        {
+          "id": "folders-filtered",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "jvm_test_class",
+          "old": "    if path.suffix != _EXTENSIONS.get(language) or \"main\" in path.parts[:-1]:\n",
+          "new": "    if \"main\" in path.parts[:-1]:\n",
+          "breaks": "a folder target becomes a bogus class filter",
+          "symbol_sha": "sha256:df273cdfd07e33c7058bcc1bae610f47a49adaab1e63a15cdc753a4a5ea82bee"
+        },
+        {
+          "id": "simple-name-instead-of-qualified",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "jvm_test_class",
+          "old": "            return \".\".join((*parts[index + 3 : -1], path.stem))\n",
+          "new": "            return path.stem\n",
+          "breaks": "two classes with one name in different packages run together",
+          "symbol_sha": "sha256:df273cdfd07e33c7058bcc1bae610f47a49adaab1e63a15cdc753a4a5ea82bee"
+        }
+      ]
     }
   ]
 }

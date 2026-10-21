@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, ClassVar
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
+from specweaver.sandbox.language.core.run_targets import jvm_test_class
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -80,6 +81,10 @@ class KotlinRunner(QARunnerInterface):
         source: str = "",
     ) -> TestRunResult:
         cmd, search_path = self._test_command()
+        test_class = jvm_test_class(target, "kotlin")
+        if test_class:
+            gradle = self._get_build_tool() == "gradle"
+            cmd += ["--tests", test_class] if gradle else [f"-Dtest={test_class}"]
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "the Kotlin build tool")
         if reason:

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.maven_output import compile_errors, program_output
+from specweaver.sandbox.language.core.run_targets import jvm_test_class
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, read_sarif_report
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -136,26 +137,7 @@ class JavaRunner(QARunnerInterface):
         coverage_source: str = "",
         source: str = "",
     ) -> TestRunResult:
-        tool = self._get_build_tool()
-        passed = 0
-        failed = 0
-        skipped = 0
-
-        if tool == "gradle":
-            cmd = ["gradlew", "test"]
-            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
-                cmd[0] = "gradle"
-            for stale_xml in self._cwd.rglob("build/test-results/test/*.xml"):
-                stale_xml.unlink(missing_ok=True)
-            search_path = report_search_paths(self._cwd, "build/test-results")
-        else:
-            cmd = ["mvnw", "test"]
-            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
-                cmd[0] = "mvn"
-            for stale_xml in self._cwd.rglob("target/surefire-reports/*.xml"):
-                stale_xml.unlink(missing_ok=True)
-            search_path = report_search_paths(self._cwd, "target/surefire-reports")
-
+        cmd, search_path = self._test_command(target)
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "the Java build tool")
         if reason:
@@ -183,6 +165,27 @@ class JavaRunner(QARunnerInterface):
             failures=harvest.failures,
             coverage_pct=None,
         )
+
+    def _test_command(self, target: str) -> tuple[list[str], list[Path]]:
+        """The build tool's test command — only `target`'s class when it is one test file — and
+        where its reports land; stale reports are deleted first."""
+        tool = self._get_build_tool()
+        if tool == "gradle":
+            cmd = ["gradlew", "test"]
+            if not (self._cwd / "gradlew").exists() and not (self._cwd / "gradlew.bat").exists():
+                cmd[0] = "gradle"
+            stale, reports = "build/test-results/test/*.xml", "build/test-results"
+        else:
+            cmd = ["mvnw", "test"]
+            if not (self._cwd / "mvnw").exists() and not (self._cwd / "mvnw.cmd").exists():
+                cmd[0] = "mvn"
+            stale, reports = "target/surefire-reports/*.xml", "target/surefire-reports"
+        for stale_xml in self._cwd.rglob(stale):
+            stale_xml.unlink(missing_ok=True)
+        test_class = jvm_test_class(target, "java")
+        if test_class:
+            cmd += ["--tests", test_class] if tool == "gradle" else [f"-Dtest={test_class}"]
+        return cmd, report_search_paths(self._cwd, reports)
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         from specweaver.sandbox.qa_runner.core.interface import LintError

@@ -219,7 +219,7 @@
           "old": "cmd = [\"cargo\", \"test\"]",
           "new": "cmd = [\"cargo\", \"test\", \"--format=json\", \"-q\"]",
           "breaks": "the exact command real cargo rejects with `unexpected argument '--format' found`; its JSON format is nightly-only and the converter it fed was installed nowhere",
-          "symbol_sha": "sha256:db56370ad33482c7a7fb02f0a73b431b0d4dc8ac0188e38ea55ba6ecffc3f0b7"
+          "symbol_sha": "sha256:0dbf53814b5f1fd7ebc2d0bb248b45ae76c451991b098cde3e655911dde94c27"
         }
       ]
     },
