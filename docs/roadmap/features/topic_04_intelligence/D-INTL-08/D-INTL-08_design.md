@@ -203,9 +203,9 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 | SF-02 | The runners do what they say | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Generation speaks the language | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Frameworks | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | The journeys | SF-02, SF-03, SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | The journeys | SF-02, SF-03, SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
 **Now**: design approved 2026-10-20.
-**Next**: SF-05 dev, CB-1 (the toolchain tier and samples). SF-05 plan approved 2026-10-21.
+**Next**: the user runs `python scripts/toolchain.py` once (SF-05 Q3) and reinstalls the nightly units (`python scripts/mutation.py --install-timer`); failures are fixed, then the sign-off. SF-05 committed 2026-10-21.

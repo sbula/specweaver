@@ -50,9 +50,8 @@ def test_the_nightly_session_runs_the_live_tests_first() -> None:
 
     service = timer.timer_units()["service"]
 
-    live_line, mutation_line = (
-        line for line in service.splitlines() if line.startswith("ExecStart")
-    )
+    starts = [line for line in service.splitlines() if line.startswith("ExecStart")]
+    live_line, mutation_line = starts[0], starts[-1]
     assert live_line.startswith("ExecStart=-") and live_line.endswith("scripts/live.py")
     assert "scripts/mutation.py" in mutation_line
 

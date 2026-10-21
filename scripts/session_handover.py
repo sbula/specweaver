@@ -293,6 +293,13 @@ def _live_state() -> list[str]:
     return [f"- **Live** {line}" if ok else f"- **Live** **{line}**"]
 
 
+def _toolchain_state() -> list[str]:
+    """The last nightly real-toolchain run; anything but a recent pass is bold."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    ok, line = __import__("toolchain").status()
+    return [f"- **Toolchain** {line}" if ok else f"- **Toolchain** **{line}**"]
+
+
 def _sweeps() -> list[str]:
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
     out = []
@@ -359,7 +366,14 @@ def render_state(*, gates: bool = False, suite: bool = False) -> str:
         f"*Generated {stamp}. Everything in this section is derived; edit above or below it.*",
         "",
     ]
-    body += _git_state() + _live_state() + _optional(gates, suite) + _registries() + _sweeps()
+    body += (
+        _git_state()
+        + _live_state()
+        + _toolchain_state()
+        + _optional(gates, suite)
+        + _registries()
+        + _sweeps()
+    )
 
     existing = HANDOVER.read_text(encoding="utf-8") if HANDOVER.is_file() else ""
     _, ahead = _run("git", "rev-list", "--count", "@{u}..HEAD")

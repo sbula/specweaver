@@ -39,7 +39,7 @@ def timer_units() -> dict[str, str]:
     """
     python = sys.executable
     service = f"""[Unit]
-Description=SpecWeaver nightly session: live run, then mutation corpus
+Description=SpecWeaver nightly session: live run, toolchain run, then mutation corpus
 Documentation=file://{REPO_ROOT}/docs/dev_guides/writing_mutation_campaigns.md
 
 [Service]
@@ -57,6 +57,8 @@ Environment=PATH={REPO_ROOT}/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:
 LimitNOFILE=65536
 # The live run first; `-` keeps its failure from stopping the mutation session.
 ExecStart=-{python} {REPO_ROOT}/scripts/live.py
+# The real build tools next, as their own verdict; `-` for the same reason.
+ExecStart=-{python} {REPO_ROOT}/scripts/toolchain.py
 ExecStart={python} {REPO_ROOT}/scripts/mutation.py --corpus-dir docs/roadmap/features
 """
     timer = f"""[Unit]

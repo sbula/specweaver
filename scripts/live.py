@@ -17,7 +17,6 @@ stops is skipped as `provider quota` and counted in the verdict.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import subprocess
@@ -25,10 +24,11 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _nightly_run
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RESULT = REPO_ROOT / ".tmp" / "live" / "last.json"
-#: A result older than this means a night was missed.
-MAX_AGE_HOURS = 48
 
 
 def quota_note(stdout: str) -> str:
@@ -66,32 +66,14 @@ def run() -> int:
         check=False,
         env=env,
     )
-    lines = proc.stdout.strip().splitlines()
-    summary = (lines[-1] if lines else proc.stderr.strip()[-300:]) + quota_note(proc.stdout)
-    RESULT.parent.mkdir(parents=True, exist_ok=True)
-    RESULT.write_text(
-        json.dumps({"at": started, "passed": proc.returncode == 0, "summary": summary}),
-        encoding="utf-8",
-    )
-    (RESULT.parent / "last.log").write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    summary = _nightly_run.record(proc, started, RESULT, quota_note(proc.stdout))
     print(summary)
     return proc.returncode
 
 
 def status(path: Path = RESULT) -> tuple[bool, str]:
     """Whether the last live run passed recently, and one line saying so."""
-    if not path.is_file():
-        return (
-            False,
-            "live run: never ran — it runs in the nightly session (`python scripts/mutation.py --install-timer`)",
-        )
-    data = json.loads(path.read_text(encoding="utf-8"))
-    hours = (time.time() - data["at"]) / 3600
-    if hours > MAX_AGE_HOURS:
-        return False, f"live run: last result is older than {MAX_AGE_HOURS}h ({hours:.0f}h)"
-    if not data["passed"]:
-        return False, f"live run: FAILED {hours:.0f}h ago — {data['summary']} (.tmp/live/last.log)"
-    return True, f"live run: passed {hours:.0f}h ago — {data['summary']}"
+    return _nightly_run.status(path, "live")
 
 
 def main(argv: list[str] | None = None) -> int:

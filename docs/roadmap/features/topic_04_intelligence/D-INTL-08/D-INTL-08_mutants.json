@@ -628,6 +628,57 @@
           "symbol_sha": "sha256:f3b29c4556ae1a350fdb31fb42a0efef6b3411bdb7031c01306743c2867fdc78"
         }
       ]
+    },
+    {
+      "requirement": "NFR-3",
+      "title": "The toolchain tier runs nightly, kept apart",
+      "scope": [
+        "tests/unit/scripts/test_toolchain_runner.py",
+        "tests/unit/scripts/test_live_runner.py",
+        "tests/unit/test_toolchain_marker_isolation.py"
+      ],
+      "mutants": [
+        {
+          "id": "tier-not-selected",
+          "origin": "authored",
+          "file": "scripts/toolchain.py",
+          "symbol": "run",
+          "old": "            \"-m\",\n            \"toolchain\",\n",
+          "new": "            \"-m\",\n            \"e2e\",\n",
+          "breaks": "the nightly run proves nothing about the real tools",
+          "symbol_sha": "sha256:6e1547a9169ab0268a20290b387c619d034fda1af2f5e735a01e54ffc798b25b"
+        },
+        {
+          "id": "failure-recorded-as-pass",
+          "origin": "authored",
+          "file": "scripts/_nightly_run.py",
+          "symbol": "record",
+          "old": "\"passed\": proc.returncode == 0",
+          "new": "\"passed\": True",
+          "breaks": "a broken toolchain reads as green",
+          "symbol_sha": "sha256:cc518e346cf9af54278a43a2cf945c919c2225f09681c36e8b74e1fc01fb003f"
+        },
+        {
+          "id": "stale-verdict-accepted",
+          "origin": "authored",
+          "file": "scripts/_nightly_run.py",
+          "symbol": "status",
+          "old": "    if hours > MAX_AGE_HOURS:\n",
+          "new": "    if False:\n",
+          "breaks": "a run that stopped weeks ago reads as current",
+          "symbol_sha": "sha256:90e36f3fa4b86154153badf6c8a4e6dcdd654dca2ca66e94ae098383f48236e2"
+        },
+        {
+          "id": "not-in-the-night",
+          "origin": "authored",
+          "file": "scripts/_mutation_timer.py",
+          "symbol": "timer_units",
+          "old": "ExecStart=-{python} {REPO_ROOT}/scripts/toolchain.py\n",
+          "new": "# the toolchain run was here\n",
+          "breaks": "the tier never runs",
+          "symbol_sha": "sha256:b64e52d74646628439fbb0620b60fa41e8724249d963defac4830e92373634e9"
+        }
+      ]
     }
   ]
 }
