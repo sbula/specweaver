@@ -10,15 +10,12 @@ then no step runs agentic. The decision itself is the engine's (`core.flow.engin
 
 from __future__ import annotations
 
-import re
-import tomllib
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.config.llm_settings import SettingsFileError
-from specweaver.core.config.toml_lines import path_line
+from specweaver.core.config.project_sections import parse_section
 
 
 class AutonomyPolicy(BaseModel):
@@ -30,18 +27,4 @@ class AutonomyPolicy(BaseModel):
 
 def parse_autonomy(text: str, source: str) -> AutonomyPolicy:
     """The `[autonomy]` section of a project's settings text; an absent section is the empty policy."""
-    try:
-        section = tomllib.loads(text).get("autonomy", {})
-    except tomllib.TOMLDecodeError as exc:
-        found = re.search(r"line (\d+)", str(exc))
-        raise SettingsFileError(
-            source, "(syntax)", int(found.group(1)) if found else 1, "not valid TOML"
-        ) from None
-    try:
-        return AutonomyPolicy.model_validate(section)
-    except ValidationError as exc:
-        errors = sorted(exc.errors(), key=lambda error: error["type"] != "extra_forbidden")
-        loc = ("autonomy", *(str(part) for part in errors[0]["loc"]))
-        raise SettingsFileError(
-            source, ".".join(loc), path_line(text, loc), errors[0]["msg"]
-        ) from None
+    return parse_section(text, source, "autonomy", AutonomyPolicy)

@@ -33,8 +33,9 @@ _SCENARIO_EXTENSIONS: dict[str, str] = {
 def detect_language(cwd: Path) -> str:
     """Return the canonical language name for a project directory.
 
-    Detection is done by sniffing well-known manifest files.
-    The order matches ``commons/qa_runner/factory.py`` to ensure consistency.
+    Detection is done by sniffing well-known manifest files, in a fixed order. A Gradle or Maven
+    build is Kotlin when the project has Kotlin sources or applies the Kotlin plugin, else Java.
+    The QA runner factory asks this function, so the two never disagree.
 
     Args:
         cwd: Project root directory to inspect.
@@ -47,11 +48,21 @@ def detect_language(cwd: Path) -> str:
         return "typescript"
     if (cwd / "Cargo.toml").exists():
         return "rust"
-    if (cwd / "build.gradle").exists() or (cwd / "build.gradle.kts").exists():
-        return "kotlin"
-    if (cwd / "pom.xml").exists():
-        return "java"
+    builds = [cwd / name for name in _JVM_BUILDS if (cwd / name).exists()]
+    if builds:
+        return "kotlin" if _is_kotlin(cwd, builds) else "java"
     return "python"
+
+
+_JVM_BUILDS = ("build.gradle", "build.gradle.kts", "pom.xml")
+
+
+def _is_kotlin(cwd: Path, builds: list[Path]) -> bool:
+    if (cwd / "src" / "main" / "kotlin").is_dir():
+        return True
+    return any(
+        "kotlin" in build.read_text(encoding="utf-8", errors="replace").lower() for build in builds
+    )
 
 
 def detect_scenario_extension(cwd: Path) -> str:

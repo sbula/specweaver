@@ -197,7 +197,11 @@ class LintFixHandler:
         from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
         from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-        return QARunnerAtom(cwd=context.project_path, sandbox_settings=coder_sandbox(context))
+        return QARunnerAtom(
+            cwd=context.project_path,
+            language=context.isolation.language,
+            sandbox_settings=coder_sandbox(context),
+        )
 
     def _find_code_files(self, context: RunContext, target: str | None = None) -> list[Path]:
         """Find the Python file(s) to fix.

@@ -429,7 +429,7 @@ class TestGetAtomSandboxSettings:
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
 
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
 
     def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
         from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
@@ -444,4 +444,6 @@ class TestGetAtomSandboxSettings:
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
 
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=config.sandbox)
+        mock_atom_cls.assert_called_once_with(
+            cwd=tmp_path, language=None, sandbox_settings=config.sandbox
+        )

@@ -271,6 +271,7 @@ def _build_run_context(
         isolation=IsolationPolicy(
             doc_policy=_core.load_doc_policy_at(project_path),
             autonomy=_core.load_autonomy_at(project_path),
+            language=_core.language_at(project_path),
         ),
         guidance=GuidanceContent(
             constitution=info.content if info else None,

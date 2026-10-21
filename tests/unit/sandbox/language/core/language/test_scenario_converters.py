@@ -326,7 +326,7 @@ class TestScenarioConverterFactory:
             create_scenario_converter,
         )
 
-        (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+        (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
         assert isinstance(create_scenario_converter(tmp_path), KotlinScenarioConverter)
 
     def test_factory_returns_typescript_for_package_json(self, tmp_path: Path) -> None:

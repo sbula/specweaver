@@ -257,6 +257,7 @@ class ValidateCodeHandler:
                 parsers=context.analysis.parsers,
                 dal_level=dal_level,
                 sandbox_settings=coder_sandbox(context),
+                language=context.isolation.language,
             )
             output, failed = _validation_output(
                 results, strict=bool(dal_level and dal_level.is_strict)
@@ -313,6 +314,7 @@ class ValidateCodeHandler:
         parsers: Any | None = None,
         dal_level: Any | None = None,
         sandbox_settings: Any | None = None,
+        language: str | None = None,
     ) -> list[RuleResult]:
         """Run code validation via sub-pipeline (called in thread)."""
         # Trigger auto-registration of built-in rules
@@ -342,6 +344,7 @@ class ValidateCodeHandler:
             dal_level=dal_level,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
             sandbox_settings=sandbox_settings,
+            language=language,
         )
 
 
@@ -523,8 +526,14 @@ class ValidateTestsHandler:
         cwd = context.isolation.execution_root or context.project_path
         if kind == "scenario":
             # Always in a container, with the scenario tests mounted read-only at /scenarios.
-            return QARunnerAtom(cwd=cwd, scenarios_root=_scenarios_root(context))
-        return QARunnerAtom(cwd=cwd, sandbox_settings=coder_sandbox(context))
+            return QARunnerAtom(
+                cwd=cwd,
+                language=context.isolation.language,
+                scenarios_root=_scenarios_root(context),
+            )
+        return QARunnerAtom(
+            cwd=cwd, language=context.isolation.language, sandbox_settings=coder_sandbox(context)
+        )
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
         """The test folders of the modules changed since the last green run; else `target`.

@@ -123,7 +123,7 @@ class TestGetAtomSandboxSettings:
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
 
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
 
     def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
         from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
@@ -138,7 +138,9 @@ class TestGetAtomSandboxSettings:
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
 
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=config.sandbox)
+        mock_atom_cls.assert_called_once_with(
+            cwd=tmp_path, language=None, sandbox_settings=config.sandbox
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +162,7 @@ class TestGetAtomExecutionRoot:
         assert context.model.config is None
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
-        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(cwd=wt, language=None, sandbox_settings=None)
 
     def test_falls_back_to_project_path_when_execution_root_none(self, tmp_path: Path) -> None:
         # [Boundary/backward-compat] non-isolated step → cwd unchanged.
@@ -169,7 +171,7 @@ class TestGetAtomExecutionRoot:
         assert context.isolation.execution_root is None
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
 
     def test_rebind_preserves_sandbox_settings_from_config(self, tmp_path: Path) -> None:
         # [Edge] if context.model.config IS populated (e.g. workflow CLIs), the rebind must
@@ -190,7 +192,9 @@ class TestGetAtomExecutionRoot:
         )
         with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
             handler._get_atom(context)
-        mock_atom_cls.assert_called_once_with(cwd=wt, sandbox_settings=context.model.config.sandbox)
+        mock_atom_cls.assert_called_once_with(
+            cwd=wt, language=None, sandbox_settings=context.model.config.sandbox
+        )
 
 
 # ---------------------------------------------------------------------------

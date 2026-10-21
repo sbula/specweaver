@@ -6,6 +6,7 @@
 Proves: C-EXEC-08 NFR-1
 Proves: C-EXEC-08 FR-1
 Proves: C-FLOW-11 FR-6
+Proves: D-INTL-08 FR-2
 
 | Bucket | Case |
 |---|---|
@@ -144,3 +145,17 @@ def test_a_broken_autonomy_section_refuses_the_start(world: tuple[TestClient, Pa
     assert answer.status_code == 500, answer.json()
     assert answer.json()["error_code"] == "AUTONOMY_POLICY"
     assert "specweaver.toml:2:" in answer.json()["detail"]
+
+
+def test_a_started_run_carries_the_projects_language(world: tuple[TestClient, Path]) -> None:
+    """D-INTL-08 FR-2."""
+    client, project = world
+    (project / "specweaver.toml").write_text(
+        '[implement]\nlanguage = "typescript"\n', encoding="utf-8"
+    )
+
+    with patch("specweaver.core.flow.engine.runner.PipelineRunner") as runner_class:
+        runner_class.return_value.run = AsyncMock()
+        _start(client)
+
+    assert runner_class.call_args.args[1].isolation.language == "typescript"

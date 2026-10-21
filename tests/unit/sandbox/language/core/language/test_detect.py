@@ -1,19 +1,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for language detection helpers."""
+"""Unit tests for language detection helpers.
+
+Proves: D-INTL-08 FR-2
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
+
+import pytest
 
 from specweaver.sandbox.language.core._detect import (
     detect_language,
     detect_scenario_extension,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TestDetectLanguage:
@@ -33,15 +35,44 @@ class TestDetectLanguage:
         (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
         assert detect_language(tmp_path) == "java"
 
-    def test_detect_kotlin_by_build_gradle(self, tmp_path: Path) -> None:
-        """`build.gradle` (Groovy DSL) signals Kotlin."""
-        (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+    @pytest.mark.parametrize("build", ["build.gradle", "build.gradle.kts"])
+    def test_a_gradle_build_without_kotlin_is_java(self, tmp_path: Path, build: str) -> None:
+        """D-INTL-08 FR-2: a Gradle build file alone says nothing about the source language."""
+        (tmp_path / build).write_text("plugins { id 'java' }", encoding="utf-8")
+        assert detect_language(tmp_path) == "java"
+
+    @pytest.mark.parametrize("build", ["build.gradle", "build.gradle.kts", "pom.xml"])
+    def test_kotlin_sources_make_it_kotlin(self, tmp_path: Path, build: str) -> None:
+        (tmp_path / build).write_text("plugins {}", encoding="utf-8")
+        (tmp_path / "src" / "main" / "kotlin").mkdir(parents=True)
         assert detect_language(tmp_path) == "kotlin"
 
-    def test_detect_kotlin_by_build_gradle_kts(self, tmp_path: Path) -> None:
-        """`build.gradle.kts` (Kotlin DSL) also signals Kotlin."""
-        (tmp_path / "build.gradle.kts").write_text("plugins {}", encoding="utf-8")
+    @pytest.mark.parametrize(
+        ("build", "text"),
+        [
+            ("build.gradle.kts", 'plugins { kotlin("jvm") version "2.0.0" }'),
+            ("build.gradle", "plugins { id 'org.jetbrains.kotlin.jvm' }"),
+            ("pom.xml", "<plugin><artifactId>kotlin-maven-plugin</artifactId></plugin>"),
+        ],
+    )
+    def test_the_kotlin_plugin_makes_it_kotlin(self, tmp_path: Path, build: str, text: str) -> None:
+        (tmp_path / build).write_text(text, encoding="utf-8")
         assert detect_language(tmp_path) == "kotlin"
+
+    @pytest.mark.parametrize(
+        ("fixture", "language"),
+        [
+            ("java_maven_project", "java"),
+            ("java_gradle_project", "java"),
+            ("kotlin_maven_project", "kotlin"),
+            ("kotlin_gradle_project", "kotlin"),
+            ("sample_project", "python"),
+        ],
+    )
+    def test_the_fixture_projects_are_what_they_say(self, fixture: str, language: str) -> None:
+        root = Path(__file__).resolve().parents[5] / "fixtures" / fixture
+        assert root.is_dir()
+        assert detect_language(root) == language
 
     def test_detect_typescript_by_package_json(self, tmp_path: Path) -> None:
         """`package.json` signals TypeScript."""
@@ -60,12 +91,10 @@ class TestDetectLanguage:
         # package.json is checked first in factory order
         assert detect_language(tmp_path) == "typescript"
 
-    def test_kotlin_wins_over_java(self, tmp_path: Path) -> None:
-        """build.gradle takes priority over pom.xml (detection order)."""
+    def test_gradle_and_maven_without_kotlin_is_java(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
         (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
-        # build.gradle is checked before pom.xml
-        assert detect_language(tmp_path) == "kotlin"
+        assert detect_language(tmp_path) == "java"
 
 
 class TestDetectScenarioExtension:
@@ -80,6 +109,7 @@ class TestDetectScenarioExtension:
 
     def test_kotlin_extension(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+        (tmp_path / "src" / "main" / "kotlin").mkdir(parents=True)
         assert detect_scenario_extension(tmp_path) == "kt"
 
     def test_typescript_extension(self, tmp_path: Path) -> None:

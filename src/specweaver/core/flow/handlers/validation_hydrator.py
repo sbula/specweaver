@@ -77,6 +77,7 @@ def hydrate_code_validation_context(
     *,
     dal_level: Any | None = None,
     sandbox_settings: Any | None = None,
+    language: str | None = None,
 ) -> dict[str, Any]:
     """Pre-execute QA atoms and return a context dict for code validation rules.
 
@@ -124,7 +125,7 @@ def hydrate_code_validation_context(
     # Lazy import — only when we actually need to run atoms
     from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
-    atom = QARunnerAtom(cwd=project_root, sandbox_settings=sandbox_settings)
+    atom = QARunnerAtom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)
 
     # --- C03: Tests Pass ---
     if "C03" in qa_rules_active:
@@ -319,6 +320,7 @@ def execute_validation_flow(
     dal_level: Any | None = None,
     context: dict[str, Any] | None = None,
     sandbox_settings: Any | None = None,
+    language: str | None = None,
 ) -> list[Any]:
     """Single entry point for code validation with hydration.
 
@@ -351,6 +353,7 @@ def execute_validation_flow(
             project_root,
             dal_level=dal_level,
             sandbox_settings=sandbox_settings,
+            language=language,
         )
         merged_context.update(qa_context)
 

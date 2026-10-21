@@ -27,6 +27,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
+import pytest
+
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.java.runner import JavaRunner
@@ -55,10 +57,26 @@ class TestLanguageAutoDiscovery:
         runner = resolve_runner(tmp_path)
         assert isinstance(runner, RustRunner)
 
-    def test_selects_kotlin_with_build_gradle(self, tmp_path: Path) -> None:
+    def test_selects_kotlin_with_kotlin_sources(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("")
+        (tmp_path / "src" / "main" / "kotlin").mkdir(parents=True)
         runner = resolve_runner(tmp_path)
         assert isinstance(runner, KotlinRunner)
+
+    def test_selects_java_with_a_bare_gradle_build(self, tmp_path: Path) -> None:
+        """D-INTL-08 FR-2: the factory asks `detect_language`, so the two cannot disagree."""
+        (tmp_path / "build.gradle").write_text("")
+        assert isinstance(resolve_runner(tmp_path), JavaRunner)
+
+    @pytest.mark.parametrize(
+        ("language", "runner_type"),
+        [("rust", RustRunner), ("java", JavaRunner), ("typescript", TypeScriptRunner)],
+    )
+    def test_an_explicit_language_wins_over_the_manifests(
+        self, tmp_path: Path, language: str, runner_type: type
+    ) -> None:
+        (tmp_path / "pyproject.toml").write_text("")
+        assert isinstance(resolve_runner(tmp_path, language=language), runner_type)
 
     def test_selects_java_with_pom_xml(self, tmp_path: Path) -> None:
         (tmp_path / "pom.xml").write_text("")

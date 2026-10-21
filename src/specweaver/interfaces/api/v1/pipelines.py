@@ -111,6 +111,7 @@ def _project_policy(project_root: Path) -> IsolationPolicy:
     """A run's isolation policy holding the project's `[docs]` and `[autonomy]`; a broken one refuses."""
     from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
     from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
+    from specweaver.core.config.bootstrap.implement_loader import load_implement
     from specweaver.core.config.llm_settings import SettingsFileError
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
@@ -124,7 +125,13 @@ def _project_policy(project_root: Path) -> IsolationPolicy:
         raise SpecWeaverAPIError(
             detail=str(exc), error_code="AUTONOMY_POLICY", status_code=500
         ) from exc
-    return IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy)
+    try:
+        language = load_implement(project_root).language
+    except SettingsFileError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc), error_code="IMPLEMENT_POLICY", status_code=500
+        ) from exc
+    return IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language)
 
 
 def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:

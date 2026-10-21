@@ -137,6 +137,18 @@ def load_doc_policy_at(path: Path) -> DocPolicy:
         refuse_llm_settings(err)
 
 
+def language_at(path: Path) -> str | None:
+    """The language the project at `path` names in `[implement]`, or None; or exit naming the
+    file, key and line."""
+    from specweaver.core.config.bootstrap.implement_loader import load_implement
+    from specweaver.core.config.llm_settings import SettingsFileError
+
+    try:
+        return load_implement(path).language
+    except SettingsFileError as err:
+        refuse_llm_settings(err)
+
+
 def load_autonomy_at(path: Path) -> AutonomyPolicy:
     """The autonomy policy of the project at `path`, or exit naming the file, key and line."""
     from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy

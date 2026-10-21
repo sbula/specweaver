@@ -51,6 +51,8 @@ class IsolationPolicy(BaseModel):
     #: The project's `[autonomy]`, read at the composition root; the empty policy runs everything
     #: one-shot.
     autonomy: AutonomyPolicy = Field(default_factory=AutonomyPolicy)
+    #: The project's `[implement] language`; None lets its manifests decide.
+    language: str | None = None
     #: The project's `[docs]` rules, read at the composition root; the grant and the merge use them.
     doc_policy: DocPolicy = Field(default_factory=DocPolicy)
 

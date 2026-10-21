@@ -233,17 +233,17 @@
           "old": "            doc_policy=_core.load_doc_policy_at(project_path),\n",
           "new": "            doc_policy=_core.load_doc_policy_at(project_path / \"missing\"),\n",
           "breaks": "sw run and sw resume use the built-in rules whatever the project says",
-          "symbol_sha": "sha256:1a2007eeacb440999cc26bf43252ce5a6f38c7b35e88fe016ab38d188820f8cf"
+          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
         },
         {
           "id": "sw-implement-drops-the-policy",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy),\n",
-          "new": "        isolation=IsolationPolicy(autonomy=autonomy),\n",
+          "old": "        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),\n",
+          "new": "        isolation=IsolationPolicy(autonomy=autonomy, language=language),\n",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:f7258e0d1a57e75298e08ad4d40fc94056e7bfae995cffe0182e2e7987121b8a"
+          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
         },
         {
           "id": "api-start-skips-the-policy",

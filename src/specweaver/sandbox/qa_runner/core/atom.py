@@ -41,15 +41,15 @@ _LANGUAGE_RUNNERS: dict[str, type] = {}
 
 
 def _resolve_runner(
-    language: str, cwd: Any, executor: SubprocessExecutor | None = None
+    language: str | None, cwd: Any, executor: SubprocessExecutor | None = None
 ) -> QARunnerInterface:
     """Create a runner for the target.
 
-    Forwards resolution to the auto-discovery factory, ignoring the legacy language string.
+    Forwards to the factory: `language` when the run names one, else the project's manifests.
     """
     from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
-    return resolve_runner(cwd, executor=executor)
+    return resolve_runner(cwd, executor=executor, language=language)
 
 
 def container_available(project_root: Path) -> bool:
@@ -94,7 +94,7 @@ class QARunnerAtom(Atom):
 
     Args:
         cwd: Project root directory.
-        language: Programming language (default: "python").
+        language: The run's language; None detects it from the project's manifests.
         sandbox_settings: Optional opt-in container sandboxing config
             `None` or `execution_mode="host"` keeps execution unsandboxed;
             `execution_mode="container"`
@@ -106,7 +106,7 @@ class QARunnerAtom(Atom):
     def __init__(
         self,
         cwd: Path,
-        language: str = "python",
+        language: str | None = None,
         sandbox_settings: SandboxSettings | None = None,
         scenarios_root: Path | None = None,
     ) -> None:

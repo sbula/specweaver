@@ -166,8 +166,8 @@ class TestContractHandlerLanguageDispatch:
         assert "package contracts;" in content
 
     async def test_kotlin_project_generates_kotlin_interface(self, tmp_path: Path) -> None:
-        """Kotlin project (build.gradle) → interface in contracts/greeter_contract.kt."""
-        (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+        """Kotlin project (Gradle, Kotlin plugin) → interface in contracts/greeter_contract.kt."""
+        (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
         ctx = _make_context(tmp_path, _SAMPLE_SPEC)
         handler = GenerateContractHandler()
         result = await handler.execute(MagicMock(), ctx)

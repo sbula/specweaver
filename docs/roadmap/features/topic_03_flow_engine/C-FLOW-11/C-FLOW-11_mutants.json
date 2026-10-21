@@ -164,7 +164,7 @@
           "old": "            autonomy=_core.load_autonomy_at(project_path),\n",
           "new": "            autonomy=_core.load_autonomy_at(project_path / \"missing\"),\n",
           "breaks": "sw run and sw resume ignore the project's [autonomy]",
-          "symbol_sha": "sha256:1a2007eeacb440999cc26bf43252ce5a6f38c7b35e88fe016ab38d188820f8cf"
+          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
         },
         {
           "id": "sw-implement-reads-another-file",
@@ -174,7 +174,7 @@
           "old": "    autonomy = _core.load_autonomy_at(project_path)\n",
           "new": "    autonomy = _core.load_autonomy_at(project_path / \"missing\")\n",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:f7258e0d1a57e75298e08ad4d40fc94056e7bfae995cffe0182e2e7987121b8a"
+          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
         },
         {
           "id": "api-reads-another-file",
@@ -184,7 +184,7 @@
           "old": "        autonomy = load_autonomy(project_root)\n",
           "new": "        autonomy = load_autonomy(project_root / \"missing\")\n",
           "breaks": "an API run ignores the project's [autonomy]",
-          "symbol_sha": "sha256:4b408d70cac17b1bbed15c1854e10ee6c5ce13869b642fd0e58f081e557e3298"
+          "symbol_sha": "sha256:26638c0aede49f82184937892ad15912d0af71dd0c19c1f3a2f2a15781942842"
         }
       ]
     },

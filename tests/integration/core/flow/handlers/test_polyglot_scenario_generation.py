@@ -41,7 +41,10 @@ async def test_polyglot_scenario_generation_integration(
     """Verifies that the ConvertScenarioHandler inherently routes to the correct ScenarioConverter
     based on the project structure and writes the correctly formatted framework path.
     """
-    (tmp_path / indicator_file).write_text("dummy", encoding="utf-8")
+    # A Gradle build is Kotlin only with the Kotlin plugin (D-INTL-08 FR-2).
+    (tmp_path / indicator_file).write_text(
+        "dummy kotlin('jvm')" if indicator_file == "build.gradle" else "dummy", encoding="utf-8"
+    )
 
     # The store stands outside the project; the converter still names the file per language.
     store = tmp_path.parent / f"{tmp_path.name}-store"

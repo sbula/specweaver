@@ -22,6 +22,100 @@
           "symbol_sha": "sha256:c4e81d57b4382dfd3a71510bea4925c3d4d5077bc519d308f69eccdc2e21563c"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "The project's language",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_detect.py",
+        "tests/unit/sandbox/qa_runner/core/qa_runner/test_qa_runner_factory.py",
+        "tests/unit/core/config/test_implement_policy.py",
+        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
+        "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
+        "tests/integration/core/flow/handlers/test_qa_follows_the_run_language.py"
+      ],
+      "mutants": [
+        {
+          "id": "gradle-java-is-kotlin",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/_detect.py",
+          "symbol": "detect_language",
+          "old": "        return \"kotlin\" if _is_kotlin(cwd, builds) else \"java\"\n",
+          "new": "        return \"kotlin\"\n",
+          "breaks": "a Gradle Java project is built and tested as Kotlin",
+          "symbol_sha": "sha256:f712700ba22d67131ad28e1c17c3aea8aeea281c2307491ec8d03024abe6e396"
+        },
+        {
+          "id": "kotlin-sources-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/_detect.py",
+          "symbol": "_is_kotlin",
+          "old": "    if (cwd / \"src\" / \"main\" / \"kotlin\").is_dir():\n        return True\n",
+          "new": "    if False:\n        return True\n",
+          "breaks": "a Kotlin project without the plugin text is treated as Java",
+          "symbol_sha": "sha256:6a070ca00e293e2775e0862609f7a1573e437381b25dd50b164e3086ef50dd74"
+        },
+        {
+          "id": "named-language-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/factory.py",
+          "symbol": "resolve_runner",
+          "old": "    chosen = language or detect_language(cwd)\n",
+          "new": "    chosen = detect_language(cwd)\n",
+          "breaks": "[implement] language never reaches the QA tools",
+          "symbol_sha": "sha256:2772389639fcfc83ac75849a5e4386121a9a589be8e243ec2437f704794feb01"
+        },
+        {
+          "id": "atom-drops-the-language",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "_resolve_runner",
+          "old": "    return resolve_runner(cwd, executor=executor, language=language)\n",
+          "new": "    return resolve_runner(cwd, executor=executor)\n",
+          "breaks": "QA steps ignore the run's language",
+          "symbol_sha": "sha256:27ea756a83eea6921b7930f59b4989864501766e92ba9113130a8eb6458984c8"
+        },
+        {
+          "id": "sw-run-names-no-language",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_build_run_context",
+          "old": "            language=_core.language_at(project_path),\n",
+          "new": "            language=None,\n",
+          "breaks": "sw run and sw resume ignore [implement] language",
+          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
+        },
+        {
+          "id": "sw-implement-names-no-language",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    language = _core.language_at(project_path)\n",
+          "new": "    language = None\n",
+          "breaks": "sw implement ignores [implement] language",
+          "symbol_sha": "sha256:b748b6286bcb48d987529cefeee84af744ddbe018571e824c501f4cc7dc9772e"
+        },
+        {
+          "id": "api-names-no-language",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_project_policy",
+          "old": "        language = load_implement(project_root).language\n",
+          "new": "        language = None\n",
+          "breaks": "an API run ignores [implement] language",
+          "symbol_sha": "sha256:26638c0aede49f82184937892ad15912d0af71dd0c19c1f3a2f2a15781942842"
+        },
+        {
+          "id": "lint-ignores-the-language",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._get_atom",
+          "old": "            language=context.isolation.language,\n",
+          "new": "            language=None,\n",
+          "breaks": "lint_fix runs the manifests' linter, not the named language's",
+          "symbol_sha": "sha256:58c6739e386d75630ac82ed785ee9bdeecf7e33364f068fc1c6e33be0b2fa2a0"
+        }
+      ]
     }
   ]
 }

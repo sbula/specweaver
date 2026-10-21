@@ -10,7 +10,7 @@ in a given directory without communicating with explicit Database layers.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -35,44 +35,43 @@ def _warn_if_container_non_python(executor: SubprocessExecutor | None, language_
         )
 
 
-def resolve_runner(cwd: Path, executor: SubprocessExecutor | None = None) -> QARunnerInterface:
-    """Auto-discover the native QA pipeline runner for the target repository.
+def resolve_runner(
+    cwd: Path, executor: SubprocessExecutor | None = None, language: str | None = None
+) -> QARunnerInterface:
+    """The QA runner for the project's language: `language` when given, else detected.
 
     Args:
-        cwd: Target directory to sniff for manifests.
-        executor: Optional SubprocessExecutor (or subclass, e.g.
-            ContainerSubprocessExecutor) DI seam, threaded through to whichever
-            language runner is selected. Defaults to None (each runner builds
-            its own default host SubprocessExecutor — NFR-7 backward compat).
-
-    Returns:
-        The matching QARunnerInterface adapter. Defaults to PythonQARunner.
+        cwd: The project root.
+        executor: Optional SubprocessExecutor (or a container one) threaded through to the runner;
+            None lets each runner build its own host executor.
+        language: The run's language; None asks `detect_language`, the one detector.
     """
-    if (cwd / "package.json").exists():
+    from specweaver.sandbox.language.core._detect import detect_language
+
+    chosen = language or detect_language(cwd)
+    if chosen != "python":
+        _warn_if_container_non_python(executor, chosen)
+    runner: QARunnerInterface = _runner_class(chosen)(cwd=cwd, executor=executor)
+    return runner
+
+
+def _runner_class(language: str) -> Any:
+    if language == "typescript":
         from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
-        _warn_if_container_non_python(executor, "typescript")
-        return TypeScriptRunner(cwd=cwd, executor=executor)
-
-    if (cwd / "Cargo.toml").exists():
+        return TypeScriptRunner
+    if language == "rust":
         from specweaver.sandbox.language.core.rust.runner import RustRunner
 
-        _warn_if_container_non_python(executor, "rust")
-        return RustRunner(cwd=cwd, executor=executor)
-
-    if (cwd / "build.gradle").exists() or (cwd / "build.gradle.kts").exists():
+        return RustRunner
+    if language == "kotlin":
         from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 
-        _warn_if_container_non_python(executor, "kotlin")
-        return KotlinRunner(cwd=cwd, executor=executor)
-
-    if (cwd / "pom.xml").exists():
+        return KotlinRunner
+    if language == "java":
         from specweaver.sandbox.language.core.java.runner import JavaRunner
 
-        _warn_if_container_non_python(executor, "java")
-        return JavaRunner(cwd=cwd, executor=executor)
-
-    # By default, or if pyproject.toml is found
+        return JavaRunner
     from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-    return PythonQARunner(cwd=cwd, executor=executor)
+    return PythonQARunner

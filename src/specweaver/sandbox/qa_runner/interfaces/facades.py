@@ -156,14 +156,14 @@ TestInterface = ImplementerTestInterface | ReviewerTestInterface
 def create_qa_runner_interface(
     role: str,
     cwd: Path,
-    language: str = "python",
+    language: str | None = None,
 ) -> ImplementerTestInterface | ReviewerTestInterface:
     """Create a role-specific test runner interface.
 
     Args:
         role: The agent's role ("implementer" or "reviewer").
         cwd: The target project's working directory.
-        language: Programming language (default: "python").
+        language: The run's language; None detects it from the project's manifests.
 
     Returns:
         A role-specific interface with only the allowed methods.

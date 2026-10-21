@@ -627,7 +627,7 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     (tmp_path / "pom.xml").unlink()
 
     # Kotlin
-    (tmp_path / "build.gradle").touch()
+    (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }")
     runner = resolve_runner(tmp_path)
     assert isinstance(runner, KotlinRunner)
     (tmp_path / "build.gradle").unlink()

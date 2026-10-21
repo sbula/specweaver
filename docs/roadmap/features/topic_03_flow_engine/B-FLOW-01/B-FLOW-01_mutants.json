@@ -371,20 +371,20 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
           "symbol": "hydrate_code_validation_context",
-          "old": "    atom = QARunnerAtom(cwd=project_root, sandbox_settings=sandbox_settings)\n",
-          "new": "    atom = QARunnerAtom(cwd=project_root)\n",
+          "old": "    atom = QARunnerAtom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
+          "new": "    atom = QARunnerAtom(cwd=project_root, language=language)\n",
           "breaks": "C03 and C04 run the coder's tests on the host",
-          "symbol_sha": "sha256:8b6a9c278b4fa89ecdbd019ecba8571b5e7d9dcee8de986516a4d339b4717e1c"
+          "symbol_sha": "sha256:1f541767b655ef70f444a6f126e68326baba5be281419e1b2975cc59bb0b4cc8"
         },
         {
           "id": "lint-on-host",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/lint_fix.py",
           "symbol": "LintFixHandler._get_atom",
-          "old": "        return QARunnerAtom(cwd=context.project_path, sandbox_settings=coder_sandbox(context))\n",
-          "new": "        return QARunnerAtom(cwd=context.project_path)\n",
+          "old": "            sandbox_settings=coder_sandbox(context),\n        )\n",
+          "new": "        )\n",
           "breaks": "lint fix runs the coder's tools on the host",
-          "symbol_sha": "sha256:af6d9ee400b0bdc06d50e395e9521d360eebe364f3a5571e4d105415657aaf33"
+          "symbol_sha": "sha256:58c6739e386d75630ac82ed785ee9bdeecf7e33364f068fc1c6e33be0b2fa2a0"
         }
       ]
     },

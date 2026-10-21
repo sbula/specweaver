@@ -6,6 +6,7 @@
 Proves: C-EXEC-08 NFR-1
 Proves: C-EXEC-08 FR-1
 Proves: C-FLOW-11 FR-6
+Proves: D-INTL-08 FR-2
 
 The policy rides on the run's isolation policy, where the grant and the merge read it. A broken
 `[docs]` stops the command naming the file and the line, and no step runs.
@@ -177,3 +178,26 @@ def test_sw_implement_carries_the_projects_autonomy(project: Path) -> None:
 
     assert runner_class.called, result.output
     assert runner_class.call_args.args[1].isolation.autonomy.mode == "agentic"
+
+
+def test_the_run_context_carries_the_projects_language(project: Path) -> None:
+    """D-INTL-08 FR-2: the setting wins; without it, detection decides."""
+    (project / "specweaver.toml").write_text('[implement]\nlanguage = "rust"\n', encoding="utf-8")
+
+    assert _context_of(project).isolation.language == "rust"
+
+
+def test_without_a_setting_the_context_names_no_language(project: Path) -> None:
+    """The QA runner then asks the manifests (`test_qa_follows_the_run_language.py`)."""
+    (project / "pom.xml").write_text("<project/>", encoding="utf-8")
+
+    assert _context_of(project).isolation.language is None
+
+
+def test_sw_implement_carries_the_projects_language(project: Path) -> None:
+    (project / "specweaver.toml").write_text('[implement]\nlanguage = "kotlin"\n', encoding="utf-8")
+
+    result, runner_class = _implement(project)
+
+    assert runner_class.called, result.output
+    assert runner_class.call_args.args[1].isolation.language == "kotlin"

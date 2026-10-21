@@ -252,7 +252,7 @@ class TestStackTraceFilterFactory:
             create_stack_trace_filter,
         )
 
-        (tmp_path / "build.gradle").write_text("plugins {}", encoding="utf-8")
+        (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
         assert isinstance(create_stack_trace_filter(tmp_path), KotlinStackTraceFilter)
 
     def test_factory_returns_typescript(self, tmp_path: Path) -> None:
