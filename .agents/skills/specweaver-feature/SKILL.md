@@ -204,8 +204,9 @@ python scripts/tests.py feature <STORY-ID>
      command, kept in the design, shows it, and it runs in the nightly real-model run.
 
 4.4. **Docs say what the code does.** Find every related document with
-     `grep -rl <ID> docs .agents src` and check each one. Recount the README numbers (tests per
-     tier, mutants) in the feature's last commit, before calling it ready.
+     `grep -rl <ID> docs .agents src` and check each one. Recount the README numbers with
+     `python scripts/readme_counts.py` (tests per tier, corpora, mutants) and update them in the
+     feature's last commit, before calling it ready.
 
 4.5. **One finished message**, at most 10 lines: the promise; the demo and what it shows; limits
      with decision and date; what was removed; "Sign off?". Then **STOP** and wait.
