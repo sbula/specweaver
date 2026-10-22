@@ -3,12 +3,14 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.registry import ToolRegistry, get_standard_registry
+from specweaver.sandbox.security import WorkspaceBoundary
 
 
 class TestBaseTool:
@@ -249,7 +251,7 @@ class TestBaseToolConformance:
             pytest.param(
                 lambda: __import__(
                     "specweaver.sandbox.protocol.interfaces.tool", fromlist=[""]
-                ).ProtocolTool(),
+                ).ProtocolTool(WorkspaceBoundary([Path("/")])),
                 id="ProtocolTool",
             ),
             pytest.param(

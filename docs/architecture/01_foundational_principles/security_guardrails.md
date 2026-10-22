@@ -72,6 +72,11 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
 - **One grant matcher** — every agent tool judges paths with `sandbox.security.grant_mode_for`,
   which resolves `..` after joining a relative path to the project root. `grep` and `find_files`
   walk the disk themselves, so this check is the only thing keeping them inside the root.
+- **One boundary for paths from outside** (`TECH-075` AD-1) — a path an agent or a client gives
+  is checked by `sandbox.security.WorkspaceBoundary`: a relative path is joined to the project root,
+  links are resolved, then the result must lie under the root or a read-only API path. Empty paths
+  and null bytes are refused. The protocol tool and atom check every path this way before reading.
+  Code outside `sandbox` asks `contains(path)`, which answers without raising.
 - **Writes are task-scoped, reads are not** (`E-SENS-03`) — a writing role may change only the
   files the worktree merge would keep for its task (`security.write_verdict`, one rule for both, with the project's doc policy — `C-EXEC-08`); a
   role with no rule gets no grant. What an agent may read is owed by `B-FLOW-04`.

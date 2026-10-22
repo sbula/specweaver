@@ -17,9 +17,13 @@ one and not the other is exactly the drift a shared assertion would hide.
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
+from specweaver.sandbox.security import WorkspaceBoundary
+
+_ANYWHERE = WorkspaceBoundary([Path("/")])
 
 
 class TestProtocolToolBoundaryCatch:
@@ -31,7 +35,7 @@ class TestProtocolToolBoundaryCatch:
             "specweaver.sandbox.protocol.core.atom.ProtocolAtom.run",
             side_effect=RuntimeError("atom exploded"),
         ):
-            out = ProtocolTool().extract_schema_endpoints("/tmp/whatever.yaml")
+            out = ProtocolTool(_ANYWHERE).extract_schema_endpoints("/tmp/whatever.yaml")
 
         assert out["status"] == "error"
         assert "Tool boundary exception" in out["error"]
@@ -43,7 +47,7 @@ class TestProtocolToolBoundaryCatch:
             "specweaver.sandbox.protocol.core.atom.ProtocolAtom.run",
             side_effect=RuntimeError("atom exploded"),
         ):
-            out = ProtocolTool().extract_schema_messages("/tmp/whatever.yaml")
+            out = ProtocolTool(_ANYWHERE).extract_schema_messages("/tmp/whatever.yaml")
 
         assert out["status"] == "error"
         assert "Tool boundary exception" in out["error"]
@@ -58,7 +62,7 @@ class TestProtocolToolBoundaryCatch:
             "specweaver.sandbox.protocol.core.atom.ProtocolAtom.run",
             side_effect=KeyError("expected_key"),
         ):
-            out = ProtocolTool().extract_schema_endpoints("/tmp/whatever.yaml")
+            out = ProtocolTool(_ANYWHERE).extract_schema_endpoints("/tmp/whatever.yaml")
 
         assert "expected_key" in out["error"]
 
@@ -77,4 +81,4 @@ class TestProtocolToolBoundaryCatch:
             ),
             pytest.raises(KeyboardInterrupt),
         ):
-            ProtocolTool().extract_schema_endpoints("/tmp/whatever.yaml")
+            ProtocolTool(_ANYWHERE).extract_schema_endpoints("/tmp/whatever.yaml")

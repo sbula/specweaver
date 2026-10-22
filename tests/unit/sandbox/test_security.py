@@ -186,6 +186,17 @@ class TestEveryWayOutIsRefused:
         with pytest.raises(WorkspaceBoundaryError, match="no root"):
             boundary.validate_path(Path("openapi.yaml"))
 
+    def test_contains_answers_without_raising(self, tmp_path: Path) -> None:
+        """For callers outside `sandbox`, which see the boundary but not its error type."""
+        project = tmp_path / "project"
+        project.mkdir()
+        (project / "escape.txt").symlink_to(tmp_path / "secret.txt")
+        boundary = WorkspaceBoundary(roots=[project])
+        assert boundary.contains(project / "a.py") is True
+        assert boundary.contains(project / "escape.txt") is False
+        assert boundary.contains(Path("../secret.txt")) is False
+        assert boundary.contains(project / "a\x00.py") is False
+
     def test_a_read_only_boundary_still_accepts_an_absolute_api_path(self, tmp_path: Path) -> None:
         contract = tmp_path / "openapi.yaml"
         boundary = ReadOnlyWorkspaceBoundary(api_paths=[tmp_path])

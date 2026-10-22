@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 from specweaver.sandbox.base import AtomStatus
 from specweaver.sandbox.protocol.core.atom import ProtocolAtom
+from specweaver.sandbox.security import WorkspaceBoundary
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -40,7 +41,7 @@ class TestProtocolAtomSurvivesUnforeseenFailures:
         binary = tmp_path / "schema.bin"
         binary.write_bytes(b"\xff\xfe\x00\x01openapi: 3.0.3\xff")
 
-        result = ProtocolAtom().run(
+        result = ProtocolAtom(WorkspaceBoundary([tmp_path])).run(
             {"action": "extract_schema_endpoints", "file_path": str(binary)}
         )
 
@@ -62,7 +63,7 @@ class TestProtocolAtomSurvivesUnforeseenFailures:
             "specweaver.sandbox.protocol.core.factory.ProtocolParserFactory.create_parser",
             side_effect=MemoryError("out of memory mid-parse"),
         ):
-            result = ProtocolAtom().run(
+            result = ProtocolAtom(WorkspaceBoundary([tmp_path])).run(
                 {"action": "extract_schema_endpoints", "file_path": str(schema)}
             )
 
@@ -75,16 +76,16 @@ class TestProtocolAtomSurvivesUnforeseenFailures:
         They are written separately in the source, so they can drift — and a reader comparing a log
         line against a tool result would then be chasing two different stories about one failure.
         """
-        result = ProtocolAtom().run(
+        result = ProtocolAtom(WorkspaceBoundary([tmp_path])).run(
             {"action": "extract_schema_endpoints", "file_path": str(tmp_path / "gone.yaml")}
         )
 
         assert result.exports["error"] == result.message
 
-    def test_an_empty_context_fails_without_touching_the_filesystem(self) -> None:
+    def test_an_empty_context_fails_without_touching_the_filesystem(self, tmp_path: Path) -> None:
         """[Hostile] the guard runs before any I/O, so a caller with nothing cannot cause a read."""
         with patch.object(ProtocolAtom, "_read_file", side_effect=AssertionError("must not read")):
-            result = ProtocolAtom().run({})
+            result = ProtocolAtom(WorkspaceBoundary([tmp_path])).run({})
 
         assert result.status == AtomStatus.FAILED
         assert "Missing" in result.message

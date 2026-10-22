@@ -104,6 +104,15 @@ Markdown have no doc intents. A doc goes above a Rust attribute, a decorator and
 `FileExecutor` reads and writes the text exactly as it is on disk, so every change keeps each
 file's line endings: a read returns `\r\n` where the file has it.
 
+## ProtocolTool
+
+`extract_schema_endpoints` and `extract_schema_messages` read an OpenAPI, AsyncAPI or `.proto`
+contract. The tool is built with the run's `WorkspaceBoundary` (the registry passes
+`kwargs["boundary"]`), and `ProtocolAtom` needs one too: no boundary, no atom. A relative path is
+read from the project root; a contract under a read-only API path is allowed; `..`, an outside
+absolute path or a link that points outside is refused before the file is opened, and the error
+names only the path as given (`TECH-075` FR-4).
+
 ## GitTool (agents)
 
 Agents call git by intent, not raw commands. Each intent maps to a safe sequence of git commands on

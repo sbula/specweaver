@@ -40,6 +40,47 @@
           "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The protocol atom and tool read only inside the run's boundary",
+      "scope": [
+        "tests/unit/sandbox/protocol/core/protocol/test_protocol_atom.py",
+        "tests/integration/sandbox/test_protocol_tool_stays_inside.py",
+        "tests/integration/core/flow/handlers/test_contract_discovery_stays_inside.py"
+      ],
+      "mutants": [
+        {
+          "id": "read-before-check",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/protocol/core/atom.py",
+          "symbol": "ProtocolAtom.run",
+          "old": "            inside = self._boundary.validate_path(Path(file_path))\n            payload = self._read_file(inside, file_path)\n",
+          "new": "            payload = self._read_file(Path(file_path), file_path)\n            inside = self._boundary.validate_path(Path(file_path))\n",
+          "breaks": "the file is opened before the boundary refuses it",
+          "symbol_sha": "sha256:9f173371c334d43d202157e2e2e51d2f1cd04cd85ebf44b133e01ba8dc224427"
+        },
+        {
+          "id": "tool-without-run-boundary",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/registry.py",
+          "symbol": "get_standard_registry",
+          "old": "        return ProtocolTool(boundary=kwargs[\"boundary\"])\n",
+          "new": "        return ProtocolTool(boundary=type(kwargs[\"boundary\"])([__import__(\"pathlib\").Path(\"/\")]))\n",
+          "breaks": "an agent's protocol tool can read any file on the machine",
+          "symbol_sha": "sha256:2187e469857b777bd30d40b1e56b6b8c38b371e277fea62c2ecc0cf20ded4b9f"
+        },
+        {
+          "id": "sniff-before-check",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "symbol": "discover_protocol_endpoints",
+          "old": "        if not boundary.contains(path):\n            logger.warning(\"Contract candidate %s points outside the project; skipped\", relative)\n            continue\n",
+          "new": "        pass\n",
+          "breaks": "a link out of the project is read to sniff whether it is a contract",
+          "symbol_sha": "sha256:14c0c1de9155dcc081358d6ef0fcf20bdeb4bcc9d9a3e473722fcc545890c7a9"
+        }
+      ]
     }
   ]
 }

@@ -102,7 +102,7 @@ def get_standard_registry() -> ToolRegistry:
     def create_protocol(**kwargs: Any) -> BaseTool:
         from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
 
-        return ProtocolTool()
+        return ProtocolTool(boundary=kwargs["boundary"])
 
     registry.register("fs", create_fs)
     registry.register("filesystem", create_fs)

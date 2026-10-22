@@ -199,14 +199,21 @@ def discover_protocol_endpoints(project_root: Path) -> list[Any]:
     """
     from specweaver.sandbox.base import AtomStatus
     from specweaver.sandbox.protocol.core.atom import ProtocolAtom
+    from specweaver.sandbox.security import WorkspaceBoundary
 
-    atom = ProtocolAtom()
+    boundary = WorkspaceBoundary([project_root])
+    atom = ProtocolAtom(boundary)
     endpoints: list[Any] = []
     for path in sorted(project_root.rglob("*")):
-        if not path.is_file() or not _is_contract(path):
-            continue
         relative = path.relative_to(project_root)
         if set(relative.parts) & _SKIP_DIRS or len(relative.parts) > _MAX_DEPTH:
+            continue
+        if path.suffix != _PROTO_SUFFIX and path.suffix not in _YAML_SUFFIXES:
+            continue
+        if not boundary.contains(path):
+            logger.warning("Contract candidate %s points outside the project; skipped", relative)
+            continue
+        if not path.is_file() or not _is_contract(path):
             continue
         result = atom.run({"action": "extract_schema_endpoints", "file_path": str(path)})
         if result.status is not AtomStatus.SUCCESS:

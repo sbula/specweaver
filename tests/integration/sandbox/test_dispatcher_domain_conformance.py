@@ -71,7 +71,9 @@ def test_dispatcher_handles_no_role_sentinel_transparently(tmp_path) -> None:
     from specweaver.sandbox.registry import get_standard_registry
 
     registry = get_standard_registry()
-    tools = registry.create_tools(allowed_tools=["protocol"])
+    tools = registry.create_tools(
+        allowed_tools=["protocol"], boundary=WorkspaceBoundary(roots=[tmp_path])
+    )
 
     assert len(tools) == 1
     protocol_tool = tools[0]
@@ -80,6 +82,14 @@ def test_dispatcher_handles_no_role_sentinel_transparently(tmp_path) -> None:
     assert isinstance(protocol_tool, BaseTool)
     assert protocol_tool.role == BaseTool.NO_ROLE
     assert protocol_tool.role == "no_role"
+
+
+@pytest.mark.integration
+def test_no_boundary_means_no_protocol_tool() -> None:
+    """[Hostile] Proves: TECH-075 NFR-1. Without a boundary the tool is not built at all."""
+    from specweaver.sandbox.registry import get_standard_registry
+
+    assert get_standard_registry().create_tools(allowed_tools=["protocol"]) == []
 
 
 @pytest.mark.integration

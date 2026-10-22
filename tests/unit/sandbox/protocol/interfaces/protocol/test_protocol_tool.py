@@ -16,13 +16,13 @@ the model calls the tool without a `file_path` and gets an error it cannot diagn
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.protocol.interfaces.tool import ProtocolTool
+from specweaver.sandbox.security import WorkspaceBoundary
 
-if TYPE_CHECKING:
-    from pathlib import Path
+_ANYWHERE = WorkspaceBoundary([Path("/")])
 
 _PETSTORE = """openapi: 3.0.3
 paths:
@@ -47,7 +47,7 @@ class TestProtocolToolDefinitions:
 
     def test_both_intents_are_offered(self) -> None:
         """[Happy] the two atom actions are the two tool names, or one is unreachable."""
-        names = [d.name for d in ProtocolTool().definitions()]
+        names = [d.name for d in ProtocolTool(_ANYWHERE).definitions()]
 
         assert names == ["extract_schema_endpoints", "extract_schema_messages"]
 
@@ -57,14 +57,14 @@ class TestProtocolToolDefinitions:
         Asserted by lookup rather than by eye: the two lists are maintained separately in the
         source, so they can drift the moment a third intent is added.
         """
-        tool = ProtocolTool()
+        tool = ProtocolTool(_ANYWHERE)
 
         for definition in tool.definitions():
             assert callable(getattr(tool, definition.name, None)), definition.name
 
     def test_file_path_is_required_on_every_intent(self) -> None:
         """[Boundary] the model omits optional arguments — a non-required path means no path."""
-        for definition in ProtocolTool().definitions():
+        for definition in ProtocolTool(_ANYWHERE).definitions():
             params = {p.name: p for p in definition.parameters}
             assert "file_path" in params, definition.name
             assert params["file_path"].required is True, definition.name
@@ -80,7 +80,7 @@ class TestProtocolToolRole:
         Pinned because `NO_ROLE` is a sentinel: if it were swapped for a real role string, every
         agent without that role would silently lose the tool rather than be refused it.
         """
-        assert ProtocolTool().role == BaseTool.NO_ROLE
+        assert ProtocolTool(_ANYWHERE).role == BaseTool.NO_ROLE
 
 
 class TestProtocolToolExtractsThroughTheAtom:
@@ -88,7 +88,7 @@ class TestProtocolToolExtractsThroughTheAtom:
 
     def test_endpoints_come_back_as_the_atom_exports(self, tmp_path: Path) -> None:
         """[Happy] the tool hands back `exports`, not an `AtomResult` the LLM cannot read."""
-        out = ProtocolTool().extract_schema_endpoints(_schema(tmp_path))
+        out = ProtocolTool(_ANYWHERE).extract_schema_endpoints(_schema(tmp_path))
 
         assert out["status"] == "success"
         assert out["data"] == [
@@ -97,21 +97,44 @@ class TestProtocolToolExtractsThroughTheAtom:
 
     def test_messages_come_back_as_the_atom_exports(self, tmp_path: Path) -> None:
         """[Happy] the second intent, which reads the same file through a different call."""
-        out = ProtocolTool().extract_schema_messages(_schema(tmp_path))
+        out = ProtocolTool(_ANYWHERE).extract_schema_messages(_schema(tmp_path))
 
         assert out["status"] == "success"
         assert out["data"] == [{"name": "Pet", "properties": {"type": "object"}}]
 
     def test_a_missing_file_returns_an_error_payload(self, tmp_path: Path) -> None:
         """[Graceful degradation] the agent gets a readable dict, never a traceback."""
-        out = ProtocolTool().extract_schema_endpoints(str(tmp_path / "absent.yaml"))
+        out = ProtocolTool(_ANYWHERE).extract_schema_endpoints(str(tmp_path / "absent.yaml"))
 
         assert out["status"] == "error"
         assert "absent.yaml" in out["error"]
 
     def test_an_unrecognisable_schema_returns_the_parser_error(self, tmp_path: Path) -> None:
         """[Hostile] the reason survives the whole way out to the agent that must act on it."""
-        out = ProtocolTool().extract_schema_messages(_schema(tmp_path, body="title: nope\n"))
+        out = ProtocolTool(_ANYWHERE).extract_schema_messages(
+            _schema(tmp_path, body="title: nope\n")
+        )
 
         assert out["status"] == "error"
         assert "determine protocol schema type" in out["error"]
+
+
+class TestProtocolToolUsesItsBoundary:
+    """Proves: TECH-075 FR-4."""
+
+    def test_a_file_outside_the_tools_boundary_is_refused(self, tmp_path: Path) -> None:
+        """[Hostile] the tool passes its boundary to the atom; outside is an error payload."""
+        project = tmp_path / "proj"
+        project.mkdir()
+        out = ProtocolTool(WorkspaceBoundary([project])).extract_schema_endpoints(_schema(tmp_path))
+
+        assert out["status"] == "error"
+        assert "outside the workspace" in out["error"]
+
+    def test_both_intents_use_it(self, tmp_path: Path) -> None:
+        """[Hostile] the messages intent is a copy of the endpoints one, so it is asserted too."""
+        project = tmp_path / "proj"
+        project.mkdir()
+        out = ProtocolTool(WorkspaceBoundary([project])).extract_schema_messages(_schema(tmp_path))
+
+        assert "outside the workspace" in out["error"]

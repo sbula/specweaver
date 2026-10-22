@@ -7,6 +7,7 @@ from typing import Any
 from specweaver.infrastructure.llm.models import ToolDefinition, ToolParameter
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.protocol.core.atom import ProtocolAtom
+from specweaver.sandbox.security import WorkspaceBoundary
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,12 @@ logger = logging.getLogger(__name__)
 class ProtocolTool(BaseTool):
     """
     Native intent-based wrapper tool targeting Protocol extraction safely via the Atom layer.
+
+    Reads only files inside the run's boundary.
     """
+
+    def __init__(self, boundary: WorkspaceBoundary) -> None:
+        self._boundary = boundary
 
     @property
     def role(self) -> str:
@@ -51,7 +57,7 @@ class ProtocolTool(BaseTool):
 
     def extract_schema_endpoints(self, file_path: str) -> dict[str, Any]:
         """Invokes the enclosed Atom strictly mapping the string bounds."""
-        atom = ProtocolAtom()
+        atom = ProtocolAtom(self._boundary)
         try:
             result = atom.run(
                 context={"action": "extract_schema_endpoints", "file_path": file_path}
@@ -62,7 +68,7 @@ class ProtocolTool(BaseTool):
 
     def extract_schema_messages(self, file_path: str) -> dict[str, Any]:
         """Invokes the enclosed Atom strictly mapping the string bounds."""
-        atom = ProtocolAtom()
+        atom = ProtocolAtom(self._boundary)
         try:
             result = atom.run(context={"action": "extract_schema_messages", "file_path": file_path})
             return result.exports

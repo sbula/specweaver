@@ -132,6 +132,14 @@ class WorkspaceBoundary:
         logger.warning("WorkspaceBoundary.validate_path: %s", msg)
         raise WorkspaceBoundaryError(msg)
 
+    def contains(self, requested: Path) -> bool:
+        """Whether `validate_path` would accept the path; never raises."""
+        try:
+            self.validate_path(requested)
+        except WorkspaceBoundaryError:  # expected: the answer is no
+            return False
+        return True
+
     def resolve_relative(self, relative: str) -> Path:
         """Resolve a relative path against the primary root."""
         if not relative.strip():
