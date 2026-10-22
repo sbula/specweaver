@@ -60,6 +60,9 @@ apply.
    design records the limit `[agreed 2026-10-22]`.
 6. `POST`/`PUT /projects` answer with the resolved path that was stored `[agreed 2026-10-22]`.
 7. `extends:` in a project pipeline stays out of scope `[agreed 2026-10-22]`.
+8. Dev found 6 tests that run their own pipeline file over the API (`two_steps.yaml`, …). The run
+   route also loads the project's own `<project>/.specweaver/pipelines/<name>.yaml`, by bare name
+   and inside the project; a file beside the server stays refused `[agreed 2026-10-22]`.
 
 ## Approach (pseudocode, ordered)
 
@@ -88,11 +91,17 @@ path checked is the path used.
 4. Return the helper's path as `abs_path`.
 
 **FR-10 — pipeline names**
-1. Run route and resume route (`pipelines.py:195`, `:55`): the name must be in
-   `list_bundled_pipelines()`; anything else → 404 `PIPELINE_NOT_FOUND`, naming the input only.
-2. Load through a new `parser.load_bundled_pipeline(name)` that reads only the packaged template.
-   `load_pipeline(Path)` stays for the CLI (`sw run my.yaml` is a local user's own file).
-3. `POST /check`: an explicit `pipeline` must be a bare name: non-empty, no `/`, `\`, NUL, no
+1. Run route and resume route (`pipelines.py:195`, `:55`), in order: the name is a bare name
+   (step 4); then `project_file(project_root, ".specweaver/pipelines/<name>.yaml")` — if it exists,
+   load it (decision 8); else, if the name is in `list_bundled_pipelines()`, load
+   `parser.load_bundled_pipeline(name)` (packaged template only); else 404 `PIPELINE_NOT_FOUND`,
+   naming the input only. A `ProjectPathError` (the folder links outside) is also 404.
+2. `load_pipeline(Path)` stays for the CLI (`sw run my.yaml` is a local user's own file).
+3. Move the 6 tests' YAML into `<project>/.specweaver/pipelines/` and call them by bare name:
+   `test_api_pipeline_run_models_e2e.py`, `test_api_gate_resumes_the_run_e2e.py`,
+   `test_tablet_journey_e2e.py`, `test_api_runs_read_the_doc_policy.py`, `test_ws_ends.py`,
+   `test_api_max_runs.py`.
+3b. `POST /check`: an explicit `pipeline` must be a bare name: non-empty, no `/`, `\`, NUL, no
    leading `.`. Otherwise 404 `PIPELINE_NOT_FOUND`. A project-local
    `.specweaver/pipelines/<name>.yaml` still loads. A missing name also answers 404 (today
    `load_pipeline_yaml`'s `FileNotFoundError` is not caught in the route; dev checks today's answer
@@ -135,6 +144,7 @@ path checked is the path used.
 | [NEW] | `tests/integration/interfaces/api/test_api_pipeline_names.py` | P-1b (FR-10) |
 | [NEW] | `tests/integration/interfaces/api/test_api_project_paths_resolved.py` | P-6 (FR-7) |
 | [MODIFY] | the existing `sw update` unit test file (dev finds it) | FR-7 CLI |
+| [MODIFY] | the 6 run tests listed under FR-10 step 3 | their pipeline moves into the project |
 | [MODIFY] | `TECH-075_mutants.json` | FR-2, FR-3, FR-7, FR-10 campaigns |
 
 ## Test Plan
@@ -144,7 +154,7 @@ path checked is the path used.
 | helper | unit | `test_project_paths.py` | inside (happy); `.` (boundary); `..`, absolute, escaping link, null byte, blank (hostile); message names the input only (NFR-2). NFR-1 (root unknown) is the API's: unknown project → 404 `PROJECT_NOT_FOUND`, no run (in the e2e) |
 | FR-2 | e2e | `test_api_run_spec_stays_inside_e2e.py` | real app + token: `../x` to an outside file that exists, absolute, escaping link → 400 `PATH_TRAVERSAL`, no run row, no absolute path in the body; inside spec → run starts and its `spec_path` is the resolved path (happy); unknown project → 404, no run (degradation). Red on today's code: the outside file passes the check |
 | FR-3 | integration | `test_api_file_fields_stay_inside.py` | `/implement`, `/review`, `/check`: escaping link → 400 (hostile); link inside → passes (boundary, NFR-3); missing inside file → 404 (degradation) |
-| FR-10 | integration | `test_api_pipeline_names.py` | run: YAML beside the server, `foo.yaml`, `../x`, `validation_spec_default`, unknown → 404 (hostile); bundled name → runs (happy); resume of a run row with a non-bundled name → 404 (degradation). `/check`: `../../x` (outside YAML exists) → 404, never loaded; project-local name → loads (happy); unknown → 404 |
+| FR-10 | integration | `test_api_pipeline_names.py` | run: YAML beside the server, `foo.yaml`, `../x`, `validation_spec_default`, unknown → 404 (hostile); bundled name → runs (happy); project pipeline by bare name → runs (happy); `.specweaver/pipelines` a link outside → 404 (hostile); resume of a run row with a non-bundled name → 404 (degradation). `/check`: `../../x` (outside YAML exists) → 404, never loaded; project-local name → loads (happy); unknown → 404 |
 | FR-7 | integration | `test_api_project_paths_resolved.py` | POST and PUT with a relative path and `a/../b` → stored and answered resolved (happy); one folder by two spellings → 409 (boundary); PUT missing path → 400 `PATH_NOT_FOUND`, row unchanged; a file → 400 (hostile); an error body never holds the resolved path (NFR-2) |
 | FR-7 | unit (CLI) | `sw update` test file | relative path → stored resolved; missing → exit 1, row unchanged |
 | agreement | integration | `test_api_project_paths_resolved.py` | `POST`, `PUT` and `sw init`'s resolver store the same text for one folder |

@@ -9,6 +9,7 @@ import logging
 from pathlib import Path, PurePosixPath
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime
+from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,18 @@ def validate_relative_path(file_path: str) -> None:
             error_code="PATH_TRAVERSAL",
             status_code=400,
         )
+
+
+def project_file_or_400(project_root: Path, relative: str) -> Path:
+    """Resolve a path inside the project, or answer 400 naming the path as given."""
+    try:
+        return project_file(project_root, relative)
+    except ProjectPathError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="PATH_TRAVERSAL",
+            status_code=400,
+        ) from exc
 
 
 async def resolve_project_root(project_name: str, db: Database) -> Path:
@@ -64,7 +77,7 @@ async def resolve_file_in_project(
     """
     validate_relative_path(file_path)
     project_root = await resolve_project_root(project_name, db)
-    abs_path = project_root / file_path
+    abs_path = project_file_or_400(project_root, file_path)
     if not abs_path.exists():
         raise SpecWeaverAPIError(
             detail=f"File not found: '{file_path}' in project '{project_name}'",

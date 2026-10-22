@@ -78,7 +78,9 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
   and null bytes are refused. The protocol tool and atom check every path this way before reading;
   the QA atom checks every `target`, `targets` entry and debugger `entrypoint` before any tool
   starts (`/scenarios/…` passes only in a scenario run).
-  Code outside `sandbox` asks `contains(path)`, which answers without raising.
+  Code outside `sandbox` asks `contains(path)`, which answers without raising. The REST API reaches
+  the boundary through `core.flow.engine.project_paths.project_file`: a pipeline run's `spec` and
+  every `file` field answer `PATH_TRAVERSAL` 400 naming only the input, before any existence check.
 - **Writes are task-scoped, reads are not** (`E-SENS-03`) — a writing role may change only the
   files the worktree merge would keep for its task (`security.write_verdict`, one rule for both, with the project's doc policy — `C-EXEC-08`); a
   role with no rule gets no grant. What an agent may read is owed by `B-FLOW-04`.

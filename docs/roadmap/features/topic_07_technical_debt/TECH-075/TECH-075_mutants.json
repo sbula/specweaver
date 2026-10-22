@@ -122,6 +122,65 @@
           "symbol_sha": "sha256:9980272c689af5c9e1ed591e9435aaade1a30a834c182ab91128977086d42bf0"
         }
       ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A pipeline run refuses a spec outside the project before anything else",
+      "scope": [
+        "tests/e2e/capabilities/interfaces/test_api_run_spec_stays_inside_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-spec-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "    spec_path = project_file_or_400(project_root, body.spec)\n",
+          "new": "    spec_path = project_root / body.spec\n",
+          "breaks": "an API run starts on a spec outside the project",
+          "symbol_sha": "sha256:059403fa8c2d87fe16a6a1a74f607bd117fb719e48dda4a0ee9d0a760b8401e2"
+        },
+        {
+          "id": "run-spec-checked-after-exists",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "    spec_path = project_file_or_400(project_root, body.spec)\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    limit = _max_runs(project_root)\n",
+          "new": "    spec_path = project_root / body.spec\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    spec_path = project_file_or_400(project_root, body.spec)\n    limit = _max_runs(project_root)\n",
+          "breaks": "a 404 tells the client that an outside file does not exist",
+          "symbol_sha": "sha256:059403fa8c2d87fe16a6a1a74f607bd117fb719e48dda4a0ee9d0a760b8401e2"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "API file fields are judged by where the path lands",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_file_fields_stay_inside.py",
+        "tests/unit/core/flow/engine/test_project_paths.py"
+      ],
+      "mutants": [
+        {
+          "id": "file-field-text-check-only",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/paths.py",
+          "symbol": "resolve_file_in_project",
+          "old": "    abs_path = project_file_or_400(project_root, file_path)\n",
+          "new": "    abs_path = project_root / file_path\n",
+          "breaks": "a link inside the project that points outside is read by implement, review and check",
+          "symbol_sha": "sha256:dc36228fef40892a3cbb2adc4d36c71fd7e633c16b6077a06360c42611835b8e"
+        },
+        {
+          "id": "blank-path-is-root",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/project_paths.py",
+          "symbol": "project_file",
+          "old": "    if not relative.strip() or not boundary.contains(Path(relative)):\n",
+          "new": "    if not boundary.contains(Path(relative)):\n",
+          "breaks": "a blank path from the API is accepted as the project root",
+          "symbol_sha": "sha256:5dfecf9a4f1fb5c4af462eb3e40a37bdbf967c5796cf5cab74cc1506143a4bd0"
+        }
+      ]
     }
   ]
 }

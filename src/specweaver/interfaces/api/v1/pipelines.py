@@ -15,7 +15,7 @@ from specweaver.core.config.database import Database  # noqa: TC001 -- runtime f
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.v1.paths import resolve_project_root
+from specweaver.interfaces.api.v1.paths import project_file_or_400, resolve_project_root
 from specweaver.interfaces.api.v1.schemas import (
     GateDecisionRequest,
     PipelineRunRequest,
@@ -200,8 +200,7 @@ async def start_pipeline_run(
             status_code=404,
         ) from exc
 
-    # Resolve spec path
-    spec_path = project_root / body.spec
+    spec_path = project_file_or_400(project_root, body.spec)
     if not spec_path.exists():
         raise SpecWeaverAPIError(
             detail=f"Spec file not found: {body.spec}",
