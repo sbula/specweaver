@@ -26,6 +26,89 @@ critical for long-term project viability.
   > never existed.
 
 ## Architecture & Restructuring
+* **`TECH-091` 🔴: CLI Errors Print as Markup, and Commands Live Anywhere**
+  > [Description](../features/topic_07_technical_debt/TECH-091/TECH-091_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (5 findings)._ |
+  > 55 error prints pass exception text as Rich markup, so an error containing `[/...]` crashes
+  > the print; there is no rule for where a command lives.
+
+* **`TECH-089` 🔴: Parser Helpers Are Copied Outside the Parser Layer**
+  > [Description](../features/topic_07_technical_debt/TECH-089/TECH-089_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (4 findings)._ |
+  > Standards analyzers and the Python parser keep private copies of the shared tree helpers;
+  > one copy still has a doc-comment bug the parsers fixed.
+
+* **`TECH-088` 🔴: Two Graph Engines in Two Homes**
+  > [Description](../features/topic_07_technical_debt/TECH-088/TECH-088_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Two graph engines with different depth caps; the graph that review, drafting and planning
+  > use lives under `assurance`, while `graph/` holds a knowledge graph nothing reads; lineage
+  > is spread over three packages.
+
+* **`TECH-087` 🔴: QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean**
+  > [Description](../features/topic_07_technical_debt/TECH-087/TECH-087_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (14 findings)._ |
+  > The runner contract and the runners live in two packages; Java and Kotlin are ~70% copies;
+  > dead parsers are kept by a test; a complexity timeout or stub reads as clean; git commit and
+  > executor choice are done several ways.
+
+* **`TECH-086` 🔴: Tool Roles and Scaffolding Are Copied per Area**
+  > [Description](../features/topic_07_technical_debt/TECH-086/TECH-086_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > Role access is spelled in about ten tables (a permission surface); tool scaffolding is
+  > copied per area; the dispatcher is also the composition root and the grant policy.
+
+* **`TECH-085` 🔴: Every Workflow Calls the Model Its Own Way**
+  > [Description](../features/topic_07_technical_debt/TECH-085/TECH-085_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > Each workflow has its own prompt, call, parse and retry; six answer cleaners exist (one
+  > breaks on a bare fence); one prompt is a raw string join; mentioned files are injected
+  > escaped in one place and raw in another.
+
+* **`TECH-084` 🔴: A File's Pipeline Is Chosen Three Ways**
+  > [Description](../features/topic_07_technical_debt/TECH-084/TECH-084_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > The validation pipeline for a file is chosen three ways and pipeline YAML is loaded five
+  > ways, so `sw check`, `sw run` and the API judge the same file by different rules.
+
+* **`TECH-083` 🔴: Spec Names and Sections Are Parsed Several Ways**
+  > [Description](../features/topic_07_technical_debt/TECH-083/TECH-083_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (5 findings)._ |
+  > Spec file names, sections and artifact paths are derived several ways.
+
+* **`TECH-082` 🔴: Domain Logic Lives in the Flow Engine**
+  > [Description](../features/topic_07_technical_debt/TECH-082/TECH-082_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > Language layouts, framework detection, contract rendering and whole LLM workflows
+  > (arbitration, lint repair, drift) sit in `core/flow`, and the runner's parts reach into each
+  > other's privates.
+
+* **`TECH-081` 🔴: The Layer Check Reports Clean While the Layers Are Broken**
+  > [Description](../features/topic_07_technical_debt/TECH-081/TECH-081_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (18 findings)._ |
+  > `tach check` passes while modules import the wrong way: four modules are not registered,
+  > manifests describe modules that moved, and sandbox, flow and the CLIs have back-edges hidden
+  > by lazy imports.
+
+* **`TECH-080` 🔴: Module Manifests Are Read Five Ways**
+  > [Description](../features/topic_07_technical_debt/TECH-080/TECH-080_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (4 findings)._ |
+  > The walk up to the nearest `context.yaml` and its parse exist at least five times, with
+  > different start rules and two YAML libraries; `dal_resolver` crashes on a list-shaped file.
+
+* **`TECH-079` 🔴: Language and Toolchain Are Decided in a Dozen Places That Disagree**
+  > [Description](../features/topic_07_technical_debt/TECH-079/TECH-079_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (10 findings)._ |
+  > About 12 suffix tables and 5+ manifest readers decide a file's language and a project's
+  > build tool, in conflicting order.
+
+* **`TECH-078` 🔴: Review, Validation and the API Still Assume Python**
+  > [Description](../features/topic_07_technical_debt/TECH-078/TECH-078_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Polyglot gaps `D-INTL-08` did not reach: `review_code` finds `*.py` only, C02/C03 look for
+  > Python test files only, `POST /implement` reports Python paths, and the planner is told it
+  > plans "for a Python project".
+
 * **`TECH-062` 🟢: Parallel Fan-Out Has No Collision Guards**
   > [Description](../features/topic_07_technical_debt/TECH-062/TECH-062_design.md) | _Status: STUB. Origin: found 2026-08-17 while citing `C-FLOW-03`'s FRs under `ADR-004`._ |
   > `C-FLOW-03` is `✅` and two of its six FRs describe mechanisms **absent from `src/`**: `SW_PORT_OFFSET` port-offset injection, and `gc.auto 0` plus serialised worktree creation. `run_fan_out` IS
@@ -110,11 +193,23 @@ critical for long-term project viability.
   > ticket owns only the import-direction defect); `infrastructure.llm.adapters._rate_limit`/`factory` (2); `interfaces.api.app`/`ui.htmx`/`v1.pipelines`/`v1.router`/`v1.ws` (5).
 
 ## Schema & Data Layer
+* **`TECH-090` 🔴: The Database Is Opened Three Ways, and the API Server Skips Migrations**
+  > [Description](../features/topic_07_technical_debt/TECH-090/TECH-090_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (8 findings)._ |
+  > The workspace database is opened three ways with different pragmas and pooling; `sw serve`
+  > skips the bootstrap and migrations the CLI runs; config owns the engine; dead write-queue
+  > code remains.
+
 * **`TECH-005` 🟢: Database Table Prefix Harmonization**
   > [Description](../features/topic_07_technical_debt/TECH-005/TECH-005_design.md) | _(2026-07-15)_ | Database tables were unprefixed, so separate bounded contexts collided in one SQLite file.
   > **DELIVERED:** all tables prefixed; SF-03 landed 2026-08-11 (`4ebb89cf`) covering the six raw-sqlite3 tables with a zero-data-loss migration path.
 
 ## Context Loading & RunContext Anti-Patterns
+* **`TECH-077` 🔴: Each Entry Point Builds Its Run by Hand, and the API Gets Less**
+  > [Description](../features/topic_07_technical_debt/TECH-077/TECH-077_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (16 findings)._ |
+  > About ten entry points build a run's context by hand and each leaves different parts out.
+
 * **`TECH-065` 🟢: Parameterised Annotations Never Match a Framework Schema**
   > [Description](../features/topic_07_technical_debt/TECH-065/TECH-065_design.md) | _Status: STUB. Origin: found 2026-08-18 writing the `INT-US-05` P-4 test._ |
   > Parsers extract `GetMapping("/orders/{id}")` and `get("/orders")`; every schema key is a bare name. So the argument-less
@@ -142,6 +237,18 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-076` 🔴: Project Settings Are Read Two Ways, and One Fails Open**
+  > [Description](../features/topic_07_technical_debt/TECH-076/TECH-076_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > `specweaver.toml` has a strict reader and a lenient one.
+
+* **`TECH-075` 🔴: Paths From Outside Can Leave the Project**
+  > [Description](../features/topic_07_technical_debt/TECH-075/TECH-075_design.md) | _Status:
+  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > A path given by an API client or an agent is not always kept inside the project: the
+  > pipeline run's spec, the protocol tool and most QA intents accept any path, and the guard
+  > that exists is written five ways.
+
 * **`TECH-074` 🟢: The Cost Ledger Prices Cached Input at the Full Price**
   > [Description](../features/topic_07_technical_debt/TECH-074/TECH-074_design.md) | _Status: closed by the user 2026-10-18 (`ad09c4e9`)._
   > _Origin: 2026-10-17, [prompt caching](../../analysis/prompt_caching_2026-10-17.md)._ |

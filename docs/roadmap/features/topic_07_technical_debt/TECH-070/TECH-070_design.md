@@ -42,6 +42,26 @@ milliseconds rather than a full pass over the repository.
   ahead of it.**
 - `B-VAL-07` and the blast-radius seam owners read the graph less often and are not blocked.
 
+## Folded in: one project walk, and reading never writes
+
+The 2026-10-22 architecture audit found that the graph build reads every file with no exclusions,
+`.venv` and `node_modules` included, and that building the topology writes `context.yaml` files.
+The user folded these findings into this ticket rather than minting one `[agreed 2026-10-22]`: an
+incremental build needs one project walk with one skip list first. Filing-day evidence; re-measure
+before planning.
+
+- **Fix first #7** — Building the topology writes `context.yaml` files into every source folder by
+  default; the knowledge-graph build reads every file with no exclusions, `.venv` and `node_modules`
+  included. Where: `assurance/graph/topology.py:203,300`, `graph/core/builder/orchestrator.py:158`.
+- **AG-4** — A "pure-logic" constructor walks the tree, writes `context.yaml` files and hashes every
+  boundary, by default. Where: `assurance/graph/topology.py:203,216,269,273,302`.
+- **AG-7** — Eight file walkers, each with its own skip list; one with none (ingests `.venv`).
+  Where: `orchestrator.py:158`, `topology.py:302`, `recency.py:131`, `lineage/scanner.py:21`,
+  `discovery.py:118`, `hasher.py:79`, `scope_detector.py:76`, `analyzers/factory.py:229`.
+- **AG-20** — Two hashers with colliding names; the graph's gitignore helper is wrong for sub-folder
+  projects. Where: `graph/core/engine/hashing.py:7`, `assurance/graph/hasher.py:61`, two
+  `_ensure_gitignore`.
+
 ## Candidate Approaches (not yet designed)
 
 1. **Hash-gated skip.** `get_all_file_hashes` already returns a `clone_hash` per file. Compare it

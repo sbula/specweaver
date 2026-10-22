@@ -148,6 +148,9 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 
 ## Still missing
 
+- **The 2026-10-22 architecture audit is 17 `🔴` STUB tickets, `TECH-075`..`TECH-091`** `[agreed 2026-10-22]`:
+  one broken promise each, findings listed in each design; the project-walk findings joined `TECH-070`.
+  `TECH-075` (paths) and `TECH-076` (settings fail open) are security holes.
 - **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose
   path never runs in production. Which side is wrong is decided per finding, with the user.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when
