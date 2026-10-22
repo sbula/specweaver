@@ -1,8 +1,10 @@
 ---
 name: specweaver-dev
-description: "TDD development skill for implementing features. Load context → read spec → break down
-→ red/green/refactor → pre-commit → commit (per commit boundary). Use when the user asks to
-implement, develop, code, or build a sub-feature from its implementation plan."
+description: "Implements one sub-feature test-first from its approved implementation plan: load context,
+break into tasks, red → green → refactor, mutate, then pre-commit and commit at each commit boundary.
+Use when the user says 'dev <impl_plan_path>', 'implement <feature_id> SF-<N>', 'develop
+<feature_id>', 'start coding <feature_id>' or 'build <impl_plan_path>'."
+argument-hint: "<impl_plan_path> | <feature_id> SF-<N>"
 ---
 
 # Development Skill (TDD)
@@ -18,78 +20,33 @@ Trigger: "dev <impl_plan_path>", "implement <feature_id> SF-<N>",
 > 1. **NO guessing or assuming.** If anything is unclear, STOP and ask the user (HITL).
 > 2. **NO single-shot implementations.** Break work into small, manageable tasks.
 > 3. **TDD: red tests first.** Every task starts with a failing test.
-> 4. **Pre-commit gate before EVERY commit.** Run the pre-commit skill — no shortcuts.
+> 4. **Pre-commit gate before EVERY commit.** Invoke the `specweaver-pre-commit` skill — no shortcuts.
 > 5. **Always re-read a file before editing it.** Never rely on memory.
-> 6. **NEVER skip a commit boundary.** When `task.md` calls for a commit, you MUST STOP and wait for the user (HITL). Do NOT proceed to the next phase.
+> 6. **NEVER skip a commit boundary.** When `.tmp/task.md` calls for a commit, run the full gate and
+>    commit before the next batch. Commit on your own; stop for the user only at the boundary that
+>    closes the sub-feature `[agreed 2026-08-15]`.
 
 > [!IMPORTANT]
 > **AGENT DIRECTIVE FOR TDD:**
 > DO NOT prompt or inform the user every time you transition between Red, Green, or Refactor phases.
 > Execute the phases silently and continuously.
-> STOP only at the defined HITL gates: red-flag check (Phase 1), task list review (Phase 2),
-> and the per-commit cycle gates (Phase 5).
+> STOP only at: the red-flag check (Phase 1) when it finds a gap, a §2 trigger
+> (`PRINCIPLES.md`), and the commit boundary that closes the sub-feature (Phase 4–6). Raise
+> anything that changes a decision at once; do not bank findings until the end.
 
 > [!CAUTION]
-> **Integration is implicit in the (sub)story. There is no integration story.** `ADR-005` retires
-> the `INT-US` family outright — `INT-US-NN`, `INT-US-NN-SFxx` and `-MIG` alike. Never mint one,
-> never reference one, not as a dependency and not as a tombstone.
->
-> **A test that cannot go RED proves nothing, and RED is only available before the code exists.**
-> A test written after the code is green on its first run: it asserts the present state instead of
-> a contract the code must satisfy. So the test comes first, and it gets the chance to fail.
->
-> **A (sub)story owns every test it needs, including the ones that span features.** If one feature
-> alone cannot prove it, the spanning test is still part of this (sub)story. It is not deferred, and
-> it is not handed to a separate entry.
->
-> **When a related (sub)story is unbuilt, write the test now anyway** and commit it as
-> `pytest.mark.xfail(strict=True)` naming the blocker. It fails today for the right reason.
-> `strict=True` makes an unexpected pass a failure, so the suite says so out loud the moment the
-> last related (sub)story lands. `check_xfail_blockers.py` fails any such marker whose named
-> blocker has become `✅`, so it cannot rot into a permanent exemption.
->
-> **The (sub)story is finished when those tests are green** — not when its own feature compiles.
->
-> **What integration actually is.** A feature's (N)FRs are not all local. Any FR whose satisfaction
-> needs something from outside — a call into another module, data handed across a boundary, a format
-> or schema both sides must agree on, an ordering, a shared file — is a **seam FR**: a hidden
-> contract with another feature. Those, and only those, are what a spanning test proves. Name them
-> as seams when you write the FR table, because a seam FR proven by a unit test with the other side
-> mocked proves the mock, not the contract. `TECH-041` is one instance: `C-VAL-03` is `✅` and its
-> DAL override is proven link by link, never as a chain.
->
-> **A missing spanning test under an already-finished (sub)story is a defect in delivered work**, so
-> it becomes a `TECH` ticket that owns the test and writes it red first. That is the rule for every
-> other defect in closed code. Integration used to be the one carve-out, and the carve-out is what
-> grew a second registry: measured 2026-08-19, 31 of 36 open contract rows were tracking work that
-> another ticket already owned.
+> **Integration is implicit in the (sub)story (`ADR-005`). Never mint or reference an `INT-US`.**
+> A test that cannot go RED proves nothing, so the test comes first. The (sub)story owns every test
+> it needs, spanning ones included. A related (sub)story unbuilt → write the test now as
+> `pytest.mark.xfail(strict=True, reason="blocked on <CAPABILITY-ID> ...")`; the blocker must be
+> named, and `check_xfail_blockers.py` fails a marker whose blocker has shipped or is unnamed.
+> A **seam FR** is proven at integration or
+> e2e tier, never by a unit test with the other side mocked. A missing spanning test under a
+> finished (sub)story → a `TECH` ticket. Full rules: [references/integration.md](references/integration.md).
 
-> [!CAUTION]
-> **A cross-feature test is written when its interface is defined, not when the code lands**
-> (`ADR-004` clause 4). Where the implementation is absent, commit it as
-> `pytest.mark.xfail(strict=True, reason="blocked on <CAPABILITY-ID> ...")` — the blocker **must**
-> be named.
->
-> This is the whole point of writing it early: a test authored after the code is green on its first
-> run and asserts the present state rather than a contract. `strict=True` turns the eventual
-> unexpected pass into a failure, which is the signal that the marker is now stale and the test
-> stands on its own.
->
-> `check_xfail_blockers.py` fails any strict xfail whose named blocker has shipped, and any whose
-> reason names no blocker at all — an unnamed one can never be judged stale and becomes a permanent
-> exemption.
-
-## MCP Tool Guidance
-
-When available, prefer these MCP tools over grep/file-reading:
-
-- **Before modifying code:** Use `codebase-memory` → `search_graph` to find the exact definition and all references of the symbol you're changing.
-- **Before adding imports:** Use `codebase-memory` → `trace_path` to verify the import respects layer boundaries (tools→atoms→commons).
-- **When using library APIs:** Use `context7` → `get-library-docs` for correct Pydantic v2, SQLAlchemy async, pytest, or Typer syntax.
-- **Fall back to grep/file-reading** if MCP tools are unavailable.
+Why each rule exists: [references/lessons.md](references/lessons.md).
 
 ## Phase 1: Load Context & Read the Spec
-
 
 **1.0. Load context (mandatory — before anything else):**
 
@@ -102,47 +59,18 @@ c. Read the Design Document in full. Focus on:
 d. **Pre-condition checks — HARD STOP if any fail:**
    - **Prerequisites green IN CODE:** run `python scripts/check_story_preconditions.py <STORY-ID>`.
      A non-zero exit is a hard block — do not implement, do not waive it, do not ask for a waiver.
-     Document state lies: INT-US-21's three prerequisites were all marked `✅` and all three were
-     materially broken (handlers never registered; a field documented as hook-populated with zero
-     writes in `src/`; a required enum that cannot be YAML-serialized). This checks the evidence,
-     not the checkbox.
+     Document state lies; this checks the evidence, not the checkbox.
    - Design Document `Status: APPROVED`? If not → trigger the design skill first.
    - This sub-feature's `Impl Plan` is `✅` in the tracker? If not → trigger the implementation-plan skill first.
    - All sub-features in `depends_on` have `Committed ✅`? If not → tell the user which dep is incomplete.
 
 > [!CAUTION]
-> **TEST TIER MUST MATCH THE CLAIM (`TECH-017`, `ADR-003`).** Tier is chosen per requirement, not
-> per story type: behaviour of this module alone → **unit**; a **seam** (calling, reading or
-> persisting through another module) → **integration**; a user-visible journey across capabilities →
-> **e2e**.
->
-> `ADR-003` folded integration into the story that creates the seam, so if your commit boundary
-> touches another module's surface, **this boundary owns that integration test** — no later story
-> will write it. Where step *n*'s interface depends on step *n−1*'s output, write the seam test
-> BETWEEN the two: that is the only moment it can fail for the right reason. Note the red and its
-> reason in the walkthrough.
->
-> **This binds the e2e too.** A journey test written once the journey already works cannot fail for
-> the right reason either, so the e2e is authored in **3.1 Red like any other test** — before the
-> wiring it exercises — and turned green inside the same boundary. The tier profile in
-> `scripts/tests.py` decides which tiers **run** at this commit state; it never decides when a test
-> is **written**, and "the profile runs e2e later" is not a reason to author it later.
->
-> `ADR-003`'s worked example is `C-EXEC-06` FR-8: an e2e whose **pipeline** step 1 generates a file
-> a later **pipeline** step consumes. Note which "steps" those are — they are steps inside the test,
-> not commit boundaries. Multi-step is what makes the journey falsifiable; it does not license a
-> test that stays red past its own commit.
->
-> **If the journey genuinely cannot go green inside one boundary**, that is a finding about the
-> boundaries, not a red to carry: the plan drew them so a user-visible journey spans several. Raise
-> it — redraw the boundary, or descope the e2e to the journey that IS complete here. Do not commit
-> a red, and do not `skip`/`xfail` it to green: a silent skip is the failure mode
-> `check_proof_tier.py` and `_silent_skips.py` exist to catch.
->
-> Writing many unit tests where a seam was expected is a **diagnostic**: the capability you build on
-> shipped incomplete, and that is a finding against *it*, not tests to adopt under your own name.
-> Before Phase 2, check whether a CLI surface already works well enough for an e2e: an explicit spec
-> path often works long before bare-name resolution does.
+> **TEST TIER MUST MATCH THE CLAIM (`TECH-017`, `ADR-003`).** Behaviour of this module alone →
+> **unit**; a **seam** (calling, reading or persisting through another module) → **integration**;
+> a user-visible journey across capabilities → **e2e**. This boundary owns the integration test for
+> any surface it touches, and the e2e is written in 3.1 Red like any other test. Never commit a red,
+> and never `skip`/`xfail` one to green. Read [references/test-tier.md](references/test-tier.md)
+> before Phase 2.
 
 **1.0e. MANDATORY**: Read ALL relevant files in `docs/dev_guides/` and `docs/user_guides/`.
        These contain established patterns, conventions, and extension points.
@@ -176,15 +104,15 @@ d. **Pre-condition checks — HARD STOP if any fail:**
 
 2.2. Order tasks by dependency — implement foundations first, consumers last.
 
-2.3. Write the task list to `task.md`. Each task should have:
+2.3. Write the task list to `.tmp/task.md`. Each task should have:
      - A clear, one-line description
      - The source file(s) to create/modify
      - The test file(s) to create/modify
 
 2.4. **Red/Blue Team Analysis**: Execute the `specweaver-red-blue-review` skill against the task list to look for missing edge cases, architectural gaps, or implementation flaws.
 
-2.5. Present the task list and the Red/Blue review findings to the user for review (HITL).
-     Wait for approval before proceeding.
+2.5. Fix what the review finds. Report the task list and the findings to the user in a few lines
+     and continue: the approved plan already covers it. Stop only if a finding changes a decision.
 
 ## Phase 3: TDD Cycle (repeat for each task)
 
@@ -195,7 +123,7 @@ For each task in the breakdown:
 > [!CAUTION]
 > **STRICT SEQUENCING MANDATE:** You MUST write the test file(s) in `tests/` and run `pytest` to
 > verify they fail (Red) **BEFORE** you are allowed to write or modify ANY implementation code in
-> `src/`. 
+> `src/`.
 > You are permitted to batch this: you may write 20 failing test cases at once. But you MUST run
 > them and confirm they fail before moving to Phase 3.2. Generating `src/` implementation code
 > before proving the tests fail is a severe process violation.
@@ -206,28 +134,17 @@ For each task in the breakdown:
 > 2. **Boundary/Edge Cases:** Empty arrays, massive files, max constraints, cyclic graphs.
 > 3. **Graceful Degradation:** Dependencies failing, network timeouts, unparseable ASTs.
 > 4. **Hostile/Wrong Input:** Path traversal strings, completely wrong types, `None` injections.
-> 
+>
 > You MUST write at least one test story for EACH of these 4 buckets. If a bucket is mathematically impossible for the current feature, explicitly justify why.
 
 > [!CAUTION]
-> **THE MATRIX VARIES INPUTS. IT NEVER ASKS WHETHER THE UNIT IS USED ALONE.** Four defects on
-> 2026-08-16 shared one shape, and every one of them had green tests in all four buckets throughout:
->
-> | | well covered | unreached |
-> |---|---|---|
-> | `TECH-054` | resume persistence — 14 tests, three tiers | how a run is *found* to resume |
-> | `TECH-055` | the baseline comparison — 11 unit tests | that the fixture is `autouse` at all |
-> | `TECH-056` | `gate_verdict` **and** `record_run`, separately | their composition — the gate could never block |
-> | `TECH-058` | both whole-suite runners | that the two agree — one had no `-n auto` |
->
-> So ask two more questions before you stop writing tests:
+> **THE MATRIX VARIES INPUTS. IT NEVER ASKS WHETHER THE UNIT IS USED ALONE.** So ask two more
+> questions before you stop writing tests:
 >
 > 1. **Is this only ever used in sequence with something else?** Then a test of each end is not a
->    test of the pair. `TECH-056`'s two functions each passed every assertion they had, while the
->    composition they exist for could not work — because each unit test built the state it wanted
->    instead of letting the other half build it.
-> 2. **Does anything else in the repo do this same job?** Then assert that they **agree**. The
->    asymmetry in `TECH-058` was plainly visible in both files and in neither test.
+>    test of the pair: each unit test builds the state it wants instead of letting the other half
+>    build it.
+> 2. **Does anything else in the repo do this same job?** Then assert that they **agree**.
 >
 > Neither question is answered by a bucket, because each half genuinely satisfies its own bucket.
 > Where the answer to either is yes, that test is **integration** even when both sides are pure —
@@ -254,34 +171,10 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 ```
 
 > [!IMPORTANT]
-> **Two shared test helpers exist because their absence caused real, cited-proof defects. Use them
-> rather than re-implementing either.**
->
-> **`tests/rendering.py` — `shows(output, needle)` for any assertion on CLI output.** Rich
-> soft-wraps to the terminal width, so `result.output` can contain `orp\nhan.py`. A raw `in` check
-> then passes or fails on `COLUMNS`, which nothing in the test declares and CI does not hold
-> constant. `TECH-017` found this **twice, both times in the cited proof of a delivered contract**,
-> and both were invisible until the file was run on its own — the full suite stayed green because
-> xdist sets a different width. `shows()` squashes whitespace on **both** sides. Presence checks
-> only: never assert layout or ordering with it.
->
-> **Setting `COLUMNS` at invoke time does not widen anything.** Rich TRUNCATES table cells to the
-> terminal width (`fake-journey-model` renders as `fake-j…`), and the CLI's `Console` is built at
-> module **import** (`interfaces/cli/_core.py:37`) — so `runner.invoke(..., env={"COLUMNS": ...})`
-> is already too late. `INT-US-16` asserted a model name that way: green run alone, red under
-> `-n auto`, where xdist's import-time width is narrower. **Assert something width cannot change** —
-> a parsed number, a row count — rather than a string that might be truncated. And note the mirror
-> image: asserting a truncated string is ABSENT passes for free, which is how the same commit's
-> isolation test was vacuous until it counted rows instead.
->
-> **`tests/scripted_llm.py` — `doubled_llm()` / `scripted_world()` when a test needs a doubled LLM.**
-> Every model call takes one path, `RoleResolver`, so these patch that one class: commands, the
-> router and the REST API are all covered. `doubled_llm` also stands in for the `[brake]` values, so
-> a test's settings file need not spell them out. Never add a second way to build an adapter — two paths
-> is how `INT-US-02`'s e2e once made a live API call while reading as mocked. `FixedRouter` gives a
-> hand-built `RunContext` its router; `TEST_CONFIG` gives a hand-built workflow class its settings.
-> Import them explicitly rather than hiding them in a fixture: the import line is the only place a
-> reader sees that a test doubles the model. `tests/fake_http.py` fakes HTTP for SDKs on `httpx2`.
+> **Two shared test helpers exist; use them rather than re-implementing either.**
+> `tests/rendering.py` — `shows(output, needle)` for any assertion on CLI output.
+> `tests/scripted_llm.py` — `doubled_llm()` / `scripted_world()` when a test needs a doubled LLM.
+> Read [references/test-helpers.md](references/test-helpers.md) before using either.
 
 ### 3.2 Green — Implement the Minimum Code
 
@@ -295,49 +188,13 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 
 ### 3.2a Debugging — When Tests Fail Unexpectedly
 
-> [!NOTE]
-> **Interpreter + parallelism.** Every command in this skill uses a bare `python` for brevity, but
-> run them with the project venv (`.venv/Scripts/python.exe` on Windows, `.venv/bin/python` on
-> Linux): the system interpreter imports `specweaver` fine but has **no `pytest-xdist`**, so
-> `-n auto` silently does nothing there and the suite runs serial.
->
-> The single-file commands below are deliberately serial — measured on 16 cores, one module is
-> 12.5s serial vs 15.2s with `-n auto`, because worker startup costs more than it saves. Add
-> `-n auto` only once you are running a whole tier or the full suite (`tests/unit` 5m02 -> 1m37;
-> full suite ~13m -> 4m26). `scripts/tests.py` already passes `-n auto`, so the commit-boundary
-> gate in Phase 4/5 needs nothing extra.
-
-
-When a test fails and you need to debug, run targeted tests autonomously.
-All these commands auto-run — no human interaction needed:
-```
-# Single test by node ID
-python -m pytest tests/unit/test_foo.py::TestClass::test_method -v --tb=long
-
-# Keyword filter
-python -m pytest tests/unit/test_foo.py -k "test_specific_case" -v --tb=long
-
-# All tests in a specific file with full traceback
-python -m pytest tests/unit/test_foo.py -v --tb=long
-
-# Re-run only previously failed tests
-python -m pytest --lf -v --tb=long
-
-# Run test with debug logging enabled
-python -m pytest tests/unit/test_foo.py -s --log-cli-level=DEBUG
-
-# Run arbitrary python debug scripts via file (must be safe)
-# write your script to .tmp/debug.py then run:
-python .tmp/debug.py
-```
-
+Run targeted tests autonomously; the commands are in
+[references/test-helpers.md](references/test-helpers.md).
 Debug loop: read error → re-read source → fix → re-run failing test → repeat until green.
 
 ### 3.2b Mutate — prove the test can still fail
 
-Green means the test passes. It does **not** mean the test would notice the behaviour going away,
-and a test written after the code has never failed for the right reason.
-
+Green means the test passes. It does **not** mean the test would notice the behaviour going away.
 For each FR this boundary claims to prove, neutralise the line that carries it and check the suite
 objects:
 
@@ -345,71 +202,17 @@ objects:
 python scripts/_mutate.py --file src/... --old '<exact anchor>' --new '<neutralised>'
 ```
 
-It runs in a detached worktree, so your tree is untouched and you can keep working; a targeted run
-is seconds, the whole suite about a minute. Three answers matter:
-
-| Result | Meaning |
-|---|---|
-| `KILLED`, several | protected |
-| `KILLED`, **exactly one** | a single point of protection — worth a note in the walkthrough |
-| `SURVIVED` | the test does not test this. Fix it now, while you still have the context |
-
-> [!CAUTION]
-> **Run it on the claims you are about to call proven, not on the ones you already doubt.**
-> `TECH-017` ran six of these by hand and **four caught vacuous assertions** — a guard that passed
-> with a bypass planted, a credential check that passed un-isolated, a repo root that globbed a
-> directory which does not exist. Every one was written by someone who believed the claim.
->
-> A *surviving* mutant is not automatically a gap: an **equivalent** mutant, one that does not change
-> observable behaviour, survives for a reason that is not missing coverage. Confirm the edit changes
-> something before acting on it.
-
-For several claims at once — an audit, or a boundary with many FRs — use
-`scripts/_mutate_campaign.py --campaign <json>`, which reuses one sandbox and writes a report to
-`.tmp/` (gitignored). Nothing it produces is committed: a report is an input to your decision, never
-a record of one.
-
-> [!IMPORTANT]
-> **A probe answers today's question; a CAMPAIGN keeps answering it.** The two above are
-> throwaway — they tell you whether a claim holds right now and leave no record. When the claim is
-> one you are about to call **proven**, write it into the durable corpus instead:
-> `docs/roadmap/features/<topic>/<ID>/<ID>_mutants.json`, one campaign per (N)FR, scoped to the
-> tests that cover it.
->
-> The nightly session then re-asks it forever, and `symbol_sha` drift reports `STALE` when the code
-> a claim rested on moves. That is the difference between knowing a test was strong in August and
-> knowing it is strong today.
->
-> `python scripts/mutation.py --corpus <path> --no-baseline` runs one file while you write it.
-> Authoring, dispositions and the morning gate: `docs/dev_guides/writing_mutation_campaigns.md`.
+`SURVIVED` means the test does not test this: fix it now, while you still have the context. Run it
+on the claims you are about to call proven, not on the ones you already doubt. When the claim is
+one you are about to call **proven**, write it into the durable corpus
+`docs/roadmap/features/<topic>/<ID>/<ID>_mutants.json`. Results, campaigns and the corpus:
+[references/proving.md](references/proving.md).
 
 ### 3.2c Backfill on contact — a capability you touch gains the FRs it never had
 
-**Measured 2026-08-16 (`TECH-053`): of 62 capabilities marked `✅`, exactly ONE passes its own FR
-ledger.** Nineteen have no design document at all — eight from the "Step N" bootstrap, eleven from
-the "Feature 3.x" era whose implementation plans carry real design reasoning and **zero FRs between
-them**. They are invisible to `check_fr_sweep.py` by construction: no design means no FRs to be
-uncited, so they score zero and read as perfect.
-
-**So when a commit boundary touches one of them, it gives it FRs.** Not as a project — writing
-nineteen designs at once manufactures nineteen claims nobody can falsify, which is worse than the
-silence it replaces. On contact, you already have the context and a change to test against, which
-is the whole reason it is cheap here and expensive as an audit.
-
-Two rules make the difference between a requirement and a paraphrase:
-
-1. **Write it from why the capability exists, not from what the code does.** An FR read off the
-   implementation restates it, and a restatement can never fail.
-2. **Kill a mutant with it before believing it.** Neutralise the line the new FR claims to cover
-   (3.2b). If nothing dies, you transcribed rather than constrained — delete the FR and write a
-   different one. This is the only mechanical way to tell the two apart, and it caught two vacuous
-   tests in `TECH-051`/`TECH-053` written by someone who believed them.
-
-**Where the code predates any recorded intent, a journey proof beats a reconstructed design.**
-`D-FLOW-01`'s entire written record is *"SQLite Pipeline Runner & State Persistence."* There is
-nothing to backfill *from* except the code, so a spec would describe the implementation with a
-straight face. One falsifiable e2e — *a pipeline runs and its state survives a resume* — declares no
-FRs, invents no history, and can fail. Prefer it.
+When a commit boundary touches a delivered capability with no design or no FRs, it gives it FRs.
+Not as a project. Write each FR from why the capability exists, and kill a mutant with it before
+believing it. Rules and the journey-proof alternative: [references/proving.md](references/proving.md).
 
 ### 3.3 Refactor (if needed)
 
@@ -421,29 +224,25 @@ python -m pytest tests/unit/<relevant_test_file>.py -v --tb=short
 python scripts/quality.py quick
 ```
 
-`quick` is the sub-second subset (lint, cognitive complexity, file sizes, conventions and the
-test-source guards, diff-scoped) and is meant to be run as often as you like. It is deliberately
-NOT the commit gate: `python scripts/quality.py cb` runs at the commit boundary, adds mypy, tach,
-the suppression ratchet, class health and cycle detection, and widens every check to the whole
-source tree. Never treat a green `quick` as permission to commit.
+A green `quick` is never permission to commit: [references/gates.md](references/gates.md).
 
 ### 3.4 Update task.md
 
-- Mark the completed task as `[x]`.
+- Mark the completed task as `[x]` in `.tmp/task.md`.
 
 ## Phase 4 + 5 + 6: Per-Commit Quality Gate (repeat for each commit boundary)
 
-The implementation plan defines one or more commit boundaries in `task.md`
+The implementation plan defines one or more commit boundaries in `.tmp/task.md`
 (e.g., "commit after tasks 1–3", "commit after tasks 4–6").
 **Each boundary triggers a full quality + commit cycle before the next task batch begins.**
 
 > [!CAUTION]
-> **HARD STOP RULE:** There is NO single pre-commit run at the end of the dev skill.
-> Every commit boundary gets its own pre-commit + HITL gate.
-> 3 commit boundaries = 3 pre-commit runs = 3 HITL commit stops.
+> **HARD RULE:** There is NO single pre-commit run at the end of the dev skill.
+> Every commit boundary gets its own pre-commit run and its own commit.
+> 3 commit boundaries = 3 pre-commit runs = 3 commits.
 > Do NOT batch commits. Do NOT skip the pre-commit for intermediate commits.
 
-For **each commit boundary** in `task.md`, in order:
+For **each commit boundary** in `.tmp/task.md`, in order:
 
 **Step A — Complete the task batch (autonomous):**
 - Run all TDD tasks in this batch to completion (red → green → refactor).
@@ -456,37 +255,37 @@ python scripts/tests.py cb <STORY-ID>
 - **DO NOT** hand-pick which tiers or paths to run. The gate decides from the story's type and
   DAL, and `python scripts/tests.py matrix` shows every profile. `--also`/`--all` may widen the
   run; nothing narrows it.
-- **This is deliberately narrower than a full-suite sweep at every commit boundary.** A capability
-  story runs unit tests for the packages it touched here, and the full sweep across all tiers
-  happens at `sf` and `feature`. The trade is bought with the scoping, not skipped: a cross-module
-  regression surfaces at the sub-feature gate rather than immediately. If a batch touched a
-  widely-depended-on module and you want the sweep now, `--all` is the honest way to ask for it.
+- The `cb` scope is narrower than a full sweep on purpose; why, and how to widen it:
+  [references/gates.md](references/gates.md).
 - A tier reporting `selected NO tests` is a **failure**, not a pass — it means you changed source
   nothing mirrors.
 - Fix any regressions before proceeding to Step B.
 
-**Step B — Pre-Commit Quality Gate (autonomous, gates may fire):**
-- Execute the full pre-commit skill (all 7 phases). This is MANDATORY.
-- Read `.agents/skills/specweaver-pre-commit/SKILL.md` and follow all phases.
-- **CRITICAL**: You MUST update `task.md` line-by-line as you execute EACH phase of the pre-commit skill.
-- **CRITICAL**: Do NOT act autonomously for Phase 4. Wait for user input from the Phase 3 HITL gate, and then you MUST implement the tests they approved/requested in Phase 4.
-- **STOP at Phase 1 HITL gate** if architectural violations are found.
-- **STOP at Phase 3 HITL gate** (test gap analysis — always fires).
-- Complete Phase 4 – 7 step-by-step after the user responds, updating `task.md` at every single step.
+**Step B — Pre-Commit Quality Gate (autonomous):**
+- Invoke the `specweaver-pre-commit` skill and run all its phases. This is MANDATORY, and it is
+  re-invoked at every boundary: context is not execution.
+- **CRITICAL**: You MUST update `.tmp/task.md` line-by-line as you execute EACH phase of the pre-commit skill.
+- Every check runs; none is skipped. Implement every test the gap analysis (Phases 2–3) calls for
+  before Phase 4.
+- Stop for the user only if a check needs a decision you cannot take.
 
-**Step C — Commit Boundary (HITL — mandatory hard stop):**
+**Step C — Commit Boundary:**
+- **Interior boundary:** commit (`<type>(<scope>): <description>`), then report in a few lines:
+  the tasks it holds, the test count, what the gate found. Proceed to the next task batch (Step A).
+  Never start the next batch on a red gate.
+- **The boundary that closes the sub-feature (HITL — mandatory hard stop):**
 
 > [!CAUTION]
-> **HARD STOP REQUIRED:** You MUST NOT proceed to the next task batch autonomously.
+> **HARD STOP REQUIRED:** You MUST NOT declare the sub-feature delivered autonomously.
 
-- **STOP execution.**
-- Inform the user:
-  - "Commit boundary N of M is ready. Pre-commit passed."
-  - Which tasks are included in this commit
-  - Current test count
-- **WAIT** for the user to commit or give explicit permission to proceed.
-- Do absolutely nothing else until they respond.
-- On commit confirmed: update `task.md`. Proceed to next task batch (Step A).
+  - Run the full gate, stage the boundary, then **STOP execution** before committing.
+  - Inform the user:
+    - "Commit boundary N of M is ready. Pre-commit passed."
+    - Which tasks are included in this commit
+    - Current test count
+  - **WAIT** for the user's acceptance.
+  - Do absolutely nothing else until they respond.
+  - On acceptance: commit, then update `.tmp/task.md`.
 
 **After the final commit boundary:**
 - Update the Progress Tracker in the Design Document:
@@ -497,6 +296,7 @@ python scripts/tests.py cb <STORY-ID>
   `specweaver-feature`** (the closure gate: `check_fr_coverage.py` + the full suite) before writing
   `Status: COMPLETE`. Do NOT declare a story finished from inside this skill without it; running
   `dev` directly is otherwise a way to close a story having never checked the design's FR ledger.
+- End every report with `Push now: YES/NO`. The user pushes, once per feature.
 
 ---
 
@@ -513,6 +313,6 @@ python scripts/tests.py cb <STORY-ID>
 | **Architecture** | Check imports respect layer boundaries. No cross-layer violations. |
 | **Coverage** | Target 70-90% test coverage. |
 | **Pre-commit gate** | Mandatory before every commit. No exceptions. |
-| **Commit Boundaries** | Hard stop at every commit. Wait for human. Do not bypass. |
+| **Commit Boundaries** | Gate and commit at every boundary. Stop for the human only at the one that closes the sub-feature. |
 | **Tests run freely** | All test/lint commands run autonomously. No exceptions. |
 | **Temporary Files** | Use the project's `.tmp` directory for all temporary scripts, debug files, or scratchpads. |
