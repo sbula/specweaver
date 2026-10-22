@@ -2,7 +2,7 @@
 
 - **Feature ID**: D-INTL-08
 - **Epic**: Topic 04 (Intelligence)
-- **Status**: APPROVED by the user 2026-10-20 — designed with them the same day (Q1–Q15)
+- **Status**: ✅ Finished — signed off by the user 2026-10-22 (designed with them 2026-10-20, Q1–Q15)
 - **Absorbs**: `TECH-073` (a task's target files named for Python only) `[agreed 2026-10-20]`
 
 | | |
@@ -207,5 +207,5 @@ SF-01, then SF-02 and SF-03, then SF-04, then SF-05.
 
 ## Session Handoff
 
-**Now**: design approved 2026-10-20.
-**Next**: the user runs `python scripts/toolchain.py` once (SF-05 Q3) and reinstalls the nightly units (`python scripts/mutation.py --install-timer`); failures are fixed, then the sign-off. SF-05 committed 2026-10-21.
+**Now**: signed off 2026-10-22.
+**Next**: `D-INTL-09` (the code step through the structure tools) builds on the task files.

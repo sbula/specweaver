@@ -679,6 +679,25 @@
           "symbol_sha": "sha256:b64e52d74646628439fbb0620b60fa41e8724249d963defac4830e92373634e9"
         }
       ]
+    },
+    {
+      "requirement": "NFR-2",
+      "title": "Host mode only",
+      "scope": [
+        "tests/unit/sandbox/qa_runner/core/qa_runner/test_qa_runner_factory.py"
+      ],
+      "mutants": [
+        {
+          "id": "container-runs-silently",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/factory.py",
+          "symbol": "resolve_runner",
+          "old": "    if chosen != \"python\":\n        _warn_if_container_non_python(executor, chosen)\n",
+          "new": "    pass\n",
+          "breaks": "a non-Python runner in the container gives no warning",
+          "symbol_sha": "sha256:2772389639fcfc83ac75849a5e4386121a9a589be8e243ec2437f704794feb01"
+        }
+      ]
     }
   ]
 }

@@ -138,8 +138,8 @@ An item only enters the Focus Points if it satisfies one of these rules:
     *   `✅` **D-VAL-05:** Code Validation Rules (C01-C08, Type hints, Coverage)
     *   `✅` **D-VAL-01:** QA Runner Tool & Lint-Fix Reflection Loop
 *   **Sub-Story Add-Ons:**
-    *   🟡 **Multi-Language Test Support:**
-        *   `[ ]` **D-INTL-08:** Polyglot Implementation Loop
+    *   🟢 **Multi-Language Test Support:**
+        *   `✅` **D-INTL-08:** Polyglot Implementation Loop
         *   `✅` **D-VAL-03:** Polyglot QA Runner
     *   🟡 **Structured Code Changes** *(agents with no raw file access)*:
         *   `✅` **D-SENS-06:** Structured Code Editing for Agents
@@ -621,5 +621,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-070:** [Every Graph Build Re-Ingests Every File](features/topic_07_technical_debt/TECH-070/TECH-070_design.md)
     *   `🔴` **TECH-071:** [Docs and Code Disagree in 60 Places](features/topic_07_technical_debt/TECH-071/TECH-071_design.md)
     *   `🟢` **TECH-072:** [Two Agent Tools Skip the Sandbox's Own Guards](features/topic_07_technical_debt/TECH-072/TECH-072_design.md)
-    *   `🔴` **TECH-073:** [A Task's Target Files Are Named for Python Only](features/topic_07_technical_debt/TECH-073/TECH-073_design.md)
+    *   `🟢` **TECH-073:** [A Task's Target Files Are Named for Python Only](features/topic_07_technical_debt/TECH-073/TECH-073_design.md)
     *   `🟢` **TECH-074:** [The Cost Ledger Prices Cached Input at the Full Price](features/topic_07_technical_debt/TECH-074/TECH-074_design.md)

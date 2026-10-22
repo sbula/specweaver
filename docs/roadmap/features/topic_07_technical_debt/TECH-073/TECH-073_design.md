@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-073
 - **Epic**: Topic 07 (Technical Debt)
-- **Status**: ABSORBED by `D-INTL-08` `[agreed 2026-10-20]` — its stem rule and its one
+- **Status**: CLOSED 2026-10-22 with `D-INTL-08` ✅ — ABSORBED by it `[agreed 2026-10-20]` — its stem rule and its one
   derivation of a task's files are `D-INTL-08` FR-1 and FR-3
   ([design](../../topic_04_intelligence/D-INTL-08/D-INTL-08_design.md)); it closes with SF-01
 - **Origin**: 2026-10-16, `E-SENS-03` design, grilling Q5 — the user asked for this ticket directly. A

@@ -98,7 +98,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Done when:** the unchanged `INT-US-02` gates pass on an interview-drafted spec
   > - **Note:** absorbs the former `D-INTL-04` (2026-08-27) — one interview harness, two rubrics, two artefacts
 
-* **`D-INTL-08` 🔜: Polyglot Implementation Loop**
+* **`D-INTL-08` ✅: Polyglot Implementation Loop**
   > - **Purpose:** Let `sw implement` target a language other than Python — five runners exist and no user path can reach them
   > - **Trigger:** When `sw implement` runs against a non-Python project
   > - **Precondition:** `D-VAL-03` → the five shipped language runners
@@ -106,7 +106,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Produces:** generated code in the target language
   > - **Enables:** every non-Python journey
   > - **Done when:** a non-Python target is implemented end to end
-  > - **Note:** absorbs `TECH-073` `[agreed 2026-10-20]` — [design](../features/topic_04_intelligence/D-INTL-08/D-INTL-08_design.md)
+  > - **Note:** absorbs `TECH-073` `[agreed 2026-10-20]`; signed off 2026-10-22 — [design](../features/topic_04_intelligence/D-INTL-08/D-INTL-08_design.md)
 
 * **`D-INTL-09` 🔜: Code Step Through Structure Tools**
   > - **Purpose:** The code step changes existing files through the code-structure tools instead of rewriting them whole

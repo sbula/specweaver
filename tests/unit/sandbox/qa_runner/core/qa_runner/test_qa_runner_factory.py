@@ -5,6 +5,7 @@
 
 Proves: D-VAL-03 FR-1
 Proves: B-EXEC-01 NFR-7
+Proves: D-INTL-08 NFR-2
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `run_compiler` renamed on the
 abstract base, so compilation leaves the interface's bounds — **228 fail and 11 collection errors**,
@@ -20,6 +21,10 @@ its own plain `SubprocessExecutor` and never a `ContainerSubprocessExecutor`, so
 `execution_mode` at its default changes nothing. The citation was carried in this file's old docstring
 as a bare `(B-EXEC-01)` plus an `(NFR-7)` comment thirty lines down, which the NFR sweep credited by
 proximity; it is explicit now.
+
+**`D-INTL-08` NFR-2**: non-Python toolchains run on the host; the container stays Python-validated.
+A non-Python runner handed a container executor says so in a warning naming its language, and one
+built without an executor runs on the host.
 """
 
 from __future__ import annotations

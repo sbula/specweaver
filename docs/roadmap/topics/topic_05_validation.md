@@ -77,7 +77,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Precondition:** —
   > - **Reads:** the target project's toolchain
   > - **Produces:** memory → normalized results from exit codes and stderr
-  > - **Enables:** `D-INTL-08` → the polyglot implement loop that cannot yet reach these runners
+  > - **Enables:** `D-INTL-08` ✅ → the polyglot implement loop that reaches these runners
   > - **Done when:** five language runners execute as a black box, with no Python AST assumptions
 
 * **`D-VAL-04` ✅: Adaptive Assurance Standards** (Legacy: 3.32a)

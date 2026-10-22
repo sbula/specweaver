@@ -148,8 +148,8 @@ critical for long-term project viability.
   > Providers bill cached input at about a tenth; SpecWeaver reads no cache field, so `sw usage` overstates
   > OpenAI and Gemini spend, and Anthropic's input price is its cache-write price. Before `C-FLOW-14`.
 
-* **`TECH-073` 🔴: A Task's Target Files Are Named for Python Only**
-  > [Description](../features/topic_07_technical_debt/TECH-073/TECH-073_design.md) | _Status: absorbed by `D-INTL-08` `[agreed 2026-10-20]`. Origin: 2026-10-16, `E-SENS-03` design._ |
+* **`TECH-073` 🟢: A Task's Target Files Are Named for Python Only**
+  > [Description](../features/topic_07_technical_debt/TECH-073/TECH-073_design.md) | _Status: closed 2026-10-22 by `D-INTL-08`, which absorbed it `[agreed 2026-10-20]`. Origin: 2026-10-16._ |
   > Generation, the worktree allow-list and the task write grant all name `src/<stem>.py` and `tests/test_<stem>.py`, so a non-Python
   > project gets wrong targets. Fix: one derivation from the project's language, used by all three.
 

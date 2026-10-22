@@ -31,7 +31,10 @@ ledger from the moment it is sent, and its readers count finished calls only —
 gate-enforced). `C-EXEC-08` was signed off `✅` on 2026-10-19: each project's `[docs]` rules
 decide which docs the task grant and the worktree merge let a step change; a refused doc change is
 kept in `doc_updates.md`; a `bash` step can fill a marked block — [design](../docs/roadmap/features/topic_06_sandbox/C-EXEC-08/C-EXEC-08_design.md).
-`C-FLOW-11` followed and was signed off on 2026-10-20.
+`C-FLOW-11` followed and was signed off on 2026-10-20. `D-INTL-08` was signed off `✅` on 2026-10-22:
+`sw implement` writes, lints and tests Python, Java, Kotlin, TypeScript and Rust in each language's
+layout and framework style; a `toolchain` tier proves it with the real tools nightly; `TECH-073`
+closed with it — [design](../docs/roadmap/features/topic_04_intelligence/D-INTL-08/D-INTL-08_design.md).
 
 `TECH-074` was closed on 2026-10-18 and `C-FLOW-14` signed off `✅` on 2026-10-19: cached input
 tokens are read, billed at their own price and shown; prices follow models.dev once a day; prompts
@@ -83,6 +86,7 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 
 | What | Result |
 |---|---|
+| `D-INTL-08` Polyglot Implementation Loop | Finished, signed off 2026-10-22: one derivation of a task's files per language; generation, lint and code rules speak the language and framework; a project's Gradle or Maven wrapper starts; the `toolchain` tier runs nightly |
 | `TECH-004` Graph Refactoring | Finished, signed off 2026-10-15: every FR proven; the engine matches its protocol, the store keeps AD-6 names, a build stores its project's service name |
 | `D-SENS-06` Structured Code Editing | Finished, signed off 2026-10-14: an agent renames, moves, creates and deletes code by name in 8 languages, all files or none; a change keeps line endings |
 | `D-INTL-03` Explicit Plan Phase | Finished, signed off 2026-10-13: `new_feature` decides a plan before code; the file and code-structure tools do what they offer |
