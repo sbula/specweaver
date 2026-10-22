@@ -6,7 +6,8 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
 
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
-> Execute the architecture verifications autonomously, but you MUST STOP and present any findings to the user. NEVER bypass the user review of violations.
+> Execute the architecture verifications autonomously. Every finding is fixed or recorded (1.8)
+> and written into the combined analysis (§2.8). Stop for the user only on a decision you cannot take.
 
 1.1. Read the architecture documentation this phase depends on, in full:
      - `docs/architecture/03_system_topology/module_dependency_graph.md` — module map (1.3)
@@ -70,17 +71,15 @@ description: "Phase 1: Architecture verification — verify layer placement, dep
      - **No violation may be silently skipped.** Every issue must be either
        fixed or documented — this is non-negotiable.
 
-1.9. **DEFERRED HITL GATE:**
-     - Do NOT stop immediately if architecture violations are found.
+1.9. **ARCHITECTURE FINDINGS GO INTO THE COMBINED ANALYSIS:**
+     - Do NOT stop if architecture violations are found.
      - Instead, document the architecture findings and PROCEED to Phase 2 (Test Gap Analysis).
-     - At the end of Phase 2, present a COMBINED analysis containing both the Architecture Violations and the Test Gap Analysis.
+     - At the end of Phase 2, write a COMBINED analysis containing both the Architecture Violations and the Test Gap Analysis.
      - **Format:** §2.8 of `phase-2-test-gap.md` is the single authority on how that combined
        analysis is presented. Do not restate it here — two copies of a format rule is how this
        instruction came to contradict itself.
 
-> [!CAUTION]
-> **HARD GATE RELOCATED:** The hard stop has been moved to the end of Phase 2. You may proceed directly to Phase 2.
 
 > [!IMPORTANT]
-> **CHECKPOINT:** Phase 1 is complete. Update `task.md`.
+> **CHECKPOINT:** Phase 1 is complete. Update `.tmp/task.md`.
 > The NEXT phase is Phase 2 (Test Gap). Proceed to it immediately to gather the test gap analysis.

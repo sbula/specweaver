@@ -1,8 +1,10 @@
 ---
 name: specweaver-pre-commit
-description: "Pre-commit quality gate. Architecture verification, test gap analysis, implement
-missing tests, run full test suite, code quality checks, documentation updates, walkthrough. Use
-when the user asks to run pre-commit checks, quality gates, or verify code before committing."
+description: "Runs the pre-commit quality gate before every commit: architecture verification, test gap
+analysis, missing tests, full test suite, code quality, documentation, walkthrough, red/blue review,
+then the commit. Use for 'pre-commit', 'quality gate', 'run pre-commit checks', 'verify before
+commit', and before any commit, docs-only ones included."
+allowed-tools: Bash(git status *)
 ---
 
 # Pre-Commit Quality Gate Skill
@@ -16,6 +18,12 @@ Before we commit, run a full pre-commit quality gate for the feature we just bui
 This skill covers architecture verification, test gap analysis, linting, complexity,
 file size, and documentation.
 
+The working tree as this gate starts:
+
+```
+!`git status --short`
+```
+
 > [!CAUTION]
 > **MANDATORY SEQUENCING — DO NOT SKIP OR REORDER PHASES!**
 >
@@ -24,25 +32,20 @@ file size, and documentation.
 >
 > **Before starting each phase:**
 > 1. Read the phase file from the `references/` directory listed below
-> 2. Update `task.md` to mark the current phase as `[/]` in-progress
-> 3. After completing a phase, mark it `[x]` in `task.md`
+> 2. Update `.tmp/task.md` to mark the current phase as `[/]` in-progress
+> 3. After completing a phase, mark it `[x]` in `.tmp/task.md`
 > 4. Remember: We do not care if any flaw existed before our changes, it must be resolved
 >
-> **Phases 1, 2, and 3 have HITL gates** — you MUST stop and present findings
-> to the user. Do NOT continue until the user responds.
-> 
-> > [!CAUTION]
-> > **WHAT "HITL GATE" TECHNICALLY MEANS:**
-> > A "HITL Gate" is a HARD STOP where you MUST yield your turn. 
-> > This means you are **FORBIDDEN** from making *any* further tool calls (e.g., executing commands, writing files, or moving to the next Phase) during the current cycle.
-> > You MUST literally stop thinking, return a text response to the user, and wait for them to reply
-> > in the chat before you do ANYTHING else. If you string together Phase 2 and Phase 3 in a single
-> > chain of tool calls, you have violated the HITL Gate.
-> 
+> **Every check runs; the waits do not** `[agreed 2026-08-26]`. Phases 1, 2, 3 and 7.5 report
+> their findings and continue. Stop for the user only when a finding needs a decision you cannot
+> take (`PRINCIPLES.md` §2), or at the boundary that closes a sub-feature (`specweaver-dev`
+> Step C). **A stop is a hard stop:** end your turn, make no further tool call, and wait for the
+> user's reply before you do ANYTHING else.
+>
 > If you catch yourself about to run `pytest` or "verify everything works"
 > before completing Phase 2 and Phase 3 — **STOP immediately**.
 > That is Phase 4. You are skipping phases.
-> 
+>
 > **CRITICAL:** AI Agents have a known tendency to skip Phase 3 (Implement Missing Tests).
 > This is UNACCEPTABLE. You MUST explicitly write tests for every gap and branch you find.
 
@@ -53,34 +56,31 @@ file size, and documentation.
 > 1-7 identically from scratch every single time this gate is entered. "I already know it passes" is
 > an unacceptable excuse.
 
-## MCP Tool Guidance
-
-When available, prefer these MCP tools over grep/file-reading:
-
-- **Architecture verification (Phase 1):** Use `codebase-memory` → `trace_path` to verify imports respect layer boundaries after changes.
-- **Test gap analysis (Phase 2):** Use `codebase-memory` → `search_graph` to find all callers of modified functions — each caller needs test coverage.
-- **Fall back to grep/file-reading** if MCP tools are unavailable.
-
 ## Phases
-
 
 Execute each phase by reading and following the instructions in its reference file.
 
-| Phase | File | Description | HITL Gate? |
+| Phase | File | Description | Stops for the user? |
 |-------|------|-------------|------------|
-| **1** | `.agents/skills/specweaver-pre-commit/references/phase-1-architecture.md` | Architecture verification | ⚠️ Yes (step 1.9) |
-| **2** | `.agents/skills/specweaver-pre-commit/references/phase-2-test-gap.md` | Test gap analysis (coverage matrix + test stories) | ⚠️ Yes (step 2.8) |
-| **3** | `.agents/skills/specweaver-pre-commit/references/phase-3-implement-tests.md` | Implement missing tests | ⚠️ Yes (step 3.1b) |
-| **4** | `.agents/skills/specweaver-pre-commit/references/phase-4-test-suite.md` | Run full test suite | No |
-| **5** | `.agents/skills/specweaver-pre-commit/references/phase-5-code-quality.md` | Code quality checks (ruff, mypy, complexity, file size) | No |
-| **6** | `.agents/skills/specweaver-pre-commit/references/phase-6-documentation.md` | Documentation updates | No |
-| **7** | `.agents/skills/specweaver-pre-commit/references/phase-7-walkthrough.md` | Write walkthrough artifact | No |
-| **7.5** | N/A | **Red/Blue Adversarial Review of Code Changes** | ⚠️ Yes (step 7.5.2) |
+| **1** | [phase-1-architecture.md](references/phase-1-architecture.md) | Architecture verification | Only on a decision (step 1.9) |
+| **2** | [phase-2-test-gap.md](references/phase-2-test-gap.md) | Test gap analysis (coverage matrix + test stories) | Only on a decision (step 2.8) |
+| **3** | [phase-3-implement-tests.md](references/phase-3-implement-tests.md) | Implement missing tests | No (step 3.1b reports) |
+| **4** | [phase-4-test-suite.md](references/phase-4-test-suite.md) | Run full test suite | No |
+| **5** | [phase-5-code-quality.md](references/phase-5-code-quality.md) | Code quality checks (ruff, mypy, complexity, file size) | No |
+| **6** | [phase-6-documentation.md](references/phase-6-documentation.md) | Documentation updates | No |
+| **7** | [phase-7-walkthrough.md](references/phase-7-walkthrough.md) | Write the walkthrough | No |
+| **7.5** | N/A | **Red/Blue Adversarial Review of Code Changes** | Only on a decision (step 7.5.2) |
+
+Shared reference for Phases 2–3: [test-quality.md](references/test-quality.md).
 
 > [!IMPORTANT]
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
 > regardless of whether it is pre-existing or introduced by this feature.
 > No inherited problems are acceptable!
+
+> [!IMPORTANT]
+> **A docs-only commit still runs the full suite.** Tests parse the roadmap and the skills; a
+> docs-only commit once broke one after only the doc gate ran.
 
 > [!NOTE]
 > **The mutation corpus is NOT part of this gate, deliberately.** `scripts/mutation.py` runs
@@ -97,7 +97,9 @@ Execute each phase by reading and following the instructions in its reference fi
 7.5.1 Execute the `specweaver-red-blue-review` skill against the code changes introduced in this
 commit boundary. Look for security flaws, unhandled edge cases, architecture violations, and
 incomplete requirements.
-7.5.2 If the cycle produces findings, **STOP** and present them to the user for review. You must resolve critical findings before proceeding to Phase 8.
+7.5.2 Resolve every critical finding before Phase 8. Fix the others or record them as accepted
+risks in the walkthrough. If a finding needs a decision you cannot take, **STOP** and present it to
+the user.
 
 ## Phase 7.9: Is anything lost if this session ends here?
 
@@ -145,10 +147,12 @@ python scripts/session_handover.py --suite    # also runs the full suite for the
 It rewrites only the marked block and returns every other line byte for byte. Numbers copied by hand
 are the ones that go stale, so copy none of them.
 
-## Phase 8: Commit Boundary (HITL)
-
-> **HARD STOP REQUIRED:** You MUST NOT proceed past a commit boundary autonomously.
+## Phase 8: Commit Boundary
 
 8.1. After Phase 7.5 completes, the pre-commit gate is finished.
-8.2. **STOP execution**. Inform the user that the pre-commit gate is complete.
-8.3. **WAIT** for the user to perform the commit or explicitly tell you to proceed. Do absolutely nothing else.
+8.2. **Commit** (`<type>(<scope>): <description>`, straight to `main`). Never commit on a red gate.
+     Exception: at the boundary that closes a sub-feature, stage it and **STOP** for the user's
+     acceptance first (`specweaver-dev` Step C). If the user asked only for a check, report and do
+     not commit.
+8.3. Report in a few lines: what the commit holds, the test count, what the gate found. End with
+     `Push now: YES/NO`. The user pushes, once per feature.

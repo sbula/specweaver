@@ -48,6 +48,10 @@ description: "Phase 4: Run the test tiers this story requires at this commit poi
 > you have reason to want more. There is no flag that removes one. If a run feels too slow, that
 > is the profile telling you what this story costs — not a setting to turn down.
 
+4.1a. **A docs-only change, or work with no story, still runs the full suite:**
+      `python -m pytest -n auto -q`. `tests.py` declares zero tiers for a diff with no `.py` in it,
+      and tests parse the roadmap and the skills — a docs-only commit once broke one.
+
 4.2. **A tier that selects ZERO tests is a FAILURE, not a pass.** If the gate reports
      `selected NO tests`, you changed source that nothing mirrors. That is missing coverage: go
      back to Phase 2/3 and write the test, do not work around the scope.
@@ -64,4 +68,4 @@ description: "Phase 4: Run the test tiers this story requires at this commit poi
      - The story's resolved DAL and where it came from (the gate prints this)
 
 > [!IMPORTANT]
-> **NO HITL GATE HERE:** If the test gate passes, update `task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.
+> **NO HITL GATE HERE:** If the test gate passes, update `.tmp/task.md` and PROCEED IMMEDIATELY to Phase 5. Do NOT stop to ask the user for permission to continue.

@@ -4,6 +4,10 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
 
 # Phase 5: Code Quality Checks
 
+## Contents
+- 5.1 The consolidated static-quality gate
+- 5.2 The documentation registry gate (proof tier, roadmap sync, skill sync)
+
 5.1. Run the **consolidated static-quality gate** for the commit point you are actually at:
 
      ```
@@ -103,4 +107,4 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
      `check_fr_coverage.py` (run by `specweaver-feature` at closure).
 
 > [!IMPORTANT]
-> **NO HITL GATE HERE:** If all checks in Phase 5 pass successfully, update `task.md` and PROCEED IMMEDIATELY to Phase 6. Do NOT stop to ask the user for permission to continue.
+> **NO HITL GATE HERE:** If all checks in Phase 5 pass successfully, update `.tmp/task.md` and PROCEED IMMEDIATELY to Phase 6. Do NOT stop to ask the user for permission to continue.

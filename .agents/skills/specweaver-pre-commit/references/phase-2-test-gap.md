@@ -1,12 +1,20 @@
 ---
-description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, coverage matrix, proposed test stories, and HITL gate."
+description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, coverage matrix, proposed test stories."
 ---
 
 # Phase 2: Test Gap Analysis
 
+## Contents
+- 2.0 Pre-check against the design
+- 2.1–2.3 Read the sources and their tests
+- 2.4 Deliverable 1 — Coverage Matrix
+- 2.5 Deliverable 2 — Proposed Test Stories (2.5a challenge, 2.5c composition, 2.5b vacuous proof)
+- 2.6–2.8 Write down the combined analysis and continue
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
-> Execute the gap analysis steps autonomously, but you MUST STOP and present the results. NEVER bypass the user review of the findings.
+> Execute the gap analysis steps autonomously and write the results down (§2.8). Stop for the user
+> only on a decision you cannot take.
 
 2.0. **MANDATORY PRE-CHECK**: Before analyzing test gaps, re-read the Design Document.
      Verify ALL of the following are covered by existing tests:
@@ -121,8 +129,8 @@ description: "Phase 2: Test gap analysis — FR/NFR/RT/AD coverage check, covera
 > fix-inherited-failures rule, a vacuous test in code you touched must be repaired, not deferred.
 >
 > **Do NOT invoke `specweaver-ticket` from inside this phase.** A proposed story is a line item for
-> the human to review at the Phase 2 HITL gate (2.8) — it becomes a real TECH ticket only if the
-> user asks for one there. Minting on your own initiative mid-phase is the exact failure this note
+> the human to review in the walkthrough (2.8) — it becomes a real TECH ticket only if the
+> user asks for one. Minting on your own initiative mid-phase is the exact failure this note
 > exists to prevent (see `specweaver-ticket`'s own incident log).
 
 Run the executable half now — these block, so there is nothing to remember:
@@ -142,12 +150,12 @@ python scripts/quality.py cb --only useless_asserts,test_basenames
 
 2.6. Do NOT invent arbitrary test counts. Every story must trace to real code.
 2.7. Present the FULL list — do NOT limit to 10 items.
-2.8. **STOP and wait for the HITL response.** Present the combined analysis — the Architecture
-     Findings deferred from Phase 1 (§1.9) together with this phase's gap analysis. This is the
+2.8. **Write down the combined analysis and continue** `[agreed 2026-08-26]`. Combine the
+     Architecture Findings deferred from Phase 1 (§1.9) with this phase's gap analysis. This is the
      single authority on that format; §1.9 defers to it.
      > [!CAUTION]
      > You MUST write the combined analysis into a **reviewable document the user can comment on
-     > line by line** — whatever this harness offers for that. You MUST NOT print the Coverage
+     > line by line** — the walkthrough (Phase 7) is that document. You MUST NOT print the Coverage
      > Matrix or Test Stories directly into your conversational chat response.
      >
      > The requirement is line-by-line commentability, not a particular tool. Name no tool here:
@@ -155,6 +163,7 @@ python scripts/quality.py cb --only useless_asserts,test_basenames
      > same rot as a path that does not resolve.
 
 > [!CAUTION]
-> **MANDATORY HITL YIELD:** You MUST stop execution and present the Coverage Matrix and Proposed Test Stories in that document.
-> You MUST YIELD YOUR TURN. A yield means making ZERO further tool calls after producing it. You must end your response and wait for the user to type a reply.
-> You MUST NOT proceed to Phase 3 (implementing tests) synchronously in the same turn. Do not assume they look okay or skip this gate.
+> **Proceed to Phase 3 and implement every proposed story.** Do not assume the matrix looks okay
+> or skip a story. **STOP** for the user only when a finding needs a decision you cannot take —
+> a scope cut, a new ticket, a §2 trigger. A stop means making ZERO further tool calls and waiting
+> for the user's reply.

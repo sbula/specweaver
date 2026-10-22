@@ -4,6 +4,14 @@ description: "Shared test-quality reference: when a passing test is evidence and
 
 # Test Quality — when green means something
 
+## Contents
+- The eight vacuous-proof patterns
+- Probe every fix — mandatory, not a tip
+- Verify before "fixing"
+- Detectors need the same proof as tests
+- Executable guards
+- Two workflow rules
+
 > Referenced by **`specweaver-dev`** (Phase 3, while writing tests) and
 > **`specweaver-pre-commit`** (Phase 2 §2.5b, while auditing them). One home, two callers — this
 > file is the source of truth for test *validity*; the skills own the *workflow*.
