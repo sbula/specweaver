@@ -1,8 +1,10 @@
 ---
 name: specweaver-implementation-plan
-description: "Create or audit an implementation plan for a sub-feature. Deep research, audit across
-16 categories, architecture verification, Red/Blue team analysis, consistency check. Use when the
-user asks to create an implementation plan, plan a sub-feature, or prepare for development."
+description: "Creates or audits the implementation plan for one sub-feature: research, an audit across
+16 categories, architecture verification, red/blue review and a consistency check, with the user's
+approval at Phases 4 and 5. Use for 'implementation plan for <feature_id> <sf_id>', 'plan
+<feature_id> SF-<N>', 'prepare implementation for <feature_id>'."
+argument-hint: "<feature_id> [SF-<N>]"
 ---
 
 # Implementation Plan Skill
@@ -23,14 +25,9 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    (`specweaver-ticket`) and stop.
 
    > [!CAUTION]
-   > This exists because document state lies. INT-US-21's design recorded its prerequisites as
-   > "all ✅: US-2 Core, D-INTL-02, D-INTL-03" — and **all three were materially broken**:
-   > handlers never registered so the shipped pipeline could not run a single step;
-   > `RunContext.plan` documented as "(set by runner hook)" with zero writes in `src/`; a required
-   > enum that cannot be serialized to YAML at all. Every checkbox was true as written and false
-   > in fact. The script verifies the *evidence* behind the checkbox: the declared proof exists,
-   > passes, and does not skip; every bundled pipeline step resolves to a real handler; no field
-   > documented as "set by X" is unwritten.
+   > This exists because document state lies. The script verifies the *evidence* behind the
+   > checkbox: the declared proof exists, passes, and does not skip; every bundled pipeline step
+   > resolves to a real handler; no field documented as "set by X" is unwritten.
 
 2. The Design Document at `<design_doc_path>` exists and `Status: APPROVED`.
 3. If `<sf_id>` is given: all sub-features in its `depends_on` list have `Impl Plan ✅`
@@ -49,8 +46,7 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
    > put the open questions to the user. Their answers close them. Plan work resumes once the frontier is empty.
    >
    > **Never let a plan settle a number the design left open.** A default chosen in a plan is a
-   > decision nobody agreed, wearing an implementation detail's clothes — which is how a `$25`
-   > spend cap that bills real money shipped in one session with no input.
+   > decision nobody agreed, wearing an implementation detail's clothes.
 
 
 > [!IMPORTANT]
@@ -65,8 +61,7 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 >
 > `ADR-003` folded integration into the story that creates the seam, so a plan that touches another
 > module's surface **owns** the integration test for it — there is no later story that will do it.
-> Never defer all integration work to one final boundary; that is how SF-02 CB-1 came to ship 16
-> unit tests and zero others.
+> Never defer all integration work to one final boundary.
 >
 > **Write the seam test at the boundary where the interface first exists and the behaviour does
 > not.** Where step *n*'s interface depends on step *n−1*'s output, the test goes **between** them —
@@ -102,11 +97,7 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > not when it passes.** Neutralise the line the test claims to cover and check it goes red:
 > `python scripts/_mutate.py --file … --old … --new …`. State the expected mutant in the plan, so
 > the boundary has a falsifiable exit condition rather than a green tick.
->
-> This is not ceremony. `TECH-017` wrote a containment test that passed immediately and proved
-> nothing — the function it covered returned `{}` for every caller, so the assertion could not fail.
-> The mutant was what said so, and chasing it found a key mismatch that had kept skeleton context
-> out of every generation and review prompt since the feature shipped.
+
 
 **Output header block** — write this at the top of every impl plan produced:
 ```markdown
@@ -190,14 +181,11 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > or schema both sides must agree on, an ordering, a shared file — is a **seam FR**: a hidden
 > contract with another feature. Those, and only those, are what a spanning test proves. Name them
 > as seams when you write the FR table, because a seam FR proven by a unit test with the other side
-> mocked proves the mock, not the contract. `TECH-041` is one instance: `C-VAL-03` is `✅` and its
-> DAL override is proven link by link, never as a chain.
+> mocked proves the mock, not the contract.
 >
 > **A missing spanning test under an already-finished (sub)story is a defect in delivered work**, so
 > it becomes a `TECH` ticket that owns the test and writes it red first. That is the rule for every
-> other defect in closed code. Integration used to be the one carve-out, and the carve-out is what
-> grew a second registry: measured 2026-08-19, 31 of 36 open contract rows were tracking work that
-> another ticket already owned.
+> other defect in closed code.
 
 > [!IMPORTANT]
 > **Read the (sub)story's path list before scheduling anything** (`ADR-005`).
@@ -209,26 +197,19 @@ Trigger: "implementation plan for <feature_id> <sf_id>",
 > blocker. It fails today for the right reason and turns green loudly when the blocker lands;
 > `check_xfail_blockers.py` will not let the marker be forgotten.
 
-## MCP Tool Guidance
-
-When available, prefer these MCP tools over grep/file-reading:
-
-- **Architecture verification (Phase 3):** Use `codebase-memory` → `get_architecture` and `trace_path` to verify dependency chains and layer boundaries.
-- **Identifying existing patterns (Phase 0-1):** Use `codebase-memory` → `search_graph` to find similar implementations in the codebase.
-- **API surface validation:** Use `context7` → `get-library-docs` to verify library APIs referenced in the plan are correct.
-- **Fall back to grep/file-reading** if MCP tools are unavailable.
-
 ## Phases
 
 
 | Phase | File | Description | HITL Gate? |
 |-------|------|-------------|------------|
-| **0** | `.agents/skills/specweaver-implementation-plan/references/phase-0-research.md` | Deep codebase + external API + guides research | No |
-| **1** | `.agents/skills/specweaver-implementation-plan/references/phase-1-preparation.md` | Read design doc + architecture + cross-ref codebase | No |
-| **2** | `.agents/skills/specweaver-implementation-plan/references/phase-2-audit.md` | Identify all open questions across 16 categories | No |
-| **3** | `.agents/skills/specweaver-implementation-plan/references/phase-3-architecture.md` | Architecture verification — feeds Phase 4 | No |
-| **4** | `.agents/skills/specweaver-implementation-plan/references/phase-4-merge.md` | Present combined findings → HITL → merge into plan | ⚠️ Always |
-| **5** | `.agents/skills/specweaver-implementation-plan/references/phase-5-consistency.md` | Consistency + Red/Blue + HITL approval | ⚠️ Always |
+| **0** | [phase-0-research.md](references/phase-0-research.md) | Deep codebase + external API + guides research | No |
+| **1** | [phase-1-preparation.md](references/phase-1-preparation.md) | Read design doc + architecture + cross-ref codebase | No |
+| **2** | [phase-2-audit.md](references/phase-2-audit.md) | Identify all open questions across 16 categories | No |
+| **3** | [phase-3-architecture.md](references/phase-3-architecture.md) | Architecture verification — feeds Phase 4 | No |
+| **4** | [phase-4-merge.md](references/phase-4-merge.md) | Present combined findings → HITL → merge into plan | ⚠️ Always |
+| **5** | [phase-5-consistency.md](references/phase-5-consistency.md) | Consistency + Red/Blue + HITL approval | ⚠️ Always |
+
+Why each rule exists: [references/lessons.md](references/lessons.md).
 
 **After Phase 5 approval:**
 - Mark `Impl Plan ✅` for this SF in the Progress Tracker in the Design Document.

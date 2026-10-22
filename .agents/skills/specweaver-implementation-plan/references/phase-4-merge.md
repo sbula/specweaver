@@ -19,17 +19,18 @@ description: "Phase 4: Merge Findings — present the full combined audit list t
      - Then HIGH, MEDIUM, LOW
      - Within each severity: sort by impact (broadest impact first)
 
-4.2. Present the full list to the user via the **system artifact window** (`implementation_plan.md`).
-     **STOP. Wait for the user to respond.**
-     Do NOT summarize, filter, or omit items. Present ALL of them in the artifact.
+4.2. Present the full list to the user in a **reviewable document the user can comment on line by
+     line** — whatever this harness offers for that; the plan file in `docs/roadmap/features/…`
+     is the fallback. **STOP. Wait for the user to respond.**
+     Do NOT summarize, filter, or omit items. Present ALL of them in the document.
      Do NOT answer questions on behalf of the user. Wait for their input.
 
      > [!IMPORTANT]
-     > **MANDATORY ARTIFACT FORMATTING RULE:**
-     > When generating the HITL review artifact, you MUST:
+     > **MANDATORY REVIEW-DOCUMENT FORMATTING RULE:**
+     > When generating the HITL review document, you MUST:
      > 1. Specify the active **Skill Name** and **Current Phase** in the main header (e.g., `# [Skill: specweaver-implementation-plan] Phase 4: HITL Gate - SF-03`).
      > 2. Present each question uniquely mapping its Options, Pros/Cons, Impact, and your Proposal.
-     > 3. Add an explicit **Comment** row (e.g., `> Comment: `) beneath EACH question allowing the user to seamlessly type their responses beside the proposals in their IDE.
+     > 3. Add an explicit **Comment** row (e.g., `> Comment: `) beneath EACH question allowing the user to type their responses beside the proposals.
 
 ---
 
