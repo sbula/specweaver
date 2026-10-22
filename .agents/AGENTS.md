@@ -28,7 +28,7 @@ skip a phase. Never bypass a HITL gate.
 | `specweaver-pre-commit` | The 7-phase gate before **every** commit |
 | `specweaver-red-blue-review` | Adversarial review of a design, plan or diff |
 | `specweaver-ticket` | Minting a `TECH-NNN` or capability ID without collision |
-| `specweaver-live-llm` | **Only** on an explicit ask to hit a real provider API — it bills |
+| `specweaver-live-llm` | **Only** when the user types `/specweaver-live-llm` — it bills; an agent never starts it on its own |
 
 **You start `/grill-me` yourself** the moment a `PRINCIPLES.md` §2 trigger appears — then put every
 question to the user and wait. Their reply is what closes it; a question you answer on their behalf
