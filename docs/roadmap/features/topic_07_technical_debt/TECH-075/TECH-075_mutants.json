@@ -138,17 +138,17 @@
           "old": "    spec_path = project_file_or_400(project_root, body.spec)\n",
           "new": "    spec_path = project_root / body.spec\n",
           "breaks": "an API run starts on a spec outside the project",
-          "symbol_sha": "sha256:059403fa8c2d87fe16a6a1a74f607bd117fb719e48dda4a0ee9d0a760b8401e2"
+          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
         },
         {
           "id": "run-spec-checked-after-exists",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    spec_path = project_file_or_400(project_root, body.spec)\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    limit = _max_runs(project_root)\n",
-          "new": "    spec_path = project_root / body.spec\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    spec_path = project_file_or_400(project_root, body.spec)\n    limit = _max_runs(project_root)\n",
+          "old": "    spec_path = project_file_or_400(project_root, body.spec)\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    limit = max_runs(project_root)\n",
+          "new": "    spec_path = project_root / body.spec\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    spec_path = project_file_or_400(project_root, body.spec)\n    limit = max_runs(project_root)\n",
           "breaks": "a 404 tells the client that an outside file does not exist",
-          "symbol_sha": "sha256:059403fa8c2d87fe16a6a1a74f607bd117fb719e48dda4a0ee9d0a760b8401e2"
+          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
         }
       ]
     },
@@ -192,32 +192,32 @@
         {
           "id": "run-name-read-beside-server",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
-          "symbol": "_api_pipeline",
+          "file": "src/specweaver/interfaces/api/v1/paths.py",
+          "symbol": "load_api_pipeline",
           "old": "        return parser.load_bundled_pipeline(name)\n",
           "new": "        return parser.load_pipeline(Path(name))\n",
           "breaks": "a YAML file beside the server is run through the URL",
-          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+          "symbol_sha": "sha256:c2e884b79a0c3a43454b661d696e369bae5018c83fcb9aba5a4beeab779805fb"
         },
         {
           "id": "run-name-not-bare",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
-          "symbol": "_api_pipeline",
+          "file": "src/specweaver/interfaces/api/v1/paths.py",
+          "symbol": "load_api_pipeline",
           "old": "    require_bare_pipeline_name(name)\n    try:",
           "new": "    try:",
           "breaks": "a stored name walks out of .specweaver/pipelines to a YAML an agent can write",
-          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+          "symbol_sha": "sha256:c2e884b79a0c3a43454b661d696e369bae5018c83fcb9aba5a4beeab779805fb"
         },
         {
           "id": "project-pipelines-link-followed",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
-          "symbol": "_api_pipeline",
+          "file": "src/specweaver/interfaces/api/v1/paths.py",
+          "symbol": "load_api_pipeline",
           "old": "        own = project_file(project_root, f\".specweaver/pipelines/{name}.yaml\")\n",
           "new": "        own = project_root / f\".specweaver/pipelines/{name}.yaml\"\n",
           "breaks": "a pipelines folder that links outside the project is read",
-          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+          "symbol_sha": "sha256:c2e884b79a0c3a43454b661d696e369bae5018c83fcb9aba5a4beeab779805fb"
         },
         {
           "id": "check-name-not-bare",
@@ -228,6 +228,56 @@
           "new": "    pass\n",
           "breaks": "POST /check loads a validation pipeline YAML outside the project",
           "symbol_sha": "sha256:ae775709d33aede446d49f7f2593be3f587dd07ff964fbfe88939d957869ae87"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A project path is stored as the resolved folder",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_project_paths_resolved.py",
+        "tests/unit/workspace/project/interfaces/test_cli_projects.py"
+      ],
+      "mutants": [
+        {
+          "id": "create-stores-as-given",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/projects.py",
+          "symbol": "create_project",
+          "old": "    project_path = _existing_folder(body.path)\n",
+          "new": "    project_path = Path(body.path)\n",
+          "breaks": "a relative project path depends on the server's working folder",
+          "symbol_sha": "sha256:627025501fc3ea46399e453563cd86dec4ea3dfe6a46658601bce10358252971"
+        },
+        {
+          "id": "update-stores-as-given",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/projects.py",
+          "symbol": "update_project",
+          "old": "    new_path = str(_existing_folder(body.path))\n",
+          "new": "    new_path = body.path\n",
+          "breaks": "PUT stores a path that is relative, or no folder at all",
+          "symbol_sha": "sha256:70dc08dd18bb3f388b4a057b800ba530ee1b051371e6634a2301df1d1bebe7d0"
+        },
+        {
+          "id": "blank-path-is-server-folder",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/projects.py",
+          "symbol": "_existing_folder",
+          "old": "        if not given.strip():\n            raise FileNotFoundError(given)\n",
+          "new": "        pass\n",
+          "breaks": "a blank path registers the server's own folder as a project",
+          "symbol_sha": "sha256:9c470eaf620e39042daf647daeb32c3f3594d88057a2596287812c9c9f244b5d"
+        },
+        {
+          "id": "cli-update-stores-as-given",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/interfaces/cli.py",
+          "symbol": "update",
+          "old": "            new_path = str(resolve_project_path(value))\n",
+          "new": "            new_path = value\n",
+          "breaks": "sw update stores a path that depends on the folder sw ran in",
+          "symbol_sha": "sha256:ae3cbb94ad727447f1c7ebede774d54b247eb92e3b003bf10c74badcf65ebfef"
         }
       ]
     }

@@ -106,3 +106,54 @@ pipeline had no case.
 - Accepted: `GET /pipelines` still lists only bundled pipelines.
 - Accepted: an invalid project pipeline answers 404 with the parser's message, which names the
   file in the client's own project.
+
+## CB-3 — FR-7: a project path is stored as the resolved folder
+
+### What changed
+
+- `POST`/`PUT /projects`: `_existing_folder` resolves through `resolve_project_path` (the
+  resolver `sw init` already used), refuses blank, a missing path or a file with 400
+  `PATH_NOT_FOUND` naming the input only, and stores and answers the resolved folder.
+- `sw update <name> path <value>`: the same resolver; blank, missing or a file → exit 1, the row
+  unchanged; it prints the stored path.
+- Rows stored relative before this fix are not rewritten (decision 5).
+- `coupling`: CB-2 left `pipelines.py` with 22 internal imports (limit 20). `_api_pipeline` moved
+  to `paths.py` as `load_api_pipeline`; the three FR-10 mutants were re-pointed, re-run (killed)
+  and re-pinned.
+- `coupling` still reported 21: the same count as before SF-02 (measured on `b6dfede6`), an
+  inherited breach. `_max_runs` and `_project_policy` moved to the new `v1/run_settings.py`
+  (`max_runs`, `project_policy`); `pipelines.py` drops five imports. Existing tests cover both
+  (`test_api_max_runs.py`, the doc-policy and isolation tests). The FR-2 order mutant was updated
+  for the rename, re-run (killed) and re-pinned.
+
+### Red first
+
+All 8 new API cases that the old code could fail did fail: relative and `a/../b` stored as given,
+the same folder registered twice, `PUT` storing a missing path or a file, `POST` registering a
+file. A blank path would have registered the server's own folder; that case was added before the
+code and failed (POST `""`, `sw update ""`). CLI: 6 cases failed (stored as given; missing, file
+and blank accepted).
+
+### Combined analysis
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `_existing_folder` | — | ✅ 3 spellings, missing, file, blank | — |
+| `create_project` | existing | ✅ resolved answer and row; 409 on two spellings; agrees with `resolve_project_path` | ✅ (other journeys register projects) |
+| `update_project` | existing | ✅ resolved; missing and file refused, row kept; moving onto another project by another spelling → 400 | — |
+| `update` (CLI) | ✅ 3 spellings; missing, file, blank | — | ✅ `test_multi_project_e2e.py` |
+
+Gap found in the gate and closed: `PUT` onto another project's folder by another spelling.
+
+### Results
+
+- `tests.py sf TECH-075 --kind bugfix`: unit 9196 passed, 9 skipped; integration 1720 passed;
+  e2e (domain) 70 passed.
+- Mutants (FR-7): `create-stores-as-given`, `update-stores-as-given`,
+  `blank-path-is-server-folder`, `cli-update-stores-as-given` — killed, hashes pinned. The CLI blank
+  check was killed too (not in the corpus).
+
+### Decisions
+
+- `PUT` to an unknown project with a bad path now answers 400 (path) before 404 (project).
+- SF-02 closes here: stopped for the user's acceptance before the commit.

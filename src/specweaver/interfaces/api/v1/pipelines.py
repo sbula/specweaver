@@ -13,13 +13,14 @@ from fastapi import APIRouter, Depends, Query
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
+from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import (
+    load_api_pipeline,
     project_file_or_400,
-    require_bare_pipeline_name,
     resolve_project_root,
 )
+from specweaver.interfaces.api.v1.run_settings import max_runs, project_policy
 from specweaver.interfaces.api.v1.schemas import (
     GateDecisionRequest,
     PipelineRunRequest,
@@ -44,35 +45,6 @@ def list_pipelines() -> list[dict[str, str]]:
     return [{"name": n, "source": "bundled"} for n in names]
 
 
-def _api_pipeline(name: str, project_root: Path) -> Any:
-    """The project's own `.specweaver/pipelines/<name>.yaml`, else the bundled pipeline `name`.
-
-    Never a file beside the server: a client names a pipeline, not a path.
-    """
-    from specweaver.core.flow.engine import parser
-    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    require_bare_pipeline_name(name)
-    try:
-        own = project_file(project_root, f".specweaver/pipelines/{name}.yaml")
-        if own.is_file():
-            return parser.load_pipeline(own)
-        return parser.load_bundled_pipeline(name)
-    except (FileNotFoundError, ProjectPathError) as exc:
-        raise SpecWeaverAPIError(
-            detail=f"Pipeline not found: '{name}'",
-            error_code="PIPELINE_NOT_FOUND",
-            status_code=404,
-        ) from exc
-    except ValueError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="PIPELINE_NOT_FOUND",
-            status_code=404,
-        ) from exc
-
-
 async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) -> None:
     """Rebuild a parked run's context and hand it back to the bridge.
 
@@ -84,14 +56,14 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     project_root = await resolve_project_root(run.project_name, db)
-    pipeline_def = _api_pipeline(run.pipeline_name, project_root)
-    limit = _max_runs(project_root)
+    pipeline_def = load_api_pipeline(run.pipeline_name, project_root)
+    limit = max_runs(project_root)
     context = RunContext(
         project_path=project_root,
         spec_path=Path(run.spec_path),
         output_dir=project_root / "src",
         db=db,
-        isolation=_project_policy(project_root),
+        isolation=project_policy(project_root),
         model=_models_for(pipeline_def, project_root, run.project_name, db),
     )
     await _apply_isolation(context, db, run.project_name)
@@ -115,55 +87,6 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
             error_code="MAX_CONCURRENT_RUNS",
             status_code=429,
         ) from exc
-
-
-def _max_runs(project_root: Path) -> int:
-    """`[serve] max_runs`, the runs the API takes at once; a run is refused while it is unset."""
-    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-    from specweaver.core.config.llm_settings import SettingsFileError
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    try:
-        limit = load_llm_settings(project_root).machine.serve.max_runs
-    except SettingsFileError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc), error_code="LLM_SETTINGS", status_code=500
-        ) from exc
-    if limit is None:
-        raise SpecWeaverAPIError(
-            detail="serve.max_runs is not set in settings.toml — how many runs the API takes at "
-            "once; there is no default",
-            error_code="SETTING_NOT_SET",
-            status_code=409,
-        )
-    return limit
-
-
-def _project_policy(project_root: Path) -> IsolationPolicy:
-    """A run's isolation policy holding the project's `[docs]` and `[autonomy]`; a broken one refuses."""
-    from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
-    from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
-    from specweaver.core.config.bootstrap.implement_loader import load_implement
-    from specweaver.core.config.llm_settings import SettingsFileError
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    try:
-        doc_policy = load_doc_policy(project_root)
-    except SettingsFileError as exc:
-        raise SpecWeaverAPIError(detail=str(exc), error_code="DOC_POLICY", status_code=500) from exc
-    try:
-        autonomy = load_autonomy(project_root)
-    except SettingsFileError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc), error_code="AUTONOMY_POLICY", status_code=500
-        ) from exc
-    try:
-        language = load_implement(project_root).language
-    except SettingsFileError as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc), error_code="IMPLEMENT_POLICY", status_code=500
-        ) from exc
-    return IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language)
 
 
 def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:
@@ -219,7 +142,7 @@ async def start_pipeline_run(
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     project_root = await resolve_project_root(body.project, db)
-    pipeline_def = _api_pipeline(name, project_root)
+    pipeline_def = load_api_pipeline(name, project_root)
 
     spec_path = project_file_or_400(project_root, body.spec)
     if not spec_path.exists():
@@ -228,7 +151,7 @@ async def start_pipeline_run(
             error_code="FILE_NOT_FOUND",
             status_code=404,
         )
-    limit = _max_runs(project_root)
+    limit = max_runs(project_root)
 
     # Build context
     context = RunContext(
@@ -236,7 +159,7 @@ async def start_pipeline_run(
         spec_path=spec_path,
         output_dir=project_root / "src",
         db=db,
-        isolation=_project_policy(project_root),
+        isolation=project_policy(project_root),
         model=_models_for(pipeline_def, project_root, body.project, db),
     )
     await _apply_isolation(context, db, body.project)

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends
 
@@ -15,12 +15,31 @@ from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.interfaces.api.v1.schemas import ProjectCreate, ProjectResponse, ProjectUpdate
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
 
 _db_dep = Depends(get_db)
+
+
+def _existing_folder(given: str) -> Path:
+    """The resolved folder `given` names, or 400 naming `given` only."""
+    from specweaver.workspace.project.discovery import resolve_project_path
+
+    try:
+        if not given.strip():
+            raise FileNotFoundError(given)
+        return resolve_project_path(given)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        raise SpecWeaverAPIError(
+            detail=f"Path is not an existing folder: {given}",
+            error_code="PATH_NOT_FOUND",
+            status_code=400,
+        ) from exc
 
 
 @router.get("/projects", response_model=list[ProjectResponse])
@@ -51,13 +70,7 @@ async def create_project(
     """Register a new project with optional scaffolding."""
     from specweaver.workspace.store import WorkspaceRepository
 
-    project_path = Path(body.path)
-    if not project_path.exists():
-        raise SpecWeaverAPIError(
-            detail=f"Path does not exist: {body.path}",
-            error_code="PATH_NOT_FOUND",
-            status_code=400,
-        )
+    project_path = _existing_folder(body.path)
 
     try:
         async with db.async_session_scope() as session:
@@ -113,6 +126,7 @@ async def update_project(
     """Update a project setting (currently: path only)."""
     from specweaver.workspace.store import WorkspaceRepository
 
+    new_path = str(_existing_folder(body.path))
     try:
         async with db.async_session_scope() as session:
             repo = WorkspaceRepository(session)
@@ -123,7 +137,7 @@ async def update_project(
                     error_code="PROJECT_NOT_FOUND",
                     status_code=404,
                 )
-            await repo.update_project_path(name, body.path)
+            await repo.update_project_path(name, new_path)
             active = await repo.get_active_project()
     except ValueError as exc:
         raise SpecWeaverAPIError(
@@ -131,7 +145,7 @@ async def update_project(
             error_code="INVALID_PATH",
             status_code=400,
         ) from exc
-    return ProjectResponse(name=name, path=body.path, active=(name == active))
+    return ProjectResponse(name=name, path=new_path, active=(name == active))
 
 
 @router.post("/projects/{name}/use")

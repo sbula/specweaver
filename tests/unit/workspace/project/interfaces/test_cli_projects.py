@@ -373,6 +373,35 @@ class TestCLIUpdate:
         proj = get_test_project(mock_db, "myapp")
         assert proj["root_path"] == str(new)
 
+    @pytest.mark.parametrize("given", ["new", "new/../new", "./new/"])
+    def test_update_stores_the_resolved_path(
+        self, mock_db, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, given: str
+    ):
+        """Proves: TECH-075 FR-7 — a relative path no longer depends on the folder sw ran in."""
+        old = tmp_path / "old"
+        old.mkdir()
+        (tmp_path / "new").mkdir()
+        runner.invoke(app, ["init", "myapp", "--path", str(old)])
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["update", "myapp", "path", given])
+        assert result.exit_code == 0, result.output
+        assert get_test_project(mock_db, "myapp")["root_path"] == str((tmp_path / "new").resolve())
+
+    @pytest.mark.parametrize("given", ["missing", "a_file.txt", ""])
+    def test_update_refuses_a_path_that_is_not_a_folder(
+        self, mock_db, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, given: str
+    ):
+        """Proves: TECH-075 FR-7 — the stored path is left as it was."""
+        old = tmp_path / "old"
+        old.mkdir()
+        (tmp_path / "a_file.txt").write_text("x", encoding="utf-8")
+        runner.invoke(app, ["init", "myapp", "--path", str(old)])
+        before = get_test_project(mock_db, "myapp")["root_path"]
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["update", "myapp", "path", given])
+        assert result.exit_code != 0
+        assert get_test_project(mock_db, "myapp")["root_path"] == before
+
     def test_update_nonexistent_project(self, tmp_path: Path):
         result = runner.invoke(app, ["update", "nonexistent", "path", str(tmp_path)])
         assert result.exit_code != 0

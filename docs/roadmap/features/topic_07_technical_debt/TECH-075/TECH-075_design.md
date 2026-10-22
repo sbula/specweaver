@@ -213,13 +213,13 @@ no run. The same journey runs as an e2e test in the suite.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The boundary refuses every way out | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | API paths stay in the project | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | API paths stay in the project | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The engine judges paths by where they land | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 plan approved 2026-10-22
-([walkthrough](TECH-075_sf01_walkthrough.md)).
-**Next step**: Trigger the dev skill for SF-02 (CB-1).
+**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 committed 2026-10-22
+([SF-01 walkthrough](TECH-075_sf01_walkthrough.md), [SF-02 walkthrough](TECH-075_sf02_walkthrough.md)).
+**Next step**: Trigger the implementation-plan skill for SF-03.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

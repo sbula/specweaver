@@ -7,10 +7,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime
 from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
+
+if TYPE_CHECKING:
+    from specweaver.core.flow.engine.models import PipelineDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +55,33 @@ def require_bare_pipeline_name(name: str) -> None:
             error_code="PIPELINE_NOT_FOUND",
             status_code=404,
         )
+
+
+def load_api_pipeline(name: str, project_root: Path) -> PipelineDefinition:
+    """The project's own `.specweaver/pipelines/<name>.yaml`, else the bundled pipeline `name`.
+
+    Never a file beside the server: a client names a pipeline, not a path.
+    """
+    from specweaver.core.flow.engine import parser
+
+    require_bare_pipeline_name(name)
+    try:
+        own = project_file(project_root, f".specweaver/pipelines/{name}.yaml")
+        if own.is_file():
+            return parser.load_pipeline(own)
+        return parser.load_bundled_pipeline(name)
+    except (FileNotFoundError, ProjectPathError) as exc:
+        raise SpecWeaverAPIError(
+            detail=f"Pipeline not found: '{name}'",
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        ) from exc
+    except ValueError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        ) from exc
 
 
 async def resolve_project_root(project_name: str, db: Database) -> Path:

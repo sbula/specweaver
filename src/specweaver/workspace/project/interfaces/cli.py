@@ -206,12 +206,15 @@ def update(
     _core.get_db()
     if field == "path":
         try:
-            _core.run_repo_op(lambda r: r.update_project_path(name, value))
-        except ValueError as exc:
+            if not value.strip():
+                raise FileNotFoundError("The path is empty")
+            new_path = str(resolve_project_path(value))
+            _core.run_repo_op(lambda r: r.update_project_path(name, new_path))
+        except (ValueError, FileNotFoundError, NotADirectoryError) as exc:
             _core.console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(code=1) from exc
         _core.console.print(
-            f"[green]Updated[/green] project [bold]{name}[/bold] path -> {value}",
+            f"[green]Updated[/green] project [bold]{name}[/bold] path -> {new_path}",
         )
     else:
         _core.console.print(f"[red]Error:[/red] Unknown field '{field}'. Supported: path")
