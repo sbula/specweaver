@@ -59,6 +59,10 @@ Filing-day evidence from the audit. Line numbers drift; re-measure each one befo
   helper. Where: `review/interfaces/cli.py:148,181`, `implementation/interfaces/cli.py:256`,
   `cli_drift.py:203`.
 
+- **EP-6, moved from `TECH-075`** `[agreed 2026-10-22]` — `selector` is accepted and ignored;
+  `new_feature` is impossible through the API. Where: `api/v1/pipelines.py:205`, `schemas.py:186`.
+  (`TECH-075` keeps EP-6's missing path guard.)
+
 ## Goal
 
 One run builder for every CLI command and API route: the same pipeline gets the same context through
