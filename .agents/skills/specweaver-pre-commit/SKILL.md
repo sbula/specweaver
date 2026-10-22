@@ -73,6 +73,7 @@ Execute each phase by reading and following the instructions in its reference fi
 | **7.5** | N/A | **Red/Blue Adversarial Review of Code Changes** | Only on a decision (step 7.5.2) |
 
 Shared reference for Phases 2–3: [test-quality.md](references/test-quality.md).
+Why the rules exist: [lessons.md](references/lessons.md).
 
 > [!IMPORTANT]
 > Every bug, lint error, complexity violation, or oversized file MUST be fixed
