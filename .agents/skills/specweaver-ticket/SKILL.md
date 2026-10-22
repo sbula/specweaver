@@ -1,16 +1,17 @@
 ---
 name: specweaver-ticket
-description: "Mint a new registry ID (TECH-NNN technical-debt ticket, capability ID like C-FLOW-12,
-or an INT-US-NN-SFxx sub-story) without colliding with an existing one, and register it everywhere
-that must know about it. Use when the user asks to file/create/mint a TECH ticket, a new capability,
-or a sub-story, or when work spins off a defect that needs its own ID."
+description: "Mints a new registry ID — a TECH-NNN technical-debt ticket or a capability ID like
+C-FLOW-12 — without colliding with an existing one, and registers it everywhere that must know about
+it. Use when the user asks to file, create or mint a TECH ticket or a new capability, or when work
+spins off a defect that needs its own ID. A last resort: verify or fix first."
+argument-hint: "[TECH | <capability-family>] <title>"
 ---
 
 # Ticket / ID Minting Skill
 
 ```
 Trigger: "file a TECH ticket", "create TECH-XXX", "mint a capability",
-         "new capability ID", "add a sub-story", "spin this off into its own ticket",
+         "new capability ID", "spin this off into its own ticket",
          "make a ticket for this"
 ```
 
@@ -21,18 +22,10 @@ directories**, no single document lists everything, and a collision silently ste
 ticket's identity. This skill exists because that failure has actually happened.
 
 > [!CAUTION]
-> **The failure this prevents (2026-07-25, real).** An agent grepped only
-> `docs/roadmap/topics/topic_07_technical_debt.md`, saw `TECH-001`..`TECH-008`, and minted
-> `TECH-009` and `TECH-010`. **Both were already taken** — `TECH-010` had a full design doc. The
-> topic doc listed only a *subset*; five tickets existed solely as design-doc directories. The
-> true maximum was `TECH-013`.
-
-> [!CAUTION]
-> **A second failure this prevents (2026-07-30, real).** `specweaver-pre-commit` Phase 2 told the
-> agent to "raise a story to make it honest" for a vacuous-test finding. Read as a standing
-> invocation of this skill, that ran Phases 1-5 to completion — registry entry, design-doc stub,
-> cross-references — inside an unrelated pre-commit task, with no point where the human was asked
-> whether a new ticket should exist at all. Another skill's prose is never a green light to mint.
+> **Two real failures this prevents** (both in [references/lessons.md](references/lessons.md)):
+> a topic doc that lists only a subset of the IDs, so an agent minted two taken numbers; and
+> another skill's prose read as a standing order to mint. Another skill's prose is never a green
+> light to mint.
 
 > [!IMPORTANT]
 > **STOP before Phase 3.** This skill creates a permanent registry ID and a feature-folder — undoing
@@ -48,8 +41,7 @@ ticket's identity. This skill exists because that failure has actually happened.
 
 > [!CAUTION]
 > **A ticket is a last resort, not a reflex — and filing one is not resolving anything.**
-> Six tickets were filed on 2026-08-13 in a single day, several as the "outcome" of resolving an
-> earlier one. The backlog grew; the verification did not. Before Phase 1, answer out loud:
+> Before Phase 1, answer out loud:
 >
 > 1. **Can I verify this now?** Then verify it. A finding backed by a failing test beats a ticket
 >    saying someone should look.
@@ -62,10 +54,7 @@ ticket's identity. This skill exists because that failure has actually happened.
 > design document of the thing it concerns. Full contract: `references/closure-contract.md`.
 
 > [!IMPORTANT]
-> **Re-measure an audit ticket before planning it.** `TECH-018` was filed 2026-07-26 against evidence
-> that `INT-US-21 SF-03` invalidated **two days later**, by shipping the 24-test CLI journey that was
-> the ticket's own second candidate approach; re-measuring closed it in one session instead of the
-> "unknown size" it feared, and the same pass corrected three of `TECH-017`'s findings. Filing-day
+> **Re-measure an audit ticket before planning it.** Filing-day
 > evidence for a ticket gated on *story X ships* is stale by construction.
 
 > [!IMPORTANT]
@@ -120,10 +109,7 @@ Each ID family has a **different** authoritative source. Pick the right one:
 > `RETIRED … by ADR-003` note whose destination is `✅`, absent from the capability matrix, or not
 > named at all. It keeps judging what was written before `ADR-005`; it gains no new subjects.
 >
-> Measured 2026-08-13: 63 pre-allocated `Sub-Story Integration (Pending Design)` entries existed and
-> **not one had a design document or a feature directory**. Measured again 2026-08-19, after a full
-> migration: **31 of 36 open contract rows named another ticket as their blocker** — the same work
-> written twice. The family's failure mode is a second place to make claims that no gate compares
+> The family's failure mode is a second place to make claims that no gate compares
 > against code, and it reappeared every time the family was allowed to keep one member.
 
 > [!WARNING]
@@ -167,11 +153,7 @@ defects worth reporting.
 > at mint time takes that decision on someone's behalf and inflates the design corpus with
 > documents for work nobody has scheduled.
 >
-> Measured 2026-08-16 across 153 capabilities: **67 of the 82 unbuilt ones have no feature
-> directory at all**, while **54 of the 62 delivered ones do** — the design document appears when
-> the work is picked up. Of the 15 unbuilt exceptions, twelve are active routing-queue candidates
-> and three were minted the same day by an agent following this phase as if it applied to
-> capabilities. `A-VAL-03` is the reference shape: a topic entry, no directory.
+> The design document appears when the work is picked up. `A-VAL-03` is the reference shape: a topic entry, no directory.
 >
 > **TECH is genuinely different** and that is why this phase exists: its authoritative registry is
 > `ls docs/roadmap/features/topic_07_technical_debt/`, one directory per ticket, so a TECH ticket
@@ -204,7 +186,7 @@ Every TECH ticket has `docs/roadmap/features/<topic_dir>/<ID>/<ID>_design.md`:
 ```
 
 The **title must match the registry entry name exactly**. Drift between the two is a recurring
-registry defect — three tickets had drifted as of 2026-07-25.
+registry defect.
 
 ## Phase 4: Register It
 
@@ -243,8 +225,7 @@ subject.
 - **Closing is a claim about the implementation, not about the work.** A `🟢`/`✅` asserts the
   implementation stands up to the ticket's promise: every FR proven by a test
   (`check_fr_coverage.py <ID>` exits 0), every unbuilt FR deleted from the FR table so the descope
-  is visible, and the `Verifiable Proof` naming test FILES that pass and do not skip. Measured
-  2026-08-13: **46 of 103 capabilities fail that bar while marked delivered.** Full contract:
+  is visible, and the `Verifiable Proof` naming test FILES that pass and do not skip. Full contract:
   `references/closure-contract.md`.
 - **Filing a follow-up is not a closure condition.** Resolving a ticket by filing another one
   defers the work and inflates the backlog.

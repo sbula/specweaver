@@ -1,5 +1,12 @@
 # Where a thing is written down
 
+## Contents
+- The four layers
+- The rules
+- What a TECH ticket looks like
+- Two things that look like exceptions and are not
+- When you are updating roadmap state after a commit
+
 One home per fact. This is the contract for `docs/roadmap/master_story_roadmap.md` and the documents
 around it, enforced by `scripts/check_roadmap_placement.py` and `scripts/_entry_depth.py` in the `doc` gate.
 

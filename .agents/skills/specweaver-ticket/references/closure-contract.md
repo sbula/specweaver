@@ -1,5 +1,15 @@
 # What it takes to close something
 
+## Contents
+- The four conditions
+- What FR coverage proves, and what it cannot
+- Filing a follow-up ticket is not one of the conditions
+- An audit's findings are verified, not filed
+- Do not rush the close
+- Where a citation goes, and what it must not name
+- NFRs are part of the claim
+- Strength: you can now measure it, on one claim at a time
+
 The rule for "finished" is `.agents/PRINCIPLES.md` §6. This file adds the FR-coverage check.
 
 A `🟢` or a `✅` is a claim that the implementation stands up to the ticket's promise. It is not a
