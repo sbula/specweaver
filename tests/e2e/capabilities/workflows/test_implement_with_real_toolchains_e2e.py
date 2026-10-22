@@ -1,13 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""`sw implement` with the real pytest, Maven, Gradle, npm and cargo — only the model is doubled.
+"""`sw implement` with the real pytest, Maven, npm and cargo — only the model is doubled.
 
 Proves: D-INTL-08 FR-9
 Proves: D-INTL-08 NFR-3
 
 US-3 P-5, the real half. Each sample in `tests/fixtures/toolchain/` is copied, prepared the way a
-user would (`npm install`, a first Maven or Gradle build), and implemented. The model answers with
+user would (`npm install`, a first Maven build), and implemented. The model answers with
 correct code and tests for the sample's package; the language's real tools compile, lint and test
 them. The `toolchain` tier is outside the default run and runs nightly (`scripts/toolchain.py`).
 
@@ -109,9 +109,9 @@ _SAMPLES = {
     ),
     "kotlin": _Sample(
         "kotlin",
-        ("java",),
-        ("services.gradle.org", "plugins.gradle.org", "repo.maven.apache.org"),
-        ("./gradlew", "-q", "testClasses", "detekt"),
+        ("mvn", "java"),
+        ("repo.maven.apache.org",),
+        ("mvn", "-q", "test-compile", "antrun:run@detekt"),
         'package com.example\n\nfun greet(name: String): String = "Hello, $name"',
         "package com.example\n\nimport kotlin.test.Test\nimport kotlin.test.assertEquals\n\n"
         "class GreeterTest {\n    @Test\n    fun greetsByName() {\n"

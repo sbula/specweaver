@@ -261,10 +261,11 @@ without secrets.
 
 ## 6a. Deselected: `@pytest.mark.toolchain`
 
-`sw implement` with the real pytest, Maven, Gradle, npm and cargo:
+`sw implement` with the real pytest, Maven, npm and cargo:
 `tests/e2e/capabilities/workflows/test_implement_with_real_toolchains_e2e.py`, on the samples in
 `tests/fixtures/toolchain/`. Only the model is doubled. A first run downloads packages (JUnit 5,
-Gradle, the Kotlin plugin, detekt, Vitest, ESLint), so it needs the network. A language skips only
+detekt, Vitest, ESLint), so it needs the network. Kotlin builds with Maven: the machine's Gradle
+is too old for its Java. A language skips only
 when its tool is missing or its package registry cannot be reached.
 
 ```bash
