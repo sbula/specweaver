@@ -152,7 +152,9 @@ are the ones that go stale, so copy none of them.
 ## Phase 8: Commit Boundary
 
 8.1. After Phase 7.5 completes, the pre-commit gate is finished.
-8.2. **Commit** (`<type>(<scope>): <description>`, straight to `main`). Never commit on a red gate.
+8.2. **Commit** (`<type>(<scope>): <description>`, straight to `main`) with
+     `python scripts/commit_gated.py "<message>" <path> ...`: it reruns the full suite, `cb` and
+     `doc`, stages only the named paths and never the mutation ledger. Never commit on a red gate.
      Exception: at the boundary that closes a sub-feature, stage it and **STOP** for the user's
      acceptance first (`specweaver-dev` Step C). If the user asked only for a check, report and do
      not commit.
