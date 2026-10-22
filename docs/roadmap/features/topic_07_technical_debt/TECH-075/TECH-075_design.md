@@ -37,6 +37,9 @@ fixes it, so none can drop out.
 | Found in research | `resolve_file_in_project` checks the text only, so an escaping link passes (`interfaces/api/v1/paths.py:52-74`) | FR-3 |
 | Found in research | `relative_to_root` hands a path outside the root on unchanged (`core/flow/handlers/archetype_pipelines.py:190`) `[agreed 2026-10-22]` | FR-8 |
 | Found in review | the pipeline `name` from the URL reaches `load_pipeline(Path(name))`, which first tries it as a file in the server's working folder (`core/flow/engine/parser.py:80-99`) | FR-10 |
+| Found in SF-02 research | `POST /check` field `pipeline` reaches `load_pipeline_yaml(name, project_dir=…)`, so `../../x` loads a YAML file outside the project (probed; `assurance/validation/pipeline_loader.py:69-82`) `[agreed 2026-10-22]` | FR-10 |
+| Found in SF-02 research | `sw update <name> path <value>` stores the path unresolved (`workspace/project/interfaces/cli.py:209`) `[agreed 2026-10-22]` | FR-7 |
+| Found in SF-02 research | `PUT /projects/{name}` stores a path that does not exist; `POST` refuses one (`interfaces/api/v1/projects.py:105-131`) `[agreed 2026-10-22]` | FR-7 |
 | Found in research | `export_graph_to_disk` and `directory_walk` compare path strings, so `/a/bc` counts as inside `/a/b` (`graph/core/builder/orchestrator.py:214-224`, `workspace/project/directory_walk.py:46`) `[agreed 2026-10-22]` | FR-9 |
 
 ## Path List (`ADR-005`)
@@ -44,12 +47,12 @@ fixes it, so none can drop out.
 | Path | Span | Proof |
 |---|---|---|
 | P-1 API client → `POST /pipelines/{name}/run` `spec` → run refused or started | API → `core/flow` → `sandbox` | e2e (FR-2) |
-| P-1b API client → `POST /pipelines/{name}/run` `name` → pipeline loaded | API → `core/flow` | integration (FR-10) |
+| P-1b API client → `POST /pipelines/{name}/run` `name`, `POST /check` `pipeline` → pipeline loaded | API → `core/flow`, `assurance/validation` | integration (FR-10) |
 | P-2 API client → implement / review / validation file field → `resolve_file_in_project` | API → `core/flow` → `sandbox` | integration (FR-3) |
 | P-3 agent → protocol tool → protocol atom | inside `sandbox` | integration (FR-4) |
 | P-4 agent → QA tool, any intent → QA atom | inside `sandbox` | integration (FR-5) |
 | P-5 spec mention → review handler → prompt | `core/flow` → `sandbox` | integration (FR-6) |
-| P-6 API client → `POST /projects`, `PUT /projects/{name}` → stored path | API → `workspace` | integration (FR-7) |
+| P-6 API client → `POST /projects`, `PUT /projects/{name}`; `sw update <name> path` → stored path | API, CLI → `workspace` | integration (FR-7) |
 | P-7 `sw check <file>` → archetype pipeline → code structure atom | `core/flow` → `sandbox` | integration (FR-8) |
 | P-8 graph export, directory walk | `graph`, `workspace` alone | unit (FR-9) |
 
@@ -97,10 +100,10 @@ resolve-then-check pattern with one shared function for every caller
 | FR-4 | The protocol atom SHALL read only files inside its boundary; the protocol tool SHALL be built with the run's boundary | protocol tool | extracts a schema | a path outside returns a failed result and is never opened |
 | FR-5 | Every QA runner intent (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`) SHALL refuse a `target` or `targets` entry outside its root, and the debugger's `entrypoint` where it is a file (Python, TypeScript) `[agreed 2026-10-22]`, before any tool starts; a scenario run also accepts `/scenarios/…` | QA atom | runs a tool | one check for all six intents |
 | FR-6 | Mention resolution SHALL check candidates with `WorkspaceBoundary` over the project root only, replacing the private `_is_within` | review handler | resolves mentions | a mention outside the project or behind an escaping link is dropped, as today |
-| FR-7 | `POST /projects` and `PUT /projects/{name}` SHALL store the resolved absolute path | API | registers or moves a project | a relative path no longer depends on the server's working folder |
+| FR-7 | `POST /projects`, `PUT /projects/{name}` and `sw update <name> path` SHALL store, and answer with, the resolved absolute path, and SHALL refuse a path that is not an existing folder `[agreed 2026-10-22]`; rows stored relative before this fix are not rewritten `[agreed 2026-10-22]` | API, CLI | registers or moves a project | a relative path no longer depends on the server's working folder |
 | FR-8 | `relative_to_root` SHALL never return a path outside its root; its callers SHALL skip that file with a WARNING | archetype pipelines, QA targets | hand a path to a sandboxed atom | no outside path reaches an atom |
 | FR-9 | `export_graph_to_disk` and the directory walk SHALL compare resolved paths by component, not by string prefix | graph builder, directory walk | test containment | a sibling folder whose name starts with the root's name is outside |
-| FR-10 | `POST /pipelines/{name}/run` SHALL accept only a bare pipeline name and SHALL never read a file relative to the server's working folder; the bundled lookup is unchanged | API | loads the named pipeline | a YAML file or folder beside the server cannot be loaded through the URL |
+| FR-10 | `POST /pipelines/{name}/run` SHALL accept only a bare pipeline name and SHALL never read a file relative to the server's working folder; the bundled lookup is unchanged. `POST /check` SHALL accept only a bare `pipeline` name `[agreed 2026-10-22]`. A refused name answers 404 `PIPELINE_NOT_FOUND` `[agreed 2026-10-22]`; `extends:` stays out of scope `[agreed 2026-10-22]` | API | loads the named pipeline | a YAML file or folder beside the server, or outside the project, cannot be loaded through the API |
 
 ## Requirement–Surface Bindings
 
@@ -210,13 +213,13 @@ no run. The same journey runs as an e2e test in the suite.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The boundary refuses every way out | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | API paths stay in the project | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | API paths stay in the project | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The engine judges paths by where they land | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22
+**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 plan approved 2026-10-22
 ([walkthrough](TECH-075_sf01_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-02.
+**Next step**: Trigger the dev skill for SF-02 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
