@@ -1,9 +1,10 @@
 ---
 name: specweaver-red-blue-review
-description: "Adversarial Red Team / Blue Team architecture review. Multi-cycle review where Red
-Team attacks and Blue Team defends design/implementation decisions. Runs until no significant
-findings remain. Use when the user asks for red team, blue team, adversarial review, design review,
-or architecture review."
+description: "Runs a multi-cycle adversarial red team / blue team review of a design, an implementation
+plan or a code change: red attacks, blue defends or fixes, until no significant finding remains. Use
+for 'red team', 'blue team', 'red/blue', 'adversarial review', 'design review', 'architecture
+review', and when another skill's phase calls for it."
+argument-hint: "<what to review>"
 ---
 
 # Red/Blue Team Review Skill
@@ -140,7 +141,7 @@ The Red Team MUST systematically check each of these categories in every cycle:
 - **Error Handling**: Are all failure modes handled? What happens on timeout, OOM, disk full?
 - **Race Conditions**: Are there TOCTOU bugs or concurrent access issues?
 - **Zombie Processes**: Can child processes outlive their parent?
-- **Platform Differences**: Does it work on both Windows and Linux?
+- **Platform Differences**: Does it work on every platform the project supports?
 
 ### Maintainability
 - **Testability**: Can every component be tested in isolation?
@@ -199,21 +200,14 @@ After all cycles complete, produce a consolidated report:
 
 ---
 
-## MCP Tool Guidance
-
-When available, prefer these MCP tools to verify claims under review:
-
-- **Verifying architecture claims:** Use `codebase-memory` → `trace_path` to check if stated dependency directions are accurate.
-- **Checking for missing references:** Use `codebase-memory` → `search_graph` to find all usages of a disputed symbol.
-- **Validating library usage:** Use `context7` → `get-library-docs` to verify API patterns cited in the design.
-- **Fall back to grep/file-reading** if MCP tools are unavailable.
-
 ## Integration Points
 
 
 This skill is invoked by:
 - **Design skill Phase 6**: Red/Blue review of the design document before approval
 - **Implementation-plan skill Phase 5**: Red/Blue review of the implementation plan before approval
+- **Dev skill Phase 2.4**: Red/Blue review of the task list
+- **Pre-commit skill Phase 7.5**: Red/Blue review of the commit boundary's changes
 - **Standalone**: When the user explicitly asks for an adversarial review of any document or code
 
 When invoked by another skill, keep the review focused and proportionate.
