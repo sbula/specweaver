@@ -15,7 +15,9 @@ Proves: B-FLOW-01 FR-14
 
 from __future__ import annotations
 
+from contextlib import suppress
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -76,25 +78,34 @@ def test_a_container_is_available_only_with_a_live_engine(
     assert container_available(which=found.get, probe=lambda engine: answers) is available
 
 
-def _atom(tmp_path: Path, scenarios: Path | None) -> QARunnerAtom:
+def _refused(tmp_path: Path, scenarios: Path | None, target: str) -> bool:
+    """Whether the atom refuses `target` before any tool starts."""
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
-    return QARunnerAtom(cwd=project, scenarios_root=scenarios)
+    with (
+        patch("specweaver.sandbox.qa_runner.core.atom._build_container_executor"),
+        patch("specweaver.sandbox.qa_runner.core.atom._resolve_runner") as resolve,
+        suppress(TypeError),  # a mock runner's result is not a real one
+    ):
+        QARunnerAtom(cwd=project, scenarios_root=scenarios).run(
+            {"intent": "run_tests", "target": target}
+        )
+    return not resolve.return_value.run_tests.called
 
 
 def test_a_target_in_the_mount_is_accepted(tmp_path: Path) -> None:
-    atom = _atom(tmp_path, tmp_path / "store")
-    assert atom._traversal_error(["/scenarios/generated/test_greet_scenarios.py"]) is None
+    assert not _refused(
+        tmp_path, tmp_path / "store", "/scenarios/generated/test_greet_scenarios.py"
+    )
 
 
 @pytest.mark.parametrize("target", ["/etc/x", "/scenarios/../etc/x", "../outside.py"])
 def test_a_target_outside_the_project_and_the_mount_is_refused(tmp_path: Path, target: str) -> None:
-    atom = _atom(tmp_path, tmp_path / "store")
-    assert atom._traversal_error([target]) is not None
+    assert _refused(tmp_path, tmp_path / "store", target)
 
 
 def test_without_the_mount_the_scenarios_path_is_refused(tmp_path: Path) -> None:
-    assert _atom(tmp_path, None)._traversal_error(["/scenarios/generated/x.py"]) is not None
+    assert _refused(tmp_path, None, "/scenarios/generated/x.py")
 
 
 # --- the sandbox image: built here when missing (no registry) ---------------------------------

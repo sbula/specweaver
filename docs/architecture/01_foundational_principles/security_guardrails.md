@@ -75,7 +75,9 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
 - **One boundary for paths from outside** (`TECH-075` AD-1) — a path an agent or a client gives
   is checked by `sandbox.security.WorkspaceBoundary`: a relative path is joined to the project root,
   links are resolved, then the result must lie under the root or a read-only API path. Empty paths
-  and null bytes are refused. The protocol tool and atom check every path this way before reading.
+  and null bytes are refused. The protocol tool and atom check every path this way before reading;
+  the QA atom checks every `target`, `targets` entry and debugger `entrypoint` before any tool
+  starts (`/scenarios/…` passes only in a scenario run).
   Code outside `sandbox` asks `contains(path)`, which answers without raising.
 - **Writes are task-scoped, reads are not** (`E-SENS-03`) — a writing role may change only the
   files the worktree merge would keep for its task (`security.write_verdict`, one rule for both, with the project's doc policy — `C-EXEC-08`); a

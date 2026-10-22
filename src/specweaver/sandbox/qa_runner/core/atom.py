@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.security import WorkspaceBoundary
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,41 @@ class QARunnerAtom(Atom):
                 message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
+        refused = self._refused_path(context)
+        if refused is not None:
+            return refused
         return handler(context)
+
+    #: Every context key an intent reads as a path. Empty values are left to the intent, which
+    #: names what is missing.
+    _PATH_KEYS: ClassVar[tuple[str, ...]] = ("target", "targets", "entrypoint")
+
+    def _refused_path(self, context: dict[str, Any]) -> AtomResult | None:
+        """A FAILED result for the first given path outside `cwd`; None when all stay inside."""
+        boundary = WorkspaceBoundary([self._cwd])
+        for key, given in self._given_paths(context):
+            if not self._stays_inside(given, boundary):
+                return AtomResult(
+                    status=AtomStatus.FAILED,
+                    message=f"{key} {given!r} is outside the sandbox directory.",
+                )
+        return None
+
+    def _given_paths(self, context: dict[str, Any]) -> list[tuple[str, object]]:
+        """Every non-empty path value in the context, with the key it came from."""
+        given: list[tuple[str, object]] = []
+        for key in self._PATH_KEYS:
+            value = context.get(key)
+            if not value:
+                continue
+            values = value if key == "targets" and isinstance(value, list) else [value]
+            given.extend((key, v) for v in values)
+        return given
+
+    def _stays_inside(self, given: object, boundary: WorkspaceBoundary) -> bool:
+        if not isinstance(given, str) or not given.strip():
+            return False
+        return self._in_scenarios_mount(given) or boundary.contains(Path(given))
 
     def _known_intents(self) -> set[str]:
         """Return the set of known intent names."""
@@ -193,24 +228,6 @@ class QARunnerAtom(Atom):
             )
         return [target], None
 
-    def _traversal_error(self, targets: list[str]) -> AtomResult | None:
-        """NFR-3 path-traversal protection: None when every target stays inside the sandbox."""
-        try:
-            for t in targets:
-                if self._in_scenarios_mount(t):
-                    continue
-                if not (self._cwd / t).resolve().is_relative_to(self._cwd.resolve()):
-                    return AtomResult(
-                        status=AtomStatus.FAILED,
-                        message="Target cannot traverse outside of the sandbox directory.",
-                    )
-        except ValueError:  # expected: the result says the target is invalid
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message="Invalid target path provided for sandbox execution.",
-            )
-        return None
-
     def _in_scenarios_mount(self, target: str) -> bool:
         """A target under the container's `/scenarios` mount, for a scenario run only."""
         normal = posixpath.normpath(target)
@@ -230,10 +247,6 @@ class QARunnerAtom(Atom):
         targets, early = self._resolve_test_targets(context)
         if early is not None:
             return early
-
-        traversal = self._traversal_error(targets)
-        if traversal is not None:
-            return traversal
 
         # Execute tests, natively aggregating for multiple dynamically rewritten boundaries
         agg_passed = 0

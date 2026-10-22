@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 from unittest.mock import patch
+
+import pytest
 
 from specweaver.core.config.settings import SandboxSettings
 from specweaver.sandbox.base import AtomStatus
@@ -685,3 +688,155 @@ class TestSandboxSettingsExecutorSelection:
         assert mounts.source_root == tmp_path
         assert mounts.scratch_root == tmp_path / ".specweaver" / ".sandbox" / "scratch"
         assert mounts.cache_root == tmp_path / ".specweaver" / ".sandbox" / "cache"
+
+
+# ---------------------------------------------------------------------------
+# One path check for every intent
+# ---------------------------------------------------------------------------
+
+_INTENTS = [
+    "run_tests",
+    "run_linter",
+    "run_complexity",
+    "run_compiler",
+    "run_debugger",
+    "run_architecture",
+]
+
+
+def _context(intent: str, target: object, entrypoint: object = "main.py") -> dict[str, object]:
+    context: dict[str, object] = {"intent": intent, "target": target}
+    if intent == "run_debugger":
+        context["entrypoint"] = entrypoint
+    return context
+
+
+class TestEveryIntentStaysInside:
+    """Proves: TECH-075 FR-5, NFR-3, NFR-4.
+
+    One check in `run()`, before any intent: every `target`, each of `targets`, and the debugger's
+    `entrypoint` must lie inside `cwd`. A refusal is FAILED and no tool starts.
+    """
+
+    @staticmethod
+    def _project(tmp_path: Path) -> Path:
+        project = tmp_path / "project"
+        project.mkdir()
+        return project
+
+    @pytest.mark.parametrize("intent", _INTENTS)
+    @pytest.mark.parametrize("target", ["../outside.py", "/etc/passwd", "src/\x00.py"])
+    def test_a_target_outside_is_refused_before_any_tool(
+        self, tmp_path: Path, intent: str, target: str
+    ) -> None:
+        """[Hostile] climbing out, an absolute path, a null byte — for every intent."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run(_context(intent, target))
+        assert result.status == AtomStatus.FAILED
+        assert "outside" in result.message
+        assert runner.method_calls == []
+
+    @pytest.mark.parametrize("intent", _INTENTS)
+    def test_a_link_that_points_outside_is_refused(self, tmp_path: Path, intent: str) -> None:
+        """[Hostile] links are resolved before the check (NFR-3)."""
+        project = self._project(tmp_path)
+        (project / "escape").symlink_to(tmp_path, target_is_directory=True)
+        atom = QARunnerAtom(cwd=project)
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run(_context(intent, "escape/x.py"))
+        assert result.status == AtomStatus.FAILED
+        assert runner.method_calls == []
+
+    @pytest.mark.parametrize("intent", ["run_tests", "run_linter"])
+    def test_one_outside_entry_in_targets_refuses_the_run(
+        self, tmp_path: Path, intent: str
+    ) -> None:
+        """[Hostile] a list is only as safe as its worst entry."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run({"intent": intent, "targets": ["tests/a.py", "../b.py"]})
+        assert result.status == AtomStatus.FAILED
+        assert runner.method_calls == []
+
+    def test_an_entrypoint_outside_is_refused(self, tmp_path: Path) -> None:
+        """[Hostile] the debugger runs `python <entrypoint>` (agreed 2026-10-22)."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run(_context("run_debugger", "src/", entrypoint="../evil.py"))
+        assert result.status == AtomStatus.FAILED
+        assert "../evil.py" in result.message
+        assert runner.method_calls == []
+
+    def test_a_class_name_entrypoint_passes(self, tmp_path: Path) -> None:
+        """[Boundary] Java and Kotlin pass a main class, which lies inside as a name."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner, suppress(TypeError):
+            atom.run(_context("run_debugger", ".", entrypoint="com.example.Main"))
+        assert runner.run_debugger.called
+
+    @pytest.mark.parametrize("target", [123, ["src/"], None.__class__])
+    def test_a_target_that_is_not_a_path_string_is_refused(
+        self, tmp_path: Path, target: object
+    ) -> None:
+        """[Hostile] a wrong type never reaches a tool."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run(_context("run_linter", target))
+        assert result.status == AtomStatus.FAILED
+        assert runner.method_calls == []
+
+    @pytest.mark.parametrize("intent", _INTENTS)
+    @pytest.mark.parametrize("target", ["src/mod.py", ".", "PROJECT_ABSOLUTE"])
+    def test_a_target_inside_reaches_the_tool(
+        self, tmp_path: Path, intent: str, target: str
+    ) -> None:
+        """[Happy] relative, the root itself, and an absolute path inside."""
+        project = self._project(tmp_path)
+        target = str(project / "src") if target == "PROJECT_ABSOLUTE" else target
+        atom = QARunnerAtom(cwd=project)
+        with patch.object(atom, "_runner") as runner, suppress(TypeError):
+            atom.run(_context(intent, target))  # the mock's result is not a real one
+        assert runner.method_calls != []
+
+    def test_the_scenarios_mount_is_inside_only_in_a_scenario_run(self, tmp_path: Path) -> None:
+        """[Boundary] `/scenarios/...` passes with the mount, and is refused without it (NFR-4)."""
+        project = self._project(tmp_path)
+        context = {"intent": "run_tests", "target": "/scenarios/generated/test_x.py"}
+        with (
+            patch("specweaver.sandbox.qa_runner.core.atom._build_container_executor"),
+            patch("specweaver.sandbox.qa_runner.core.atom._resolve_runner") as resolve,
+        ):
+            mounted = QARunnerAtom(cwd=project, scenarios_root=tmp_path / "store")
+            with suppress(TypeError):
+                mounted.run(context)
+        assert resolve.return_value.run_tests.called
+
+        plain = QARunnerAtom(cwd=project)
+        with patch.object(plain, "_runner") as runner:
+            assert plain.run(context).status == AtomStatus.FAILED
+        assert runner.method_calls == []
+
+    @pytest.mark.parametrize("intent", _INTENTS)
+    def test_a_missing_target_keeps_its_own_message(self, tmp_path: Path, intent: str) -> None:
+        """[Degradation] the check skips empty values, so each intent still names what is missing."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        result = atom.run(_context(intent, ""))
+        assert result.status == AtomStatus.FAILED
+        assert "Missing" in result.message
+
+    def test_targets_given_as_one_string_is_still_checked(self, tmp_path: Path) -> None:
+        """[Hostile] a wrongly shaped `targets` is checked as one path, not skipped."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run({"intent": "run_linter", "targets": "../b.py"})
+        assert result.status == AtomStatus.FAILED
+        assert runner.method_calls == []
+
+    def test_a_whitespace_target_is_refused(self, tmp_path: Path) -> None:
+        """[Boundary] blank is not the project root."""
+        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        with patch.object(atom, "_runner") as runner:
+            result = atom.run({"intent": "run_linter", "target": "   "})
+        assert result.status == AtomStatus.FAILED
+        assert runner.method_calls == []

@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """Tests for ContainerMounts and ContainerSubprocessExecutor (B-EXEC-01).
-Proves: B-EXEC-01 FR-6, B-EXEC-01 FR-7
+Proves: B-EXEC-01 FR-6, B-EXEC-01 FR-7, B-EXEC-01 NFR-3, B-EXEC-01 NFR-4
 
 FR-6 is dual-engine support and FR-7 is failing closed when neither engine is usable. Both are
 exercised here against a patched `PATH` rather than by installing a second runtime: `podman` preferred

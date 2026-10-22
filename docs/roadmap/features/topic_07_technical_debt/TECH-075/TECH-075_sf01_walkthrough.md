@@ -104,3 +104,66 @@ tool with no boundary; it now passes one, and a new test proves no boundary mean
 
 No stop. `contains` is a new public method on an exposed class, chosen to keep `tach.toml`
 unchanged (NFR-5); review it.
+
+## CB-3 — FR-5: every QA intent refuses a path outside its root
+
+### What changed
+
+- `QARunnerAtom.run` checks every path argument before any intent runs: `target`, each `targets`
+  entry, and the debugger's `entrypoint` (agreed 2026-10-22). Each must pass
+  `WorkspaceBoundary([cwd]).contains`, or be `/scenarios/…` in a scenario run. A blank or non-string
+  value is refused. An empty value is skipped, so each intent still names what is missing.
+- `_traversal_error` (only `run_tests` called it) is removed. The scenario-mount tests now go
+  through `run()` instead of the private helper.
+- A Java or Kotlin main-class name (`com.example.Main`) passes: it resolves inside the root as a name.
+
+### Red first
+
+26 of the new unit cases failed before the code: five intents had no check, and `run_tests` let a
+null byte through as "Invalid target path". The seam test was written after the code, so it was run
+against the old atom (`git show HEAD:…`, then restored): 16 of 20 failed; the 4 that passed are
+`run_tests`, which had a check, and the inside case.
+
+### Combined analysis
+
+Architecture: `sandbox.qa_runner.core` imports `sandbox.security` (same tach module). No new edge.
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `QARunnerAtom.run` → `_refused_path` | ✅ six intents × outside, link, null byte; targets; entrypoint; types; blank | ✅ through `create_qa_runner_interface`, real runner, no process starts | — |
+| `_given_paths`, `_stays_inside` | ✅ via `run` | ✅ | — |
+| `_in_scenarios_mount` | ✅ mounted / not mounted | — | ✅ scenario pipelines (unchanged) |
+
+Gaps found in the gate and closed: `targets` given as one string; a whitespace-only target.
+Engine callers (`validation.py`, `lint_fix.py`, `validation_hydrator.py`, scenario steps) pass
+relative targets inside `cwd`; their tests stay green.
+
+Found in the gate, and what was done:
+
+- `complexipy`: `_refused_path` reached 16. Split into `_given_paths` and `_stays_inside`.
+- `ruff` SIM105 in the seam test. Fixed.
+- `duplication`: the intent dispatch copied in `FileSystemAtom.run` and `QARunnerAtom.run` is an
+  old clone; the edit re-keyed it and it shrank from 23 to 14 lines. Re-frozen
+  (`scripts/baselines/duplication.json`). No audit ticket owns it; the baseline keeps it from
+  growing.
+- `nfr_sweep`: `B-EXEC-01` NFR-3 (`--network none`) and NFR-4 (non-root, `--cap-drop ALL`,
+  `no-new-privileges`) were "cited" only because `test_qa_runner_atom.py` names `B-EXEC-01` once and
+  has old "NFR-3/NFR-4 Edge Case" docstrings that mean something else. The new `Proves: TECH-075`
+  line took those words, so the false citation fell away. The real proof was read and cited:
+  `test_container_executor.py` (`test_network_none_present`, `test_capabilities_dropped`,
+  `test_user_flag_matches_invoking_uid_on_linux`) and the real-engine
+  `test_network_none_blocks_egress`.
+- The first `tests.py sf` run reported a unit failure that did not come back in a rerun or in three
+  runs of the test it printed. Not reproduced; the commit gate runs the full suite again.
+
+### Results
+
+- `tests.py sf TECH-075 --kind bugfix`: unit 9170 passed, 9 skipped; integration 1686 passed;
+  e2e (domain) 34 passed.
+- `quality.py sf`: 18 of 18. `quality.py doc`: 14 of 14.
+- Mutants (FR-5): `linter-unchecked`, `entrypoint-unchecked`, `scenarios-without-mount` — killed,
+  hashes pinned. A blank-target mutant was killed too (not in the corpus).
+
+### Decisions
+
+SF-01 closes here: stopped for the user's acceptance before the commit.

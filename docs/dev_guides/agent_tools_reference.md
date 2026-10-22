@@ -113,6 +113,16 @@ read from the project root; a contract under a read-only API path is allowed; `.
 absolute path or a link that points outside is refused before the file is opened, and the error
 names only the path as given (`TECH-075` FR-4).
 
+## QARunnerTool and QARunnerAtom
+
+Tests, lint, complexity, compile, debug and architecture checks, by intent. Before any intent runs,
+`QARunnerAtom.run` checks every `target`, each `targets` entry and the debugger's `entrypoint`
+against `WorkspaceBoundary([cwd])`. A path outside (`..`, an outside absolute path, a link that
+points outside, a null byte, a value that is not a string) is a `FAILED` result and no tool starts.
+A Java or Kotlin main-class name passes as a name inside the root. `/scenarios/…` passes only when
+the atom was built with `scenarios_root`. An empty value is left to the intent, which names what is
+missing (`TECH-075` FR-5).
+
 ## GitTool (agents)
 
 Agents call git by intent, not raw commands. Each intent maps to a safe sequence of git commands on

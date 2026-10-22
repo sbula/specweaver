@@ -81,6 +81,47 @@
           "symbol_sha": "sha256:14c0c1de9155dcc081358d6ef0fcf20bdeb4bcc9d9a3e473722fcc545890c7a9"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Every QA intent refuses a path outside its root before any tool starts",
+      "scope": [
+        "tests/unit/sandbox/qa_runner/core/qa_runner/test_qa_runner_atom.py",
+        "tests/unit/sandbox/execution/test_scenario_mount.py",
+        "tests/integration/sandbox/test_qa_targets_stay_inside.py"
+      ],
+      "mutants": [
+        {
+          "id": "linter-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "QARunnerAtom.run",
+          "old": "        refused = self._refused_path(context)\n",
+          "new": "        refused = None if intent == \"run_linter\" else self._refused_path(context)\n",
+          "breaks": "the linter runs on a path outside the project",
+          "symbol_sha": "sha256:43578c80969d7e58b12b495f70e9285156c788c8c99831e74bac4018c258e5a2"
+        },
+        {
+          "id": "entrypoint-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "QARunnerAtom._given_paths",
+          "old": "        for key in self._PATH_KEYS:\n",
+          "new": "        for key in self._PATH_KEYS[:2]:\n",
+          "breaks": "the debugger runs python on an outside entrypoint",
+          "symbol_sha": "sha256:53f8254f36ec9492eb6e56c2dc13539237059a96a773ba28594644fcdba658fd"
+        },
+        {
+          "id": "scenarios-without-mount",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
+          "symbol": "QARunnerAtom._in_scenarios_mount",
+          "old": "        return self._scenarios_mounted and normal.startswith(\"/scenarios/\")\n",
+          "new": "        return normal.startswith(\"/scenarios/\")\n",
+          "breaks": "a /scenarios path passes in a run with no scenario mount",
+          "symbol_sha": "sha256:9980272c689af5c9e1ed591e9435aaade1a30a834c182ab91128977086d42bf0"
+        }
+      ]
     }
   ]
 }

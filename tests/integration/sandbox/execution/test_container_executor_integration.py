@@ -15,7 +15,7 @@ Proves: TECH-031 FR-1, TECH-031 FR-2, TECH-031 FR-3, TECH-031 FR-4
 Proves: TECH-031 FR-5, TECH-031 FR-6, TECH-031 FR-7
 Proves: TECH-031 FR-8, TECH-031 FR-9
 Proves: B-EXEC-01 FR-2, B-EXEC-01 FR-3, B-EXEC-01 FR-4
-Proves: B-EXEC-01 FR-5, B-EXEC-01 FR-8
+Proves: B-EXEC-01 FR-5, B-EXEC-01 FR-8, B-EXEC-01 NFR-3
 """
 
 from __future__ import annotations

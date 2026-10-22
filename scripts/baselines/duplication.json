@@ -199,10 +199,10 @@
     "first": "src/specweaver/sandbox/execution/container_executor.py:534",
     "second": "src/specweaver/sandbox/execution/executor.py:71"
   },
-  "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @a91f7b2f86aa": {
-    "lines": 23,
+  "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @83b463251c29": {
+    "lines": 14,
     "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
-    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:139"
+    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:140"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
