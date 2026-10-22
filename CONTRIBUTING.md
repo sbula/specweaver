@@ -16,6 +16,14 @@ cd specweaver
 uv sync
 ```
 
+> [!WARNING]
+> **Windows: the agent skills need symlinks.** Each `.claude/skills/<name>` is a symlink to
+> `.agents/skills/<name>`. Without symlink support, git checks them out as small text files and
+> Claude Code finds no skills. Turn on Developer Mode (or run git as administrator), then clone
+> with `git clone -c core.symlinks=true <url>`. To repair an existing clone: run
+> `git config core.symlinks true`, delete the `.claude/skills` folder, then run
+> `git checkout -- .claude/skills`.
+
 ## Running Tests
 
 ```bash

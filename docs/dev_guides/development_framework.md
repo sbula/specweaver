@@ -168,11 +168,11 @@ own baseline is a guard that cannot fail.
 | `.agents/STATE.md` | Where the project stands right now — committed |
 | `.tmp/HANDOVER.md` | Where **this session** stands — gitignored, dies with the machine |
 | `docs/dev_guides/working_in_this_repo.md` | Ten operational traps, each one a real incident |
-| `.agents/skills/` + `.claude/skills/` | The procedures. **Two copies**, held in step by `check_skill_sync.py` |
+| `.agents/skills/` + `.claude/skills/` | The procedures. One copy in `.agents/skills/`; each `.claude/skills/<name>` is a symlink to it, checked by `check_skill_sync.py` |
 
-The two skill trees exist because Claude Code reads one path and other agents read the other. That is
-an environment constraint, not duplication for its own sake — but it means **every skill edit must be
-applied to both trees**, and the gate will tell you if you forget.
+The two skill paths exist because Claude Code reads one and other agents read the other. The symlinks
+make them one set of files: **edit only `.agents/skills/`**. On Windows, symlinks need git's
+`core.symlinks` (see `CONTRIBUTING.md`, Dev Setup).
 
 ### The one rule about rules
 

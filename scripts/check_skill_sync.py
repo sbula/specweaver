@@ -4,14 +4,11 @@
 
 """Verify the two skill trees are identical.
 
-`.agents/skills/` is the tool-neutral path (read by Gemini/Antigravity and anything else);
-`.claude/skills/` is what Claude Code reads. They hold the same files by CONVENTION ONLY — measured
-2026-07-25, all 26 pairs are separate files (`st_nlink == 1`), not hardlinks. Nothing in the repo
-keeps them in step; the Claude Code harness appears to mirror them, which means an edit made while
-working in a DIFFERENT agent updates only one side and the other silently goes stale.
-
-This check is therefore the only thing standing between you and an agent following an outdated
-skill. Run it in the pre-commit gate.
+`.agents/skills/` is the tool-neutral path (read by Gemini and other agents) and holds the files;
+each `.claude/skills/<name>` is a symlink to it, because Claude Code reads that path. A symlink
+cannot drift. This check catches what can still go wrong: a skill added on one side only, a copy
+that has drifted, or a link git checked out as a plain text file (Windows without
+`core.symlinks`), which leaves every file of that skill MISSING.
 
 Note on `st_ino`: do NOT use inode equality to detect hardlinks here. On this workspace's
 filesystem two distinct files reported the SAME `st_ino` while both had `st_nlink == 1`. Content
@@ -100,11 +97,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if errors:
         print(
-            "\nThe two skill trees have drifted. Decide which side is correct, then copy it over\n"
-            "the other:\n"
-            "  cp .agents/skills/<rel> .claude/skills/<rel>   # or the reverse\n"
-            "Nothing keeps these in step automatically outside Claude Code, so a skill edited\n"
-            "while working in another agent updates only one side."
+            "\nThe two skill trees have drifted. Keep the correct files in .agents/skills/, then\n"
+            "make .claude/skills/<name> a symlink to it:\n"
+            "  ln -s ../../.agents/skills/<name> .claude/skills/<name>"
         )
     return 1 if errors else 0
 

@@ -71,6 +71,17 @@ class TestPlainTrees:
         assert css.main([str(left), str(right)]) == 1
         assert "extra.md" in capsys.readouterr().out
 
+    def test_a_file_only_on_the_claude_side_is_reported(
+        self, css: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        left, right = _trees(tmp_path)
+        (left / "demo" / "extra.md").write_text("only here\n", encoding="utf-8")
+
+        assert css.main([str(left), str(right)]) == 1
+        out = capsys.readouterr().out
+        assert f"MISSING in {right}" in out
+        assert "extra.md" in out
+
     def test_differing_content_is_reported(
         self, css: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -125,3 +136,17 @@ class TestSymlinkedSkill:
         (right / "demo" / "loop").symlink_to(right / "demo", target_is_directory=True)
 
         assert css.main([str(left), str(right)]) in (0, 1)
+
+    def test_a_link_checked_out_as_a_plain_file_is_reported(
+        self, css: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Git without `core.symlinks` writes the link target into a text file of the same name."""
+        left, right = _trees(tmp_path)
+        (right / "linked").mkdir()
+        (right / "linked" / "SKILL.md").write_text("real\n", encoding="utf-8")
+        (left / "linked").write_text("../../agents/skills/linked", encoding="utf-8")
+
+        assert css.main([str(left), str(right)]) == 1
+        out = capsys.readouterr().out
+        assert "MISSING" in out
+        assert "linked/SKILL.md" in out

@@ -26,7 +26,11 @@ each one an incident that cost a session.
 
 ## Note on tooling directories
 
-`.claude/skills/` and `.agents/skills/` hold **two copies** of the same files, so Claude Code and
-other agents both find them. Nothing syncs them automatically outside Claude Code. **Edit both**,
-then run `python scripts/check_skill_sync.py` — it is part of the pre-commit gate and fails on any
-drift. `.agents/` is the tool-neutral path; prefer it when reading.
+`.agents/skills/` holds the skills. Each `.claude/skills/<name>` is a **symlink** to
+`.agents/skills/<name>`, so Claude Code and other agents read the same files. **Edit only
+`.agents/skills/`.** `python scripts/check_skill_sync.py` is part of the pre-commit gate and fails
+if the two trees ever differ.
+
+> [!WARNING]
+> **Windows:** the symlinks need git's `core.symlinks`, or Claude Code finds no skills. Setup and
+> repair: [`CONTRIBUTING.md`](CONTRIBUTING.md#dev-setup).

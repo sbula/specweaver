@@ -91,10 +91,11 @@ description: "Phase 5: Code quality checks — one consolidated static-analysis 
      the matrix) MUST be surfaced to the user — never silently "fixed" in either direction, since
      resolving them touches finished-registry content (HITL + guard hook apply).
 
-     **Skill sync.** `.claude/skills/` and `.agents/skills/` hold two copies of the same files so
-     that Claude Code and other agents (Gemini/Antigravity) both find them. Any error MUST be
-     fixed by copying the correct version over the other; decide which side is correct by
-     reading, not by timestamp.
+     **Skill sync.** Each `.claude/skills/<name>` is a symlink to `.agents/skills/<name>`, so
+     Claude Code and other agents read the same files. An error means a skill exists on one side
+     only, or a link became a copy or a plain file. Fix it by keeping the correct files in
+     `.agents/skills/` and restoring the symlink; decide which side is correct by reading, not by
+     timestamp.
 
      Not included here, because both need a `<STORY-ID>` argument and belong to specific
      lifecycle moments rather than to every commit: `check_story_preconditions.py` (run by
