@@ -57,7 +57,9 @@ def _app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Path]:
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
     (data / "settings.toml").write_text("[serve]\nmax_runs = 3\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "two_steps.yaml").write_text(_PIPELINE, encoding="utf-8")
+    own = tmp_path / "proj" / ".specweaver" / "pipelines"
+    own.mkdir(parents=True)
+    (own / "two_steps.yaml").write_text(_PIPELINE, encoding="utf-8")
     bootstrap_database(str(data / "specweaver.db"))
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
@@ -76,7 +78,7 @@ def _park(client: TestClient, project: Path) -> str:
         headers=AUTH,
     )
     run_id = client.post(
-        "/api/v1/pipelines/two_steps.yaml/run",
+        "/api/v1/pipelines/two_steps/run",
         json={"project": "rest", "spec": "specs/a_spec.md"},
         headers=AUTH,
     ).json()["run_id"]

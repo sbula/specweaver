@@ -6,13 +6,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.v1.paths import resolve_file_in_project, validate_relative_path
+from specweaver.interfaces.api.errors import SpecWeaverAPIError
+from specweaver.interfaces.api.v1.paths import (
+    require_bare_pipeline_name,
+    resolve_file_in_project,
+    validate_relative_path,
+)
 from specweaver.interfaces.api.v1.schemas import (
     CheckRequest,
     CheckResponse,
@@ -20,6 +25,9 @@ from specweaver.interfaces.api.v1.schemas import (
     RuleInfo,
     RuleResultResponse,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +70,26 @@ def _rule_response(r: Any) -> RuleResultResponse:
     )
 
 
+def _check_pipeline(body: CheckRequest, project_root: Path, active_profile: str | None) -> Any:
+    """The validation pipeline `/check` runs: a bare name, the project's own or a packaged one."""
+    from specweaver.assurance.validation.pipeline_loader import (
+        load_pipeline_yaml,
+        resolve_pipeline_name,
+    )
+
+    if body.pipeline is not None:
+        require_bare_pipeline_name(body.pipeline)
+    pipeline_name = resolve_pipeline_name(body.level, body.pipeline, active_profile=active_profile)
+    try:
+        return load_pipeline_yaml(pipeline_name, project_dir=project_root)
+    except FileNotFoundError as exc:
+        raise SpecWeaverAPIError(
+            detail=f"Pipeline not found: '{pipeline_name}'",
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        ) from exc
+
+
 @router.post("/check", response_model=CheckResponse)
 async def run_check(
     body: CheckRequest,
@@ -71,20 +99,13 @@ async def run_check(
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401
     from specweaver.assurance.validation.executor import execute_validation_pipeline
-    from specweaver.assurance.validation.pipeline_loader import (
-        load_pipeline_yaml,
-        resolve_pipeline_name,
-    )
 
     validate_relative_path(body.file)
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     content = abs_path.read_text(encoding="utf-8")
 
-    active_profile = await _active_domain_profile(db)
-    pipeline_name = resolve_pipeline_name(body.level, body.pipeline, active_profile=active_profile)
-
-    resolved = load_pipeline_yaml(pipeline_name, project_dir=project_root)
+    resolved = _check_pipeline(body, project_root, await _active_domain_profile(db))
     if body.level == "code":
         from specweaver.core.config.dal_resolver import DALResolver
         from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow

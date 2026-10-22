@@ -89,7 +89,9 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
     (data_dir / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "one_review.yaml").write_text(_ONE_REVIEW, encoding="utf-8")
+    own = tmp_path / "proj" / ".specweaver" / "pipelines"
+    own.mkdir(parents=True)
+    (own / "one_review.yaml").write_text(_ONE_REVIEW, encoding="utf-8")
     db_path = data_dir / "specweaver.db"
     bootstrap_database(str(db_path))
     project = tmp_path / "proj"
@@ -104,7 +106,7 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
             "/api/v1/projects", json={"name": "rest", "path": str(project), "scaffold": False}
         )
         started = client.post(
-            "/api/v1/pipelines/one_review.yaml/run",
+            "/api/v1/pipelines/one_review/run",
             json={"project": "rest", "spec": "specs/a_spec.md"},
         )
         assert started.status_code == 200, started.text

@@ -62,6 +62,20 @@ def load_pipeline(path: Path) -> PipelineDefinition:
     return pipeline
 
 
+def load_bundled_pipeline(name: str) -> PipelineDefinition:
+    """Load a bundled pipeline by name, and never a file outside the package.
+
+    Raises:
+        FileNotFoundError: If `name` is not in `list_bundled_pipelines()`.
+    """
+    if name not in list_bundled_pipelines():
+        msg = f"Not a bundled pipeline: '{name}'"
+        raise FileNotFoundError(msg)
+    template = importlib.resources.files("specweaver.workflows.pipelines") / f"{name}.yaml"
+    with importlib.resources.as_file(template) as real_path:
+        return load_pipeline(real_path)
+
+
 def list_bundled_pipelines() -> list[str]:
     """The names of the bundled pipelines `sw run` can run.
 

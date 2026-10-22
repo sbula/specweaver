@@ -52,7 +52,9 @@ def _client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, serve: str) -> Test
     (data / "settings.toml").write_text(serve, encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "one_check.yaml").write_text(_PIPELINE, encoding="utf-8")
+    own = tmp_path / "proj" / ".specweaver" / "pipelines"
+    own.mkdir(parents=True)
+    (own / "one_check.yaml").write_text(_PIPELINE, encoding="utf-8")
 
     async def _waits(_self: PipelineRunner, *_args: object, **_kwargs: object) -> None:
         await asyncio.sleep(30)
@@ -70,7 +72,7 @@ def _client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, serve: str) -> Test
 
 def _run(client: TestClient):
     return client.post(
-        "/api/v1/pipelines/one_check.yaml/run", json={"project": "rest", "spec": "specs/a_spec.md"}
+        "/api/v1/pipelines/one_check/run", json={"project": "rest", "spec": "specs/a_spec.md"}
     )
 
 

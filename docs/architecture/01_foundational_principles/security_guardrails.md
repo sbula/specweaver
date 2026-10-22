@@ -81,6 +81,8 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
   Code outside `sandbox` asks `contains(path)`, which answers without raising. The REST API reaches
   the boundary through `core.flow.engine.project_paths.project_file`: a pipeline run's `spec` and
   every `file` field answer `PATH_TRAVERSAL` 400 naming only the input, before any existence check.
+  A pipeline named over the API (run, resume, `/check`) is a bare name: the project's own
+  `.specweaver/pipelines/<name>.yaml`, else a packaged one; never a file beside the server.
 - **Writes are task-scoped, reads are not** (`E-SENS-03`) — a writing role may change only the
   files the worktree merge would keep for its task (`security.write_verdict`, one rule for both, with the project's doc policy — `C-EXEC-08`); a
   role with no rule gets no grant. What an agent may read is owed by `B-FLOW-04`.

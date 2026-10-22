@@ -15,7 +15,11 @@ from specweaver.core.config.database import Database  # noqa: TC001 -- runtime f
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.interfaces.api.deps import get_db
-from specweaver.interfaces.api.v1.paths import project_file_or_400, resolve_project_root
+from specweaver.interfaces.api.v1.paths import (
+    project_file_or_400,
+    require_bare_pipeline_name,
+    resolve_project_root,
+)
 from specweaver.interfaces.api.v1.schemas import (
     GateDecisionRequest,
     PipelineRunRequest,
@@ -40,6 +44,35 @@ def list_pipelines() -> list[dict[str, str]]:
     return [{"name": n, "source": "bundled"} for n in names]
 
 
+def _api_pipeline(name: str, project_root: Path) -> Any:
+    """The project's own `.specweaver/pipelines/<name>.yaml`, else the bundled pipeline `name`.
+
+    Never a file beside the server: a client names a pipeline, not a path.
+    """
+    from specweaver.core.flow.engine import parser
+    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
+    from specweaver.interfaces.api.errors import SpecWeaverAPIError
+
+    require_bare_pipeline_name(name)
+    try:
+        own = project_file(project_root, f".specweaver/pipelines/{name}.yaml")
+        if own.is_file():
+            return parser.load_pipeline(own)
+        return parser.load_bundled_pipeline(name)
+    except (FileNotFoundError, ProjectPathError) as exc:
+        raise SpecWeaverAPIError(
+            detail=f"Pipeline not found: '{name}'",
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        ) from exc
+    except ValueError as exc:
+        raise SpecWeaverAPIError(
+            detail=str(exc),
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        ) from exc
+
+
 async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) -> None:
     """Rebuild a parked run's context and hand it back to the bridge.
 
@@ -47,12 +80,11 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     unblocks — and they carried the same thirty lines twice. The isolation policy is one line each of
     them needs, and a shared block is one place to forget it rather than two.
     """
-    from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     project_root = await resolve_project_root(run.project_name, db)
-    pipeline_def = load_pipeline(Path(run.pipeline_name))
+    pipeline_def = _api_pipeline(run.pipeline_name, project_root)
     limit = _max_runs(project_root)
     context = RunContext(
         project_path=project_root,
@@ -182,23 +214,12 @@ async def start_pipeline_run(
     """
     import uuid
 
-    from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
-    # Resolve project
     project_root = await resolve_project_root(body.project, db)
-
-    # Load pipeline definition
-    try:
-        pipeline_def = load_pipeline(Path(name))
-    except (FileNotFoundError, ValueError) as exc:
-        raise SpecWeaverAPIError(
-            detail=str(exc),
-            error_code="PIPELINE_NOT_FOUND",
-            status_code=404,
-        ) from exc
+    pipeline_def = _api_pipeline(name, project_root)
 
     spec_path = project_file_or_400(project_root, body.spec)
     if not spec_path.exists():

@@ -181,6 +181,55 @@
           "symbol_sha": "sha256:5dfecf9a4f1fb5c4af462eb3e40a37bdbf967c5796cf5cab74cc1506143a4bd0"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "An API client names a pipeline, never a path",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_pipeline_names.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-name-read-beside-server",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_api_pipeline",
+          "old": "        return parser.load_bundled_pipeline(name)\n",
+          "new": "        return parser.load_pipeline(Path(name))\n",
+          "breaks": "a YAML file beside the server is run through the URL",
+          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+        },
+        {
+          "id": "run-name-not-bare",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_api_pipeline",
+          "old": "    require_bare_pipeline_name(name)\n    try:",
+          "new": "    try:",
+          "breaks": "a stored name walks out of .specweaver/pipelines to a YAML an agent can write",
+          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+        },
+        {
+          "id": "project-pipelines-link-followed",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_api_pipeline",
+          "old": "        own = project_file(project_root, f\".specweaver/pipelines/{name}.yaml\")\n",
+          "new": "        own = project_root / f\".specweaver/pipelines/{name}.yaml\"\n",
+          "breaks": "a pipelines folder that links outside the project is read",
+          "symbol_sha": "sha256:2f6df522e82ff551b3089280259ba24420b6617ae1783f84b44e11978500690b"
+        },
+        {
+          "id": "check-name-not-bare",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/validation.py",
+          "symbol": "_check_pipeline",
+          "old": "    if body.pipeline is not None:\n        require_bare_pipeline_name(body.pipeline)\n",
+          "new": "    pass\n",
+          "breaks": "POST /check loads a validation pipeline YAML outside the project",
+          "symbol_sha": "sha256:ae775709d33aede446d49f7f2593be3f587dd07ff964fbfe88939d957869ae87"
+        }
+      ]
     }
   ]
 }

@@ -307,19 +307,12 @@ def test_submit_hitl_gate(tmp_path) -> None:
     app = create_app(token=TEST_TOKEN, db=db)
     client = TestClient(app, headers=AUTH)
 
-    # Set up pipeline definitions to prevent FileNotFoundError
-    pipeline_def_dir = tmp_path / "validate_only"
-    pipeline_def_dir.mkdir()
-    (pipeline_def_dir / "pipeline.yaml").write_text(
-        "name: validate_only\nsteps:\n  - name: v\n    action: validate\n    target: spec\n"
-    )
-
     # Set up spec
     (tmp_path / "fake_spec.md").write_text("# Spec")
 
     run = PipelineRun(
         run_id="test-gate-1",
-        pipeline_name=str(pipeline_def_dir / "pipeline.yaml"),
+        pipeline_name="validate_only",
         project_name="myproject",
         spec_path="fake_spec.md",
         status=RunStatus.PARKED,

@@ -76,7 +76,9 @@ def _client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     (data / "settings.toml").write_text("[serve]\nmax_runs = 2\n", encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "one_validate.yaml").write_text(_PIPELINE, encoding="utf-8")
+    own = tmp_path / "proj" / ".specweaver" / "pipelines"
+    own.mkdir(parents=True)
+    (own / "one_validate.yaml").write_text(_PIPELINE, encoding="utf-8")
     path = data / "specweaver.db"
     bootstrap_database(str(path))
     project = tmp_path / "proj"
@@ -90,7 +92,7 @@ def _client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 def _start(client: TestClient) -> str:
     started = client.post(
-        "/api/v1/pipelines/one_validate.yaml/run",
+        "/api/v1/pipelines/one_validate/run",
         json={"project": "rest", "spec": "specs/a_spec.md"},
     )
     assert started.status_code == 200, started.text

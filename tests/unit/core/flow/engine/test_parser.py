@@ -17,7 +17,11 @@ from specweaver.core.flow.engine.models import (
     StepAction,
     StepTarget,
 )
-from specweaver.core.flow.engine.parser import list_bundled_pipelines, load_pipeline
+from specweaver.core.flow.engine.parser import (
+    list_bundled_pipelines,
+    load_bundled_pipeline,
+    load_pipeline,
+)
 
 # ---------------------------------------------------------------------------
 # load_pipeline — from file path
@@ -290,3 +294,25 @@ class TestParserEdgeCases:
         )
         with pytest.raises(ValueError):
             load_pipeline(yaml_file)
+
+
+class TestLoadBundledPipeline:
+    """`load_bundled_pipeline` reads only the packaged run pipelines. Proves: TECH-075 FR-10"""
+
+    def test_a_bundled_name_loads(self) -> None:
+        assert load_bundled_pipeline("validate_only").name == "validate_only"
+
+    @pytest.mark.parametrize(
+        "name", ["validation_spec_default", "context", "validate_only.yaml", "nothing_here"]
+    )
+    def test_a_name_not_in_the_list_is_not_found(self, name: str) -> None:
+        with pytest.raises(FileNotFoundError):
+            load_bundled_pipeline(name)
+
+    def test_a_file_beside_the_process_is_never_read(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "beside.yaml").write_text("name: beside\nsteps: []\n", encoding="utf-8")
+        with pytest.raises(FileNotFoundError):
+            load_bundled_pipeline("beside")

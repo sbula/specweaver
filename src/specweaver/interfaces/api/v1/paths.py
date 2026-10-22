@@ -43,6 +43,16 @@ def project_file_or_400(project_root: Path, relative: str) -> Path:
         ) from exc
 
 
+def require_bare_pipeline_name(name: str) -> None:
+    """Refuse a pipeline name that could be read as a path: 404, as for any unknown name."""
+    if not name or name.startswith(".") or any(c in name for c in "/\\\x00"):
+        raise SpecWeaverAPIError(
+            detail=f"Pipeline not found: '{name}'",
+            error_code="PIPELINE_NOT_FOUND",
+            status_code=404,
+        )
+
+
 async def resolve_project_root(project_name: str, db: Database) -> Path:
     """Resolve a project name to its root directory.
 
