@@ -1,10 +1,10 @@
 ---
 name: specweaver-feature
-description: "Drives a feature end to end: precondition gate, design, an implementation plan per
-sub-feature, dev and commit per commit boundary, then the closure gate and the finished message.
-Resumable from the Progress Tracker in the Design Document. Use when the user says 'feature
-<feature_id>', 'implement <feature_id>', 'build <feature_id>', 'work on <feature_id>' or 'start
-<feature_id>'."
+description: >-
+  Drives a feature end to end: precondition gate, design, an implementation plan per sub-feature,
+  dev and commit per commit boundary, then the closure gate and the finished message. Resumable
+  from the Progress Tracker in the Design Document. Use when the user says 'feature <feature_id>',
+  'implement <feature_id>', 'build <feature_id>', 'work on <feature_id>' or 'start <feature_id>'.
 argument-hint: "<feature_id>"
 allowed-tools: Bash(git rev-list *) Bash(echo *)
 ---

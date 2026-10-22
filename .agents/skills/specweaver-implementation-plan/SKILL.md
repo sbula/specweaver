@@ -1,9 +1,10 @@
 ---
 name: specweaver-implementation-plan
-description: "Creates or audits the implementation plan for one sub-feature: research, an audit across
-16 categories, architecture verification, red/blue review and a consistency check, with the user's
-approval at Phases 4 and 5. Use for 'implementation plan for <feature_id> <sf_id>', 'plan
-<feature_id> SF-<N>', 'prepare implementation for <feature_id>'."
+description: >-
+  Creates or audits the implementation plan for one sub-feature: research, an audit across 16
+  categories, architecture verification, red/blue review and a consistency check, with the user's
+  approval at Phases 4 and 5. Use for 'implementation plan for <feature_id> <sf_id>', 'plan
+  <feature_id> SF-<N>', 'prepare implementation for <feature_id>'.
 argument-hint: "<feature_id> [SF-<N>]"
 ---
 

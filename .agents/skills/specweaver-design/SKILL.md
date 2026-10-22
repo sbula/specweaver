@@ -1,9 +1,10 @@
 ---
 name: specweaver-design
-description: "Designs a feature: intake and grilling, research, FR/NFR detail, decomposition, the Design
-Document with its Progress Tracker, and a consistency check that ends in the user's approval. Use
-for 'design <feature_id>', 'create design for <feature_id>', 'design document for <feature_id>',
-'analyze requirements for <feature_id>'."
+description: >-
+  Designs a feature: intake and grilling, research, FR/NFR detail, decomposition, the Design
+  Document with its Progress Tracker, and a consistency check that ends in the user's approval.
+  Use for 'design <feature_id>', 'create design for <feature_id>', 'design document for
+  <feature_id>', 'analyze requirements for <feature_id>'.
 argument-hint: "<feature_id>"
 ---
 

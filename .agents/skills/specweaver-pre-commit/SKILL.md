@@ -1,9 +1,10 @@
 ---
 name: specweaver-pre-commit
-description: "Runs the pre-commit quality gate before every commit: architecture verification, test gap
-analysis, missing tests, full test suite, code quality, documentation, walkthrough, red/blue review,
-then the commit. Use for 'pre-commit', 'quality gate', 'run pre-commit checks', 'verify before
-commit', and before any commit, docs-only ones included."
+description: >-
+  Runs the pre-commit quality gate before every commit: architecture verification, test gap
+  analysis, missing tests, full test suite, code quality, documentation, walkthrough, red/blue
+  review, then the commit. Use for 'pre-commit', 'quality gate', 'run pre-commit checks', 'verify
+  before commit', and before any commit, docs-only ones included.
 allowed-tools: Bash(git status *)
 ---
 

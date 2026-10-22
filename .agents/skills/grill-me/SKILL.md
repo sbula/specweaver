@@ -1,8 +1,9 @@
 ---
 name: grill-me
-description: "Interviews the user until a decision is settled, one round of open questions at a
-time. Start it yourself when a `PRINCIPLES.md` §2 must-not-guess trigger appears — design Phase 1, a
-plan, or any unagreed default — or when the user says 'grill me'."
+description: >-
+  Interviews the user until a decision is settled, one round of open questions at a
+  time. Start it yourself when a PRINCIPLES.md §2 must-not-guess trigger appears — design Phase 1, a
+  plan, or any unagreed default — or when the user says "grill me".
 argument-hint: "[<feature_id> | <topic>]"
 ---
 

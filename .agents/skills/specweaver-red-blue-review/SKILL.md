@@ -1,9 +1,10 @@
 ---
 name: specweaver-red-blue-review
-description: "Runs a multi-cycle adversarial red team / blue team review of a design, an implementation
-plan or a code change: red attacks, blue defends or fixes, until no significant finding remains. Use
-for 'red team', 'blue team', 'red/blue', 'adversarial review', 'design review', 'architecture
-review', and when another skill's phase calls for it."
+description: >-
+  Runs a multi-cycle adversarial red team / blue team review of a design, an implementation plan
+  or a code change: red attacks, blue defends or fixes, until no significant finding remains. Use
+  for 'red team', 'blue team', 'red/blue', 'adversarial review', 'design review', 'architecture
+  review', and when another skill's phase calls for it.
 argument-hint: "<what to review>"
 ---
 

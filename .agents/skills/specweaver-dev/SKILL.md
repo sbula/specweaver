@@ -1,9 +1,10 @@
 ---
 name: specweaver-dev
-description: "Implements one sub-feature test-first from its approved implementation plan: load context,
-break into tasks, red → green → refactor, mutate, then pre-commit and commit at each commit boundary.
-Use when the user says 'dev <impl_plan_path>', 'implement <feature_id> SF-<N>', 'develop
-<feature_id>', 'start coding <feature_id>' or 'build <impl_plan_path>'."
+description: >-
+  Implements one sub-feature test-first from its approved implementation plan: load context, break
+  into tasks, red → green → refactor, mutate, then pre-commit and commit at each commit boundary.
+  Use when the user says 'dev <impl_plan_path>', 'implement <feature_id> SF-<N>', 'develop
+  <feature_id>', 'start coding <feature_id>' or 'build <impl_plan_path>'.
 argument-hint: "<impl_plan_path> | <feature_id> SF-<N>"
 ---
 

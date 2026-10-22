@@ -1,9 +1,10 @@
 ---
 name: specweaver-ticket
-description: "Mints a new registry ID — a TECH-NNN technical-debt ticket or a capability ID like
-C-FLOW-12 — without colliding with an existing one, and registers it everywhere that must know about
-it. Use when the user asks to file, create or mint a TECH ticket or a new capability, or when work
-spins off a defect that needs its own ID. A last resort: verify or fix first."
+description: >-
+  Mints a new registry ID — a TECH-NNN technical-debt ticket or a capability ID like C-FLOW-12 —
+  without colliding with an existing one, and registers it everywhere that must know about it. Use
+  when the user asks to file, create or mint a TECH ticket or a new capability, or when work spins
+  off a defect that needs its own ID. A last resort: verify or fix first.
 argument-hint: "[TECH | <capability-family>] <title>"
 ---
 

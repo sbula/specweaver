@@ -1,9 +1,10 @@
 ---
 name: specweaver-live-llm
-description: "Runs the `live`-marked tests against real LLM providers and reads their verdict. Use only
-when the user types /specweaver-live-llm: 'run the live tests', 'test against real Gemini', 'verify
-my API key works'. Never part of implementing a feature, never at a commit boundary, never to
-'check' something an offline test can answer."
+description: >-
+  Runs the `live`-marked tests against real LLM providers and reads their verdict. Use only when
+  the user types /specweaver-live-llm: 'run the live tests', 'test against real Gemini', 'verify
+  my API key works'. Never part of implementing a feature, never at a commit boundary, never to
+  'check' something an offline test can answer.
 argument-hint: "[nightly | status | <test node id>]"
 disable-model-invocation: true
 ---
