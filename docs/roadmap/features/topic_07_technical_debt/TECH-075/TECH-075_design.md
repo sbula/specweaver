@@ -95,7 +95,7 @@ resolve-then-check pattern with one shared function for every caller
 | FR-2 | `POST /pipelines/{name}/run` SHALL refuse a `spec` that resolves outside the project (`..`, absolute, escaping link) with `PATH_TRAVERSAL` 400, before the existence check and before any run is created, so the answer never tells whether an outside file exists | API | starts a run | no run, no file read outside the project |
 | FR-3 | `resolve_file_in_project` SHALL keep its text check (absolute or `..` refused) and SHALL also refuse a path whose resolved location lies outside the project, so an escaping link gets `PATH_TRAVERSAL` 400 on every API route that uses it | API | resolves a file field | implement, review and validation refuse the same paths |
 | FR-4 | The protocol atom SHALL read only files inside its boundary; the protocol tool SHALL be built with the run's boundary | protocol tool | extracts a schema | a path outside returns a failed result and is never opened |
-| FR-5 | Every QA runner intent (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`) SHALL refuse a target outside its root before any tool starts; a scenario run also accepts `/scenarios/…` | QA atom | runs a tool | one check for all six intents |
+| FR-5 | Every QA runner intent (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`) SHALL refuse a `target` or `targets` entry outside its root, and the debugger's `entrypoint` where it is a file (Python, TypeScript) `[agreed 2026-10-22]`, before any tool starts; a scenario run also accepts `/scenarios/…` | QA atom | runs a tool | one check for all six intents |
 | FR-6 | Mention resolution SHALL check candidates with `WorkspaceBoundary` over the project root only, replacing the private `_is_within` | review handler | resolves mentions | a mention outside the project or behind an escaping link is dropped, as today |
 | FR-7 | `POST /projects` and `PUT /projects/{name}` SHALL store the resolved absolute path | API | registers or moves a project | a relative path no longer depends on the server's working folder |
 | FR-8 | `relative_to_root` SHALL never return a path outside its root; its callers SHALL skip that file with a WARNING | archetype pipelines, QA targets | hand a path to a sandboxed atom | no outside path reaches an atom |
@@ -209,13 +209,13 @@ no run. The same journey runs as an e2e test in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The boundary refuses every way out | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The boundary refuses every way out | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | API paths stay in the project | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The engine judges paths by where they land | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-22.
-**Next step**: Trigger the implementation-plan skill for SF-01.
+**Current status**: Design APPROVED 2026-10-22; SF-01 plan APPROVED 2026-10-22.
+**Next step**: Trigger the dev skill for `TECH-075_sf01_implementation_plan.md`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

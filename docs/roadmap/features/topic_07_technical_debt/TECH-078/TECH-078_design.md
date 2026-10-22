@@ -38,6 +38,16 @@ Filing-day evidence from the audit. Line numbers drift; re-measure each one befo
   Rust get Python-flavoured plans. Where: `workflows/planning/planner.py:28`.
 - **WV-12** — Kotlin files are fenced as "text" in prompts. Where: 6 suffix tables in this area.
 
+- **Found 2026-10-22 during `TECH-075` planning** `[agreed 2026-10-22]` — a single test method cannot
+  be run or debugged in Java, Kotlin or Rust: `run_tests` passes only the test class or file to the
+  build tool (Gradle `--tests <Class>`, Maven `-Dtest=<Class>`, `cargo test --test <file>`), never
+  `Class.method` / `Class#method` / a test-name filter, which IDEs such as IntelliJ offer. Where:
+  `sandbox/language/core/run_targets.py:17` (`jvm_test_class`), `java/runner.py:168`,
+  `kotlin/runner.py:84-87`, `rust/runner.py:116-119`.
+- **Found 2026-10-22 during `TECH-075` planning** `[agreed 2026-10-22]` — the Rust debugger ignores
+  its `entrypoint` and always runs `cargo run` (the default binary), so no `--bin` or test can be
+  chosen; Python and TypeScript take a file. Where: `sandbox/language/core/rust/runner.py:279-298`.
+
 ## Goal
 
 Every step finds its files through `task_files_for`, so Java, Kotlin, TypeScript and Rust projects
