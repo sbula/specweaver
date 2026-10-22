@@ -1,8 +1,12 @@
 ---
 name: specweaver-feature
-description: "Master feature lifecycle. Orchestrates design → implementation-plan (per sub-feature)
-→ dev (per sub-feature, per commit boundary) → commit. Fully resumable via the Progress Tracker in
-the Design Document. Use when the user asks to implement, build, or work on a feature end-to-end."
+description: "Drives a feature end to end: precondition gate, design, an implementation plan per
+sub-feature, dev and commit per commit boundary, then the closure gate and the finished message.
+Resumable from the Progress Tracker in the Design Document. Use when the user says 'feature
+<feature_id>', 'implement <feature_id>', 'build <feature_id>', 'work on <feature_id>' or 'start
+<feature_id>'."
+argument-hint: "<feature_id>"
+allowed-tools: Bash(git rev-list *) Bash(echo *)
 ---
 
 # Feature Lifecycle Skill
@@ -24,14 +28,26 @@ automatically continues from where the Progress Tracker shows work stopped.
 > [!IMPORTANT]
 > **AGENT DIRECTIVE:**
 > Execute all research, TDD, and quality checks autonomously.
-> STOP only at the explicitly defined HITL gates below.
+> STOP only at the explicitly defined HITL gates below: design approval (Phase 1), plan approval
+> (Phase 2), the commit boundary that closes a sub-feature (Phase 3), and sign-off (Phase 4).
 > Never add extra stops. Never skip a defined gate.
 > The Progress Tracker in the Design Document is the single source of truth.
 > Always read it at the start of a new session to know where to resume.
 
+Why each rule exists: [references/lessons.md](references/lessons.md).
+
 ---
 
 ## Phase 0: Precondition Gate (HARD BLOCK — run before anything else)
+
+0.0. **No new feature while commits are unpushed.** Commits on `main` not yet on `origin`:
+
+```
+!`git rev-list --count origin/main..HEAD 2>/dev/null || echo "unknown: no origin/main"`
+```
+
+If that number is above 0 (or unknown) and this feature is not the one those commits belong to, **STOP** and ask
+the user to push first. Fixes to the same feature may go on (`PRINCIPLES.md` §6).
 
 0.1. Verify the story's prerequisites are green **in code**, not just in documents:
 ```
@@ -40,18 +56,9 @@ python scripts/check_story_preconditions.py <STORY-ID>
 
 A non-zero exit **blocks the whole feature**. Do not design, plan, or implement; fix the reported
 facts, or file each as its own ticket (`specweaver-ticket`) and stop. There is deliberately no
-override — an overridable gate becomes a habit.
-
-> [!CAUTION]
-> **Why this is Phase 0 and not advice.** INT-US-21's design recorded its prerequisites as
-> "all ✅: US-2 Core, D-INTL-02, D-INTL-03". All three were materially broken: the shipped
-> `feature_decomposition.yaml` could not execute a single step because two handlers were never
-> registered; `RunContext.plan` was documented as "(set by runner hook)" with **zero** writes in
-> `src/`; and a required enum could not be serialized to YAML at all. Every checkbox was true as
-> written and false in fact, and the whole story became an archaeology exercise instead of an
-> integration. The gate checks the *evidence*: the declared proof exists, passes and does not skip;
-> every bundled pipeline step resolves to a real handler; no field documented as "set by X" is
-> unwritten.
+override — an overridable gate becomes a habit. The gate checks the *evidence*: the declared proof
+exists, passes and does not skip; every bundled pipeline step resolves to a real handler; no field
+documented as "set by X" is unwritten.
 
 ## Phase 0b: The (Sub)Story Path List (`ADR-005`)
 
@@ -75,9 +82,7 @@ override — an overridable gate becomes a habit.
       reason and turns green loudly when the last related (sub)story lands.
       `check_xfail_blockers.py` fails the marker once its blocker is `✅`.
 
-0b.4. A path a single feature can walk is **never** restated at (sub)story level. Restating one is
-      what credited 41 unit tests to a seam holding six claims while both capabilities read as
-      untested for three months.
+0b.4. A path a single feature can walk is **never** restated at (sub)story level.
 
 0b.5. The path list is expected to change. A list or a scope that turns out wrong is edited, not
       worked around.
@@ -100,7 +105,7 @@ override — an overridable gate becomes a habit.
      Skip to Phase 2. Design is already done.
 
 1.3. If it does not exist or `Status: DRAFT`:
-     Read `.agents/skills/specweaver-design/SKILL.md` and execute the full design skill.
+     Invoke the `specweaver-design` skill and execute it in full.
      **STOP at Phase 6 HITL gate.** Wait for user approval.
      On approval: the design doc is written and `Status: APPROVED`.
      Proceed to Phase 2.
@@ -119,8 +124,7 @@ For each sub-feature in topological execution order (from the Design Document):
      All sub-features listed in this SF's `depends_on` must have `Impl Plan ✅`.
      If not → **STOP.** Tell the user which dependency still needs its plan first.
 
-2.3. Read `.agents/skills/specweaver-implementation-plan/SKILL.md` and execute the full
-     implementation-plan skill for this SF.
+2.3. Invoke the `specweaver-implementation-plan` skill and execute it in full for this SF.
      Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_sf[N]_implementation_plan.md`
      (no `_sf<N>` suffix for non-decomposed features)
 
@@ -150,18 +154,17 @@ For each sub-feature in the same topological execution order:
      If not → **STOP.** Tell the user which dependency must be committed first.
 
 3.3. Derive the implementation plan path from the Design Document SF section.
-     Read `.agents/skills/specweaver-dev/SKILL.md` and execute the full dev skill.
+     Invoke the `specweaver-dev` skill and execute it in full.
 
-     Inside the dev skill, for **each commit boundary** defined in `task.md`:
+     Inside the dev skill, for **each commit boundary** defined in `.tmp/task.md`:
      - Complete all TDD tasks in this batch autonomously (red → green → refactor).
-     - Execute the full pre-commit skill (read `.agents/skills/specweaver-pre-commit/SKILL.md`).
-       **STOP at pre-commit Phase 1 HITL gate** if arch violations found.
-       **STOP at pre-commit Phase 3 HITL gate** (test gap — always fires).
-     - **COMMIT BOUNDARY — HARD STOP (HITL):**
+     - Invoke the `specweaver-pre-commit` skill; every check runs.
+     - **Interior boundary:** commit and report in a few lines (tasks, test count, what the gate
+       found), then continue `[agreed 2026-08-15]`.
+     - **The boundary that closes the sub-feature — HARD STOP (HITL):**
        Inform the user: "Commit boundary N of M for SF-<X> is ready."
        State: tasks included, test count, what's in this commit.
-       **WAIT** for the user to commit or give explicit permission.
-       Do NOT proceed to the next task batch until confirmed.
+       **WAIT** for the user's acceptance before committing it.
 
 3.4. After the final commit boundary for this SF:
      Update Progress Tracker: `Dev ✅`, `Pre-Commit ✅`, `Committed ✅`.
@@ -172,7 +175,10 @@ Repeat until all sub-features have `Committed ✅`, then proceed to Phase 4.
 
 ---
 
-## Phase 4: Completion
+## Phase 4: Completion `[agreed 2026-10-10]`
+
+Only the user says "finished"; until then the feature is "ready for your check"
+(`PRINCIPLES.md` §6).
 
 4.1. Verify all Progress Tracker rows are fully `✅`.
 
@@ -188,24 +194,22 @@ python scripts/tests.py feature <STORY-ID>
   silently descoped while the design still claims it. Fix the proof, or delete the row from the
   design's FR table so the descoping is a visible decision.
 - **Filing a follow-up ticket does not satisfy this gate.** If an FR is unproven, the story is not
-  finished — a new ticket defers the work rather than discharging it. Six tickets were filed on
-  2026-08-13 in one day, several as the "outcome" of resolving an earlier one. Full contract:
+  finished — a new ticket defers the work rather than discharging it. Full contract:
   `.claude/skills/specweaver-ticket/references/closure-contract.md`.
 - The **suite** carries the always-on reachability invariants
   (`tests/unit/core/flow/engine/test_handler_reachability.py`): every declared step combination
   resolves to a registered handler, and every bundled pipeline step is executable.
 
-> [!CAUTION]
-> **Why this is a gate and not a checklist item.** `D-INTL-02` §6.2 promised
-> `<name>_decomposition.yaml` plus stub component specs, shipped neither, and was marked ✅. It also
-> declared `(DRAFT, FEATURE)` valid without registering a handler, so the pipeline it shipped could
-> not execute one step. Both survived because nothing checked the design's promises against the
-> code, and the proof only ever drove handlers directly instead of the artifacts users get. These
-> two commands are that check.
+4.3. **Works for real.** The feature ran on a real project with the real tools; one live demo
+     command, kept in the design, shows it, and it runs in the nightly real-model run.
 
-4.3. Update Design Document `Status: COMPLETE`.
-4.4. Update Session Handoff: "Feature complete. Ready for dogfood + merge."
-4.5. Inform the user:
-     - All commits included in this feature
-     - Sub-features delivered
-     - Suggested next steps: dogfood, validate, merge
+4.4. **Docs say what the code does.** Find every related document with
+     `grep -rl <ID> docs .agents src` and check each one. Recount the README numbers (tests per
+     tier, mutants) in the feature's last commit, before calling it ready.
+
+4.5. **One finished message**, at most 10 lines: the promise; the demo and what it shows; limits
+     with decision and date; what was removed; "Sign off?". Then **STOP** and wait.
+
+4.6. **After sign-off:** set Design Document `Status: COMPLETE`, update the Session Handoff and the
+     one line in `.agents/STATE.md`, in one commit. End with `Push now: YES`. The user pushes;
+     no new feature starts while commits are unpushed.
