@@ -2,7 +2,7 @@
 
 ## Contents
 - 3.2b Mutate — prove the test can still fail
-- Campaigns and the durable corpus
+- Campaigns and the durable corpus (and the loop after moving code)
 - 3.2c Backfill on contact — a capability you touch gains the FRs it never had
 
 ## 3.2b Mutate — prove the test can still fail
@@ -54,6 +54,16 @@ knowing it is strong today.
 
 `python scripts/mutation.py --corpus <path> --no-baseline` runs one file while you write it.
 Authoring, dispositions and the morning gate: `docs/dev_guides/writing_mutation_campaigns.md`.
+
+**After moving code a mutant rests on**, repeat until nothing is stale:
+
+1. `python scripts/stale_mutants.py` lists every STALE mutant (exit 1 while any is).
+2. Re-anchor each one: its `old` must match exactly once inside its `symbol`.
+3. Re-pin it, one mutant at a time:
+   `python scripts/_corpus.py --corpus <json> --refresh "<FEATURE> <FR> <id>"`. Never hand-write a
+   hash.
+4. Rerun every corpus whose file or test scope you touched:
+   `python scripts/mutation.py --corpus <json> --out .tmp/<dir> --no-baseline`.
 
 ## 3.2c Backfill on contact — a capability you touch gains the FRs it never had
 
