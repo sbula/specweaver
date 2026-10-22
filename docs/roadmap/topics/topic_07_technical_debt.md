@@ -242,9 +242,9 @@ critical for long-term project viability.
   > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
   > `specweaver.toml` has a strict reader and a lenient one.
 
-* **`TECH-075` 🔴: Paths From Outside Can Leave the Project**
+* **`TECH-075` 🟡: Paths From Outside Can Leave the Project**
   > [Description](../features/topic_07_technical_debt/TECH-075/TECH-075_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > design APPROVED, SF-01 in progress. Origin: 2026-10-22, architecture audit (7 findings)._ |
   > A path given by an API client or an agent is not always kept inside the project: the
   > pipeline run's spec, the protocol tool and most QA intents accept any path, and the guard
   > that exists is written five ways.

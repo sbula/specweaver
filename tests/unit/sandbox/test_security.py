@@ -5,14 +5,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
-from specweaver.sandbox.security import WorkspaceBoundary, WorkspaceBoundaryError
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from specweaver.sandbox.security import (
+    ReadOnlyWorkspaceBoundary,
+    WorkspaceBoundary,
+    WorkspaceBoundaryError,
+)
 
 
 class TestWorkspaceBoundaryInit:
@@ -114,6 +115,81 @@ class TestResolveRelative:
         boundary = WorkspaceBoundary(roots=[project])
         with pytest.raises(WorkspaceBoundaryError, match="outside workspace"):
             boundary.resolve_relative("../../etc/passwd")
+
+
+class TestEveryWayOutIsRefused:
+    """Proves: TECH-075 FR-1, NFR-1.
+
+    A path from outside is judged against the project root, never against the process folder,
+    and a path that names nothing or cannot exist is refused as a boundary error.
+    """
+
+    @pytest.mark.parametrize("relative", ["", "   ", "\t"])
+    def test_an_empty_relative_path_is_refused(self, tmp_path: Path, relative: str) -> None:
+        boundary = WorkspaceBoundary(roots=[tmp_path])
+        with pytest.raises(WorkspaceBoundaryError, match="empty"):
+            boundary.resolve_relative(relative)
+
+    def test_a_null_byte_is_a_boundary_error_not_a_value_error(self, tmp_path: Path) -> None:
+        boundary = WorkspaceBoundary(roots=[tmp_path])
+        with pytest.raises(WorkspaceBoundaryError, match="null byte"):
+            boundary.resolve_relative("src/a\x00.py")
+
+    def test_validate_path_refuses_a_null_byte_too(self, tmp_path: Path) -> None:
+        boundary = WorkspaceBoundary(roots=[tmp_path])
+        with pytest.raises(WorkspaceBoundaryError, match="null byte"):
+            boundary.validate_path(tmp_path / "a\x00.py")
+
+    def test_a_relative_path_is_judged_against_the_root_not_the_process_folder(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        project = tmp_path / "project"
+        elsewhere = tmp_path / "elsewhere"
+        project.mkdir()
+        elsewhere.mkdir()
+        monkeypatch.chdir(elsewhere)
+        boundary = WorkspaceBoundary(roots=[project])
+        assert boundary.validate_path(Path("src/a.py")) == project / "src" / "a.py"
+        assert boundary.validate_path(Path(".")) == project
+
+    def test_a_relative_path_that_climbs_out_is_refused(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        project = tmp_path / "project"
+        project.mkdir()
+        monkeypatch.chdir(tmp_path)
+        boundary = WorkspaceBoundary(roots=[project])
+        with pytest.raises(WorkspaceBoundaryError, match="outside workspace"):
+            boundary.validate_path(Path("../secrets.txt"))
+
+    def test_a_link_that_points_outside_is_refused(self, tmp_path: Path) -> None:
+        """Proves: TECH-075 NFR-3."""
+        project = tmp_path / "project"
+        project.mkdir()
+        (tmp_path / "secret.txt").write_text("x")
+        (project / "escape.txt").symlink_to(tmp_path / "secret.txt")
+        boundary = WorkspaceBoundary(roots=[project])
+        with pytest.raises(WorkspaceBoundaryError, match="outside workspace"):
+            boundary.resolve_relative("escape.txt")
+
+    def test_a_link_that_points_inside_is_allowed(self, tmp_path: Path) -> None:
+        """Proves: TECH-075 NFR-3."""
+        (tmp_path / "real.txt").write_text("x")
+        (tmp_path / "alias.txt").symlink_to(tmp_path / "real.txt")
+        boundary = WorkspaceBoundary(roots=[tmp_path])
+        assert boundary.resolve_relative("alias.txt") == (tmp_path / "real.txt").resolve()
+
+    def test_a_read_only_boundary_refuses_a_relative_path(self, tmp_path: Path) -> None:
+        boundary = ReadOnlyWorkspaceBoundary(api_paths=[tmp_path])
+        with pytest.raises(WorkspaceBoundaryError, match="no root"):
+            boundary.resolve_relative("openapi.yaml")
+        with pytest.raises(WorkspaceBoundaryError, match="no root"):
+            boundary.validate_path(Path("openapi.yaml"))
+
+    def test_a_read_only_boundary_still_accepts_an_absolute_api_path(self, tmp_path: Path) -> None:
+        contract = tmp_path / "openapi.yaml"
+        boundary = ReadOnlyWorkspaceBoundary(api_paths=[tmp_path])
+        assert boundary.validate_path(contract) == contract.resolve()
 
 
 class TestFromRunContext:

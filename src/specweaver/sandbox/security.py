@@ -101,9 +101,18 @@ class WorkspaceBoundary:
     def validate_path(self, requested: Path) -> Path:
         """Resolve and validate a path is within boundaries.
 
-        Returns the resolved absolute path.
+        Returns the resolved absolute path. A relative path is judged against the primary root,
+        never against the process folder.
         Raises WorkspaceBoundaryError if path escapes boundaries.
         """
+        if "\x00" in str(requested):
+            raise WorkspaceBoundaryError("Path holds a null byte")
+        if not requested.is_absolute():
+            if not self.roots:
+                raise WorkspaceBoundaryError(
+                    "A relative path needs a root; this boundary has no root"
+                )
+            requested = self.roots[0] / requested
         resolved = requested.resolve()
 
         # Check against all roots
@@ -125,8 +134,9 @@ class WorkspaceBoundary:
 
     def resolve_relative(self, relative: str) -> Path:
         """Resolve a relative path against the primary root."""
-        resolved = (self.roots[0] / relative).resolve()
-        return self.validate_path(resolved)
+        if not relative.strip():
+            raise WorkspaceBoundaryError("Path is empty")
+        return self.validate_path(Path(relative))
 
     @classmethod
     def from_run_context(cls, context: RunContext) -> WorkspaceBoundary:

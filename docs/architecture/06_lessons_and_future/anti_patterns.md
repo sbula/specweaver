@@ -7,7 +7,7 @@ Each row cost a session. The table is the rule; the cases below it are the evide
 | Anti-Pattern | Why It's Wrong |
 |--------------|----------------|
 | Putting tool-consuming code in `commons/` | Violates `forbids: tools/*` |
-| Creating parallel security classes (e.g. `WorkspaceBoundary`) | Duplicates `FolderGrant` + `FileExecutor._validate_path()` |
+| A second guard for paths from outside | `WorkspaceBoundary` (`sandbox/security.py`) is the one check: it resolves links, then compares against the roots. A new string-prefix or `relative_to` copy drifts from it (`TECH-075` AD-1). `FileExecutor._validate_path` stays as the stricter executor guard (AD-5) |
 | Centralizing tool definitions in a separate module | Each tool should own its own `ToolDefinition` list |
 | God-object dispatcher reimplementing I/O | Delegate to actual tool methods instead |
 | Naming modules by what the agent *does* ("research") | Name by what the code *is* |

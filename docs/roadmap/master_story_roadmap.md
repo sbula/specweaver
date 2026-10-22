@@ -623,7 +623,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🟢` **TECH-072:** [Two Agent Tools Skip the Sandbox's Own Guards](features/topic_07_technical_debt/TECH-072/TECH-072_design.md)
     *   `🟢` **TECH-073:** [A Task's Target Files Are Named for Python Only](features/topic_07_technical_debt/TECH-073/TECH-073_design.md)
     *   `🟢` **TECH-074:** [The Cost Ledger Prices Cached Input at the Full Price](features/topic_07_technical_debt/TECH-074/TECH-074_design.md)
-    *   `🔴` **TECH-075:** [Paths From Outside Can Leave the Project](features/topic_07_technical_debt/TECH-075/TECH-075_design.md)
+    *   `🟡` **TECH-075:** [Paths From Outside Can Leave the Project](features/topic_07_technical_debt/TECH-075/TECH-075_design.md)
     *   `🔴` **TECH-076:** [Project Settings Are Read Two Ways, and One Fails Open](features/topic_07_technical_debt/TECH-076/TECH-076_design.md)
     *   `🔴` **TECH-077:** [Each Entry Point Builds Its Run by Hand, and the API Gets Less](features/topic_07_technical_debt/TECH-077/TECH-077_design.md)
     *   `🔴` **TECH-078:** [Review, Validation and the API Still Assume Python](features/topic_07_technical_debt/TECH-078/TECH-078_design.md)

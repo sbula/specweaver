@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "feature": "TECH-075",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The boundary refuses every way out",
+      "scope": [
+        "tests/unit/sandbox/test_security.py"
+      ],
+      "mutants": [
+        {
+          "id": "null-byte-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.validate_path",
+          "old": "        if \"\\x00\" in str(requested):\n            raise WorkspaceBoundaryError(\"Path holds a null byte\")\n",
+          "new": "        pass\n",
+          "breaks": "a null byte escapes as ValueError instead of a boundary refusal",
+          "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
+        },
+        {
+          "id": "empty-path-is-root",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.resolve_relative",
+          "old": "        if not relative.strip():\n            raise WorkspaceBoundaryError(\"Path is empty\")\n",
+          "new": "        pass\n",
+          "breaks": "an empty path is accepted as the project root",
+          "symbol_sha": "sha256:857cd278c81a5fc60835a075eec9bbb0aaa6a5e9f48791befe80a89f2e2c5ac7"
+        },
+        {
+          "id": "relative-judged-by-cwd",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.validate_path",
+          "old": "            requested = self.roots[0] / requested\n",
+          "new": "            pass\n",
+          "breaks": "a relative path is judged against the process folder, not the root",
+          "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
+        }
+      ]
+    }
+  ]
+}
