@@ -4,6 +4,10 @@ description: "Phase 5: Document — write the fully self-contained Design Docume
 
 # Phase 5: Document
 
+## Contents
+- Opening rules (above the template)
+- Write the Design Document (the template, from Feature Overview to Sub-Feature Breakdown)
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Write the document autonomously using the template below.

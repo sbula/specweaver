@@ -1,8 +1,10 @@
 ---
 name: specweaver-design
-description: "Feature design skill. Intake → Research → Feature Detail → Decompose → Document →
-Consistency Check. Produces a self-contained Design Document with Progress Tracker. Use when the
-user asks to design a feature, create a design document, or analyze requirements for a feature."
+description: "Designs a feature: intake and grilling, research, FR/NFR detail, decomposition, the Design
+Document with its Progress Tracker, and a consistency check that ends in the user's approval. Use
+for 'design <feature_id>', 'create design for <feature_id>', 'design document for <feature_id>',
+'analyze requirements for <feature_id>'."
+argument-hint: "<feature_id>"
 ---
 
 # Design Skill
@@ -26,7 +28,7 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > 3. Never skip a phase, even if the feature seems simple.
 >
 > **Phases 1, 3, and 6 have HITL gates** — you MUST stop and wait for the user.
-> Phase 1 gate fires only if the feature description is ambiguous.
+> Phase 1 always ends with `/grill-me`; its gate fires on any open question or §2 trigger.
 > Phase 3 gates fire on gaps, API conflicts, or architectural switches.
 > Phase 6 gate fires always — the design MUST be approved before planning begins.
 
@@ -61,14 +63,11 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > or schema both sides must agree on, an ordering, a shared file — is a **seam FR**: a hidden
 > contract with another feature. Those, and only those, are what a spanning test proves. Name them
 > as seams when you write the FR table, because a seam FR proven by a unit test with the other side
-> mocked proves the mock, not the contract. `TECH-041` is one instance: `C-VAL-03` is `✅` and its
-> DAL override is proven link by link, never as a chain.
+> mocked proves the mock, not the contract.
 >
 > **A missing spanning test under an already-finished (sub)story is a defect in delivered work**, so
 > it becomes a `TECH` ticket that owns the test and writes it red first. That is the rule for every
-> other defect in closed code. Integration used to be the one carve-out, and the carve-out is what
-> grew a second registry: measured 2026-08-19, 31 of 36 open contract rows were tracking work that
-> another ticket already owned.
+> other defect in closed code.
 
 > [!CAUTION]
 > **Before Phase 3 can bind requirements to surfaces, the (sub)story must list its paths.**
@@ -90,9 +89,7 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > `.tmp/HANDOVER.md`: which gate, what question is open, and the document that must be read before
 > answering it. One line each.
 >
-> This is what a handover is for and what `git log` cannot give you. `E-VAL-03` sat at its Phase 1 gate
-> across sessions and was only picked up correctly because the handover named the analysis document and
-> said *do not restart the research* — without that line the next session re-derives it.
+> This is what a handover is for and what `git log` cannot give you.
 
 > [!IMPORTANT]
 > **Write the lossy half only.** The state — suite result, gate status, commits unpushed, open rows
@@ -104,29 +101,18 @@ Output: `docs/roadmap/features/[Topic]/[ID]/[ID]_design.md`
 > `.tmp/HANDOVER.md` is gitignored and session-scoped; `STATE.md` is committed and says where the
 > project stands. A capability left unapproved, or a correction owed, goes in `STATE.md`.
 
-## MCP Tool Guidance
-
-When available, prefer these MCP tools over grep/file-reading for code discovery:
-
-| Tool | When to use | Instead of |
-|------|------------|------------|
-| `codebase-memory` → `search_graph` | Find functions, classes, routes by name | `grep` across source files |
-| `codebase-memory` → `trace_path` | Trace call chains and dependencies | Reading files one-by-one |
-| `codebase-memory` → `get_architecture` | Understand module structure | Reading every context.yaml |
-| `context7` → `resolve-library-id` + `get-library-docs` | Get correct API syntax for libraries (Pydantic, SQLAlchemy, Typer, etc.) | Guessing from training data |
-
-> If these tools are unavailable (e.g., MCP not configured), fall back to grep/file-reading normally.
-
 ## Phases
 
 
 | Phase | File | Description | HITL Gate? |
 |-------|------|-------------|------------|
-| **1** | `.agents/skills/specweaver-design/references/phase-1-intake.md` | Read feature entry + clarify scope | ⚠️ If unclear |
-| **2** | `.agents/skills/specweaver-design/references/phase-2-research.md` | Parallel: codebase + internet research + ROI | No |
-| **3** | `.agents/skills/specweaver-design/references/phase-3-detail.md` | FR/NFR ⇄ surface fixpoint, bindings, API validation, arch alignment | ⚠️ On gap, missing surface, or arch switch |
-| **4** | `.agents/skills/specweaver-design/references/phase-4-decompose.md` | Sub-feature breakdown + dependency graph | No |
-| **5** | `.agents/skills/specweaver-design/references/phase-5-document.md` | Write design.md | No |
-| **6** | `.agents/skills/specweaver-design/references/phase-6-consistency.md` | Final checks + Red/Blue + HITL approval | ⚠️ Always |
+| **1** | [phase-1-intake.md](references/phase-1-intake.md) | Read feature entry + clarify scope, then `/grill-me` | ⚠️ On any open question |
+| **2** | [phase-2-research.md](references/phase-2-research.md) | Parallel: codebase + internet research + ROI | No |
+| **3** | [phase-3-detail.md](references/phase-3-detail.md) | FR/NFR ⇄ surface fixpoint, bindings, API validation, arch alignment | ⚠️ On gap, missing surface, or arch switch |
+| **4** | [phase-4-decompose.md](references/phase-4-decompose.md) | Sub-feature breakdown + dependency graph | No |
+| **5** | [phase-5-document.md](references/phase-5-document.md) | Write design.md | No |
+| **6** | [phase-6-consistency.md](references/phase-6-consistency.md) | Final checks + Red/Blue + HITL approval | ⚠️ Always |
 
 Execute each phase by reading its file and following the instructions exactly.
+
+Why each rule exists: [references/lessons.md](references/lessons.md).

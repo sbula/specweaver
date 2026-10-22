@@ -4,6 +4,12 @@ description: "Phase 3: Feature Detail — define FRs/NFRs, validate external API
 
 # Phase 3: Feature Detail
 
+## Contents
+- Section A — Functional Requirements
+- Section B — Non-Functional Requirements
+- Section C — External API & Tool Validation
+- Section D — Architectural Alignment
+
 > [!IMPORTANT]
 > **Autonomy vs. HITL:**
 > Derive and validate autonomously. Three categories of HITL gate:

@@ -4,6 +4,10 @@ description: "Phase 6: Final Consistency Check — FR/NFR completeness, agent ha
 
 # Phase 6: Final Consistency Check
 
+## Contents
+- 6.0–6.5 Checks: bindings, open questions, handoff risk, architecture, internal consistency, red/blue
+- HITL Gate (Mandatory — Always Fires)
+
 After the Design Document is written, evaluate and present the following consistency checks. Do NOT just assert "yes" — provide evidence based on the document you just wrote.
 
 ---

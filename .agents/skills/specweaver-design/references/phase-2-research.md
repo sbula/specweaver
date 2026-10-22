@@ -4,6 +4,11 @@ description: "Phase 2: Research — two parallel tracks (codebase + internet), R
 
 # Phase 2: Research
 
+## Contents
+- Track A — Codebase Research
+- Track B — External Research
+- Synthesis
+
 > [!IMPORTANT]
 > **This phase is fully autonomous. No HITL.**
 > Execute both research tracks, then synthesize. Do not stop for confirmation.
