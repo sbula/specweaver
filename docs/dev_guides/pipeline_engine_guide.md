@@ -307,7 +307,8 @@ Lifecycle (`execute_run`, when `context.isolation.session_isolation` is set):
 **DAL auto-escalation (`INT-US-03` SF-03)**: `apply_session_policy` takes an opt-in
 `dal_auto_escalate` flag. The run builder (`interfaces/run_setup`) passes it for every CLI door
 except the read-only ones (`sw review`, `sw drift check`, `sw drift check-rot`, `sw standards scan`),
-which skip the per-run policy and keep the per-step one (`TECH-077`). When set and
+which skip the per-run policy and keep the per-step one, and for every API run
+(`interfaces/api/v1/run_doors.py`) (`TECH-077`). When set and
 `enforce_session_isolation` is off, session isolation turns on if the touched code's resolved DAL is
 **at or above `[sandbox] auto_isolate_min_dal`** (default `DAL_B`; `"off"` disables). High-assurance
 (DAL_A/B) generated code is sandboxed automatically; low-DAL projects stay on host mode.
@@ -318,7 +319,6 @@ A project that is not a git repository then stops at the worktree, naming it, as
 
 - Non-parking spans only (AD-4): a HITL park inside a session raises, because the worktree cannot
   survive a resume. Pipelines that park (e.g. §13) need session isolation OFF.
-- API composition roots do not resolve the policy yet (`TECH-013`).
 
 ---
 

@@ -179,12 +179,12 @@
         {
           "id": "api-reads-another-file",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/run_settings.py",
-          "symbol": "project_policy",
-          "old": "        autonomy = load_section(project_root, parse_autonomy)\n",
-          "new": "        autonomy = load_section(project_root / \"missing\", parse_autonomy)\n",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
+          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
           "breaks": "an API run ignores the project's [autonomy]",
-          "symbol_sha": "sha256:a58b3d6564d0bc9ca2dd3445398adabc1e7750a44ca11cf5bf42aeb6adab2fd9"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         }
       ]
     },

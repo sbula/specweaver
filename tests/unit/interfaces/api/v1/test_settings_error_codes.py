@@ -4,12 +4,13 @@
 """A broken setting is named to an API client by the setting that stopped the run.
 
 Proves: TECH-076 FR-4
+Proves: TECH-077 FR-12
 
 | Bucket | Case |
 |---|---|
-| Happy | a `[sandbox]` key, a `[standards]` key, a DAL file key each get their code |
-| Boundary | a whole table of the wrong type (`sandbox = 1`) has the bare name and still maps |
-| Degradation | a TOML syntax error names no section: `SANDBOX_SETTINGS` (decision 1 of the SF-02 plan); another lookup failure gives no settings and no refusal |
+| Happy | a `[sandbox]`, `[standards]`, `[docs]`, `[autonomy]`, `[implement]`, `[llm]` key and a DAL file key each get their code |
+| Boundary | a whole table of the wrong type (`sandbox = 1`) has the bare name and still maps; any key of the machine's `settings.toml` is `LLM_SETTINGS` |
+| Degradation | a TOML syntax error in `specweaver.toml` names no section: `SANDBOX_SETTINGS` (TECH-076 SF-02 decision 1); an unknown project gives no settings — `test_build_run.py` |
 | Hostile | a key that merely starts with `standards` (`standardsx`) is not `[standards]` |
 """
 
@@ -18,7 +19,7 @@ from __future__ import annotations
 import pytest
 
 from specweaver.core.config.settings_file import SettingsFileError
-from specweaver.interfaces.api.v1.run_settings import _settings_code
+from specweaver.interfaces.api.v1.run_doors import settings_error_code
 
 
 @pytest.mark.parametrize(
@@ -31,19 +32,13 @@ from specweaver.interfaces.api.v1.run_settings import _settings_code
         ("p/specweaver.toml", "sandbox", "SANDBOX_SETTINGS"),
         ("p/specweaver.toml", "(syntax)", "SANDBOX_SETTINGS"),
         ("p/specweaver.toml", "standardsx.mode", "SANDBOX_SETTINGS"),
+        ("p/specweaver.toml", "docs.rule.0.access", "DOC_POLICY"),
+        ("p/specweaver.toml", "autonomy.mode", "AUTONOMY_POLICY"),
+        ("p/specweaver.toml", "implement.language", "IMPLEMENT_POLICY"),
+        ("p/specweaver.toml", "llm.private_only", "LLM_SETTINGS"),
+        ("/home/u/.specweaver/settings.toml", "brake.hosted_spend_per_run", "LLM_SETTINGS"),
+        ("/home/u/.specweaver/settings.toml", "(syntax)", "LLM_SETTINGS"),
     ],
 )
 def test_each_setting_has_its_code(source: str, key: str, code: str) -> None:
-    assert _settings_code(SettingsFileError(source, key, 1, "bad")) == code
-
-
-async def test_another_lookup_failure_stays_best_effort(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Design decision 5: only a broken settings file refuses; an unknown project does not."""
-    from specweaver.interfaces.api.v1 import run_settings
-
-    async def unknown(_db: object, _project: str) -> object:
-        raise ValueError("Project 'p' not found")
-
-    monkeypatch.setattr(run_settings, "load_settings_async", unknown)
-
-    assert await run_settings.isolation_settings(object(), "p") is None
+    assert settings_error_code(SettingsFileError(source, key, 1, "bad")) == code

@@ -18,6 +18,7 @@ consumes:
   - specweaver/graph
   - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
   - specweaver/workspace/project
+  - specweaver/interfaces/run_setup  # every endpoint builds its run here
   - specweaver/assurance/standards
 
 forbids:

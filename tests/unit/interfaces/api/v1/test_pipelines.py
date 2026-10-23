@@ -482,10 +482,14 @@ class TestGateDecision:
 
     def test_a_resumed_run_gets_its_models_and_the_database(self, client, tmp_path) -> None:
         """Proves: B-FLOW-07 FR-1 — a REST resume can call a model and record its history."""
+        from specweaver.core.flow.engine.models import (
+            PipelineDefinition,
+            StepAction,
+            StepTarget,
+        )
         from specweaver.core.flow.engine.runner import PipelineRunner
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus
         from specweaver.core.flow.engine.store import StateStore
-        from specweaver.core.flow.handlers.run_context import ModelAccess
 
         state_dir = tmp_path / ".specweaver"
         state_dir.mkdir(exist_ok=True)
@@ -502,7 +506,7 @@ class TestGateDecision:
                 updated_at="2026-01-01T00:00:01",
             )
         )
-        models = ModelAccess()
+        router = object()
         seen: list = []
 
         async def resume(self, _run_id):
@@ -516,15 +520,18 @@ class TestGateDecision:
             ),
             patch(
                 "specweaver.core.flow.engine.parser.load_pipeline",
-                return_value=_simple_pipeline(),
+                return_value=PipelineDefinition.create_single_step(
+                    "review", StepAction.REVIEW, StepTarget.SPEC
+                ),
             ),
-            patch("specweaver.interfaces.api.v1.pipelines._models_for", return_value=models),
+            # The run builder's router: the claim is that the resume hands it to the run.
+            patch("specweaver.interfaces.run_setup.builder._router", return_value=router),
             patch.object(PipelineRunner, "resume", autospec=True, side_effect=resume),
         ):
             resp = client.post("/api/v1/runs/test-run-models/resume")
 
         assert resp.status_code == 200, resp.text
-        assert seen and seen[0].model is models
+        assert seen and seen[0].model.llm_router is router
         assert seen[0].db is not None
 
     # --- Gap #38: gate on non-parked run → 409 ---

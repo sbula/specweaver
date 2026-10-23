@@ -155,10 +155,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    spec_path = project_file_or_400(project_root, body.spec)\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    limit = max_runs(project_root)\n",
-          "new": "    spec_path = project_root / body.spec\n    if not spec_path.exists():\n        raise SpecWeaverAPIError(\n            detail=f\"Spec file not found: {body.spec}\",\n            error_code=\"FILE_NOT_FOUND\",\n            status_code=404,\n        )\n    spec_path = project_file_or_400(project_root, body.spec)\n    limit = max_runs(project_root)\n",
+          "old": "    else:\n        spec_path = project_file_or_400(project_root, body.spec)\n",
+          "new": "    else:\n        spec_path = project_root / body.spec\n",
           "breaks": "a 404 tells the client that an outside file does not exist",
-          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         }
       ]
     },

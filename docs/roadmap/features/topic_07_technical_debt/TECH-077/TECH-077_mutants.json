@@ -444,6 +444,86 @@
           "symbol_sha": "sha256:2b99d583a4428a20758b195d28c7cb0599b980ce575644230d44e8efd06abc4c"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The API run honours selector and accepts new_feature",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_selector_and_new_feature.py"
+      ],
+      "mutants": [
+        {
+          "id": "api-selector-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "project=body.project, db=db, selector=body.selector\n",
+          "new": "project=body.project, db=db\n",
+          "breaks": "an API run's selector is ignored",
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+        },
+        {
+          "id": "new-feature-needs-spec",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "    if pipeline_def.name != \"new_feature\" and not spec_path.exists():\n",
+          "new": "    if not spec_path.exists():\n",
+          "breaks": "an API new_feature is refused for its missing spec",
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+        },
+        {
+          "id": "new-feature-escapes",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "        spec_path = project_file_or_400(project_root, f\"specs/{body.spec}_spec.md\")\n",
+          "new": "        spec_path = project_root / f\"specs/{body.spec}_spec.md\"\n",
+          "breaks": "an API new_feature spec may lie outside the project",
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "Every API door builds its run through the run builder and answers its errors",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_doors_build_alike.py",
+        "tests/unit/interfaces/api/v1/test_settings_error_codes.py",
+        "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py"
+      ],
+      "mutants": [
+        {
+          "id": "docs-code-lost",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "settings_error_code",
+          "old": "        \"docs\": \"DOC_POLICY\",\n",
+          "new": "        \"docsx\": \"DOC_POLICY\",\n",
+          "breaks": "a broken [docs] is reported as SANDBOX_SETTINGS",
+          "symbol_sha": "sha256:6be75d7b1a2140b943363708ce98ff8fe9b3ba16d6e631840707c0cf7a740e2b"
+        },
+        {
+          "id": "machine-settings-misfiled",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "settings_error_code",
+          "old": "    if not exc.source.endswith(PROJECT_FILE_NAME):\n",
+          "new": "    if False:\n",
+          "breaks": "a broken settings.toml is reported as a project section",
+          "symbol_sha": "sha256:6be75d7b1a2140b943363708ce98ff8fe9b3ba16d6e631840707c0cf7a740e2b"
+        },
+        {
+          "id": "worktree-failure-unrecorded",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "_worktree_failed",
+          "old": "    runner._persist(run)\n    runner._emit(\"run_failed\", run=run)\n    raise SessionWorktreeError(message)\n",
+          "new": "    raise SessionWorktreeError(message)\n",
+          "breaks": "a run whose worktree cannot start leaves no trace in the store",
+          "symbol_sha": "sha256:3dcb9fe6f59bb87ae6588a03a0a16cbd5feb80d6ba0d309eb79dc407cfd4595d"
+        }
+      ]
     }
   ]
 }

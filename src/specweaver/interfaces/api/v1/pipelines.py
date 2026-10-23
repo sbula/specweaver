@@ -13,14 +13,14 @@ from fastapi import APIRouter, Depends, Query
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import (
     load_api_pipeline,
     project_file_or_400,
     resolve_project_root,
 )
-from specweaver.interfaces.api.v1.run_settings import isolation_settings, max_runs, project_policy
+from specweaver.interfaces.api.v1.run_doors import build_api_run
+from specweaver.interfaces.api.v1.run_settings import max_runs
 from specweaver.interfaces.api.v1.schemas import (
     GateDecisionRequest,
     PipelineRunRequest,
@@ -58,15 +58,9 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     project_root = await resolve_project_root(run.project_name, db)
     pipeline_def = load_api_pipeline(run.pipeline_name, project_root)
     limit = max_runs(project_root)
-    context = RunContext(
-        project_path=project_root,
-        spec_path=Path(run.spec_path),
-        output_dir=project_root / "src",
-        db=db,
-        isolation=project_policy(project_root),
-        model=_models_for(pipeline_def, project_root, run.project_name, db),
+    context = await build_api_run(
+        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db
     )
-    await _apply_isolation(context, db, run.project_name)
 
     from specweaver.interfaces.api.event_bridge import get_event_bridge
 
@@ -87,36 +81,6 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
             error_code="MAX_CONCURRENT_RUNS",
             status_code=429,
         ) from exc
-
-
-def _models_for(pipeline: Any, project_root: Path, project: str, db: Database) -> Any:
-    """The run's model access: a router for the roles its steps use; none when no step needs one."""
-    from specweaver.core.flow.handlers._llm import roles_of
-    from specweaver.core.flow.handlers.run_context import ModelAccess
-    from specweaver.interfaces.api.v1._llm import api_router
-
-    roles = roles_of(pipeline)
-    if not roles:
-        return ModelAccess()
-    return ModelAccess(llm_router=api_router(project_root, project, roles, db))
-
-
-async def _apply_isolation(context: RunContext, db: Database, project: str) -> None:
-    """Resolve the worktree-isolation policy for an API-triggered run.
-
-    `ADR-002` puts this decision at the composition root, and there are two: the CLI's `sw run` /
-    `sw resume`, and these endpoints. Only the CLI resolved it, so an API-launched run executed with
-    isolation OFF whatever `[sandbox]` declared — untrusted generated code running against the real
-    worktree because of which door the run came through.
-
-    Async on purpose: the settings loader has an async form, and calling the sync one inside an
-    endpoint would block the event loop.
-    """
-    from specweaver.core.flow.engine.isolation import apply_isolation_policy
-
-    settings = await isolation_settings(db, project)
-    if settings is not None:
-        apply_isolation_policy(context, settings, logger)
 
 
 @router.post("/pipelines/{name}/run", response_model=PipelineRunResponse)
@@ -140,8 +104,12 @@ async def start_pipeline_run(
     project_root = await resolve_project_root(body.project, db)
     pipeline_def = load_api_pipeline(name, project_root)
 
-    spec_path = project_file_or_400(project_root, body.spec)
-    if not spec_path.exists():
+    # A new feature's spec is what the run drafts; any other pipeline needs it to exist.
+    if pipeline_def.name == "new_feature":
+        spec_path = project_file_or_400(project_root, f"specs/{body.spec}_spec.md")
+    else:
+        spec_path = project_file_or_400(project_root, body.spec)
+    if pipeline_def.name != "new_feature" and not spec_path.exists():
         raise SpecWeaverAPIError(
             detail=f"Spec file not found: {body.spec}",
             error_code="FILE_NOT_FOUND",
@@ -149,16 +117,9 @@ async def start_pipeline_run(
         )
     limit = max_runs(project_root)
 
-    # Build context
-    context = RunContext(
-        project_path=project_root,
-        spec_path=spec_path,
-        output_dir=project_root / "src",
-        db=db,
-        isolation=project_policy(project_root),
-        model=_models_for(pipeline_def, project_root, body.project, db),
+    context = await build_api_run(
+        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector
     )
-    await _apply_isolation(context, db, body.project)
 
     # State store
     state_db = state_db_path()

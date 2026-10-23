@@ -61,18 +61,22 @@ async def execute_run(
     worktree = original.project_path / wt_path
     if approve_parked and run.current_step > 0:
         if not worktree.is_dir():
-            raise SessionWorktreeError(
+            _worktree_failed(
+                runner,
+                run,
                 f"Cannot resume: the run's worktree {wt_path} is gone, and with it the files of "
-                "its earlier steps. Start the run again."
+                "its earlier steps. Start the run again.",
             )
     else:
         # Prune a stale same-named worktree and branch left by a crash, so the add cannot collide.
         atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
         add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
         if add_res.status != AtomStatus.SUCCESS:
-            raise SessionWorktreeError(
+            _worktree_failed(
+                runner,
+                run,
                 f"C-EXEC-06 session isolation could not start ({add_res.message}). "
-                f"Ensure {original.project_path} is a git repository, or disable session isolation."
+                f"Ensure {original.project_path} is a git repository, or disable session isolation.",
             )
         setup_sandbox_caches(original, wt_path, logger)
 
@@ -122,6 +126,21 @@ async def execute_run(
         # A parked run keeps its worktree when it can be resumed.
         if not (run.status == RunStatus.PARKED and runner._store is not None):
             atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+
+
+def _worktree_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:
+    """No worktree, so no step ran: the run is failed in the store, its step naming why."""
+    from specweaver.commons.timestamps import now_iso
+    from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
+
+    stamp = now_iso()
+    run.status = RunStatus.FAILED
+    run.step_records[run.current_step].result = StepResult(
+        status=StepStatus.ERROR, error_message=message, started_at=stamp, completed_at=stamp
+    )
+    runner._persist(run)
+    runner._emit("run_failed", run=run)
+    raise SessionWorktreeError(message)
 
 
 def _reconcile_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:

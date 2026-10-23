@@ -222,7 +222,8 @@
       "scope": [
         "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
         "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
-        "tests/integration/core/flow/test_cli_config_integration.py"
+        "tests/integration/core/flow/test_cli_config_integration.py",
+        "tests/integration/interfaces/api/test_api_doors_build_alike.py"
       ],
       "mutants": [
         {
@@ -250,20 +251,20 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
-          "new": "        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
+          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
           "breaks": "an API run ignores a broken [docs] and the project's rules",
-          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         },
         {
           "id": "api-resume-skips-the-policy",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "_resume_existing_run",
-          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
-          "new": "        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
+          "old": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n",
+          "new": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
           "breaks": "a resumed API run ignores a [docs] broken since its start",
-          "symbol_sha": "sha256:457a37dd9b22a8f92bdf03acb3c4a47b426d98f6c40029d5c400f95d2c0a3792"
+          "symbol_sha": "sha256:d43f3f0534da08edc8a89a79d6532c665498dee470634141711deca619da62c4"
         }
       ]
     },

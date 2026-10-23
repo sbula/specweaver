@@ -228,32 +228,32 @@
         {
           "id": "api-run-isolation-off",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/run_settings.py",
-          "symbol": "isolation_settings",
-          "old": "    except SettingsFileError as exc:\n        raise SpecWeaverAPIError(\n            detail=str(exc), error_code=_settings_code(exc), status_code=500\n        ) from exc\n",
-          "new": "    except SettingsFileError:\n        return None\n",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "build_api_run",
+          "old": "    except SettingsFileError as exc:\n",
+          "new": "    except ImportError as exc:\n",
           "breaks": "an API run starts with isolation off on a broken setting",
-          "symbol_sha": "sha256:76e54bb4fb3b5ca26aa40973a63c75d5bd129dcf8d67743faddea3a7d94496e1"
+          "symbol_sha": "sha256:8edf3f31b3a562fd966cc7d8a21993379cc97bce4b7f8e0a33f37224e78a153f"
         },
         {
           "id": "standards-code-lost",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/run_settings.py",
-          "symbol": "_settings_code",
-          "old": "    if exc.key.split(\".\")[0] == \"standards\":\n",
-          "new": "    if False:\n",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "settings_error_code",
+          "old": "        \"standards\": \"STANDARDS_SETTINGS\",\n",
+          "new": "        \"standardsx\": \"STANDARDS_SETTINGS\",\n",
           "breaks": "a broken [standards] is reported as SANDBOX_SETTINGS",
-          "symbol_sha": "sha256:9ad4eb85f5ae44c8cfa8cc29d84f5efa3708c29ce29bd21a76fcb1fa15c8aa5b"
+          "symbol_sha": "sha256:6be75d7b1a2140b943363708ce98ff8fe9b3ba16d6e631840707c0cf7a740e2b"
         },
         {
           "id": "dal-code-lost",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/run_settings.py",
-          "symbol": "_settings_code",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "settings_error_code",
           "old": "    if exc.source.endswith(\"dal_definitions.yaml\"):\n",
           "new": "    if False:\n",
           "breaks": "a broken DAL file is reported as SANDBOX_SETTINGS",
-          "symbol_sha": "sha256:9ad4eb85f5ae44c8cfa8cc29d84f5efa3708c29ce29bd21a76fcb1fa15c8aa5b"
+          "symbol_sha": "sha256:6be75d7b1a2140b943363708ce98ff8fe9b3ba16d6e631840707c0cf7a740e2b"
         },
         {
           "id": "validation-without-tier",

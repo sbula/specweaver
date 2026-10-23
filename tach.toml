@@ -67,7 +67,7 @@ depends_on = [ "specweaver.core.flow", "specweaver.core.config", "specweaver.cor
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project",]
+depends_on = [ "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
@@ -199,7 +199,7 @@ expose = [ "cli", "cli.config_app",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.bootstrap",]
-expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "llm_settings_loader.load_llm_settings", "project_settings.load_section", "llm_settings_loader.machine_settings_path", "llm_settings_writer.set_model_price", "llm_settings_writer.clear_model_price", "llm_settings_writer.set_role",]
+expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_loader.load_settings", "settings_loader.load_settings_async", "llm_settings_loader.load_llm_settings", "project_settings.load_section", "project_settings.PROJECT_FILE_NAME", "llm_settings_loader.machine_settings_path", "llm_settings_writer.set_model_price", "llm_settings_writer.clear_model_price", "llm_settings_writer.set_role",]
 
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]
