@@ -237,9 +237,10 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
-* **`TECH-076` 🟡: Project Settings Are Read Two Ways, and One Fails Open**
+* **`TECH-076` 🟢: Project Settings Are Read Two Ways, and One Fails Open**
   > [Description](../features/topic_07_technical_debt/TECH-076/TECH-076_design.md) | _Status:
-  > SF-01..SF-03 committed, ready for sign-off. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > closed by the user 2026-10-23. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Verifiable Proof: `tests/e2e/capabilities/core/test_broken_sandbox_stops_the_run_e2e.py` |
   > `specweaver.toml` has a strict reader and a lenient one.
 
 * **`TECH-075` 🟢: Paths From Outside Can Leave the Project**
