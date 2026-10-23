@@ -207,21 +207,22 @@
       "title": "A run never starts with isolation off on a broken setting",
       "scope": [
         "tests/e2e/capabilities/core/test_broken_sandbox_stops_the_run_e2e.py",
-        "tests/unit/core/flow/interfaces/test_run_isolation_settings.py",
         "tests/integration/interfaces/api/test_api_broken_settings_refuse.py",
         "tests/unit/interfaces/api/v1/test_settings_error_codes.py",
-        "tests/unit/core/flow/handlers/test_validation_dal_merge_stops.py"
+        "tests/unit/core/flow/handlers/test_validation_dal_merge_stops.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py",
+        "tests/integration/interfaces/cli/test_run_doors.py"
       ],
       "mutants": [
         {
           "id": "cli-run-isolation-off",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_apply_isolation_policy",
-          "old": "    except typer.Exit:\n        raise  # the refusal of a broken settings file\n",
-          "new": "    except ():\n        raise\n",
-          "breaks": "sw run runs with isolation off on a broken [sandbox]",
-          "symbol_sha": "sha256:b49df301341066558a621f61d348ead0868639729852660f13b1e2114915dad9"
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_settings",
+          "old": "        if isinstance(exc, SettingsFileError):\n            raise\n",
+          "new": "        if False:\n            raise\n",
+          "breaks": "a run goes on with isolation off on a broken [sandbox]",
+          "symbol_sha": "sha256:452da6cf547fc8efd968c4d59a4e91b7ef11b01786bd85fc0a6a7afea791728f"
         },
         {
           "id": "api-run-isolation-off",

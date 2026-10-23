@@ -52,6 +52,10 @@ sw resume
 sw resume <run_id>
 ```
 
+A run resumes in the project it belongs to, with that project's settings and pipeline file,
+whatever folder you type `sw resume` in. If that project is no longer registered, the resume stops
+and names it.
+
 ### Resuming a review gate **is** approving it
 
 When a run is parked at a HITL gate on a step that **passed**, `sw resume` means *"I looked at

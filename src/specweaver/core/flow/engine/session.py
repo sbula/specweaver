@@ -21,6 +21,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class SessionWorktreeError(RuntimeError):
+    """The run's worktree could not start, or a resumed run's worktree is gone."""
+
+
 async def execute_run(
     runner: Any,
     run: Any,
@@ -57,7 +61,7 @@ async def execute_run(
     worktree = original.project_path / wt_path
     if approve_parked and run.current_step > 0:
         if not worktree.is_dir():
-            raise RuntimeError(
+            raise SessionWorktreeError(
                 f"Cannot resume: the run's worktree {wt_path} is gone, and with it the files of "
                 "its earlier steps. Start the run again."
             )
@@ -66,7 +70,7 @@ async def execute_run(
         atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
         add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
         if add_res.status != AtomStatus.SUCCESS:
-            raise RuntimeError(
+            raise SessionWorktreeError(
                 f"C-EXEC-06 session isolation could not start ({add_res.message}). "
                 f"Ensure {original.project_path} is a git repository, or disable session isolation."
             )

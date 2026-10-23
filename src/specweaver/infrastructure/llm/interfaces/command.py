@@ -40,7 +40,7 @@ def run_model_option(value: str | None) -> RoleEntry | None:
         raise typer.Exit(code=1) from err
 
 
-def _tell_missing_at_end(router: ModelRouter) -> ModelRouter:
+def tell_missing_at_end(router: ModelRouter) -> ModelRouter:
     """At the command's end, also after an exit, say on stderr how many calls the ledger misses."""
     context = click.get_current_context(silent=True)
     if context is not None:
@@ -85,7 +85,7 @@ def command_router(
     else:
         files = _core.load_active_llm_settings(project)
     try:
-        return _tell_missing_at_end(
+        return tell_missing_at_end(
             build_router(
                 files,
                 project=project,
@@ -107,7 +107,7 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
     """
     files = _core.load_active_llm_settings(project)
     try:
-        return _tell_missing_at_end(
+        return tell_missing_at_end(
             build_router(
                 files,
                 project=project,

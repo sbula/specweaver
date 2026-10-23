@@ -45,6 +45,8 @@ consumes:
   - specweaver/assurance/standards
   - specweaver/workspace/context
   - specweaver/telemetry_logger
+  - specweaver/interfaces/run_setup  # every command builds its run here
+  - specweaver/workspace
 
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.

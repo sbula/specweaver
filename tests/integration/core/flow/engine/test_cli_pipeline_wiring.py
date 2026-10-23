@@ -22,6 +22,9 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
     # We will mock the PipelineRunner.run method to prevent actual execution,
     # but we will let the CLI build it and call it.
     (tmp_path / "spec.md").write_text("# Test Spec")
+    assert (
+        runner.invoke(app, ["init", tmp_path.name.lower(), "--path", str(tmp_path)]).exit_code == 0
+    )
 
     with patch("specweaver.core.flow.engine.runner.PipelineRunner.run") as mock_run:
         from specweaver.core.flow.engine.state import PipelineRun

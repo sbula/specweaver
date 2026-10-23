@@ -228,12 +228,12 @@
         {
           "id": "sw-run-skips-the-policy",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_build_run_context",
-          "old": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n",
-          "new": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n    doc_policy = _core.project_sections_at(project_path / \"missing\")[0]\n",
-          "breaks": "sw run and sw resume use the built-in rules whatever the project says",
-          "symbol_sha": "sha256:789e8ba2195011d6a28d7cfd29613006447fd279e260f8553dd59eecb6f5502d"
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_sections",
+          "old": "        load_section(root, parse_doc_policy),\n",
+          "new": "        load_section(root / \"missing\", parse_doc_policy),\n",
+          "breaks": "a run uses the built-in rules whatever the project says",
+          "symbol_sha": "sha256:15d23e0a3eaf9e4e9c5c76216eea3fa94b7833630559ca7f744ea364a07e9cc6"
         },
         {
           "id": "sw-implement-drops-the-policy",

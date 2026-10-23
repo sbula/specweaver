@@ -183,19 +183,16 @@ def test_a_malformed_specweaver_toml_stops_the_run(tmp_path: Path) -> None:
     assert not mock_runner.called
 
 
-def test_high_dal_project_does_not_auto_isolate_on_sw_run(tmp_path: Path) -> None:
-    """[Boundary/NFR — INT-US-03 SF-03 G2] DAL-driven auto-escalation is opt-in PER CALLER:
-    `sw implement` opts in, but `sw run` must NOT. A DAL_B project run via `sw run` therefore
-    stays on host (session off), proving the shared `apply_session_policy` escalation never
-    leaked into the generic run path."""
+def test_high_dal_project_auto_isolates_on_sw_run(tmp_path: Path) -> None:
+    """[Boundary] DAL auto-escalation applies to `sw run` as to every door (TECH-077 FR-3, which
+    reverses INT-US-03 SF-03 G2: escalation used to be `sw implement`'s alone)."""
     project_dir = _init_project(tmp_path, "cexec06-daljrun", None)
-    # Mark the project DAL_B (would auto-escalate IF sw run opted into DAL escalation).
     (project_dir / "context.yaml").write_text(
         "operational:\n  dal_level: DAL_B\n", encoding="utf-8"
     )
     context = _run_and_capture(project_dir)
-    assert context.isolation.session_isolation is False
-    assert context.isolation.allowed_paths == []
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths
 
 
 def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, monkeypatch) -> None:

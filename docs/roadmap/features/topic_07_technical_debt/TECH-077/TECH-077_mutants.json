@@ -219,6 +219,16 @@
           "new": "            context.project_path,\n        )\n        return False\n    return True\n",
           "breaks": "a high-DAL project without git runs unbounded on the host",
           "symbol_sha": "sha256:930ce08d5259d3a724285f90e03108060981b7df0b990e5ab774e00b6964222f"
+        },
+        {
+          "id": "read-only-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_apply_isolation",
+          "old": "    if not read_only:\n",
+          "new": "    if True:\n",
+          "breaks": "a read-only run still opens a per-run worktree",
+          "symbol_sha": "sha256:8bfa3121a89c4ae42dbc7e607e80d7a79407e8bcf6f280367890c85345fa3196"
         }
       ]
     },
@@ -238,6 +248,87 @@
           "new": "    \"\"\"`build_run` for a synchronous door.\"\"\"\n    import typer  # noqa: F401\n",
           "breaks": "the builder could exit a process",
           "symbol_sha": "sha256:ff78418fbce3260558b3d7cc2453268e16cdd38e08adc329125dcad46b54d680"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "sw resume rebuilds the run for the project the run recorded",
+      "scope": [
+        "tests/e2e/capabilities/core/test_resume_uses_runs_project_e2e.py",
+        "tests/integration/interfaces/cli/test_run_doors.py"
+      ],
+      "mutants": [
+        {
+          "id": "resume-uses-current-folder",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "resume",
+          "old": "    project_path = recorded_project_root(run_state.project_name)\n",
+          "new": "    project_path = Path.cwd()\n",
+          "breaks": "a resume runs in the folder it is typed in",
+          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+        },
+        {
+          "id": "resume-pipeline-from-cwd",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "resume",
+          "old": "    pipeline_def = load_pipeline(project_path / run_state.pipeline_name)\n",
+          "new": "    pipeline_def = load_pipeline(Path(run_state.pipeline_name))\n",
+          "breaks": "a resume cannot find its project's pipeline file",
+          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Every CLI door builds its run through the run builder and refuses its errors",
+      "scope": [
+        "tests/integration/interfaces/cli/test_run_doors.py",
+        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
+        "tests/integration/interfaces/cli/test_run_wiring.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-project-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "    except UnknownProjectError as err:\n",
+          "new": "    except ImportError as err:\n",
+          "breaks": "an unregistered folder ends in a traceback",
+          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+        },
+        {
+          "id": "resume-worktree-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "resume",
+          "old": "    except SessionWorktreeError as err:\n",
+          "new": "    except ImportError as err:\n",
+          "breaks": "a resume whose worktree is gone ends in a traceback",
+          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+        },
+        {
+          "id": "router-never-tells",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "        tell_missing_at_end(context.model.llm_router)\n",
+          "new": "        pass\n",
+          "breaks": "a command never says its ledger missed calls",
+          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+        },
+        {
+          "id": "no-folder-no-active-root",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
+          "new": "        root = project_path\n",
+          "breaks": "a command with no folder has no project root",
+          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
         }
       ]
     }

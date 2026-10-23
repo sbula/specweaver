@@ -38,9 +38,13 @@ FAKE_RUN_ID = "9f8e7d6c-1111-2222-3333-444455556666"
 
 
 @pytest.fixture()
-def project(tmp_path: Path) -> Path:
+def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    assert (
+        runner.invoke(app, ["init", tmp_path.name.lower(), "--path", str(tmp_path)]).exit_code == 0
+    )
+    monkeypatch.chdir(tmp_path)
     specs = tmp_path / "specs"
-    specs.mkdir(parents=True)
+    specs.mkdir(parents=True, exist_ok=True)
     (specs / "greeter_spec.md").write_text("# Greeter\n\n## 1. Purpose\n\nGreets.\n", "utf-8")
     return tmp_path
 

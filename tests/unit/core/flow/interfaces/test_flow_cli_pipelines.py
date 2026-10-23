@@ -347,6 +347,9 @@ class TestResumeContextConfigWiring:
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
+        (project_dir / "specweaver.toml").write_text(
+            "[sandbox]\nenforce_worktree_isolation = true\n", encoding="utf-8"
+        )
 
         mock_run_state = PipelineRun(
             run_id="abc1234567890",
@@ -358,23 +361,10 @@ class TestResumeContextConfigWiring:
             updated_at="",
         )
 
-        from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
-
-        sentinel = SpecWeaverSettings(
-            llm={"model": "gemini-2.0-flash"},
-            sandbox=SandboxSettings(enforce_worktree_isolation=True),
-        )
-
         with (
             patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
-            # Patch the loader to a sentinel so we assert the *wiring* (resume assigns
-            # load_settings' result to context.model.config) independent of project resolution.
-            patch(
-                "specweaver.core.config.bootstrap.settings_loader.load_settings",
-                return_value=sentinel,
-            ),
         ):
             mock_get_store.return_value.load_run.return_value = mock_run_state
             mock_runner = mock_runner_class.return_value
@@ -391,7 +381,7 @@ class TestResumeContextConfigWiring:
 
     def test_resume_resolves_isolation_policy(self, tmp_path: Path, monkeypatch) -> None:
         context = self._resume_and_capture_context(tmp_path, monkeypatch)
-        # sentinel settings enable the policy → resume wires it onto the flag,
+        # the project's settings enable the policy → resume wires it onto the flag,
         # while keeping context.model.config None (container-neutral).
         assert context.isolation.enforce_isolation is True
         assert context.model.config is None

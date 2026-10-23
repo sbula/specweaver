@@ -12,12 +12,12 @@
         {
           "id": "folder-name-lookup",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_build_run_context",
-          "old": "    _apply_isolation_policy(context, db, active or project_path.name)\n",
-          "new": "    _apply_isolation_policy(context, db, project_path.name)\n",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_settings",
+          "old": "        return await load_settings_async(request.db, request.project)\n",
+          "new": "        return await load_settings_async(request.db, request.project_root.name)\n",
           "breaks": "a project named unlike its folder runs without the worktree isolation it asked for",
-          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
+          "symbol_sha": "sha256:452da6cf547fc8efd968c4d59a4e91b7ef11b01786bd85fc0a6a7afea791728f"
         }
       ]
     },

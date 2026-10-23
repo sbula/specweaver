@@ -804,10 +804,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/interfaces/cli.py",
           "symbol": "_build_run_context",
-          "old": "    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)\n",
-          "new": "    _wire_models(context, pipeline, active or project_path.name, run_model=None)\n",
+          "old": "        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n",
+          "new": "        project_path, spec_path, pipeline, selector=selector, run_model=None\n",
           "breaks": "sw run and sw resume ignore --model",
-          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
+          "symbol_sha": "sha256:6b9a24573649a536942cab2e8f414ecacffed4fcf40ad10b7c5534a762c250d6"
         },
         {
           "id": "resume-drops-run-model",
@@ -832,12 +832,12 @@
         {
           "id": "run-model-reads-settings-for-no-model-pipeline",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_wire_models",
-          "old": "    roles = roles_of(pipeline)\n    if not roles:\n        return\n",
-          "new": "    roles = roles_of(pipeline)\n    if not roles and run_model is None:\n        return\n",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "    needs_model = bool(roles_of(request.pipeline)) and request.models != \"none\"\n",
+          "new": "    needs_model = (bool(roles_of(request.pipeline)) or request.run_model is not None) and request.models != \"none\"\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
-          "symbol_sha": "sha256:c604aa93ef9c6fc8364ebe6c3b8fe92761919624fc675c86c23e7ae0bcee4a8b"
+          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
         }
       ]
     },

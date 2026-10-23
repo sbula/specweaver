@@ -78,12 +78,12 @@
         {
           "id": "sw-run-names-no-language",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/interfaces/cli.py",
-          "symbol": "_build_run_context",
-          "old": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n",
-          "new": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n    language = None\n",
-          "breaks": "sw run and sw resume ignore [implement] language",
-          "symbol_sha": "sha256:789e8ba2195011d6a28d7cfd29613006447fd279e260f8553dd59eecb6f5502d"
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_sections",
+          "old": "        load_section(root, parse_implement).language,\n",
+          "new": "        None,\n",
+          "breaks": "a run ignores [implement] language",
+          "symbol_sha": "sha256:15d23e0a3eaf9e4e9c5c76216eea3fa94b7833630559ca7f744ea364a07e9cc6"
         },
         {
           "id": "sw-implement-names-no-language",

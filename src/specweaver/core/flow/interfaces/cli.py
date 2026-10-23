@@ -12,21 +12,17 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from specweaver.assurance.standards.loader import load_standards_content
 from specweaver.core.config.paths import state_db_path
-from specweaver.core.flow.handlers.run_context import (
-    AnalysisContext,
-    GuidanceContent,
-    IsolationPolicy,
-    RunContext,
-)
+from specweaver.core.flow.engine.session import SessionWorktreeError
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
-from specweaver.core.flow.interfaces.run_topology import attach_topology
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli.run_doors import (
+    build_run_or_exit,
+    recorded_project_root,
+    refuse_unstarted_worktree,
+)
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
-from specweaver.workspace.project.constitution import find_constitution
-from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +31,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from specweaver.core.config.database import Database
     from specweaver.core.config.llm_settings import RoleEntry
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers.run_context import RunContext
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
 
@@ -247,95 +243,16 @@ def _build_run_context(
     pipeline: PipelineDefinition,
     *,
     run_model: RoleEntry | None = None,
+    selector: str = "direct",
 ) -> RunContext:
-    """The fully-wired `RunContext` a run or a resume starts from.
-
-    Shared by `_execute_run` and `resume` — constitution, standards, interaction provider,
-    isolation policy, model router. As two copies it is forty lines where the entry points can
-    drift into giving a run and its resume different execution postures.
-    """
-
-    info = find_constitution(project_path, spec_path=spec_path)
-    active = _core.registered_project_at(project_path) or _core.run_repo_op(
-        lambda r: r.get_active_project()
+    """The context a run or a resume starts from, with the registered interaction channel."""
+    context = build_run_or_exit(
+        project_path, spec_path, pipeline, selector=selector, run_model=run_model
     )
-    db = _core.get_db()
-    doc_policy, autonomy, language = _core.project_sections_at(project_path)
-
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=spec_path,
-        output_dir=project_path / "src",
-        db=db,
-        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),
-        guidance=GuidanceContent(
-            constitution=info.content if info else None,
-            standards=(
-                load_standards_content(db, active, project_path, target_path=spec_path)
-                if active
-                else None
-            ),
-        ),
-    )
-
-    # Attach the registered interaction channel, if any —
-    # the delivery-layer factory decides interactivity (returns None when headless, so
-    # DraftSpecHandler's parking contract is untouched without a TTY).
+    # The delivery-layer factory decides interactivity (None when headless, so DraftSpecHandler's
+    # parking contract is untouched without a TTY).
     _maybe_attach_provider(context)
-    _apply_isolation_policy(context, db, active or project_path.name)
-
-    _wire_models(context, pipeline, active or project_path.name, run_model=run_model)
     return context
-
-
-def _wire_models(
-    context: RunContext,
-    pipeline: PipelineDefinition,
-    project: str,
-    *,
-    run_model: RoleEntry | None = None,
-) -> None:
-    """Give the run its router, every role its steps use checked before the first call.
-
-    A pipeline whose steps call no model (`validate_only`) needs no settings files at all.
-    """
-    from specweaver.core.flow.handlers._llm import roles_of
-    from specweaver.infrastructure.llm.interfaces.command import command_router
-
-    roles = roles_of(pipeline)
-    if not roles:
-        return
-    settings = _core.load_project_settings(_core.get_db(), project)
-    router = command_router(project, roles, run_model=run_model, project_root=context.project_path)
-    context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
-
-
-def _apply_isolation_policy(context: RunContext, db: Database, project: str) -> None:
-    """Resolve the worktree-isolation policies at the composition root (ADR-002).
-
-    Both the per-step policy (``enforce_isolation``) and the per-run one (``session_isolation`` +
-    ``allowed_paths``). Deliberately does NOT populate ``context.model.config``: that would also
-    expose ``[sandbox] execution_mode`` and incidentally activate container QA on this path.
-
-    A broken settings file stops the run, naming the file, key and line: running it with isolation
-    off would be the one outcome the file asked to prevent. Any other lookup failure stays
-    best-effort and leaves the policies at their defaults (off).
-    """
-    from specweaver.core.flow.engine.isolation import apply_isolation_policy
-
-    try:
-        settings = _core.load_project_settings(db, project)
-    except typer.Exit:
-        raise  # the refusal of a broken settings file
-    except Exception:  # any other lookup failure is best-effort here — never crash a run
-        logger.debug(
-            "Could not resolve settings for project '%s'; worktree isolation "
-            "policy will use its default (off).",
-            project,
-        )
-        return
-    apply_isolation_policy(context, settings, logger)
 
 
 def _tests_passed_over_project(final_run: Any) -> bool:
@@ -415,9 +332,9 @@ def _execute_run(
     # Build display backend
     display = _create_display(use_json=json_output, verbose=verbose)
 
-    context = _build_run_context(project_path, spec_path, pipeline_def, run_model=run_model)
-
-    attach_topology(context, project_path, spec_path, selector)
+    context = _build_run_context(
+        project_path, spec_path, pipeline_def, run_model=run_model, selector=selector
+    )
 
     # Set up state store
     store = _get_state_store()
@@ -543,10 +460,9 @@ def resume(
         f"step {run_state.current_step + 1}/{len(run_state.step_records)})",
     )
 
-    # Load the pipeline definition
-    pipeline_def = load_pipeline(Path(run_state.pipeline_name))
-
-    project_path = resolve_project_path(None)
+    project_path = recorded_project_root(run_state.project_name)
+    # A pipeline given as a YAML file is found where the run's project keeps it.
+    pipeline_def = load_pipeline(project_path / run_state.pipeline_name)
     spec_path = Path(run_state.spec_path)
     context = _build_run_context(project_path, spec_path, pipeline_def, run_model=run_model)
 
@@ -571,6 +487,9 @@ def resume(
             f"\n[yellow]Interrupted.[/yellow] [dim]Resume with: sw resume {run_state.run_id}[/dim]",
         )
         raise typer.Exit(code=130) from None
+    except SessionWorktreeError as err:
+        display.stop()
+        refuse_unstarted_worktree(err)
     except Exception:
         display.stop()
         raise

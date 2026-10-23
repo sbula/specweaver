@@ -70,10 +70,10 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _context_of(project: Path) -> Any:
     from specweaver.core.flow.engine.parser import load_pipeline
-    from specweaver.core.flow.interfaces.cli import _build_run_context
+    from specweaver.interfaces.cli.run_doors import build_run_or_exit
 
     pipeline = load_pipeline(project / "one_step.yaml")
-    return _build_run_context(project, project / "specs" / "greeter_spec.md", pipeline)
+    return build_run_or_exit(project, project / "specs" / "greeter_spec.md", pipeline)
 
 
 def test_the_run_context_carries_the_projects_rules(project: Path) -> None:

@@ -68,7 +68,7 @@ def _resume(tmp_path: Path, *flags: str):
         patch("specweaver.core.flow.interfaces.cli._get_state_store") as store,
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as runner_class,
         patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
-        patch("specweaver.core.flow.interfaces.cli._wire_models") as wire,
+        patch("specweaver.core.flow.interfaces.cli.build_run_or_exit") as wire,
     ):
         store.return_value.load_run.return_value = parked
         runner_class.return_value.resume = AsyncMock(return_value=_Done())

@@ -191,6 +191,23 @@ def test_the_per_step_policy_is_applied(world: tuple[Database, Path]) -> None:
     assert context.isolation.enforce_isolation is True
 
 
+def test_a_read_only_run_skips_the_session_worktree(world: tuple[Database, Path]) -> None:
+    """A run that writes and executes nothing gets no per-run worktree; the per-step rule stays."""
+    db, root = world
+    _dal(root, "DAL_B")
+    (root / ".git").mkdir()
+    (root / "specweaver.toml").write_text(
+        _PROJECT_SETTINGS + "\n[sandbox]\nenforce_worktree_isolation = true\n", encoding="utf-8"
+    )
+
+    context = build_run_sync(_request(db, root, StepAction.VALIDATE, read_only=True))
+
+    assert (context.isolation.session_isolation, context.isolation.enforce_isolation) == (
+        False,
+        True,
+    )
+
+
 def test_a_low_dal_project_runs_on_the_host(world: tuple[Database, Path]) -> None:
     db, root = world
     _dal(root, "DAL_E")

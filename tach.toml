@@ -47,7 +47,7 @@ depends_on = [ "specweaver.graph", "specweaver.workflows.planning", "specweaver.
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm.interfaces",]
+depends_on = [ "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm.interfaces",]
 
 [[modules]]
 path = "specweaver.sandbox"
@@ -71,7 +71,7 @@ depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specwea
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project",]
+depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.interfaces.run_setup",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
@@ -187,7 +187,7 @@ expose = [ "cli", "cli.standards_app",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm.interfaces",]
-expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router", "command.run_model_option", "settings_show.config_show",]
+expose = [ "cli", "cli.usage_app", "cli.costs_app", "command.command_router", "command.optional_command_router", "command.run_model_option", "command.tell_missing_at_end", "settings_show.config_show",]
 
 [[interfaces]]
 from = [ "specweaver.core.config.interfaces",]

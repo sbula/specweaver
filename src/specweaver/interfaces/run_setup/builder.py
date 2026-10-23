@@ -67,6 +67,8 @@ class RunRequest:
     ask: Callable[[str], bool] | None = None
     #: `required`: a model step with no model set raises; `optional`: it gives no router.
     models: Literal["required", "optional", "none"] = "required"
+    #: A run that writes and executes nothing gets no per-run worktree.
+    read_only: bool = False
 
 
 async def build_run(request: RunRequest) -> RunContext:
@@ -106,7 +108,7 @@ async def build_run(request: RunRequest) -> RunContext:
         graph=GraphContext(topology=_topology(request)),
     )
     if settings is not None:
-        _apply_isolation(context, settings)
+        _apply_isolation(context, settings, read_only=request.read_only)
     return context
 
 
@@ -177,11 +179,12 @@ def _topology(request: RunRequest) -> Any:
     )
 
 
-def _apply_isolation(context: RunContext, settings: SpecWeaverSettings) -> None:
-    """Both isolation policies, with escalation by the code's DAL, in every door."""
+def _apply_isolation(context: RunContext, settings: SpecWeaverSettings, *, read_only: bool) -> None:
+    """Both isolation policies, with escalation by the code's DAL; a read-only run only per step."""
     from specweaver.core.flow.engine.isolation import apply_session_policy
 
     context.isolation = context.isolation.model_copy(
         update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
     )
-    apply_session_policy(context, settings, logger, dal_auto_escalate=True)
+    if not read_only:
+        apply_session_policy(context, settings, logger, dal_auto_escalate=True)
