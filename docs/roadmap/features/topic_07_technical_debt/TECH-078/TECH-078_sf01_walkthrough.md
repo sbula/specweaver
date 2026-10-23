@@ -43,3 +43,43 @@ Full suite 11588 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
 - R2 (LOW) a mutant cannot pin a module-level dict (`pin` takes functions and classes), so the
   table's own rows are proven through `language_of` and the parser registry.
 - Cycle 2: no new finding.
+
+## CB-2 — the prompt fences, the code-structure atom and the skeleton (FR-6)
+
+### What changed
+
+- `prompt/constants.detect_language`: code takes its fence from `commons.languages`; only data files
+  (markdown, YAML, JSON, TOML, HTML, CSS, SQL, shell, Ruby, XML, text) keep their own labels. Kotlin
+  is fenced `kotlin` (WV-12), and `.tsx`, `.jsx`, `.c`, `.cpp` get their language instead of `text`.
+- The code-structure atom names a file's language with `language_of` (it knew neither JavaScript, Go,
+  C nor C++).
+- `_skeleton.extract_ast_skeleton` picks its parser by language; `.pyi`, `.mjs`, `.cjs` are now
+  condensed instead of copied whole.
+- `language_support_guide.md`: a new language starts with one row in `commons/languages.py`.
+
+### Red first
+
+`test_one_language_table.py`: 34 cases failed — 13 fences, 19 atom languages, 2 skeletons.
+
+### Mutants
+
+New, OBJECTED and pinned: `fence-skips-the-table`, `atom-skips-the-table`,
+`skeleton-misses-javascript`. Drifted: 0.
+
+### Gates
+
+Full suite 11629 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (LOW) a `.go` file is fenced `go` as before; a `.rb` file stays `ruby` (not a table language).
+- R2 (LOW) the skeleton's language list still names which parsers it imports; the endings come from
+  the table. Accepted: the parser objects are its own concern.
+- Cycle 2: no new finding.
+
+### SF-01 coverage
+
+| FR | Proof |
+|---|---|
+| FR-6 | `test_language_table.py`, `test_one_language_table.py` (archetype rules, fences, atom, skeleton), `test_parsers_factory.py` |
+| FR-3 (convention) | `test_language_table.py`, `test_one_language_table.py` (`task_files_for` agrees) |

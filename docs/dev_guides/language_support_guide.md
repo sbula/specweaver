@@ -36,6 +36,11 @@ A new language registers its manifest trigger in all three.
 
 Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 
+0. **`commons/languages.py`**: one row in `LANGUAGE_SUFFIXES` with every file ending of the language,
+   and, if the language has a test convention, its folder in `_TESTS_ROOT` and its file name in
+   `name_tests_for`. The prompt fences, the parser registry, rename, the archetype rules, the skeleton
+   reader, the code-structure atom and `task_files_for` all read it; no other list of endings exists
+   (`TECH-078`).
 1. **`runner.py`**: `GoQARunner`, implementing `QARunnerInterface`, bound to `go build`, `go test`,
    etc. Implement or stub every method:
    - `run_compiler()`

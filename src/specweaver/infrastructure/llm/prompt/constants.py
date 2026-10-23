@@ -14,10 +14,8 @@ if TYPE_CHECKING:
 # Language detection
 # ---------------------------------------------------------------------------
 
-_LANG_MAP: dict[str, str] = {
-    ".py": "python",
-    ".js": "javascript",
-    ".ts": "typescript",
+#: Fence labels of the files that are not code; code takes its language from `commons.languages`.
+_DATA_FENCES: dict[str, str] = {
     ".md": "markdown",
     ".yaml": "yaml",
     ".yml": "yaml",
@@ -28,9 +26,6 @@ _LANG_MAP: dict[str, str] = {
     ".sql": "sql",
     ".sh": "bash",
     ".bash": "bash",
-    ".rs": "rust",
-    ".go": "go",
-    ".java": "java",
     ".rb": "ruby",
     ".xml": "xml",
     ".txt": "text",
@@ -42,7 +37,9 @@ def detect_language(path: Path) -> str:
 
     Returns ``"text"`` for unrecognised extensions.
     """
-    return _LANG_MAP.get(path.suffix.lower(), "text")
+    from specweaver.commons.languages import language_of
+
+    return language_of(path) or _DATA_FENCES.get(path.suffix.lower(), "text")
 
 
 # ---------------------------------------------------------------------------

@@ -18,31 +18,33 @@ logger = logging.getLogger(__name__)
 
 def extract_ast_skeleton(path: Path, content: str) -> str:
     """Resolve a workspace AST parser to construct compressed bounds."""
-    ext = path.suffix.lower()
+    from specweaver.commons.languages import language_of
+
+    language = language_of(path)
 
     # Use explicit Any or CodeStructureInterface for generic parser typing
     try:
         parser: CodeStructureInterface | None = None
 
-        if ext == ".py":
+        if language == "python":
             from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
 
             parser = PythonCodeStructure()
-        elif ext in (".ts", ".tsx", ".js", ".jsx"):
+        elif language in ("typescript", "javascript"):  # JavaScript reads with the TS parser
             from specweaver.workspace.ast.parsers.typescript.codestructure import (
                 TypeScriptCodeStructure,
             )
 
             parser = TypeScriptCodeStructure()
-        elif ext == ".java":
+        elif language == "java":
             from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 
             parser = JavaCodeStructure()
-        elif ext in (".kt", ".kts"):
+        elif language == "kotlin":
             from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 
             parser = KotlinCodeStructure()
-        elif ext == ".rs":
+        elif language == "rust":
             from specweaver.workspace.ast.parsers.rust.codestructure import RustCodeStructure
 
             parser = RustCodeStructure()

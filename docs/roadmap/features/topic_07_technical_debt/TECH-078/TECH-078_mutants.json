@@ -31,6 +31,35 @@
           "new": "        LANGUAGE_SUFFIXES[name][:1]: parser for name, parser in by_language.items()\n",
           "breaks": "a .pyi, .kts or .tsx file has no parser",
           "symbol_sha": "sha256:b53f14c8600176fcb0c8a9dfeb66053e4c0511e8011674359f8f012e2f7003a4"
+        },
+        {
+          "id": "fence-skips-the-table",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prompt/constants.py",
+          "symbol": "detect_language",
+          "old": "    return language_of(path) or _DATA_FENCES.get(path.suffix.lower(), \"text\")\n",
+          "new": "    return _DATA_FENCES.get(path.suffix.lower(), \"text\")\n",
+          "breaks": "Kotlin and every code file are fenced as text",
+          "symbol_sha": "sha256:0d3b8e6d9a317384e2626c7508cfdd5a1435bb1e53d6c1f4a74605f709195802"
+        },
+        {
+          "id": "atom-skips-the-table",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/code_structure/core/atom.py",
+          "symbol": "_handle_read_symbol",
+          "old": "            language = language_of(path) or \"\"\n",
+          "new": "            language = \"\"\n",
+          "breaks": "the unrolled symbol is evaluated for no language"
+        },
+        {
+          "id": "skeleton-misses-javascript",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/_skeleton.py",
+          "symbol": "extract_ast_skeleton",
+          "old": "        elif language in (\"typescript\", \"javascript\"):",
+          "new": "        elif language in (\"typescript\",):",
+          "breaks": "a .mjs file is copied whole into the prompt",
+          "symbol_sha": "sha256:b8184b62f5fbc8e62c5013da8194eea1490850683ba1735d05a221c21a30225b"
         }
       ]
     },

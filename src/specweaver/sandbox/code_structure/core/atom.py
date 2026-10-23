@@ -324,17 +324,9 @@ class CodeStructureAtom(Atom):
             # Use the merged evaluator so plugins unroll appropriately alongside the base archetype
             evaluator = SchemaEvaluator({self._active_archetype: self.active_evaluator})
 
-            ext = Path(path).suffix.lower()
-            lang_map = {
-                ".py": "python",
-                ".java": "java",
-                ".kt": "kotlin",
-                ".kts": "kotlin",
-                ".ts": "typescript",
-                ".tsx": "typescript",
-                ".rs": "rust",
-            }
-            language = lang_map.get(ext, "")
+            from specweaver.commons.languages import language_of
+
+            language = language_of(path) or ""
 
             try:
                 explanation = evaluator.evaluate_markers(
