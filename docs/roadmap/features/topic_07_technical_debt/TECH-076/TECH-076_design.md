@@ -195,6 +195,7 @@ no run. The same journey runs as an e2e test in the suite.
 - **Outputs**: one loader and wrapper; the error in a settings-file module; `llm_settings` split;
   block helpers in `commons`.
 - **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-076/TECH-076_sf03_implementation_plan.md
 
 ## Execution Order
 
@@ -207,11 +208,11 @@ no run. The same journey runs as an e2e test in the suite.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One strict reader | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 and SF-02 committed 2026-10-23 ([SF-01](TECH-076_sf01_walkthrough.md), [SF-02](TECH-076_sf02_walkthrough.md) walkthroughs).
-**Next step**: Trigger the implementation-plan skill for SF-03.
+**Next step**: Trigger the dev skill for SF-03 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
