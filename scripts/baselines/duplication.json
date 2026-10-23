@@ -221,17 +221,17 @@
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @d84b9c582a2c": {
     "lines": 17,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:220",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:194"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:227",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:203"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @c9747b237b21": {
     "lines": 8,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:98",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:92"
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:104",
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:93"
   },
-  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @085468184f89": {
-    "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:128",
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @d4e279cea0a7": {
+    "lines": 13,
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:134",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:85"
   },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
@@ -251,12 +251,12 @@
   },
   "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @639e7b0d7a99": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:54",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:95"
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:60",
+    "second": "src/specweaver/sandbox/language/core/python/runner.py:96"
   },
-  "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4f23ce91d1f6": {
+  "src/specweaver/sandbox/language/core/kotlin/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @676517d7708b": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:72",
+    "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:78",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:85"
   },
   "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @624509f14dc5": {
@@ -266,17 +266,17 @@
   },
   "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2f393c255cf8": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/python/runner.py:106",
+    "first": "src/specweaver/sandbox/language/core/python/runner.py:107",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:85"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @215e96f23a4f": {
     "lines": 8,
-    "first": "src/specweaver/sandbox/language/core/rust/runner.py:87",
+    "first": "src/specweaver/sandbox/language/core/rust/runner.py:92",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:76"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4264be866118": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/rust/runner.py:96",
+    "first": "src/specweaver/sandbox/language/core/rust/runner.py:101",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:85"
   },
   "src/specweaver/sandbox/language/core/sarif.py <-> src/specweaver/workspace/ast/parsers/_sarif_complexity.py @1ebcd44d9751": {

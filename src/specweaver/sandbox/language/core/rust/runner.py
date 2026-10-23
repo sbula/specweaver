@@ -11,7 +11,12 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.language.core.run_targets import cargo_test_file
+from specweaver.sandbox.language.core.run_targets import (
+    TargetError,
+    cargo_test_args,
+    no_test_ran,
+    parse_target,
+)
 from specweaver.sandbox.language.core.rust.cargo_diagnostics import parse_cargo_diagnostics
 from specweaver.sandbox.language.core.rust.cargo_output import parse_cargo_test
 from specweaver.sandbox.language.core.toolchain import (
@@ -113,10 +118,11 @@ class RustRunner(QARunnerInterface):
             # Cargo's own output, parsed directly. It offers no stable machine-readable form — the
             # JSON libtest format is nightly-only — so asking for one produced a command cargo
             # rejects outright, piped into a converter that was never installed.
-            cmd = ["cargo", "test"]
-            test_file = cargo_test_file(target)
-            if test_file:
-                cmd += ["--test", test_file]
+            try:
+                # Without --no-fail-fast cargo stops at the first test binary that fails.
+                cmd = ["cargo", "test", "--no-fail-fast", *cargo_test_args(parse_target(target))]
+            except TargetError as exc:
+                return failed_tests(no_test_ran(target, str(exc)))
 
             test_result = self._executor.execute(cmd, timeout_seconds=timeout)
             outcome = parse_cargo_test(test_result.stdout)
@@ -129,6 +135,8 @@ class RustRunner(QARunnerInterface):
                     f"{(test_result.stderr or test_result.stdout).strip()[:200]}"
                 )
 
+            if not outcome.total:
+                return failed_tests(no_test_ran(target))
             return TestRunResult(
                 passed=outcome.passed,
                 failed=outcome.failed,

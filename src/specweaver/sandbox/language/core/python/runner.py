@@ -27,6 +27,7 @@ from specweaver.sandbox.language.core.python.toolchain_absence import (
     supplied_note as _supplied_note,
 )
 from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
+from specweaver.sandbox.language.core.run_targets import no_test_ran, parse_target
 from specweaver.sandbox.language.core.toolchain import failed_architecture
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -115,25 +116,16 @@ class PythonQARunner(QARunnerInterface):
         source: str = "",
     ) -> TestRunResult:
         """Run pytest with the given parameters."""
-        logger.debug(
-            "PythonQARunner.run_tests: target=%s kind=%s scope=%s timeout=%d coverage=%s",
-            target,
-            kind,
-            scope,
-            timeout,
-            coverage,
-        )
+        logger.debug("PythonQARunner.run_tests: target=%s kind=%s scope=%s", target, kind, scope)
         cmd = ["python", "-m", "pytest", target, "--tb=short", "-q"]
 
-        # Add marker filter
-        if kind:
+        # A marker filter can only deselect a test named outright.
+        if kind and parse_target(target).kind != "test":
             cmd.extend(["-m", kind])
 
-        # Add scope filter
         if scope:
             cmd.extend(["-k", scope])
 
-        # Add coverage
         if coverage:
             # Coverage measures a folder; one file's figure is read from its own report row.
             measured = str(PurePosixPath(coverage_source).parent) if coverage_source else target
@@ -162,6 +154,9 @@ class PythonQARunner(QARunnerInterface):
         reason = why_it_did_not_run(result, "pytest")
         if reason:
             return _did_not_run("<toolchain>", reason, result.duration_seconds)
+        if not parsed["total"]:
+            said = f"none carries the marker '{kind}'" if "-m" in cmd[3:] else ""
+            return _did_not_run("<no tests>", no_test_ran(target, said), result.duration_seconds)
 
         logger.info(
             "PythonQARunner: tests complete — passed=%d failed=%d errors=%d skipped=%d (%.2fs)",

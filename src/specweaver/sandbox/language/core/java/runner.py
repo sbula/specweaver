@@ -15,7 +15,13 @@ from typing import TYPE_CHECKING
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.maven_output import compile_errors, program_output
-from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_class
+from specweaver.sandbox.language.core.run_targets import (
+    TargetError,
+    build_launcher,
+    jvm_test_args,
+    no_test_ran,
+    parse_target,
+)
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, read_sarif_report
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -136,7 +142,10 @@ class JavaRunner(QARunnerInterface):
         coverage_source: str = "",
         source: str = "",
     ) -> TestRunResult:
-        cmd, search_path = self._test_command(target)
+        try:
+            cmd, search_path = self._test_command(target)
+        except TargetError as exc:
+            return failed_tests(no_test_ran(target, str(exc)))
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "the Java build tool")
         if reason:
@@ -151,9 +160,9 @@ class JavaRunner(QARunnerInterface):
         )
         # A build that never compiled writes no reports and exits non-zero with plenty on
         # stdout, so it passes `did_not_run` and would harvest as an empty suite.
-        broken_build = build_failed_without_results(result, "the Java build tool", total)
-        if broken_build:
-            return failed_tests(broken_build)
+        if not total:
+            broken_build = build_failed_without_results(result, "the Java build tool", total)
+            return failed_tests(no_test_ran(target, broken_build or ""))
 
         return TestRunResult(
             passed=passed,
@@ -166,9 +175,10 @@ class JavaRunner(QARunnerInterface):
         )
 
     def _test_command(self, target: str) -> tuple[list[str], list[Path]]:
-        """The build tool's test command — only `target`'s class when it is one test file — and
-        where its reports land; stale reports are deleted first."""
+        """The build tool's test command, filtered to exactly what `target` names, and where its
+        reports land; stale reports are deleted first."""
         tool = self._get_build_tool()
+        filters = jvm_test_args(parse_target(target), "java", tool)
         if tool == "gradle":
             cmd = [build_launcher(self._cwd, "gradle"), "test"]
             stale, reports = "build/test-results/test/*.xml", "build/test-results"
@@ -177,10 +187,7 @@ class JavaRunner(QARunnerInterface):
             stale, reports = "target/surefire-reports/*.xml", "target/surefire-reports"
         for stale_xml in self._cwd.rglob(stale):
             stale_xml.unlink(missing_ok=True)
-        test_class = jvm_test_class(target, "java")
-        if test_class:
-            cmd += ["--tests", test_class] if tool == "gradle" else [f"-Dtest={test_class}"]
-        return cmd, report_search_paths(self._cwd, reports)
+        return cmd + filters, report_search_paths(self._cwd, reports)
 
     def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
         """The PMD run that lint and complexity both read, and the SARIF report it writes."""

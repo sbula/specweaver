@@ -92,6 +92,138 @@
           "symbol_sha": "sha256:d6789e866e9f6f79ee6c8b8736910ef32d9502a9e04dc18a0d3915ba1e2ab080"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A test target runs exactly what it names, at every size",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_test_targets.py",
+        "tests/integration/sandbox/language/test_test_target_sizes_live.py",
+        "tests/unit/sandbox/language/core/language/python/test_python_runner.py",
+        "tests/unit/sandbox/language/core/language/test_one_test_file.py"
+      ],
+      "mutants": [
+        {
+          "id": "first-colon-pair-splits",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "parse_target",
+          "old": "    path, _, name = target.replace(\"\\\\\", \"/\").partition(\"::\")\n",
+          "new": "    path, _, name = target.replace(\"\\\\\", \"/\").rpartition(\"::\")\n",
+          "breaks": "a class-qualified pytest name loses its class",
+          "symbol_sha": "sha256:5fd67dabb583887dbfe409ce3b7a86ac84af7295f18d4fca815d1a9f4726a65b"
+        },
+        {
+          "id": "jvm-folder-loses-filter",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "_jvm_selector",
+          "old": "        return f\"{'.'.join(package)}.*\" if tool == \"gradle\" else f\"{'/'.join(package)}/**/*\"\n",
+          "new": "        return \"\"\n",
+          "breaks": "a JVM folder runs every test",
+          "symbol_sha": "sha256:34ba6c3b65ef98dd486c8d72531ef2843ca07b139c35bab02a3a4471e3645c76"
+        },
+        {
+          "id": "jvm-name-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "_jvm_selector",
+          "old": "        selector += f\".{target.name}\" if tool == \"gradle\" else f\"#{target.name}\"\n",
+          "new": "        selector += \"\"\n",
+          "breaks": "one JVM test runs its whole class",
+          "symbol_sha": "sha256:34ba6c3b65ef98dd486c8d72531ef2843ca07b139c35bab02a3a4471e3645c76"
+        },
+        {
+          "id": "cargo-name-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "cargo_test_args",
+          "old": "        return [*args, \"--\", target.name, \"--exact\"] if target.name else args\n",
+          "new": "        return args\n",
+          "breaks": "one Rust test runs its whole file",
+          "symbol_sha": "sha256:3e12c8c50d6817d07e5c1519ab099913f6791e5ec3fde94574c400af6cf862f3"
+        },
+        {
+          "id": "cargo-name-not-exact",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "cargo_test_args",
+          "old": "        return [*args, \"--\", target.name, \"--exact\"] if target.name else args\n",
+          "new": "        return [*args, \"--\", target.name] if target.name else args\n",
+          "breaks": "a Rust name runs every test it is a prefix of",
+          "symbol_sha": "sha256:3e12c8c50d6817d07e5c1519ab099913f6791e5ec3fde94574c400af6cf862f3"
+        },
+        {
+          "id": "cargo-src-name-outside-tests-module",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "_cargo_source_args",
+          "old": "        return [*where, \"--\", \"::\".join([*module, \"tests\", target.name]), \"--exact\"]\n",
+          "new": "        return [*where, \"--\", \"::\".join([*module, target.name]), \"--exact\"]\n",
+          "breaks": "a test in a src file is never found",
+          "symbol_sha": "sha256:2f46627dfc3c17934e7c4c193e0e1611358e9412b69fd3e5add9e3b6c1487a07"
+        },
+        {
+          "id": "cargo-stops-at-first-failure",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_tests",
+          "old": "                cmd = [\"cargo\", \"test\", \"--no-fail-fast\", *cargo_test_args(parse_target(target))]\n",
+          "new": "                cmd = [\"cargo\", \"test\", *cargo_test_args(parse_target(target))]\n",
+          "breaks": "the project run stops at the first failing test file",
+          "symbol_sha": "sha256:ec1ff54c6fa0bb225aba4bd971a1061d76f7f6993fa3854e8e939d9b150686a6"
+        },
+        {
+          "id": "python-empty-run-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_tests",
+          "old": "        if not parsed[\"total\"]:\n",
+          "new": "        if False:\n",
+          "breaks": "a misspelt Python target is green",
+          "symbol_sha": "sha256:5aa0027f24429e7700def1eeafab4aa9efeefe21a5735a81ae1565cb74366a09"
+        },
+        {
+          "id": "python-marker-hides-named-test",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_tests",
+          "old": "        if kind and parse_target(target).kind != \"test\":\n",
+          "new": "        if kind:\n",
+          "breaks": "a named test without the marker runs nothing",
+          "symbol_sha": "sha256:5aa0027f24429e7700def1eeafab4aa9efeefe21a5735a81ae1565cb74366a09"
+        },
+        {
+          "id": "rust-empty-run-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_tests",
+          "old": "            if not outcome.total:\n",
+          "new": "            if False:\n",
+          "breaks": "a misspelt Rust target is green",
+          "symbol_sha": "sha256:ec1ff54c6fa0bb225aba4bd971a1061d76f7f6993fa3854e8e939d9b150686a6"
+        },
+        {
+          "id": "java-empty-run-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/java/runner.py",
+          "symbol": "JavaRunner.run_tests",
+          "old": "        if not total:\n",
+          "new": "        if False:\n",
+          "breaks": "a misspelt Java target is green",
+          "symbol_sha": "sha256:e18857e47822ae97ba0ba0e1ebeb3a8b9e550067d7bc553bc2f7482ac9b096ee"
+        },
+        {
+          "id": "kotlin-empty-run-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/kotlin/runner.py",
+          "symbol": "KotlinRunner.run_tests",
+          "old": "        if not harvest.total:\n",
+          "new": "        if False:\n",
+          "breaks": "a misspelt Kotlin target is green",
+          "symbol_sha": "sha256:73bab5c2ab6410f5c4a3de488d4272a8a3f4f34a39abfb6239c9fe41e1a3f30d"
+        }
+      ]
     }
   ]
 }

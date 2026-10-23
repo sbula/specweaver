@@ -200,32 +200,32 @@
         {
           "id": "maven-runs-everything",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/java/runner.py",
-          "symbol": "JavaRunner._test_command",
-          "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
-          "new": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else []\n",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "jvm_test_args",
+          "old": "        f\"-Dtest={selector}\",\n",
+          "new": "        \"-q\",\n",
           "breaks": "Maven runs every test, and an old failure sends the coder to fix code it did not write",
-          "symbol_sha": "sha256:dd1d819fd90d9b4711d735d9cf688ea95925f831a8d1ccf38ae7107197a8ce84"
+          "symbol_sha": "sha256:d4d9769f0cfb8e6ed1a4d64a295dba2e5bae410df709506c5650987de4e0dac7"
         },
         {
           "id": "gradle-runs-everything",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/java/runner.py",
-          "symbol": "JavaRunner._test_command",
-          "old": "            cmd += [\"--tests\", test_class] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
-          "new": "            cmd += [] if tool == \"gradle\" else [f\"-Dtest={test_class}\"]\n",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "jvm_test_args",
+          "old": "        return [\"--tests\", selector]\n",
+          "new": "        return []\n",
           "breaks": "Gradle runs every test",
-          "symbol_sha": "sha256:dd1d819fd90d9b4711d735d9cf688ea95925f831a8d1ccf38ae7107197a8ce84"
+          "symbol_sha": "sha256:d4d9769f0cfb8e6ed1a4d64a295dba2e5bae410df709506c5650987de4e0dac7"
         },
         {
           "id": "cargo-runs-everything",
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/rust/runner.py",
           "symbol": "RustRunner.run_tests",
-          "old": "                cmd += [\"--test\", test_file]\n",
-          "new": "                pass\n",
+          "old": "                cmd = [\"cargo\", \"test\", \"--no-fail-fast\", *cargo_test_args(parse_target(target))]\n",
+          "new": "                cmd = [\"cargo\", \"test\", \"--no-fail-fast\"]\n",
           "breaks": "cargo runs every test file",
-          "symbol_sha": "sha256:0dbf53814b5f1fd7ebc2d0bb248b45ae76c451991b098cde3e655911dde94c27"
+          "symbol_sha": "sha256:ec1ff54c6fa0bb225aba4bd971a1061d76f7f6993fa3854e8e939d9b150686a6"
         },
         {
           "id": "folders-filtered",

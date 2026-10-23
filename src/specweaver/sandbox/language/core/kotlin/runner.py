@@ -15,7 +15,13 @@ from typing import TYPE_CHECKING, ClassVar
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
-from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_class
+from specweaver.sandbox.language.core.run_targets import (
+    TargetError,
+    build_launcher,
+    jvm_test_args,
+    no_test_ran,
+    parse_target,
+)
 from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
@@ -80,11 +86,12 @@ class KotlinRunner(QARunnerInterface):
         coverage_source: str = "",
         source: str = "",
     ) -> TestRunResult:
+        try:
+            filters = jvm_test_args(parse_target(target), "kotlin", self._get_build_tool())
+        except TargetError as exc:
+            return failed_tests(no_test_ran(target, str(exc)))
         cmd, search_path = self._test_command()
-        test_class = jvm_test_class(target, "kotlin")
-        if test_class:
-            gradle = self._get_build_tool() == "gradle"
-            cmd += ["--tests", test_class] if gradle else [f"-Dtest={test_class}"]
+        cmd += filters
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "the Kotlin build tool")
         if reason:
@@ -93,9 +100,11 @@ class KotlinRunner(QARunnerInterface):
         harvest = harvest_junit(search_path)
         # A compile failure exits non-zero, prints freely, and leaves the report directory
         # empty — so it passes `did_not_run` and would harvest as an empty suite.
-        broken_build = build_failed_without_results(result, "the Kotlin build tool", harvest.total)
-        if broken_build:
-            return failed_tests(broken_build)
+        if not harvest.total:
+            broken_build = build_failed_without_results(
+                result, "the Kotlin build tool", harvest.total
+            )
+            return failed_tests(no_test_ran(target, broken_build or ""))
 
         return TestRunResult(
             passed=harvest.passed,

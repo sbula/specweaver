@@ -216,10 +216,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/rust/runner.py",
           "symbol": "RustRunner.run_tests",
-          "old": "cmd = [\"cargo\", \"test\"]",
-          "new": "cmd = [\"cargo\", \"test\", \"--format=json\", \"-q\"]",
+          "old": "\"cargo\", \"test\", \"--no-fail-fast\", *cargo_test_args",
+          "new": "\"cargo\", \"test\", \"--no-fail-fast\", \"--format=json\", \"-q\", *cargo_test_args",
           "breaks": "the exact command real cargo rejects with `unexpected argument '--format' found`; its JSON format is nightly-only and the converter it fed was installed nowhere",
-          "symbol_sha": "sha256:0dbf53814b5f1fd7ebc2d0bb248b45ae76c451991b098cde3e655911dde94c27"
+          "symbol_sha": "sha256:ec1ff54c6fa0bb225aba4bd971a1061d76f7f6993fa3854e8e939d9b150686a6"
         }
       ]
     },

@@ -123,6 +123,13 @@ A Java or Kotlin main-class name passes as a name inside the root. `/scenarios/â
 the atom was built with `scenarios_root`. An empty value is left to the intent, which names what is
 missing (`TECH-075` FR-5).
 
+A `run_tests` target runs exactly what it names, in every language. `<file>::<name>` is one test,
+a file is its tests, a folder is its tests and its subfolders', and `.` or empty is the project.
+`run_targets.parse_target` reads the target; each runner turns it into its tool's filter: pytest
+takes it as it is, Gradle `--tests`, Maven `-Dtest`, cargo `--test`/`--lib` with `--exact`. A Rust
+test in a `src/` file is named as `<module>::tests::<name>`. A named test ignores the `kind`
+marker. A run that ran no test fails and names the target (`TECH-078` FR-7).
+
 ## GitTool (agents)
 
 Agents call git by intent, not raw commands. Each intent maps to a safe sequence of git commands on

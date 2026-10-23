@@ -422,30 +422,25 @@ class TestPythonQARunnerMissingToolchain:
         assert result.total == 1
         assert "pytest" in result.failures[0].message
 
-    def test_an_empty_suite_is_still_reported_as_empty(self, tmp_path: Path) -> None:
-        """The control. pytest exits 5 when it collects nothing, and that is not an error.
-
-        Without this the fix above would turn every genuinely empty target into a failure, which
-        is the obvious over-correction.
-        """
+    def test_an_empty_suite_fails_as_empty_not_as_a_missing_toolchain(self, tmp_path: Path) -> None:
+        """pytest exits 5 when it collects nothing: a run that ran no test fails, naming the
+        target, and is not mistaken for a missing pytest (TECH-078 FR-7)."""
         executor = MagicMock(spec=SubprocessExecutor)
         executor.execute.return_value = _make_result(exit_code=5, stdout="no tests ran", stderr="")
         runner = PythonQARunner(cwd=tmp_path, executor=executor)
 
         result = runner.run_tests(target=".")
 
-        assert result.errors == 0
-        assert result.total == 0
+        assert [f.nodeid for f in result.failures] == ["<no tests>"]
+        assert "the project" in result.failures[0].message
 
     def test_a_target_directory_that_does_not_exist_is_not_a_toolchain_failure(
         self, tmp_path: Path
     ) -> None:
-        """Exit **4**, and the regression that caught the first version of this guard.
+        """Exit **4**: pytest started and ran, and found no `tests/` folder.
 
-        `sw implement` runs the QA gate against a project whose `tests/` directory does not exist
-        yet — the tests are what it is about to generate. pytest exits 4 there, having started
-        and run correctly. Keying the guard on the exit code failed that whole pipeline, which is
-        why it keys on empty stdout instead: pytest printed `no tests ran in 0.00s`.
+        It printed `no tests ran in 0.00s`, so the toolchain guard keys on empty stdout, not the
+        exit code. The run still fails, as one that ran no test (TECH-078 FR-7).
         """
         executor = MagicMock(spec=SubprocessExecutor)
         executor.execute.return_value = _make_result(
@@ -455,8 +450,8 @@ class TestPythonQARunnerMissingToolchain:
 
         result = runner.run_tests(target="tests/")
 
-        assert result.errors == 0
-        assert result.total == 0
+        assert [f.nodeid for f in result.failures] == ["<no tests>"]
+        assert "tests" in result.failures[0].message
 
     def test_a_normal_failing_run_is_untouched(self, tmp_path: Path) -> None:
         """A real test failure exits non-zero with parseable output and must stay a failure."""

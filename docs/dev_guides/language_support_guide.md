@@ -44,7 +44,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 1. **`runner.py`**: `GoQARunner`, implementing `QARunnerInterface`, bound to `go build`, `go test`,
    etc. Implement or stub every method:
    - `run_compiler()`
-   - `run_tests()`
+   - `run_tests()`: read the target with `run_targets.parse_target` and turn each size (one test,
+     file, folder with subfolders, project) into the tool's filter; a run of zero tests returns
+     `failed_tests(no_test_ran(target))`
    - `run_linter()`
    - `run_complexity()`
    - `run_debugger()`

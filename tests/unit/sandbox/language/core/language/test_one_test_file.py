@@ -8,7 +8,7 @@ Proves: D-INTL-08 FR-5
 | Bucket | Case |
 |---|---|
 | Happy | Maven `-Dtest=<class>`, Gradle `--tests <class>`, `cargo test --test <stem>` |
-| Boundary | a folder or the project runs everything; a test outside `src/test/<lang>/` filters by its simple class name; no package |
+| Boundary | the project runs everything (a folder's filter: TECH-078 FR-7); a test outside `src/test/<lang>/` filters by its simple class name; no package |
 | Degradation | not applicable — the command is only built here; the real tools run in the integration test |
 | Hostile | a target outside the test folders, or not a test file, is never turned into a filter |
 """
@@ -117,11 +117,11 @@ def test_cargo_runs_one_test_file(tmp_path: Path) -> None:
 
     RustRunner(cwd=tmp_path, executor=executor).run_tests(target="tests/greet_service.rs")
 
-    assert _command(executor)[:4] == ["cargo", "test", "--test", "greet_service"]
+    assert _command(executor)[:5] == ["cargo", "test", "--no-fail-fast", "--test", "greet_service"]
 
 
-@pytest.mark.parametrize("target", [".", "src/", "tests/", "src/greet_service.rs"])
-def test_cargo_runs_the_crate_for_anything_else(tmp_path: Path, target: str) -> None:
+@pytest.mark.parametrize("target", [".", "src/", "src/greet_service.rs"])
+def test_cargo_names_no_test_file_for_the_crate_or_its_sources(tmp_path: Path, target: str) -> None:
     executor = _executor(_CARGO_OK)
 
     RustRunner(cwd=tmp_path, executor=executor).run_tests(target=target)

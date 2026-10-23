@@ -75,7 +75,8 @@ def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:
         "def add(a: int, b: int) -> int:\n    return a + b\n", encoding="utf-8"
     )
     (tests / "test_math.py").write_text(
-        "from src.math_ops import add\n\ndef test_add():\n    assert add(2, 3) == 5\n",
+        "import pytest\n\nfrom src.math_ops import add\n\n\n"
+        "@pytest.mark.unit\ndef test_add():\n    assert add(2, 3) == 5\n",
         encoding="utf-8",
     )
 

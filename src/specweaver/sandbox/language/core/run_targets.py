@@ -1,17 +1,100 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Turning a test target into the filter a build tool takes, so one task runs only its own tests."""
+"""Turning a test target into the filter a build tool takes, so a run runs exactly what it names.
+
+A target is `<path>` or `<path>::<name>`: one test, one file, one folder with its subfolders, or
+the project (empty or `.`).
+"""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 _EXTENSIONS = {"java": ".java", "kotlin": ".kt"}
+
+
+class TargetError(ValueError):
+    """A target the build tool has no filter for; running everything instead would not be it."""
+
+
+@dataclass(frozen=True)
+class RunTarget:
+    """What a test target names: `path` in `/` form, the test `name`, and its size."""
+
+    path: str
+    name: str
+    kind: Literal["test", "file", "folder", "project"]
+
+
+def parse_target(target: str) -> RunTarget:
+    """The size a target names. The first `::` splits off the name; a drive letter has one colon."""
+    path, _, name = target.replace("\\", "/").partition("::")
+    path = path.strip()
+    while path.startswith("./"):
+        path = path[2:]
+    path = path.rstrip("/")
+    if path in ("", "."):
+        return RunTarget("", "", "project")
+    if name:
+        return RunTarget(path, name, "test")
+    return RunTarget(path, "", "file" if PurePosixPath(path).suffix else "folder")
+
+
+def no_test_ran(target: str, detail: str = "") -> str:
+    """Why a run that ran no test is a failure: the target names nothing that exists."""
+    said = f" ({detail})" if detail else ""
+    named = "the project" if parse_target(target).kind == "project" else target
+    return f"no test ran for {named}: the target names no test{said}"
+
+
+def jvm_test_args(target: RunTarget, language: str, tool: str) -> list[str]:
+    """Gradle's `--tests` or Maven's `-Dtest` for the target; nothing for the project.
+
+    A file that is not a test file keeps running every test."""
+    selector = _jvm_selector(target, language, tool)
+    if not selector:
+        return []
+    if tool == "gradle":
+        return ["--tests", selector]
+    # Maven fails on its own when nothing matches; the empty run is judged by the runner instead.
+    return [
+        f"-Dtest={selector}",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-DfailIfNoTests=false",
+    ]
+
+
+def _jvm_selector(target: RunTarget, language: str, tool: str) -> str:
+    """The class, method or package pattern in the tool's spelling; empty for everything."""
+    if target.kind == "folder":
+        package = _jvm_package(target.path, language)
+        if not package:
+            return ""
+        return f"{'.'.join(package)}.*" if tool == "gradle" else f"{'/'.join(package)}/**/*"
+    if target.kind == "project":
+        return ""
+    selector = jvm_test_class(target.path, language) or ""
+    if selector and target.name:
+        selector += f".{target.name}" if tool == "gradle" else f"#{target.name}"
+    return selector
+
+
+def _jvm_package(folder: str, language: str) -> tuple[str, ...]:
+    """The package a folder holds; empty for the test root or anything above it."""
+    parts = PurePosixPath(folder).parts
+    root = ("src", "test", language)
+    if parts == root[: len(parts)]:
+        return ()
+    for index in range(len(parts) - 2):
+        if parts[index : index + 3] in (root, ("src", "main", language)):
+            return parts[index + 3 :]
+    raise TargetError(f"{folder} is not under src/test/{language}/, so its tests have no package")
 
 
 def jvm_test_class(target: str, language: str) -> str | None:
@@ -27,12 +110,37 @@ def jvm_test_class(target: str, language: str) -> str | None:
     return path.stem
 
 
-def cargo_test_file(target: str) -> str | None:
-    """The integration test `tests/<name>.rs` names, or None for anything else."""
-    path = PurePosixPath(target.replace("\\", "/"))
-    if path.suffix == ".rs" and len(path.parts) >= 2 and path.parts[-2] == "tests":
-        return path.stem
-    return None
+def cargo_test_args(target: RunTarget) -> list[str]:
+    """The `cargo test` arguments for the target. A name is matched with `--exact`; a test in a
+    `src/` file is `<module>::tests::<name>`, the layout generation writes."""
+    if target.kind == "project":
+        return []
+    parts = PurePosixPath(target.path).parts
+    top = next((part for part in parts if part in ("src", "tests")), None)
+    if top == "tests":
+        rest = parts[parts.index("tests") + 1 :]
+        if not rest:
+            return ["--test", "*"]
+        args = ["--test", PurePosixPath(rest[0]).stem]
+        return [*args, "--", target.name, "--exact"] if target.name else args
+    if top == "src":
+        return _cargo_source_args(parts[parts.index("src") + 1 :], target)
+    raise TargetError(
+        f"{target.path} is neither under src/ nor tests/, so cargo has no filter for it"
+    )
+
+
+def _cargo_source_args(rest: tuple[str, ...], target: RunTarget) -> list[str]:
+    """`--lib` (or `--bins` for `main.rs`) and the module path a file or folder under `src/` is."""
+    if rest == ("main.rs",):
+        where, module = ["--bins"], []
+    else:
+        where, module = ["--lib"], [PurePosixPath(part).stem for part in rest]
+        if module and module[-1] in ("mod", "lib"):
+            module.pop()
+    if target.name:
+        return [*where, "--", "::".join([*module, "tests", target.name]), "--exact"]
+    return [*where, f"{'::'.join(module)}::"] if module else where
 
 
 _WRAPPERS = {"gradle": ("gradlew", "gradlew.bat"), "maven": ("mvnw", "mvnw.cmd")}
