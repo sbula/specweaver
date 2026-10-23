@@ -186,6 +186,7 @@ no run. The same journey runs as an e2e test in the suite.
 - **Inputs**: `SettingsFileError` from SF-01.
 - **Outputs**: CLI exit 1 with the located message; API 500 with the section's code.
 - **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-076/TECH-076_sf02_implementation_plan.md
 
 ### SF-03: One loader, honest names, one home each
 - **Scope**: CW-3, CW-4, CW-18, CW-19. No behaviour change.
@@ -205,12 +206,12 @@ no run. The same journey runs as an e2e test in the suite.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One strict reader | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23 ([walkthrough](TECH-076_sf01_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-02.
+**Next step**: Trigger the dev skill for SF-02 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
