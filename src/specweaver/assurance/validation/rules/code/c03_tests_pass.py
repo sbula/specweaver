@@ -89,20 +89,20 @@ class TestsPassRule(Rule):
     def _located_test_file(self, spec_path: Path) -> Path | str:
         """The test file the hydrator ran, from the real project root; else a search of our own."""
         if "qa_test_file" not in self.context:
-            return _test_file(spec_path)
+            return _test_file(spec_path, self.context.get("project_root"))
         located = self.context["qa_test_file"]
         return Path(located) if located else f"No test file 'test_{spec_path.stem}.py' found"
 
 
-def _test_file(spec_path: Path) -> Path | str:
-    """The file's `tests/**/test_<stem>.py` under the nearest `pyproject.toml`, or why there is none."""
+def _test_file(spec_path: Path, stop: Path | None = None) -> Path | str:
+    """The file's `tests/**/test_<stem>.py` under the nearest `pyproject.toml` at or below the
+    project root, or why there is none."""
+    from specweaver.assurance.validation.project_root import walk_up
+
     test_name = f"test_{spec_path.stem}.py"
-    project_root = spec_path.parent
-    while project_root != project_root.parent:
-        if (project_root / "pyproject.toml").exists():
-            break
-        project_root = project_root.parent
-    tests_dir = project_root / "tests"
+    folders = list(walk_up(spec_path.parent, stop))
+    package_root = next((f for f in folders if (f / "pyproject.toml").exists()), folders[-1])
+    tests_dir = package_root / "tests"
     if not tests_dir.is_dir():
         return "No tests/ directory found"
     matches = list(tests_dir.rglob(test_name))

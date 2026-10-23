@@ -32,16 +32,15 @@ class TestsExistRule(Rule):
         name = spec_path.stem
         test_name = f"test_{name}.py"
 
-        # Look in common test directories
-        project_root = spec_path.parent
-        while project_root != project_root.parent:
-            tests_dir = project_root / "tests"
+        from specweaver.assurance.validation.project_root import walk_up
+
+        # Every `tests/` from the file's folder up to the run's project root, never above it.
+        for folder in walk_up(spec_path.parent, self.context.get("project_root")):
+            tests_dir = folder / "tests"
             if tests_dir.is_dir():
-                # Search recursively for the test file
                 matches = list(tests_dir.rglob(test_name))
                 if matches:
                     return self._pass(f"Test file found: {matches[0]}")
-            project_root = project_root.parent
 
         return self._fail(
             f"No test file '{test_name}' found",

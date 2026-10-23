@@ -89,3 +89,52 @@ Full suite 11460 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
 - R2 (LOW) the run record's archetype changes for specs in a sub-folder with its own
   `context.yaml`. Intended (FR-6).
 - Cycle 2: no new finding.
+
+## CB-3 — FR-9 (rules stay inside the run's project)
+
+### What changed
+
+- New `assurance/validation/project_root.py`: `walk_up(start, stop)` yields the file's folder and
+  each parent, never above `stop` (the filesystem root when no root is known).
+- `execute_validation_flow` (`core/flow/handlers/validation_hydrator.py`), which every code-level
+  run uses (the validation handler, the API `/check`, `sw check`), hands `project_root` to the rules.
+- C02 searches each `tests/` from the file up to the root; C03 keeps its own question, the nearest
+  `pyproject.toml` (the Python test runner's root), but only inside the project; C09 takes the
+  run's root when given, else its old marker search (decision 1).
+- The graph hasher's `.git` search places a `.gitignore` line at the git root — a different
+  question; unchanged.
+
+### Red first
+
+`test_rules_share_the_root.py`, written before the change: C02 passed on a `tests/test_orders.py`
+above the project root, and C09 judged the enclosing repository (its `specs/` FR-1 untraced) instead
+of the run's project. `test_project_root.py`: import error.
+
+A first walker had two checks that both stopped at the root, so the mutant removing one was SILENT
+(equivalent). The redundant check is gone; the remaining one is mutated (OBJECTED).
+
+### Combined analysis
+
+| Function | Unit | Integration |
+|---|---|---|
+| `walk_up` | ✅ ends at stop, start at stop, no stop, nothing above, start outside | — |
+| C02 / C03 / C09 through `execute_validation_flow` | — | ✅ above-root file ignored, inside found, no root as before, nearest package inside the project, C09 judges the run's project |
+
+Mutants (OBJECTED, pinned): `walk-passes-the-root`, `root-not-handed-to-rules`,
+`traceability-ignores-the-run-root`. Drifted mutants: 0.
+
+### Gates
+
+Full suite 11470 passed, 9 skipped. `quality.py sf` 18/18 after `ruff format`. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) `sw check` with no `--project` uses the working folder as the root, so a file's tests
+  above the working folder are not found. Accepted: the working folder is the project there, as it
+  already is for the DAL and the pipeline.
+- R2 (LOW) spec-level validation does not pass the root; C02, C03 and C09 are code rules only.
+- Cycle 2: no new finding.
+
+## Decision at the SF-01 stop (user, 2026-10-23)
+
+CB-3 accepted.

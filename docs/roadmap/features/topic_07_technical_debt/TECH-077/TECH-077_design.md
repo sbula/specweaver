@@ -212,14 +212,15 @@ an e2e test in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One answer per lookup | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One answer per lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The run builder | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Every CLI door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Every API door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01 plan approved 2026-10-23.
-**Next step**: Trigger the dev skill for SF-01 (CB-1).
+**Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
+([walkthrough](TECH-077_sf01_walkthrough.md)).
+**Next step**: Trigger the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

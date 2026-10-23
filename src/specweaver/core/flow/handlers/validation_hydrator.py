@@ -367,6 +367,9 @@ def execute_validation_flow(
     # Merge any extra context (e.g., analyzer_factory)
     if context:
         merged_context.update(context)
+    # Rules that search near the code stop at the run's project root.
+    if project_root is not None:
+        merged_context["project_root"] = project_root
 
     return execute_validation_pipeline(
         pipeline,

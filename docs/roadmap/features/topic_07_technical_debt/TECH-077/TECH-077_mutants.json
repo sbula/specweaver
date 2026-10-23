@@ -70,6 +70,46 @@
           "symbol_sha": "sha256:958f1c729cc9bfdc6ba88d84eb87bd3ebe02659e3985f44527d5f0ec3e12c05e"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "Rules searching near the code stay inside the run's project",
+      "scope": [
+        "tests/unit/assurance/validation/test_project_root.py",
+        "tests/integration/assurance/validation/test_rules_share_the_root.py"
+      ],
+      "mutants": [
+        {
+          "id": "walk-passes-the-root",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/project_root.py",
+          "symbol": "walk_up",
+          "old": "        if boundary is not None and not parent.resolve().is_relative_to(boundary):\n            return\n",
+          "new": "        if False:\n            return\n",
+          "breaks": "a rule searches above the project",
+          "symbol_sha": "sha256:146ce5610eda443527e7e3ef919a71d8eb2ae82bc7985e3aedae310d4201048f"
+        },
+        {
+          "id": "root-not-handed-to-rules",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "symbol": "execute_validation_flow",
+          "old": "    if project_root is not None:\n        merged_context[\"project_root\"] = project_root\n",
+          "new": "    if False:\n        merged_context[\"project_root\"] = project_root\n",
+          "breaks": "rules never learn the run's project root",
+          "symbol_sha": "sha256:679cb71ac84a171b7c42edc728ccafc89767d5faedf4ebfb4fb0990362d8a795"
+        },
+        {
+          "id": "traceability-ignores-the-run-root",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c09_traceability.py",
+          "symbol": "TraceabilityRule._find_project_root",
+          "old": "        if given is not None:\n            return Path(given)\n",
+          "new": "        if False:\n            return Path(given)\n",
+          "breaks": "C09 judges an enclosing repository",
+          "symbol_sha": "sha256:ce5748294427fcec7dccfba748edc7f0aa8ae65a96794f9fb3b4a104ebb7d79c"
+        }
+      ]
     }
   ]
 }

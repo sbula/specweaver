@@ -5,10 +5,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
+from typing import Any
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
 
@@ -94,22 +92,18 @@ class TraceabilityRule(Rule):
         return self._pass(f"All {len(target_ids)} requirements successfully traced to test code.")
 
     def _find_project_root(self, spec_path: Path | None) -> Path | None:
+        from specweaver.assurance.validation.project_root import walk_up
+
+        given = self.context.get("project_root")
+        if given is not None:
+            return Path(given)
         if spec_path is None:
             return None
-
-        project_root = spec_path.parent
-        while project_root != project_root.parent:
-            if (
-                (project_root / "pyproject.toml").exists()
-                or (project_root / "package.json").exists()
-                or (project_root / ".git").exists()
-                or (project_root / ".specweaver").exists()
-            ):
-                return project_root
-            project_root = project_root.parent
-
-        # Fallback to current directory if not found upward
-        return None
+        markers = ("pyproject.toml", "package.json", ".git", ".specweaver")
+        return next(
+            (f for f in walk_up(spec_path.parent, None) if any((f / m).exists() for m in markers)),
+            None,
+        )
 
     def _extract_all_requirements(self, project_root: Path) -> set[str]:
         target_ids: set[str] = set()
