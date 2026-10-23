@@ -52,6 +52,21 @@ def test_export_graph_to_disk_and_gitignore(tmp_path):
         builder.export_graph_to_disk(str(tmp_path), "folder/file")
 
 
+def test_export_never_writes_into_a_sibling_by_a_link(tmp_path):
+    """TECH-075 FR-9: `<root>c` is not inside `<root>`, though its name starts with it."""
+    root = tmp_path / "proj"
+    root.mkdir()
+    sibling = tmp_path / "projc"
+    sibling.mkdir()
+    (root / "g.graphml").symlink_to(sibling / "g.graphml")
+    builder = GraphBuilder(engine=InMemoryGraphEngine())
+
+    with pytest.raises(ValueError, match="traversal"):
+        builder.export_graph_to_disk(str(root), "g")
+
+    assert not (sibling / "g.graphml").exists()
+
+
 def test_builder_ingest_ast_happy_path():
     """[Happy Path] Ingesting an AST populates the graph engine."""
     engine = InMemoryGraphEngine()

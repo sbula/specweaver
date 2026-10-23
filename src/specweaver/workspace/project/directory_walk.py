@@ -24,7 +24,8 @@ def walk_up_dirs(
     """Build ordered list of directories to search for constitution.
 
     Starts at spec_path's parent, walks up to project_path (inclusive).
-    Returns [project_path] if spec_path is None.
+    Only folders inside project_path are listed, compared by component, so a spec outside the
+    project gets [project_path] only.
     """
     project_resolved = project_path.resolve()
 
@@ -34,18 +35,11 @@ def walk_up_dirs(
     directories: list[Path] = []
     current = spec_path.resolve().parent
 
-    while True:
+    while current.is_relative_to(project_resolved):
         directories.append(current)
         if current == project_resolved:
             break
-        parent = current.parent
-        if parent == current:
-            # Reached filesystem root without finding project_path
-            break
-        # Don't walk above project_path
-        if not str(current).startswith(str(project_resolved)):
-            break
-        current = parent
+        current = current.parent
 
     # Ensure project_path is always in the list
     if project_resolved not in directories:

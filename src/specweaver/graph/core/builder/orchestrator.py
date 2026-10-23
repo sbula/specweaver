@@ -219,8 +219,8 @@ class GraphBuilder:
 
         output_path = (root_path / output_name).resolve()
 
-        # Double check it is strictly inside the workspace root
-        if not str(output_path).startswith(str(root_path)):
+        # By component: a sibling `<root>c` shares the root's text prefix.
+        if not output_path.is_relative_to(root_path):
             raise ValueError("Path traversal attempt detected.")
 
         graphml_content = self.engine.to_graphml_string()

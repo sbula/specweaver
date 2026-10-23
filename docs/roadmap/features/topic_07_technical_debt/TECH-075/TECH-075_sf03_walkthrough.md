@@ -79,3 +79,58 @@ FR-6 `mention-unchecked`; FR-8 `outside-path-handed-on`, `relative-path-joined-t
   failure path changes; callers already handle the boundary error.
 - R3 (LOW) a mention naming a folder: `is_file()` is false, skipped, as before.
 - Cycle 2: no new finding. Below every threshold.
+
+## CB-2 — FR-9 (component compare; the constitution walk stays inside)
+
+### What changed
+
+- `graph/core/builder/orchestrator.py`: `export_graph_to_disk` checks
+  `output_path.is_relative_to(root_path)` (both resolved). The RT-16 text check on the name stays.
+- `workspace/project/directory_walk.py`: `walk_up_dirs` walks while the folder is inside the project
+  by component and tests before it appends, so a spec outside gets `[project]` only (decision 1).
+- `security_guardrails.md`: the "One boundary" bullet names the component compare and the walk.
+- New `tests/unit/workspace/project/test_directory_walk.py`: the walk tests live here, beside their
+  source. Put into `test_project_constitution.py`, they took it to 906 lines (limit 900).
+
+### Red first
+
+- Graph export: a link `g.graphml` to the sibling `<root>c/g.graphml` was written (DID NOT RAISE).
+- Walk: a sibling spec listed `[projc, proj]`; a `CONSTITUTION.md` above the project loaded as an
+  override; a spec outside brought its own folder's `# Foreign` constitution.
+
+### Combined analysis
+
+Architecture: no import added; `graph/core/builder` and `workspace/project` may not import
+`sandbox`, so both use `Path.is_relative_to` on resolved paths. `tach check` clean.
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `export_graph_to_disk` | ✅ written; `..`, `/` refused; link into a sibling refused, nothing written | — | — |
+| `walk_up_dirs` / `find_constitution` | ✅ nested, at root, through a linked project, sibling, above, outside | — | — |
+
+Composition: `find_constitution` → `walk_up_dirs` is driven together (the "above" and "outside"
+cases go through `find_constitution`). Same job elsewhere: `relative_to_root` (CB-1) asks the
+boundary; these two modules may not, and the walk tests assert the same answer for a sibling.
+Gap story added in Phase 3: a project reached through a link.
+
+Mutants (all OBJECTED, pinned): FR-9 `export-string-prefix`, `walk-string-prefix`,
+`walk-appends-before-check`.
+
+### Gates
+
+- `quality.py sf` first run: `comment_provenance` (two comments named TECH-075; reworded to state
+  the present) and `file_sizes` (the split above). Then 18/18.
+- Full suite, `cb`, `doc`: see the commit gate.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) a project whose `CONSTITUTION.md` sits only above its root (a monorepo parent) loses
+  it. Blue: that is decision 1 (FR-9, agreed 2026-10-23): only the project's own folders count.
+- R2 (LOW) `walk_up_dirs` can no longer loop forever: each step moves to the parent and stops at the
+  project or outside it.
+- Cycle 2: no new finding. Below every threshold.
+
+## Decision at the SF-03 stop (user, 2026-10-23)
+
+Audit #2 (hydrator): A — dropped from FR-8; the design row now records it as measured safe.
+CB-2 accepted.

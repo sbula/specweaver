@@ -62,6 +62,7 @@ NFR-1, NFR-3, NFR-4, NFR-5 apply. SF-02 is committed (`28ff0dad`); its helper
 1. The constitution walk searches only folders inside the project; a spec outside gets the root
    constitution only (FR-9, design row widened).
 2. `_hydrate_coverage` takes its paths from `relative_to_root` (FR-8, design row widened).
+   **Reversed in dev, user 2026-10-23:** already safe (see the SF-03 walkthrough); dropped.
 3. FR-6 and FR-8 reuse `project_file`; no boundary is built per call site.
 4. FR-6 is proven by a killed mutant, not by a red: today's check already works. The walkthrough
    records it.

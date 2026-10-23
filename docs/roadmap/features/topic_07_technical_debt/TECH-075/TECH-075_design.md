@@ -42,7 +42,7 @@ fixes it, so none can drop out.
 | Found in SF-02 research | `PUT /projects/{name}` stores a path that does not exist; `POST` refuses one (`interfaces/api/v1/projects.py:105-131`) `[agreed 2026-10-22]` | FR-7 |
 | Found in research | `export_graph_to_disk` and `directory_walk` compare path strings, so `/a/bc` counts as inside `/a/b` (`graph/core/builder/orchestrator.py:214-224`, `workspace/project/directory_walk.py:46`) `[agreed 2026-10-22]` | FR-9 |
 | Found in SF-03 research | `generated_code` hands an outside code file to the QA atom as `source`; the Python runner puts its folder on `PYTHONPATH` (`core/flow/handlers/qa_targets.py:95-102`, `sandbox/language/core/python/runner.py:144`) | FR-8 |
-| Found in SF-03 research | `_hydrate_coverage` builds `target`, `source` and `coverage_source` with a lexical `relative_to`, so a link inside the project that points outside passes (`core/flow/handlers/validation_hydrator.py:262-286`) `[agreed 2026-10-23]` | FR-8 |
+| Found in SF-03 research | `_hydrate_coverage` builds `target`, `source` and `coverage_source` with `relative_to`. Re-measured in dev: safe, because `hydrate_code_validation_context` resolves `code_path` first (`core/flow/handlers/validation_hydrator.py:96`) and SF-01 checks the QA `target`; dropped from FR-8 `[agreed 2026-10-23]` | none needed |
 | Found in SF-03 research | a spec outside the project has its own folder searched for a `CONSTITUTION.md` override (`workspace/project/directory_walk.py:34-38`) `[agreed 2026-10-23]` | FR-9 |
 
 ## Path List (`ADR-005`)
@@ -104,7 +104,7 @@ resolve-then-check pattern with one shared function for every caller
 | FR-5 | Every QA runner intent (`run_tests`, `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`) SHALL refuse a `target` or `targets` entry outside its root, and the debugger's `entrypoint` where it is a file (Python, TypeScript) `[agreed 2026-10-22]`, before any tool starts; a scenario run also accepts `/scenarios/…` | QA atom | runs a tool | one check for all six intents |
 | FR-6 | Mention resolution SHALL check candidates with `WorkspaceBoundary` over the project root only, replacing the private `_is_within` | review handler | resolves mentions | a mention outside the project or behind an escaping link is dropped, as today |
 | FR-7 | `POST /projects`, `PUT /projects/{name}` and `sw update <name> path` SHALL store, and answer with, the resolved absolute path, and SHALL refuse a path that is not an existing folder `[agreed 2026-10-22]`; rows stored relative before this fix are not rewritten `[agreed 2026-10-22]` | API, CLI | registers or moves a project | a relative path no longer depends on the server's working folder |
-| FR-8 | `relative_to_root` SHALL never return a path outside its root; its callers SHALL skip that file with a WARNING; `_hydrate_coverage` SHALL take its paths from `relative_to_root` too `[agreed 2026-10-23]` | archetype pipelines, QA targets | hand a path to a sandboxed atom | no outside path reaches an atom |
+| FR-8 | `relative_to_root` SHALL never return a path outside its root; its callers SHALL skip that file with a WARNING | archetype pipelines, QA targets | hand a path to a sandboxed atom | no outside path reaches an atom |
 | FR-9 | `export_graph_to_disk` and the directory walk SHALL compare resolved paths by component, not by string prefix; the constitution walk SHALL search only folders inside the project, so a spec outside gets the root constitution only `[agreed 2026-10-23]` | graph builder, directory walk | test containment | a sibling folder whose name starts with the root's name is outside |
 | FR-10 | `POST /pipelines/{name}/run` SHALL accept only a bare pipeline name and SHALL never read a file relative to the server's working folder; it loads the project's own `.specweaver/pipelines/<name>.yaml` (inside the project) or else the bundled pipeline `[agreed 2026-10-22]`. `POST /check` SHALL accept only a bare `pipeline` name `[agreed 2026-10-22]`. A refused name answers 404 `PIPELINE_NOT_FOUND` `[agreed 2026-10-22]`; `extends:` stays out of scope `[agreed 2026-10-22]` | API | loads the named pipeline | a YAML file or folder beside the server, or outside the project, cannot be loaded through the API |
 
@@ -217,12 +217,12 @@ no run. The same journey runs as an e2e test in the suite.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The boundary refuses every way out | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | API paths stay in the project | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The engine judges paths by where they land | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The engine judges paths by where they land | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 committed 2026-10-22; SF-03 plan approved 2026-10-23
-([SF-01 walkthrough](TECH-075_sf01_walkthrough.md), [SF-02 walkthrough](TECH-075_sf02_walkthrough.md)).
-**Next step**: Trigger the dev skill for SF-03 (CB-1).
+**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 committed 2026-10-22; SF-03 committed 2026-10-23
+([SF-01](TECH-075_sf01_walkthrough.md), [SF-02](TECH-075_sf02_walkthrough.md), [SF-03](TECH-075_sf03_walkthrough.md) walkthroughs).
+**Next step**: Feature Phase 4 closure (FR coverage, `tests.py feature`, live demo, README counts), then sign-off.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
