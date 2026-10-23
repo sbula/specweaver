@@ -3,7 +3,7 @@
 
 """Every command finds its project folder and its target file one way, and refuses one way.
 
-Proves: TECH-076 FR-5, TECH-076 FR-7
+Proves: TECH-076 FR-5, TECH-076 FR-7, TECH-076 FR-8
 
 | Bucket | Case |
 |---|---|
@@ -89,3 +89,14 @@ def test_a_broken_section_exits_naming_its_line(
 
     assert caught.value.exit_code == 1
     assert shows(capsys.readouterr().out, "specweaver.toml:2: implement.languag")
+
+
+def test_any_settings_error_is_refused_by_one_handler(capsys: pytest.CaptureFixture[str]) -> None:
+    """The refusal is named for settings, not for LLM settings: a `[docs]` error goes through it."""
+    from specweaver.core.config.settings_file import SettingsFileError
+
+    with pytest.raises(typer.Exit) as caught:
+        _core.refuse_settings(SettingsFileError("p/specweaver.toml", "docs.rule", 4, "bad"))
+
+    assert caught.value.exit_code == 1
+    assert shows(capsys.readouterr().out, "p/specweaver.toml:4: docs.rule: bad")

@@ -167,8 +167,11 @@ None beyond the standard library and the already-pinned `ruamel.yaml`.
 
 In a project whose `specweaver.toml` holds `[sandbox]` / `execution_mod = "container"`,
 `sw run validate_only specs/<x>_spec.md` exits 1 printing
-`<project>/specweaver.toml:<line>: sandbox.execution_mod: Extra inputs are not permitted` and starts
-no run. The same journey runs as an e2e test in the suite.
+`<project>/specweaver.toml:2: sandbox.execution_mod: Extra inputs are not permitted` and starts
+no run; with `execution_mode = "host"` the same command runs the pipeline. Run 2026-10-23 against a
+scratch data folder. No model is involved, so the journey runs as the e2e
+`tests/e2e/capabilities/core/test_broken_sandbox_stops_the_run_e2e.py` in every suite run, not in
+the nightly real-model run.
 
 ## Sub-Feature Breakdown
 
