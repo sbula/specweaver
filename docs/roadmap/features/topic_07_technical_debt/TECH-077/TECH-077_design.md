@@ -94,7 +94,7 @@ standards, sections, isolation, router, topology); the builder starts from it.
 |---|-----|-------|--------|---------|
 | FR-1 | One run builder in `interfaces/run_setup` SHALL build a run's context from (project, spec or target, pipeline, run options): the rule file, the standards, `[docs]`/`[autonomy]`/`[implement]`, isolation, the model router and `config` when a step needs a model, and the topology slice; it SHALL raise errors, never exit, and load each settings file once | run setup | builds a run | one context, one set of errors |
 | FR-2 | Every CLI door (`sw run`, `sw resume`, `sw implement`, `sw review`, `sw draft`, `sw drift check`, `sw drift check-rot`, `sw standards scan`) SHALL build its run through FR-1 and turn its errors into the existing CLI refusals | CLI | starts a run | the same context as every other door |
-| FR-3 | Every door SHALL apply both isolation policies (per step and per run) with DAL auto-escalation `[agreed 2026-10-23]`, except that the read-only doors (`sw review`, `sw drift check`, `sw drift check-rot`, `sw standards scan`) skip the per-run worktree `[agreed 2026-10-23]`; a high-DAL project with no git repository stops instead of running on the host (`sw implement` used to warn and run on the host, `INT-US-03` AD-8, now reversed) `[agreed 2026-10-23]` | run setup | decides isolation | untrusted steps are bounded the same way through every door |
+| FR-3 | Every door SHALL apply both isolation policies (per step and per run) with DAL auto-escalation `[agreed 2026-10-23]`, except that the read-only doors (`sw review`, `sw drift check`, `sw drift check-rot`, `sw standards scan`, `POST /review`) skip the per-run worktree `[agreed 2026-10-23]`; a high-DAL project with no git repository stops instead of running on the host (`sw implement` used to warn and run on the host, `INT-US-03` AD-8, now reversed) `[agreed 2026-10-23]` | run setup | decides isolation | untrusted steps are bounded the same way through every door |
 | FR-4 | A run SHALL use one project for everything (settings, router, standards, profiles, rule file): the project registered at the target's folder, else the active project when no path is given; the API uses the request's project `[agreed 2026-10-23]`; a folder no project is registered at is refused, naming it and `sw init` `[agreed 2026-10-23]` | run setup | picks the project | no mix of active and target project |
 | FR-5 | `sw resume` SHALL rebuild the run for the project the run recorded, with its topology, whatever the current folder; a recorded project that is no longer registered stops the resume, naming it | CLI | resumes a run | a resumed run gets its own project's context |
 | FR-6 | The archetype SHALL be found one way, the nearest `context.yaml` above the file (`ArchetypeResolver`), in the run context, the archetype pipelines and the context assembler `[agreed 2026-10-23]` | engine, handlers | ask for the archetype | one answer per file |
@@ -135,7 +135,7 @@ None.
 |---|----------|-----------|----------------------|
 | AD-1 | The run builder is a new module `interfaces/run_setup`, used by the CLI, the API and the command modules | the engine keeps its rule; run setup is a door concern `[agreed 2026-10-23]` | Yes — approved by the user 2026-10-23 (option B) |
 | AD-2 | The builder is async at its core with a sync entry for the CLI (`commons.async_bridge.run_sync`) | the API loaders are async; one implementation | No |
-| AD-3 | Doors map builder errors with their existing refusals (`refuse_settings`, `SpecWeaverAPIError` codes) | no new error codes | No |
+| AD-3 | Doors map builder errors with their existing refusals (`refuse_settings`, `SpecWeaverAPIError` codes) | no new error codes, except `WORKTREE_UNAVAILABLE` (409) for `POST /implement` `[agreed 2026-10-23]` | No |
 
 ## ROI Analysis
 
@@ -203,6 +203,7 @@ an e2e test in the suite.
   standards scan.
 - **FRs**: [FR-7, FR-8, FR-12]
 - **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-077/TECH-077_sf04_implementation_plan.md
 
 ## Execution Order
 
@@ -217,13 +218,13 @@ an e2e test in the suite.
 | SF-01 | One answer per lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The run builder | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Every CLI door uses it | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Every API door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Every API door uses it | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-10-23; SF-01, SF-02 and SF-03 committed 2026-10-23
 ([SF-01](TECH-077_sf01_walkthrough.md), [SF-02](TECH-077_sf02_walkthrough.md),
 [SF-03](TECH-077_sf03_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-04.
+**Next step**: Trigger the dev skill for SF-04 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
