@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
 from specweaver.core.config.database import StrictISODateTime
 from specweaver.core.config.paths import scenario_store_for
 
@@ -52,7 +53,9 @@ class Project(Base):
     console_log_level: Mapped[str] = mapped_column(
         String, default="WARNING", server_default="WARNING", nullable=False
     )
-    constitution_max_size: Mapped[int] = mapped_column(Integer, default=5120, nullable=False)
+    constitution_max_size: Mapped[int] = mapped_column(
+        Integer, default=DEFAULT_MAX_CONSTITUTION_SIZE, nullable=False
+    )
     domain_profile: Mapped[str | None] = mapped_column(String, default=None)
     auto_bootstrap_constitution: Mapped[str] = mapped_column(
         String, default="prompt", nullable=False
@@ -84,35 +87,49 @@ class ProjectStandard(Base):
     scanned_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
 
 
-def default_dal_at(db: Any, root: Path) -> DALLevel | None:
-    """The default DAL of the project registered at `root`; None when no project is."""
+def _project_row_at(db: Any, root: Path) -> Any:
+    """The row of the project registered at `root`, the path compared resolved; None when none is."""
     target = root.resolve()
     with db.connect() as conn:
-        rows = conn.execute("SELECT root_path, default_dal FROM workspace_projects").fetchall()
-    for root_path, dal in rows:
-        if Path(root_path).resolve() == target:
-            try:
-                return DALLevel(dal)
-            except ValueError:
-                logger.warning("The project's stored DAL %r is not a DAL, so it is ignored", dal)
-                return None
-    return None
+        rows = conn.execute(
+            "SELECT name, root_path, default_dal, domain_profile FROM workspace_projects"
+        ).fetchall()
+    return next((row for row in rows if Path(row["root_path"]).resolve() == target), None)
+
+
+def default_dal_at(db: Any, root: Path) -> DALLevel | None:
+    """The default DAL of the project registered at `root`; None when no project is."""
+    row = _project_row_at(db, root)
+    if row is None:
+        return None
+    try:
+        return DALLevel(row["default_dal"])
+    except ValueError:
+        logger.warning(
+            "The project's stored DAL %r is not a DAL, so it is ignored", row["default_dal"]
+        )
+        return None
 
 
 def project_name_at(db: Any, root: Path) -> str | None:
     """The name of the project registered at `root`; None when no project is."""
-    target = root.resolve()
-    with db.connect() as conn:
-        rows = conn.execute("SELECT name, root_path FROM workspace_projects").fetchall()
-    return next((name for name, root_path in rows if Path(root_path).resolve() == target), None)
+    row = _project_row_at(db, root)
+    return None if row is None else str(row["name"])
 
 
 def domain_profile_at(db: Any, root: Path) -> str | None:
     """The domain profile of the project registered at `root`; None when none is set or registered."""
-    target = root.resolve()
+    row = _project_row_at(db, root)
+    return None if row is None else row["domain_profile"]
+
+
+def project_root_of(db: Any, name: str) -> Path | None:
+    """The registered root of project `name`; None when no project has that name."""
     with db.connect() as conn:
-        rows = conn.execute("SELECT root_path, domain_profile FROM workspace_projects").fetchall()
-    return next((p for root_path, p in rows if Path(root_path).resolve() == target), None)
+        row = conn.execute(
+            "SELECT root_path FROM workspace_projects WHERE name = ?", (name,)
+        ).fetchone()
+    return Path(row["root_path"]) if row else None
 
 
 class WorkspaceRepository:

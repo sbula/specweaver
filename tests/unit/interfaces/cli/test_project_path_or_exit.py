@@ -4,6 +4,7 @@
 """Every command finds its project folder and its target file one way, and refuses one way.
 
 Proves: TECH-076 FR-5, TECH-076 FR-7, TECH-076 FR-8
+Proves: TECH-077 FR-10
 
 | Bucket | Case |
 |---|---|
@@ -100,3 +101,23 @@ def test_any_settings_error_is_refused_by_one_handler(capsys: pytest.CaptureFixt
 
     assert caught.value.exit_code == 1
     assert shows(capsys.readouterr().out, "p/specweaver.toml:4: docs.rule: bad")
+
+
+def test_an_unregistered_project_exits_naming_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(_core, "project_root", lambda _name: None)
+
+    with pytest.raises(typer.Exit) as caught:
+        _core.existing_project_root_or_exit("ghost")
+
+    assert caught.value.exit_code == 1
+    assert shows(capsys.readouterr().out, "Project 'ghost' not found")
+
+
+def test_a_registered_existing_folder_is_returned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_core, "project_root", lambda _name: tmp_path)
+
+    assert _core.existing_project_root_or_exit("p") == tmp_path

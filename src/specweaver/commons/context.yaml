@@ -35,6 +35,7 @@ exposes:
   - ArchitectureViolation
   - ArchitectureRunResult
   - fill_block
+  - DEFAULT_MAX_CONSTITUTION_SIZE
   - outside_blocks
 
 # -- Operational Metadata --------------------------------------------------

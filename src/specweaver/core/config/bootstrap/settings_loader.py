@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,7 +17,7 @@ from specweaver.core.config.settings import (
 )
 from specweaver.core.config.settings_file import SettingsFileError, parse_section, validate
 from specweaver.core.config.yaml_lines import yaml_line
-from specweaver.workspace.store import WorkspaceRepository
+from specweaver.workspace.store import project_root_of
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine
@@ -102,18 +103,13 @@ def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
 async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSettings:
     logger.debug("load_settings_async called for project=%s", project_name)
 
-    async def _get_data() -> dict[str, object] | None:
-        async with db.async_session_scope() as session:
-            return await WorkspaceRepository(session).get_project(project_name)
-
-    proj = await _get_data()
-
-    if not proj:
+    root = await asyncio.to_thread(project_root_of, db, project_name)
+    if root is None:
         logger.error("Project '%s' not found in database", project_name)
         msg = f"Project '{project_name}' not found"
         raise ValueError(msg)
 
-    root_path = proj.get("root_path")
+    root_path = str(root)
     standards, sandbox = _project_sections(str(root_path) if root_path else None)
 
     return SpecWeaverSettings(

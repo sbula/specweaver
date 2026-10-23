@@ -1,0 +1,46 @@
+{
+  "schema": 2,
+  "feature": "TECH-077",
+  "campaigns": [
+    {
+      "requirement": "FR-10",
+      "title": "One lookup per project question",
+      "scope": [
+        "tests/integration/workspace/test_one_project_lookup.py",
+        "tests/unit/core/flow/engine/test_registered.py"
+      ],
+      "mutants": [
+        {
+          "id": "path-not-resolved",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "_project_row_at",
+          "old": "    target = root.resolve()\n    with db.connect() as conn:\n",
+          "new": "    target = root\n    with db.connect() as conn:\n",
+          "breaks": "one folder spelled two ways is two projects",
+          "symbol_sha": "sha256:5ab5d24112f9b81aace2ac2d304673a91f149d2d56d072752902c89730037b8a"
+        },
+        {
+          "id": "root-by-name-prefix",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "project_root_of",
+          "old": "\"SELECT root_path FROM workspace_projects WHERE name = ?\", (name,)",
+          "new": "\"SELECT root_path FROM workspace_projects WHERE name LIKE ?\", (name + \"%\",)",
+          "breaks": "a name prefix finds another project",
+          "symbol_sha": "sha256:9eaab72c6c0666b6bd9677be863f5f83a43c184e2e077e015118cf13e6865839"
+        },
+        {
+          "id": "failed-read-escapes",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/registered.py",
+          "symbol": "registered",
+          "old": "    except Exception:  # expected: the registry is unreadable; the caller falls back\n",
+          "new": "    except ValueError:\n",
+          "breaks": "an unreadable registry fails the run instead of falling back",
+          "symbol_sha": "sha256:b87ddb07cbc7d63c6a9e37d59eb6c5805483bd0d6935c76edb59449af91c0ed4"
+        }
+      ]
+    }
+  ]
+}

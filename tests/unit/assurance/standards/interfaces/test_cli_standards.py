@@ -119,16 +119,11 @@ class TestStandardsScan:
         monkeypatch,
     ) -> None:
         """Scan with non-existent root path → error."""
-        _init_project(_mock_db, "ghost", str(tmp_path))
+        gone = tmp_path / "ghost"
+        gone.mkdir()
+        _init_project(_mock_db, "ghost", str(gone))
+        gone.rename(tmp_path / "moved-away")  # the registered folder no longer exists
 
-        # Monkeypatch get_project to return a non-existent path
-        async def mock_get_project(self, name):
-            return {"name": name, "root_path": "/nonexistent/path"}
-
-        monkeypatch.setattr(
-            "specweaver.workspace.store.WorkspaceRepository.get_project",
-            mock_get_project,
-        )
         result = runner.invoke(app, ["standards", "scan"])
         assert result.exit_code != 0
         assert "Error" in result.output or "does not exist" in result.output

@@ -21,13 +21,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+# Re-export from sub-modules for backward compatibility
+from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
 from specweaver.workspace.project._templates import STANDARDS_TEMPLATE as _STANDARDS_TEMPLATE
 from specweaver.workspace.project._templates import STARTER_TEMPLATE as _STARTER_TEMPLATE
-
-# Re-export from sub-modules for backward compatibility
 from specweaver.workspace.project.constitution_loading import (
     CONSTITUTION_FILENAME,
-    DEFAULT_MAX_CONSTITUTION_SIZE,
     ConstitutionInfo,
 )
 from specweaver.workspace.project.constitution_loading import (

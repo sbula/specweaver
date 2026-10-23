@@ -6,10 +6,11 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.workspace.context.inferrer import ContextInferrer
 
 import typer
@@ -103,8 +104,8 @@ def use(
     """Switch the active project."""
     logger.debug("Executing use command")
     _core.get_db()
-    proj = _core.run_repo_op(lambda r: r.get_project(name))
-    if not proj:
+    root = _core.project_root(name)
+    if root is None:
         _core.console.print(
             f"[red]Error:[/red] Project '{name}' not found. "
             f"Run [bold]sw init {name} --path <path>[/bold] to register it.",
@@ -112,7 +113,6 @@ def use(
         raise typer.Exit(code=1)
 
     # Check path still exists
-    root = Path(str(proj["root_path"]))
     if not root.exists():
         _core.console.print(
             f"[red]Error:[/red] Project root no longer exists: {root}\n"
@@ -273,15 +273,7 @@ def scan() -> None:
         )
         raise typer.Exit(code=1)
 
-    proj = _core.run_repo_op(lambda r: r.get_project(active))
-    if proj is None:
-        _core.console.print(f"[red]Error:[/red] Project '{active}' not found.")
-        raise typer.Exit(code=1)
-    project_path = Path(str(proj["root_path"]))
-
-    if not project_path.exists():
-        _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
-        raise typer.Exit(code=1)
+    project_path = _core.existing_project_root_or_exit(active)
 
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.context.inferrer import ContextInferrer

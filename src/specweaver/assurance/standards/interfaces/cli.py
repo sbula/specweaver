@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import typer
@@ -21,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
     from specweaver.assurance.standards.analyzer import CategoryResult
     from specweaver.core.config.database import Database
@@ -35,16 +35,7 @@ standards_app = typer.Typer(
 
 def _resolve_project_root(name: str) -> Path:
     """The active project's root on disk. Exits 1 if it is unregistered or gone."""
-    proj = _core.run_repo_op(lambda r: r.get_project(name))
-    if proj is None:
-        _core.console.print(f"[red]Error:[/red] Project '{name}' not found.")
-        raise typer.Exit(code=1)
-
-    project_path = Path(str(proj["root_path"]))
-    if not project_path.exists():
-        _core.console.print(f"[red]Error:[/red] Project root does not exist: {project_path}")
-        raise typer.Exit(code=1)
-    return project_path
+    return _core.existing_project_root_or_exit(name)
 
 
 def _scan_scopes(

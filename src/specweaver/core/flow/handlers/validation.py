@@ -38,15 +38,12 @@ logger = logging.getLogger(__name__)
 def target_dal(context: RunContext, target_path: Path) -> DALLevel:
     """The target's DAL: its nearest `context.yaml`, else its project's default, else `DAL_C`."""
     from specweaver.core.config.dal_resolver import DALResolver
+    from specweaver.core.flow.engine.registered import registered
     from specweaver.workspace.store import DEFAULT_DAL, default_dal_at
 
     dal = DALResolver(context.project_path).resolve(target_path)
-    db = getattr(context, "db", None)
-    if dal is None and db is not None:
-        try:
-            dal = default_dal_at(db, context.project_path)
-        except Exception:
-            logger.warning("Could not read the project's default DAL", exc_info=True)
+    if dal is None:
+        dal = registered(context, default_dal_at, "default DAL")
     return dal or DEFAULT_DAL
 
 
@@ -539,13 +536,7 @@ class ValidateTestsHandler:
 
 def _profile_of(context: RunContext) -> str | None:
     """The domain profile of the run's project, read from its registration."""
+    from specweaver.core.flow.engine.registered import registered
     from specweaver.workspace.store import domain_profile_at
 
-    db = getattr(context, "db", None)
-    if db is None or context.project_path is None:
-        return None
-    try:
-        return domain_profile_at(db, context.project_path)
-    except Exception:
-        logger.warning("Could not read the project's domain profile", exc_info=True)
-        return None
+    return registered(context, domain_profile_at, "domain profile")

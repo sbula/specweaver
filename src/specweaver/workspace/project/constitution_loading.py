@@ -13,13 +13,14 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
+
 if TYPE_CHECKING:
     from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 CONSTITUTION_FILENAME = "CONSTITUTION.md"
-DEFAULT_MAX_CONSTITUTION_SIZE = 5120  # 5 KB
 
 
 @dataclass(frozen=True)

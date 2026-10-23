@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
@@ -90,17 +91,16 @@ async def resolve_project_root(project_name: str, db: Database) -> Path:
     Raises:
         SpecWeaverAPIError: If project not found.
     """
-    from specweaver.workspace.store import WorkspaceRepository
+    from specweaver.workspace.store import project_root_of
 
-    async with db.async_session_scope() as session:
-        proj = await WorkspaceRepository(session).get_project(project_name)
-    if not proj:
+    root = await asyncio.to_thread(project_root_of, db, project_name)
+    if root is None:
         raise SpecWeaverAPIError(
             detail=f"Project '{project_name}' not found.",
             error_code="PROJECT_NOT_FOUND",
             status_code=404,
         )
-    return Path(str(proj["root_path"]))
+    return root
 
 
 async def resolve_file_in_project(

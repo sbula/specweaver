@@ -96,21 +96,21 @@
           "id": "default-dal-by-name",
           "origin": "authored",
           "file": "src/specweaver/workspace/store.py",
-          "symbol": "default_dal_at",
-          "old": "        rows = conn.execute(\"SELECT root_path, default_dal FROM workspace_projects\").fetchall()\n",
-          "new": "        rows = conn.execute(\"SELECT name, default_dal FROM workspace_projects\").fetchall()\n",
+          "symbol": "_project_row_at",
+          "old": "    return next((row for row in rows if Path(row[\"root_path\"]).resolve() == target), None)\n",
+          "new": "    return next((row for row in rows if Path(row[\"name\"]).resolve() == target), None)\n",
           "breaks": "a project registered under another name than its folder loses its default DAL",
-          "symbol_sha": "sha256:b43be4a43e88eaa4916679e36861f6a1fac645999861666847c0d3b5cec05a0e"
+          "symbol_sha": "sha256:5ab5d24112f9b81aace2ac2d304673a91f149d2d56d072752902c89730037b8a"
         },
         {
           "id": "no-default-dal-fallback",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "target_dal",
-          "old": "    if dal is None and db is not None:\n",
-          "new": "    if False:\n",
+          "old": "    if dal is None:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
+          "new": "    if False:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
           "breaks": "a target without a declared DAL has none, so its history group is unknown",
-          "symbol_sha": "sha256:3131b33e0a7d870359d515b9bbd1dde141267ca9d8ea42d062a5141e8eddfb4d"
+          "symbol_sha": "sha256:f83cf31c77f05949bbb57df5fe9a7b19e09d271c3dab27e0f44c24dfe9e0544d"
         },
         {
           "id": "old-default-dal-a",

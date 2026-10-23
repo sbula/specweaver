@@ -20,15 +20,7 @@ def registered_name(context: RunContext) -> str:
     A resume (`POST /runs/{id}/gate`, `sw resume`) finds the project by this name, so a folder
     name here strands every run of a project named unlike its folder.
     """
+    from specweaver.core.flow.engine.registered import registered
     from specweaver.workspace.store import project_name_at
 
-    db = getattr(context, "db", None)
-    if db is not None:
-        try:
-            name = project_name_at(db, context.project_path)
-        except Exception:
-            logger.warning("Could not read the project's registered name", exc_info=True)
-        else:
-            if name:
-                return name
-    return context.project_path.name
+    return registered(context, project_name_at, "registered name") or context.project_path.name

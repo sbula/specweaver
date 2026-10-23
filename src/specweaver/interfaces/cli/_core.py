@@ -98,20 +98,28 @@ def _require_active_project() -> str:
 
 def project_root(name: str) -> Path | None:
     """The registered root directory of project `name`, or `None` if it has none."""
+    from specweaver.workspace.store import project_root_of
 
-    project = run_repo_op(lambda repo: repo.get_project(name))
-    root = project.get("root_path") if project else None
-    return Path(str(root)) if root else None
+    return project_root_of(get_db(), name)
+
+
+def existing_project_root_or_exit(name: str) -> Path:
+    """Project `name`'s root on disk, or exit naming why: unregistered, or its folder is gone."""
+    root = project_root(name)
+    if root is None:
+        console.print(f"[red]Error:[/red] Project '{name}' not found.")
+        raise typer.Exit(code=1)
+    if not root.exists():
+        console.print(f"[red]Error:[/red] Project root does not exist: {root}")
+        raise typer.Exit(code=1)
+    return root
 
 
 def registered_project_at(path: Path) -> str | None:
     """The name of the project registered at `path`, if any."""
-    target = path.resolve()
-    for project in run_repo_op(lambda repo: repo.list_projects()):
-        root = project.get("root_path")
-        if root and Path(str(root)).resolve() == target:
-            return str(project["name"])
-    return None
+    from specweaver.workspace.store import project_name_at
+
+    return project_name_at(get_db(), path)
 
 
 def project_name_for(path: Path) -> str:
