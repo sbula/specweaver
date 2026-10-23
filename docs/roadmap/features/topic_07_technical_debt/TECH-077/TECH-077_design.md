@@ -182,6 +182,7 @@ an e2e test in the suite.
 - **Inputs**: today's duplicated lookups.
 - **Outputs**: one function per question, used by SF-02.
 - **Depends on**: none
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-077/TECH-077_sf01_implementation_plan.md
 
 ### SF-02: The run builder
 - **Scope**: `interfaces/run_setup`: build, isolation with DAL escalation, the one-project rule.
@@ -211,14 +212,14 @@ an e2e test in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One answer per lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One answer per lookup | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The run builder | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Every CLI door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Every API door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23.
-**Next step**: Trigger the implementation-plan skill for SF-01.
+**Current status**: Design APPROVED 2026-10-23; SF-01 plan approved 2026-10-23.
+**Next step**: Trigger the dev skill for SF-01 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
