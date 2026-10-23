@@ -15,8 +15,8 @@ def test_get_default_parsers() -> None:
     parsers = get_default_parsers()
 
     # Assert standard extensions are correctly mapped
-    assert (".py",) in parsers
-    assert isinstance(parsers[(".py",)], PythonCodeStructure)
+    assert (".py", ".pyi") in parsers
+    assert isinstance(parsers[(".py", ".pyi")], PythonCodeStructure)
 
     assert (".java",) in parsers
     assert isinstance(parsers[(".java",)], JavaCodeStructure)

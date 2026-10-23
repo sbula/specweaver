@@ -37,6 +37,10 @@ exposes:
   - fill_block
   - DEFAULT_MAX_CONSTITUTION_SIZE
   - outside_blocks
+  - LANGUAGE_SUFFIXES
+  - language_of
+  - name_tests_for
+  - root_of_tests
 
 # -- Operational Metadata --------------------------------------------------
 operational:

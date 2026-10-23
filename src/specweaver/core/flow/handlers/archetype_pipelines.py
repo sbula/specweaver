@@ -14,6 +14,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES as _LANGUAGE_SUFFIXES
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -24,18 +26,8 @@ logger = logging.getLogger(__name__)
 SPEC_DEFAULT = "validation_spec_default"
 CODE_DEFAULT = "validation_code_default"
 
-#: The file endings of each language an archetype may name.
-LANGUAGE_SUFFIXES: dict[str, tuple[str, ...]] = {
-    "python": (".py",),
-    "java": (".java",),
-    "kotlin": (".kt", ".kts"),
-    "typescript": (".ts", ".tsx"),
-    "javascript": (".js", ".jsx"),
-    "rust": (".rs",),
-    "go": (".go",),
-    "c": (".c", ".h"),
-    "cpp": (".cpp", ".hpp", ".cc", ".cxx"),
-}
+#: The file endings of each language an archetype may name: the one table.
+LANGUAGE_SUFFIXES = _LANGUAGE_SUFFIXES
 
 
 def archetype_of(path: Path, project_path: Path | None) -> str | None:

@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.refactor._model import (
     MAX_SPOTS,
     RenamePlan,
@@ -44,47 +45,26 @@ if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
     from specweaver.workspace.ast.refactor._base import Resolver
 
+_BY_LANGUAGE: dict[str, type[Resolver]] = {
+    "python": PythonResolver,
+    "java": JvmResolver,
+    "kotlin": JvmResolver,
+    "typescript": TypeScriptResolver,
+    "rust": RustResolver,
+    "go": GoResolver,
+    "c": CResolver,
+    "cpp": CppResolver,
+}
+
 #: Which resolver renames a symbol defined in a file with this ending.
 _RESOLVERS: dict[str, type[Resolver]] = {
-    ".py": PythonResolver,
-    ".java": JvmResolver,
-    ".kt": JvmResolver,
-    ".kts": JvmResolver,
-    ".ts": TypeScriptResolver,
-    ".tsx": TypeScriptResolver,
-    ".rs": RustResolver,
-    ".go": GoResolver,
-    ".c": CResolver,
-    ".h": CResolver,
-    ".cpp": CppResolver,
-    ".hpp": CppResolver,
-    ".cc": CppResolver,
-    ".cxx": CppResolver,
+    suffix: resolver
+    for language, resolver in _BY_LANGUAGE.items()
+    for suffix in LANGUAGE_SUFFIXES[language]
 }
 
 #: Endings of source code; every other file is text, where a name is only ever a mention.
-CODE_SUFFIXES = (
-    ".py",
-    ".pyi",
-    ".java",
-    ".kt",
-    ".kts",
-    ".ts",
-    ".tsx",
-    ".js",
-    ".jsx",
-    ".mjs",
-    ".cjs",
-    ".rs",
-    ".go",
-    ".c",
-    ".h",
-    ".cpp",
-    ".hpp",
-    ".cc",
-    ".cxx",
-    ".sql",
-)
+CODE_SUFFIXES = (*(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixes), ".sql")
 
 
 def resolver_for(path: str) -> type[Resolver] | None:

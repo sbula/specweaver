@@ -9,6 +9,7 @@ This centralizes the physical instantiation of CodeStructureInterfaces so orches
 
 import logging
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.parsers.c.codestructure import CCodeStructure
 from specweaver.workspace.ast.parsers.cpp.codestructure import CppCodeStructure
 from specweaver.workspace.ast.parsers.go.codestructure import GoCodeStructure
@@ -27,15 +28,20 @@ logger = logging.getLogger(__name__)
 def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
     """Return the registry mapping of file extensions to their AST parsing implementations."""
     logger.debug("get_default_parsers called: initializing parser registry")
-    return {
-        (".c", ".h"): CCodeStructure(),
-        (".cpp", ".hpp", ".cc", ".cxx"): CppCodeStructure(),
-        (".py",): PythonCodeStructure(),
-        (".java",): JavaCodeStructure(),
-        (".ts", ".tsx"): TypeScriptCodeStructure(),
-        (".rs",): RustCodeStructure(),
-        (".kt", ".kts"): KotlinCodeStructure(),
-        (".md", ".mdx"): MarkdownCodeStructure(),
-        (".go",): GoCodeStructure(),
-        (".sql",): SqlCodeStructure(),
+    by_language = {
+        "c": CCodeStructure(),
+        "cpp": CppCodeStructure(),
+        "python": PythonCodeStructure(),
+        "java": JavaCodeStructure(),
+        "typescript": TypeScriptCodeStructure(),
+        "rust": RustCodeStructure(),
+        "kotlin": KotlinCodeStructure(),
+        "go": GoCodeStructure(),
     }
+    parsers: dict[tuple[str, ...], CodeStructureInterface] = {
+        LANGUAGE_SUFFIXES[name]: parser for name, parser in by_language.items()
+    }
+    # Not programming languages, so not in the table.
+    parsers[(".md", ".mdx")] = MarkdownCodeStructure()
+    parsers[(".sql",)] = SqlCodeStructure()
+    return parsers

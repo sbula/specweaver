@@ -64,13 +64,21 @@ def task_files_for(project_root: Path, spec_path: Path, language: str | None) ->
     if chosen in {"java", "kotlin"}:
         return _jvm(project_root, spec_path, stem, chosen)
     if chosen == "typescript":
-        return TaskFiles(f"src/{stem}.ts", f"tests/{stem}.test.ts", language=chosen)
+        return TaskFiles(f"src/{stem}.ts", _tests(f"{stem}.ts", chosen), language=chosen)
     if chosen == "rust":
         # Always the library root: tests in `tests/` reach only a library crate, so a binary-only
         # crate gets a `lib.rs` beside its `main.rs`.
         module = stem.replace("-", "_")
-        return TaskFiles(f"src/{module}.rs", f"tests/{module}.rs", (RUST_ROOT,), language=chosen)
-    return TaskFiles(f"src/{stem}.py", f"tests/test_{stem}.py", language="python")
+        code = f"src/{module}.rs"
+        return TaskFiles(code, _tests(code, chosen), (RUST_ROOT,), language=chosen)
+    return TaskFiles(f"src/{stem}.py", _tests(f"{stem}.py", "python"), language="python")
+
+
+def _tests(code: str, language: str, package_folder: str = "") -> str:
+    """The test file of `code`, by the language's one convention (`commons.languages`)."""
+    from specweaver.commons.languages import name_tests_for, root_of_tests
+
+    return f"{root_of_tests(language)}/{package_folder}{name_tests_for(code, language)}"
 
 
 def _jvm(project_root: Path, spec_path: Path, stem: str, language: str) -> TaskFiles:
@@ -82,7 +90,7 @@ def _jvm(project_root: Path, spec_path: Path, stem: str, language: str) -> TaskF
     ext = "java" if language == "java" else "kt"
     return TaskFiles(
         f"src/main/{language}/{folder}{name}.{ext}",
-        f"src/test/{language}/{folder}{name}Test.{ext}",
+        _tests(f"{name}.{ext}", language, folder),
         language=language,
     )
 

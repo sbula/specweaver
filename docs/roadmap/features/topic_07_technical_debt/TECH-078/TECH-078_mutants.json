@@ -1,0 +1,68 @@
+{
+  "schema": 2,
+  "feature": "TECH-078",
+  "campaigns": [
+    {
+      "requirement": "FR-6",
+      "title": "One table maps file endings to languages, read everywhere",
+      "scope": [
+        "tests/integration/test_one_language_table.py",
+        "tests/unit/commons/test_language_table.py",
+        "tests/unit/core/flow/handlers/test_archetype_languages.py",
+        "tests/unit/workspace/ast/parsers/test_parsers_factory.py"
+      ],
+      "mutants": [
+        {
+          "id": "upper-case-ending-unknown",
+          "origin": "authored",
+          "file": "src/specweaver/commons/languages.py",
+          "symbol": "language_of",
+          "old": "    return _LANGUAGE_OF.get(PurePath(path).suffix.lower())\n",
+          "new": "    return _LANGUAGE_OF.get(PurePath(path).suffix)\n",
+          "breaks": "ORDERS.PY is no language",
+          "symbol_sha": "sha256:f9e198c70ea132b6e75e6d3fb0501dcd4d452166f1155fe5c0212c2b2c269ba0"
+        },
+        {
+          "id": "parsers-own-endings",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/factory.py",
+          "symbol": "get_default_parsers",
+          "old": "        LANGUAGE_SUFFIXES[name]: parser for name, parser in by_language.items()\n",
+          "new": "        LANGUAGE_SUFFIXES[name][:1]: parser for name, parser in by_language.items()\n",
+          "breaks": "a .pyi, .kts or .tsx file has no parser",
+          "symbol_sha": "sha256:b53f14c8600176fcb0c8a9dfeb66053e4c0511e8011674359f8f012e2f7003a4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "One convention names and places each language's tests",
+      "scope": [
+        "tests/unit/commons/test_language_table.py",
+        "tests/integration/test_one_language_table.py"
+      ],
+      "mutants": [
+        {
+          "id": "kotlin-test-loses-Test",
+          "origin": "authored",
+          "file": "src/specweaver/commons/languages.py",
+          "symbol": "name_tests_for",
+          "old": "        \"kotlin\": f\"{code.stem}Test.kt\",\n",
+          "new": "        \"kotlin\": f\"{code.stem}.kt\",\n",
+          "breaks": "a Kotlin file's test is looked for under its own name",
+          "symbol_sha": "sha256:83e349c8e823cc173f89bc7360631e2b3ac0f4da084177344f7e1d82fa851b0f"
+        },
+        {
+          "id": "task-files-own-python-name",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "symbol": "task_files_for",
+          "old": "_tests(f\"{stem}.py\", \"python\")",
+          "new": "f\"tests/{stem}_test.py\"",
+          "breaks": "a Python task's tests are written where the rules never look",
+          "symbol_sha": "sha256:d6789e866e9f6f79ee6c8b8736910ef32d9502a9e04dc18a0d3915ba1e2ab080"
+        }
+      ]
+    }
+  ]
+}
