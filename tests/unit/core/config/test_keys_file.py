@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_keys, load_llm_settings
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.resolve import RoleResolver
 

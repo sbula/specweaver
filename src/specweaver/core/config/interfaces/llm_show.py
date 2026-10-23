@@ -8,7 +8,7 @@ from __future__ import annotations
 import typer
 
 from specweaver.core.config.bootstrap.llm_settings_writer import set_role
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.interfaces.cli import _core
 
 

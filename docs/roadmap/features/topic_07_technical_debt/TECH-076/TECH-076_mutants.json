@@ -1,0 +1,66 @@
+{
+  "schema": 2,
+  "feature": "TECH-076",
+  "campaigns": [
+    {
+      "requirement": "FR-6",
+      "title": "One reader turns settings text into a strict model or a located error",
+      "scope": [
+        "tests/unit/core/config/test_settings_file.py",
+        "tests/unit/core/config/test_doc_policy.py"
+      ],
+      "mutants": [
+        {
+          "id": "syntax-line-lost",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings_file.py",
+          "symbol": "load_toml",
+          "old": "        line = int(found.group(1)) if found else 1\n",
+          "new": "        line = 1\n",
+          "breaks": "a syntax error points at line 1, not its own line",
+          "symbol_sha": "sha256:259aae2e392c2118fed6ad6ac4e19ae6e01c78b5614e6e006f6a55775de2682e"
+        },
+        {
+          "id": "unknown-key-not-first",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings_file.py",
+          "symbol": "validate",
+          "old": "        errors = sorted(exc.errors(), key=lambda error: error[\"type\"] != \"extra_forbidden\")\n",
+          "new": "        errors = exc.errors()\n",
+          "breaks": "a typo is reported as the real key missing",
+          "symbol_sha": "sha256:e30ac0836d157895e214b034b6827697a21951d0fa80376411f7961c3e05fbce"
+        },
+        {
+          "id": "value-error-prefix-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings_file.py",
+          "symbol": "validate",
+          "old": "        message = first[\"msg\"].removeprefix(\"Value error, \")\n",
+          "new": "        message = first[\"msg\"]\n",
+          "breaks": "messages differ per section",
+          "symbol_sha": "sha256:e30ac0836d157895e214b034b6827697a21951d0fa80376411f7961c3e05fbce"
+        },
+        {
+          "id": "docs-own-toml-reader",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "parse_doc_policy",
+          "old": "    section = load_toml(text, source).get(\"docs\", {})\n",
+          "new": "    section = __import__(\"tomllib\").loads(text).get(\"docs\", {})\n",
+          "breaks": "[docs] reports a syntax error unlike every other section",
+          "symbol_sha": "sha256:56b4409892e705ad83a723306a9169133205ca2469435911e211a4f9d0e484c9"
+        },
+        {
+          "id": "docs-array-line-lost",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/doc_policy.py",
+          "symbol": "parse_doc_policy",
+          "old": "line_of=lambda t, loc: _line(t, loc[1:])",
+          "new": "line_of=lambda t, loc: _line(t, loc)",
+          "breaks": "an error in a [[docs.rule]] entry points at line 1",
+          "symbol_sha": "sha256:56b4409892e705ad83a723306a9169133205ca2469435911e211a4f9d0e484c9"
+        }
+      ]
+    }
+  ]
+}

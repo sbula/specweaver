@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from specweaver.core.config.llm_settings import SettingsFileError, resolve_roles, settings_report
+from specweaver.core.config.llm_settings import resolve_roles, settings_report
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.settings_view import role_rows
 from specweaver.interfaces.cli import _core

@@ -17,11 +17,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import (
-    SettingsFileError,
-    parse_machine_file,
-    parse_project_llm,
-)
+from specweaver.core.config.llm_settings import parse_machine_file, parse_project_llm
+from specweaver.core.config.settings_file import SettingsFileError
 
 _MACHINE = """\
 schema_version = 1

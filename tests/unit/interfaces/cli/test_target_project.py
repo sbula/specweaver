@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.interfaces.command import command_router
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.interfaces.cli import _core

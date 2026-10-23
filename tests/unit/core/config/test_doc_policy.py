@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 from specweaver.core.config.doc_policy import DocBlock, DocRule, parse_doc_policy
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 
 _FULL = """\
 [llm]

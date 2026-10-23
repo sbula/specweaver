@@ -24,11 +24,8 @@ from specweaver.core.config.bootstrap.llm_settings_writer import (
     set_model_price,
     set_role,
 )
-from specweaver.core.config.llm_settings import (
-    SettingsFileError,
-    parse_machine_file,
-    parse_project_llm,
-)
+from specweaver.core.config.llm_settings import parse_machine_file, parse_project_llm
+from specweaver.core.config.settings_file import SettingsFileError
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -26,7 +26,8 @@ from starlette.testclient import TestClient
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
-from specweaver.core.config.llm_settings import SettingsFileError, parse_machine_file
+from specweaver.core.config.llm_settings import parse_machine_file
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.interfaces.api.app import create_app
 from tests.api_token import AUTH, TEST_TOKEN

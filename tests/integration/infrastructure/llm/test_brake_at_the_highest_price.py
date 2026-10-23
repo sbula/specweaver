@@ -22,7 +22,8 @@ from __future__ import annotations
 import httpx2
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
+from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 from specweaver.infrastructure.llm.models import Message, Role, TaskType
 from specweaver.infrastructure.llm.router import build_router

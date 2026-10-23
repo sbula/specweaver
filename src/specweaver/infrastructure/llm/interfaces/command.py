@@ -13,7 +13,8 @@ import typer
 from pydantic import ValidationError
 from rich.console import Console
 
-from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError, SettingsFileError
+from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.router import build_router
 from specweaver.interfaces.cli import _core
 

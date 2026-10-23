@@ -15,12 +15,8 @@ from rich.table import Table
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
 from specweaver.core.config.bootstrap.llm_settings_writer import clear_model_price, set_model_price
-from specweaver.core.config.llm_settings import (
-    SettingsFileError,
-    format_money,
-    resolve_roles,
-    to_usd,
-)
+from specweaver.core.config.llm_settings import format_money, resolve_roles, to_usd
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.price_refresh import SOURCE, last_reached, refresh_prices

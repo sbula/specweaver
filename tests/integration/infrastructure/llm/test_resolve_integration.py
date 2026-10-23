@@ -25,7 +25,7 @@ import httpx2
 import pytest
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.adapters._rate_limit import _SEMAPHORES
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import Message, Role

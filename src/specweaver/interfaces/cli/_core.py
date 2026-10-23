@@ -118,7 +118,7 @@ def project_name_for(path: Path) -> str:
 def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
     """The LLM settings files for the project at `path`, or exit naming the error."""
     from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.core.config.settings_file import SettingsFileError
 
     try:
         return load_llm_settings(path)
@@ -129,7 +129,7 @@ def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
 def load_doc_policy_at(path: Path) -> DocPolicy:
     """The doc policy of the project at `path`, or exit naming the file, key and line."""
     from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
-    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.core.config.settings_file import SettingsFileError
 
     try:
         return load_doc_policy(path)
@@ -141,7 +141,7 @@ def language_at(path: Path) -> str | None:
     """The language the project at `path` names in `[implement]`, or None; or exit naming the
     file, key and line."""
     from specweaver.core.config.bootstrap.implement_loader import load_implement
-    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.core.config.settings_file import SettingsFileError
 
     try:
         return load_implement(path).language
@@ -152,7 +152,7 @@ def language_at(path: Path) -> str | None:
 def load_autonomy_at(path: Path) -> AutonomyPolicy:
     """The autonomy policy of the project at `path`, or exit naming the file, key and line."""
     from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
-    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.core.config.settings_file import SettingsFileError
 
     try:
         return load_autonomy(path)
@@ -166,7 +166,7 @@ def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFile
     A broken settings file stops every command that uses LLM settings, naming the file and line.
     """
     from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-    from specweaver.core.config.llm_settings import SettingsFileError
+    from specweaver.core.config.settings_file import SettingsFileError
 
     try:
         return load_llm_settings(project_root(project_name or _require_active_project()))

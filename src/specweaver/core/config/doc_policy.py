@@ -11,12 +11,11 @@ step fills. The decision itself is the sandbox's (`sandbox.security.doc_access`)
 from __future__ import annotations
 
 import re
-import tomllib
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError, load_toml, validate
 
 Access = Literal["human", "open", "step"]
 _BLOCK_NAME = re.compile(r"[a-z0-9_-]+")
@@ -81,21 +80,10 @@ class DocPolicy(_Strict):
 
 def parse_doc_policy(text: str, source: str) -> DocPolicy:
     """The `[docs]` section of a project's settings text; an absent section is an empty policy."""
-    try:
-        section = tomllib.loads(text).get("docs", {})
-    except tomllib.TOMLDecodeError as exc:
-        raise SettingsFileError(
-            source, "(file)", getattr(exc, "lineno", 0), "not valid TOML"
-        ) from None
-    try:
-        policy = DocPolicy.model_validate(section)
-    except ValidationError as exc:
-        errors = sorted(exc.errors(), key=lambda error: error["type"] != "extra_forbidden")
-        loc = tuple(str(part) for part in errors[0]["loc"])
-        message = errors[0]["msg"].removeprefix("Value error, ")
-        raise SettingsFileError(
-            source, ".".join(("docs", *loc)), _line(text, loc), message
-        ) from None
+    section = load_toml(text, source).get("docs", {})
+    policy = validate(
+        DocPolicy, section, text, source, prefix=("docs",), line_of=lambda t, loc: _line(t, loc[1:])
+    )
     _one_block_each(policy, text, source)
     return policy
 

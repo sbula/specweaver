@@ -15,7 +15,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.config.project_sections import parse_section
+from specweaver.core.config.settings_file import parse_section
 
 
 class AutonomyPolicy(BaseModel):

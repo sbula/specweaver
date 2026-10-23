@@ -19,12 +19,12 @@ import pytest
 
 from specweaver.core.config.llm_settings import (
     LlmSettingsFiles,
-    SettingsFileError,
     parse_machine_file,
     parse_project_llm,
     resolve_roles,
     settings_report,
 )
+from specweaver.core.config.settings_file import SettingsFileError
 
 _MACHINE = """\
 [servers.gb10]

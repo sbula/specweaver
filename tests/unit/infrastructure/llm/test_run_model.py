@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry, SettingsFileError
+from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.catalogue import Catalogue
 from specweaver.infrastructure.llm.models import TaskType

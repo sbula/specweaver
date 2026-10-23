@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import ModelFacts, SettingsFileError
+from specweaver.core.config.llm_settings import ModelFacts
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import Catalogue
 
 _LIST = """\

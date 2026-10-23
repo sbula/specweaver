@@ -22,10 +22,10 @@ from specweaver.core.config.llm_settings import (
     RUN_OVERRIDE,
     LlmSettingsFiles,
     RoleEntry,
-    SettingsFileError,
     resolve_roles,
     settings_report,
 )
+from specweaver.core.config.settings_file import SettingsFileError
 
 _MACHINE = """\
 [servers.gb10]

@@ -24,7 +24,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from specweaver.core.config.llm_settings import ModelFacts, SettingsFileError
+from specweaver.core.config.llm_settings import ModelFacts
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.prices import SETTING_OF, Price, Rule
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 from specweaver.infrastructure.llm.router import build_router
 from specweaver.interfaces.api.errors import SpecWeaverAPIError

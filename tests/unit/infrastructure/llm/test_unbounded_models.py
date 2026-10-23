@@ -19,7 +19,8 @@ import logging
 
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
+from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.catalogue import Catalogue
 from specweaver.infrastructure.llm.models import TaskType

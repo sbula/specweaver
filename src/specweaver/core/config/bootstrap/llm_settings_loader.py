@@ -17,8 +17,9 @@ from typing import TYPE_CHECKING
 
 from dotenv import dotenv_values
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles, SettingsFileError
+from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.core.config.paths import specweaver_root
+from specweaver.core.config.settings_file import SettingsFileError
 
 if TYPE_CHECKING:
     from pathlib import Path

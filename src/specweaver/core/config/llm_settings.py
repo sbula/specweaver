@@ -13,20 +13,18 @@ is sent — servers, addresses and key variables belong to the machine file alon
 from __future__ import annotations
 
 import re
-import tomllib
 from dataclasses import dataclass, field
 from datetime import date
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from specweaver.core.config.settings_file import SettingsFileError, load_toml, validate
 from specweaver.core.config.toml_lines import path_line
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from pathlib import Path
-
-_M = TypeVar("_M", bound=BaseModel)
 
 #: The file shape this SpecWeaver understands.
 SCHEMA_VERSION = 1
@@ -44,17 +42,6 @@ _VARIABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _MACHINE_ONLY_KEYS = frozenset({"servers", "base_url", "api_key_env"})
 #: A model's limit keys.
 _LIMIT_KEYS = ("spend_per_run", "tokens_per_run")
-
-
-class SettingsFileError(ValueError):
-    """A settings file that cannot be used, located by file, key and line."""
-
-    def __init__(self, source: str, key: str, line: int, message: str) -> None:
-        self.source = source
-        self.key = key
-        self.line = line
-        self.message = message
-        super().__init__(f"{source}:{line}: {key}: {message}")
 
 
 class SettingNotSetError(SettingsFileError):
@@ -264,14 +251,14 @@ class ProjectLlmSection(_Strict):
 
 def parse_machine_file(text: str, source: str) -> MachineLlmFile:
     """The machine settings file, or `SettingsFileError` naming what is wrong and where."""
-    data = _load_toml(text, source)
+    data = load_toml(text, source)
     _check_schema_version(data, text, source, prefix=())
-    return _validate(MachineLlmFile, data, text, source, prefix=())
+    return validate(MachineLlmFile, data, text, source, prefix=())
 
 
 def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
     """A project's `[llm]` section; an absent section is an empty choice."""
-    section = _load_toml(text, source).get("llm", {})
+    section = load_toml(text, source).get("llm", {})
     _check_schema_version(section, text, source, prefix=("llm",))
     forbidden = _find_machine_only_key(section, ("llm",))
     if forbidden:
@@ -282,7 +269,7 @@ def parse_project_llm(text: str, source: str) -> ProjectLlmSection:
             "a project may choose models, not define where code is sent — set servers, "
             "addresses and key variables in the machine settings file",
         )
-    return _validate(ProjectLlmSection, section, text, source, prefix=("llm",))
+    return validate(ProjectLlmSection, section, text, source, prefix=("llm",))
 
 
 def _check_schema_version(
@@ -300,31 +287,6 @@ def _check_schema_version(
     else:
         return
     raise SettingsFileError(source, ".".join(path), path_line(text, path), message)
-
-
-def _load_toml(text: str, source: str) -> dict[str, Any]:
-    try:
-        return tomllib.loads(text)
-    except tomllib.TOMLDecodeError as exc:
-        # `lineno` exists only from Python 3.14; before that the line is in the message.
-        found = re.search(r"line (\d+)", str(exc))
-        line = int(found.group(1)) if found else 1
-        raise SettingsFileError(source, "(syntax)", line, "not valid TOML") from exc
-
-
-def _validate(
-    model: type[_M], data: dict[str, Any], text: str, source: str, *, prefix: tuple[str, ...]
-) -> _M:
-    try:
-        return model.model_validate(data)
-    except ValidationError as exc:
-        # An unknown key first: a typo also shows up as the real key "missing", and the typo is
-        # the line the user has to fix.
-        errors = sorted(exc.errors(), key=lambda error: error["type"] != "extra_forbidden")
-        first = errors[0]
-        loc = prefix + tuple(str(part) for part in first["loc"] if part != "[key]")
-        # The message only: pydantic's `input` would echo the value, which may be a secret.
-        raise SettingsFileError(source, ".".join(loc), path_line(text, loc), first["msg"]) from None
 
 
 def _find_machine_only_key(value: Any, path: tuple[str, ...]) -> tuple[str, ...] | None:

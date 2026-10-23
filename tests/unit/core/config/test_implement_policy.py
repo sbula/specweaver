@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 from specweaver.core.config.implement_policy import parse_implement
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 
 
 @pytest.mark.parametrize("language", ["python", "java", "kotlin", "typescript", "rust"])

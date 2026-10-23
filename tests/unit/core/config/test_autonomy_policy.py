@@ -20,7 +20,7 @@ import pytest
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.autonomy_policy import parse_autonomy
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 
 
 def test_mode_and_ceiling_are_read_as_written() -> None:

@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 from specweaver.core.config.doc_policy import fill_block, outside_blocks, parse_doc_policy
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 
 _START = "<!-- sw:block counts -->"
 _END = "<!-- sw:end counts -->"

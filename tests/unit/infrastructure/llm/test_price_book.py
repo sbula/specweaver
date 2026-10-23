@@ -19,7 +19,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from specweaver.core.config.llm_settings import ModelFacts, SettingsFileError
+from specweaver.core.config.llm_settings import ModelFacts
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import Catalogue
 from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.prices import Price, PriceBook, Rule

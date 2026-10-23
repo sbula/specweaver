@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -11,7 +11,7 @@ from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
 from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
 from specweaver.core.config.bootstrap.implement_loader import load_implement
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-from specweaver.core.config.llm_settings import SettingsFileError
+from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.handlers.run_context import IsolationPolicy
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
