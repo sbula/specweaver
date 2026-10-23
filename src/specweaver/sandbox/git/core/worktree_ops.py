@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.config.doc_policy import DocPolicy, outside_blocks
+from specweaver.commons.doc_blocks import outside_blocks
+from specweaver.core.config.doc_policy import DocPolicy
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from specweaver.sandbox.security import write_verdict
 

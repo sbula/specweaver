@@ -4,6 +4,7 @@
 """A generated block: its body is replaced, and nothing outside it changes.
 
 Proves: C-EXEC-08 FR-3
+Proves: TECH-076 FR-10
 
 | Bucket | Case |
 |---|---|
@@ -17,7 +18,8 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.doc_policy import fill_block, outside_blocks, parse_doc_policy
+from specweaver.commons.doc_blocks import fill_block, outside_blocks
+from specweaver.core.config.doc_policy import parse_doc_policy
 from specweaver.core.config.settings_file import SettingsFileError
 
 _START = "<!-- sw:block counts -->"

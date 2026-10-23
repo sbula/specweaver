@@ -63,3 +63,30 @@ list update). Drifted mutants: 0.
 - R2 (LOW) `project_sections_at` reads the file three times. Accepted: three small reads at a run's
   start; one parse per section keeps each parser's own error.
 - Cycle 2: no new finding.
+
+## CB-2 — FR-10 (doc block helpers to `commons`)
+
+### What changed
+
+- New `commons/doc_blocks.py`: `_markers`, `_span`, `fill_block`, `outside_blocks`, moved unchanged
+  from `core/config/doc_policy.py`; `commons/context.yaml` exposes `fill_block` and
+  `outside_blocks`. `doc_policy.py` keeps the `[docs]` policy only.
+- `core/flow/handlers/bash_action.py` and `sandbox/git/core/worktree_ops.py` import from `commons`.
+- C-EXEC-08 mutants `markers-unchecked` and `output-escapes-the-block` re-pointed (OBJECTED, pinned);
+  drifted mutants: 0.
+
+### Red first
+
+`test_doc_blocks.py`, re-pointed at `commons.doc_blocks` before the move: collection error.
+
+### Gates
+
+Full suite 11438 passed, 9 skipped (first run: the FR sweep read `Proves: C-EXEC-08 FR-3, TECH-076
+FR-10` as C-EXEC-08 FR-10 — a second ID on one `Proves:` line is not parsed; split onto its own
+line). `quality.py sf` 18/18. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (LOW) `commons` has no `tach` rules; the helpers are pure text functions, so nothing they could
+  import is at risk. No finding.
+- Cycle 2: no new finding.

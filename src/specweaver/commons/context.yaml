@@ -34,6 +34,8 @@ exposes:
   - DebugRunResult
   - ArchitectureViolation
   - ArchitectureRunResult
+  - fill_block
+  - outside_blocks
 
 # -- Operational Metadata --------------------------------------------------
 operational:

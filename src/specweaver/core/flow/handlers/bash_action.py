@@ -90,7 +90,7 @@ def _fill_block(step: str, exports: dict[str, Any], context: RunContext) -> str 
 
     SpecWeaver writes the block, not the script, so the script cannot reach past it.
     """
-    from specweaver.core.config.doc_policy import fill_block
+    from specweaver.commons.doc_blocks import fill_block
 
     block = next((b for b in context.isolation.doc_policy.block if b.step == step), None)
     if block is None:

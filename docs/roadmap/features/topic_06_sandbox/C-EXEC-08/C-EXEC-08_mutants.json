@@ -356,7 +356,7 @@
         {
           "id": "markers-unchecked",
           "origin": "authored",
-          "file": "src/specweaver/core/config/doc_policy.py",
+          "file": "src/specweaver/commons/doc_blocks.py",
           "symbol": "fill_block",
           "old": "    if span is None:\n",
           "new": "    if False:\n",
@@ -366,7 +366,7 @@
         {
           "id": "output-escapes-the-block",
           "origin": "authored",
-          "file": "src/specweaver/core/config/doc_policy.py",
+          "file": "src/specweaver/commons/doc_blocks.py",
           "symbol": "fill_block",
           "old": "    if start in body or end in body:\n",
           "new": "    if False:\n",
