@@ -41,6 +41,35 @@
           "symbol_sha": "sha256:b87ddb07cbc7d63c6a9e37d59eb6c5805483bd0d6935c76edb59449af91c0ed4"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A file's archetype is its nearest context.yaml everywhere",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_one_archetype.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-reads-root-archetype",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/run_context.py",
+          "symbol": "RunContext._read_archetype",
+          "old": "        return ArchetypeResolver(self.project_path).resolve(self.spec_path) or \"generic\"\n",
+          "new": "        return ArchetypeResolver(self.project_path).resolve(self.project_path) or \"generic\"\n",
+          "breaks": "a nested spec reports the root's archetype",
+          "symbol_sha": "sha256:ab788100f5c27934b07d41dd2e501b735723be3c3b8190347eaeab7f63273e36"
+        },
+        {
+          "id": "skeleton-ignores-file-archetype",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/context_assembler.py",
+          "symbol": "evaluate_and_fetch_skeleton_context",
+          "old": "        archetype = resolver.resolve(path) or \"generic\"\n",
+          "new": "        archetype = resolver.resolve(context.project_path) or \"generic\"\n",
+          "breaks": "every file is skeletonized under the root's archetype",
+          "symbol_sha": "sha256:958f1c729cc9bfdc6ba88d84eb87bd3ebe02659e3985f44527d5f0ec3e12c05e"
+        }
+      ]
     }
   ]
 }

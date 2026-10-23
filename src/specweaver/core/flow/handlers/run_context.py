@@ -242,16 +242,7 @@ class RunContext(BaseModel):
         return str(getattr(routed.adapter, "provider_name", "unknown")), routed.config.model
 
     def _read_archetype(self) -> str:
-        """The project's archetype from its `context.yaml`, or "generic" if unavailable."""
-        try:
-            import ruamel.yaml
+        """The spec's archetype from its nearest `context.yaml`, or "generic" when none says."""
+        from specweaver.core.config.archetype_resolver import ArchetypeResolver
 
-            ctx_path = self.project_path / "context.yaml"
-            if not ctx_path.exists():
-                return "generic"
-            with ctx_path.open("r", encoding="utf-8") as f:
-                data = ruamel.yaml.YAML(typ="safe").load(f)
-            return data.get("archetype", "generic") if isinstance(data, dict) else "generic"
-        except Exception as exc:
-            logger.warning("The archetype is unreadable, so 'generic' is used: %s", exc)
-            return "generic"
+        return ArchetypeResolver(self.project_path).resolve(self.spec_path) or "generic"

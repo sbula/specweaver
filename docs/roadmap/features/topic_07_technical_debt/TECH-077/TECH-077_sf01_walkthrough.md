@@ -55,3 +55,37 @@ re-exporting the constant through the loader (now imported from `commons`). `tac
 - R2 (LOW) `registered` swallows every read error by design (each caller has a safe default), and
   logs it with the traceback.
 - Cycle 2: no new finding.
+
+## CB-2 — FR-6 (the archetype found one way)
+
+### What changed
+
+- `RunContext._read_archetype` asks `ArchetypeResolver(project_path).resolve(spec_path)`: the
+  spec's nearest `context.yaml`, not only the root file. The resolver logs an unreadable file.
+- `context_assembler.evaluate_and_fetch_skeleton_context` resolves each target file's archetype
+  (relative paths taken inside the project) and builds one `CodeStructureAtom` per archetype. The
+  topology's archetype no longer overrides a file's own `context.yaml`.
+
+### Red first
+
+`test_one_archetype.py`, written before the change: the run context answered the root's `generic`
+for a spec under `service/` (`spring-boot`), and the skeleton step used the topology's `adapter`.
+
+### Combined analysis
+
+Agreement: the run context, `archetype_of` and the skeleton step answer `spring-boot` for one file.
+Cases: no `context.yaml` (generic), an unreadable one (generic, WARNING), a topology claiming
+another archetype, a relative file path. Mutants (OBJECTED, pinned): `run-reads-root-archetype`,
+`skeleton-ignores-file-archetype`. Drifted mutants: 0.
+
+### Gates
+
+Full suite 11460 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (LOW) the skeleton step may now build several atoms (one per archetype among the files).
+  Atoms are light; the count is the number of distinct archetypes, usually one.
+- R2 (LOW) the run record's archetype changes for specs in a sub-folder with its own
+  `context.yaml`. Intended (FR-6).
+- Cycle 2: no new finding.

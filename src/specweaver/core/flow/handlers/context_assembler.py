@@ -11,13 +11,12 @@ over the files to ensure token limits remain fully stable during large system in
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -43,18 +42,22 @@ def evaluate_and_fetch_skeleton_context(
     if not target_files:
         return skeleton_files
 
-    # Try to grab the resolved archetype from context if available, otherwise just use generic
-    active_archetype = "generic"
-    if context.graph.topology and hasattr(context.graph.topology, "archetype"):
-        active_archetype = context.graph.topology.archetype
+    from specweaver.core.config.archetype_resolver import ArchetypeResolver
 
-    # Instantiate the CodeStructure atom statically with injected parser mappings
-    # ensuring we adhere to the architectural dependency boundary.
-    atom = CodeStructureAtom(
-        cwd=context.project_path,
-        active_archetype=active_archetype,
-        parsers=context.analysis.parsers,
-    )
+    # Each file is skeletonized under its own nearest `context.yaml`'s archetype; one atom per
+    # archetype, with the run's parser mappings.
+    resolver = ArchetypeResolver(context.project_path)
+    atoms: dict[str, CodeStructureAtom] = {}
+
+    def atom_for(path: Path) -> CodeStructureAtom:
+        archetype = resolver.resolve(path) or "generic"
+        if archetype not in atoms:
+            atoms[archetype] = CodeStructureAtom(
+                cwd=context.project_path,
+                active_archetype=archetype,
+                parsers=context.analysis.parsers,
+            )
+        return atoms[archetype]
 
     logger.debug(
         "ContextAssembler: Resolving %d background files for skeletonization...",
@@ -64,7 +67,10 @@ def evaluate_and_fetch_skeleton_context(
     for file_path in target_files:
         path_str = str(file_path)
         try:
-            res = atom.run({"intent": "skeletonize", "path": path_str})
+            absolute = Path(file_path)
+            if not absolute.is_absolute():
+                absolute = context.project_path / absolute
+            res = atom_for(absolute).run({"intent": "skeletonize", "path": path_str})
             # `CodeStructureAtom._handle_structure` exports the payload under "structure"; this
             # read "skeleton", the condition never holds and the assembler returns {} for every
             # caller, so generation and review prompts carry no skeleton context. A containment
