@@ -19,7 +19,6 @@ from specweaver.commons.spec_names import module_stem
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
-from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 
@@ -164,11 +163,7 @@ def draft(
 ) -> None:
     """Interactively draft a new component spec with LLM assistance."""
     logger.debug("Executing draft command")
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     specs_dir = project_path / "specs"
     spec_path = specs_dir / f"{name}_spec.md"
@@ -260,16 +255,9 @@ def review(
     For code review, also provide --spec to compare against.
     """
     logger.debug("Executing review command")
-    target_path = Path(target)
-    if not target_path.exists():
-        _core.console.print(f"[red]Error:[/red] File not found: {target}")
-        raise typer.Exit(code=1)
+    target_path = _core.file_or_exit(target)
 
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner

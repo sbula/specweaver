@@ -35,7 +35,7 @@ def test_cli_pipelines_injects_model_router_in_run(
         patch("specweaver.core.flow.interfaces.cli.find_constitution", return_value=None),
         patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
         patch("specweaver.interfaces.cli._core.registered_project_at", return_value=None),
-        patch("specweaver.core.flow.interfaces.cli.resolve_project_path", return_value=project_dir),
+        patch("specweaver.interfaces.cli._core.resolve_project_path", return_value=project_dir),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):
         mock_runner = mock_runner_cls.return_value
@@ -94,7 +94,7 @@ def test_cli_pipelines_injects_model_router_in_resume(
         patch("specweaver.core.flow.interfaces.cli.find_constitution", return_value=None),
         patch("specweaver.interfaces.cli._core.run_repo_op", return_value="test-proj"),
         patch("specweaver.interfaces.cli._core.registered_project_at", return_value=None),
-        patch("specweaver.core.flow.interfaces.cli.resolve_project_path", return_value=project_dir),
+        patch("specweaver.interfaces.cli._core.resolve_project_path", return_value=project_dir),
         patch("specweaver.core.flow.interfaces.cli._get_state_store", return_value=mock_state_db),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_cls,
     ):

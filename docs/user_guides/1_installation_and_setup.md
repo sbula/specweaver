@@ -133,7 +133,9 @@ rate_date = 2026-09-26
   A run's `spec` and every `file` field must land inside the project (links are followed first);
   one outside answers 400 `PATH_TRAVERSAL` and starts nothing. A pipeline is named by a bare name:
   the project's own `.specweaver/pipelines/<name>.yaml`, else a built-in one. A project path is
-  stored as the full, real folder. To see the refusal:
+  stored as the full, real folder. A run on a project whose `[sandbox]`, `[standards]` or
+  `.specweaver/dal_definitions.yaml` is broken answers 500 `SANDBOX_SETTINGS`, `STANDARDS_SETTINGS`
+  or `DAL_DEFINITIONS`, naming the file, key and line, and starts nothing. To see the refusal:
   `curl -X POST http://127.0.0.1:8000/api/v1/pipelines/validate_only/run -H "Authorization: Bearer $(cat ~/.specweaver/serve.token)" -H "Content-Type: application/json" -d '{"project":"<name>","spec":"../outside.md"}'`
 
 ## 4. Initializing your First Project

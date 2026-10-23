@@ -20,7 +20,7 @@ from specweaver.interfaces.api.v1.paths import (
     project_file_or_400,
     resolve_project_root,
 )
-from specweaver.interfaces.api.v1.run_settings import max_runs, project_policy
+from specweaver.interfaces.api.v1.run_settings import isolation_settings, max_runs, project_policy
 from specweaver.interfaces.api.v1.schemas import (
     GateDecisionRequest,
     PipelineRunRequest,
@@ -112,15 +112,11 @@ async def _apply_isolation(context: RunContext, db: Database, project: str) -> N
     Async on purpose: the settings loader has an async form, and calling the sync one inside an
     endpoint would block the event loop.
     """
-    from specweaver.core.config.bootstrap.settings_loader import load_settings_async
     from specweaver.core.flow.engine.isolation import apply_isolation_policy
 
-    try:
-        settings = await load_settings_async(db, project)
-    except Exception:  # best-effort by contract — a policy lookup must not fail a run
-        logger.debug("Could not resolve settings for '%s'; isolation defaults to off.", project)
-        return
-    apply_isolation_policy(context, settings, logger)
+    settings = await isolation_settings(db, project)
+    if settings is not None:
+        apply_isolation_policy(context, settings, logger)
 
 
 @router.post("/pipelines/{name}/run", response_model=PipelineRunResponse)

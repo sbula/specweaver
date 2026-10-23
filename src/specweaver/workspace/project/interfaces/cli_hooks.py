@@ -10,7 +10,6 @@ import sys
 import typer
 
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.project.discovery import resolve_project_path
 
 hooks_app = typer.Typer(
     name="hooks",
@@ -66,13 +65,7 @@ def hooks_install(
     ),
 ) -> None:
     """Install git hooks for the current repository."""
-    try:
-        project_path = resolve_project_path(project)
-        logger.debug("Resolved project path: %s", project_path)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        logger.error("Project path resolution failed: %s", exc)
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     git_dir = project_path / ".git"
     if not git_dir.exists() or not git_dir.is_dir():

@@ -58,17 +58,18 @@ async def _resolve_merged_settings(context: RunContext, target_path: Path) -> An
 
     merged_settings = context.settings
     if dal_str and merged_settings and hasattr(merged_settings, "dal_matrix"):
-        try:
-            dal = dal_str
-            matrix_dict = merged_settings.dal_matrix.matrix
-            dal_constraints = matrix_dict.get(dal)
-            if dal_constraints:
-                base_dict = merged_settings.model_dump()
-                constraint_dict = {"validation": dal_constraints.model_dump(exclude_unset=True)}
-                merged_dict = deep_merge_dict(base_dict, constraint_dict)
-                merged_settings = SpecWeaverSettings.model_validate(merged_dict)
-        except Exception as exc:
-            logger.warning("Failed to merge DAL '%s' constraints: %s", dal_str, exc)
+        dal_constraints = merged_settings.dal_matrix.matrix.get(dal_str)
+        if dal_constraints:
+            base_dict = merged_settings.model_dump()
+            constraint_dict = {"validation": dal_constraints.model_dump(exclude_unset=True)}
+            try:
+                merged_settings = SpecWeaverSettings.model_validate(
+                    deep_merge_dict(base_dict, constraint_dict)
+                )
+            except Exception as exc:
+                # Judging the file without its tier's rules would pass what the tier forbids.
+                msg = f"cannot apply the {dal_str} rules: {exc}"
+                raise ValueError(msg) from exc
 
     return merged_settings
 

@@ -401,11 +401,7 @@ def _execute_run(
     from specweaver.core.flow.engine.runner import PipelineRunner
 
     # Resolve project path
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     # Load pipeline definition
     pipeline_def = load_pipeline(Path(pipeline))

@@ -31,6 +31,7 @@ from rich.console import Console
 
 from specweaver._version import __version__
 from specweaver.core.config.bootstrap.db_bootstrap import get_db
+from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(
@@ -160,6 +161,24 @@ def load_autonomy_at(path: Path) -> AutonomyPolicy:
         return load_autonomy(path)
     except SettingsFileError as err:
         refuse_llm_settings(err)
+
+
+def file_or_exit(given: str) -> Path:
+    """`given` as a path when the file exists, or exit naming it."""
+    path = Path(given)
+    if not path.exists():
+        console.print(f"[red]Error:[/red] File not found: {given}")
+        raise typer.Exit(code=1)
+    return path
+
+
+def project_path_or_exit(project: str | None) -> Path:
+    """The project folder `project` names (the working folder when None), or exit naming why."""
+    try:
+        return resolve_project_path(project)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
 
 
 def load_project_settings(db: Database, project: str) -> SpecWeaverSettings:

@@ -9,7 +9,6 @@ import typer
 
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.project.constitution import check_constitution, find_constitution
-from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +30,7 @@ def constitution_show(
 ) -> None:
     """Display the current CONSTITUTION.md content."""
     logger.debug("Executing constitution_show command")
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     info = find_constitution(project_path)
     if info is None:
@@ -62,11 +57,7 @@ def constitution_check(
 ) -> None:
     """Validate the constitution against size limits."""
     logger.debug("Executing constitution_check command")
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     info = find_constitution(project_path)
     if info is None:
@@ -120,11 +111,7 @@ def constitution_init(
 ) -> None:
     """Create or reset the CONSTITUTION.md template."""
     logger.debug("Executing constitution_init command")
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     constitution_path = project_path / "CONSTITUTION.md"
 
@@ -174,11 +161,7 @@ def constitution_bootstrap(
     require --force to overwrite.
     """
     logger.debug("Executing constitution_bootstrap command")
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     from specweaver.workspace.project.constitution import generate_constitution_from_standards
 

@@ -46,21 +46,14 @@ def drift_check(
     ),
 ) -> None:
     """Check a code file against its planned AST signatures."""
-    target_path = Path(target)
-    if not target_path.exists():
-        _core.console.print(f"[red]Error:[/red] File not found: {target}")
-        raise typer.Exit(code=1)
+    target_path = _core.file_or_exit(target)
 
     plan_path = Path(plan)
     if not plan_path.exists():
         _core.console.print(f"[red]Error:[/red] Plan file not found: {plan}")
         raise typer.Exit(code=1)
 
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner

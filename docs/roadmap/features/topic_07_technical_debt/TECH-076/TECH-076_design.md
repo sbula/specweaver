@@ -117,7 +117,7 @@ one shape of error everywhere, the unknown key reported first.
 | NFR-1 | Fail closed: a settings file that cannot be read stops the command; it never yields defaults `[agreed 2026-10-23]` | refusal, never a pass |
 | NFR-2 | A valid file, an absent file and an absent section behave exactly as today | existing tests green |
 | NFR-3 | The error text keeps today's shape `source:line: key: message` | one shape for every section |
-| NFR-4 | No new layer edge except `core/flow` and `sandbox/git` importing `commons` (already allowed) **[proof: arch — tach/lint gate, not pytest]** | `tach check` clean |
+| NFR-4 | No new layer edge except `core/flow` and `sandbox/git` importing `commons` (already allowed), and `interfaces.cli → workspace.project`, so the CLI's one "find the project folder or exit" helper replaces ten copies `[agreed 2026-10-23]` **[proof: arch — tach/lint gate, not pytest]** | `tach check` clean |
 
 ## External Dependencies
 
@@ -206,12 +206,12 @@ no run. The same journey runs as an e2e test in the suite.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One strict reader | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23 ([walkthrough](TECH-076_sf01_walkthrough.md)).
-**Next step**: Trigger the dev skill for SF-02 (CB-1).
+**Current status**: Design APPROVED 2026-10-23; SF-01 and SF-02 committed 2026-10-23 ([SF-01](TECH-076_sf01_walkthrough.md), [SF-02](TECH-076_sf02_walkthrough.md) walkthroughs).
+**Next step**: Trigger the implementation-plan skill for SF-03.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

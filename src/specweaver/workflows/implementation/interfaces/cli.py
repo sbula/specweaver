@@ -19,7 +19,6 @@ from specweaver.core.flow.engine.task_files import TaskFiles
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.constitution import find_constitution
-from specweaver.workspace.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -246,11 +245,7 @@ def implement(
         _core.console.print(f"[red]Error:[/red] Spec not found: {spec}")
         raise typer.Exit(code=1)
 
-    try:
-        project_path = resolve_project_path(project)
-    except (FileNotFoundError, NotADirectoryError) as exc:
-        _core.console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
+    project_path = _core.project_path_or_exit(project)
 
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._llm import roles_of

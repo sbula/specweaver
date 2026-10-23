@@ -57,3 +57,76 @@ Mutants (OBJECTED, pinned): FR-5 `cli-settings-error-escapes`; FR-4 `cli-run-iso
 - R2 (LOW) `_wire_models` now refuses a broken file too, but the isolation step before it always
   refuses first. Kept for one rule on every door.
 - Cycle 2: no new finding.
+
+## CB-2 — FR-4 (the API doors and the validation step)
+
+### What changed
+
+- `interfaces/api/v1/run_settings.py`: `isolation_settings(db, project)` — `load_settings_async`;
+  a `SettingsFileError` becomes 500 with `_settings_code`: `DAL_DEFINITIONS` (the DAL file),
+  `STANDARDS_SETTINGS` (`standards` or `standards.*`), else `SANDBOX_SETTINGS` (`sandbox…`, and a
+  `(syntax)` error — plan decision 1); any other failure stays best-effort (None).
+- `pipelines.py` `_apply_isolation` calls it; run, resume and gate answers all pass through it.
+  The lookup lives in `run_settings.py` so `pipelines.py` keeps its fan-out under 20 (`TECH-075`).
+- `core/flow/handlers/validation.py` `_resolve_merged_settings`: a failed tier merge raises
+  `ValueError("cannot apply the DAL_X rules: …")`; both handlers already turn that into an ERROR
+  step (plan decision 2), so the run stops instead of judging the file without its tier.
+- `1_installation_and_setup.md` (API bullet): the three codes.
+
+### Red first
+
+- `test_api_broken_settings_refuse.py`: every broken case answered 200 and started a run; the
+  parked run resumed.
+- `test_validation_dal_merge_stops.py`: the forced merge failure returned the unmerged settings,
+  and the spec step ended FAILED on the project's own rules, not ERROR.
+
+### Combined analysis
+
+| Function | Unit | Integration |
+|---|---|---|
+| `isolation_settings` | ✅ other failure best-effort | ✅ 4 broken cases + resume + valid |
+| `_settings_code` | ✅ 7 keys incl. bare table names, `(syntax)`, `standardsx` | ✅ through the route |
+| `_resolve_merged_settings` | ✅ layered, no entry, forced failure raises, step ERROR | — |
+
+Mutants (OBJECTED, pinned): FR-4 `api-run-isolation-off`, `standards-code-lost`, `dal-code-lost`,
+`validation-without-tier`.
+
+### Gates
+
+- Full suite 11426 passed, 9 skipped (one run failed the happy API case: the run starts in a
+  background task after the answer; the test now waits up to 5 s for it — a race in the test, not
+  the code). `quality.py sf` 18/18. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) `_settings_code` defaults to `SANDBOX_SETTINGS`: a future section read here would be
+  mislabelled. Accepted: only `[sandbox]`, `[standards]` and the DAL file are read by
+  `load_settings`; a new section is a new design question.
+- R2 (LOW) the error detail carries the absolute settings path. The client named the project and
+  the server owns that path; same as `DOC_POLICY` / `AUTONOMY_POLICY` today.
+- R3 (LOW) the validation message embeds pydantic's text, which can name a key but never a value
+  of the user's (the merged dict comes from validated models).
+- Cycle 2: no new finding.
+
+### Added to CB-2 at the user's choice (2026-10-23): the copied CLI preamble
+
+The CB-1 note above accepted the duplicated "find the project folder or exit" block. Asked which
+burden is lesser, the user chose the new dependency (`[agreed 2026-10-23]`, design NFR-4 updated):
+the block stood in 10 places in 6 files, and the edge points down (delivery → project discovery),
+with no loop possible (`workspace.project` depends only on parsers and analyzers).
+
+- `tach.toml`: `specweaver.interfaces.cli` may depend on `specweaver.workspace.project`.
+- `_core.project_path_or_exit(project)` replaces all 10 copies (`sw run`, `sw constitution` ×4,
+  hooks, `draft`, `review`, `implement`, `drift check`); `_core.file_or_exit(given)` replaces the
+  "File not found" check in `drift check` and `review` (the third copy, in `sw check`, resolves
+  and also refuses an empty target, so it stays).
+- Tests that patched `resolve_project_path` in `sw run` and the hooks now patch it in `_core`;
+  `drift check-rot` still calls it directly, so its tests are unchanged.
+- Duplication baseline: 103 → 99 clones, none new.
+- Red first: `test_project_path_or_exit.py` failed on the missing helpers. Mutant
+  `project-path-error-escapes` OBJECTED, pinned.
+- Full suite 11432 passed, 9 skipped; `quality.py sf` 18/18; `tach check` clean.
+
+## Decision at the SF-02 stop (user, 2026-10-23)
+
+CB-2 accepted, with the CLI preamble extraction above.

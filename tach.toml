@@ -67,7 +67,7 @@ depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specwea
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context",]
+depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
