@@ -21,7 +21,7 @@ import pytest
 from pydantic import BaseModel, ConfigDict
 
 from specweaver.core.config.doc_policy import parse_doc_policy
-from specweaver.core.config.llm_settings import parse_project_llm
+from specweaver.core.config.llm_settings_parse import parse_project_llm
 from specweaver.core.config.settings_file import SettingsFileError, load_toml, parse_section
 
 

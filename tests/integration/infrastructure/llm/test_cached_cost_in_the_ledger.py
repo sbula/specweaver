@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.infrastructure.llm.models import Message, Role, TaskType
 from specweaver.infrastructure.llm.router import build_router
 from tests.fake_http import fake_httpx2

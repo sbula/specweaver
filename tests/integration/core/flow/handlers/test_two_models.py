@@ -25,7 +25,8 @@ from unittest.mock import patch
 import pytest
 import typer
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry
+from specweaver.core.config.llm_settings import RoleEntry
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,

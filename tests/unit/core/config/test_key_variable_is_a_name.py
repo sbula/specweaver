@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import parse_machine_file
+from specweaver.core.config.llm_settings_parse import parse_machine_file
 from specweaver.core.config.settings_file import SettingsFileError
 
 _SERVER = """\

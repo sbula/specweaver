@@ -81,7 +81,8 @@ def test_the_local_model_is_not_priced_from_a_hosted_namesake() -> None:
 
 def test_a_20_kb_settings_file_resolves_within_the_budget() -> None:
     """NFR-1: read, validate and layer the settings once, under 50 ms for a file under 20 KB."""
-    from specweaver.core.config.llm_settings import LlmSettingsFiles, resolve_roles
+    from specweaver.core.config.llm_roles import resolve_roles
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 
     models = "".join(
         f'[models."m{i}"]\nusd_per_million_input = 1.0\nusd_per_million_output = 2.0\n'

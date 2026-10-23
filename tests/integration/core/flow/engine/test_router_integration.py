@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from specweaver.core.config.database import Database
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.run_context import RunContext

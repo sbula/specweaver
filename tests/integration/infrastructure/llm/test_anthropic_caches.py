@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock
 import httpx2
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.infrastructure.llm.models import Message, Role, TaskType, ToolDefinition
 from specweaver.infrastructure.llm.router import build_router
 from tests.fake_http import fake_httpx2

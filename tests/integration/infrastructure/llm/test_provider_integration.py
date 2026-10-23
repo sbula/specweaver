@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.models import Message, Role
 from specweaver.infrastructure.llm.resolve import RoleResolver

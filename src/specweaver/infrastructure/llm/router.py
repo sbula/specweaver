@@ -17,7 +17,8 @@ from specweaver.infrastructure.llm.models import TaskType
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from specweaver.core.config.llm_settings import LlmSettingsFiles, RoleEntry
+    from specweaver.core.config.llm_settings import RoleEntry
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.collector import TelemetryCollector
     from specweaver.infrastructure.llm.models import GenerationConfig

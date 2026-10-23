@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.router import build_router

@@ -14,7 +14,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from specweaver.core.config.llm_settings import SettingNotSetError, resolve_roles, to_usd
+from specweaver.core.config.llm_roles import resolve_roles
+from specweaver.core.config.llm_settings import SettingNotSetError, to_usd
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.config.toml_lines import line_of
 from specweaver.infrastructure.llm.budget import STEP_LIMIT_PREFIX, CallScope, Limit, Unit
@@ -29,12 +30,9 @@ from specweaver.infrastructure.llm.store import step_history_limit
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from specweaver.core.config.llm_settings import (
-        LlmSettingsFiles,
-        ModelFacts,
-        ResolvedRole,
-        RoleEntry,
-    )
+    from specweaver.core.config.llm_roles import ResolvedRole
+    from specweaver.core.config.llm_settings import ModelFacts, RoleEntry
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.infrastructure.llm.budget import SpendBudget
     from specweaver.infrastructure.llm.catalogue import Catalogue
     from specweaver.infrastructure.llm.prices import PriceBook

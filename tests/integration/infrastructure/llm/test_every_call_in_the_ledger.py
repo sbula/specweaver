@@ -339,7 +339,7 @@ def test_a_commands_router_writes_every_call_to_its_ledger(
     ledger: tuple[Database, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The one path every command and REST endpoint builds its models through (`build_router`)."""
-    from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.infrastructure.llm import resolve
     from specweaver.infrastructure.llm.models import TaskType
     from specweaver.infrastructure.llm.router import build_router

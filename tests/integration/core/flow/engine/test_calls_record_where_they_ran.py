@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus

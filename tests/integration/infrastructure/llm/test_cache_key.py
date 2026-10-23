@@ -25,7 +25,7 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx2
 import pytest
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import GenerationConfig, Message, Role, TaskType

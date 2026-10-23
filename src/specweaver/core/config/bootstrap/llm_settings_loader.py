@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from dotenv import dotenv_values
 
 from specweaver.core.config.bootstrap.project_settings import PROJECT_FILE_NAME, read_settings_text
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.config.paths import specweaver_root
 from specweaver.core.config.settings_file import SettingsFileError
 

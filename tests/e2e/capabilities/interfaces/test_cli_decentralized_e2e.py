@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.llm_settings import parse_machine_file
+from specweaver.core.config.llm_settings_parse import parse_machine_file
 from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:

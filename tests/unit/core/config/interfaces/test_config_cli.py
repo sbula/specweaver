@@ -225,7 +225,7 @@ class TestConfigSetRole:
     """`sw config set-role` writes a role into the machine file, or the project's with --project."""
 
     def test_a_machine_role_is_written(self, _mock_db, tmp_path, monkeypatch) -> None:
-        from specweaver.core.config.llm_settings import parse_machine_file
+        from specweaver.core.config.llm_settings_parse import parse_machine_file
 
         monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
         (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")
@@ -241,7 +241,7 @@ class TestConfigSetRole:
     def test_a_project_role_goes_to_the_projects_file(
         self, _mock_db, tmp_path, monkeypatch
     ) -> None:
-        from specweaver.core.config.llm_settings import parse_project_llm
+        from specweaver.core.config.llm_settings_parse import parse_project_llm
 
         monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(tmp_path))
         (tmp_path / "settings.toml").write_text(_MACHINE, encoding="utf-8")

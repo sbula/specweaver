@@ -90,3 +90,49 @@ line). `quality.py sf` 18/18. `tach check` clean.
 - R1 (LOW) `commons` has no `tach` rules; the helpers are pure text functions, so nothing they could
   import is at risk. No finding.
 - Cycle 2: no new finding.
+
+## CB-3 — FR-9 (`llm_settings.py` split)
+
+### What changed
+
+- `core/config/llm_settings.py` (522 → 242 lines): the schema — models, constants, money helpers,
+  `brake_limits`. `_LIMIT_KEYS` is now `LIMIT_KEYS`, because the report in another module reads it.
+- New `core/config/llm_settings_parse.py` (130 lines): `parse_machine_file`, `parse_project_llm`,
+  the schema-version and machine-only-key checks, and `LlmSettingsFiles` (decision 2).
+- New `core/config/llm_roles.py` (193 lines): `ResolvedRole`, `resolve_roles`, the private-only
+  refusal, `settings_report` and its row helpers, `BUILT_IN`, `RUN_OVERRIDE`.
+- 55 files in `src` and `tests` re-pointed by a script that sorts each imported name to its home.
+- 9 mutants (B-FLOW-07, C-FLOW-13) re-pointed by symbol, all OBJECTED, re-pinned; drifted: 0.
+
+### Red first
+
+`test_llm_settings_homes.py`: collection error (no `llm_roles`). Two expectation slips on the way,
+both mine: the sample machine file lacked `max_parallel` and used a role table the schema does not
+read; and I counted the role's line as 9 where it is 10 (counted again by hand, not taken from the
+code).
+
+### Combined analysis
+
+Behaviour unchanged: every existing LLM settings test passes against the new homes. The new test
+drives parse → resolve across the two new modules with schema models, refuses an unknown server
+naming its line, and asserts the schema module holds no parser or resolver. Import direction:
+`llm_roles` → `llm_settings_parse` (type only) and `llm_settings`; `llm_settings_parse` →
+`llm_settings`; `llm_settings` → `llm_settings_parse` for one type hint only. No runtime cycle.
+
+### Gates
+
+Full suite 11442 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean. mypy clean (429
+files).
+
+### Red/Blue (code)
+
+- R1 (LOW) `llm_settings` imports `LlmSettingsFiles` for a type hint, and the parsing module
+  imports the schema at runtime. Accepted: the hint is under `TYPE_CHECKING`, so there is no
+  import cycle at runtime.
+- R2 (LOW) external code importing the moved names from `llm_settings` breaks. Nothing outside the
+  repo imports them; the CLI and API are the public surface.
+- Cycle 2: no new finding.
+
+## Decision at the SF-03 stop (user, 2026-10-23)
+
+CB-3 accepted.

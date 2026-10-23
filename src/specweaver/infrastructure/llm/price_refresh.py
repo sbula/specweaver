@@ -24,7 +24,7 @@ from sqlalchemy import create_engine, insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from specweaver.commons.async_bridge import run_sync
-from specweaver.core.config.llm_settings import resolve_roles
+from specweaver.core.config.llm_roles import resolve_roles
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.price_store import offering_host, store_downloaded
@@ -34,7 +34,7 @@ from specweaver.infrastructure.llm.store import LlmPriceRefresh
 if TYPE_CHECKING:
     from sqlalchemy import Connection
 
-    from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 
 logger = logging.getLogger(__name__)
 

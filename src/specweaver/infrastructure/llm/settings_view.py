@@ -15,7 +15,9 @@ from specweaver.infrastructure.llm.adapters.registry import get_adapter_class
 from specweaver.infrastructure.llm.resolve import _SAMPLING, DEFAULT_ROLE
 
 if TYPE_CHECKING:
-    from specweaver.core.config.llm_settings import LlmSettingsFiles, ModelFacts, ResolvedRole
+    from specweaver.core.config.llm_roles import ResolvedRole
+    from specweaver.core.config.llm_settings import ModelFacts
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.infrastructure.llm.catalogue import Catalogue
 
 CATALOGUE = "catalogue"

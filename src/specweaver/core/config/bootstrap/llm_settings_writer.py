@@ -19,7 +19,8 @@ import tomlkit.exceptions
 
 from specweaver.core.config.bootstrap.llm_settings_loader import machine_settings_path
 from specweaver.core.config.bootstrap.project_settings import PROJECT_FILE_NAME
-from specweaver.core.config.llm_settings import LlmSettingsFiles, parse_machine_file, resolve_roles
+from specweaver.core.config.llm_roles import resolve_roles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles, parse_machine_file
 from specweaver.core.config.settings_file import SettingsFileError
 
 if TYPE_CHECKING:

@@ -105,7 +105,7 @@ class TestTelemetryRoundtrip:
 
     def test_the_resolver_builds_a_collector_for_the_project(self, tmp_path: Path):
         """Every adapter a command's router hands out records usage against its project."""
-        from specweaver.core.config.llm_settings import LlmSettingsFiles
+        from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.models import TaskType
         from specweaver.infrastructure.llm.router import build_router

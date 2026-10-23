@@ -15,7 +15,8 @@ from rich.table import Table
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
 from specweaver.core.config.bootstrap.llm_settings_writer import clear_model_price, set_model_price
-from specweaver.core.config.llm_settings import format_money, resolve_roles, to_usd
+from specweaver.core.config.llm_roles import resolve_roles
+from specweaver.core.config.llm_settings import format_money, to_usd
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
@@ -25,10 +26,8 @@ from specweaver.infrastructure.llm.store import LlmRepository
 from specweaver.interfaces.cli import _core
 
 if TYPE_CHECKING:
-    from specweaver.core.config.llm_settings import (
-        Currency,
-        ResolvedRole,
-    )
+    from specweaver.core.config.llm_roles import ResolvedRole
+    from specweaver.core.config.llm_settings import Currency
     from specweaver.infrastructure.llm.prices import Price, PriceBook
 
 logger = logging.getLogger(__name__)

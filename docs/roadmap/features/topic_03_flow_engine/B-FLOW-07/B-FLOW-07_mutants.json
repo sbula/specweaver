@@ -272,7 +272,7 @@
         {
           "id": "off-not-shown",
           "origin": "authored",
-          "file": "src/specweaver/core/config/llm_settings.py",
+          "file": "src/specweaver/core/config/llm_roles.py",
           "symbol": "_step_limit_rows",
           "old": "        return [(\"step_limits\", \"off — [step_limits] is not set\", \"-\")]\n",
           "new": "        return []\n",

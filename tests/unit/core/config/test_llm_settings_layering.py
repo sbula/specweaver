@@ -18,13 +18,9 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import (
-    RUN_OVERRIDE,
-    LlmSettingsFiles,
-    RoleEntry,
-    resolve_roles,
-    settings_report,
-)
+from specweaver.core.config.llm_roles import RUN_OVERRIDE, resolve_roles, settings_report
+from specweaver.core.config.llm_settings import RoleEntry
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.config.settings_file import SettingsFileError
 
 _MACHINE = """\

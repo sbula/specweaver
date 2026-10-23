@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from specweaver.core.config.autonomy_policy import AutonomyPolicy
     from specweaver.core.config.database import Database
     from specweaver.core.config.doc_policy import DocPolicy
-    from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.workspace.store import WorkspaceRepository
 

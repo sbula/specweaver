@@ -25,7 +25,7 @@ import httpx
 import pytest
 import respx
 
-from specweaver.core.config.llm_settings import LlmSettingsFiles
+from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext

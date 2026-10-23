@@ -17,12 +17,11 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.config.llm_settings import (
+from specweaver.core.config.llm_roles import resolve_roles, settings_report
+from specweaver.core.config.llm_settings_parse import (
     LlmSettingsFiles,
     parse_machine_file,
     parse_project_llm,
-    resolve_roles,
-    settings_report,
 )
 from specweaver.core.config.settings_file import SettingsFileError
 
