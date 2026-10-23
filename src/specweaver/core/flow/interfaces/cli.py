@@ -12,9 +12,7 @@ from typing import TYPE_CHECKING
 
 import typer
 
-from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
 from specweaver.assurance.standards.loader import load_standards_content
-from specweaver.commons.spec_names import module_stem
 from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
@@ -23,6 +21,7 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
 )
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
+from specweaver.core.flow.interfaces.run_topology import attach_topology
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
 from specweaver.interfaces.cli import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
@@ -304,14 +303,13 @@ def _wire_models(
 
     A pipeline whose steps call no model (`validate_only`) needs no settings files at all.
     """
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.handlers._llm import roles_of
     from specweaver.infrastructure.llm.interfaces.command import command_router
 
     roles = roles_of(pipeline)
     if not roles:
         return
-    settings = load_settings(_core.get_db(), project)
+    settings = _core.load_project_settings(_core.get_db(), project)
     router = command_router(project, roles, run_model=run_model, project_root=context.project_path)
     context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 
@@ -323,15 +321,17 @@ def _apply_isolation_policy(context: RunContext, db: Database, project: str) -> 
     ``allowed_paths``). Deliberately does NOT populate ``context.model.config``: that would also
     expose ``[sandbox] execution_mode`` and incidentally activate container QA on this path.
 
-    **Best-effort by contract:** a settings-resolution failure must never crash a run, so the
-    policies fall back to their defaults (off).
+    A broken settings file stops the run, naming the file, key and line: running it with isolation
+    off would be the one outcome the file asked to prevent. Any other lookup failure stays
+    best-effort and leaves the policies at their defaults (off).
     """
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.isolation import apply_isolation_policy
 
     try:
-        settings = load_settings(db, project)
-    except Exception:  # settings resolution is best-effort here — never crash a run
+        settings = _core.load_project_settings(db, project)
+    except typer.Exit:
+        raise  # the refusal of a broken settings file
+    except Exception:  # any other lookup failure is best-effort here — never crash a run
         logger.debug(
             "Could not resolve settings for project '%s'; worktree isolation "
             "policy will use its default (off).",
@@ -424,16 +424,7 @@ def _execute_run(
 
     context = _build_run_context(project_path, spec_path, pipeline_def, run_model=run_model)
 
-    # Load topology
-    topo_graph = load_topology(project_path)
-    if topo_graph:
-        module_name = module_stem(spec_path)
-        topo_contexts = select_topology_contexts(
-            topo_graph,
-            module_name,
-            selector_name=selector,
-        )
-        context.graph = context.graph.model_copy(update={"topology": topo_contexts})
+    attach_topology(context, project_path, spec_path, selector)
 
     # Set up state store
     store = _get_state_store()

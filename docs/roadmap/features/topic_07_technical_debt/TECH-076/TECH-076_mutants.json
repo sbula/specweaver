@@ -171,6 +171,45 @@
           "symbol_sha": "sha256:dbc024addb9135318a3ea7e64bd462b50c4162844b8c86d65db307e43de6d43e"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Every CLI command that loads project settings stops on a broken one",
+      "scope": [
+        "tests/integration/interfaces/cli/test_cli_broken_settings_refuse.py"
+      ],
+      "mutants": [
+        {
+          "id": "cli-settings-error-escapes",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "load_project_settings",
+          "old": "    except SettingsFileError as err:\n        refuse_llm_settings(err)\n",
+          "new": "    except SettingsFileError:\n        raise\n",
+          "breaks": "a broken setting ends in a traceback",
+          "symbol_sha": "sha256:34f0cb22ddb03449b9014791a656abb8374d5d2b09e95e775fcf0ac75cb531ff"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A run never starts with isolation off on a broken setting",
+      "scope": [
+        "tests/e2e/capabilities/core/test_broken_sandbox_stops_the_run_e2e.py",
+        "tests/unit/core/flow/interfaces/test_run_isolation_settings.py"
+      ],
+      "mutants": [
+        {
+          "id": "cli-run-isolation-off",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_apply_isolation_policy",
+          "old": "    except typer.Exit:\n        raise  # the refusal of a broken settings file\n",
+          "new": "    except ():\n        raise\n",
+          "breaks": "sw run runs with isolation off on a broken [sandbox]",
+          "symbol_sha": "sha256:b49df301341066558a621f61d348ead0868639729852660f13b1e2114915dad9"
+        }
+      ]
     }
   ]
 }

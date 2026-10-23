@@ -39,10 +39,10 @@
     "first": "src/specweaver/assurance/standards/loader.py:94",
     "second": "src/specweaver/assurance/standards/loader.py:64"
   },
-  "src/specweaver/assurance/validation/interfaces/cli_drift.py <-> src/specweaver/workflows/review/interfaces/cli.py @160e5d70ab8a": {
-    "lines": 10,
+  "src/specweaver/assurance/validation/interfaces/cli_drift.py <-> src/specweaver/workflows/review/interfaces/cli.py @ee8c8269fbd1": {
+    "lines": 12,
     "first": "src/specweaver/assurance/validation/interfaces/cli_drift.py:56",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:266"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
   "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py <-> src/specweaver/assurance/validation/rules/code/c04_coverage.py @a536cb106114": {
     "lines": 11,
@@ -91,7 +91,7 @@
   },
   "src/specweaver/core/flow/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @23ff0e327a75": {
     "lines": 10,
-    "first": "src/specweaver/core/flow/interfaces/cli.py:27",
+    "first": "src/specweaver/core/flow/interfaces/cli.py:26",
     "second": "src/specweaver/workflows/review/interfaces/cli.py:19"
   },
   "src/specweaver/core/flow/store.py <-> src/specweaver/core/flow/store.py @d4eb33b97a5c": {
@@ -176,23 +176,23 @@
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
     "lines": 15,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:337",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:282"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:280",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:225"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @605f0236a621": {
     "lines": 16,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:313",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:281"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:256",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:224"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @c138b76e8941": {
     "lines": 22,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:377",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:282"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:320",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:225"
   },
   "src/specweaver/interfaces/api/v1/projects.py <-> src/specweaver/interfaces/api/v1/projects.py @f89fbec0af3a": {
     "lines": 12,
-    "first": "src/specweaver/interfaces/api/v1/projects.py:143",
-    "second": "src/specweaver/interfaces/api/v1/projects.py:92"
+    "first": "src/specweaver/interfaces/api/v1/projects.py:157",
+    "second": "src/specweaver/interfaces/api/v1/projects.py:105"
   },
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
@@ -324,10 +324,10 @@
     "first": "src/specweaver/workflows/drafting/_base.py:26",
     "second": "src/specweaver/workflows/planning/decomposer.py:20"
   },
-  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @b7d04899b60c": {
-    "lines": 11,
+  "src/specweaver/workflows/implementation/interfaces/cli.py <-> src/specweaver/workflows/review/interfaces/cli.py @0c4b3daf63ff": {
+    "lines": 10,
     "first": "src/specweaver/workflows/implementation/interfaces/cli.py:246",
-    "second": "src/specweaver/workflows/review/interfaces/cli.py:266"
+    "second": "src/specweaver/workflows/review/interfaces/cli.py:265"
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
     "lines": 22,

@@ -19,8 +19,10 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from specweaver.core.config.autonomy_policy import AutonomyPolicy
+    from specweaver.core.config.database import Database
     from specweaver.core.config.doc_policy import DocPolicy
     from specweaver.core.config.llm_settings import LlmSettingsFiles
+    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.workspace.store import WorkspaceRepository
 
 import anyio
@@ -156,6 +158,17 @@ def load_autonomy_at(path: Path) -> AutonomyPolicy:
 
     try:
         return load_autonomy(path)
+    except SettingsFileError as err:
+        refuse_llm_settings(err)
+
+
+def load_project_settings(db: Database, project: str) -> SpecWeaverSettings:
+    """The project's settings, or exit naming the file, key and line of a broken one."""
+    from specweaver.core.config.bootstrap.settings_loader import load_settings
+    from specweaver.core.config.settings_file import SettingsFileError
+
+    try:
+        return load_settings(db, project)
     except SettingsFileError as err:
         refuse_llm_settings(err)
 

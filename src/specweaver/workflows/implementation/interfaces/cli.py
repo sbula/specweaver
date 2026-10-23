@@ -252,7 +252,6 @@ def implement(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._llm import roles_of
     from specweaver.core.flow.handlers.run_context import (
@@ -272,7 +271,7 @@ def implement(
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
     # failure. The models come from the settings files through `command_router`.
     project = _core.project_name_for(project_path)
-    settings = load_settings(db, project)
+    settings = _core.load_project_settings(db, project)
 
     # Load topology context for the implementation target
     topo_graph = load_topology(project_path)

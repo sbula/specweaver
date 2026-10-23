@@ -139,7 +139,6 @@ def standards_scan(
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.infrastructure.llm.interfaces.command import optional_command_router
     from specweaver.infrastructure.llm.models import TaskType
 
@@ -160,7 +159,7 @@ def standards_scan(
 
     from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
 
-    settings = load_settings(db, name)
+    settings = _core.load_project_settings(db, name)
     # Enrichment is optional: without a model for the `check` role the findings stand as found.
     router = optional_command_router(name, [TaskType.CHECK])
 

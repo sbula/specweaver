@@ -87,12 +87,11 @@ def drift_check(
     )
 
     if analyze:
-        from specweaver.core.config.bootstrap.settings_loader import load_settings
         from specweaver.core.flow.handlers._llm import roles_of
         from specweaver.infrastructure.llm.interfaces.command import command_router
 
         drift_project = _core.project_name_for(project_path)
-        settings = load_settings(_core.get_db(), drift_project)
+        settings = _core.load_project_settings(_core.get_db(), drift_project)
         router = command_router(drift_project, roles_of(pipeline), project_root=project_path)
         context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
 

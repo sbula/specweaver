@@ -178,7 +178,6 @@ def draft(
         )
         raise typer.Exit(code=1)
 
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import RunStatus
     from specweaver.core.flow.handlers._llm import roles_of
@@ -195,7 +194,7 @@ def draft(
     # A refusal must name the missing project, not a database lookup; the models come from the
     # settings files through `command_router`, which checks every role before the first call.
     project = _core.project_name_for(project_path)
-    settings = load_settings(db, project)
+    settings = _core.load_project_settings(db, project)
 
     # Load topology context for the new component (best-effort)
     topo_graph = load_topology(project_path)
@@ -272,7 +271,6 @@ def review(
         _core.console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._llm import roles_of
@@ -289,7 +287,7 @@ def review(
     # A refusal must name the missing project, not a database lookup; the models come from the
     # settings files through `command_router`, which checks every role before the first call.
     project = _core.project_name_for(project_path)
-    settings = load_settings(db, project)
+    settings = _core.load_project_settings(db, project)
 
     # Load topology context for the review target
     topo_graph = load_topology(project_path)
