@@ -21,7 +21,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.interfaces.cli.main import app
 from tests.scripted_llm import doubled_llm
 
@@ -78,20 +77,13 @@ def _run_and_capture_context(
     from specweaver.core.flow.engine.state import RunStatus
 
     spec = _scaffold(tmp_path, dal=dal, git=git)
-    settings = SpecWeaverSettings()
-    settings.sandbox.auto_isolate_min_dal = min_dal  # enforce_session_isolation stays False
+    sandbox = f'[sandbox]\nauto_isolate_min_dal = "{min_dal}"\n'
     if execution_mode is not None:
-        # Set on the settings object the CLI actually receives. Writing a specweaver.toml here
-        # would prove nothing: this harness injects settings through the patched `load_settings`,
-        # so a toml on disk is never read (established by probe, TECH-017 SF-02 CB-3).
-        settings.sandbox.execution_mode = execution_mode
+        sandbox += f'execution_mode = "{execution_mode}"\n'
+    (tmp_path / "specweaver.toml").write_text(sandbox, encoding="utf-8")
 
     with (
         doubled_llm(_mock_adapter()),
-        patch(
-            "specweaver.core.config.bootstrap.settings_loader.load_settings",
-            return_value=settings,
-        ),
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
     ):
         run_state = MagicMock()

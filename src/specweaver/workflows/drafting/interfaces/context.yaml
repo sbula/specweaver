@@ -1,0 +1,10 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+archetype: interface
+purpose: CLI entrypoint for drafting a spec (sw draft)
+consumes:
+  - specweaver/core/flow
+  - specweaver/interfaces/cli
+forbids:
+  - specweaver/sandbox/*

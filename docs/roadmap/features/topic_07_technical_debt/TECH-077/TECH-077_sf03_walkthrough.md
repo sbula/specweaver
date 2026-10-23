@@ -61,3 +61,53 @@ Full suite 11494 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
   resume finds it at the project root or as a bundled one. Same as before for files outside the
   root.
 - Cycle 2: no new finding.
+
+## CB-2 — `sw implement`, `sw review`, `sw draft` (FR-2, FR-3, FR-4, FR-11)
+
+### What changed
+
+- `sw implement`: builds through `build_run_or_exit`; standards, settings and router all from the
+  project at `--project` (before: standards from the active project). The run is built before
+  anything is printed, so a refusal stands alone. A worktree that cannot start is refused.
+- `sw review`: through the builder with `read_only=True` (decision 1): no per-run worktree, the
+  per-step policy and the sections now apply (before: no isolation, no sections).
+- `sw draft`: moved to `workflows/drafting/interfaces/cli.py` (new `tach` module, registered in
+  `main.py`), with its pipeline and report helpers. It now gets the rule file, standards, sections
+  and isolation; the terminal provider is attached after the build. A worktree error is refused.
+- `tach.toml`: the review and implementation interfaces lose four unused links each.
+- `cli_architecture.md`: the draft plugin row.
+
+### Red first
+
+`test_cli_doors_build_alike.py`: 5 of 8 failed on the old code — `sw implement` took project A's
+standards, `sw review` had no sections and no per-step policy, `sw draft` had no rule file,
+`sw implement` without git ended in a traceback. `test_draft_lives_in_drafting.py`: 2 of 3 failed
+(no drafting CLI). The `sw draft` no-git case was added after the code; its mutant is killed.
+
+### Tests changed, not lost
+
+- `test_cli_implement_isolation.py` wrote settings through a patched `load_settings`, which the
+  async builder does not call; it now writes a real `specweaver.toml`.
+- `test_implement_collector_wiring.py`: the refusal in an unregistered folder now names
+  `sw init` (SF-02 decision 1).
+- Imports of the draft helpers point at the drafting module.
+
+### Mutants
+
+Re-pointed and OBJECTED: C-FLOW-11 `sw-implement-reads-another-file`, C-FLOW-13
+`implement-drops-run-model`, D-INTL-08 `sw-implement-names-no-language`, C-EXEC-08
+`sw-implement-drops-the-policy` (each now models the door dropping a part the builder gave it).
+New, OBJECTED: `implement-worktree-traceback`, `draft-worktree-traceback`, `draft-no-terminal`,
+`review-not-read-only`, `draft-not-registered`. Drifted: 0.
+
+### Gates
+
+Full suite 11506 passed, 9 skipped. `quality.py sf` 18/18 after one ruff fix. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (LOW) `sw implement` still reads `[implement] language` once itself, to name the task files
+  before the run exists. Accepted: the pipeline needs the files before the builder runs.
+- R2 (LOW) `sw draft`'s topology slice is now chosen by the spec's stem (`orders` from
+  `orders_spec.md`), the same name it used before.
+- Cycle 2: no new finding.

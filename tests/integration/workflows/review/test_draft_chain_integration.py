@@ -23,7 +23,7 @@ from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
-from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
+from specweaver.workflows.drafting.interfaces.cli import _build_draft_pipeline
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:

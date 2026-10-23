@@ -71,11 +71,15 @@ depends_on = [ "specweaver.workflows.review", "specweaver.core.config", "specwea
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.interfaces.run_setup",]
+depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.interfaces.run_setup", "specweaver.workflows.drafting.interfaces",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
 depends_on = [ "specweaver.infrastructure.llm",]
+
+[[modules]]
+path = "specweaver.workflows.drafting.interfaces"
+depends_on = [ "specweaver.interfaces.cli", "specweaver.core.flow",]
 
 [[modules]]
 path = "specweaver.workflows.implementation"
@@ -83,7 +87,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = [ "specweaver.assurance.standards", "specweaver.workspace.analyzers", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.flow", "specweaver.infrastructure.llm.interfaces",]
+depends_on = [ "specweaver.interfaces.cli", "specweaver.core.flow", "specweaver.infrastructure.llm.interfaces",]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
@@ -99,7 +103,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review.interfaces"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.flow", "specweaver.workspace.project", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.interfaces.cli", "specweaver.infrastructure.llm.interfaces",]
+depends_on = [ "specweaver.workflows.review", "specweaver.core.flow", "specweaver.interfaces.cli",]
 
 [[modules]]
 path = "specweaver.workspace.context"

@@ -325,7 +325,7 @@ class TestDraftChain:
     def test_built_pipeline_passes_validate_flow(self, tmp_path: Path) -> None:
         """[G4/Boundary] the inline chain satisfies the engine's own flow validation
         (backward loop_target, gate coherence) — a direct tripwire against reordering."""
-        from specweaver.workflows.review.interfaces.cli import _build_draft_pipeline
+        from specweaver.workflows.drafting.interfaces.cli import _build_draft_pipeline
 
         pipeline = _build_draft_pipeline("greeter")
 

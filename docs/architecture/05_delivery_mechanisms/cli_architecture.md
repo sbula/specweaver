@@ -22,6 +22,7 @@ available.
 | costs, usage | `infrastructure/llm/interfaces/cli.py` |
 | implement | `workflows/implementation/interfaces/cli.py` |
 | review | `workflows/review/interfaces/cli.py` |
+| draft | `workflows/drafting/interfaces/cli.py` |
 | workspace, sandbox | `workspace/project/interfaces/cli.py`, `interfaces/cli/routers/sandbox_router.py` |
 | flow pipelines (`sw run`) | `core/flow/interfaces/cli.py` |
 | serve | `interfaces/cli/routers/serve_router.py` |

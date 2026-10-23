@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from rich.console import Console
 
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.workflows.review.interfaces.cli import _report_draft_chain
+from specweaver.workflows.drafting.interfaces.cli import _report_draft_chain
 
 
 def _record(step_name: str, status: StepStatus, output):

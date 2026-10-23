@@ -258,8 +258,9 @@ class TestImplementInstallsTelemetryCollector:
         # FR-2, CB-2. Until this boundary the message was `Project 'None' not found` — the settings
         # loader describing a failed database lookup on the string `None`, which tells the user
         # nothing about what to do. The exit code is unchanged; what changed is what it says.
-        assert shows(result.output, "No active project"), result.output
-        assert shows(result.output, "sw use <name>"), result.output
+        # TECH-077 FR-4: a folder no project is registered at is refused, naming `sw init`.
+        assert shows(result.output, "No project is registered at"), result.output
+        assert shows(result.output, "sw init <name>"), result.output
         assert not shows(result.output, "Project 'None' not found"), result.output
 
 

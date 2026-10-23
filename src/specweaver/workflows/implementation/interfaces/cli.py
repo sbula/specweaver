@@ -12,13 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 import typer
 
-from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
-from specweaver.assurance.standards.loader import load_standards_content
-from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.task_files import TaskFiles
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.analyzers.factory import AnalyzerFactory
-from specweaver.workspace.project.constitution import find_constitution
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -237,7 +232,7 @@ def implement(
     - Test file in tests/
     """
     logger.debug("Executing implement command")
-    from specweaver.infrastructure.llm.interfaces.command import command_router, run_model_option
+    from specweaver.infrastructure.llm.interfaces.command import run_model_option
 
     run_model = run_model_option(model)
     spec_path = Path(spec)
@@ -248,32 +243,10 @@ def implement(
     project_path = _core.project_path_or_exit(project)
 
     from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers._llm import roles_of
-    from specweaver.core.flow.handlers.run_context import (
-        AnalysisContext,
-        GraphContext,
-        GuidanceContent,
-        IsolationPolicy,
-        ModelAccess,
-        RunContext,
-    )
+    from specweaver.core.flow.engine.session import SessionWorktreeError
+    from specweaver.interfaces.cli.run_doors import build_run_or_exit, refuse_unstarted_worktree
 
-    db = _core.get_db()
-    doc_policy, autonomy, language = _core.project_sections_at(project_path)
-    # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
-    # and the refusal must name the missing project rather than surface a `load_settings` lookup
-    # failure. The models come from the settings files through `command_router`.
-    project = _core.project_name_for(project_path)
-    settings = _core.load_project_settings(db, project)
-
-    # Load topology context for the implementation target
-    topo_graph = load_topology(project_path)
-    module_name = module_stem(spec_path)
-    topo_contexts = select_topology_contexts(
-        topo_graph,
-        module_name,
-        selector_name=selector,
-    )
+    _doc_policy, _autonomy, language = _core.project_sections_at(project_path)
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
@@ -287,46 +260,23 @@ def implement(
     code_path = project_path / task.code
     test_path = project_path / task.tests
 
+    pipeline = _build_implement_pipeline(task)
+    context = build_run_or_exit(
+        project_path, spec_path, pipeline, selector=selector, run_model=run_model
+    )
+
     _core.console.print(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",
     )
     _core.console.print(f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}")
     _print_framework(project_path, code_path, task.language)
 
-    constitution_info = find_constitution(project_path, spec_path=spec_path)
-    constitution_content = constitution_info.content if constitution_info else None
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    standards_content = (
-        load_standards_content(db, active, project_path, target_path=spec_path) if active else None
-    )
-
-    pipeline = _build_implement_pipeline(task)
-    router = command_router(
-        project, roles_of(pipeline), run_model=run_model, project_root=project_path
-    )
-
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=spec_path,
-        model=ModelAccess(config=settings, llm_router=router),
-        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),
-        graph=GraphContext(topology=topo_contexts),
-        db=_core.get_db(),
-        guidance=GuidanceContent(constitution=constitution_content, standards=standards_content),
-    )
-
-    # Run the autonomous (untrusted) implement loop
-    # worktree-bounded when the risk warrants it. Opt into DAL-driven auto-escalation —
-    # session isolation auto-enables for high-assurance (DAL_B+) code, while small/low-DAL
-    # projects keep today's friction-free host behavior. Best-effort: never crashes the run.
-    from specweaver.core.flow.engine.isolation import apply_session_policy
-
-    apply_session_policy(context, settings, logger, dal_auto_escalate=True)
-
     _core.console.print("[dim]Executing implementation pipeline...[/dim]")
     runner = PipelineRunner(pipeline, context, memory_task=True)
-    run_state = asyncio.run(runner.run())
+    try:
+        run_state = asyncio.run(runner.run())
+    except SessionWorktreeError as err:
+        refuse_unstarted_worktree(err)
 
     _report_implementation(run_state)
 

@@ -794,10 +794,10 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "        project, roles_of(pipeline), run_model=run_model, project_root=project_path\n",
-          "new": "        project, roles_of(pipeline), project_root=project_path\n",
+          "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
+          "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=None\n    )\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:942cbf09abf348f797287b7aa632eca20a4a1eef2a8b574b6d1f5f6e333fb76c"
+          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
         },
         {
           "id": "run-drops-run-model",

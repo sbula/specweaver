@@ -185,9 +185,10 @@
       "requirement": "FR-3",
       "title": "Both isolation policies with DAL escalation in every door; high-DAL without git fails closed",
       "scope": [
+        "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
+        "tests/integration/interfaces/cli/test_cli_implement_isolation.py",
         "tests/integration/interfaces/run_setup/test_build_run.py",
-        "tests/unit/core/flow/engine/test_session_policy.py",
-        "tests/integration/interfaces/cli/test_cli_implement_isolation.py"
+        "tests/unit/core/flow/engine/test_session_policy.py"
       ],
       "mutants": [
         {
@@ -229,6 +230,16 @@
           "new": "    if True:\n",
           "breaks": "a read-only run still opens a per-run worktree",
           "symbol_sha": "sha256:8bfa3121a89c4ae42dbc7e607e80d7a79407e8bcf6f280367890c85345fa3196"
+        },
+        {
+          "id": "review-not-read-only",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/interfaces/cli.py",
+          "symbol": "review",
+          "old": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=True\n",
+          "new": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=False\n",
+          "breaks": "sw review opens a per-run worktree",
+          "symbol_sha": "sha256:b9e931c0f74e5b0f1ba6671421c100a2f215d9b05193069e62a27050cf0f1f07"
         }
       ]
     },
@@ -285,9 +296,10 @@
       "requirement": "FR-2",
       "title": "Every CLI door builds its run through the run builder and refuses its errors",
       "scope": [
+        "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_run_doors.py",
-        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
-        "tests/integration/interfaces/cli/test_run_wiring.py"
+        "tests/integration/interfaces/cli/test_run_wiring.py",
+        "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py"
       ],
       "mutants": [
         {
@@ -329,6 +341,55 @@
           "new": "        root = project_path\n",
           "breaks": "a command with no folder has no project root",
           "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+        },
+        {
+          "id": "implement-worktree-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    except SessionWorktreeError as err:\n",
+          "new": "    except ImportError as err:\n",
+          "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
+          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
+        },
+        {
+          "id": "draft-worktree-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/interfaces/cli.py",
+          "symbol": "draft",
+          "old": "    except SessionWorktreeError as err:\n",
+          "new": "    except ImportError as err:\n",
+          "breaks": "sw draft on a non-git high-DAL project ends in a traceback",
+          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+        },
+        {
+          "id": "draft-no-terminal",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/interfaces/cli.py",
+          "symbol": "draft",
+          "old": "    context.context_provider = HITLProvider(console=_core.console)\n",
+          "new": "    pass\n",
+          "breaks": "sw draft asks the user nothing",
+          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "sw draft lives in the drafting workflow",
+      "scope": [
+        "tests/integration/workflows/drafting/interfaces/test_draft_lives_in_drafting.py"
+      ],
+      "mutants": [
+        {
+          "id": "draft-not-registered",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/drafting/interfaces/cli.py",
+          "symbol": "draft",
+          "old": "@drafting_cli.command(name=\"draft\")\n",
+          "new": "@drafting_cli.command(name=\"drafts\")\n",
+          "breaks": "sw draft is no drafting command",
+          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
         }
       ]
     }

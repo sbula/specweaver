@@ -106,6 +106,13 @@ except ImportError as e:
     console.print(f"[bold red]Failed to load implementation workflow plugin:[/bold red] {e}")
 
 try:
+    from specweaver.workflows.drafting.interfaces.cli import drafting_cli
+
+    app.add_typer(drafting_cli)
+except ImportError as e:
+    console.print(f"[bold red]Failed to load drafting workflow plugin:[/bold red] {e}")
+
+try:
     from specweaver.workflows.review.interfaces.cli import review_cli
 
     app.add_typer(review_cli)
