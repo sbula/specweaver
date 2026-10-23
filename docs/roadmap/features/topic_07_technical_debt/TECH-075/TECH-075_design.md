@@ -176,9 +176,14 @@ None beyond the standard library.
 
 ## Works For Real
 
-`sw serve`, then `curl -X POST http://127.0.0.1:<port>/api/v1/pipelines/<name>/run -H "Authorization:
-Bearer <token>" -d '{"project":"<p>","spec":"../../etc/hosts"}'` answers 400 `PATH_TRAVERSAL` and starts
-no run. The same journey runs as an e2e test in the suite.
+`sw serve` (with `[serve] max_runs` set), then `curl -X POST
+http://127.0.0.1:8000/api/v1/pipelines/validate_only/run -H "Authorization: Bearer $(cat
+~/.specweaver/serve.token)" -H "Content-Type: application/json" -d
+'{"project":"<p>","spec":"../outside.md"}'` answers 400 `PATH_TRAVERSAL` and starts no run; an
+absolute outside path answers the same; `specs/<x>_spec.md` starts the run (200). Run 2026-10-23
+against a scratch data folder. No model is involved, so the journey runs as the e2e
+`tests/e2e/capabilities/interfaces/test_api_run_spec_stays_inside_e2e.py` in every suite run,
+not in the nightly real-model run.
 
 ## Sub-Feature Breakdown
 

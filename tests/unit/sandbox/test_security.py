@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for WorkspaceBoundary — dynamic path enforcement for research tools."""
+"""Tests for WorkspaceBoundary — dynamic path enforcement for research tools.
+
+Proves: TECH-075 FR-1
+"""
 
 from __future__ import annotations
 
