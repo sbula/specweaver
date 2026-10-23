@@ -75,7 +75,7 @@ class TestReviewEndpointTelemetry:
         proj, spec = _project_with_spec
 
         with patch(
-            "specweaver.interfaces.api.v1._llm.build_router",
+            "specweaver.infrastructure.llm.router.build_router",
             return_value=FixedRouter(_flushable()),
         ) as mock_build:
             client.post(
@@ -105,7 +105,7 @@ class TestImplementEndpointTelemetry:
 
         with (
             patch(
-                "specweaver.interfaces.api.v1._llm.build_router",
+                "specweaver.infrastructure.llm.router.build_router",
                 return_value=FixedRouter(_flushable()),
             ) as mock_build,
             patch(

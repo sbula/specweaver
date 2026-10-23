@@ -159,10 +159,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/_llm.py",
           "symbol": "run_steps",
-          "old": "    return run, router.unwritten()\n",
+          "old": "    return run, router.unwritten() if router is not None else 0\n",
           "new": "    return run, 0\n",
           "breaks": "REST always answers that nothing is missing",
-          "symbol_sha": "sha256:050a72a38ccddf8fd25255103dc9d1638a718b1e614c11da8f37b7c162bc95e1"
+          "symbol_sha": "sha256:e2d09b3c5bfee6448f0209e6a364596eda11e5ed8a937c914f7b3aa3359239f3"
         },
         {
           "id": "run-end-not-logged",

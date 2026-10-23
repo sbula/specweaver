@@ -135,7 +135,13 @@ rate_date = 2026-09-26
   the project's own `.specweaver/pipelines/<name>.yaml`, else a built-in one. A project path is
   stored as the full, real folder. A run on a project whose `[sandbox]`, `[standards]` or
   `.specweaver/dal_definitions.yaml` is broken answers 500 `SANDBOX_SETTINGS`, `STANDARDS_SETTINGS`
-  or `DAL_DEFINITIONS`, naming the file, key and line, and starts nothing. To see the refusal:
+  or `DAL_DEFINITIONS`, naming the file, key and line, and starts nothing. An API run is set up as
+  `sw run` sets it up: the rule file, the standards, the project's sections, the topology slice
+  (`selector`, default `direct`) and isolation by the code's DAL. `new_feature` takes a module name
+  as its `spec` and drafts `specs/<name>_spec.md`; with no interactive channel it parks for a gate
+  answer. `POST /implement` on a high-DAL project that is not a git repository answers 409
+  `WORKTREE_UNAVAILABLE`; a background run there ends `failed`, naming the worktree.
+  To see the refusal:
   `curl -X POST http://127.0.0.1:8000/api/v1/pipelines/validate_only/run -H "Authorization: Bearer $(cat ~/.specweaver/serve.token)" -H "Content-Type: application/json" -d '{"project":"<name>","spec":"../outside.md"}'`
 
 ## 4. Initializing your First Project

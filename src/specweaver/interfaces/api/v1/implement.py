@@ -41,7 +41,6 @@ async def implement_spec(
         StepTarget,
     )
     from specweaver.core.flow.engine.state import RunStatus
-    from specweaver.infrastructure.llm.models import TaskType
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.interfaces.api.v1._llm import run_steps
 
@@ -62,8 +61,8 @@ async def implement_spec(
         spec_path=spec_path,
         project=body.project,
         db=db,
-        roles=[TaskType.IMPLEMENT],
         memory_task=True,
+        selector=body.selector,
     )
     if run.status is not RunStatus.COMPLETED:
         failed = next((r for r in run.step_records if r.result and r.result.error_message), None)

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path  # noqa: TC003 -- runtime for rglob
 
 from fastapi import APIRouter, Depends, Query
 
@@ -66,17 +65,11 @@ async def scan_standards(
 
     project_root = await resolve_project_root(body.project, db)
 
-    # Discover Python/JS/TS source files
-    source_files: list[Path] = []
-    for ext in ("*.py", "*.js", "*.ts", "*.jsx", "*.tsx"):
-        source_files.extend(project_root.rglob(ext))
+    from specweaver.assurance.standards.discovery import discover_files
+    from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
-    # Filter out hidden dirs, node_modules, etc.
-    source_files = [
-        f
-        for f in source_files
-        if not any(p.startswith(".") or p == "node_modules" for p in f.parts)
-    ]
+    # Dot-folders are judged relative to the project, and `.specweaverignore` applies.
+    source_files = discover_files(project_root, AnalyzerFactory)
 
     scanner = StandardsScanner()
     results = scanner.scan(source_files)

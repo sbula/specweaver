@@ -218,13 +218,13 @@ an e2e test in the suite.
 | SF-01 | One answer per lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The run builder | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Every CLI door uses it | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Every API door uses it | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Every API door uses it | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01, SF-02 and SF-03 committed 2026-10-23
+**Current status**: Design APPROVED 2026-10-23; SF-01..SF-04 committed 2026-10-23
 ([SF-01](TECH-077_sf01_walkthrough.md), [SF-02](TECH-077_sf02_walkthrough.md),
-[SF-03](TECH-077_sf03_walkthrough.md)).
-**Next step**: Trigger the dev skill for SF-04 (CB-1).
+[SF-03](TECH-077_sf03_walkthrough.md), [SF-04](TECH-077_sf04_walkthrough.md)).
+**Next step**: Feature closure (`specweaver-feature` Phase 4), then sign-off.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

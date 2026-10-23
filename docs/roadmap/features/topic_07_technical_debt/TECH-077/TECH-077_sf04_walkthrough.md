@@ -63,3 +63,68 @@ Full suite 11521 passed, 9 skipped (2 fr-sweep failures first: a two-ID `Proves:
   allowed; a name leaving the project answers 400.
 - R3 (LOW) `worktree_unavailable` (decision 1) is held back to CB-2, where `/implement` calls it.
 - Cycle 2: no new finding.
+
+## CB-2 — `/review`, `/implement`, `/check`, `/standards/scan`, agreement (FR-12, FR-3, FR-4, FR-7, FR-8, NFR-1)
+
+### What changed
+
+- `_llm.run_steps` builds through `build_api_run`; `api_router` removed (the last of the three router
+  factories EP-4 named). `/review` is read-only (decision 2): sections and the per-step policy, no
+  per-run worktree. `/implement` passes its `selector` and answers 409 `WORKTREE_UNAVAILABLE` when the
+  worktree cannot start (decision 1, `run_doors.worktree_unavailable`).
+- `/check` takes the request project's domain profile (`store.domain_profile_at`), not the active
+  project's (EP-5).
+- `/standards/scan` finds files with `discover_files`: dot-folders judged inside the project,
+  `.specweaverignore` applied. A project under `~/.local` now scans its files.
+- `tach.toml`: `interfaces.api` → `workspace.analyzers` (the scan's analyzers).
+- User guide: what an API run gets, `new_feature`, the 409.
+
+### Red first
+
+`test_api_doors_build_alike.py`: `/review` and `/implement` failed on sections and the per-run worktree;
+`/implement` without git reached the model call (blocked by the test network guard), not a 409.
+`test_api_standards_scan.py`: the dot-folder project scanned nothing. `test_api_check_profile.py`:
+project B got A's `web_app` profile.
+
+### Written late, proven by mutant
+
+`test_cli_and_api_agree.py` (NFR-1) and the `/implement` selector case were written after the code
+they compare, so they were green on first run. Their proof is a killed mutant each:
+`api-run-loses-topology`, `implement-selector-ignored`.
+
+### Tests re-homed
+
+`test_telemetry_wiring.py` patches `infrastructure.llm.router.build_router`, where the builder gets its
+router.
+
+### Mutants
+
+Re-pointed and OBJECTED: C-FLOW-01 `rest-unwritten-dropped`. New, OBJECTED: `api-review-not-read-only`,
+`implement-worktree-500`, `implement-selector-ignored`, `scan-drops-dot-paths`, `check-ignores-profile`,
+`api-run-loses-topology`. Drifted: 0.
+
+### Gates
+
+Full suite 11535 passed, 9 skipped. `quality.py sf` 18/18 after a lint fix and re-freezing one
+duplication clone (the shared FastAPI import lines of `constitution.py` and `standards.py`,
+re-keyed when a line was removed). `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) `/standards/scan` now hands the scanner every file `discover_files` finds, as
+  `sw standards scan` does, not only five extensions. Accepted: the scanner judges files by their
+  analyzer; the CLI has always done this.
+- R2 (LOW) `/check`'s profile lookup runs in a thread (`asyncio.to_thread`), like the other store
+  lookups (SF-01 decision 2).
+- Cycle 2: no new finding.
+
+### SF-04 coverage
+
+| FR | Proof |
+|---|---|
+| FR-12 | `test_api_doors_build_alike.py` (run, resume, gate, `/review`, `/implement`), `test_settings_error_codes.py` |
+| FR-7 | `test_api_selector_and_new_feature.py` |
+| FR-8 | `test_api_standards_scan.py` |
+| FR-4 (API) | `test_api_check_profile.py` |
+| FR-3 (API) | `test_api_doors_build_alike.py` — the per-run worktree list |
+| NFR-1 | `test_cli_and_api_agree.py` |

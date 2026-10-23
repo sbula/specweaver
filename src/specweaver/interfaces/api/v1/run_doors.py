@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.models import PipelineDefinition
+    from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.handlers.run_context import RunContext
 
 
@@ -64,3 +65,12 @@ def settings_error_code(exc: SettingsFileError) -> str:
         "llm": "LLM_SETTINGS",
     }
     return codes.get(exc.key.split(".")[0], "SANDBOX_SETTINGS")
+
+
+def worktree_unavailable(exc: SessionWorktreeError) -> SpecWeaverAPIError:
+    """The answer to a run whose worktree cannot start: the project's state, so a 409."""
+    return SpecWeaverAPIError(
+        detail=f'{exc} `git init` the project, or set [sandbox] auto_isolate_min_dal = "off".',
+        error_code="WORKTREE_UNAVAILABLE",
+        status_code=409,
+    )

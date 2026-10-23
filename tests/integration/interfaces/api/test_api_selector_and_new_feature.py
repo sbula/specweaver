@@ -10,7 +10,7 @@ the context a door built.
 
 | Bucket | Case |
 |---|---|
-| Happy | `selector: nhop` gives a different topology slice than `direct` |
+| Happy | `selector: nhop` gives a different topology slice than `direct`, for a run and for `/implement` |
 | Boundary | `new_feature` with a module name starts; its spec is `specs/<name>_spec.md` inside the project |
 | Degradation | a validate run of a spec that does not exist is still refused with 404 |
 | Hostile | `new_feature` with `../../escape` answers 400 and starts nothing |
@@ -89,8 +89,20 @@ def world(
         )
     contexts: list[Any] = []
 
-    async def _capture(self: PipelineRunner, *_args: object, **_kwargs: object) -> None:
+    async def _capture(self: PipelineRunner, *_args: object, **_kwargs: object) -> Any:
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+
         contexts.append(self._context)
+        return PipelineRun(
+            run_id="captured",
+            pipeline_name=self._pipeline.name,
+            project_name="rest",
+            spec_path=str(self._context.spec_path),
+            status=RunStatus.COMPLETED,
+            step_records=[],
+            started_at="",
+            updated_at="",
+        )
 
     monkeypatch.setattr(PipelineRunner, "run", _capture)
     path = data / "specweaver.db"
@@ -127,6 +139,18 @@ def test_the_selector_chooses_the_slice(world) -> None:
     nhop = _context(contexts).graph.topology
 
     assert direct is not None
+    assert _slice(nhop) != _slice(direct)
+
+
+def test_implement_honours_its_selector(world) -> None:
+    client, _root, contexts = world
+    body = {"file": "specs/orders_spec.md", "project": "rest"}
+
+    assert client.post("/api/v1/implement", json={**body, "selector": "direct"}).status_code == 200
+    direct = _context(contexts).graph.topology
+    assert client.post("/api/v1/implement", json={**body, "selector": "nhop"}).status_code == 200
+    nhop = _context(contexts).graph.topology
+
     assert _slice(nhop) != _slice(direct)
 
 

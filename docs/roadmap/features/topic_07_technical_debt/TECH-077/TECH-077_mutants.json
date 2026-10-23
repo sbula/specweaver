@@ -115,8 +115,9 @@
       "requirement": "FR-4",
       "title": "A run uses one project, chosen one way",
       "scope": [
-        "tests/integration/interfaces/run_setup/test_project_for.py",
-        "tests/integration/interfaces/run_setup/test_build_run.py"
+        "tests/integration/interfaces/api/test_api_check_profile.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py",
+        "tests/integration/interfaces/run_setup/test_project_for.py"
       ],
       "mutants": [
         {
@@ -128,6 +129,16 @@
           "new": "            return active_project(db) or \"\"\n        return name\n",
           "breaks": "an unregistered folder runs with the active project's settings",
           "symbol_sha": "sha256:c8d94d577e9f1a5b519ff462a13648c4a7ad05ed062a9b1030e5ba1354b1e85a"
+        },
+        {
+          "id": "check-ignores-profile",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/validation.py",
+          "symbol": "run_check",
+          "old": "    resolved = _check_pipeline(body, project_root, await _domain_profile(db, project_root))\n",
+          "new": "    resolved = _check_pipeline(body, project_root, None)\n",
+          "breaks": "/check ignores the project's domain profile",
+          "symbol_sha": "sha256:bf5045da0f7a6caf61ced80af69094417d14f7937a666612b530d15ec512093b"
         }
       ]
     },
@@ -185,6 +196,7 @@
       "requirement": "FR-3",
       "title": "Both isolation policies with DAL escalation in every door; high-DAL without git fails closed",
       "scope": [
+        "tests/integration/interfaces/api/test_api_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_cli_implement_isolation.py",
         "tests/integration/interfaces/run_setup/test_build_run.py",
@@ -260,6 +272,16 @@
           "new": "        models=\"optional\",\n        read_only=False,\n",
           "breaks": "sw standards scan opens a per-run worktree",
           "symbol_sha": "sha256:78ef4109f9e800b3b3f6432ece59f35fff21f0c30b1458516f42b2d7971b6404"
+        },
+        {
+          "id": "api-review-not-read-only",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/review.py",
+          "symbol": "review_spec",
+          "old": "        read_only=True,\n",
+          "new": "        read_only=False,\n",
+          "breaks": "POST /review opens a per-run worktree",
+          "symbol_sha": "sha256:a1202c50e3d27fe6135a039f3bf231cba1d69fc6859662575c6d2e4ea001a694"
         }
       ]
     },
@@ -481,6 +503,16 @@
           "new": "        spec_path = project_root / f\"specs/{body.spec}_spec.md\"\n",
           "breaks": "an API new_feature spec may lie outside the project",
           "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+        },
+        {
+          "id": "implement-selector-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/implement.py",
+          "symbol": "implement_spec",
+          "old": "        selector=body.selector,\n",
+          "new": "        selector=\"direct\",\n",
+          "breaks": "POST /implement ignores its selector",
+          "symbol_sha": "sha256:753404a5733dd45123e92bc9287c33eb12b474da90f67f51461a21f55f29621e"
         }
       ]
     },
@@ -522,6 +554,54 @@
           "new": "    raise SessionWorktreeError(message)\n",
           "breaks": "a run whose worktree cannot start leaves no trace in the store",
           "symbol_sha": "sha256:3dcb9fe6f59bb87ae6588a03a0a16cbd5feb80d6ba0d309eb79dc407cfd4595d"
+        },
+        {
+          "id": "implement-worktree-500",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/_llm.py",
+          "symbol": "run_steps",
+          "old": "    except SessionWorktreeError as exc:\n",
+          "new": "    except ImportError as exc:\n",
+          "breaks": "POST /implement on a non-git high-DAL project ends in a bare 500",
+          "symbol_sha": "sha256:e2d09b3c5bfee6448f0209e6a364596eda11e5ed8a937c914f7b3aa3359239f3"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "POST /standards/scan finds files the way sw standards scan does",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_standards_scan.py"
+      ],
+      "mutants": [
+        {
+          "id": "scan-drops-dot-paths",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/standards.py",
+          "symbol": "scan_standards",
+          "old": "    source_files = discover_files(project_root, AnalyzerFactory)\n",
+          "new": "    source_files = [\n        f for f in discover_files(project_root, AnalyzerFactory)\n        if not any(p.startswith(\".\") for p in f.parts)\n    ]\n",
+          "breaks": "a project under a dot-folder scans nothing",
+          "symbol_sha": "sha256:bd16ff899cbecdbb80b3f035b3636a1180dd23b407244f8d0567da8ffa3b7184"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-1",
+      "title": "The same pipeline gets the same run through the CLI and the API",
+      "scope": [
+        "tests/integration/interfaces/test_cli_and_api_agree.py"
+      ],
+      "mutants": [
+        {
+          "id": "api-run-loses-topology",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "start_pipeline_run",
+          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
+          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.graph = type(context.graph)()\n",
+          "breaks": "an API run gets no topology while sw run does",
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         }
       ]
     }

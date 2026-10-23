@@ -11,9 +11,9 @@ policy). The runner's `run`/`resume` are replaced only to capture the context a 
 
 | Bucket | Case |
 |---|---|
-| Happy | a run, a resume and a gate approval each get the rule file, standards, sections and per-step policy |
-| Boundary | a high-DAL run gets the per-run worktree |
-| Degradation | a background run whose worktree cannot start is recorded failed, naming it |
+| Happy | a run, a resume, a gate approval, `/review` and `/implement` each get the rule file, standards, sections and per-step policy |
+| Boundary | on a high-DAL project a run and `/implement` get the per-run worktree; the read-only `/review` does not |
+| Degradation | a background run whose worktree cannot start is recorded failed, naming it; `/implement` there answers 409 `WORKTREE_UNAVAILABLE` |
 | Hostile | a broken `[docs]`, `[autonomy]`, `[sandbox]`, `[standards]` or `settings.toml` answers 500 with its own code; no run starts |
 """
 
@@ -47,6 +47,26 @@ steps:
   - name: check_spec
     action: validate
     target: spec
+"""
+
+_MACHINE = """schema_version = 1
+
+[serve]
+max_runs = 2
+
+[servers.local]
+kind = "openai-compatible"
+base_url = "http://localhost:8000/v1"
+private = true
+max_parallel = 1
+
+[roles]
+default = { model = "local-model@local", max_output_tokens = 4096 }
+
+[brake]
+hosted_spend_per_run = 1
+tokens_per_run = 100000
+agent_turns = 5
 """
 
 _SETTINGS = """[[docs.rule]]
@@ -88,7 +108,7 @@ def world(
 ) -> Iterator[tuple[TestClient, Path, list[Any]]]:
     data = tmp_path / "data"
     data.mkdir()
-    (data / "settings.toml").write_text("[serve]\nmax_runs = 2\n", encoding="utf-8")
+    (data / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
     monkeypatch.chdir(tmp_path)
     path = data / "specweaver.db"
@@ -97,8 +117,20 @@ def world(
     project, save_standard = _project(tmp_path, db)
     contexts: list[Any] = []
 
-    async def _capture(self: PipelineRunner, *_args: object, **_kwargs: object) -> None:
+    async def _capture(self: PipelineRunner, *_args: object, **_kwargs: object) -> Any:
+        from specweaver.core.flow.engine.state import PipelineRun, RunStatus
+
         contexts.append(self._context)
+        return PipelineRun(
+            run_id="captured",
+            pipeline_name=self._pipeline.name,
+            project_name="rest",
+            spec_path=str(self._context.spec_path),
+            status=RunStatus.COMPLETED,
+            step_records=[],
+            started_at="",
+            updated_at="",
+        )
 
     monkeypatch.setattr(PipelineRunner, "run", _capture)
     monkeypatch.setattr(PipelineRunner, "resume", _capture, raising=False)
@@ -152,10 +184,20 @@ def _gate(client: TestClient, project: Path) -> Any:
     return client.post("/api/v1/runs/r-gate/gate", json={"action": "approve"})
 
 
+def _review(client: TestClient, project: Path) -> Any:
+    return client.post("/api/v1/review", json={"file": "specs/orders_spec.md", "project": "rest"})
+
+
+def _implement(client: TestClient, project: Path) -> Any:
+    return client.post(
+        "/api/v1/implement", json={"file": "specs/orders_spec.md", "project": "rest"}
+    )
+
+
 @pytest.mark.parametrize(
     "door",
-    [lambda c, p: _start(c), _resume, _gate],
-    ids=["run", "resume", "gate"],
+    [lambda c, p: _start(c), _resume, _gate, _review, _implement],
+    ids=["run", "resume", "gate", "review", "implement"],
 )
 def test_every_api_door_gets_every_part(door, world) -> None:
     client, project, contexts = world
@@ -168,7 +210,31 @@ def test_every_api_door_gets_every_part(door, world) -> None:
     assert "api_case" in (context.guidance.standards or "")
     assert [rule.access for rule in context.isolation.doc_policy.rule] == ["open"]
     assert context.isolation.enforce_isolation is True
-    assert context.isolation.session_isolation is True
+
+
+@pytest.mark.parametrize(
+    ("door", "per_run"),
+    [(lambda c, p: _start(c), True), (_implement, True), (_review, False)],
+    ids=["run", "implement", "review"],
+)
+def test_only_api_doors_that_write_get_a_per_run_worktree(door, per_run: bool, world) -> None:
+    client, project, contexts = world
+
+    door(client, project)
+
+    assert _wait_for(contexts).isolation.session_isolation is per_run
+
+
+def test_implement_without_git_answers_409(world, monkeypatch) -> None:
+    client, project, _contexts = world
+    monkeypatch.setattr(PipelineRunner, "run", _REAL_RUN)
+    (project / ".git").rmdir()
+
+    answer = _implement(client, project)
+
+    assert answer.status_code == 409, answer.text
+    assert answer.json()["error_code"] == "WORKTREE_UNAVAILABLE"
+    assert "git init" in answer.json()["detail"]
 
 
 @pytest.mark.parametrize(

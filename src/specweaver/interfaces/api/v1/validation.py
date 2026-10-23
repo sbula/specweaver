@@ -37,17 +37,13 @@ router = APIRouter()
 _db_dep = Depends(get_db)
 
 
-async def _active_domain_profile(db: Database) -> str | None:
-    """The active project's `domain_profile`, or None when there is no active project."""
-    from specweaver.workspace.store import WorkspaceRepository
+async def _domain_profile(db: Database, project_root: Path) -> str | None:
+    """The `domain_profile` of the project the request names, or None when it has none."""
+    import asyncio
 
-    async with db.async_session_scope() as session:
-        repo = WorkspaceRepository(session)
-        active_name = await repo.get_active_project()
-        if not active_name:
-            return None
-        proj = await repo.get_project(active_name)
-        profile = proj.get("domain_profile") if proj else None
+    from specweaver.workspace.store import domain_profile_at
+
+    profile = await asyncio.to_thread(domain_profile_at, db, project_root)
     return str(profile) if profile else None
 
 
@@ -105,7 +101,7 @@ async def run_check(
 
     content = abs_path.read_text(encoding="utf-8")
 
-    resolved = _check_pipeline(body, project_root, await _active_domain_profile(db))
+    resolved = _check_pipeline(body, project_root, await _domain_profile(db, project_root))
     if body.level == "code":
         from specweaver.core.config.dal_resolver import DALResolver
         from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow

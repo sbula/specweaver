@@ -34,7 +34,6 @@ async def review_spec(
     project_root, abs_path = await resolve_file_in_project(body.file, body.project, db)
 
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.infrastructure.llm.models import TaskType
     from specweaver.interfaces.api.v1._llm import run_steps
     from specweaver.workflows.review.reviewer import result_from_run
 
@@ -50,6 +49,6 @@ async def review_spec(
         spec_path=abs_path,
         project=body.project,
         db=db,
-        roles=[TaskType.REVIEW],
+        read_only=True,
     )
     return {**result_from_run(run).model_dump(), "unwritten_calls": unwritten}
