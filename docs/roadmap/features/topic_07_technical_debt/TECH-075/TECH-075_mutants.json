@@ -38,6 +38,16 @@
           "new": "            pass\n",
           "breaks": "a relative path is judged against the process folder, not the root",
           "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
+        },
+        {
+          "id": "unresolvable-path-crashes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.validate_path",
+          "old": "        except (OSError, RuntimeError) as exc:  # a link loop raises RuntimeError before 3.13\n",
+          "new": "        except ():\n",
+          "breaks": "a link loop crashes the check instead of refusing (Python 3.11, 3.12)",
+          "symbol_sha": "sha256:846de84abb8ddf33382dca238dee51a313cdb99b0e7bf51488a96d731e9e1428"
         }
       ]
     },
@@ -278,6 +288,76 @@
           "new": "            new_path = value\n",
           "breaks": "sw update stores a path that depends on the folder sw ran in",
           "symbol_sha": "sha256:ae3cbb94ad727447f1c7ebede774d54b247eb92e3b003bf10c74badcf65ebfef"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A mention reaches the prompt only from inside the project",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_mention_scanning.py",
+        "tests/integration/core/flow/handlers/test_mentions_stay_inside.py"
+      ],
+      "mutants": [
+        {
+          "id": "mention-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_resolve_mentions",
+          "old": "            resolved_path = project_file(project_path, candidate)\n",
+          "new": "            resolved_path = (project_path / candidate).resolve()\n",
+          "breaks": "an escaping link or an outside path puts outside text in the prompt",
+          "symbol_sha": "sha256:cc25463d5df7af2c6e40c0bc15dc04330d067930b0bc7b8872940c9b945ef285"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "An engine path handed to an atom lies inside its root",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_engine_paths_stay_inside.py",
+        "tests/integration/core/flow/handlers/test_archetype_spec_pipeline.py"
+      ],
+      "mutants": [
+        {
+          "id": "outside-path-handed-on",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "relative_to_root",
+          "old": "    except ProjectPathError:  # expected: outside the root; the caller warns and skips\n        return None\n",
+          "new": "    except ProjectPathError:  # expected: outside the root; the caller warns and skips\n        return str(path)\n",
+          "breaks": "an outside path reaches a sandboxed atom",
+          "symbol_sha": "sha256:827e61fdd4f37093ac5204a0397f9267d977a7b6df77190caf6c5f247b90f4e3"
+        },
+        {
+          "id": "relative-path-joined-to-root",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "relative_to_root",
+          "old": "        inside = project_file(root, str(path.absolute()))\n",
+          "new": "        inside = project_file(root, str(path))\n",
+          "breaks": "a path relative to the working folder names another file",
+          "symbol_sha": "sha256:827e61fdd4f37093ac5204a0397f9267d977a7b6df77190caf6c5f247b90f4e3"
+        },
+        {
+          "id": "payload-reads-outside",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "symbol": "add_payload",
+          "old": "    if relative is None:\n        logger.warning",
+          "new": "    if False:\n        logger.warning",
+          "breaks": "the structure atom is called with no path check",
+          "symbol_sha": "sha256:15657d6b20ad2b2a8b9ba857f1e4a3f09da81057a1ce723c6ca2e4f7a10eaf35"
+        },
+        {
+          "id": "outside-module-is-source",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "generated_code",
+          "old": "    if relative is None:\n",
+          "new": "    if False:\n",
+          "breaks": "an outside folder goes on the tests' import path",
+          "symbol_sha": "sha256:268d9a6c684b0f98d54f16c59139c520468cea0025029d53cc598cdc369ba9d3"
         }
       ]
     }

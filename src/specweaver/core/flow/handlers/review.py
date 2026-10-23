@@ -383,51 +383,31 @@ def _resolve_mentions(
     Only files within the project are included.
     Spec files (kind="spec") are prioritized over other kinds.
     """
+    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
-
-    roots = [project_path]
 
     resolved: list[ResolvedMention] = []
     seen_paths: set[Path] = set()
 
     for candidate in candidates:
-        for root in roots:
-            candidate_path = root / candidate
-            try:
-                # Resolve symlinks and normalize
-                resolved_path = candidate_path.resolve(strict=False)
-            except (OSError, ValueError) as exc:
-                logger.debug("Mention %s does not resolve: %s", candidate_path, exc)
-                continue
-
-            # Workspace boundary check: must be within a root
-            if not any(_is_within(resolved_path, r) for r in roots):
-                continue
-
-            if resolved_path.is_file() and resolved_path not in seen_paths:
-                seen_paths.add(resolved_path)
-                kind = ResolvedMention.classify(resolved_path)
-                resolved.append(
-                    ResolvedMention(
-                        original=candidate,
-                        resolved_path=resolved_path,
-                        kind=kind,
-                    ),
-                )
-                break  # Found a match for this candidate; next candidate
+        try:
+            resolved_path = project_file(project_path, candidate)
+        except ProjectPathError:
+            logger.debug("Mention %r is outside the project", candidate)
+            continue
+        if resolved_path.is_file() and resolved_path not in seen_paths:
+            seen_paths.add(resolved_path)
+            resolved.append(
+                ResolvedMention(
+                    original=candidate,
+                    resolved_path=resolved_path,
+                    kind=ResolvedMention.classify(resolved_path),
+                ),
+            )
 
     # Prioritize specs, then cap
     resolved.sort(key=lambda m: 0 if m.kind == "spec" else 1)
     return resolved[:max_files]
-
-
-def _is_within(path: Path, root: Path) -> bool:
-    """Check if path is within root directory."""
-    try:
-        path.resolve().relative_to(root.resolve())
-    except ValueError:  # expected: not inside the root
-        return False
-    return True
 
 
 def _judge_conflicts(result: Any, clashes: list[str], context: RunContext) -> Any:

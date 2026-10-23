@@ -197,6 +197,21 @@ class TestEveryWayOutIsRefused:
         assert boundary.contains(Path("../secret.txt")) is False
         assert boundary.contains(project / "a\x00.py") is False
 
+    @pytest.mark.parametrize("error", [RuntimeError("Symlink loop"), OSError("name too long")])
+    def test_a_path_that_cannot_be_resolved_is_refused(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception
+    ) -> None:
+        """Python 3.11 and 3.12 raise `RuntimeError` on a link loop; it must refuse, not crash."""
+        boundary = WorkspaceBoundary(roots=[tmp_path])
+
+        def broken(self: Path, strict: bool = False) -> Path:
+            raise error
+
+        monkeypatch.setattr(Path, "resolve", broken)
+        with pytest.raises(WorkspaceBoundaryError, match="cannot be resolved"):
+            boundary.validate_path(Path("loop"))
+        assert boundary.contains(Path("loop")) is False
+
     def test_a_read_only_boundary_still_accepts_an_absolute_api_path(self, tmp_path: Path) -> None:
         contract = tmp_path / "openapi.yaml"
         boundary = ReadOnlyWorkspaceBoundary(api_paths=[tmp_path])

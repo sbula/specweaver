@@ -99,4 +99,10 @@ def generated_code(context: RunContext) -> str:
         (context.output_dir or context.project_path / "src") / f"{stem}.py"
     )
     root = context.isolation.execution_root or context.project_path
-    return relative_to_root(code, root) if code.is_file() else ""
+    if not code.is_file():
+        return ""
+    relative = relative_to_root(code, root)
+    if relative is None:
+        logger.warning("%s is outside %s; the tests run without it as their source", code, root)
+        return ""
+    return relative

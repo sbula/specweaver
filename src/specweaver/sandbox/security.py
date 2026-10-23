@@ -113,7 +113,10 @@ class WorkspaceBoundary:
                     "A relative path needs a root; this boundary has no root"
                 )
             requested = self.roots[0] / requested
-        resolved = requested.resolve()
+        try:
+            resolved = requested.resolve()
+        except (OSError, RuntimeError) as exc:  # a link loop raises RuntimeError before 3.13
+            raise WorkspaceBoundaryError(f"Path cannot be resolved: {exc}") from exc
 
         # Check against all roots
         for root in self.roots:

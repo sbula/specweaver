@@ -3,8 +3,9 @@
 
 """Tests for mention scanning helpers in flow._review.
 
-Covers: _resolve_mentions, _scan_and_store_mentions, _is_within,
-        _get_prior_mentions.
+Covers: _resolve_mentions, _scan_and_store_mentions, _get_prior_mentions.
+
+Proves: TECH-075 FR-6
 """
 
 from __future__ import annotations
@@ -14,30 +15,10 @@ from unittest.mock import MagicMock
 
 from specweaver.core.flow.handlers.review import (
     _get_prior_mentions,
-    _is_within,
     _resolve_mentions,
     _scan_and_store_mentions,
 )
 from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
-
-# ===========================================================================
-# _is_within
-# ===========================================================================
-
-
-class TestIsWithin:
-    """Workspace boundary check."""
-
-    def test_path_within_root(self, tmp_path: Path) -> None:
-        child = tmp_path / "sub" / "file.py"
-        child.parent.mkdir(parents=True, exist_ok=True)
-        child.touch()
-        assert _is_within(child, tmp_path) is True
-
-    def test_path_outside_root(self, tmp_path: Path) -> None:
-        outside = Path(tmp_path.anchor) / "somewhere_else" / "file.py"
-        assert _is_within(outside, tmp_path) is False
-
 
 # ===========================================================================
 # _resolve_mentions
@@ -107,6 +88,34 @@ class TestResolveMentions:
         (tmp_path / "util.py").write_text("code")
 
         assert _resolve_mentions(["../util.py", "util.py"], project) == []
+
+    def test_a_link_that_points_outside_is_not_resolved(self, tmp_path: Path) -> None:
+        project = tmp_path / "project"
+        project.mkdir()
+        (tmp_path / "secret.py").write_text("secret")
+        (project / "escape.py").symlink_to(tmp_path / "secret.py")
+
+        assert _resolve_mentions(["escape.py"], project) == []
+
+    def test_a_link_that_points_inside_is_resolved(self, tmp_path: Path) -> None:
+        (tmp_path / "real.py").write_text("code")
+        (tmp_path / "alias.py").symlink_to(tmp_path / "real.py")
+
+        result = _resolve_mentions(["alias.py"], tmp_path)
+
+        assert [m.resolved_path for m in result] == [(tmp_path / "real.py").resolve()]
+
+    def test_an_absolute_path_outside_is_not_resolved(self, tmp_path: Path) -> None:
+        project = tmp_path / "project"
+        project.mkdir()
+        (tmp_path / "secret.py").write_text("secret")
+
+        assert _resolve_mentions([str(tmp_path / "secret.py")], project) == []
+
+    def test_a_blank_or_nul_candidate_is_skipped(self, tmp_path: Path) -> None:
+        (tmp_path / "a.py").write_text("code")
+
+        assert _resolve_mentions(["", "  ", "a\0.py"], tmp_path) == []
 
 
 # ===========================================================================

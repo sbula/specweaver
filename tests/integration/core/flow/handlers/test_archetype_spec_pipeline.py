@@ -81,9 +81,7 @@ def test_the_structure_reader_gets_a_project_relative_path(tmp_path: Path) -> No
     from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
 
     assert relative_to_root(tmp_path / "specs" / "a.md", tmp_path) == "specs/a.md"
-    assert relative_to_root(tmp_path.parent / "elsewhere.md", tmp_path) == str(
-        tmp_path.parent / "elsewhere.md"
-    )
+    assert relative_to_root(tmp_path.parent / "elsewhere.md", tmp_path) is None
 
 
 def test_the_archetype_bounds_the_one_s12_step(tmp_path: Path) -> None:

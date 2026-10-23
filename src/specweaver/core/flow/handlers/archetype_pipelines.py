@@ -130,6 +130,11 @@ def add_payload(
     )
     relative = relative_to_root(path, cwd)
     payload: dict[str, Any] = {}
+    if relative is None:
+        logger.warning("%s is outside the project %s; its structure is not read", path, cwd)
+        for step in pipeline.steps:
+            step.params["ast_payload"] = payload
+        return
     structure = atom.run({"intent": "read_file_structure", "path": relative})
     if structure.status.value == "SUCCESS":
         payload = structure.exports
@@ -187,9 +192,14 @@ def _load(name: str, project_path: Path | None) -> ValidationPipeline:
     return load_pipeline_yaml(name, project_dir=project_path)
 
 
-def relative_to_root(path: Path, root: Path) -> str:
-    """`path` relative to `root`, as the sandboxed atoms take it; unchanged when it lies outside."""
+def relative_to_root(path: Path, root: Path) -> str | None:
+    """`path` relative to `root`, as the sandboxed atoms take it; None when it lands outside."""
+    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
+
     try:
-        return path.resolve().relative_to(root.resolve()).as_posix()
-    except ValueError:  # expected: a path outside the root keeps its full form
-        return str(path)
+        # `absolute()`, not `resolve()`: a relative path is read from the working folder, and the
+        # boundary resolves links itself.
+        inside = project_file(root, str(path.absolute()))
+    except ProjectPathError:  # expected: outside the root; the caller warns and skips
+        return None
+    return inside.relative_to(root.resolve()).as_posix()
