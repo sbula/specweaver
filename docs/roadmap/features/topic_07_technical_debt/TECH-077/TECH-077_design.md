@@ -169,10 +169,15 @@ Covered by FR-10 and FR-11.
 
 ## Works For Real
 
-On a DAL_B project with a `CONSTITUTION.md`, `sw run validate_only specs/<x>_spec.md` and
-`POST /pipelines/validate_only/run` give the run the same rule file, standards and session
-isolation (shown by the run's context in the e2e and by `sw run --verbose`). The same journey runs as
-an e2e test in the suite.
+On a DAL_B git project with a `CONSTITUTION.md`, `sw run validate_only specs/greeter_spec.md --verbose`
+runs the pipeline inside `.worktrees/session-<id>` and removes it afterwards; with the `.git` folder
+moved away, the same command exits 1 naming the worktree, with no traceback. Run 2026-10-23 against a
+scratch data folder. No model is involved, so the journey runs as the e2e
+`tests/e2e/capabilities/core/test_high_dal_run_isolated_e2e.py` in every suite run, not in the nightly
+real-model run. That `POST /pipelines/{name}/run` builds the same run is
+`tests/integration/interfaces/test_cli_and_api_agree.py` (rule file, standards, sections, isolation,
+topology equal), and `sw resume` from another project's folder is
+`tests/e2e/capabilities/core/test_resume_uses_runs_project_e2e.py`.
 
 ## Sub-Feature Breakdown
 

@@ -196,6 +196,7 @@
       "requirement": "FR-3",
       "title": "Both isolation policies with DAL escalation in every door; high-DAL without git fails closed",
       "scope": [
+        "tests/e2e/capabilities/core/test_high_dal_run_isolated_e2e.py",
         "tests/integration/interfaces/api/test_api_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_cli_implement_isolation.py",
@@ -211,7 +212,7 @@
           "old": "    apply_session_policy(context, settings, logger, dal_auto_escalate=True)\n",
           "new": "    apply_session_policy(context, settings, logger, dal_auto_escalate=False)\n",
           "breaks": "high-DAL code runs unisolated",
-          "symbol_sha": "sha256:e5b13d47e3900910e311612957f2ad5f79737e44dccd693f1067b7f69d31c75e"
+          "symbol_sha": "sha256:8bfa3121a89c4ae42dbc7e607e80d7a79407e8bcf6f280367890c85345fa3196"
         },
         {
           "id": "per-step-policy-ignored",
