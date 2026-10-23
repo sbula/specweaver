@@ -205,9 +205,10 @@ critical for long-term project viability.
   > **DELIVERED:** all tables prefixed; SF-03 landed 2026-08-11 (`4ebb89cf`) covering the six raw-sqlite3 tables with a zero-data-loss migration path.
 
 ## Context Loading & RunContext Anti-Patterns
-* **`TECH-077` 🔴: Each Entry Point Builds Its Run by Hand, and the API Gets Less**
+* **`TECH-077` 🟢: Each Entry Point Builds Its Run by Hand, and the API Gets Less**
   > [Description](../features/topic_07_technical_debt/TECH-077/TECH-077_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (16 findings)._ |
+  > closed by the user 2026-10-23. Origin: 2026-10-22, architecture audit (16 findings)._ |
+  > Verifiable Proof: `tests/integration/interfaces/test_cli_and_api_agree.py` |
   > About ten entry points build a run's context by hand and each leaves different parts out.
 
 * **`TECH-065` 🟢: Parameterised Annotations Never Match a Framework Schema**

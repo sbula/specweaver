@@ -148,11 +148,11 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 
 ## Still missing
 
-- **The 2026-10-22 architecture audit is 15 `🔴` STUB tickets, `TECH-077`..`TECH-091`** `[agreed 2026-10-22]`:
+- **The 2026-10-22 architecture audit is 14 `🔴` STUB tickets, `TECH-078`..`TECH-091`** `[agreed 2026-10-22]`:
   one broken promise each, findings listed in each design; the project-walk findings joined `TECH-070`.
-  `TECH-075` (paths) and `TECH-076` (settings fail open) closed 2026-10-23.
+  `TECH-075` (paths), `TECH-076` (settings fail open) and `TECH-077` (one run builder) closed 2026-10-23.
 - **Nothing at commit time checks that a mutant still finds its code.** Moving code drifted 26
-  mutants across TECH-075/076 (all re-pointed); only the nightly run reports drift.
+  mutants across TECH-075/076 and over 30 more in TECH-077 (all re-pointed); only the nightly run reports drift.
 - **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose
   path never runs in production. Which side is wrong is decided per finding, with the user.
 - **No gate stops `🔧` becoming `✅`.** The check that would is story-scoped and only fires when

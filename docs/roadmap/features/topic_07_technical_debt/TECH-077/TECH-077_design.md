@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-077
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (by the user, 2026-10-23)
+- **Status**: COMPLETE (signed off by the user, 2026-10-23)
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-077/TECH-077_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -123,7 +123,7 @@ standards, sections, isolation, router, topology); the builder starts from it.
 | NFR-1 | The same pipeline and project give the same context parts through every door (agreement test across CLI and API) | one test compares them |
 | NFR-2 | The engine (`core/flow`) gains no `workspace/project` dependency; the new module's links all point from doors to it and from it downward `[agreed 2026-10-23]` **[proof: arch — tach/lint gate, not pytest]** | `tach check` clean |
 | NFR-3 | The builder raises; only doors exit or answer HTTP | no `typer` import in `run_setup` |
-| NFR-4 | Behaviour not named here stays as it is | existing tests green |
+| NFR-4 | Behaviour not named here stays as it is **[proof: meta — the full suite, which `scripts/commit_gated.py` runs green before every commit; no single test can name what did not change]** | existing tests green |
 
 ## External Dependencies
 
@@ -227,9 +227,9 @@ topology equal), and `sw resume` from another project's folder is
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01..SF-04 committed 2026-10-23
+**Current status**: COMPLETE, signed off 2026-10-23; SF-01..SF-04 committed 2026-10-23
 ([SF-01](TECH-077_sf01_walkthrough.md), [SF-02](TECH-077_sf02_walkthrough.md),
 [SF-03](TECH-077_sf03_walkthrough.md), [SF-04](TECH-077_sf04_walkthrough.md)).
-**Next step**: Feature closure (`specweaver-feature` Phase 4), then sign-off.
+**Next step**: none; the limits are in the FR rows, AD-3 and §Works For Real.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
