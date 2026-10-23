@@ -270,6 +270,8 @@ session_allowed_paths = []   # empty = derive from the spec (below); non-empty =
 auto_isolate_min_dal = "DAL_B"
 ```
 
+A misspelt key or a bad value here stops the command, naming the file, key and line.
+
 Lifecycle (`execute_run`, when `context.isolation.session_isolation` is set):
 
 1. **Create**: tear down any stale same-named worktree + branch left by a hard crash, then

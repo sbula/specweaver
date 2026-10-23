@@ -190,8 +190,9 @@ result = atom.run({"intent": "run_tests", "target": "tests/"})  # runs inside a 
 execution_mode = "container"
 ```
 
-An absent, empty or malformed `[sandbox]` falls back to `SandboxSettings()` (`execution_mode="host"`),
-like `[standards]`. `ValidateTestsHandler`/`LintFixHandler` (the `validate+test` and lint-fix-reflection
+An absent or empty `[sandbox]` is `SandboxSettings()` (`execution_mode="host"`), like `[standards]`.
+A malformed one stops the command: invalid TOML, an unknown key or a bad value raises
+`SettingsFileError` naming the file, key and line (`TECH-076`); it never falls back to the host. `ValidateTestsHandler`/`LintFixHandler` (the `validate+test` and lint-fix-reflection
 steps) pass `context.config.sandbox` to `QARunnerAtom`, so this one line is enough — no pipeline code
 changes.
 

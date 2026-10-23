@@ -25,7 +25,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.config.bootstrap.settings_loader import _load_toml_sandbox
+from specweaver.core.config.bootstrap.settings_loader import _project_sections
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.isolation import apply_session_policy
 from specweaver.core.flow.engine.models import (
@@ -111,7 +111,7 @@ def test_toml_session_policy_drives_isolated_run_and_authorized_reconcile(tmp_pa
     # Real settings, real TOML-loaded [sandbox] section (no db needed for the policy).
     settings = SpecWeaverSettings(
         llm={"model": "gemini-2.0-flash"},
-        sandbox=_load_toml_sandbox(str(tmp_path)),
+        sandbox=_project_sections(str(tmp_path))[1],
     )
     # spec stem "foo_spec" -> derived allow-list src/foo.py + tests/test_foo.py.
     context = RunContext(
@@ -146,7 +146,7 @@ def test_toml_session_policy_off_runs_without_isolation(tmp_path: Path) -> None:
 
     settings = SpecWeaverSettings(
         llm={"model": "gemini-2.0-flash"},
-        sandbox=_load_toml_sandbox(str(tmp_path)),
+        sandbox=_project_sections(str(tmp_path))[1],
     )
     context = RunContext(
         project_path=tmp_path,

@@ -50,3 +50,53 @@ Full suite 11372 passed, 9 skipped. `quality.py sf` 18/18 after the import re-po
 - R2 (LOW) `load_toml` now raises `from None` (was `from exc` in `llm_settings`): the traceback no
   longer chains the decode error. The message carries file and line; nothing read the chain.
 - Cycle 2: no new finding.
+
+## CB-2 — FR-1 and FR-2 (`[sandbox]` and `[standards]` strict)
+
+### What changed
+
+- `SandboxSettings` and `StandardsSettings` forbid unknown keys.
+- `load_settings_async` reads `specweaver.toml` once and passes it through `parse_section` for both
+  sections (`_project_sections`). The lenient `_load_toml_sandbox` / `_load_toml_standards` and
+  their `except Exception` are gone: a `SettingsFileError` leaves `load_settings`.
+- Guides: `subprocess_execution.md` (no host fallback), `pipeline_engine_guide.md` (`[sandbox]`),
+  `3_managing_constitutions.md` (`[standards]`).
+
+### Red first
+
+`test_project_settings_strict.py`, written before the change: all 6 broken cases (broken TOML,
+`execution_mod`, `"containr"`, a non-bool, `standards.mod`, `"copycat"`) loaded the defaults
+(DID NOT RAISE). The 3 happy and boundary cases passed, as they must (NFR-2).
+
+### Combined analysis
+
+Architecture: `bootstrap/settings_loader` now imports `bootstrap/llm_settings_loader`
+(`PROJECT_FILE_NAME`, `read_settings_text`) and `settings_file`, both inside `core/config`.
+`tach check` clean. SF-03 FR-7 moves `PROJECT_FILE_NAME` out of the LLM loader.
+
+| Function | Unit | Integration |
+|---|---|---|
+| `_project_sections` | ✅ no root → defaults | ✅ through `load_settings`: valid, no file, no section, 6 broken |
+| `SandboxSettings` / `StandardsSettings` | ✅ existing model tests | ✅ unknown key cases |
+
+Changed: `test_load_settings_toml_sandbox_malformed_falls_back_to_default` now expects the stop;
+`test_session_policy_fullchain.py` used the removed `_load_toml_sandbox` and now calls
+`_project_sections`. Gap story added: a project without a root path.
+
+Mutants (all OBJECTED, pinned): FR-1 `sandbox-falls-back`, `standards-falls-back`; FR-2
+`sandbox-accepts-unknown-key`, `standards-accepts-unknown-key`.
+
+### Gates
+
+Full suite 11382 passed, 9 skipped (first run: the full-chain test's import, fixed).
+`quality.py sf` 18/18.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) `sw run` and the API still swallow the new error and run with isolation off. Known:
+  SF-02 FR-4. Not pushed before SF-02.
+- R2 (MEDIUM) `sw implement` / `sw review` on a broken `[sandbox]` now end in a traceback. Safer
+  than the host fallback; SF-02 FR-5 turns it into the located message.
+- R3 (LOW) `coder_sandbox` builds a container copy with `model_copy(update=…)`, which does not
+  validate, so `extra="forbid"` does not touch it.
+- Cycle 2: no new finding.

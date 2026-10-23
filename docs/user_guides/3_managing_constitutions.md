@@ -43,6 +43,8 @@ mode = "best_practice" # defaults to "mimicry" (strict topology analysis only)
 
 In `best_practice` mode, `sw standards scan` on an empty directory initializes best-practice
 baselines (such as Python `snake_case` or TypeScript `camelCase`) for generated code.
+A misspelt key or another value than `mimicry` / `best_practice` stops the command, naming the
+file, key and line.
 
 ## 3. Enforcing Constitution Bounds
 

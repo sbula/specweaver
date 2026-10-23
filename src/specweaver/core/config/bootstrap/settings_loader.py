@@ -7,6 +7,10 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from specweaver.core.config.bootstrap.llm_settings_loader import (
+    PROJECT_FILE_NAME,
+    read_settings_text,
+)
 from specweaver.core.config.settings import (
     DALImpactMatrix,
     SandboxSettings,
@@ -14,6 +18,7 @@ from specweaver.core.config.settings import (
     StandardsSettings,
     deep_merge_dict,
 )
+from specweaver.core.config.settings_file import parse_section
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
@@ -42,44 +47,19 @@ def _sync_or_async(coro: Coroutine[Any, Any, Any]) -> Any:
     return run_sync(lambda: coro)
 
 
-def _load_toml_standards(root_path: str | None) -> StandardsSettings:
-    import tomllib
+def _project_sections(root_path: str | None) -> tuple[StandardsSettings, SandboxSettings]:
+    """The project's `[standards]` and `[sandbox]`; defaults when the file or a section is absent.
 
-    standards = StandardsSettings()
-    if root_path:
-        toml_file = Path(root_path) / "specweaver.toml"
-        if toml_file.exists():
-            try:
-                with open(toml_file, "rb") as f:
-                    toml_data = tomllib.load(f)
-                std_data = toml_data.get("standards", {})
-                if std_data:
-                    standards = StandardsSettings(**std_data)
-            except Exception:
-                logger.exception("Failed to parse specweaver.toml at %s", toml_file)
-    return standards
-
-
-def _load_toml_sandbox(root_path: str | None) -> SandboxSettings:
-    """Load the opt-in [sandbox] TOML section, mirroring _load_toml_standards exactly.
-
-    Defaults to SandboxSettings() (execution_mode="host") on any absence or parse failure, so an
-    unconfigured project keeps host execution."""
-    import tomllib
-
-    sandbox = SandboxSettings()
-    if root_path:
-        toml_file = Path(root_path) / "specweaver.toml"
-        if toml_file.exists():
-            try:
-                with open(toml_file, "rb") as f:
-                    toml_data = tomllib.load(f)
-                sandbox_data = toml_data.get("sandbox", {})
-                if sandbox_data:
-                    sandbox = SandboxSettings(**sandbox_data)
-            except Exception:
-                logger.exception("Failed to parse specweaver.toml at %s", toml_file)
-    return sandbox
+    Raises `SettingsFileError` naming the file, key and line of anything it cannot use.
+    """
+    if not root_path:
+        return StandardsSettings(), SandboxSettings()
+    path = Path(root_path) / PROJECT_FILE_NAME
+    text, source = read_settings_text(path), str(path)
+    return (
+        parse_section(text, source, "standards", StandardsSettings),
+        parse_section(text, source, "sandbox", SandboxSettings),
+    )
 
 
 def load_settings(db: Database, project_name: str) -> SpecWeaverSettings:
@@ -134,8 +114,7 @@ async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSett
         raise ValueError(msg)
 
     root_path = proj.get("root_path")
-    standards = _load_toml_standards(str(root_path) if root_path else None)
-    sandbox = _load_toml_sandbox(str(root_path) if root_path else None)
+    standards, sandbox = _project_sections(str(root_path) if root_path else None)
 
     return SpecWeaverSettings(
         dal_matrix=_load_dal_matrix(root_path),

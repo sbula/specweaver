@@ -306,8 +306,10 @@ def test_load_settings_toml_sandbox_absent_keeps_host_default(tmp_path: Path):
     assert settings.sandbox.execution_mode == "host"
 
 
-def test_load_settings_toml_sandbox_malformed_falls_back_to_default(tmp_path: Path, caplog):
+def test_load_settings_toml_sandbox_malformed_stops(tmp_path: Path):
+    """TECH-076 FR-1: a file that is not valid TOML stops, naming its line; no host fallback."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
+    from specweaver.core.config.settings_file import SettingsFileError
 
     bootstrap_database(str(tmp_path / "specweaver.db"))
     db = Database(tmp_path / "specweaver.db")
@@ -318,7 +320,14 @@ def test_load_settings_toml_sandbox_malformed_falls_back_to_default(tmp_path: Pa
     toml_path = project_path / "specweaver.toml"
     toml_path.write_text("not valid toml [[[", encoding="utf-8")
 
-    with caplog.at_level("ERROR"):
-        settings = load_settings(db, "my_project")
+    with pytest.raises(SettingsFileError, match="not valid TOML"):
+        load_settings(db, "my_project")
 
-    assert settings.sandbox.execution_mode == "host"
+
+def test_a_project_without_a_root_gets_the_default_sections():
+    """TECH-076 FR-1: no root path means no file to read, so the defaults stand."""
+    from specweaver.core.config.bootstrap.settings_loader import _project_sections
+
+    standards, sandbox = _project_sections(None)
+
+    assert (standards.mode, sandbox.execution_mode) == ("mimicry", "host")

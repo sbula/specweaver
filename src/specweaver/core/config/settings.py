@@ -86,6 +86,8 @@ class DALImpactMatrix(BaseModel):
 class StandardsSettings(BaseModel):
     """Standards auto-discovery behavioral configurations."""
 
+    model_config = ConfigDict(extra="forbid")
+
     mode: Literal["mimicry", "best_practice"] = "mimicry"
 
 
@@ -115,6 +117,8 @@ class SandboxSettings(BaseModel):
       (DAL_A/B) code auto-sandboxes while small/low-DAL projects stay on host.
       The sentinel ``"off"`` disables escalation entirely (pure opt-in).
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     execution_mode: Literal["host", "container"] = "host"
     enforce_worktree_isolation: bool = False

@@ -61,6 +61,66 @@
           "symbol_sha": "sha256:56b4409892e705ad83a723306a9169133205ca2469435911e211a4f9d0e484c9"
         }
       ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "[sandbox] and [standards] are read strictly",
+      "scope": [
+        "tests/integration/core/config/test_project_settings_strict.py",
+        "tests/unit/core/config/bootstrap/test_settings_loader.py"
+      ],
+      "mutants": [
+        {
+          "id": "sandbox-falls-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/settings_loader.py",
+          "symbol": "_project_sections",
+          "old": "        parse_section(text, source, \"sandbox\", SandboxSettings),\n",
+          "new": "        SandboxSettings(),\n",
+          "breaks": "a broken [sandbox] runs on the host",
+          "symbol_sha": "sha256:2df00a047b9b2b1d6843356007107f4c7009259e19f6dd724b798a866e01210c"
+        },
+        {
+          "id": "standards-falls-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/settings_loader.py",
+          "symbol": "_project_sections",
+          "old": "        parse_section(text, source, \"standards\", StandardsSettings),\n",
+          "new": "        StandardsSettings(),\n",
+          "breaks": "a broken [standards] is ignored",
+          "symbol_sha": "sha256:2df00a047b9b2b1d6843356007107f4c7009259e19f6dd724b798a866e01210c"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "[sandbox] and [standards] refuse unknown keys",
+      "scope": [
+        "tests/integration/core/config/test_project_settings_strict.py",
+        "tests/unit/core/config/bootstrap/test_settings_loader.py"
+      ],
+      "mutants": [
+        {
+          "id": "sandbox-accepts-unknown-key",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings.py",
+          "symbol": "SandboxSettings",
+          "old": "    model_config = ConfigDict(extra=\"forbid\")\n\n    execution_mode",
+          "new": "    execution_mode",
+          "breaks": "a misspelt [sandbox] key is ignored",
+          "symbol_sha": "sha256:18385b6975e1601ca5b6276321ae6a0548178da509220922a87b7ed8ecd88851"
+        },
+        {
+          "id": "standards-accepts-unknown-key",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings.py",
+          "symbol": "StandardsSettings",
+          "old": "    model_config = ConfigDict(extra=\"forbid\")\n\n    mode",
+          "new": "    mode",
+          "breaks": "a misspelt [standards] key is ignored",
+          "symbol_sha": "sha256:4ae3d65054eb302ee875f56d71118440e966347545cd0ff1cd7850d7154e1ff6"
+        }
+      ]
     }
   ]
 }
