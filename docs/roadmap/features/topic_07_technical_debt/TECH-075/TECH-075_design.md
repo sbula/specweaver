@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-075
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (by the user, 2026-10-22)
+- **Status**: COMPLETE — signed off by the user 2026-10-23; SF-01..03 delivered
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-075/TECH-075_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -226,8 +226,8 @@ not in the nightly real-model run.
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 committed 2026-10-22; SF-03 committed 2026-10-23
+**Current status**: COMPLETE, signed off 2026-10-23. Design APPROVED 2026-10-22; SF-01 committed 2026-10-22; SF-02 committed 2026-10-22; SF-03 committed 2026-10-23
 ([SF-01](TECH-075_sf01_walkthrough.md), [SF-02](TECH-075_sf02_walkthrough.md), [SF-03](TECH-075_sf03_walkthrough.md) walkthroughs).
-**Next step**: Feature Phase 4 closure (FR coverage, `tests.py feature`, live demo, README counts), then sign-off.
+**Next step**: none; the limits are in §Works For Real and the FR rows.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

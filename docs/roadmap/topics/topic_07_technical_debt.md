@@ -242,9 +242,10 @@ critical for long-term project viability.
   > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
   > `specweaver.toml` has a strict reader and a lenient one.
 
-* **`TECH-075` 🟡: Paths From Outside Can Leave the Project**
+* **`TECH-075` 🟢: Paths From Outside Can Leave the Project**
   > [Description](../features/topic_07_technical_debt/TECH-075/TECH-075_design.md) | _Status:
-  > SF-01..SF-03 committed, ready for sign-off. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > closed by the user 2026-10-23. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Verifiable Proof: `tests/e2e/capabilities/interfaces/test_api_run_spec_stays_inside_e2e.py` |
   > A path given by an API client or an agent is not always kept inside the project: the
   > pipeline run's spec, the protocol tool and most QA intents accept any path, and the guard
   > that exists is written five ways.
