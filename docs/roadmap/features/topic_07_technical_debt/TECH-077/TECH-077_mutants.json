@@ -180,6 +180,66 @@
           "symbol_sha": "sha256:020b2a11c3503c9d7bc63e465a397f8c230bbd85c3adbcf85dc64f63a7b6e93c"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Both isolation policies with DAL escalation in every door; high-DAL without git fails closed",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_build_run.py",
+        "tests/unit/core/flow/engine/test_session_policy.py",
+        "tests/integration/interfaces/cli/test_cli_implement_isolation.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-dal-escalation",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_apply_isolation",
+          "old": "    apply_session_policy(context, settings, logger, dal_auto_escalate=True)\n",
+          "new": "    apply_session_policy(context, settings, logger, dal_auto_escalate=False)\n",
+          "breaks": "high-DAL code runs unisolated",
+          "symbol_sha": "sha256:e5b13d47e3900910e311612957f2ad5f79737e44dccd693f1067b7f69d31c75e"
+        },
+        {
+          "id": "per-step-policy-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_apply_isolation",
+          "old": "        update={\"enforce_isolation\": settings.sandbox.enforce_worktree_isolation}\n",
+          "new": "        update={\"enforce_isolation\": False}\n",
+          "breaks": "enforce_worktree_isolation is ignored",
+          "symbol_sha": "sha256:e5b13d47e3900910e311612957f2ad5f79737e44dccd693f1067b7f69d31c75e"
+        },
+        {
+          "id": "non-git-runs-on-host",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "_dal_requires_isolation",
+          "old": "            context.project_path,\n        )\n    return True\n",
+          "new": "            context.project_path,\n        )\n        return False\n    return True\n",
+          "breaks": "a high-DAL project without git runs unbounded on the host",
+          "symbol_sha": "sha256:930ce08d5259d3a724285f90e03108060981b7df0b990e5ab774e00b6964222f"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-3",
+      "title": "The builder raises; only doors exit",
+      "scope": [
+        "tests/unit/interfaces/run_setup/test_no_exit.py"
+      ],
+      "mutants": [
+        {
+          "id": "builder-imports-typer",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run_sync",
+          "old": "    \"\"\"`build_run` for a synchronous door.\"\"\"\n",
+          "new": "    \"\"\"`build_run` for a synchronous door.\"\"\"\n    import typer  # noqa: F401\n",
+          "breaks": "the builder could exit a process",
+          "symbol_sha": "sha256:ff78418fbce3260558b3d7cc2453268e16cdd38e08adc329125dcad46b54d680"
+        }
+      ]
     }
   ]
 }

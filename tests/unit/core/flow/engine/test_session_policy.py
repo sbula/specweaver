@@ -207,14 +207,14 @@ class TestApplySessionPolicyDalEscalation:
         assert ctx.isolation.session_isolation is False
         assert ctx.isolation.allowed_paths == []
 
-    def test_escalate_non_git_project_degrades_to_host(self, tmp_path):
-        # [Degradation/Q3] DAL qualifies but the project is NOT a git repo -> degrade to host
-        # (never hard-fail the command). Escalation stays off.
+    def test_escalate_non_git_project_still_escalates(self, tmp_path):
+        # [Degradation] TECH-077 FR-3 [agreed 2026-10-23]: DAL qualifies but the project is NOT a
+        # git repo -> session isolation stays ON, so the run fails closed when the worktree cannot
+        # start; high-DAL code never runs unbounded.
         ctx = _git_ctx(tmp_path, git=False)
         ctx.isolation = ctx.isolation.model_copy(update={"dal_level": DALLevel.DAL_A})
         apply_session_policy(ctx, _settings(min_dal="DAL_B"), _LOG, dal_auto_escalate=True)
-        assert ctx.isolation.session_isolation is False
-        assert ctx.isolation.allowed_paths == []
+        assert ctx.isolation.session_isolation is True
 
     def test_no_escalate_param_leaves_high_dal_off(self, tmp_path):
         # [Boundary/CRUX] dal_auto_escalate defaults False -> sw run/sw resume are UNAFFECTED

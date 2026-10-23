@@ -188,16 +188,14 @@ def _dal_requires_isolation(context: RunContext, sandbox: Any, logger: logging.L
     if dal is None or dal.rank < threshold.rank:
         return False
 
-    # Q3: auto-escalation must NEVER break the command. If the project cannot host a git
-    # worktree (not a git repo), degrade to host mode with a warning instead of failing.
-    # (An explicit ``enforce_session_isolation`` still fails-closed at ``execute_run``.)
+    # High-DAL code never runs unbounded: without a git repository the worktree cannot start and
+    # the run stops there, as an explicit `enforce_session_isolation` does.
     if not (context.project_path / ".git").exists():
         logger.warning(
-            "DAL %s meets the auto-isolation threshold %s but %s is not a git repository; "
-            "running the loop on host (unsandboxed). `git init` to enable worktree isolation.",
+            "DAL %s meets the auto-isolation threshold %s but %s is not a git repository; the run "
+            'will stop. `git init` it, or set [sandbox] auto_isolate_min_dal = "off".',
             dal.value,
             threshold.value,
             context.project_path,
         )
-        return False
     return True

@@ -3,7 +3,7 @@
 
 """One builder sets up every part of a run from one project.
 
-Proves: TECH-077 FR-1, TECH-077 NFR-3
+Proves: TECH-077 FR-1, TECH-077 FR-3, TECH-077 NFR-3
 
 A real database, settings files, rule file, stored standards and `context.yaml`; only the model is
 doubled, and no call is made.
@@ -160,3 +160,72 @@ def test_an_unknown_project_gives_no_settings_but_still_builds(
 
     assert context.model.config is None
     assert "Keep it small." in (context.guidance.constitution or "")
+
+
+def _dal(root: Path, dal: str) -> None:
+    (root / "context.yaml").write_text(
+        f"name: orders\narchetype: pure-logic\noperational:\n  dal_level: {dal}\n", encoding="utf-8"
+    )
+
+
+def test_a_high_dal_project_runs_isolated(world: tuple[Database, Path]) -> None:
+    """TECH-077 FR-3: DAL auto-escalation in every door [agreed 2026-10-23]."""
+    db, root = world
+    _dal(root, "DAL_B")
+    (root / ".git").mkdir()
+
+    context = build_run_sync(_request(db, root, StepAction.VALIDATE))
+
+    assert context.isolation.session_isolation is True
+    assert context.isolation.allowed_paths
+
+
+def test_the_per_step_policy_is_applied(world: tuple[Database, Path]) -> None:
+    db, root = world
+    (root / "specweaver.toml").write_text(
+        _PROJECT_SETTINGS + "\n[sandbox]\nenforce_worktree_isolation = true\n", encoding="utf-8"
+    )
+
+    context = build_run_sync(_request(db, root, StepAction.VALIDATE))
+
+    assert context.isolation.enforce_isolation is True
+
+
+def test_a_low_dal_project_runs_on_the_host(world: tuple[Database, Path]) -> None:
+    db, root = world
+    _dal(root, "DAL_E")
+    (root / ".git").mkdir()
+
+    context = build_run_sync(_request(db, root, StepAction.VALIDATE))
+
+    assert (context.isolation.session_isolation, context.isolation.enforce_isolation) == (
+        False,
+        False,
+    )
+
+
+def test_without_settings_isolation_stays_off(world: tuple[Database, Path]) -> None:
+    db, root = world
+    _dal(root, "DAL_A")
+    request = _request(db, root, StepAction.VALIDATE)
+
+    context = build_run_sync(RunRequest(**{**request.__dict__, "project": "ghost"}))
+
+    assert context.isolation.session_isolation is False
+
+
+def test_the_sync_and_async_builders_agree(world: tuple[Database, Path]) -> None:
+    import asyncio
+
+    from specweaver.interfaces.run_setup.builder import build_run
+
+    db, root = world
+    _dal(root, "DAL_B")
+    (root / ".git").mkdir()
+    request = _request(db, root, StepAction.VALIDATE)
+
+    sync, async_ = build_run_sync(request), asyncio.run(build_run(request))
+
+    assert sync.isolation == async_.isolation
+    assert sync.guidance == async_.guidance
+    assert sync.graph.topology == async_.graph.topology

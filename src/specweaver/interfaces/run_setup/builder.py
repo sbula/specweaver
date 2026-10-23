@@ -8,6 +8,7 @@ The builder raises; each door turns its errors into a CLI refusal or an HTTP ans
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.handlers.run_context import RunContext
+
+logger = logging.getLogger(__name__)
 
 
 class UnknownProjectError(ValueError):
@@ -88,7 +91,7 @@ async def build_run(request: RunRequest) -> RunContext:
     )
     settings = await _settings(request)
     needs_model = bool(roles_of(request.pipeline)) and request.models != "none"
-    return RunContext(
+    context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
         project_path=request.project_root,
         spec_path=request.spec_path,
@@ -102,6 +105,9 @@ async def build_run(request: RunRequest) -> RunContext:
         ),
         graph=GraphContext(topology=_topology(request)),
     )
+    if settings is not None:
+        _apply_isolation(context, settings)
+    return context
 
 
 def build_run_sync(request: RunRequest) -> RunContext:
@@ -169,3 +175,13 @@ def _topology(request: RunRequest) -> Any:
     return select_topology_contexts(
         graph, module_stem(request.spec_path), selector_name=request.selector
     )
+
+
+def _apply_isolation(context: RunContext, settings: SpecWeaverSettings) -> None:
+    """Both isolation policies, with escalation by the code's DAL, in every door."""
+    from specweaver.core.flow.engine.isolation import apply_session_policy
+
+    context.isolation = context.isolation.model_copy(
+        update={"enforce_isolation": settings.sandbox.enforce_worktree_isolation}
+    )
+    apply_session_policy(context, settings, logger, dal_auto_escalate=True)

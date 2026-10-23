@@ -272,6 +272,10 @@ auto_isolate_min_dal = "DAL_B"
 
 A misspelt key or a bad value here stops the command, naming the file, key and line.
 
+`auto_isolate_min_dal` escalates to per-run isolation when the code's DAL is that strict or
+stricter. A project that is not a git repository then stops at the worktree instead of running on
+the host (`TECH-077`); `git init` it, or set `auto_isolate_min_dal = "off"`.
+
 Lifecycle (`execute_run`, when `context.isolation.session_isolation` is set):
 
 1. **Create**: tear down any stale same-named worktree + branch left by a hard crash, then

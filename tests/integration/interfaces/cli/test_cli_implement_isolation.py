@@ -129,11 +129,11 @@ def test_threshold_off_disables_escalation_even_for_dal_a(tmp_path) -> None:
     assert context.isolation.session_isolation is False
 
 
-def test_dal_a_but_non_git_project_degrades_to_host(tmp_path) -> None:
-    """[Degradation/Q3] a high-DAL but NON-git project degrades to host — auto-escalation
-    must never break `sw implement`."""
+def test_dal_a_but_non_git_project_still_escalates(tmp_path) -> None:
+    """[Degradation] TECH-077 FR-3 [agreed 2026-10-23]: a high-DAL but NON-git project keeps
+    session isolation on, so the run fails closed at the worktree instead of running on host."""
     context = _run_and_capture_context(tmp_path, dal="DAL_A", git=False)
-    assert context.isolation.session_isolation is False
+    assert context.isolation.session_isolation is True
 
 
 def test_container_execution_mode_stays_dormant_on_implement(tmp_path) -> None:

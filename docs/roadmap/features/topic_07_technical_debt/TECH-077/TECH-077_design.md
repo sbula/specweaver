@@ -94,7 +94,7 @@ standards, sections, isolation, router, topology); the builder starts from it.
 |---|-----|-------|--------|---------|
 | FR-1 | One run builder in `interfaces/run_setup` SHALL build a run's context from (project, spec or target, pipeline, run options): the rule file, the standards, `[docs]`/`[autonomy]`/`[implement]`, isolation, the model router and `config` when a step needs a model, and the topology slice; it SHALL raise errors, never exit, and load each settings file once | run setup | builds a run | one context, one set of errors |
 | FR-2 | Every CLI door (`sw run`, `sw resume`, `sw implement`, `sw review`, `sw draft`, `sw drift check`, `sw drift check-rot`, `sw standards scan`) SHALL build its run through FR-1 and turn its errors into the existing CLI refusals | CLI | starts a run | the same context as every other door |
-| FR-3 | Every door SHALL apply both isolation policies (per step and per run) with DAL auto-escalation `[agreed 2026-10-23]`; a high-DAL project that cannot start a worktree stops, as `sw implement` does today | run setup | decides isolation | untrusted steps are bounded the same way through every door |
+| FR-3 | Every door SHALL apply both isolation policies (per step and per run) with DAL auto-escalation `[agreed 2026-10-23]`; a high-DAL project with no git repository stops instead of running on the host (`sw implement` used to warn and run on the host, `INT-US-03` AD-8, now reversed) `[agreed 2026-10-23]` | run setup | decides isolation | untrusted steps are bounded the same way through every door |
 | FR-4 | A run SHALL use one project for everything (settings, router, standards, profiles, rule file): the project registered at the target's folder, else the active project when no path is given; the API uses the request's project `[agreed 2026-10-23]`; a folder no project is registered at is refused, naming it and `sw init` `[agreed 2026-10-23]` | run setup | picks the project | no mix of active and target project |
 | FR-5 | `sw resume` SHALL rebuild the run for the project the run recorded, with its topology, whatever the current folder; a recorded project that is no longer registered stops the resume, naming it | CLI | resumes a run | a resumed run gets its own project's context |
 | FR-6 | The archetype SHALL be found one way, the nearest `context.yaml` above the file (`ArchetypeResolver`), in the run context, the archetype pipelines and the context assembler `[agreed 2026-10-23]` | engine, handlers | ask for the archetype | one answer per file |
@@ -154,7 +154,7 @@ None.
 ### Risk Assessment
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| A high-DAL project without git now stops on `sw run` / API runs | medium | the run stops, naming the cause | decision 1, as `sw implement` today |
+| A high-DAL project without git now stops in every door, `sw implement` included | medium | the run stops, naming `git init` and `auto_isolate_min_dal = "off"` | the user's choice 2026-10-23: high-DAL code never runs unbounded |
 | A door loses a part it had | low | a run behaves differently | NFR-1 agreement test; existing door tests |
 | An API run of a high-DAL project fails at its first isolated step, not at the request | medium | the run ends failed, naming the worktree error | the run starts in the background today; the failure is recorded on the run |
 
@@ -214,7 +214,7 @@ an e2e test in the suite.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One answer per lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The run builder | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The run builder | SF-01 | ✅ | ✅ | ✅ | ✅ | ⬜ |
 | SF-03 | Every CLI door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Every API door uses it | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
