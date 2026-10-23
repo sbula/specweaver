@@ -1,0 +1,30 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: run_setup
+level: module
+purpose: >
+  One way to set up a run for every CLI command and API route: the project, its rule file,
+  standards, settings sections, isolation, model router and topology. Raises; never exits.
+
+archetype: adapter
+
+consumes:
+  - specweaver/core/flow
+  - specweaver/core/config
+  - specweaver/workspace
+  - specweaver/assurance/standards
+  - specweaver/assurance/graph
+  - specweaver/infrastructure/llm
+  - specweaver/commons
+
+forbids:
+  - specweaver/interfaces/cli  # the builder raises; only a door exits
+  - specweaver/interfaces/api
+
+exposes:
+  - RunRequest
+  - build_run
+  - build_run_sync
+  - project_for
+  - UnknownProjectError

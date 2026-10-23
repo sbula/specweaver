@@ -60,7 +60,7 @@ the builder alone.
 **FR-4 — which project**
 1. `run_setup.project_for(db, project_root, *, named=None) -> str`: `named` (the API's request)
    wins; else the project registered at `project_root`; with no root given, the active project; a
-   root no project is registered at raises `UnknownProject` naming the folder and `sw init` (decision 1).
+   root no project is registered at raises `UnknownProjectError` naming the folder and `sw init` (decision 1).
 
 **FR-1 — the builder**
 2. `RunRequest`: project root, spec (or target) path, pipeline, project name, `run_model`,
@@ -81,7 +81,7 @@ the builder alone.
 
 | File | Change |
 |---|---|
-| `src/specweaver/interfaces/run_setup/builder.py` [NEW] | `RunRequest`, `build_run`, `build_run_sync`, `project_for`, `UnknownProject` |
+| `src/specweaver/interfaces/run_setup/builder.py` [NEW] | `RunRequest`, `build_run`, `build_run_sync`, `project_for`, `UnknownProjectError` |
 | `src/specweaver/interfaces/run_setup/context.yaml` [NEW] | purpose, archetype (adapter), consumes |
 | `tach.toml` [MODIFY] | the `specweaver.interfaces.run_setup` module and its `depends_on` |
 
@@ -89,7 +89,7 @@ the builder alone.
 
 | FR | Tier | Test file | Cases (bucket) |
 |---|---|---|---|
-| FR-4 | integration | `tests/integration/interfaces/run_setup/test_project_for.py` [NEW] | real DB: registered at the root (happy); a named project wins (boundary); no root → active (boundary); an unregistered root → `UnknownProject` naming it (hostile, decision 1); project B registered at the root while A is active → B (the EP-5 mix) |
+| FR-4 | integration | `tests/integration/interfaces/run_setup/test_project_for.py` [NEW] | real DB: registered at the root (happy); a named project wins (boundary); no root → active (boundary); an unregistered root → `UnknownProjectError` naming it (hostile, decision 1); project B registered at the root while A is active → B (the EP-5 mix) |
 | FR-1 | integration | `tests/integration/interfaces/run_setup/test_build_run.py` [NEW] | a real project with `CONSTITUTION.md`, `[docs]`/`[autonomy]`/`[implement]`, stored standards, a topology and a model step (doubled model): every part on the context, `config` set, settings loaded once (happy); a pipeline with no model step → no router, no settings file needed for models (boundary); `optional` with no model set → no router (degradation); a broken `[sandbox]` → `SettingsFileError` raised, not an exit (hostile, NFR-3). **Agreement:** `build_run_sync` and `build_run` give equal contexts |
 | FR-3 | integration | same file | DAL_B target → session isolation on with derived `allowed_paths`; `enforce_worktree_isolation = true` → per-step on; DAL_E → both off; no settings (unknown-project lookup failure) → both off |
 | NFR-3 | unit | `tests/unit/interfaces/run_setup/test_no_exit.py` [NEW] | the module imports no `typer` and never raises `SystemExit` (AST scan) |

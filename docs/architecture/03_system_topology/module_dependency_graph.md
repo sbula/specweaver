@@ -60,3 +60,7 @@ graph TD
 grouped into `assurance/`, `core/`, `infrastructure/`, `interfaces/`, `sandbox/`, `workflows/`,
 `workspace/`, `commons/`, `graph/`. The enforced graph is `tach.toml` (`exact = true`), checked by
 the `tach` gate in `scripts/quality.py`.
+
+**Run setup (`TECH-077`):** `interfaces/run_setup` builds every run's context for the CLI and the
+API (rule file, standards, settings sections, isolation, model router, topology). It sits beside
+the doors, not in the engine, so `core/flow` keeps its rule of never using `workspace/project`.

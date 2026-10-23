@@ -123,6 +123,15 @@ def domain_profile_at(db: Any, root: Path) -> str | None:
     return None if row is None else row["domain_profile"]
 
 
+def active_project(db: Any) -> str | None:
+    """The active project's name; None when no project is active."""
+    with db.connect() as conn:
+        row = conn.execute(
+            "SELECT value FROM workspace_active_state WHERE key = 'active_project'"
+        ).fetchone()
+    return str(row["value"]) if row else None
+
+
 def project_root_of(db: Any, name: str) -> Path | None:
     """The registered root of project `name`; None when no project has that name."""
     with db.connect() as conn:

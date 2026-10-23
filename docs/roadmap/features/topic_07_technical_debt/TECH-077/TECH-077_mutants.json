@@ -110,6 +110,76 @@
           "symbol_sha": "sha256:ce5748294427fcec7dccfba748edc7f0aa8ae65a96794f9fb3b4a104ebb7d79c"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A run uses one project, chosen one way",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_project_for.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py"
+      ],
+      "mutants": [
+        {
+          "id": "unregistered-folder-takes-active",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "project_for",
+          "old": "            raise UnknownProjectError(msg)\n        return name\n",
+          "new": "            return active_project(db) or \"\"\n        return name\n",
+          "breaks": "an unregistered folder runs with the active project's settings",
+          "symbol_sha": "sha256:c8d94d577e9f1a5b519ff462a13648c4a7ad05ed062a9b1030e5ba1354b1e85a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "One builder sets up every part of a run",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_project_for.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-rule-file",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "constitution=info.content if info else None",
+          "new": "constitution=None",
+          "breaks": "runs get no rule file",
+          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+        },
+        {
+          "id": "no-standards",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "standards=standards)",
+          "new": "standards=None)",
+          "breaks": "runs get no coding standards",
+          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+        },
+        {
+          "id": "no-topology",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "graph=GraphContext(topology=_topology(request)),",
+          "new": "graph=GraphContext(topology=None),",
+          "breaks": "runs get no topology",
+          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+        },
+        {
+          "id": "optional-model-refuses",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "        if request.models == \"optional\":\n            return None\n",
+          "new": "        if False:\n            return None\n",
+          "breaks": "a command whose model is optional refuses without one",
+          "symbol_sha": "sha256:020b2a11c3503c9d7bc63e465a397f8c230bbd85c3adbcf85dc64f63a7b6e93c"
+        }
+      ]
     }
   ]
 }
