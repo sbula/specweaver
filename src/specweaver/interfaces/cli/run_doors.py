@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 import typer
 
@@ -14,9 +14,10 @@ from specweaver.interfaces.cli import _core
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.llm_settings import RoleEntry
-    from specweaver.core.flow.engine.models import PipelineDefinition
+    from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
+    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.session import SessionWorktreeError
+    from specweaver.core.flow.engine.state import StepRecord
     from specweaver.core.flow.handlers.run_context import RunContext
 
 
@@ -59,6 +60,7 @@ def build_run_or_exit(
                 ask=_core.spend_asker(),
                 models=models,
                 read_only=read_only,
+                on_model_skipped=_say_no_model,
             )
         )
     except SettingsFileError as err:
@@ -69,6 +71,38 @@ def build_run_or_exit(
     if context.model.llm_router is not None:
         tell_missing_at_end(context.model.llm_router)
     return context
+
+
+def run_one_step(
+    project_path: Path | None,
+    spec_path: Path,
+    *,
+    name: str,
+    action: StepAction,
+    target: StepTarget,
+    description: str,
+    params: dict[str, Any] | None = None,
+    models: Literal["required", "optional", "none"] = "required",
+    read_only: bool = False,
+) -> tuple[StepRecord | None, RunContext]:
+    """Run a one-step pipeline set up by the builder; its last step record, and its context."""
+    import asyncio
+
+    from specweaver.core.flow.engine.models import PipelineDefinition
+    from specweaver.core.flow.engine.runner import PipelineRunner
+
+    pipeline = PipelineDefinition.create_single_step(
+        name=name, action=action, target=target, description=description, params=params or {}
+    )
+    context = build_run_or_exit(
+        project_path, spec_path, pipeline, models=models, read_only=read_only
+    )
+    run = asyncio.run(PipelineRunner(pipeline, context).run())
+    return (run.step_records[-1] if run.step_records else None), context
+
+
+def _say_no_model(err: SettingNotSetError) -> None:
+    _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)
 
 
 def refuse_unstarted_worktree(err: SessionWorktreeError) -> NoReturn:

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import subprocess  # noqa: TID251 — see usage comment below; narrow CLI-only exemption
 from pathlib import Path
@@ -13,7 +12,6 @@ import typer
 from rich.table import Table
 
 from specweaver.interfaces.cli import _core
-from specweaver.workspace.analyzers.factory import AnalyzerFactory
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -55,43 +53,21 @@ def drift_check(
 
     project_path = _core.project_path_or_exit(project)
 
-    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.engine.models import StepAction, StepTarget
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.run_context import AnalysisContext, RunContext
+    from specweaver.interfaces.cli.run_doors import run_one_step
 
-    pipeline = PipelineDefinition.create_single_step(
+    last_record, _context = run_one_step(
+        project_path,
+        plan_path,
         name="drift_check",
         action=StepAction.DETECT,
         target=StepTarget.DRIFT,
         description=f"AST Drift Check for {target_path.name}",
-        params={
-            "target_path": str(target_path),
-            "plan_path": str(plan_path),
-            "analyze": analyze,
-        },
+        params={"target_path": str(target_path), "plan_path": str(plan_path), "analyze": analyze},
+        models="required" if analyze else "none",
+        read_only=True,
     )
-
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=plan_path,
-        db=_core.get_db(),
-    )
-
-    if analyze:
-        from specweaver.core.flow.handlers._llm import roles_of
-        from specweaver.infrastructure.llm.interfaces.command import command_router
-
-        drift_project = _core.project_name_for(project_path)
-        settings = _core.load_project_settings(_core.get_db(), drift_project)
-        router = command_router(drift_project, roles_of(pipeline), project_root=project_path)
-        context.model = context.model.model_copy(update={"config": settings, "llm_router": router})
-
-    runner = PipelineRunner(pipeline, context)
-    run_state = asyncio.run(runner.run())
-
-    last_record = run_state.step_records[-1] if run_state.step_records else None
 
     if not last_record or last_record.status == StepStatus.ERROR or not last_record.result:
         error_msg = (
@@ -193,12 +169,13 @@ def _plan_declaring(
 
 
 def _run_rot_check(target_path: Path, matched_plan: Path, project_path: Path) -> Any:
-    """Run the single-step drift pipeline for one file against its plan."""
-    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.engine.runner import PipelineRunner
-    from specweaver.core.flow.handlers.run_context import AnalysisContext, RunContext
+    """Run the single-step drift check for one file against its plan; its last step record."""
+    from specweaver.core.flow.engine.models import StepAction, StepTarget
+    from specweaver.interfaces.cli.run_doors import run_one_step
 
-    pipeline = PipelineDefinition.create_single_step(
+    record, _context = run_one_step(
+        project_path,
+        matched_plan,
         name="check_rot",
         action=StepAction.DETECT,
         target=StepTarget.DRIFT,
@@ -208,14 +185,10 @@ def _run_rot_check(target_path: Path, matched_plan: Path, project_path: Path) ->
             "plan_path": str(matched_plan.absolute()),
             "analyze": False,
         },
+        models="none",
+        read_only=True,
     )
-    context = RunContext(
-        analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-        project_path=project_path,
-        spec_path=matched_plan,
-        db=_core.get_db(),
-    )
-    return asyncio.run(PipelineRunner(pipeline, context).run())
+    return record
 
 
 def _report_findings(last_record: Any, target: str, target_posix: str) -> None:
@@ -250,8 +223,7 @@ def _target_has_drifted(target: str, all_plans: list[Path], project_path: Path) 
     if not matched_plan:
         return False
 
-    run_state = _run_rot_check(target_path, matched_plan, project_path)
-    last_record = run_state.step_records[-1] if run_state.step_records else None
+    last_record = _run_rot_check(target_path, matched_plan, project_path)
     status_code = getattr(last_record, "status", None) if last_record else None
 
     logger.debug("check-rot: %s -> status=%s", target, status_code)

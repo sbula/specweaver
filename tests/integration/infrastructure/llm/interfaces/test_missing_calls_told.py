@@ -5,8 +5,8 @@
 
 Proves: C-FLOW-01 FR-5
 
-A real Typer command calls each of the two router builders; only the router is a double, so the
-line is proven for every command that builds its models through them.
+A real Typer command hands its router to `tell_missing_at_end`, as every command's run setup does
+(`interfaces/cli/run_doors.py`); only the router is a double.
 
 | Bucket | Case |
 |---|---|
@@ -42,16 +42,12 @@ class _Router:
         return self.missing
 
 
-def _app(monkeypatch: pytest.MonkeyPatch, builder: str, missing: Any, *, fail: bool) -> typer.Typer:
-    monkeypatch.setattr(command, "build_router", lambda *_a, **_k: _Router(missing))
-    monkeypatch.setattr(command._core, "load_active_llm_settings", lambda _p: None)
-    monkeypatch.setattr(command._core, "get_db", lambda: None)
-    monkeypatch.setattr(command._core, "spend_asker", lambda: None)
+def _app(missing: Any, *, fail: bool) -> typer.Typer:
     app = typer.Typer()
 
     @app.command()
     def work() -> None:
-        getattr(command, builder)("greeter", [])
+        command.tell_missing_at_end(_Router(missing))
         typer.echo("done")
         if fail:
             raise typer.Exit(code=1)
@@ -63,12 +59,9 @@ def _app(monkeypatch: pytest.MonkeyPatch, builder: str, missing: Any, *, fail: b
     return app
 
 
-@pytest.mark.parametrize("builder", ["command_router", "optional_command_router"])
 @pytest.mark.parametrize("fail", [False, True], ids=["ok", "exit-1"])
-def test_a_command_ends_saying_how_many_calls_are_missing(
-    monkeypatch: pytest.MonkeyPatch, builder: str, fail: bool
-) -> None:
-    result = CliRunner().invoke(_app(monkeypatch, builder, 3, fail=fail), ["work"])
+def test_a_command_ends_saying_how_many_calls_are_missing(fail: bool) -> None:
+    result = CliRunner().invoke(_app(3, fail=fail), ["work"])
 
     assert result.exit_code == (1 if fail else 0)
     assert shows(result.stderr, f"3 {_LINE}")
@@ -76,21 +69,21 @@ def test_a_command_ends_saying_how_many_calls_are_missing(
     assert result.stdout.strip() == "done"
 
 
-def test_one_missing_call_is_said_in_the_singular(monkeypatch: pytest.MonkeyPatch) -> None:
-    result = CliRunner().invoke(_app(monkeypatch, "command_router", 1, fail=False), ["work"])
+def test_one_missing_call_is_said_in_the_singular() -> None:
+    result = CliRunner().invoke(_app(1, fail=False), ["work"])
 
     assert shows(result.stderr, "1 call of this command is missing from the cost ledger")
 
 
-def test_no_missing_call_says_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
-    result = CliRunner().invoke(_app(monkeypatch, "command_router", 0, fail=False), ["work"])
+def test_no_missing_call_says_nothing() -> None:
+    result = CliRunner().invoke(_app(0, fail=False), ["work"])
 
     assert result.exit_code == 0
     assert "cost ledger" not in result.output
 
 
-def test_a_router_that_cannot_count_leaves_the_end_alone(monkeypatch: pytest.MonkeyPatch) -> None:
-    app = _app(monkeypatch, "command_router", RuntimeError("closed"), fail=False)
+def test_a_router_that_cannot_count_leaves_the_end_alone() -> None:
+    app = _app(RuntimeError("closed"), fail=False)
 
     result = CliRunner().invoke(app, ["work"])
 

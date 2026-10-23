@@ -152,28 +152,29 @@
       "scope": [
         "tests/unit/interfaces/cli/test_target_project.py",
         "tests/e2e/capabilities/infrastructure/test_llm_servers_e2e.py",
-        "tests/integration/interfaces/cli/test_cli_drift.py"
+        "tests/integration/interfaces/cli/test_cli_drift.py",
+        "tests/integration/interfaces/cli/test_cli_doors_build_alike.py"
       ],
       "mutants": [
         {
           "id": "router-reads-active-project",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "command_router",
-          "old": "        files = _core.load_llm_settings_at(project_root)\n",
-          "new": "        files = _core.load_active_llm_settings(project)\n",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "            load_llm_settings(request.project_root),\n",
+          "new": "            load_llm_settings(request.project_root.parent),\n",
           "breaks": "a private-only project's code goes to a hosted server while another project is active",
-          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
         },
         {
           "id": "target-name-is-active-project",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
-          "symbol": "project_name_for",
-          "old": "    return registered_project_at(path) or _require_active_project()\n",
-          "new": "    return _require_active_project()\n",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "        project = project_for(db, project_path)\n",
+          "new": "        project = project_for(db, None)\n",
           "breaks": "a command on one project runs under another project's name and settings",
-          "symbol_sha": "sha256:55108524c0426a58dbf2087a94597f405de9446505a956c1e4dc8fc5ab4dc08e"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         }
       ]
     },
@@ -782,12 +783,12 @@
         {
           "id": "command-drops-run-model",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "command_router",
-          "old": "            run_model=run_model,\n",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "            run_model=request.run_model,\n",
           "new": "            run_model=None,\n",
           "breaks": "every CLI command ignores --model",
-          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
         },
         {
           "id": "implement-drops-run-model",
@@ -960,22 +961,22 @@
         {
           "id": "skipped-model-unnamed",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "optional_command_router",
-          "old": "        _core.console.print(f\"No model used: {err.key}: {err.message}\", style=\"dim\", markup=False)\n",
-          "new": "        _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "_say_no_model",
+          "old": "    _core.console.print(f\"No model used: {err.key}: {err.message}\", style=\"dim\", markup=False)\n",
+          "new": "    _core.console.print(f\"No model used: {err.message}\", style=\"dim\", markup=False)\n",
           "breaks": "a scan skips the model and never says which key would turn it on",
-          "symbol_sha": "sha256:0697479eb69cd52e554d39923b0f6d4aad241652c53f51eb626a396dc14cd2db"
+          "symbol_sha": "sha256:0baf3e8b38248ae32df55b54ebfcf5a5761949595cb3d3dc82c523d9e0ee2109"
         },
         {
           "id": "scan-skips-wrong-settings",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "optional_command_router",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
           "old": "    except SettingNotSetError as err:\n",
-          "new": "    except SettingsFileError as err:\n",
+          "new": "    except ValueError as err:\n",
           "breaks": "a scan with a server typo says 'No model used' and goes on",
-          "symbol_sha": "sha256:0697479eb69cd52e554d39923b0f6d4aad241652c53f51eb626a396dc14cd2db"
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
         },
         {
           "id": "unset-brake-is-an-error",

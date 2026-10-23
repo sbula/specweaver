@@ -177,18 +177,19 @@
       "title": "Every CLI command that loads project settings stops on a broken one",
       "scope": [
         "tests/integration/interfaces/cli/test_cli_broken_settings_refuse.py",
-        "tests/unit/interfaces/cli/test_project_path_or_exit.py"
+        "tests/unit/interfaces/cli/test_project_path_or_exit.py",
+        "tests/integration/interfaces/cli/test_run_doors.py"
       ],
       "mutants": [
         {
           "id": "cli-settings-error-escapes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
-          "symbol": "load_project_settings",
-          "old": "    except SettingsFileError as err:\n        refuse_settings(err)\n\n\ndef load_active_llm_settings",
-          "new": "    except SettingsFileError:\n        raise\n\n\ndef load_active_llm_settings",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "    except SettingsFileError as err:\n",
+          "new": "    except ImportError as err:\n",
           "breaks": "a broken setting ends in a traceback",
-          "symbol_sha": "sha256:d88dc5c4578575a828b8cbc8ee71b352eb221cfee8ba998987cd3014284619be"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         },
         {
           "id": "project-path-error-escapes",

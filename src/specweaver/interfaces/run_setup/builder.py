@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.config.database import Database
-    from specweaver.core.config.llm_settings import RoleEntry
+    from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.handlers.run_context import RunContext
@@ -69,6 +69,8 @@ class RunRequest:
     models: Literal["required", "optional", "none"] = "required"
     #: A run that writes and executes nothing gets no per-run worktree.
     read_only: bool = False
+    #: Told why an `optional` model was skipped.
+    on_model_skipped: Callable[[SettingNotSetError], None] | None = None
 
 
 async def build_run(request: RunRequest) -> RunContext:
@@ -161,10 +163,12 @@ def _router(request: RunRequest) -> Any:
             ask=request.ask,
             db=request.db,
         )
-    except SettingNotSetError:
-        if request.models == "optional":
-            return None
-        raise
+    except SettingNotSetError as err:
+        if request.models != "optional":
+            raise
+        if request.on_model_skipped is not None:
+            request.on_model_skipped(err)
+        return None
 
 
 def _topology(request: RunRequest) -> Any:

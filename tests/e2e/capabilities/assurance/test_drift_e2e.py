@@ -29,10 +29,25 @@ def test_git_hook_aborts_on_spec_drift(tmp_path: Path) -> None:
     subprocess.run(["git", "init"], cwd=proj, check=True)
     subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=proj)
     subprocess.run(["git", "config", "user.name", "test"], cwd=proj)
+    # The hook runs in a registered project (TECH-077: an unregistered folder is refused).
+    init = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "specweaver.interfaces.cli.main",
+            "init",
+            "my_proj",
+            "--path",
+            str(proj),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert init.returncode == 0, init.stdout + init.stderr
 
     # 2. Setup baseline SpecWeaver workspace
     specs_dir = proj / "specs"
-    specs_dir.mkdir()
+    specs_dir.mkdir(exist_ok=True)
     plan = specs_dir / "test_plan.yaml"
     plan.write_text("""
 spec_path: "feat.md"
@@ -56,7 +71,7 @@ tasks:
 """)
 
     src_dir = proj / "src"
-    src_dir.mkdir()
+    src_dir.mkdir(exist_ok=True)
     main = src_dir / "main.py"
     main.write_text("def wrong_func(): pass\n")
 

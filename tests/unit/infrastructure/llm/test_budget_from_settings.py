@@ -12,8 +12,6 @@ nobody, and one that ran with a built-in number would spend money nobody chose.
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.infrastructure.llm.models import TaskType
 from specweaver.infrastructure.llm.router import build_router
@@ -63,15 +61,10 @@ def test_the_token_ceiling_comes_from_the_brake_table() -> None:
 def test_a_telemetry_adapter_carries_the_configured_ceilings() -> None:
     """The seam. Settings nothing reads are a comment.
 
-    `command_router` is where a command's settings files meet the resolver that builds every
+    `build_router` is where every run's settings files meet the resolver that builds every
     `TelemetryCollector`, so it is the only place the configured limit can reach the breaker.
     """
-    from specweaver.infrastructure.llm.interfaces.command import command_router
-
-    files = _files(_HOSTED + _BRAKE)
-
-    with patch("specweaver.interfaces.cli._core.load_active_llm_settings", return_value=files):
-        router = command_router("proj", [TaskType.REVIEW])
+    router = build_router(_files(_HOSTED + _BRAKE), project="proj", roles=[TaskType.REVIEW])
 
     routed = router.get_for_task(TaskType.REVIEW)
     (limit,) = routed.adapter.scope(routed.config).limits

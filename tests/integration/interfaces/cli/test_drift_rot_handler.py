@@ -39,6 +39,13 @@ from tests.rendering import shows
 runner = CliRunner()
 
 
+def _register(name: str, root: Path) -> None:
+    from specweaver.interfaces.cli import _core
+    from tests.fixtures.db_utils import register_test_project
+
+    register_test_project(_core.get_db(), name, str(root))
+
+
 @pytest.fixture(autouse=True)
 def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
@@ -60,6 +67,7 @@ def test_rot_check_exits_42_on_drift(tmp_path: Path) -> None:
     # 1. Setup a dummy workspace
     proj_dir = tmp_path / "rot_proj"
     proj_dir.mkdir()
+    _register("rot_proj", proj_dir)  # TECH-077: the hook runs in a registered project
 
     # 2. Setup the specs directory and plan
     specs_dir = proj_dir / "specs"
@@ -130,6 +138,7 @@ def test_rot_check_exits_0_on_clean(tmp_path: Path) -> None:
     """Test that cleanly mapped ASTs do not trigger the 42 Git Hook."""
     proj_dir = tmp_path / "clean_proj"
     proj_dir.mkdir()
+    _register("clean_proj", proj_dir)  # TECH-077: the hook runs in a registered project
 
     specs_dir = proj_dir / "specs"
     specs_dir.mkdir()

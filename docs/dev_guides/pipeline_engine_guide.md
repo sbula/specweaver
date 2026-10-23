@@ -305,13 +305,14 @@ Lifecycle (`execute_run`, when `context.isolation.session_isolation` is set):
   off rather than "on with an empty allow-list".
 
 **DAL auto-escalation (`INT-US-03` SF-03)**: `apply_session_policy` takes an opt-in
-`dal_auto_escalate` flag. Only **`sw implement`** passes it today. When set and
+`dal_auto_escalate` flag. The run builder (`interfaces/run_setup`) passes it for every CLI door
+except the read-only ones (`sw review`, `sw drift check`, `sw drift check-rot`, `sw standards scan`),
+which skip the per-run policy and keep the per-step one (`TECH-077`). When set and
 `enforce_session_isolation` is off, session isolation turns on if the touched code's resolved DAL is
 **at or above `[sandbox] auto_isolate_min_dal`** (default `DAL_B`; `"off"` disables). High-assurance
 (DAL_A/B) generated code is sandboxed automatically; low-DAL projects stay on host mode.
-`sw run`/`sw resume` do **not** opt in. **Q3 degrade**: if escalation wants isolation but the project
-is not a git repo, it logs a warning and stays on host. An explicit `enforce_session_isolation=true`
-still fails closed.
+A project that is not a git repository then stops at the worktree, naming it, as an explicit
+`enforce_session_isolation=true` always did (`TECH-077`, reversing the old host fallback).
 
 **v1 limits**:
 

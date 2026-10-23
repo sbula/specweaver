@@ -80,6 +80,12 @@ except ImportError as e:
 
 ## Rules for `cli.py`
 
+- **A command that runs a pipeline sets up its run through `interfaces/cli/run_doors.py`.**
+  `build_run_or_exit` gives the rule file, standards, project sections, isolation, router and
+  topology from one project, and turns the builder's errors into refusals; `run_one_step` does the
+  same for a one-step pipeline and returns its last step record. Pass `read_only=True` when the
+  command writes and executes nothing. Never construct a `RunContext` by hand in a command.
+
 - **No heavy global imports.** Import core services, SQLAlchemy or heavy ML libraries *inside* the
   command function. Typer parses all CLI scripts at boot; a heavy global import slows every `sw`
   command and invites cyclic imports.

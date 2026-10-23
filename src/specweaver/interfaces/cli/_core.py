@@ -19,10 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from specweaver.core.config.autonomy_policy import AutonomyPolicy
-    from specweaver.core.config.database import Database
     from specweaver.core.config.doc_policy import DocPolicy
     from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
-    from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.workspace.store import WorkspaceRepository
 
 import anyio
@@ -122,22 +120,6 @@ def registered_project_at(path: Path) -> str | None:
     return project_name_at(get_db(), path)
 
 
-def project_name_for(path: Path) -> str:
-    """The project registered at `path`; the active project when none is registered there."""
-    return registered_project_at(path) or _require_active_project()
-
-
-def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
-    """The LLM settings files for the project at `path`, or exit naming the error."""
-    from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
-    from specweaver.core.config.settings_file import SettingsFileError
-
-    try:
-        return load_llm_settings(path)
-    except SettingsFileError as err:
-        refuse_settings(err)
-
-
 def load_section_at(path: Path, parse: Callable[[str, str], _T]) -> _T:
     """A section of the project's settings at `path`, or exit naming the file, key and line."""
     from specweaver.core.config.bootstrap.project_settings import load_section
@@ -178,17 +160,6 @@ def project_path_or_exit(project: str | None) -> Path:
     except (FileNotFoundError, NotADirectoryError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
-
-
-def load_project_settings(db: Database, project: str) -> SpecWeaverSettings:
-    """The project's settings, or exit naming the file, key and line of a broken one."""
-    from specweaver.core.config.bootstrap.settings_loader import load_settings
-    from specweaver.core.config.settings_file import SettingsFileError
-
-    try:
-        return load_settings(db, project)
-    except SettingsFileError as err:
-        refuse_settings(err)
 
 
 def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFiles:

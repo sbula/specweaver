@@ -15,6 +15,9 @@ sw hooks install --pre-commit
 ```
 
 - Installs into your local `.git` repository. The hook runs `sw drift check-rot --staged`. Drift raises a fatal **Exit Code 42**.
+- The project must be registered (`sw init <name> --path <folder>`); in a folder no project is
+  registered at, the hook stops the commit and says so. It is a read-only check: it never opens a
+  per-run worktree, whatever the project's DAL.
 - The installer records your active Python/UV executable (`sys.executable`), so the hook uses the
   right environment from the git CLI and from IDE source control.
 

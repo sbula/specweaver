@@ -7,10 +7,10 @@ Proves: C-FLOW-13 FR-2, C-FLOW-13 FR-9
 
 | Bucket | Case |
 |---|---|
-| Happy | the project registered at the target folder is the command's project |
-| Boundary | a folder nobody registered falls back to the active project |
-| Degradation | not applicable — a missing active project is refused by `_require_active_project` |
-| Hostile | the router reads the target folder's settings even when given another project's name |
+| Happy | the project registered at the target folder is the command's project, not the active one |
+| Boundary | a folder nobody registered is refused, never run as the active project (`TECH-077` FR-4) |
+| Degradation | not applicable — a broken settings file is `test_run_doors.py`'s |
+| Hostile | the router reads the target folder's settings while another project is active |
 """
 
 from __future__ import annotations
@@ -19,11 +19,12 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+import typer
 
 from specweaver.core.config.settings_file import SettingsFileError
-from specweaver.infrastructure.llm.interfaces.command import command_router
-from specweaver.infrastructure.llm.models import TaskType
-from specweaver.interfaces.cli import _core
+from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+from specweaver.core.flow.engine.naming import registered_name
+from specweaver.interfaces.cli import _core, run_doors
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 if TYPE_CHECKING:
@@ -69,27 +70,33 @@ def projects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Pat
     return private, other
 
 
+def _build(root: Path, action: StepAction = StepAction.VALIDATE) -> object:
+    pipeline = PipelineDefinition.create_single_step("one", action, StepTarget.SPEC)
+    return run_doors.build_run_or_exit(root, root / "a_spec.md", pipeline)
+
+
 def test_the_project_registered_at_the_folder_is_the_commands_project(projects) -> None:
     private, _other = projects
 
-    assert _core.project_name_for(private) == "priv"
+    assert registered_name(_build(private)) == "priv"
 
 
-def test_an_unregistered_folder_falls_back_to_the_active_project(projects, tmp_path: Path) -> None:
+def test_an_unregistered_folder_is_refused(projects, tmp_path: Path) -> None:
     loose = tmp_path / "loose"
     loose.mkdir()
 
-    assert _core.project_name_for(loose) == "other"
+    with pytest.raises(typer.Exit):
+        _build(loose)
 
 
-def test_the_router_reads_the_target_folders_settings_whatever_name_it_gets(projects) -> None:
+def test_the_router_reads_the_target_folders_settings(projects) -> None:
     private, _other = projects
 
     with (
         patch.object(_core, "refuse_settings", side_effect=_reraise),
         pytest.raises(SettingsFileError, match="private servers only"),
     ):
-        command_router("other", [TaskType.REVIEW], project_root=private)
+        _build(private, StepAction.REVIEW)
 
 
 def _reraise(err: Exception) -> None:

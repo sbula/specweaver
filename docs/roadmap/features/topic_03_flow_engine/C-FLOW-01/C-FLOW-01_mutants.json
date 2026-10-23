@@ -100,7 +100,8 @@
         "tests/integration/infrastructure/llm/interfaces/test_missing_calls_told.py",
         "tests/e2e/capabilities/infrastructure/test_missing_calls_e2e.py",
         "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py",
-        "tests/unit/core/flow/engine/test_runner_telemetry.py"
+        "tests/unit/core/flow/engine/test_runner_telemetry.py",
+        "tests/integration/interfaces/cli/test_run_doors.py"
       ],
       "mutants": [
         {
@@ -146,12 +147,12 @@
         {
           "id": "optional-router-never-tells",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "optional_command_router",
-          "old": "        return tell_missing_at_end(\n            build_router(\n                files,\n                project=project,\n                roles=roles,\n                ask=_core.spend_asker(),\n                db=",
-          "new": "        return (\n            build_router(\n                files,\n                project=project,\n                roles=roles,\n                ask=_core.spend_asker(),\n                db=",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "        tell_missing_at_end(context.model.llm_router)\n",
+          "new": "        pass\n",
           "breaks": "sw standards never says its ledger missed calls",
-          "symbol_sha": "sha256:97b73121fe980216277babf6197f783d0f021d56a615a2668bc66799de5ad0fe"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         },
         {
           "id": "rest-unwritten-dropped",

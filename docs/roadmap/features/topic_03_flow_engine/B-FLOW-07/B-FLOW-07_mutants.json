@@ -381,12 +381,12 @@
         {
           "id": "command-without-history",
           "origin": "authored",
-          "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "command_router",
-          "old": "                run_model=run_model,\n                db=_core.get_db(),\n",
-          "new": "                run_model=run_model,\n",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "            ask=request.ask,\n            db=request.db,\n",
+          "new": "            ask=request.ask,\n",
           "breaks": "sw run and sw implement never apply step limits",
-          "symbol_sha": "sha256:82f0cedc479fa5123b8ececb9de77a11b05909edb5bbf63a6f74b39ecb34f2f1"
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
         },
         {
           "id": "step-limit-on-worst-case",

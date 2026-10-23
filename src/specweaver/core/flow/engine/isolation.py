@@ -121,9 +121,8 @@ def apply_session_policy(
     ``dal_auto_escalate``: when True and the explicit
     ``enforce_session_isolation`` flag is off, the policy auto-enables session isolation if
     the touched code's resolved DAL is at/above the ``auto_isolate_min_dal`` threshold
-    (default ``DAL_B``). This is **opt-in per caller** — ``sw implement`` passes True;
-    ``sw run``/``sw resume`` leave it False, so their behavior is byte-identical (escalation
-    never even resolves a DAL for them).
+    (default ``DAL_B``). The run builder (``interfaces/run_setup``) passes True for every door
+    except the read-only ones, which skip the per-run policy altogether.
 
     No half-apply: the allow-list is computed BEFORE either field is mutated, so a
     derivation failure leaves the context fully default (session off) rather than the

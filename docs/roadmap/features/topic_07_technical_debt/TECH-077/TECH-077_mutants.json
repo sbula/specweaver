@@ -174,10 +174,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/run_setup/builder.py",
           "symbol": "_router",
-          "old": "        if request.models == \"optional\":\n            return None\n",
-          "new": "        if False:\n            return None\n",
+          "old": "        if request.models != \"optional\":\n            raise\n",
+          "new": "        if True:\n            raise\n",
           "breaks": "a command whose model is optional refuses without one",
-          "symbol_sha": "sha256:020b2a11c3503c9d7bc63e465a397f8c230bbd85c3adbcf85dc64f63a7b6e93c"
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
         }
       ]
     },
@@ -240,6 +240,26 @@
           "new": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=False\n",
           "breaks": "sw review opens a per-run worktree",
           "symbol_sha": "sha256:b9e931c0f74e5b0f1ba6671421c100a2f215d9b05193069e62a27050cf0f1f07"
+        },
+        {
+          "id": "check-rot-opens-worktree",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "_run_rot_check",
+          "old": "        models=\"none\",\n        read_only=True,\n",
+          "new": "        models=\"none\",\n        read_only=False,\n",
+          "breaks": "the commit hook opens a per-run worktree",
+          "symbol_sha": "sha256:86711ddeb8d885e333742a8d8abd0571fc4fa344a3ece6424c7c574fbd34b406"
+        },
+        {
+          "id": "scan-opens-worktree",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/interfaces/cli.py",
+          "symbol": "_enrich_scope",
+          "old": "        models=\"optional\",\n        read_only=True,\n",
+          "new": "        models=\"optional\",\n        read_only=False,\n",
+          "breaks": "sw standards scan opens a per-run worktree",
+          "symbol_sha": "sha256:78ef4109f9e800b3b3f6432ece59f35fff21f0c30b1458516f42b2d7971b6404"
         }
       ]
     },
@@ -296,6 +316,7 @@
       "requirement": "FR-2",
       "title": "Every CLI door builds its run through the run builder and refuses its errors",
       "scope": [
+        "tests/e2e/capabilities/assurance/test_scan_without_brake_e2e.py",
         "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
         "tests/integration/interfaces/cli/test_run_doors.py",
         "tests/integration/interfaces/cli/test_run_wiring.py",
@@ -371,6 +392,26 @@
           "new": "    pass\n",
           "breaks": "sw draft asks the user nothing",
           "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+        },
+        {
+          "id": "no-model-said-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "            request.on_model_skipped(err)\n",
+          "new": "            pass\n",
+          "breaks": "a scan with no model never says why",
+          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+        },
+        {
+          "id": "drift-check-wrong-folder",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "drift_check",
+          "old": "    last_record, _context = run_one_step(\n        project_path,\n        plan_path,\n",
+          "new": "    last_record, _context = run_one_step(\n        target_path.parent,\n        plan_path,\n",
+          "breaks": "sw drift check builds its run for the file's folder, not the project",
+          "symbol_sha": "sha256:e4d73d6c168e904c16e973b2755fdb6a40683f0f4d550a78600ce8dec4933388"
         }
       ]
     },
@@ -378,7 +419,8 @@
       "requirement": "FR-11",
       "title": "sw draft lives in the drafting workflow",
       "scope": [
-        "tests/integration/workflows/drafting/interfaces/test_draft_lives_in_drafting.py"
+        "tests/integration/workflows/drafting/interfaces/test_draft_lives_in_drafting.py",
+        "tests/unit/interfaces/cli/test_run_one_step.py"
       ],
       "mutants": [
         {
@@ -390,6 +432,16 @@
           "new": "@drafting_cli.command(name=\"drafts\")\n",
           "breaks": "sw draft is no drafting command",
           "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+        },
+        {
+          "id": "one-step-drops-params",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "symbol": "run_one_step",
+          "old": "description=description, params=params or {}",
+          "new": "description=description, params={}",
+          "breaks": "a one-step run loses its params",
+          "symbol_sha": "sha256:2b99d583a4428a20758b195d28c7cb0599b980ce575644230d44e8efd06abc4c"
         }
       ]
     }

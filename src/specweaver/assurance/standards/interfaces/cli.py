@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from pathlib import Path
 
     from specweaver.assurance.standards.analyzer import CategoryResult
@@ -42,14 +41,12 @@ def _scan_scopes(
     scopes: list[str],
     all_files: list[Any],
     project_path: Path,
-    make_context: Callable[[], Any],
     *,
     compare: bool,
 ) -> dict[str, list[CategoryResult]]:
     """Enrich every scope that has source files, keeping only those that produced results.
 
-    `make_context` is a factory rather than a value: each scope gets a fresh `RunContext`, which is
-    what the loop did inline before and what keeps one scope's run from observing another's state.
+    Each scope runs with a fresh context, so one scope's run never observes another's state.
     """
     from specweaver.core.flow.engine.brake import brake_stop
 
@@ -64,8 +61,7 @@ def _scan_scopes(
             continue
 
         _core.console.print(f"  Scope [cyan]{scope}[/cyan]: {len(scope_files)} source files")
-        context = make_context()
-        results = _enrich_scope(scope, scope_files, context, compare=compare)
+        results, context = _enrich_scope(scope, scope_files, project_path, compare=compare)
         if stopped is None and (stopped := brake_stop(context)) is not None:
             _core.console.print("  Model enrichment stopped by the spend brake:", style="yellow")
             _core.console.print(f"  {stopped}", markup=False)
@@ -75,30 +71,33 @@ def _scan_scopes(
 
 
 def _enrich_scope(
-    scope: str, scope_files: list[Any], context: Any, *, compare: bool
-) -> list[CategoryResult]:
-    """Run the one-step enrichment pipeline for a scope; `[]` unless it passed with results."""
-    import asyncio
+    scope: str, scope_files: list[Any], project_path: Path, *, compare: bool
+) -> tuple[list[CategoryResult], Any]:
+    """Run the one-step enrichment for a scope: `[]` unless it passed with results, and its context.
 
-    from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-    from specweaver.core.flow.engine.runner import PipelineRunner
+    Enrichment is optional: without a model for the `check` role the findings stand as found.
+    """
+    from specweaver.core.flow.engine.models import StepAction, StepTarget
     from specweaver.core.flow.engine.state import StepStatus
+    from specweaver.interfaces.cli.run_doors import run_one_step
 
-    pipeline = PipelineDefinition.create_single_step(
+    # The scan is project-wide, so the step's spec is the project's rule file.
+    last_record, context = run_one_step(
+        project_path,
+        project_path / "CONSTITUTION.md",
         name=f"enrich_scope_{scope}",
         action=StepAction.ENRICH,
         target=StepTarget.STANDARDS,
         description=f"Enrich standards for scope {scope}",
         params={"scope_files": scope_files, "half_life_days": 90.0, "compare": compare},
+        models="optional",
+        read_only=True,
     )
-
-    run_state = asyncio.run(PipelineRunner(pipeline, context).run())
-    last_record = run_state.step_records[-1] if run_state.step_records else None
     kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)
     if last_record and last_record.status in kept and last_record.result:
         results: list[CategoryResult] = last_record.result.output.get("results", [])
-        return results
-    return []
+        return results, context
+    return [], context
 
 
 @standards_app.command("scan")
@@ -130,8 +129,6 @@ def standards_scan(
     from specweaver.assurance.standards.discovery import discover_files
     from specweaver.assurance.standards.reviewer import StandardsReviewer
     from specweaver.assurance.standards.scope_detector import detect_scopes
-    from specweaver.infrastructure.llm.interfaces.command import optional_command_router
-    from specweaver.infrastructure.llm.models import TaskType
 
     name = _core._require_active_project()
     db = _core.get_db()
@@ -148,25 +145,7 @@ def standards_scan(
     # Discover all files once
     all_files = discover_files(project_path, AnalyzerFactory)
 
-    from specweaver.core.flow.handlers.run_context import AnalysisContext, ModelAccess, RunContext
-
-    settings = _core.load_project_settings(db, name)
-    # Enrichment is optional: without a model for the `check` role the findings stand as found.
-    router = optional_command_router(name, [TaskType.CHECK])
-
-    # We use a dummy spec_path since standards scanning is project/scope-wide
-    dummy_spec = project_path / "CONSTITUTION.md"
-
-    def _context() -> Any:
-        return RunContext(
-            analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
-            project_path=project_path,
-            spec_path=dummy_spec,
-            model=ModelAccess(config=settings, llm_router=router),
-            db=db,
-        )
-
-    scope_results = _scan_scopes(scopes, all_files, project_path, _context, compare=compare)
+    scope_results = _scan_scopes(scopes, all_files, project_path, compare=compare)
 
     if not scope_results:
         _core.console.print(

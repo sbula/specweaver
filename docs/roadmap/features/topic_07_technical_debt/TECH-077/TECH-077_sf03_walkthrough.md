@@ -111,3 +111,80 @@ Full suite 11506 passed, 9 skipped. `quality.py sf` 18/18 after one ruff fix. `t
 - R2 (LOW) `sw draft`'s topology slice is now chosen by the spec's stem (`orders` from
   `orders_spec.md`), the same name it used before.
 - Cycle 2: no new finding.
+
+## CB-3 — the one-step helper, the read-only doors, and dead code out (FR-2, FR-3, FR-11)
+
+### What changed
+
+- `run_doors.run_one_step`: builds the one-step pipeline, builds its run, runs it; returns the last
+  step record and the context (decision 2).
+- `sw drift check`, `sw drift check-rot`, the standards scan's per-scope enrichment: on
+  `run_one_step` with `read_only=True` (decision 1). They now get the rule file, standards, sections
+  and the per-step policy.
+- `RunRequest.on_model_skipped`: the builder tells the door why an `optional` model was skipped;
+  the CLI prints the same "No model used: <key>: <why>" line as before.
+- Removed, no callers left: `command_router`, `optional_command_router` (the CLI's two router
+  factories — the third, the API's, goes in SF-04), `_core.project_name_for`,
+  `_core.load_project_settings`, `_core.load_llm_settings_at`, `core/flow/interfaces/run_topology.py`.
+- Docs: `domain_driven_cli_creation.md` (build a command's run through `run_doors`),
+  `pipeline_engine_guide.md` (who escalates; non-git stops), `spec_rot_pre_commit_workflow.md` (the
+  hook needs a registered project and opens no per-run worktree), `apply_session_policy` docstring.
+
+### A behavior change to know
+
+`sw drift check-rot` — the git pre-commit hook — now refuses a folder no project is registered at,
+naming `sw init`, so it stops the commit there. Before, it ran in any folder. This follows SF-02
+decision 1 (no project, no run); two hook tests now register their folder.
+
+### Deviation from the plan
+
+The plan had `check-rot` build its run once and swap the spec per file. It builds once per staged
+file through `run_one_step` instead: simpler, and a hook checks a few files.
+
+### Red first
+
+`test_run_one_step.py`: 3 of 3 failed (no helper). `test_cli_doors_build_alike.py`: the drift and
+scan cases failed on the old code (no rule file). The no-model line was lost on the first green and
+caught by `test_scan_without_brake_e2e.py`; `on_model_skipped` restored it.
+
+### Tests re-homed
+
+- `test_target_project.py` now runs through `build_run_or_exit`; "an unregistered folder falls back
+  to the active project" became "is refused" (FR-4).
+- `test_missing_calls_told.py` drives `tell_missing_at_end` directly; `run_doors` calling it is
+  `router-never-tells`.
+- `test_budget_from_settings.py` asks `build_router`, the seam every run uses.
+- `test_run_topology.py` deleted with its module; the builder's topology is in `test_build_run.py`.
+
+### Mutants
+
+Re-pointed from deleted code and OBJECTED: B-FLOW-07 `command-without-history`, C-FLOW-01
+`optional-router-never-tells`, C-FLOW-13 `router-reads-active-project`,
+`target-name-is-active-project`, `command-drops-run-model`, `skipped-model-unnamed`,
+`scan-skips-wrong-settings`, TECH-076 `cli-settings-error-escapes`. TECH-077 `optional-model-refuses`
+re-anchored. New, OBJECTED: `no-model-said-nothing`, `drift-check-wrong-folder`,
+`check-rot-opens-worktree`, `scan-opens-worktree`, `one-step-drops-params`. Drifted: 0.
+
+### Gates
+
+Full suite 11511 passed, 9 skipped. `quality.py sf` 18/18 after one import-order fix. `tach check`
+clean (three modules lose unused links; `interfaces.cli` gains `core.flow` for the helper).
+
+### Red/Blue (code)
+
+- R1 (MEDIUM) the hook now blocks commits in an unregistered repo. Accepted: SF-02 decision 1, and
+  the message says how to register. Recorded above and in the hook guide.
+- R2 (LOW) a scan with several scopes and no model prints "No model used" once per scope.
+  Accepted: one line per scope run, each true.
+- R3 (LOW) `sw implement` reads `[implement] language` itself once more (CB-2 R1).
+- Cycle 2: no new finding.
+
+### SF-03 coverage
+
+| FR | Proof |
+|---|---|
+| FR-2 | `test_run_doors.py`, `test_cli_doors_build_alike.py` (all eight doors), `test_run_wiring.py` |
+| FR-3 (doors) | `test_cli_doors_build_alike.py` — the per-run worktree list is exact |
+| FR-4 (doors) | `test_cli_doors_build_alike.py` — `sw implement` in B while A is active |
+| FR-5 | `test_resume_uses_runs_project_e2e.py`, `test_run_doors.py` (worktree gone) |
+| FR-11 | `test_draft_lives_in_drafting.py`, `test_run_one_step.py` |
