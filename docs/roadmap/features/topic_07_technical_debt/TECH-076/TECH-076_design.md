@@ -177,6 +177,7 @@ no run. The same journey runs as an e2e test in the suite.
 - **Inputs**: `specweaver.toml` text, `dal_definitions.yaml` text.
 - **Outputs**: `SettingsFileError` from `load_settings` for any broken project setting.
 - **Depends on**: none
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-076/TECH-076_sf01_implementation_plan.md
 
 ### SF-02: Every door stops on a broken setting
 - **Scope**: the two catch-alls and every CLI command that loads project settings.
@@ -202,13 +203,13 @@ no run. The same journey runs as an e2e test in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One strict reader | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One strict reader | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23.
-**Next step**: Trigger the implementation-plan skill for SF-01.
+**Current status**: Design APPROVED 2026-10-23; SF-01 plan approved 2026-10-23.
+**Next step**: Trigger the dev skill for SF-01 (CB-1).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
