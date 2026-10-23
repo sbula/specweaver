@@ -87,7 +87,7 @@ generalises it.
 | FR-4 | `POST /implement` SHALL run the same implement pipeline as `sw implement` (code, tests, test run, validation, the bounded loop; one pipeline builder outside both doors) and report the task's files `[agreed 2026-10-23]` | API | implements | one feature behind one name |
 | FR-5 | The planner SHALL tell the model the project's language, by its language guide's name | planner | plans | Java, Kotlin, TypeScript and Rust get plans for their language |
 | FR-6 | One table in `commons` SHALL map file endings to languages; prompt fences, the code-structure atom, the archetype pipelines, the parser registry, the skeleton reader and rename SHALL read it `[agreed 2026-10-23]` | prompts, AST, flow | name a file's language | Kotlin is fenced as `kotlin`; a new language is added once |
-| FR-7 | A test target SHALL run exactly what it names, at every size, in every language: one test (`<file>::<test name>` `[agreed 2026-10-23]`), one file, one folder with all its subfolders, or the whole project (no target) `[agreed 2026-10-23]`. Each runner turns it into its tool's filter: pytest takes the path as is; Gradle `--tests <Class>.<name>` / `<Class>` / `<pkg>.*` (its `*` spans subpackages); Maven `-Dtest=<Class>#<name>` / `<Class>` / `<pkg path>/**`; cargo `--test <file> <name>` / `--test <file>` / a folder of `src/` as its module path filter, `tests/` as `--tests`; the TypeScript runner takes the file or folder and a name filter | QA runner | runs tests | a single test, a file, a folder or all of them run and can be debugged outside Python |
+| FR-7 | A test target SHALL run exactly what it names, at every size, in every language: one test (`<file>::<test name>` `[agreed 2026-10-23]`), one file, one folder with all its subfolders, or the whole project (no target) `[agreed 2026-10-23]`. A name means exactly that test, and a run that ran no test fails, naming the target `[agreed 2026-10-23]`. Each runner turns it into its tool's filter: pytest takes the path as is; Gradle `--tests <Class>.<name>` / `<Class>` / `<pkg>.*` (its `*` spans subpackages); Maven `-Dtest=<Class>#<name>` / `<Class>` / `<pkg path>/**`; cargo `--test <file> <name>` / `--test <file>` / a folder of `src/` as its module path filter, `tests/` as `--tests`; the TypeScript runner takes the file or folder and a name filter | QA runner | runs tests | a single test, a file, a folder or all of them run and can be debugged outside Python |
 | FR-8 | The Rust debugger SHALL run the entrypoint it is given: `src/bin/<x>.rs` → `cargo run --bin <x>`, `examples/<x>.rs` → `--example <x>`, else the default binary | QA runner | debugs | a chosen Rust binary or example runs |
 
 ## Requirement–Surface Bindings
@@ -190,6 +190,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 - **Scope**: every target size (one test, file, folder, project) in every runner; the Rust debugger's entrypoint.
 - **FRs**: [FR-7, FR-8]
 - **Depends on**: none
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-078/TECH-078_sf04_implementation_plan.md
 
 ## Execution Order
 
@@ -204,12 +205,12 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One way to find a step's files | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The API's implement and the planner | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | Test and debug targets | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Test and debug targets | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
-([walkthrough](TECH-078_sf01_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-04 (no dependency), then SF-02.
+([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 plan APPROVED 2026-10-23.
+**Next step**: Trigger the dev skill for SF-04, then the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
