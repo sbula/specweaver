@@ -35,6 +35,7 @@ Re-measured 2026-10-23; every one still holds. Each maps to the requirement that
 | Found in design research | `[docs]` reports a TOML syntax error at line 0 before Python 3.14 (`doc_policy.py:87`, `getattr(exc, "lineno", 0)`) | FR-6 |
 | Found in design research | a broken `.specweaver/dal_definitions.yaml` falls back to the default matrix and only logs (`settings_loader.py:96-118`) `[agreed 2026-10-23]` | FR-3 |
 | Found in design research | `sw run` / `sw resume` and `POST /pipelines/{name}/run` catch every settings error and run with isolation off (`core/flow/interfaces/cli.py:330-340`, `interfaces/api/v1/pipelines.py:116-123`) `[agreed 2026-10-23]` | FR-4 |
+| Found in SF-01 dev | `_resolve_merged_settings` catches every error while layering the target's DAL tier over the settings and validates without it, logging a WARNING (`core/flow/handlers/validation.py:57-72`) `[agreed 2026-10-23]` | FR-4 |
 | Found in design research | `load_settings_for_active` has no caller (`settings_loader.py:147`) | FR-7 |
 | Found in design research | `sw implement`, `sw review`, `sw standards scan`, `sw drift` and `sw run`'s model setup call `load_settings` with no handler, so a settings error would end in a traceback | FR-5 |
 
@@ -90,7 +91,7 @@ one shape of error everywhere, the unknown key reported first.
 | FR-1 | `[sandbox]` and `[standards]` SHALL be read by the shared strict reader: invalid TOML, an unknown key or a bad value SHALL raise `SettingsFileError` naming the file, key and line, and never fall back to defaults `[agreed 2026-10-23]`; an absent file or section still gives the defaults | settings loader | loads project settings | a typo stops the command instead of running on the host |
 | FR-2 | `SandboxSettings` and `StandardsSettings` SHALL refuse unknown keys `[agreed 2026-10-23]` | settings models | validate a section | a misspelt key is an error, not ignored |
 | FR-3 | A broken `.specweaver/dal_definitions.yaml` (invalid YAML, unknown key, bad value) SHALL raise `SettingsFileError` naming the file, key and line `[agreed 2026-10-23]`; an absent file still gives the default matrix | settings loader | loads the DAL matrix | a broken matrix stops the command |
-| FR-4 | `sw run`, `sw resume`, `POST /pipelines/{name}/run` and the API's resume and gate-answer routes (both through `_apply_isolation`, `pipelines.py:69`) SHALL stop on a `SettingsFileError` while resolving isolation instead of running with isolation off: the CLI exits 1 printing the located message, the API answers 500 with `SANDBOX_SETTINGS` or `STANDARDS_SETTINGS` `[agreed 2026-10-23]`, or `DAL_DEFINITIONS` for the DAL file `[agreed 2026-10-23]`; any other failure there keeps today's best effort `[agreed 2026-10-23]` | CLI, API | start a run | no run executes on a project whose settings cannot be read |
+| FR-4 | `sw run`, `sw resume`, `POST /pipelines/{name}/run` and the API's resume and gate-answer routes (both through `_apply_isolation`, `pipelines.py:69`) SHALL stop on a `SettingsFileError` while resolving isolation instead of running with isolation off: the CLI exits 1 printing the located message, the API answers 500 with `SANDBOX_SETTINGS` or `STANDARDS_SETTINGS` `[agreed 2026-10-23]`, or `DAL_DEFINITIONS` for the DAL file `[agreed 2026-10-23]`; any other failure there keeps today's best effort `[agreed 2026-10-23]`; the validation handler SHALL stop when it cannot layer the target's DAL tier over the settings, instead of validating without it `[agreed 2026-10-23]` | CLI, API | start a run | no run executes on a project whose settings cannot be read |
 | FR-5 | Every CLI command that loads project settings (`sw implement`, `sw review`, `sw standards scan`, `sw drift`, `sw run`) SHALL stop on a `SettingsFileError` with exit 1 and the located message, never a traceback | CLI | loads project settings | one clear refusal on every door |
 | FR-6 | One function SHALL turn settings text into a strict model or a located `SettingsFileError`; `[docs]`, `[llm]`, the machine file and the project sections SHALL use it, and a TOML syntax error SHALL name its real line on every supported Python | settings readers | parse settings text | one error shape; no "line 0" |
 | FR-7 | One loader SHALL read any project section by name and model, and one CLI wrapper SHALL refuse its error; `PROJECT_FILE_NAME` SHALL live with that loader, not in the LLM loader; the unused `load_settings_for_active` is removed | settings loader, CLI | load a section | adding a section costs a model only |
@@ -203,13 +204,13 @@ no run. The same journey runs as an e2e test in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One strict reader | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One strict reader | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every door stops on a broken setting | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One loader, honest names, one home each | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01 plan approved 2026-10-23.
-**Next step**: Trigger the dev skill for SF-01 (CB-1).
+**Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23 ([walkthrough](TECH-076_sf01_walkthrough.md)).
+**Next step**: Trigger the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

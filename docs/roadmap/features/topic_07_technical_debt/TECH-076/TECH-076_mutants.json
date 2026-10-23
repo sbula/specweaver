@@ -121,6 +121,56 @@
           "symbol_sha": "sha256:4ae3d65054eb302ee875f56d71118440e966347545cd0ff1cd7850d7154e1ff6"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A broken dal_definitions.yaml stops, naming the file, key and line",
+      "scope": [
+        "tests/integration/core/config/test_project_settings_strict.py",
+        "tests/unit/core/config/test_dal_merge.py"
+      ],
+      "mutants": [
+        {
+          "id": "dal-syntax-falls-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/settings_loader.py",
+          "symbol": "_load_dal_matrix",
+          "old": "        raise SettingsFileError(source, \"(syntax)\", line, \"not valid YAML\") from None\n",
+          "new": "        return DALImpactMatrix()\n",
+          "breaks": "broken YAML becomes the default matrix",
+          "symbol_sha": "sha256:40e87d7209fe071bdbdfcf6ca21bb6175ea72c06831bf9c838d2605470e8a5dc"
+        },
+        {
+          "id": "dal-line-lost",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/yaml_lines.py",
+          "symbol": "yaml_line",
+          "old": "        line = marks.key(part)[0] + 1\n",
+          "new": "        line = 1\n",
+          "breaks": "a DAL error points at line 1",
+          "symbol_sha": "sha256:9c7589b8baeea3749ac6d5840fbe7542b68949aff252ea8b101c6dc24c7b2a56"
+        },
+        {
+          "id": "dal-matrix-accepts-unknown-key",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings.py",
+          "symbol": "DALImpactMatrix",
+          "old": "    model_config = ConfigDict(use_enum_values=False, extra=\"forbid\")\n",
+          "new": "    model_config = ConfigDict(use_enum_values=False)\n",
+          "breaks": "a misspelt top key is ignored",
+          "symbol_sha": "sha256:a744e17af61ab7209a295f5ff3e654a893fecdc2cbefc20c5b283aab37f98bc4"
+        },
+        {
+          "id": "dal-tier-accepts-unknown-key",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/settings.py",
+          "symbol": "ValidationSettings",
+          "old": "    \"\"\"Container for all validation overrides for a project.\"\"\"\n\n    model_config = ConfigDict(extra=\"forbid\")\n",
+          "new": "    \"\"\"Container for all validation overrides for a project.\"\"\"\n",
+          "breaks": "a misspelt 'overrides' is ignored",
+          "symbol_sha": "sha256:dbc024addb9135318a3ea7e64bd462b50c4162844b8c86d65db307e43de6d43e"
+        }
+      ]
     }
   ]
 }

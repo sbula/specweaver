@@ -3,16 +3,16 @@
 
 """A broken project setting stops `load_settings`, naming the file, key and line.
 
-Proves: TECH-076 FR-1, TECH-076 FR-2, TECH-076 NFR-1, TECH-076 NFR-2
+Proves: TECH-076 FR-1, TECH-076 FR-2, TECH-076 FR-3, TECH-076 NFR-1, TECH-076 NFR-2
 
 A real database row → `load_settings` → the project's `specweaver.toml`. Nothing is mocked.
 
 | Bucket | Case |
 |---|---|
-| Happy | a valid `[sandbox]` and `[standards]` are read |
-| Boundary | no file, and a file without the sections, give the defaults |
-| Degradation | a file that is not valid TOML stops, naming `(syntax)` and its line |
-| Hostile | a misspelt key or a bad value in either section stops, naming the key and its line |
+| Happy | a valid `[sandbox]`, `[standards]` and `dal_definitions.yaml` are read |
+| Boundary | no file, a file without the sections, and an empty DAL file give the defaults |
+| Degradation | a file that is not valid TOML or YAML stops, naming `(syntax)` and its line |
+| Hostile | a misspelt key, a bad value or an unknown DAL level stops, naming the key and its line |
 """
 
 from __future__ import annotations
@@ -96,4 +96,65 @@ def test_a_broken_section_stops_naming_the_key_and_line(
         load_settings(db, "proj")
 
     assert caught.value.source == str(root / "specweaver.toml")
+    assert (caught.value.key, caught.value.line) == (key, line)
+
+
+def _write_dal(root: Path, text: str) -> Path:
+    folder = root / ".specweaver"
+    folder.mkdir(exist_ok=True)
+    path = folder / "dal_definitions.yaml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_a_valid_dal_file_is_read(project: tuple[Database, Path]) -> None:
+    from specweaver.commons.enums.dal import DALLevel
+
+    db, root = project
+    _write_dal(
+        root,
+        "matrix:\n  DAL_E:\n    overrides:\n      S01:\n        rule_id: S01\n        enabled: false\n",
+    )
+
+    matrix = load_settings(db, "proj").dal_matrix
+
+    assert matrix.matrix[DALLevel.DAL_E].is_enabled("S01") is False
+
+
+@pytest.mark.parametrize("text", [None, "", "# nothing yet\n"])
+def test_no_or_an_empty_dal_file_gives_the_default(
+    project: tuple[Database, Path], text: str | None
+) -> None:
+    db, root = project
+    if text is not None:
+        _write_dal(root, text)
+
+    assert load_settings(db, "proj").dal_matrix.matrix == {}
+
+
+@pytest.mark.parametrize(
+    ("text", "key", "line"),
+    [
+        ("matrix:\n  DAL_E: {}\n\tbad: 1\n", "(syntax)", 3),
+        ("matrx:\n  DAL_E: {}\n", "matrx", 1),
+        ("matrix:\n  DAL_E:\n    overides: {}\n", "matrix.DAL_E.overides", 3),
+        (
+            "matrix:\n  DAL_E:\n    overrides:\n      S01:\n        rule_id: S01\n"
+            "        enabled: not_a_boolean\n",
+            "matrix.DAL_E.overrides.S01.enabled",
+            6,
+        ),
+        ("matrix:\n  DAL_Z:\n    overrides: {}\n", "matrix.DAL_Z", 2),
+    ],
+)
+def test_a_broken_dal_file_stops_naming_the_key_and_line(
+    project: tuple[Database, Path], text: str, key: str, line: int
+) -> None:
+    db, root = project
+    path = _write_dal(root, text)
+
+    with pytest.raises(SettingsFileError) as caught:
+        load_settings(db, "proj")
+
+    assert caught.value.source == str(path)
     assert (caught.value.key, caught.value.line) == (key, line)

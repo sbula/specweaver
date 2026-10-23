@@ -16,9 +16,9 @@ from specweaver.core.config.settings import (
     SandboxSettings,
     SpecWeaverSettings,
     StandardsSettings,
-    deep_merge_dict,
 )
-from specweaver.core.config.settings_file import parse_section
+from specweaver.core.config.settings_file import SettingsFileError, parse_section, validate
+from specweaver.core.config.yaml_lines import yaml_line
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
@@ -74,10 +74,10 @@ def load_settings(db: Database, project_name: str) -> SpecWeaverSettings:
 
 
 def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
-    """The project's DAL impact matrix, or the built-in default.
+    """The project's DAL impact matrix, or the built-in default when it has no file.
 
-    A malformed file is logged and the default used: DAL only *escalates* isolation, so falling
-    back is the safe direction — a parse error must not leave a project unable to load at all.
+    Raises `SettingsFileError` naming the file, key and line of a matrix it cannot use: a broken
+    matrix must not quietly become the default one.
     """
     if not root_path:
         return DALImpactMatrix()
@@ -88,13 +88,16 @@ def _load_dal_matrix(root_path: object) -> DALImpactMatrix:
 
     from ruamel.yaml import YAML
 
+    text, source = dal_file.read_text(encoding="utf-8"), str(dal_file)
     try:
-        dal_dict = YAML(typ="safe").load(dal_file) or {}
-        matrix = DALImpactMatrix(**deep_merge_dict({}, dal_dict))
-    except Exception:
-        logger.exception("Failed to parse dal_definitions.yaml at %s", dal_file)
-        return DALImpactMatrix()
-
+        data = YAML(typ="rt").load(text) or {}
+    except YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        line = mark.line + 1 if mark is not None else 1
+        raise SettingsFileError(source, "(syntax)", line, "not valid YAML") from None
+    matrix = validate(
+        DALImpactMatrix, data, text, source, line_of=lambda _, loc: yaml_line(data, loc)
+    )
     logger.debug("Loaded DAL configuration from %s", dal_file)
     return matrix
 

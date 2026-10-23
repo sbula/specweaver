@@ -14,7 +14,10 @@ safety-tier matrix, and the count is recorded rather than dressed up. The mutant
 loads, the run still succeeds, and every local augmentation is silently absent.
 """
 
+import pytest
+
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.core.config.settings_file import SettingsFileError
 from tests.fixtures.db_utils import register_test_project
 
 
@@ -123,11 +126,10 @@ def test_load_settings_missing_dal_file(tmp_path):
 
 
 def test_load_settings_invalid_yaml(tmp_path):
-    """Verify load_settings() gracefully swallows fundamentally invalid YAML."""
+    """TECH-076 FR-3: invalid YAML stops, naming the file; no default matrix."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.config.database import Database
-    from specweaver.core.config.settings import DALImpactMatrix
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(tmp_path / "test.db")
@@ -138,21 +140,17 @@ def test_load_settings_invalid_yaml(tmp_path):
     dal_file = sw_dir / "dal_definitions.yaml"
     dal_file.write_text("matrix:\n  - DAL_A:\n    [this is broken yaml]\n ::")
 
-    settings = load_settings(db, "dummy")
-
-    # Assert matrix degrades to empty gracefully
-    assert isinstance(settings.dal_matrix, DALImpactMatrix)
-    assert len(settings.dal_matrix.matrix) == 0
+    with pytest.raises(SettingsFileError, match="not valid YAML"):
+        load_settings(db, "dummy")
 
 
 def test_load_settings_invalid_schema(tmp_path):
-    """Verify load_settings() swallows Pydantic schema validation failures."""
+    """TECH-076 FR-3: a value of the wrong type stops, naming the key."""
     import yaml
 
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.core.config.bootstrap.settings_loader import load_settings
     from specweaver.core.config.database import Database
-    from specweaver.core.config.settings import DALImpactMatrix
 
     bootstrap_database(str(tmp_path / "test.db"))
     db = Database(tmp_path / "test.db")
@@ -169,8 +167,6 @@ def test_load_settings_invalid_schema(tmp_path):
     dal_file = sw_dir / "dal_definitions.yaml"
     dal_file.write_text(yaml.dump(overlay))
 
-    settings = load_settings(db, "dummy")
-
-    # Assert matrix degrades to empty gracefully due to Pydantic exception inside try/except
-    assert isinstance(settings.dal_matrix, DALImpactMatrix)
-    assert len(settings.dal_matrix.matrix) == 0
+    with pytest.raises(SettingsFileError) as caught:
+        load_settings(db, "dummy")
+    assert caught.value.key == "matrix.DAL_E.overrides.S01.enabled"

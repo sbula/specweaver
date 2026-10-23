@@ -50,6 +50,8 @@ class RuleOverride(BaseModel):
     standard warn/fail pattern (e.g. S01's ``max_h2``).
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     rule_id: str
     enabled: bool = True
     warn_threshold: float | None = None
@@ -59,6 +61,8 @@ class RuleOverride(BaseModel):
 
 class ValidationSettings(BaseModel):
     """Container for all validation overrides for a project."""
+
+    model_config = ConfigDict(extra="forbid")
 
     overrides: dict[str, RuleOverride] = {}
 
@@ -78,7 +82,7 @@ class DALImpactMatrix(BaseModel):
     Maps each risk tier (DALLevel) to discrete ValidationSettings overrides.
     """
 
-    model_config = ConfigDict(use_enum_values=False)
+    model_config = ConfigDict(use_enum_values=False, extra="forbid")
 
     matrix: dict[DALLevel, ValidationSettings] = {}
 

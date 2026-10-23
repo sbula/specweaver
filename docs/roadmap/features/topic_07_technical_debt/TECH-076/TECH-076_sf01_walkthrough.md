@@ -100,3 +100,56 @@ Full suite 11382 passed, 9 skipped (first run: the full-chain test's import, fix
 - R3 (LOW) `coder_sandbox` builds a container copy with `model_copy(update=…)`, which does not
   validate, so `extra="forbid"` does not touch it.
 - Cycle 2: no new finding.
+
+## CB-3 — FR-3 (`dal_definitions.yaml` strict)
+
+### What changed
+
+- `_load_dal_matrix` reads the file with ruamel's round-trip loader (line marks kept): invalid YAML
+  → `SettingsFileError(…, "(syntax)", line, "not valid YAML")`; then `validate(DALImpactMatrix, …)`
+  with a YAML line finder. Absent or empty file → the empty matrix, as before. The `except
+  Exception` and its default are gone. The no-op `deep_merge_dict({}, data)` went with them.
+- New `core/config/yaml_lines.py`: `yaml_line(data, path)`, the deepest key's line, else 1. It
+  duck-types the marks, so `core/config` gains no ruamel import.
+- `DALImpactMatrix`, `ValidationSettings`, `RuleOverride` forbid unknown keys.
+- `special_patterns_and_adaptations.md` §6 said the file is "layered over the base presets"; the
+  loader merged it into an empty dict. It now says what the code does: strict read here, the tier
+  merged over the project's settings at validation time.
+
+### Red first
+
+The 5 broken DAL cases (YAML syntax, `matrx`, `overides`, a non-bool `enabled`, `DAL_Z`) loaded the
+default matrix (DID NOT RAISE). The first syntax case was my guess at ruamel's line (3); ruamel
+reports where it detects the error (4). I replaced it with a tab on line 3, which ruamel reports
+on line 3, instead of copying the code's answer into the test.
+
+### Combined analysis
+
+| Function | Unit | Integration |
+|---|---|---|
+| `yaml_line` | ✅ nested, missing part, no marks, through a list | — |
+| `_load_dal_matrix` | ✅ `test_dal_merge.py` (valid, missing, invalid YAML, wrong type) | ✅ valid, absent, empty, comment-only, 5 broken |
+
+Changed: `test_load_settings_invalid_yaml` and `…_invalid_schema` expected the silent default; they
+now expect the stop. Mutants (all OBJECTED, pinned): `dal-syntax-falls-back`, `dal-line-lost`,
+`dal-matrix-accepts-unknown-key`, `dal-tier-accepts-unknown-key`.
+
+### Gates
+
+Full suite 11395 passed, 9 skipped. `quality.py sf` 18/18. `tach check` clean.
+
+### Red/Blue (code)
+
+- R1 (MEDIUM, **for the user**) `core/flow/handlers/validation.py:57-72`
+  (`_resolve_merged_settings`) catches every error while layering the target's DAL tier over the
+  settings and then validates with the tier **not applied**, logging a WARNING. That is a fourth
+  fail-open spot, outside this ticket's findings. After this SF the file is validated on load, so
+  the merge should not fail any more; the catch still hides it if it does.
+- R2 (LOW) the YAML error message is fixed text; file content never reaches it.
+- R3 (LOW) a matrix key ruamel loads as a non-string (`1:`) is refused by `DALLevel`, with the line
+  of the deepest string key found.
+- Cycle 2: no new finding.
+
+## Decisions at the SF-01 stop (user, 2026-10-23)
+
+CB-3 accepted. R1 (the validation handler's DAL merge catch-all) goes into SF-02 under FR-4.

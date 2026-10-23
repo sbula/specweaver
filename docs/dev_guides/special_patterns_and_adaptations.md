@@ -90,9 +90,11 @@ without letting validation import the sandbox. See §12 for the hydration mechan
 A DO-178C-style DAL matrix tightens or relaxes rules per module criticality. `pydantic-settings` is
 not used for it.
 
-**How:** `.specweaver/dal_definitions.yaml` is read with `ruamel.yaml` and layered over the base
-presets by `deep_merge_dict` (a recursive dict walker, `core/config/settings.py`). The merged dict
-goes into `DALImpactMatrix(**merged)`.
+**How:** `.specweaver/dal_definitions.yaml` is read with `ruamel.yaml` into a strict
+`DALImpactMatrix`: invalid YAML, an unknown key or a bad value stops the command, naming the file,
+key and line (`TECH-076`); an absent or empty file is the empty matrix. At validation time the
+target's tier is layered over the project's settings by `deep_merge_dict` (a recursive dict walker,
+`core/config/settings.py`) in `core/flow/handlers/validation.py`.
 
 **Why:** override frameworks drop whole sub-trees when a user config omits one child key.
 `deep_merge_dict` keeps every default safety toggle and changes only the keys the user set.
