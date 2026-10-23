@@ -34,6 +34,7 @@ from specweaver.core.config.bootstrap.db_bootstrap import get_db
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
+
 app = typer.Typer(
     name="sw",
     help="SpecWeaver \u2014 Specification-driven development lifecycle tool.",
@@ -126,41 +127,31 @@ def load_llm_settings_at(path: Path) -> LlmSettingsFiles:
     try:
         return load_llm_settings(path)
     except SettingsFileError as err:
-        refuse_llm_settings(err)
+        refuse_settings(err)
 
 
-def load_doc_policy_at(path: Path) -> DocPolicy:
-    """The doc policy of the project at `path`, or exit naming the file, key and line."""
-    from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
+def load_section_at(path: Path, parse: Callable[[str, str], _T]) -> _T:
+    """A section of the project's settings at `path`, or exit naming the file, key and line."""
+    from specweaver.core.config.bootstrap.project_settings import load_section
     from specweaver.core.config.settings_file import SettingsFileError
 
     try:
-        return load_doc_policy(path)
+        return load_section(path, parse)
     except SettingsFileError as err:
-        refuse_llm_settings(err)
+        refuse_settings(err)
 
 
-def language_at(path: Path) -> str | None:
-    """The language the project at `path` names in `[implement]`, or None; or exit naming the
-    file, key and line."""
-    from specweaver.core.config.bootstrap.implement_loader import load_implement
-    from specweaver.core.config.settings_file import SettingsFileError
+def project_sections_at(path: Path) -> tuple[DocPolicy, AutonomyPolicy, str | None]:
+    """The `[docs]`, `[autonomy]` and `[implement]` language a run is built from, or exit."""
+    from specweaver.core.config.autonomy_policy import parse_autonomy
+    from specweaver.core.config.doc_policy import parse_doc_policy
+    from specweaver.core.config.implement_policy import parse_implement
 
-    try:
-        return load_implement(path).language
-    except SettingsFileError as err:
-        refuse_llm_settings(err)
-
-
-def load_autonomy_at(path: Path) -> AutonomyPolicy:
-    """The autonomy policy of the project at `path`, or exit naming the file, key and line."""
-    from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
-    from specweaver.core.config.settings_file import SettingsFileError
-
-    try:
-        return load_autonomy(path)
-    except SettingsFileError as err:
-        refuse_llm_settings(err)
+    return (
+        load_section_at(path, parse_doc_policy),
+        load_section_at(path, parse_autonomy),
+        load_section_at(path, parse_implement).language,
+    )
 
 
 def file_or_exit(given: str) -> Path:
@@ -189,7 +180,7 @@ def load_project_settings(db: Database, project: str) -> SpecWeaverSettings:
     try:
         return load_settings(db, project)
     except SettingsFileError as err:
-        refuse_llm_settings(err)
+        refuse_settings(err)
 
 
 def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFiles:
@@ -203,7 +194,7 @@ def load_active_llm_settings(project_name: str | None = None) -> LlmSettingsFile
     try:
         return load_llm_settings(project_root(project_name or _require_active_project()))
     except SettingsFileError as err:
-        refuse_llm_settings(err)
+        refuse_settings(err)
 
 
 def print_error(err: Exception) -> None:
@@ -211,8 +202,8 @@ def print_error(err: Exception) -> None:
     console.print("Error:", str(err), style="red", markup=False, highlight=False, soft_wrap=True)
 
 
-def refuse_llm_settings(err: Exception) -> NoReturn:
-    """Stop a command whose LLM settings cannot be resolved, naming the file, key and line."""
+def refuse_settings(err: Exception) -> NoReturn:
+    """Stop a command whose settings file cannot be used, naming the file, key and line."""
     print_error(err)
     raise typer.Exit(code=1) from err
 

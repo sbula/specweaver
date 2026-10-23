@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
+from specweaver.core.config.bootstrap.project_settings import load_section
+from specweaver.core.config.doc_policy import parse_doc_policy
 from specweaver.core.config.settings_file import SettingsFileError
 
 if TYPE_CHECKING:
@@ -34,13 +35,13 @@ def test_a_project_s_rules_are_loaded(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    policy = load_doc_policy(tmp_path)
+    policy = load_section(tmp_path, parse_doc_policy)
 
     assert [rule.access for rule in policy.rule] == ["open"]
 
 
 def test_no_file_is_an_empty_policy(tmp_path: Path) -> None:
-    assert load_doc_policy(tmp_path).rule == []
+    assert load_section(tmp_path, parse_doc_policy).rule == []
 
 
 def test_a_broken_rule_names_the_file_and_the_line(tmp_path: Path) -> None:
@@ -48,6 +49,6 @@ def test_a_broken_rule_names_the_file_and_the_line(tmp_path: Path) -> None:
     path.write_text('[[docs.rule]]\npaths = ["docs/**"]\naccess = "maybe"\n', encoding="utf-8")
 
     with pytest.raises(SettingsFileError) as caught:
-        load_doc_policy(tmp_path)
+        load_section(tmp_path, parse_doc_policy)
 
     assert (caught.value.source, caught.value.line) == (str(path), 3)

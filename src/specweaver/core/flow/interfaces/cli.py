@@ -260,6 +260,7 @@ def _build_run_context(
         lambda r: r.get_active_project()
     )
     db = _core.get_db()
+    doc_policy, autonomy, language = _core.project_sections_at(project_path)
 
     context = RunContext(
         analysis=AnalysisContext(analyzer_factory=AnalyzerFactory),
@@ -267,11 +268,7 @@ def _build_run_context(
         spec_path=spec_path,
         output_dir=project_path / "src",
         db=db,
-        isolation=IsolationPolicy(
-            doc_policy=_core.load_doc_policy_at(project_path),
-            autonomy=_core.load_autonomy_at(project_path),
-            language=_core.language_at(project_path),
-        ),
+        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),
         guidance=GuidanceContent(
             constitution=info.content if info else None,
             standards=(

@@ -185,10 +185,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/cli/_core.py",
           "symbol": "load_project_settings",
-          "old": "    except SettingsFileError as err:\n        refuse_llm_settings(err)\n",
-          "new": "    except SettingsFileError:\n        raise\n",
+          "old": "    except SettingsFileError as err:\n        refuse_settings(err)\n\n\ndef load_active_llm_settings",
+          "new": "    except SettingsFileError:\n        raise\n\n\ndef load_active_llm_settings",
           "breaks": "a broken setting ends in a traceback",
-          "symbol_sha": "sha256:34f0cb22ddb03449b9014791a656abb8374d5d2b09e95e775fcf0ac75cb531ff"
+          "symbol_sha": "sha256:d88dc5c4578575a828b8cbc8ee71b352eb221cfee8ba998987cd3014284619be"
         },
         {
           "id": "project-path-error-escapes",
@@ -262,6 +262,36 @@
           "new": "                logger.warning(msg)\n",
           "breaks": "a file is judged without its DAL tier's rules",
           "symbol_sha": "sha256:b69d32082e4f16410f9e8dbd33e43cfefc15bfe0c1eea8b4e2fb1e50b9d7ac10"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "One loader reads every project section; one CLI wrapper refuses it",
+      "scope": [
+        "tests/unit/core/config/bootstrap/test_project_settings.py",
+        "tests/unit/interfaces/cli/test_project_path_or_exit.py"
+      ],
+      "mutants": [
+        {
+          "id": "loader-reads-nothing",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/project_settings.py",
+          "symbol": "load_section",
+          "old": "    return parse(read_settings_text(path), str(path))\n",
+          "new": "    return parse(\"\", str(path))\n",
+          "breaks": "every section reads as empty",
+          "symbol_sha": "sha256:4d340fee075f46fa984f7a0e47eb671bf1e39ea98e61aaafeb0f242335eb223e"
+        },
+        {
+          "id": "cli-section-error-escapes",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/_core.py",
+          "symbol": "load_section_at",
+          "old": "    except SettingsFileError as err:\n        refuse_settings(err)\n\n\ndef project_sections_at",
+          "new": "    except SettingsFileError:\n        raise\n\n\ndef project_sections_at",
+          "breaks": "a broken section ends in a traceback",
+          "symbol_sha": "sha256:de802146c19df4056cf3d65f9bdbb44363af76a46543b62f0be909e61914f264"
         }
       ]
     }

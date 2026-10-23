@@ -23,7 +23,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.commons.enums.dal import DALLevel
-from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
+from specweaver.core.config.autonomy_policy import parse_autonomy
+from specweaver.core.config.bootstrap.project_settings import load_section
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
@@ -42,7 +43,7 @@ def _run(tmp_path: Path, dal: DALLevel, **autonomy: str) -> RunContext:
     """A context carrying a resolved DAL and the policy the project's file says."""
     lines = "".join(f'{key} = "{value}"\n' for key, value in autonomy.items())
     (tmp_path / "specweaver.toml").write_text(f"[autonomy]\n{lines}", encoding="utf-8")
-    isolation = IsolationPolicy(autonomy=load_autonomy(tmp_path), dal_level=dal)
+    isolation = IsolationPolicy(autonomy=load_section(tmp_path, parse_autonomy), dal_level=dal)
     return RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md", isolation=isolation)
 
 

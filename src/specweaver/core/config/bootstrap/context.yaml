@@ -25,4 +25,3 @@ exposes:
   - db_bootstrap.bootstrap_database
   - settings_loader.load_settings
   - settings_loader.load_settings_async
-  - settings_loader.load_settings_for_active

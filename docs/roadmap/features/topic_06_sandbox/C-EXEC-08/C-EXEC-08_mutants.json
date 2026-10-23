@@ -230,10 +230,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/interfaces/cli.py",
           "symbol": "_build_run_context",
-          "old": "            doc_policy=_core.load_doc_policy_at(project_path),\n",
-          "new": "            doc_policy=_core.load_doc_policy_at(project_path / \"missing\"),\n",
+          "old": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n",
+          "new": "    doc_policy, autonomy, language = _core.project_sections_at(project_path)\n    doc_policy = _core.project_sections_at(project_path / \"missing\")[0]\n",
           "breaks": "sw run and sw resume use the built-in rules whatever the project says",
-          "symbol_sha": "sha256:a618bd4fda3097b6d03aafa7c339c6eb3fe3b09d0b92ac8ef7735d475723b114"
+          "symbol_sha": "sha256:789e8ba2195011d6a28d7cfd29613006447fd279e260f8553dd59eecb6f5502d"
         },
         {
           "id": "sw-implement-drops-the-policy",
@@ -250,20 +250,20 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "        isolation=_project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
           "new": "        model=_models_for(pipeline_def, project_root, body.project, db),\n",
           "breaks": "an API run ignores a broken [docs] and the project's rules",
-          "symbol_sha": "sha256:2ebcf68219a0165589de1143d60629b67d8529b4b17e0cbed059603dd8592d90"
+          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
         },
         {
           "id": "api-resume-skips-the-policy",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "_resume_existing_run",
-          "old": "        isolation=_project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
+          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
           "new": "        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
           "breaks": "a resumed API run ignores a [docs] broken since its start",
-          "symbol_sha": "sha256:f097f8844f8022abf8f6befc1ebadede3d122af3853407e85134f3418824ba83"
+          "symbol_sha": "sha256:457a37dd9b22a8f92bdf03acb3c4a47b426d98f6c40029d5c400f95d2c0a3792"
         }
       ]
     },

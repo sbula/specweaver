@@ -8,11 +8,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.core.config.bootstrap.autonomy_loader import load_autonomy
-from specweaver.core.config.bootstrap.doc_policy_loader import load_doc_policy
-from specweaver.core.config.bootstrap.implement_loader import load_implement
+from specweaver.core.config.autonomy_policy import parse_autonomy
 from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
+from specweaver.core.config.bootstrap.project_settings import load_section
 from specweaver.core.config.bootstrap.settings_loader import load_settings_async
+from specweaver.core.config.doc_policy import parse_doc_policy
+from specweaver.core.config.implement_policy import parse_implement
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.handlers.run_context import IsolationPolicy
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
@@ -49,17 +50,17 @@ def project_policy(project_root: Path) -> IsolationPolicy:
     """A run's isolation policy holding the project's `[docs]` and `[autonomy]`; a broken one refuses."""
 
     try:
-        doc_policy = load_doc_policy(project_root)
+        doc_policy = load_section(project_root, parse_doc_policy)
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(detail=str(exc), error_code="DOC_POLICY", status_code=500) from exc
     try:
-        autonomy = load_autonomy(project_root)
+        autonomy = load_section(project_root, parse_autonomy)
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc), error_code="AUTONOMY_POLICY", status_code=500
         ) from exc
     try:
-        language = load_implement(project_root).language
+        language = load_section(project_root, parse_implement).language
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc), error_code="IMPLEMENT_POLICY", status_code=500

@@ -259,9 +259,7 @@ def implement(
     )
 
     db = _core.get_db()
-    doc_policy = _core.load_doc_policy_at(project_path)
-    autonomy = _core.load_autonomy_at(project_path)
-    language = _core.language_at(project_path)
+    doc_policy, autonomy, language = _core.project_sections_at(project_path)
     # Telemetry is attributed per active project, so a run that cannot be attributed cannot run —
     # and the refusal must name the missing project rather than surface a `load_settings` lookup
     # failure. The models come from the settings files through `command_router`.

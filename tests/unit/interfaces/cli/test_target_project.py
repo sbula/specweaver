@@ -86,7 +86,7 @@ def test_the_router_reads_the_target_folders_settings_whatever_name_it_gets(proj
     private, _other = projects
 
     with (
-        patch.object(_core, "refuse_llm_settings", side_effect=_reraise),
+        patch.object(_core, "refuse_settings", side_effect=_reraise),
         pytest.raises(SettingsFileError, match="private servers only"),
     ):
         command_router("other", [TaskType.REVIEW], project_root=private)

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -52,22 +52,3 @@ class TestLoadSettings:
 
         with pytest.raises(ValueError, match="not found"):
             load_settings(db, "nonexistent")
-
-
-class TestLoadActiveProject:
-    """Loading settings for the currently active project."""
-
-    def test_load_active(self, db, tmp_path: Path):
-        from specweaver.core.config.bootstrap.settings_loader import load_settings_for_active
-
-        register_test_project(db, "myapp", str(tmp_path / "proj"))
-        set_test_active_project(db, "myapp")
-        settings = load_settings_for_active(db)
-
-        assert settings.dal_matrix is not None
-
-    def test_load_no_active_raises(self, db):
-        from specweaver.core.config.bootstrap.settings_loader import load_settings_for_active
-
-        with pytest.raises(ValueError, match=r"[Nn]o active project"):
-            load_settings_for_active(db)

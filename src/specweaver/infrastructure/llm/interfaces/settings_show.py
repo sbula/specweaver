@@ -19,6 +19,6 @@ def config_show() -> None:
         roles = resolve_roles(files)
         rows = settings_report(files, roles, role_rows(files, roles, shipped_catalogue()))
     except SettingsFileError as err:
-        _core.refuse_llm_settings(err)
+        _core.refuse_settings(err)
     for key, value, origin in rows:
         _core.console.print(f"{key} = {value}   ({origin})", markup=False, highlight=False)

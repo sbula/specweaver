@@ -13,10 +13,11 @@
           "id": "nested-not-filtered",
           "origin": "authored",
           "file": "src/specweaver/workspace/analyzers/chunking.py",
-          "symbol": "_top_level",
-          "old": "return [name for name in symbols if \".\" not in name]",
-          "new": "return symbols",
-          "breaks": "a parser listing a method before its class consumes the method's text first, so the whole class is skipped"
+          "symbol": "chunk_source",
+          "old": "    tops = [n for n in order if parents[n] is None]\n",
+          "new": "    tops = list(order)\n",
+          "breaks": "a parser listing a method before its class consumes the method's text first, so the whole class is skipped",
+          "symbol_sha": "sha256:bac18dffd5b4925a734895703b73a2bf4e10ffcc48dfa21a7f18eb42aa21a54b"
         }
       ],
       "retired": {
@@ -35,11 +36,12 @@
         {
           "id": "split-truncates",
           "origin": "authored",
-          "file": "src/specweaver/workspace/analyzers/chunking.py",
-          "symbol": "_split",
+          "file": "src/specweaver/workspace/analyzers/_sizing.py",
+          "symbol": "emit_split",
           "old": "return parts or [text]",
           "new": "return [parts[0]] if parts else [text]",
-          "breaks": "only the first slice of a long function is indexed and the rest is lost silently"
+          "breaks": "only the first slice of a long function is indexed and the rest is lost silently",
+          "symbol_sha": "sha256:5dd42ce15f1a6c8d29a1d44fc3d4efa9badf4d3fe083e7bf2829cbe117df02c7"
         }
       ],
       "retired": {

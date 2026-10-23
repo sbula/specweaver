@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from dotenv import dotenv_values
 
+from specweaver.core.config.bootstrap.project_settings import PROJECT_FILE_NAME, read_settings_text
 from specweaver.core.config.llm_settings import LlmSettingsFiles
 from specweaver.core.config.paths import specweaver_root
 from specweaver.core.config.settings_file import SettingsFileError
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
 
 MACHINE_FILE_NAME = "settings.toml"
 KEYS_FILE_NAME = "keys.env"
-PROJECT_FILE_NAME = "specweaver.toml"
 
 
 def machine_settings_path() -> Path:
@@ -58,10 +58,3 @@ def load_keys(path: Path) -> dict[str, str]:
             str(path), "(file mode)", 0, f"other users can read this key file; run chmod 600 {path}"
         )
     return {name: value for name, value in dotenv_values(path).items() if value}
-
-
-def read_settings_text(path: Path | None) -> str:
-    """A settings file's text; empty when it is missing."""
-    if path is None or not path.is_file():
-        return ""
-    return path.read_text(encoding="utf-8-sig")

@@ -66,20 +66,20 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "        isolation=_project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
-          "new": "        isolation=_project_policy(project_root),\n",
+          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, body.project, db),\n",
+          "new": "        isolation=project_policy(project_root),\n",
           "breaks": "a REST pipeline step that needs a model fails",
-          "symbol_sha": "sha256:2ebcf68219a0165589de1143d60629b67d8529b4b17e0cbed059603dd8592d90"
+          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
         },
         {
           "id": "rest-resume-without-models",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "_resume_existing_run",
-          "old": "        isolation=_project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
-          "new": "        isolation=_project_policy(project_root),\n",
+          "old": "        isolation=project_policy(project_root),\n        model=_models_for(pipeline_def, project_root, run.project_name, db),\n",
+          "new": "        isolation=project_policy(project_root),\n",
           "breaks": "a REST resume of a step that needs a model fails",
-          "symbol_sha": "sha256:f097f8844f8022abf8f6befc1ebadede3d122af3853407e85134f3418824ba83"
+          "symbol_sha": "sha256:457a37dd9b22a8f92bdf03acb3c4a47b426d98f6c40029d5c400f95d2c0a3792"
         }
       ]
     },

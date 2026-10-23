@@ -96,7 +96,7 @@ def command_router(
             )
         )
     except SettingsFileError as err:
-        _core.refuse_llm_settings(err)
+        _core.refuse_settings(err)
 
 
 def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> ModelRouter | None:
@@ -120,4 +120,4 @@ def optional_command_router(project: str, roles: Iterable[TaskType | str]) -> Mo
         _core.console.print(f"No model used: {err.key}: {err.message}", style="dim", markup=False)
         return None
     except SettingsFileError as err:
-        _core.refuse_llm_settings(err)
+        _core.refuse_settings(err)

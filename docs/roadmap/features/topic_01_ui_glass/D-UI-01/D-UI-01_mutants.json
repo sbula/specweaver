@@ -201,12 +201,12 @@
         {
           "id": "unset-limit-accepted",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
-          "symbol": "_max_runs",
+          "file": "src/specweaver/interfaces/api/v1/run_settings.py",
+          "symbol": "max_runs",
           "old": "    if limit is None:\n",
           "new": "    if False:\n",
           "breaks": "a run starts with no limit set",
-          "symbol_sha": "sha256:f302e5477cc274fa3cb5eba14e7cffa9b7b017e2b74d0c254484b991cdfe7d69"
+          "symbol_sha": "sha256:d39d1ee537489c078648f3e17cff17abbb4ac2edfb6f893b3b577459ad54bc68"
         },
         {
           "id": "one-run-too-many",

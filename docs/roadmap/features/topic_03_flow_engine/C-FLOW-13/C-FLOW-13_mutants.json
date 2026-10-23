@@ -31,12 +31,12 @@
         {
           "id": "missing-reported-before-typo",
           "origin": "authored",
-          "file": "src/specweaver/core/config/llm_settings.py",
-          "symbol": "_validate",
+          "file": "src/specweaver/core/config/settings_file.py",
+          "symbol": "validate",
           "old": "        errors = sorted(exc.errors(), key=lambda error: error[\"type\"] != \"extra_forbidden\")\n",
           "new": "        errors = exc.errors()\n",
           "breaks": "the user is told a correct key is missing instead of being shown the typo on its line",
-          "symbol_sha": "sha256:ca56cf84a4d06ad190830005bd4a1e99b9a22e011dd6dcc0408aeaaee397eb8d"
+          "symbol_sha": "sha256:e30ac0836d157895e214b034b6827697a21951d0fa80376411f7961c3e05fbce"
         }
       ]
     },
@@ -681,7 +681,7 @@
         {
           "id": "bom-breaks-reader",
           "origin": "authored",
-          "file": "src/specweaver/core/config/bootstrap/llm_settings_loader.py",
+          "file": "src/specweaver/core/config/bootstrap/project_settings.py",
           "symbol": "read_settings_text",
           "old": "    return path.read_text(encoding=\"utf-8-sig\")\n",
           "new": "    return path.read_text(encoding=\"utf-8\")\n",

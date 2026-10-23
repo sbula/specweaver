@@ -7,10 +7,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.config.bootstrap.llm_settings_loader import (
-    PROJECT_FILE_NAME,
-    read_settings_text,
-)
+from specweaver.core.config.bootstrap.project_settings import PROJECT_FILE_NAME, read_settings_text
 from specweaver.core.config.settings import (
     DALImpactMatrix,
     SandboxSettings,
@@ -124,19 +121,3 @@ async def load_settings_async(db: Database, project_name: str) -> SpecWeaverSett
         standards=standards,
         sandbox=sandbox,
     )
-
-
-def load_settings_for_active(db: Database) -> SpecWeaverSettings:
-    logger.debug("load_settings_for_active called")
-
-    async def _get_active() -> str | None:
-        async with db.async_session_scope() as session:
-            return await WorkspaceRepository(session).get_active_project()
-
-    active = _sync_or_async(_get_active())
-    if not active:
-        logger.error("No active project found")
-        msg = "No active project. Run 'sw init <name> --path <path>' first."
-        raise ValueError(msg)
-    logger.debug("Active project resolved to '%s'", active)
-    return load_settings(db, active)

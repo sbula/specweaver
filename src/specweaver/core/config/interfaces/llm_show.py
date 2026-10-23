@@ -27,5 +27,5 @@ def config_set_role(
     try:
         path = set_role(role, model, project_root=root)
     except SettingsFileError as err:
-        _core.refuse_llm_settings(err)
+        _core.refuse_settings(err)
     _core.console.print(f"roles.{role} = {model}   ({path})", markup=False, highlight=False)
