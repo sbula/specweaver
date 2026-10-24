@@ -180,6 +180,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 - **Scope**: `target`, the task's file, the test file; five handlers, C02, C03, the hydrator.
 - **FRs**: [FR-1, FR-2, FR-3]
 - **Depends on**: SF-01
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-078/TECH-078_sf02_implementation_plan.md
 
 ### SF-03: The API's implement and the planner
 - **Scope**: the shared implement pipeline, `POST /implement`, the planner prompt.
@@ -203,7 +204,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | One way to find a step's files | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | One way to find a step's files | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The API's implement and the planner | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Test and debug targets | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -211,7 +212,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
 ([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
-([walkthrough](TECH-078_sf04_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-02, then SF-03.
+([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 plan approved 2026-10-24.
+**Next step**: Trigger the dev skill for the SF-02 plan; the C03 timeout is decided at its CB-2 stop.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
