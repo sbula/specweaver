@@ -102,9 +102,10 @@ critical for long-term project viability.
   > About 12 suffix tables and 5+ manifest readers decide a file's language and a project's
   > build tool, in conflicting order.
 
-* **`TECH-078` 🔴: Review, Validation and the API Still Assume Python**
+* **`TECH-078` 🟢: Review, Validation and the API Still Assume Python**
   > [Description](../features/topic_07_technical_debt/TECH-078/TECH-078_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > closed by the user 2026-10-24. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Verifiable Proof: `tests/e2e/capabilities/workflows/test_implement_rust_live_e2e.py` |
   > Polyglot gaps `D-INTL-08` did not reach: `review_code` finds `*.py` only, C02/C03 look for
   > Python test files only, `POST /implement` reports Python paths, and the planner is told it
   > plans "for a Python project".

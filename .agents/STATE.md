@@ -151,6 +151,13 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 - **The 2026-10-22 architecture audit is 14 `🔴` STUB tickets, `TECH-078`..`TECH-091`** `[agreed 2026-10-22]`:
   one broken promise each, findings listed in each design; the project-walk findings joined `TECH-070`.
   `TECH-075` (paths), `TECH-076` (settings fail open) and `TECH-077` (one run builder) closed 2026-10-23.
+  `TECH-078` (every language gets review, validation, test runs and the API) closed 2026-10-24.
+- **The spend brake stops tool loops early** (found 2026-10-24, `TECH-078` closure): each finished
+  tool round keeps its worst-case reservation until the whole loop ends, so a plan or review that
+  reads a few files is refused at a small limit while it has spent USD 0.00. The nightly live run
+  is red from this. A TECH ticket is owed `[agreed 2026-10-24]`.
+- **Web search has no service** `[agreed 2026-10-24]`: no Tavily account (it wants a card); Exa
+  and SearXNG replace it as a capability feature. Until then the web-search live test skips.
 - **Nothing at commit time checks that a mutant still finds its code.** Moving code drifted 26
   mutants across TECH-075/076 and over 30 more in TECH-077 (all re-pointed); only the nightly run reports drift.
 - **Docs and code disagree in about 60 places** — `TECH-071`. 14 are features marked delivered whose

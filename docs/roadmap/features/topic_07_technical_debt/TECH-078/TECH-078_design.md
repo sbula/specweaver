@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-078
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (by the user, 2026-10-23)
+- **Status**: COMPLETE (signed off by the user, 2026-10-24)
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-078/TECH-078_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -215,12 +215,9 @@ Maven runs with the real tools in the `toolchain` tier instead
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
-([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
-([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 committed 2026-10-24
-([walkthrough](TECH-078_sf02_walkthrough.md)).
-SF-03 committed 2026-10-24
-([walkthrough](TECH-078_sf03_walkthrough.md)).
-**Next step**: the closure gate (`specweaver-feature` Phase 4): FR coverage, `tests.py feature`, the demo, README counts, sign-off.
-**If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
-from there using the appropriate skill.
+**Current status**: COMPLETE, signed off by the user 2026-10-24. All four sub-features committed
+(walkthroughs: [SF-01](TECH-078_sf01_walkthrough.md), [SF-02](TECH-078_sf02_walkthrough.md),
+[SF-03](TECH-078_sf03_walkthrough.md), [SF-04](TECH-078_sf04_walkthrough.md)); the demo runs nightly.
+**Left for other entries** `[agreed 2026-10-24]`: the spend brake holds every finished tool round's
+worst case until the loop ends (a TECH ticket); web search moves from Tavily to Exa and SearXNG (a
+capability feature); the web-search live test skips until then.

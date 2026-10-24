@@ -626,7 +626,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🟢` **TECH-075:** [Paths From Outside Can Leave the Project](features/topic_07_technical_debt/TECH-075/TECH-075_design.md)
     *   `🟢` **TECH-076:** [Project Settings Are Read Two Ways, and One Fails Open](features/topic_07_technical_debt/TECH-076/TECH-076_design.md)
     *   `🟢` **TECH-077:** [Each Entry Point Builds Its Run by Hand, and the API Gets Less](features/topic_07_technical_debt/TECH-077/TECH-077_design.md)
-    *   `🔴` **TECH-078:** [Review, Validation and the API Still Assume Python](features/topic_07_technical_debt/TECH-078/TECH-078_design.md)
+    *   `🟢` **TECH-078:** [Review, Validation and the API Still Assume Python](features/topic_07_technical_debt/TECH-078/TECH-078_design.md)
     *   `🔴` **TECH-079:** [Language and Toolchain Are Decided in a Dozen Places That Disagree](features/topic_07_technical_debt/TECH-079/TECH-079_design.md)
     *   `🔴` **TECH-080:** [Module Manifests Are Read Five Ways](features/topic_07_technical_debt/TECH-080/TECH-080_design.md)
     *   `🔴` **TECH-081:** [The Layer Check Reports Clean While the Layers Are Broken](features/topic_07_technical_debt/TECH-081/TECH-081_design.md)
