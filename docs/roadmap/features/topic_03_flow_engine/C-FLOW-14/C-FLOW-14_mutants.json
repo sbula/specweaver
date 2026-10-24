@@ -152,7 +152,7 @@
           "old": "        config = self._keyed(config)\n        scope, first = self._reserve(messages, config)\n",
           "new": "        scope, first = self._reserve(messages, config)\n",
           "breaks": "an agent step never shares its provider's cache with the run before",
-          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
         }
       ]
     },
@@ -191,7 +191,7 @@
           "old": "        if reported:\n            self._hint_cache_count(response.usage, scope.prices)\n",
           "new": "        self._hint_cache_count(response.usage, scope.prices)\n",
           "breaks": "a stream, whose usage is only estimated, is mistaken for a server that hides its cache",
-          "symbol_sha": "sha256:eaa8abba6e8aa62753e7d74a018feff4325e9a2a605120e538aac6d2ec43bc8c"
+          "symbol_sha": "sha256:5937ab7abb67929dac29d8b088749e6832d2d55e633aca0549d682ddaf386fa0"
         },
         {
           "id": "hint-despite-a-count",

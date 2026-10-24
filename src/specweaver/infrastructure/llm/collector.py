@@ -138,10 +138,19 @@ class TelemetryCollector:
         return Cost(usd=worst_cost(worst, scope.prices), tokens=worst.total_tokens)
 
     def _record_failure(
-        self, scope: CallScope, reservation: Reservation, exc: BaseException
+        self,
+        scope: CallScope,
+        reservation: Reservation,
+        exc: BaseException,
+        counted: TokenUsage | None = None,
     ) -> None:
-        """Count a failed call's usage if the adapter attached it, else its reserved worst case."""
+        """Count a failed call's usage if the adapter attached it, else its reserved worst case.
+
+        `counted` is what a tool loop's settled rounds already counted; only the rest is added.
+        """
         usage = getattr(exc, "usage", None)
+        if isinstance(usage, TokenUsage) and counted is not None:
+            usage = usage - counted
         cost = (
             Cost(usd=estimate_cost(usage, scope.prices), tokens=usage.total_tokens)
             if isinstance(usage, TokenUsage)
@@ -197,16 +206,21 @@ class TelemetryCollector:
         on_tool_round = self._redactor.rounds(on_tool_round)
         config = self._keyed(config)
         scope, first = self._reserve(messages, config)
-        held = [first]
+        rounds = _Rounds(self._budget, scope, first)
         prompt_tokens = [self._prompt_tokens(messages, config)]
         call_id = await self._open(config, prompt_tokens[0])
         start_hash = self._start_of(messages, config)
         widening: list[asyncio.Task[Any]] = []
 
-        def before_request(round_num: int, prompt_chars: int) -> None:
+        def before_request(
+            round_num: int, prompt_chars: int, used_so_far: TokenUsage | None = None
+        ) -> None:
             if round_num > 0:
+                # Settle the finished rounds first: the check must see what was really spent.
+                if used_so_far is not None:
+                    rounds.settle(used_so_far)
                 worst = self._worst_of(_estimate_chars(prompt_chars), config, scope)
-                held.append(self._budget.before_call(scope, worst))
+                rounds.held.append(self._budget.before_call(scope, worst))
                 prompt_tokens.append(_estimate_chars(prompt_chars))
                 widening.append(asyncio.ensure_future(self._widen(call_id, config, prompt_tokens)))
 
@@ -216,7 +230,7 @@ class TelemetryCollector:
                 messages, config, tool_executor, on_tool_round, before_request=before_request
             )
         except BaseException as exc:
-            self._record_failure(scope, Reservation.combined(held), exc)
+            self._record_failure(scope, Reservation.combined(rounds.held), exc, rounds.counted)
             await asyncio.gather(*widening, return_exceptions=True)
             await self._close_failed(call_id, config, exc, time.monotonic() - start)
             raise
@@ -227,9 +241,10 @@ class TelemetryCollector:
             response,
             elapsed,
             scope,
-            Reservation.combined(held),
+            Reservation.combined(rounds.held),
             call_id,
             start=start_hash,
+            counted=rounds.counted,
         )
         return response
 
@@ -278,11 +293,14 @@ class TelemetryCollector:
         *,
         reported: bool = True,
         start: str | None = None,
+        counted: TokenUsage | None = None,
     ) -> None:
         """Create a UsageRecord and append to the internal list.
 
         ``reported`` is false for a stream, whose usage is estimated from its text, not reported.
         ``start`` is the hash of the prompt's start (`_start_of`), remembered for the lifetime check.
+        ``counted`` is what a tool loop's settled rounds already counted against the limits; the
+        ledger row keeps the loop's total, the limits get only the rest.
 
         ``task_type`` is read from ``config.task_type`` (set per call
         by each handler), NOT from the constructor.
@@ -311,11 +329,12 @@ class TelemetryCollector:
             before = await self._remember_start(config.model, start, sent_at)
             self._check_cache_lifetime(config.model, response.usage, scope.prices, before, sent_at)
         # A reply that reports no usage counts its reserved worst case.
-        cost = (
-            None
-            if response.usage == TokenUsage()
-            else Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
-        )
+        if counted is not None and counted != TokenUsage():
+            cost = _cost_of(response.usage - counted, scope)
+        elif response.usage == TokenUsage():
+            cost = None
+        else:
+            cost = Cost(usd=record.estimated_cost_usd, tokens=record.total_tokens)
         self._budget.record(scope, cost, reservation)
 
     @staticmethod
@@ -501,3 +520,31 @@ def _estimate_tokens(text: str) -> int:
 
 def _estimate_chars(chars: int) -> int:
     return chars // 4
+
+
+def _cost_of(usage: TokenUsage, scope: CallScope) -> Cost | None:
+    """What `usage` costs; `None` (its reserved worst case) when it reports no tokens."""
+    if usage.total_tokens <= 0:
+        return None
+    return Cost(usd=estimate_cost(usage, scope.prices), tokens=usage.total_tokens)
+
+
+class _Rounds:
+    """A tool loop's reservations not yet settled, and the usage its settled rounds counted."""
+
+    def __init__(self, budget: SpendBudget, scope: CallScope, first: Reservation) -> None:
+        self._budget = budget
+        self._scope = scope
+        self.held = [first]
+        self.counted = TokenUsage()
+
+    def settle(self, used_so_far: TokenUsage) -> None:
+        """Count the rounds finished since the last settlement and release their reservations; a
+        round that reported no usage counts its worst case."""
+        self._budget.record(
+            self._scope,
+            _cost_of(used_so_far - self.counted, self._scope),
+            Reservation.combined(self.held),
+        )
+        self.counted = used_so_far
+        self.held = []

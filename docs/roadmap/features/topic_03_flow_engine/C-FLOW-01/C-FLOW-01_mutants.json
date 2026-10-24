@@ -38,7 +38,7 @@
           "old": "        call_id = await self._open(config, prompt_tokens[0])\n",
           "new": "        call_id = None\n",
           "breaks": "a call is not in the ledger while it runs, and a killed process loses it",
-          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
         },
         {
           "id": "round-worst-not-raised",
@@ -48,7 +48,7 @@
           "old": "                widening.append(asyncio.ensure_future(self._widen(call_id, config, prompt_tokens)))\n",
           "new": "                pass\n",
           "breaks": "a killed tool loop shows only its first round's worst case",
-          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
         }
       ]
     },

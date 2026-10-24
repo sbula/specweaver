@@ -47,7 +47,7 @@
           "old": "        messages = self._redactor.messages(messages)\n        tool_executor = self._redactor.tools(tool_executor)\n",
           "new": "        messages = self._redactor.messages(messages)\n",
           "breaks": "a tool that reads the vault hands its secrets to the model",
-          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
         },
         {
           "id": "stream-sent-raw",
@@ -107,7 +107,7 @@
           "old": "        on_tool_round = self._redactor.rounds(on_tool_round)\n",
           "new": "        on_tool_round = on_tool_round\n",
           "breaks": "a file a review adds between tool rounds reaches the model unmasked",
-          "symbol_sha": "sha256:f1babcbfa013f776c64bf8d9d21eca748ecaf2a1464ac1ddce77a5ccd269bc28"
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
         }
       ]
     }

@@ -139,6 +139,23 @@ class TokenUsage(BaseModel):
             cache_write_tokens=_known_sum(self.cache_write_tokens, other.cache_write_tokens),
         )
 
+    def __sub__(self, other: TokenUsage) -> TokenUsage:
+        """What a running sum added since `other`, an earlier value of it: a tool loop's latest
+        rounds. A cached count with an unknown part is unknown."""
+        if other == TokenUsage():
+            return self
+        return TokenUsage(
+            prompt_tokens=self.prompt_tokens - other.prompt_tokens,
+            completion_tokens=self.completion_tokens - other.completion_tokens,
+            total_tokens=self.total_tokens - other.total_tokens,
+            cached_read_tokens=_known_difference(self.cached_read_tokens, other.cached_read_tokens),
+            cache_write_tokens=_known_difference(self.cache_write_tokens, other.cache_write_tokens),
+        )
+
+
+def _known_difference(later: int | None, earlier: int | None) -> int | None:
+    return None if later is None or earlier is None else later - earlier
+
 
 def count_or_unknown(value: object) -> int | None:
     """A token count a provider reported, or `None` when it is missing or not a whole number."""

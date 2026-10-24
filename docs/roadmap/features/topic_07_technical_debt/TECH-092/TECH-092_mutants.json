@@ -1,0 +1,95 @@
+{
+  "schema": 2,
+  "feature": "TECH-092",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "A finished tool round settles before the next is checked",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_token_usage_sub.py"
+      ],
+      "mutants": [
+        {
+          "id": "finished-rounds-stay-reserved",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "                    rounds.settle(used_so_far)\n",
+          "new": "                    pass\n",
+          "breaks": "a plan that reads a few files is refused while it has spent nothing",
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A round that reports no usage counts its worst case",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_token_usage_sub.py"
+      ],
+      "mutants": [
+        {
+          "id": "unreported-round-is-free",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "_cost_of",
+          "old": "    if usage.total_tokens <= 0:\n        return None\n",
+          "new": "    if False:\n        return None\n",
+          "breaks": "a round with no usage report counts as costing nothing",
+          "symbol_sha": "sha256:db8157e7be24e12aa258a710799ce49f8d0925b140e8daafec6fc8784de591b7"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A round is still refused when real spend and its worst case cross",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py"
+      ],
+      "mutants": [
+        {
+          "id": "later-rounds-unchecked",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector.generate_with_tools",
+          "old": "                rounds.held.append(self._budget.before_call(scope, worst))\n",
+          "new": "                rounds.held.append(Reservation({}))\n",
+          "breaks": "a tool loop's later rounds are sent whatever they could cost",
+          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A loop is counted once, also when it fails part-way",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_collector_circuit_breaker.py",
+        "tests/unit/infrastructure/llm/test_token_usage_sub.py"
+      ],
+      "mutants": [
+        {
+          "id": "settled-rounds-counted-again",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._capture",
+          "old": "            cost = _cost_of(response.usage - counted, scope)\n",
+          "new": "            cost = _cost_of(response.usage, scope)\n",
+          "breaks": "a finished loop counts its settled rounds twice",
+          "symbol_sha": "sha256:5937ab7abb67929dac29d8b088749e6832d2d55e633aca0549d682ddaf386fa0"
+        },
+        {
+          "id": "failure-counts-settled-rounds-again",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/collector.py",
+          "symbol": "TelemetryCollector._record_failure",
+          "old": "            usage = usage - counted\n",
+          "new": "            usage = usage\n",
+          "breaks": "a loop failing part-way counts its settled rounds twice",
+          "symbol_sha": "sha256:56cc4456f62580d71f3132dbf89e4912a0929cd4f89a701bc8743cc722519cde"
+        }
+      ]
+    }
+  ]
+}
