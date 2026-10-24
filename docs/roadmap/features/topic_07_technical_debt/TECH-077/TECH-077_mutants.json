@@ -252,7 +252,7 @@
           "old": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=True\n",
           "new": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=False\n",
           "breaks": "sw review opens a per-run worktree",
-          "symbol_sha": "sha256:b9e931c0f74e5b0f1ba6671421c100a2f215d9b05193069e62a27050cf0f1f07"
+          "symbol_sha": "sha256:a4772d7b7d505f2a91493c0d10e34b03681dff3a6235bd9180c5ac93255ef760"
         },
         {
           "id": "check-rot-opens-worktree",
@@ -262,7 +262,7 @@
           "old": "        models=\"none\",\n        read_only=True,\n",
           "new": "        models=\"none\",\n        read_only=False,\n",
           "breaks": "the commit hook opens a per-run worktree",
-          "symbol_sha": "sha256:86711ddeb8d885e333742a8d8abd0571fc4fa344a3ece6424c7c574fbd34b406"
+          "symbol_sha": "sha256:5f9466dd7337acaf65310ad3945a9df2ea5d4f413f2cc509f18bd84022fc21b8"
         },
         {
           "id": "scan-opens-worktree",
@@ -434,7 +434,7 @@
           "old": "    last_record, _context = run_one_step(\n        project_path,\n        plan_path,\n",
           "new": "    last_record, _context = run_one_step(\n        target_path.parent,\n        plan_path,\n",
           "breaks": "sw drift check builds its run for the file's folder, not the project",
-          "symbol_sha": "sha256:e4d73d6c168e904c16e973b2755fdb6a40683f0f4d550a78600ce8dec4933388"
+          "symbol_sha": "sha256:d5e1e712c94469d046e1dc61f50bc95b10c6d472a631e80ca35a1feac2327ca8"
         }
       ]
     },

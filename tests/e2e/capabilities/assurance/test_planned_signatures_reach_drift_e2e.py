@@ -86,7 +86,9 @@ class _FakeLLM:
 
 async def _plan() -> Any:
     """A `PlanArtifact` the real planner produced — never one written by this test."""
-    return await Planner(_FakeLLM(_PLAN_REPLY), config=TEST_CONFIG).generate_plan(
+    return await Planner(
+        _FakeLLM(_PLAN_REPLY), config=TEST_CONFIG, language="Python"
+    ).generate_plan(
         spec_content=_SPEC,
         spec_path="specs/ledger.md",
         spec_name="Ledger",

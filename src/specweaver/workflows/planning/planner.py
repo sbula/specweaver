@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
-You are an implementation planner for a Python project. Given a component \
+You are an implementation planner for a {language} project. Given a component \
 specification, you produce a structured implementation plan as JSON.
 
 Your output must be ONLY valid JSON matching the PlanArtifact schema. \
@@ -59,6 +59,7 @@ class Planner:
 
     Args:
         llm: LLM adapter for generation.
+        language: The project's language by its display name ("Rust"), told to the model.
         max_retries: Maximum reflection retries on JSON validation failure.
     """
 
@@ -67,10 +68,12 @@ class Planner:
         llm: LLMAdapter,
         *,
         config: GenerationConfig,
+        language: str,
         max_retries: int = 3,
         tool_dispatcher: ToolDispatcherProtocol | None = None,
     ) -> None:
         self._llm = llm
+        self._language = language
         self._max_retries = max_retries
         self._tool_dispatcher = tool_dispatcher
         self._config = config
@@ -115,7 +118,7 @@ class Planner:
         user_prompt = builder.build()
 
         messages: list[Message] = [
-            Message(role=Role.SYSTEM, content=_SYSTEM_PROMPT),
+            Message(role=Role.SYSTEM, content=_SYSTEM_PROMPT.format(language=self._language)),
             Message(role=Role.USER, content=user_prompt),
         ]
 

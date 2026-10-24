@@ -17,7 +17,7 @@
           "old": "    relative = relative_to_root(path, cwd)\n",
           "new": "    relative = str(path)\n",
           "breaks": "the structure reader refuses the path and every code rule gets no markers",
-          "symbol_sha": "sha256:de685ff22aa87a24c2aa625e477c944ea1fb8e03230dc6fcf9ace3b925e59a1b"
+          "symbol_sha": "sha256:15657d6b20ad2b2a8b9ba857f1e4a3f09da81057a1ce723c6ca2e4f7a10eaf35"
         }
       ]
     },

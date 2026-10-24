@@ -86,7 +86,7 @@ class TestPlannerSuccess:
     @pytest.mark.asyncio()
     async def test_generates_valid_plan(self) -> None:
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Login Spec\n\nHandle login.",
@@ -105,7 +105,7 @@ class TestPlannerSuccess:
     async def test_overwrites_hash(self) -> None:
         """Planner always recomputes spec_hash from actual content."""
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -124,7 +124,7 @@ class TestPlannerSuccess:
         json_str = _valid_plan_json()
         wrapped = f"```json\n{json_str}\n```"
         llm = FakeLLM([wrapped])
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -152,7 +152,7 @@ class TestPlannerRetry:
                 _valid_plan_json(),
             ]
         )
-        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -173,7 +173,7 @@ class TestPlannerRetry:
                 _valid_plan_json(),
             ]
         )
-        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
         await planner.generate_plan(
             spec_content="# Test",
@@ -198,7 +198,7 @@ class TestPlannerRetry:
                 "bad 3",
             ]
         )
-        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
         with pytest.raises(ValueError, match="failed after 3 attempts"):
             await planner.generate_plan(
@@ -245,7 +245,7 @@ class TestPlannerEdgeCases:
     async def test_empty_spec_content(self) -> None:
         """Empty spec content should still work (hash computed from empty string)."""
         llm = FakeLLM([_valid_plan_json()])
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="",
@@ -277,7 +277,7 @@ class TestPlannerEdgeCases:
             "confidence": 70,
         }
         llm = FakeLLM([json.dumps(plan_data)])
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -295,7 +295,7 @@ class TestPlannerEdgeCases:
         # Missing required 'file_layout' field
         bad_json = json.dumps({"spec_path": "t.md", "confidence": 50})
         llm = FakeLLM([bad_json, _valid_plan_json()])
-        planner = Planner(llm, max_retries=3, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
         plan = await planner.generate_plan(
             spec_content="# Test",
@@ -310,7 +310,7 @@ class TestPlannerEdgeCases:
     async def test_max_retries_one_exhausted(self) -> None:
         """max_retries=1 means only one attempt — no retries on failure."""
         llm = FakeLLM(["not json"])
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
 
         with pytest.raises(ValueError, match="failed after 1 attempts"):
             await planner.generate_plan(

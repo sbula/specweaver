@@ -54,7 +54,7 @@ async def test_the_planner_does_not_retry_a_tripped_breaker() -> None:
     from specweaver.workflows.planning.planner import Planner
 
     llm = _BrokenBudgetLLM()
-    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG)
+    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
     with pytest.raises(BudgetExceededError):
         await planner.generate_plan("spec", "spec.md", "spec", PromptBuilder())
@@ -111,7 +111,7 @@ async def test_malformed_output_is_still_retried_by_the_planner() -> None:
             return LLMResponse(text="not json at all", model="stub")
 
     llm = _MalformedLLM()
-    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG)
+    planner = Planner(llm=llm, max_retries=3, config=TEST_CONFIG, language="Python")
 
     with pytest.raises(ValueError, match="after 3 attempts"):
         await planner.generate_plan("spec", "spec.md", "spec", PromptBuilder())

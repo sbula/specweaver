@@ -100,7 +100,7 @@ class TestPlannerToRenderer:
         llm = FakeLLM([_valid_plan_json()])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
         plan = await planner.generate_plan(
             spec_content="# Login Spec\nHandle login.",
             spec_path="specs/login_spec.md",
@@ -410,7 +410,7 @@ class TestPlannerWithConstitutionAndStandards:
         llm = FakeLLM([_valid_plan_json()])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
         pb = (
             PromptBuilder()
             .add_constitution("Always follow security best practices.")
@@ -513,7 +513,7 @@ class TestPlannerRetryWithCleanJson:
         llm = FakeLLM([fenced])
         from specweaver.workflows.planning.planner import Planner
 
-        planner = Planner(llm, max_retries=1, config=TEST_CONFIG)
+        planner = Planner(llm, max_retries=1, config=TEST_CONFIG, language="Python")
         plan = await planner.generate_plan(
             spec_content="# Spec\nContent.",
             spec_path="specs/test.md",

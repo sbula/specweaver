@@ -395,13 +395,19 @@ class PlanSpecHandler:
             )
 
         try:
+            from specweaver.core.flow.engine.task_files import task_files_for
+            from specweaver.workflows.implementation.languages import language_guide
             from specweaver.workflows.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
             adapter, config = self._resolve_routing(context)
+            language = task_files_for(
+                context.project_path, context.spec_path, context.isolation.language
+            ).language
             planner = Planner(
                 llm=adapter,
                 config=config,
+                language=language_guide(language, context.project_path).name,
                 max_retries=max_retries,
                 tool_dispatcher=_build_tool_dispatcher(context, role="planner", adapter=adapter),
             )

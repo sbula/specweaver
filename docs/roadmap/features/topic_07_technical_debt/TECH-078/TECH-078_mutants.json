@@ -79,7 +79,7 @@
           "old": "        \"kotlin\": f\"{code.stem}Test.kt\",\n",
           "new": "        \"kotlin\": f\"{code.stem}.kt\",\n",
           "breaks": "a Kotlin file's test is looked for under its own name",
-          "symbol_sha": "sha256:83e349c8e823cc173f89bc7360631e2b3ac0f4da084177344f7e1d82fa851b0f"
+          "symbol_sha": "sha256:8d2525b4b4410d42cb323921cc95ab7c08df3c0dc8d419878b18dd0f5886e39a"
         },
         {
           "id": "task-files-own-python-name",
@@ -538,6 +538,36 @@
           "new": "    found = \"none\"\n",
           "breaks": "C03 never runs the code file's tests",
           "symbol_sha": "sha256:5db7aa7fc90820901078b18c17cf0c32414ff561e209fedfa76dc9bd08855cd2"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The planner is told the project's language",
+      "scope": [
+        "tests/unit/workflows/planning/test_planner_language.py",
+        "tests/integration/core/flow/handlers/test_plan_names_the_language.py"
+      ],
+      "mutants": [
+        {
+          "id": "planner-always-python",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/planning/planner.py",
+          "symbol": "Planner.generate_plan",
+          "old": "            Message(role=Role.SYSTEM, content=_SYSTEM_PROMPT.format(language=self._language)),\n",
+          "new": "            Message(role=Role.SYSTEM, content=_SYSTEM_PROMPT.format(language=\"Python\")),\n",
+          "breaks": "a Rust project's plan is asked for Python",
+          "symbol_sha": "sha256:19eac92668464db7487eb58ede6039058760c2979e8fa27f5d281f27ed85f9a8"
+        },
+        {
+          "id": "plan-step-says-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "PlanSpecHandler.execute",
+          "old": "                language=language_guide(language, context.project_path).name,\n",
+          "new": "                language=\"Python\",\n",
+          "breaks": "the plan step tells the planner Python whatever the project",
+          "symbol_sha": "sha256:9b7d57964ada124da4e650e99101789ff36ae94ce96ce67d243c08b070f76062"
         }
       ]
     }

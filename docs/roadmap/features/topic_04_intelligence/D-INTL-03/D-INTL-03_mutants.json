@@ -38,7 +38,7 @@
           "old": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"planner\", adapter=adapter),\n",
           "new": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"implementer\", adapter=adapter),\n",
           "breaks": "the plan step's model can add, replace and delete code",
-          "symbol_sha": "sha256:ed8c6052313878486e74757d11bab1e277f9ba9047d344d38a84526d9e4090bf"
+          "symbol_sha": "sha256:9b7d57964ada124da4e650e99101789ff36ae94ce96ce67d243c08b070f76062"
         }
       ]
     },
@@ -57,7 +57,7 @@
           "old": "        raise ValueError(msg)\n",
           "new": "        return PlanArtifact(spec_path=spec_path, spec_name=spec_name, spec_hash=spec_hash, file_layout=[], timestamp='')\n",
           "breaks": "an empty plan is invented and code is written against it",
-          "symbol_sha": "sha256:65c6be0293d6f28c8d7756a788895f1b42641778fbc965394ec5658e3bbfbaf9"
+          "symbol_sha": "sha256:19eac92668464db7487eb58ede6039058760c2979e8fa27f5d281f27ed85f9a8"
         }
       ]
     }

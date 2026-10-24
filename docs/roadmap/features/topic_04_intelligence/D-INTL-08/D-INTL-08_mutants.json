@@ -134,7 +134,7 @@
           "old": "        _spec_package(spec_path) or _source_package(project_root, language) or _group(project_root)\n",
           "new": "        _source_package(project_root, language) or _group(project_root)\n",
           "breaks": "a spec's Package line is ignored",
-          "symbol_sha": "sha256:3849597cea2da6b4cf38b2cdac37468c78eb341d6cc96cb2a2d8f4bb3e03c7f6"
+          "symbol_sha": "sha256:56aad4d756eafc8fa6999e36ff094cc24759e95221e7b9173caa81a141858e9a"
         },
         {
           "id": "hostile-package-accepted",
@@ -484,7 +484,7 @@
           "old": "if archetype is None and language_of(code_path) != \"python\":",
           "new": "if False:",
           "breaks": "C01/C02 fail every Java file",
-          "symbol_sha": "sha256:06c8163006898fc6594c96c82a93fd1d0ca118a35ef46d8b147f4a44b2c00829"
+          "symbol_sha": "sha256:5d034366558d9bc8cd4ae1e563ea05d5adb23c82935c3bc0e2841abdece1de31"
         },
         {
           "id": "note-not-shown",
