@@ -117,7 +117,7 @@ None.
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
 | AD-1 | The language table and the code-to-test convention live in `commons` | validation and the engine both need them, and validation may not import the engine | No |
-| AD-2 | The implement pipeline builder moves from the CLI module to `workflows/implementation` | the API may not import a CLI module | No |
+| AD-2 | The implement steps become a bundled pipeline, `workflows/pipelines/implement_spec.yaml`, loaded by name by both doors (replaced 2026-10-24: `workflows/implementation` may not import the flow engine) `[agreed 2026-10-24]` | the API may not import a CLI module; the engine already runs every built-in pipeline from YAML | No |
 | AD-3 | A test target's `::<name>` is translated by each runner | the tool syntax stays inside the runner that owns it | No |
 
 ## ROI Analysis
@@ -186,6 +186,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 - **Scope**: the shared implement pipeline, `POST /implement`, the planner prompt.
 - **FRs**: [FR-4, FR-5]
 - **Depends on**: SF-02
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-078/TECH-078_sf03_implementation_plan.md
 
 ### SF-04: Test and debug targets
 - **Scope**: every target size (one test, file, folder, project) in every runner; the Rust debugger's entrypoint.
@@ -205,7 +206,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One way to find a step's files | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The API's implement and the planner | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The API's implement and the planner | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Test and debug targets | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
@@ -214,6 +215,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 ([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
 ([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 committed 2026-10-24
 ([walkthrough](TECH-078_sf02_walkthrough.md)).
-**Next step**: Trigger the implementation-plan skill for SF-03.
+SF-03 plan approved 2026-10-24.
+**Next step**: Trigger the dev skill for the SF-03 plan.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
