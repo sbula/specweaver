@@ -233,7 +233,10 @@ def test_sw_implement_speaks_the_language(tmp_path: Path, language: _Language) -
     assert language.tag in code_prompt
 
     assert log["lint"][0] == language.code_file
-    assert log["tests"] == [language.tests_file]
+    # run_tests runs it, then C03 (and C04 in Python) run it again to judge the code file.
+    assert log["tests"][0] == language.tests_file
+    assert set(log["tests"]) == {language.tests_file}
+    assert len(log["tests"]) >= 2
     fix_prompts = [prompt for role, prompt in model.calls if prompt.startswith("Fix the following")]
     assert fix_prompts, "the lint loop never asked the model"
     assert f"this {language.name} file" in fix_prompts[0]
@@ -242,7 +245,8 @@ def test_sw_implement_speaks_the_language(tmp_path: Path, language: _Language) -
     if language.key == "python":
         assert shows(result.output, "rules passed")
     else:
-        assert shows(result.output, f"no code rules for {language.key}")
+        # Its test rules judge it (TECH-078 FR-3): the test exists and passes.
+        assert shows(result.output, "code validation: 2/2 rules passed")
         assert not re.search(r"failed rules:.*C0[12]", result.output)
 
 

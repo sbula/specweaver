@@ -87,6 +87,6 @@ async def test_the_steps_after_generation_work_on_the_java_file(
     assert "not the task file" not in llm.prompts[-1]
 
     validated = await ValidateCodeHandler().execute(_step(StepAction.VALIDATE), context)
-    assert validated.output.get("note") == "no code rules for java", validated
+    assert "GreeterTest.java" in str(validated.output.get("results")), validated
 
     assert LintFixHandler()._fix_file(context, "src/") == written

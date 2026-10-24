@@ -31,6 +31,7 @@ _TESTS_ROOT = {
     "java": "src/test/java",
     "kotlin": "src/test/kotlin",
     "typescript": "tests",
+    "javascript": "tests",
     "rust": "tests",
 }
 
@@ -53,6 +54,7 @@ def name_tests_for(code_name: str, language: str) -> str | None:
         "java": f"{code.stem}Test.java",
         "kotlin": f"{code.stem}Test.kt",
         "typescript": f"{code.stem}.test.ts",
+        "javascript": f"{code.stem}.test.js",
         "rust": f"{code.stem}.rs",
     }
     return names.get(language)

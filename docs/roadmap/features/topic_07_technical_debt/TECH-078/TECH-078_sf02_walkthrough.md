@@ -43,3 +43,64 @@ which this test alone kills.
   (NFR-3; the README says so).
 - A spec with a bad `Package` line now fails `validate_code` and `review_code` with the spec line,
   as generation already did.
+
+## CB-2 — one test file lookup (FR-3)
+
+### What changed
+
+- `assurance/validation/project_root.find_tests(code, stop)`: the code file's test file by its
+  language's convention, or why there is none. From the file's folder up to the project root, the
+  first `<folder>/<tests root>` holding the name wins; any depth, except Rust (`tests/<m>.rs` only).
+  A language with no convention (Go, C, C++) answers "no test convention for go".
+- C02, C03 and the C03 hydrator (for C03 and C04) call it. C02 and C03 skip a language with no
+  convention. The three old searches (C02 walk-up, C03 nearest `pyproject.toml`, the hydrator's
+  `<root>/tests`) are one.
+- `commons.languages`: JavaScript has the TypeScript convention, `tests/<stem>.test.js`.
+- `validate_code` with no archetype runs C02 and C03 on every language with a test convention; the
+  other default rules stay Python's.
+- **Bug found and fixed**: `validate_code` handed the rules the spec path, not the code file. C02
+  looked for `test_<spec stem>.py`, C03 and C04 ran nothing, C05 read the spec, and a non-Python
+  "2/2 rules passed" was two skips. The rules now get the code file.
+- `project_root` and `find_tests` are exposed to `core/flow` (`context.yaml`, `tach.toml`); its file
+  reading in a `pure-logic` module has a row in `known_boundary_violations.md` (decision 2).
+- Docs: `language_support_guide.md` gains the five steps it missed (generator text, task files,
+  detection, rename/move resolver, standards analyzer) and their checklist rows.
+
+### Red first
+
+`test_find_tests.py` (collection error), `test_c02_c03_languages.py` (7 red),
+`test_validate_code_languages.py` (Kotlin judged by no rule), the JavaScript convention row (red).
+`test_the_rules_judge_the_code_file_not_the_spec` is killed by `rules-get-the-spec`.
+`test_c02_c03_languages_live.py` (P-2): real cargo, and real Maven with Kotlin (`toolchain` tier);
+a failing Kotlin test fails C03, a passing one passes it.
+
+### Tests changed
+
+- `test_rules_share_the_root.py`: the C03 `pyproject.toml` search is gone; the test now proves the
+  shared search stays inside the project.
+- `test_code_validation_dal_strictness.py`: its one warning was C04 failing to parse coverage of the
+  spec file. The widget's test now imports it (C03 and C04 really pass) and a `TODO` gives the one
+  warning (C07).
+- `test_implement_in_every_language_e2e.py`: C03 now runs the task's tests again, so the test log
+  holds the tests file more than once; non-Python runs say "code validation: 2/2 rules passed".
+- Java tests that expected "no code rules for java" now expect C02 naming `GreeterTest.java`.
+- Mutants: eight FR-3 mutants, all killed. D-VAL-05 `missing-test-passes` re-pointed to `find_tests`;
+  `c03-own-search` re-pointed (the hydrator's file and the own search are now one search, so the old
+  mutant changed nothing) and its scope gains `test_c02_c03_languages.py`.
+
+### C03 timings (2026-10-24, for the timeout decision)
+
+| Project | First run | Again |
+|---|---|---|
+| Rust crate, one test | 0.3 s | 0.0 s |
+| Kotlin on Maven, packages cached | 2.6 s | 2.4 s |
+
+Not measured: Maven with an empty package cache (needs downloads). C03's limit is 60 s.
+
+**Decided** `[agreed 2026-10-24]`: C03 keeps its 60-second limit; a run that passes it fails as "timed out".
+
+### Accepted risks
+
+- A Python `sw implement` run is slower: C03 and C04 now run the task's tests, which they claimed to
+  do and did not.
+- A `.tsx` file's test is looked up as `<stem>.test.ts` (generation writes `.ts`).

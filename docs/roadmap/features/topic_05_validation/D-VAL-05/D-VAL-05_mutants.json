@@ -12,12 +12,12 @@
         {
           "id": "missing-test-passes",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rules/code/c02_tests_exist.py",
-          "symbol": "TestsExistRule.check",
-          "old": "                matches = list(tests_dir.rglob(test_name))\n",
-          "new": "                matches = [tests_dir]\n",
+          "file": "src/specweaver/assurance/validation/project_root.py",
+          "symbol": "find_tests",
+          "old": "        found = sorted(tests_dir.rglob(name))\n",
+          "new": "        found = [tests_dir]\n",
           "breaks": "a file with no test passes C02",
-          "symbol_sha": "sha256:d30c124ee94f308f522af1fd97e3cf460ce33bb75313983223cdd8030d80b0f3"
+          "symbol_sha": "sha256:ee70f50f033e762774c1971ef6bbd1cefac23bff03998f352808d67c7ca25991"
         }
       ]
     },
@@ -26,7 +26,8 @@
       "title": "C03 runs the file's own test, its module importable",
       "scope": [
         "tests/e2e/capabilities/assurance/test_code_rules_on_a_fresh_project_e2e.py",
-        "tests/integration/core/flow/handlers/test_run_tests_imports_the_generated_code.py"
+        "tests/integration/core/flow/handlers/test_run_tests_imports_the_generated_code.py",
+        "tests/unit/assurance/validation/rules/code/test_c02_c03_languages.py"
       ],
       "mutants": [
         {
@@ -54,10 +55,10 @@
           "origin": "authored",
           "file": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py",
           "symbol": "TestsPassRule._located_test_file",
-          "old": "        if \"qa_test_file\" not in self.context:\n",
-          "new": "        if True:\n",
-          "breaks": "C03 looks for tests/ above a pyproject.toml a project may not have",
-          "symbol_sha": "sha256:220b6d8c5be5ccf3f7677a024c384e1aa0495e3c76a0904be17ddfa2fd5597b4"
+          "old": "        return find_tests(spec_path, self.context.get(\"project_root\"))\n",
+          "new": "        return \"No tests/ directory found\"\n",
+          "breaks": "C03 without the hydrator's file finds no test and skips instead of judging",
+          "symbol_sha": "sha256:df9310515e020f0bac60d8a8ae1866c6756cb61d93cb3ffd47468fcf9513ba0c"
         }
       ]
     },

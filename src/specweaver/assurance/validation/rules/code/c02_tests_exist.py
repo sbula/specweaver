@@ -28,27 +28,20 @@ class TestsExistRule(Rule):
         if spec_path is None:
             return self._skip("No file path provided")
 
-        # Derive expected test file name
-        name = spec_path.stem
-        test_name = f"test_{name}.py"
+        from specweaver.assurance.validation.project_root import find_tests
 
-        from specweaver.assurance.validation.project_root import walk_up
-
-        # Every `tests/` from the file's folder up to the run's project root, never above it.
-        for folder in walk_up(spec_path.parent, self.context.get("project_root")):
-            tests_dir = folder / "tests"
-            if tests_dir.is_dir():
-                matches = list(tests_dir.rglob(test_name))
-                if matches:
-                    return self._pass(f"Test file found: {matches[0]}")
-
+        found = find_tests(spec_path, self.context.get("project_root"))
+        if not isinstance(found, str):
+            return self._pass(f"Test file found: {found}")
+        if found.startswith("no test convention"):
+            return self._skip(found)
         return self._fail(
-            f"No test file '{test_name}' found",
+            found,
             [
                 Finding(
-                    message=f"Expected test file '{test_name}' not found in any tests/ directory",
+                    message=f"{found} by the language's convention",
                     severity=Severity.ERROR,
-                    suggestion=f"Create a test file: tests/unit/{test_name}",
+                    suggestion="Create the test file where the language keeps its tests",
                 )
             ],
         )

@@ -447,6 +447,99 @@
           "symbol_sha": "sha256:d671a1e8bf53679ce0570b9bf89b2bfea1d13f635994248d1e9c58c3b74a8e4c"
         }
       ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "C02, C03 and the hydrator find a code file's tests by its language's convention",
+      "scope": [
+        "tests/unit/assurance/validation/test_find_tests.py",
+        "tests/unit/assurance/validation/rules/code/test_c02_c03_languages.py",
+        "tests/unit/core/flow/handlers/test_validate_code_languages.py",
+        "tests/unit/commons/test_language_table.py",
+        "tests/integration/assurance/validation/test_c02_c03_languages_live.py"
+      ],
+      "mutants": [
+        {
+          "id": "rules-get-the-spec",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateCodeHandler._run_validation",
+          "old": "            code_path,\n            project_root=project_path,\n",
+          "new": "            spec_path,\n            project_root=project_path,\n",
+          "breaks": "C02 looks for the spec's tests, never the code file's",
+          "symbol_sha": "sha256:5d034366558d9bc8cd4ae1e563ea05d5adb23c82935c3bc0e2841abdece1de31"
+        },
+        {
+          "id": "other-languages-unjudged",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateCodeHandler._run_validation",
+          "old": "            narrowed = _test_rules_only(pipeline, language_of(code_path))\n            if narrowed is None:\n                return None\n            pipeline = narrowed\n",
+          "new": "            return None\n",
+          "breaks": "a Kotlin file is judged by no rule",
+          "symbol_sha": "sha256:5d034366558d9bc8cd4ae1e563ea05d5adb23c82935c3bc0e2841abdece1de31"
+        },
+        {
+          "id": "python-rules-judge-kotlin",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "_test_rules_only",
+          "old": "    steps = [step for step in pipeline.steps if step.rule in _TEST_RULES]\n",
+          "new": "    steps = list(pipeline.steps)\n",
+          "breaks": "Python's syntax and type-hint rules judge a Kotlin file",
+          "symbol_sha": "sha256:7d463b7e37527ea04b18e98af936e259be45950468bfbbb2352904949a11ce28"
+        },
+        {
+          "id": "rust-searches-any-depth",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/project_root.py",
+          "symbol": "find_tests",
+          "old": "        if language == \"rust\":\n            if (tests_dir / name).is_file():\n                return tests_dir / name\n            continue\n",
+          "new": "        pass\n",
+          "breaks": "a file under tests/common/ counts as a Rust test target",
+          "symbol_sha": "sha256:ee70f50f033e762774c1971ef6bbd1cefac23bff03998f352808d67c7ca25991"
+        },
+        {
+          "id": "no-convention-fails",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/project_root.py",
+          "symbol": "find_tests",
+          "old": "        return f\"no test convention for {language or code_path.suffix or code_path.name}\"\n",
+          "new": "        return f\"No test file {code_path.name!r} found\"\n",
+          "breaks": "Go code fails C02 instead of being skipped",
+          "symbol_sha": "sha256:ee70f50f033e762774c1971ef6bbd1cefac23bff03998f352808d67c7ca25991"
+        },
+        {
+          "id": "javascript-named-as-typescript",
+          "origin": "authored",
+          "file": "src/specweaver/commons/languages.py",
+          "symbol": "name_tests_for",
+          "old": "        \"javascript\": f\"{code.stem}.test.js\",\n",
+          "new": "        \"javascript\": f\"{code.stem}.test.ts\",\n",
+          "breaks": "a JavaScript file's tests are never found",
+          "symbol_sha": "sha256:8d2525b4b4410d42cb323921cc95ab7c08df3c0dc8d419878b18dd0f5886e39a"
+        },
+        {
+          "id": "c02-ignores-the-convention",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c02_tests_exist.py",
+          "symbol": "TestsExistRule.check",
+          "old": "        found = find_tests(spec_path, self.context.get(\"project_root\"))\n",
+          "new": "        found = f\"No test file {spec_path.name!r} found\"\n",
+          "breaks": "C02 fails every file",
+          "symbol_sha": "sha256:fd7025eca7f435c5c2d885c6416960c24b89f8ad5192eed9236c597b48575c6d"
+        },
+        {
+          "id": "hydrator-runs-no-test",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "symbol": "_test_file_for",
+          "old": "    found = find_tests(code_path, project_root)\n",
+          "new": "    found = \"none\"\n",
+          "breaks": "C03 never runs the code file's tests",
+          "symbol_sha": "sha256:5db7aa7fc90820901078b18c17cf0c32414ff561e209fedfa76dc9bd08855cd2"
+        }
+      ]
     }
   ]
 }

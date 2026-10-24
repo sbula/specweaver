@@ -68,7 +68,7 @@ Read 2026-10-24.
 1. With no archetype, `validate_code` runs C02 and C03 of the default pipeline on every language
    with a test convention (Java, Kotlin, TypeScript, JavaScript, Rust); the other default rules stay
    Python's `[agreed 2026-10-24]`.
-2. One test-file finder, `tests_of`, lives in `assurance/validation/project_root.py` beside
+2. One test-file finder, `find_tests`, lives in `assurance/validation/project_root.py` beside
    `walk_up`; C02, C03 and the hydrator call it. Its file reading in a `pure-logic` module gets a row
    in `known_boundary_violations.md` `[agreed 2026-10-24]`.
 3. One search: from the code file's folder up to the project root, the first
@@ -96,6 +96,15 @@ Generation already finds its files one way (`generation.py:135`); it does not ch
 > warm, and the CB-2 report gives the user those numbers with two options: keep 60 seconds, or let
 > C03 take the step's own `timeout`. The user decides there; nothing in CB-1 or CB-2 changes the
 > number before that.
+>
+> **Decided at the CB-2 stop** `[agreed 2026-10-24]`: keep 60 seconds (measured: Rust 0.3 s, Kotlin on
+> Maven with cached packages 2.6 s).
+
+> [!NOTE]
+> Found in CB-2 (2026-10-24): `validate_code` handed the rules the **spec** path, not the code file
+> (`_run_validation` → `execute_validation_flow`), so C02 looked for `test_<spec stem>.py`, C03 and
+> C04 ran nothing, and a non-Python run's "2/2 rules passed" were two skips. CB-2 hands the code file;
+> the finder is named `find_tests` (pytest collects a name that starts with `test`).
 
 ## Approach (pseudocode, ordered)
 
@@ -118,7 +127,7 @@ Generation already finds its files one way (`generation.py:135`); it does not ch
 
 **CB-2 — one test file lookup (FR-3)** — closes SF-02
 5. `commons.languages`: JavaScript joins the convention (`tests`, `<stem>.test.js`).
-6. `project_root.tests_of(code_path, stop) -> Path | str`: the test file, or why there is none
+6. `project_root.find_tests(code_path, stop) -> Path | str`: the test file, or why there is none
    ("no test convention for go", "no test file 'OrdersTest.kt' found"): language from
    `language_of`; walk up with `walk_up`; at each folder `<folder>/<root>`; Rust looks only at
    `<root>/<name>`, the others search any depth (first in sorted order).
@@ -140,16 +149,16 @@ Generation already finds its files one way (`generation.py:135`); it does not ch
 | `src/specweaver/core/flow/handlers/validation.py` | [MODIFY] uses `step_file`; C02/C03 for other languages |
 | `src/specweaver/core/flow/handlers/lint_fix.py` | [MODIFY] uses `step_file` / `task_code_file` |
 | `src/specweaver/core/flow/handlers/drift.py` | [MODIFY] reads `target`, uses `step_file` |
-| `src/specweaver/core/flow/handlers/validation_hydrator.py` | [MODIFY] `_test_file_for` calls `tests_of` |
+| `src/specweaver/core/flow/handlers/validation_hydrator.py` | [MODIFY] `_test_file_for` calls `find_tests` |
 | `src/specweaver/workflows/review/interfaces/cli.py` | [MODIFY] sends `target` |
 | `src/specweaver/assurance/validation/interfaces/cli_drift.py` | [MODIFY] sends `target` |
 | `src/specweaver/commons/languages.py` | [MODIFY] JavaScript convention |
-| `src/specweaver/assurance/validation/project_root.py` | [MODIFY] `tests_of` |
-| `src/specweaver/assurance/validation/rules/code/c02_tests_exist.py`, `c03_tests_pass.py` | [MODIFY] call `tests_of` |
+| `src/specweaver/assurance/validation/project_root.py` | [MODIFY] `find_tests` |
+| `src/specweaver/assurance/validation/rules/code/c02_tests_exist.py`, `c03_tests_pass.py` | [MODIFY] call `find_tests` |
 | `src/specweaver/assurance/validation/context.yaml`, `tach.toml` | [MODIFY] expose `project_root.tests_of` |
 | `tests/unit/core/flow/handlers/test_step_file.py` | [NEW] |
 | `tests/integration/core/flow/test_step_files_java_live.py` | [NEW] P-1 |
-| `tests/unit/assurance/validation/test_tests_of.py` | [NEW] |
+| `tests/unit/assurance/validation/test_find_tests.py` | [NEW] |
 | `tests/integration/assurance/validation/test_c02_c03_languages_live.py` | [NEW] P-2 |
 | the nine test files under Research Notes | [MODIFY] as the lookups change |
 
@@ -160,13 +169,13 @@ Generation already finds its files one way (`generation.py:135`); it does not ch
 | unit | `step_file`: target, old spelling, outside, not a file, none → task file per language, Python `output_dir` | FR-1, FR-2, NFR-3 | `step_file` does not exist |
 | unit | each handler: outside target refused; no target → the task's `.java`, not a stray `.py` in `output_dir` | FR-1, NFR-3 | the handlers glob `*.py` |
 | integration | P-1: a Java project; `generate_code` (doubled LLM) writes the `.java`; `review_code`, `validate_code`, `lint_fix` find that file | FR-1 (seam: handlers → `task_files_for`) | review finds no code file |
-| unit | `tests_of` per language, nested Python, a Rust test in a subfolder is not one, no convention, outside the root | FR-3 | `tests_of` does not exist |
+| unit | `find_tests` per language, nested Python, a Rust test in a subfolder is not one, no convention, outside the root | FR-3 | `find_tests` does not exist |
 | integration | P-2: C02 and C03 through `validate_code` on a Rust crate and a Kotlin-on-Maven project with the real tools; their tests found and run (skipped where the tool is missing) | FR-3 (seam: validation → convention → QA runner) | `validate_code` skips Kotlin and Rust; C02 looks for `test_<stem>.py` |
 | unit | C02/C03 skip Go; the TypeScript and JavaScript names; Python nested as before | FR-3, NFR-1 | the rules know only `test_<stem>.py` |
 
 Mutants, written into `TECH-078_mutants.json` as each claim is proven: the target read, the old
 spelling, the inside check, the task-file fallback, each language's test name and root in
-`tests_of`, the Rust no-depth rule, the C02/C03 call sites.
+`find_tests`, the Rust no-depth rule, the C02/C03 call sites.
 
 ## Commit Boundaries
 
@@ -178,7 +187,7 @@ spelling, the inside check, the task-file fallback, each language's test name an
 ## Documentation
 
 `pipeline_engine_guide.md`: a step's `target`. `language_support_guide.md`: a new language's test
-convention reaches C02/C03, and the missing steps above (one checklist for a new language). `known_boundary_violations.md`: the `tests_of` row. User guide: `sw review --spec` and `sw drift` refuse a file outside the project.
+convention reaches C02/C03, and the missing steps above (one checklist for a new language). `known_boundary_violations.md`: the `find_tests` row. User guide: `sw review --spec` and `sw drift` refuse a file outside the project.
 
 ## Architecture Verification (Phase 3)
 

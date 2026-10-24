@@ -158,8 +158,8 @@ Covered by FR-1 and FR-6.
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| `language_support_guide.md` | add a language: one row in the `commons` table, its test convention | ⬜ To be written during Pre-commit |
-| `pipeline_engine_guide.md` | a step's `target` | ⬜ To be written during Pre-commit |
+| `language_support_guide.md` | add a language: one row in the `commons` table, its test convention | ✅ SF-02 |
+| `pipeline_engine_guide.md` | a step's `target` | ✅ SF-02 |
 
 ## Works For Real
 
@@ -204,7 +204,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | One way to find a step's files | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | One way to find a step's files | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The API's implement and the planner | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Test and debug targets | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -212,7 +212,8 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
 ([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
-([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 plan approved 2026-10-24.
-**Next step**: Trigger the dev skill for the SF-02 plan; the C03 timeout is decided at its CB-2 stop.
+([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 committed 2026-10-24
+([walkthrough](TECH-078_sf02_walkthrough.md)).
+**Next step**: Trigger the implementation-plan skill for SF-03.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

@@ -242,7 +242,7 @@ class TestHandlersUseIt:
     async def test_validate_without_target_judges_the_java_file(self, tmp_path: Path) -> None:
         result = await ValidateCodeHandler().execute(_step(), _java_project(tmp_path))
 
-        assert result.output.get("note") == "no code rules for java", result
+        assert "GreeterTest.java" in str(result.output.get("results")), result
 
     def test_lint_fix_fixes_the_task_file_when_target_is_a_folder(self, tmp_path: Path) -> None:
         context = _java_project(tmp_path)

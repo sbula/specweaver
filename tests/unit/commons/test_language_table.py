@@ -71,6 +71,7 @@ def test_no_two_languages_share_an_ending() -> None:
         ("Orders.kt", "kotlin", "OrdersTest.kt", "src/test/kotlin"),
         ("orders.ts", "typescript", "orders.test.ts", "tests"),
         ("orders.rs", "rust", "orders.rs", "tests"),
+        ("orders.js", "javascript", "orders.test.js", "tests"),
     ],
 )
 def test_each_language_names_its_tests(code: str, language: str, name: str, root: str) -> None:

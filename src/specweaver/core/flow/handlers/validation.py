@@ -323,8 +323,10 @@ class ValidateCodeHandler:
 
         pipeline, archetype = code_pipeline(code_path, project_path)
         if archetype is None and language_of(code_path) != "python":
-            # The default rules are Python's and would fail any other language.
-            return None
+            narrowed = _test_rules_only(pipeline, language_of(code_path))
+            if narrowed is None:
+                return None
+            pipeline = narrowed
         if settings is not None:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
@@ -332,16 +334,32 @@ class ValidateCodeHandler:
         add_payload(pipeline, code_path, project_path, archetype, parsers=parsers, markers=True)
 
         content = code_path.read_text(encoding="utf-8")
+        # The rules judge the code file: C02 and C03 find its tests, C04 measures it, C05 reads it.
         return execute_validation_flow(
             pipeline,
             content,
-            spec_path,
+            code_path,
             project_root=project_path,
             dal_level=dal_level,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
             sandbox_settings=sandbox_settings,
             language=language,
         )
+
+
+#: The default code rules that judge any language with a test convention; the others are Python's.
+_TEST_RULES = frozenset({"C02", "C03"})
+
+
+def _test_rules_only(pipeline: Any, language: str) -> Any:
+    """The default pipeline narrowed to its test rules for a non-Python language; None when the
+    language has no test convention, so no rule judges it."""
+    from specweaver.commons.languages import root_of_tests
+
+    if root_of_tests(language) is None:
+        return None
+    steps = [step for step in pipeline.steps if step.rule in _TEST_RULES]
+    return pipeline.model_copy(update={"steps": steps})
 
 
 def _no_code_rules(code_path: Path, started: str) -> StepResult:

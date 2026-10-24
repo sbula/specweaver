@@ -48,6 +48,8 @@ exposes:
   - pipeline_loader
   - pipeline_loader.load_pipeline_yaml
   - pipeline_loader.resolve_pipeline_name
+  - project_root
+  - project_root.find_tests
   - registry
   - rubrics
   - rubrics.Rubric

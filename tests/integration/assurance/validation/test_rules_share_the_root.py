@@ -10,7 +10,7 @@ Proves: TECH-077 FR-9
 
 | Bucket | Case |
 |---|---|
-| Happy | a test file inside the project is found by C02; C03 finds the nearest package inside the project |
+| Happy | a test file inside the project is found by C02; the shared search finds the nearest `tests/` inside the project |
 | Boundary | with no project root, C02 searches as before |
 | Degradation | not applicable — the rules read only the disk |
 | Hostile | a matching test file above the project root is never used; C09 judges the run's project, not an enclosing repository |
@@ -86,20 +86,20 @@ def test_traceability_judges_the_runs_project(nest: tuple[Path, Path], tmp_path:
     assert _run("C09", code, proj) == Status.PASS
 
 
-def test_the_test_runner_root_is_the_nearest_package_inside_the_project(tmp_path: Path) -> None:
-    """C03 keeps its own question (the Python package's root) but never looks above the project."""
-    from specweaver.assurance.validation.rules.code.c03_tests_pass import _test_file
+def test_the_test_search_finds_the_nearest_tests_inside_the_project(tmp_path: Path) -> None:
+    """C02, C03 and the hydrator share one search (TECH-078); it never looks above the project."""
+    from specweaver.assurance.validation.project_root import find_tests
 
-    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'outer'\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_bare.py").write_text("def test_o():\n    pass\n", encoding="utf-8")
     pkg = tmp_path / "proj" / "pkg"
     (pkg / "src").mkdir(parents=True)
     (pkg / "tests").mkdir()
-    (pkg / "pyproject.toml").write_text("[project]\nname = 'pkg'\n", encoding="utf-8")
     (pkg / "tests" / "test_orders.py").write_text("def test_o():\n    pass\n", encoding="utf-8")
     code = pkg / "src" / "orders.py"
     code.write_text("x = 1\n", encoding="utf-8")
     bare = tmp_path / "proj" / "bare.py"
     bare.write_text("x = 1\n", encoding="utf-8")
 
-    assert _test_file(code, tmp_path / "proj") == pkg / "tests" / "test_orders.py"
-    assert _test_file(bare, tmp_path / "proj") == "No tests/ directory found"
+    assert find_tests(code, tmp_path / "proj") == pkg / "tests" / "test_orders.py"
+    assert find_tests(bare, tmp_path / "proj") == "No test file 'test_bare.py' found"

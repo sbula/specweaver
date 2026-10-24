@@ -9,7 +9,7 @@ Proves: D-INTL-08 FR-5
 
 | Bucket | Case |
 |---|---|
-| Happy | a Java file is fixed as "this Java file", fenced ```` ```java ````, its tag `//`; a Java file without rules says "no code rules for java" and passes |
+| Happy | a Java file is fixed as "this Java file", fenced ```` ```java ````, its tag `//`; a Java file is judged by its test rules only, C02 naming `GreeterTest.java` |
 | Boundary | a Python file keeps today's prompt and rules; a Spring Boot `.java` file runs its archetype's rules; a fence inside the fixed code stays |
 | Degradation | a Java test file that ran no tests fails the step, as a Python one does |
 | Hostile | the model's lost tag is put back in the file's own comment syntax, never `#` in Java |
@@ -151,12 +151,12 @@ async def _validate(tmp_path: Path, path: str, content: str) -> object:
     return await ValidateCodeHandler().execute(step, _context(tmp_path, None))
 
 
-async def test_a_java_file_without_rules_says_so(tmp_path: Path) -> None:
+async def test_a_java_file_is_judged_on_its_tests_only(tmp_path: Path) -> None:
     result = await _validate(tmp_path, _JAVA, "class Greeter {}\n")
 
-    assert result.status == StepStatus.PASSED
-    assert result.output["note"] == "no code rules for java"
-    assert result.output["results"] == []
+    assert result.status == StepStatus.FAILED
+    assert {r["rule_id"] for r in result.output["results"]} == {"C02", "C03"}
+    assert "GreeterTest.java" in str(result.output["results"])
 
 
 async def test_a_python_file_keeps_its_rules(tmp_path: Path) -> None:

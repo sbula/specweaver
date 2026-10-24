@@ -229,11 +229,11 @@ def discover_protocol_endpoints(project_root: Path) -> list[Any]:
 
 
 def _test_file_for(code_path: Path, project_root: Path) -> Path | None:
-    """The first `tests/**/test_<stem>.py`, as C03 finds it."""
-    tests_dir = project_root / "tests"
-    if not tests_dir.is_dir():
-        return None
-    return next(iter(sorted(tests_dir.rglob(f"test_{code_path.stem}.py"))), None)
+    """The code file's test file by its language's convention, as C02 and C03 find it."""
+    from specweaver.assurance.validation.project_root import find_tests
+
+    found = find_tests(code_path, project_root)
+    return None if isinstance(found, str) else found
 
 
 def _hydrate_tests(

@@ -40,7 +40,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    and, if the language has a test convention, its folder in `_TESTS_ROOT` and its file name in
    `name_tests_for`. The prompt fences, the parser registry, rename, the archetype rules, the skeleton
    reader, the code-structure atom and `task_files_for` all read it; no other list of endings exists
-   (`TECH-078`).
+   (`TECH-078`). The test convention is what C02 and C03 judge a code file by
+   (`assurance/validation/project_root.find_tests`): with one, `validate_code` runs those two rules on
+   the language; without one, no rule judges it.
 1. **`runner.py`**: `GoQARunner`, implementing `QARunnerInterface`, bound to `go build`, `go test`,
    etc. Implement or stub every method:
    - `run_compiler()`
@@ -66,7 +68,18 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    `get_default_directory_ignores()` (language-specific topological exclusions). Traceability needs
    `extract_test_mapped_requirements()` on the language analyzer. Find a grammar in the
    [official Tree-Sitter List of Parsers](https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers).
-6. **Framework evaluator schemas**: flat YAML files (e.g. `gin.yaml` for Gin/Fiber) in
+6. **Generator text**: `workflows/languages/<lang>.md` (front-matter `name:`; sections `# Code`,
+   `# Tests`, `# Code role`, `# Tests role`, `# Coder role`) and the name in `_LANGUAGES`
+   (`workflows/implementation/languages.py`). This is what the model is told to write.
+7. **Task files**: `task_files_for` (`core/flow/engine/task_files.py`) says where the task's code and
+   test files go; every step after generation finds the file there (`qa_targets.step_file`).
+8. **Detection and scenarios**: the manifest in `detect_language`, the name in `SUPPORTED_LANGUAGES`
+   and its scenario file ending in `_SCENARIO_EXTENSIONS` (`sandbox/language/core/_detect.py`).
+9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py`, registered in
+   `rename._RESOLVERS`; without it `rename_symbol` and `move_module` refuse the language.
+10. **Standards**: an analyzer in `assurance/standards/languages/<lang>/`, registered in
+    `assurance/standards/scanner.py`, so `sw standards` reads the project's conventions.
+11. **Framework evaluator schemas**: flat YAML files (e.g. `gin.yaml` for Gin/Fiber) in
    `specweaver.workflows.evaluators.frameworks`. Bind each to the language with
    `metadata: supported_languages: ["go"]` so it cannot leak into another language. Users override
    with their own `<framework>.yaml` in `<project_dir>/.specweaver/evaluators/`.
@@ -103,6 +116,12 @@ Keep mocks out of live test files.
 - [ ] No Regex where JSON/SARIF is supported.
 - [ ] Manifest trigger in `resolve_runner`, `_detect.py` and both factories.
 - [ ] Tree-Sitter parser registered in `get_default_parsers()` (used by `CodeStructureAtom`).
+- [ ] Row in `commons/languages.py`, with its test convention if it has one.
+- [ ] Generator text in `workflows/languages/<lang>.md` and `_LANGUAGES`.
+- [ ] `task_files_for` places its code and test files.
+- [ ] `SUPPORTED_LANGUAGES` and `_SCENARIO_EXTENSIONS` in `_detect.py`.
+- [ ] Rename/move resolver in `workspace/ast/refactor/`.
+- [ ] Standards analyzer in `assurance/standards/languages/`.
 - [ ] Default YAML schema for macro/annotation unrolling in
   `workflows/evaluators/frameworks/<archetype>.yaml` with `"supported_languages": ["<lang>"]`.
 - [ ] Unit tests with static parsing fixtures.

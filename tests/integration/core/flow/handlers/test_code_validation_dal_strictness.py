@@ -47,8 +47,22 @@ SOURCE = '''"""A widget."""
 
 def add(a: int, b: int) -> int:
     """Add two numbers."""
-    return a + b
+    return a + b  # TODO: overflow check
 '''
+
+#: Imports the widget, so C03 passes and C04 measures it fully; the TODO above is the one warning
+#: (C07), the same in both runs.
+TESTS = """import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from widget import add
+
+
+def test_add():
+    assert add(1, 2) == 3
+"""
 
 #: Named for the archetype the resolver picks from `context.yaml`, because the handler loads
 #: `validation_code_<archetype>` and falls back to the default. Naming it `validation_code_default`
@@ -70,15 +84,12 @@ def _project(tmp_path: Path, dal: str) -> Path:
     (project / "src" / "context.yaml").write_text(CONTEXT.format(dal=dal), encoding="utf-8")
     (project / "src" / "widget.py").write_text(SOURCE, encoding="utf-8")
     (project / "tests").mkdir()
-    (project / "tests" / "test_widget.py").write_text(
-        "def test_add():\n    assert True\n", encoding="utf-8"
-    )
+    (project / "tests" / "test_widget.py").write_text(TESTS, encoding="utf-8")
     pipelines = project / ".specweaver" / "pipelines"
     pipelines.mkdir(parents=True)
     (pipelines / "validation_code_pure-logic.yaml").write_text(LEAN_PIPELINE, encoding="utf-8")
-    # Named for the module, not "spec": C02 derives the expected test file from the SPEC stem, so a
-    # `spec.md` makes it look for `test_spec.py` and FAIL — and any FAIL fails the step whatever the
-    # strictness, which would make the strict assertion below pass without the DAL doing anything.
+    # Any FAIL fails the step whatever the strictness, which would make the strict assertion below
+    # pass without the DAL doing anything; so every rule passes here but C07's warning.
     (project / "widget.md").write_text("# Widget\n", encoding="utf-8")
     return project
 
