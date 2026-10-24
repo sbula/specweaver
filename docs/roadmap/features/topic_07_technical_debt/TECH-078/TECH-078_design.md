@@ -219,5 +219,5 @@ Maven runs with the real tools in the `toolchain` tier instead
 (walkthroughs: [SF-01](TECH-078_sf01_walkthrough.md), [SF-02](TECH-078_sf02_walkthrough.md),
 [SF-03](TECH-078_sf03_walkthrough.md), [SF-04](TECH-078_sf04_walkthrough.md)); the demo runs nightly.
 **Left for other entries** `[agreed 2026-10-24]`: the spend brake holds every finished tool round's
-worst case until the loop ends (a TECH ticket); web search moves from Tavily to Exa and SearXNG (a
+worst case until the loop ends (`TECH-092`); web search moves from Tavily to Exa and SearXNG (a
 capability feature); the web-search live test skips until then.

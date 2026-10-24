@@ -239,6 +239,12 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-092` 🔴: The Spend Brake Stops Tool Loops That Have Spent Nothing**
+  > [Description](../features/topic_07_technical_debt/TECH-092/TECH-092_design.md) | _Status:
+  > STUB. Origin: 2026-10-24, the `TECH-078` closure; a defect in `B-FLOW-05`._ |
+  > A tool loop keeps every finished round's worst-case reservation until the loop ends, so a
+  > plan or review that reads a few files is refused at a small limit while it has spent USD 0.00.
+
 * **`TECH-076` 🟢: Project Settings Are Read Two Ways, and One Fails Open**
   > [Description](../features/topic_07_technical_debt/TECH-076/TECH-076_design.md) | _Status:
   > closed by the user 2026-10-23. Origin: 2026-10-22, architecture audit (7 findings)._ |
