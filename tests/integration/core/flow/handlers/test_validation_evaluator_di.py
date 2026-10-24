@@ -46,7 +46,7 @@ def handler():
         encoding="utf-8",
     )
 
-    spec_path = project_dir / "spec.yaml"
+    spec_path = project_dir / "main_spec.yaml"  # its task file is src/main.py
     spec_path.write_text("dummy", encoding="utf-8")
 
     evaluator_dir = project_dir / ".specweaver" / "evaluators"

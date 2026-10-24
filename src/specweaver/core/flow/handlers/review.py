@@ -8,7 +8,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
@@ -17,6 +16,8 @@ from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_c
 from specweaver.core.flow.handlers.results import log_step_failure
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
@@ -265,11 +266,13 @@ class ReviewCodeHandler:
             return _error_result("LLM adapter required for review steps", started)
 
         try:
+            from specweaver.core.flow.handlers.qa_targets import step_file
             from specweaver.workflows.review.reviewer import Reviewer
 
-            target_param = step.params.get("target_path") if step.params else None
-            code_path = Path(target_param) if target_param else self._find_code_path(context)
-
+            try:
+                code_path = step_file(step, context)
+            except ValueError as exc:
+                return _error_result(str(exc), started)
             if code_path is None:
                 return _error_result("No code file found for review", started)
 
@@ -317,13 +320,6 @@ class ReviewCodeHandler:
         except Exception as exc:
             log_step_failure(logger, "ReviewCodeHandler: unhandled exception during code review")
             return _error_result(str(exc), started)
-
-    def _find_code_path(self, context: RunContext) -> Path | None:
-        if context.output_dir and context.output_dir.exists():
-            py_files = list(context.output_dir.glob("*.py"))
-            if py_files:
-                return py_files[0]
-        return None
 
 
 # ---------------------------------------------------------------------------

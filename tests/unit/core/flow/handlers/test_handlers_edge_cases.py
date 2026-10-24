@@ -52,7 +52,7 @@ async def test_validate_code_handler_success_output(
     run_context: RunContext, pipeline_step: PipelineStep
 ) -> None:
     """ValidateCodeHandler constructs proper output payloads when validation rules execute."""
-    (run_context.output_dir / "foo.py").touch()
+    (run_context.output_dir / "test.py").touch()  # the task file of test_spec.md
 
     handler = ValidateCodeHandler()
 
@@ -147,7 +147,7 @@ async def test_lint_fix_handler_missing_code(
             MagicMock(exports={"error_count": 1, "errors": [{"line": 1}]}),
         ]
 
-        # We ensure output dir is empty so _find_code_files returns []
+        # The task's code file does not exist, so there is nothing to fix
         result = await handler.execute(pipeline_step, run_context)
         assert result.status == StepStatus.FAILED
         assert "No code files found" in (result.error_message or "")
@@ -179,7 +179,7 @@ async def test_review_handlers_execution(
     run_context.model = run_context.model.model_copy(
         update={"llm_router": FixedRouter(AsyncMock())}
     )
-    (run_context.output_dir / "foo.py").touch()
+    (run_context.output_dir / "test.py").touch()  # the task file of test_spec.md
 
     spec_handler = ReviewSpecHandler()
     code_handler = ReviewCodeHandler()

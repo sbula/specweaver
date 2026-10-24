@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""What a test step runs: its target, the generated code it imports, and the scenario mount."""
+"""What a step works on: its file, the generated code a test run imports, and the scenario mount."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from specweaver.commons.spec_names import module_stem
 
 if TYPE_CHECKING:
+    from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -90,14 +91,52 @@ def task_file(context: RunContext, which: str) -> Path | None:
     return None if relative.endswith(".py") else context.project_path / relative
 
 
+def task_code_file(context: RunContext) -> Path:
+    """The task's code file, where generation writes it; Python keeps the run's `output_dir`."""
+    stem = module_stem(context.spec_path)
+    return task_file(context, "code") or (
+        (context.output_dir or context.project_path / "src") / f"{stem}.py"
+    )
+
+
+def step_file(step: PipelineStep, context: RunContext) -> Path | None:
+    """The file a step works on: its `target` (old spelling `target_path`), else the task's code
+    file; None when that file is not there yet.
+
+    Raises `ValueError` naming a given target that is outside the project or not a file.
+    """
+    params = step.params or {}
+    target = params.get("target") or params.get("target_path")
+    if not target:
+        code = task_code_file(context)
+        return code if code.is_file() else None
+    return file_inside(context.project_path, str(target))
+
+
+def resolve_inside(project: Path, target: str) -> Path:
+    """`target` resolved against `project`; raises `ValueError` naming it when it is outside the
+    project, a link out included."""
+    candidate = (project / target).resolve()
+    if not candidate.is_relative_to(project.resolve()):
+        msg = f"target {target!r} is outside the project"
+        raise ValueError(msg)
+    return candidate
+
+
+def file_inside(project: Path, target: str) -> Path:
+    """`resolve_inside`, and also refused when it is not a file."""
+    candidate = resolve_inside(project, target)
+    if not candidate.is_file():
+        msg = f"target {target!r} is not a file"
+        raise ValueError(msg)
+    return candidate
+
+
 def generated_code(context: RunContext) -> str:
     """The run's generated module, relative to where its tests run; "" when there is none."""
     from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
 
-    stem = module_stem(context.spec_path)
-    code = task_file(context, "code") or (
-        (context.output_dir or context.project_path / "src") / f"{stem}.py"
-    )
+    code = task_code_file(context)
     root = context.isolation.execution_root or context.project_path
     if not code.is_file():
         return ""

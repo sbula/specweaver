@@ -26,7 +26,7 @@ works in an isolated copy of the repository, and only permitted changes come bac
   paths, missing examples, untestable contracts and hidden dependencies. `sw implement` is meant to
   run on a spec that has passed.
 - **Verify the implementation against the spec.** `sw review --spec` has an LLM compare code with its
-  spec and answer `ACCEPTED` or `DENIED`. `sw drift` detects when code has moved away from the spec it was generated from.
+  spec and answer `ACCEPTED` or `DENIED`. `sw drift` detects when code has moved away from the spec it was generated from. Both read only files inside the project.
 - **Change protection.** Generated code is written in an ephemeral git worktree. At the end of the
   run, changes outside the paths the step may touch are stripped before anything is merged back.
   Agents only get the tools their role allows.

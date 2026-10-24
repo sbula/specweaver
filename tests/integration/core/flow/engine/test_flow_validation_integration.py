@@ -161,7 +161,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
 
     context = RunContext(
         project_path=tmp_path,
-        spec_path=tmp_path / "spec.md",
+        spec_path=tmp_path / "example_spec.md",  # its task file is src/example.py
         output_dir=code_dir,
         settings=settings,
         db=mock_db,

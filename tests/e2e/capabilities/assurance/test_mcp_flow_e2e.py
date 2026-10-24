@@ -175,7 +175,7 @@ class TestMCPFlowE2E:
             consumes_resources=["mcp://dummy/users_table"],
         )
 
-        spec = tmp_path / "spec.md"
+        spec = tmp_path / "test_spec.md"  # its task file is test.py
         spec.write_text("# Test Spec\\n")
 
         ctx = RunContext(

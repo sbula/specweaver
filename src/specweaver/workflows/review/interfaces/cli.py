@@ -71,7 +71,7 @@ def review(
         action = StepAction.REVIEW
         target_kind = StepTarget.CODE
         actual_spec_path = spec_path
-        params = {"target_path": str(target_path)}
+        params = {"target": str(target_path)}
     else:
         action = StepAction.REVIEW
         target_kind = StepTarget.SPEC

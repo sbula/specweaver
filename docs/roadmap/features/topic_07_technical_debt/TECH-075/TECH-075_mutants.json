@@ -357,7 +357,7 @@
           "old": "    if relative is None:\n",
           "new": "    if False:\n",
           "breaks": "an outside folder goes on the tests' import path",
-          "symbol_sha": "sha256:268d9a6c684b0f98d54f16c59139c520468cea0025029d53cc598cdc369ba9d3"
+          "symbol_sha": "sha256:0efcb8153f3e4cf5842550a6a876b02e8fe8551b76b3ba2f7e59bb7cbecbbe5f"
         }
       ]
     },

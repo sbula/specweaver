@@ -33,6 +33,12 @@ steps:
 ```
 
 - **`action` + `target`** select the handler.
+- **`params.target`** names the file a step works on (`review_code`, `validate_code`, `lint_fix`,
+  `drift`); `target_path` is still read as the old spelling. It is resolved inside the project, and a
+  file outside it (a link out included) or a target that is not a file fails the step, naming it.
+  Without one, the step takes the task's code file from `task_files_for`, where generation wrote it
+  (Python: the run's `output_dir/<stem>.py`), never the first `*.py` it finds
+  (`qa_targets.step_file`, `TECH-078`).
 - **`gate`** stops the `PipelineRunner`. `auto` passes when static validation passes. `hitl` parks the
   run until a human approves it (the approval is persisted in the state DB).
 

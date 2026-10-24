@@ -56,7 +56,7 @@ def _make_context(
     return RunContext(
         model=ModelAccess(llm_router=FixedRouter(llm) if llm is not None else None),
         project_path=tmp_path,
-        spec_path=tmp_path / "spec.md",
+        spec_path=tmp_path / "foo_spec.md",  # its task file is output/foo.py
         output_dir=output_dir,
         db=db,
     )

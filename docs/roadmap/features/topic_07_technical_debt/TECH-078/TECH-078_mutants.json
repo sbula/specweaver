@@ -356,6 +356,97 @@
           "symbol_sha": "sha256:6d6d7b416cd8e4277d54f6f586993d83ee70c8866a64c5cc3033bcc634451bb6"
         }
       ]
+    },
+    {
+      "requirement": "FR-1",
+      "title": "Every step finds the generated code one way",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_step_file.py",
+        "tests/integration/core/flow/handlers/test_step_files_java.py",
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py"
+      ],
+      "mutants": [
+        {
+          "id": "first-py-in-output-dir",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "step_file",
+          "old": "        code = task_code_file(context)\n        return code if code.is_file() else None\n",
+          "new": "        found = sorted(context.output_dir.glob(\"*.py\")) if context.output_dir else []\n        return found[0] if found else None\n",
+          "breaks": "a Java run reviews a stray .py instead of the task's file",
+          "symbol_sha": "sha256:b0f41691dfa4f3ec276e17945df00c195826d5ce8aee77a50d5da1ebf1a263d0"
+        },
+        {
+          "id": "lint-fix-has-no-fallback",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._fix_file",
+          "old": "        code = task_code_file(context)\n        return code if code.is_file() else None\n",
+          "new": "        return None\n",
+          "breaks": "lint_fix on a folder target finds nothing to fix",
+          "symbol_sha": "sha256:c20e110b50c113c6135f54a3aec5a3c48dbff500ce3b4af9ae34f9c87c462996"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "target is the one parameter name; target_path is still read",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_step_file.py",
+        "tests/unit/core/flow/handlers/test_drift.py",
+        "tests/integration/interfaces/cli/test_cli_drift.py"
+      ],
+      "mutants": [
+        {
+          "id": "old-spelling-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "step_file",
+          "old": "    target = params.get(\"target\") or params.get(\"target_path\")\n",
+          "new": "    target = params.get(\"target\")\n",
+          "breaks": "a pipeline that says target_path loses its file",
+          "symbol_sha": "sha256:b0f41691dfa4f3ec276e17945df00c195826d5ce8aee77a50d5da1ebf1a263d0"
+        },
+        {
+          "id": "drift-reads-old-name-only",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/drift.py",
+          "symbol": "DriftCheckHandler.execute",
+          "old": "        if not (step.params.get(\"target\") or step.params.get(\"target_path\")):\n",
+          "new": "        if not step.params.get(\"target_path\"):\n",
+          "breaks": "drift refuses a step that says target",
+          "symbol_sha": "sha256:4dbc5b621ecc6e28c370a9fa990776460a28e32138eac2305ada150c37e07229"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-3",
+      "title": "A target outside the project is refused in every step that reads one",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_step_file.py"
+      ],
+      "mutants": [
+        {
+          "id": "outside-target-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "resolve_inside",
+          "old": "    if not candidate.is_relative_to(project.resolve()):\n",
+          "new": "    if False:\n",
+          "breaks": "review sends /etc/passwd to the model",
+          "symbol_sha": "sha256:329f15f0d64537f2b762486ed840bdf04612ccaa67177db8ed562fcca71674da"
+        },
+        {
+          "id": "folder-target-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "file_inside",
+          "old": "    if not candidate.is_file():\n",
+          "new": "    if False:\n",
+          "breaks": "a folder or a missing file is taken as the step's file",
+          "symbol_sha": "sha256:d671a1e8bf53679ce0570b9bf89b2bfea1d13f635994248d1e9c58c3b74a8e4c"
+        }
+      ]
     }
   ]
 }

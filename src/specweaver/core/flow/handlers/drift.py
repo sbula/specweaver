@@ -47,17 +47,21 @@ class DriftCheckHandler:
         """Execute the drift check."""
         started = _now_iso()
 
-        target_path_str = step.params.get("target_path")
-        if not target_path_str:
-            return _error_result("Missing 'target_path' in step params.", started)
+        if not (step.params.get("target") or step.params.get("target_path")):
+            return _error_result("Missing 'target' in step params.", started)
 
         plan_path_str = step.params.get("plan_path")
         if not plan_path_str:
             return _error_result("Missing 'plan_path' in step params.", started)
 
-        target_path = Path(target_path_str)
-        if not target_path.exists():
-            return _error_result(f"Target file not found: {target_path}", started)
+        from specweaver.core.flow.handlers.qa_targets import step_file
+
+        try:
+            target_path = step_file(step, context)
+        except ValueError as exc:
+            return _error_result(str(exc), started)
+        if target_path is None:  # an explicit target is a file or refused; this keeps mypy honest
+            return _error_result("Missing 'target' in step params.", started)
 
         try:
             plan = _load_plan(plan_path_str)
@@ -99,14 +103,9 @@ class DriftCheckHandler:
         except Exception as exc:
             return _error_result(f"Failed to parse AST: {exc}", started)
 
-        try:
-            rel_path = target_path.relative_to(context.project_path)
-            file_path_str = str(rel_path).replace("\\", "/")
-        except ValueError:  # expected: a file outside the project is named alone
-            file_path_str = target_path.name
-
+        file_path_str = target_path.relative_to(context.project_path.resolve()).as_posix()
         return await self._run_drift_detect(
-            file_path_str, target_path_str, tree, plan, step, context, started
+            file_path_str, str(target_path), tree, plan, step, context, started
         )
 
     async def _run_drift_detect(

@@ -244,7 +244,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                "specweaver.core.flow.handlers.qa_targets.step_file",
                 return_value=Path("/tmp/fake_project/code.py"),
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
@@ -331,7 +331,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                "specweaver.core.flow.handlers.qa_targets.step_file",
                 return_value=Path("/tmp/fake_project/code.py"),
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),
@@ -414,7 +414,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.review.ReviewCodeHandler._find_code_path",
+                "specweaver.core.flow.handlers.qa_targets.step_file",
                 return_value=Path("/tmp/fake_project/code.py"),
             ),
             patch("pathlib.Path.exists", autospec=True, side_effect=mock_exists),

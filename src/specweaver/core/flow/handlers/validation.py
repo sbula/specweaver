@@ -21,6 +21,7 @@ from specweaver.core.flow.handlers.qa_targets import (
     names_one_file,
     requirement_coverage_of,
     scenarios_root,
+    step_file,
 )
 
 if TYPE_CHECKING:
@@ -240,8 +241,11 @@ class ValidateCodeHandler:
         started = _now_iso()
         logger.debug("ValidateCodeHandler: looking for code to validate")
 
-        code_path = self._find_code_path(step, context)
-        if code_path is None or not code_path.exists():
+        try:
+            code_path = step_file(step, context)
+        except ValueError as exc:
+            return _error_result(str(exc), started)
+        if code_path is None:
             logger.warning("ValidateCodeHandler: no code file found to validate")
             return _error_result(
                 "No code file found to validate",
@@ -287,31 +291,6 @@ class ValidateCodeHandler:
         except Exception as exc:
             logger.exception("ValidateCodeHandler: unhandled exception during code validation")
             return _error_result(str(exc), started)
-
-    def _find_code_path(self, step: PipelineStep, context: RunContext) -> Path | None:
-        """Find the code file to validate.
-
-        An explicit ``params["target"]`` is authoritative — it points
-        validation at a specific generated file (``src/<stem>.py``) instead of the
-        ``output_dir`` glob (which returns an arbitrary first match). The target is
-        resolved against ``project_path`` and must stay inside it (no traversal). When
-        no target is set, the legacy ``output_dir`` glob behavior is preserved.
-        """
-        target = step.params.get("target")
-        if target and context.project_path:
-            base = context.project_path.resolve()
-            candidate = (context.project_path / target).resolve()
-            try:
-                candidate.relative_to(base)
-            except ValueError:  # expected: a target outside the project root is refused
-                return None
-            return candidate if candidate.is_file() else None
-
-        if context.output_dir and context.output_dir.exists():
-            py_files = list(context.output_dir.glob("*.py"))
-            if py_files:
-                return py_files[0]
-        return None
 
     def _run_validation(
         self,

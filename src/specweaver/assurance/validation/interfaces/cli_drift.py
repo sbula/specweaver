@@ -64,7 +64,7 @@ def drift_check(
         action=StepAction.DETECT,
         target=StepTarget.DRIFT,
         description=f"AST Drift Check for {target_path.name}",
-        params={"target_path": str(target_path), "plan_path": str(plan_path), "analyze": analyze},
+        params={"target": str(target_path), "plan_path": str(plan_path), "analyze": analyze},
         models="required" if analyze else "none",
         read_only=True,
     )
@@ -181,7 +181,7 @@ def _run_rot_check(target_path: Path, matched_plan: Path, project_path: Path) ->
         target=StepTarget.DRIFT,
         description=f"Rot Check {target_path.name}",
         params={
-            "target_path": str(target_path.absolute()),
+            "target": str(target_path.absolute()),
             "plan_path": str(matched_plan.absolute()),
             "analyze": False,
         },

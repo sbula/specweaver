@@ -125,11 +125,11 @@ class LintFixHandler:
                 )
 
             # Find code to fix
-            code_files = self._find_code_files(context, target)
-            if not code_files:
+            code_file, refused = self._file_to_fix(context, target)
+            if code_file is None:
                 return StepResult(
                     status=StepStatus.FAILED,
-                    error_message="No code files found to fix",
+                    error_message=refused,
                     output={
                         "reflections_used": reflections_used,
                         "lint_errors_remaining": last_error_count,
@@ -144,10 +144,10 @@ class LintFixHandler:
                     "LintFixHandler: LLM reflection %d/%d on '%s'",
                     reflections_used + 1,
                     max_reflections,
-                    code_files[0].name,
+                    code_file.name,
                 )
                 await self._llm_fix(
-                    code_files[0],
+                    code_file,
                     lint_result.exports.get("errors", []) if lint_result.exports else [],
                     context=context,
                 )
@@ -205,28 +205,24 @@ class LintFixHandler:
             sandbox_settings=coder_sandbox(context),
         )
 
-    def _find_code_files(self, context: RunContext, target: str | None = None) -> list[Path]:
-        """Find the Python file(s) to fix.
+    def _file_to_fix(self, context: RunContext, target: str) -> tuple[Path | None, str]:
+        """`_fix_file`, and what to say when there is none."""
+        try:
+            found = self._fix_file(context, target)
+        except ValueError as exc:
+            return None, str(exc)
+        return found, "No code files found to fix"
 
-        An explicit ``target`` (the generated ``src/<stem>.py``) is
-        authoritative — resolved against ``project_path`` and required to stay inside it
-        (no traversal) — so the LLM reflection loop can locate the file when ``output_dir``
-        is unset. A non-file target (e.g. the default ``"src/"`` directory) or no target
-        falls back to the legacy ``output_dir`` glob.
-        """
-        if target and getattr(context, "project_path", None):
-            base = context.project_path.resolve()
-            candidate = (context.project_path / target).resolve()
-            try:
-                candidate.relative_to(base)
-            except ValueError:  # expected: a target outside the project root is refused
-                return []
-            if candidate.is_file():
-                return [candidate]
+    def _fix_file(self, context: RunContext, target: str) -> Path | None:
+        """The file the LLM fixes: `target` when it names a file inside the project, else the
+        task's code file; None when there is none. Raises `ValueError` for a target outside."""
+        from specweaver.core.flow.handlers.qa_targets import resolve_inside, task_code_file
 
-        if context.output_dir and context.output_dir.exists():
-            return list(context.output_dir.glob("*.py"))
-        return []
+        candidate = resolve_inside(context.project_path, target)
+        if candidate.is_file():
+            return candidate
+        code = task_code_file(context)
+        return code if code.is_file() else None
 
     async def _llm_fix(
         self,

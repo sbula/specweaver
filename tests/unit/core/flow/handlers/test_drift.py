@@ -60,7 +60,7 @@ tasks:
 
 @pytest.mark.asyncio
 async def test_drift_handler_no_target_path(tmp_path: Path) -> None:
-    """Test handler fails if target_path not provided."""
+    """Test handler fails if no target is provided."""
     handler = DriftCheckHandler()
     step = PipelineStep(
         name="drift_check", action=StepAction.DETECT, target=StepTarget.DRIFT, params={}
@@ -69,7 +69,7 @@ async def test_drift_handler_no_target_path(tmp_path: Path) -> None:
 
     result = await handler.execute(step, context)
     assert result.status == StepStatus.ERROR
-    assert "target_path" in result.error_message
+    assert "target" in result.error_message
 
 
 @pytest.mark.asyncio
