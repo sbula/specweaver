@@ -126,9 +126,13 @@ missing (`TECH-075` FR-5).
 A `run_tests` target runs exactly what it names, in every language. `<file>::<name>` is one test,
 a file is its tests, a folder is its tests and its subfolders', and `.` or empty is the project.
 `run_targets.parse_target` reads the target; each runner turns it into its tool's filter: pytest
-takes it as it is, Gradle `--tests`, Maven `-Dtest`, cargo `--test`/`--lib` with `--exact`. A Rust
-test in a `src/` file is named as `<module>::tests::<name>`. A named test ignores the `kind`
-marker. A run that ran no test fails and names the target (`TECH-078` FR-7).
+takes it as it is, Gradle `--tests`, Maven `-Dtest`, cargo `--test`/`--lib` with `--exact`, Jest and
+Vitest the path (a folder ends in `/`) and `-t "(^| )<name>$"` with the name escaped. A Rust test in a
+`src/` file is named as `<module>::tests::<name>`. A named test ignores the `kind` marker. A run
+that ran no test fails and names the target (`TECH-078` FR-7).
+
+The Rust debugger runs `cargo run --bin <x>` for `src/bin/<x>.rs` or `src/bin/<x>/main.rs`,
+`--example <x>` for `examples/<x>.rs`, and the default binary for anything else (`TECH-078` FR-8).
 
 ## GitTool (agents)
 

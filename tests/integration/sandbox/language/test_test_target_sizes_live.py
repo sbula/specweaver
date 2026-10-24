@@ -1,9 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Real pytest, Maven and cargo run exactly what a target names, at every size.
+"""Real pytest, Maven and cargo run exactly what a target names, at every size; the real cargo
+runs the binary or example the debugger is given.
 
 Proves: TECH-078 FR-7
+Proves: TECH-078 FR-8
 
 Each project holds two test files in a folder and its subfolder; each file has one passing and one
 failing test, the passing one's name a prefix of the failing one's. Skipped where the tool is
@@ -228,3 +230,40 @@ class TestCargo:
         target = "tests/orders.rs::gone"
 
         assert _names_the_target(self._run(root, target), target)
+
+
+@pytest.mark.skipif(shutil.which("cargo") is None, reason="cargo not installed")
+class TestCargoDebugger:
+    """The chosen binary's output comes back, not the default one's."""
+
+    @pytest.fixture(scope="class")
+    def root(self, tmp_path_factory: pytest.TempPathFactory) -> Path:
+        say = 'fn main() {{ println!("{0}"); }}\n'
+        return _write(
+            tmp_path_factory.mktemp("debug") / "crate",
+            {
+                "Cargo.toml": '[package]\nname = "probe"\nversion = "0.1.0"\nedition = "2021"\n'
+                'default-run = "probe"\n',
+                "src/main.rs": say.format("default"),
+                "src/bin/cli.rs": say.format("from cli"),
+                "examples/demo.rs": say.format("from demo"),
+            },
+        )
+
+    @pytest.mark.parametrize(
+        ("entrypoint", "said"),
+        [
+            ("src/bin/cli.rs", "from cli"),
+            ("examples/demo.rs", "from demo"),
+            ("src/main.rs", "default"),
+        ],
+    )
+    def test_the_named_entrypoint_runs(self, root: Path, entrypoint: str, said: str) -> None:
+        from specweaver.sandbox.language.core.rust.runner import RustRunner
+
+        result = RustRunner(cwd=root, executor=SubprocessExecutor(cwd=root)).run_debugger(
+            target="src/", entrypoint=entrypoint
+        )
+
+        output = "".join(event.output for event in result.events)
+        assert (result.exit_code, output.strip()) == (0, said), result

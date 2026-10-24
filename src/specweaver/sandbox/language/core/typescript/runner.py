@@ -5,12 +5,14 @@
 
 import json
 import logging
+import re
 import shlex
 import shutil
 from pathlib import Path
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.run_targets import no_test_ran, npm_test_args, parse_target
 from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
     failed_architecture,
@@ -70,6 +72,16 @@ def _restricted_import_violations(stdout: str) -> list[ArchitectureViolation]:
     ]
 
 
+_NO_TESTS = re.compile(r"No tests? (files )?found", re.IGNORECASE)
+
+
+def _ran_nothing(counts: TestCounts | None, output: str) -> bool:
+    """Jest or Vitest ran no test: every test skipped by the name filter, or none found."""
+    if counts is not None:
+        return counts.passed + counts.failed == 0
+    return bool(_NO_TESTS.search(output))
+
+
 class TypeScriptRunner(QARunnerInterface):
     """Executes tests, compilation, and debugging for TypeScript projects."""
 
@@ -98,13 +110,18 @@ class TypeScriptRunner(QARunnerInterface):
         if not self._has_test_script():
             return failed_tests("package.json has no test script: npm test cannot run the tests")
         cmd = [shutil.which("npm") or "npm", "test"]
-        if target and target not in {".", "src/", "tests/"} and not target.endswith("/"):
-            cmd += ["--", target]
+        filters = npm_test_args(parse_target(target))
+        if filters:
+            cmd += ["--", *filters]
         result = self._executor.execute(cmd, timeout_seconds=timeout)
         reason = did_not_run(result, "npm test")
         if reason:
             return failed_tests(reason, result.duration_seconds)
-        counts = summary_counts(result.stdout)
+        # Jest writes its summary to stderr, Vitest to stdout.
+        output = f"{result.stdout}\n{result.stderr}"
+        counts = summary_counts(output)
+        if _ran_nothing(counts, output):
+            return failed_tests(no_test_ran(target), result.duration_seconds)
         if counts is None:
             ok = result.exit_code == 0
             counts = TestCounts(passed=int(ok), failed=int(not ok), skipped=0, total=1)

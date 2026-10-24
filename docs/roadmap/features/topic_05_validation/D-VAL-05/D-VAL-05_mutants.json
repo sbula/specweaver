@@ -37,7 +37,7 @@
           "old": "            env = {\"PYTHONPATH\": str(PurePosixPath(source).parent)} if source else None\n",
           "new": "            env = None\n",
           "breaks": "a generated test cannot import its module",
-          "symbol_sha": "sha256:52cfd431613d3cde219b9b7686ad188e241a00d369237add53377fac93b04d96"
+          "symbol_sha": "sha256:44f8849fcbedb6151a44daf52edfd6cd4d0144a7fc65bd30a0e750d064780e03"
         },
         {
           "id": "step-source-dropped",

@@ -187,7 +187,7 @@
           "old": "            return failed_tests(f\"cargo test could not run: {exc}\")\n",
           "new": "            return failed_tests(\"cargo test could not run\")\n",
           "breaks": "a crashed cargo test says nothing of why",
-          "symbol_sha": "sha256:0dbf53814b5f1fd7ebc2d0bb248b45ae76c451991b098cde3e655911dde94c27"
+          "symbol_sha": "sha256:ec1ff54c6fa0bb225aba4bd971a1061d76f7f6993fa3854e8e939d9b150686a6"
         },
         {
           "id": "dal-warning-silenced",

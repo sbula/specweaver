@@ -13,6 +13,7 @@ from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.run_targets import (
     TargetError,
+    cargo_run_args,
     cargo_test_args,
     no_test_ran,
     parse_target,
@@ -288,7 +289,7 @@ class RustRunner(QARunnerInterface):
         from specweaver.sandbox.qa_runner.core.interface import DebugRunResult, OutputEvent
 
         try:
-            cmd = ["cargo", "run"]
+            cmd = ["cargo", "run", *cargo_run_args(entrypoint)]
             result = self._executor.execute(cmd)
             return DebugRunResult(
                 exit_code=result.exit_code,

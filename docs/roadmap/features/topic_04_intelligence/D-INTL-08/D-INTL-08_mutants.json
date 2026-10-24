@@ -252,10 +252,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
           "symbol": "TypeScriptRunner.run_tests",
-          "old": "        counts = summary_counts(result.stdout)\n",
+          "old": "        counts = summary_counts(output)\n",
           "new": "        counts = None\n",
           "breaks": "Jest and Vitest results collapse to one pass or fail",
-          "symbol_sha": "sha256:48dd28d42bb8e3d15a7ee3bc4bba4633ec9659a80bb70a63388ed32178cc9794"
+          "symbol_sha": "sha256:33d4d17a013486e741b8bca6969b52c9c2ae91385c9ea39eb466555e839dede0"
         },
         {
           "id": "ts-failures-not-counted",
@@ -285,7 +285,7 @@
           "old": "        if not self._has_test_script():\n",
           "new": "        if False:\n",
           "breaks": "a project with no tests passes as if it had some",
-          "symbol_sha": "sha256:48dd28d42bb8e3d15a7ee3bc4bba4633ec9659a80bb70a63388ed32178cc9794"
+          "symbol_sha": "sha256:33d4d17a013486e741b8bca6969b52c9c2ae91385c9ea39eb466555e839dede0"
         }
       ]
     },
@@ -646,7 +646,7 @@
           "old": "            \"-m\",\n            \"toolchain\",\n",
           "new": "            \"-m\",\n            \"e2e\",\n",
           "breaks": "the nightly run proves nothing about the real tools",
-          "symbol_sha": "sha256:6e1547a9169ab0268a20290b387c619d034fda1af2f5e735a01e54ffc798b25b"
+          "symbol_sha": "sha256:3b9ec088b9ab2987dd0a6885af2e5139a78381ddc8424bd54f1055d013d12b31"
         },
         {
           "id": "failure-recorded-as-pass",

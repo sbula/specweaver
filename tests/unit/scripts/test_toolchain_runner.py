@@ -63,6 +63,7 @@ def test_the_run_selects_the_tier_and_keeps_the_verdict(
     command = run.call_args[0][0]
     selections = [command[i + 1] for i, part in enumerate(command[:-1]) if part == "-m"]
     assert selections == ["pytest", "toolchain"]
+    assert {"tests/integration", "tests/e2e"} <= set(command)
     verdict = json.loads(result.read_text(encoding="utf-8"))
     assert verdict["passed"] is passed
     assert verdict["summary"] == "3 passed, 2 skipped"

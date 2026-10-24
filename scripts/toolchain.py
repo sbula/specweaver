@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The nightly real-toolchain run: `sw implement` with the real pytest, Maven, Gradle, npm, cargo.
+"""The nightly real-toolchain run: the `toolchain` tier with the real pytest, Maven, Gradle, npm, cargo.
 
     python scripts/toolchain.py             # run the toolchain tier now
     python scripts/toolchain.py --status    # the last night's verdict; exit 1 unless it passed
@@ -39,6 +39,7 @@ def run(result: Path = RESULT) -> int:
             "-rs",
             "-p",
             "no:randomly",
+            "tests/integration",
             "tests/e2e",
         ],
         cwd=REPO_ROOT,

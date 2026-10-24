@@ -205,12 +205,13 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One way to find a step's files | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The API's implement and the planner | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-04 | Test and debug targets | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Test and debug targets | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
 **Current status**: Design APPROVED 2026-10-23; SF-01 committed 2026-10-23
-([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 plan APPROVED 2026-10-23.
-**Next step**: Trigger the dev skill for SF-04, then the implementation-plan skill for SF-02.
+([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
+([walkthrough](TECH-078_sf04_walkthrough.md)).
+**Next step**: Trigger the implementation-plan skill for SF-02, then SF-03.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

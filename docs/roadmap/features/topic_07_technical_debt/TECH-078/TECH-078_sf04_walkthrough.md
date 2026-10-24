@@ -44,5 +44,39 @@ a Java folder and was refused before the build. The case now uses `src/test/kotl
 - `src/bin/x.rs` is read as a library module and runs no test; that fails, naming the target.
 - A JVM file that is not a test file still runs every test (D-INTL-08 FR-5). A JVM folder outside
   `src/test/<lang>/` and `src/main/<lang>/` is refused.
-- Gradle (Kotlin) is not installed here; its filters are proven by unit tests until CB-2's toolchain
-  tier.
+- Gradle (Kotlin) is not installed here; see CB-2.
+
+## CB-2 — TypeScript, the toolchain tier, the Rust debugger (FR-7, FR-8)
+
+### What changed
+
+- `run_targets.npm_test_args`: `npm test -- <path>`; a folder ends in `/` so `tests/shop` leaves
+  `tests/shopping` out; a name becomes `-t "(^| )<name>$"`, escaped, so it matches only that test
+  under any `describe` (decision 1). The TypeScript runner fails a run that ran no test: all tests
+  skipped by the name, or "No tests found" / "No test files found" (decision 2).
+- Jest writes its summary to stderr, Vitest to stdout; the runner now reads both. Before, a Jest
+  run's counts were never read and fell back to the exit code (found by the gap analysis).
+- `run_targets.cargo_run_args`: the Rust debugger runs `--bin <x>` for `src/bin/<x>.rs` or
+  `src/bin/<x>/main.rs`, `--example <x>` for `examples/<x>.rs`, the default binary otherwise; a path
+  with `..` names nothing (FR-8).
+- `test_test_target_sizes_toolchain.py` (`toolchain` tier): the four sizes with Kotlin on Maven and
+  on Gradle, and Vitest. `scripts/toolchain.py` now runs the tier in `tests/integration` as well as
+  `tests/e2e`.
+
+### Red first
+
+TypeScript sizes and the debugger cases: 12 red before the code. The stderr summary and the
+two-sided anchor: red, then green. The live debugger case (real cargo, two binaries and an example)
+and the Kotlin-on-Maven sizes ran green here with the real tools.
+
+### Not run here
+
+- Gradle is not installed: its sizes skip here and on the nightly machine, so Gradle's filters are
+  proven by unit tests only.
+- Vitest needs `npm install` from the registry; it runs in the nightly toolchain run, not in this
+  session.
+
+### Accepted risks
+
+- Jest and Vitest read the path as a pattern: `tests/a.test.ts` also matches a path that ends with
+  it (`xtests/a.test.ts`). On Windows Jest sees `\` in paths, and a `/` folder pattern may not match.

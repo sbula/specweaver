@@ -9,6 +9,7 @@ the project (empty or `.`).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Literal
@@ -141,6 +142,39 @@ def _cargo_source_args(rest: tuple[str, ...], target: RunTarget) -> list[str]:
     if target.name:
         return [*where, "--", "::".join([*module, "tests", target.name]), "--exact"]
     return [*where, f"{'::'.join(module)}::"] if module else where
+
+
+_JS_REGEX_SPECIALS = re.compile(r"[\\^$.*+?()[\]{}|/]")
+
+
+def npm_test_args(target: RunTarget) -> list[str]:
+    """What follows `npm test --` for Jest or Vitest: the path, a folder ending in `/` so a
+    sibling with a longer name stays out, and a name escaped and anchored at both ends."""
+    if target.kind == "project":
+        return []
+    if target.kind == "folder":
+        return [f"{target.path}/"]
+    if target.kind == "test":
+        # The full name is the `describe` names and the test's, joined by spaces.
+        name = _JS_REGEX_SPECIALS.sub(r"\\\g<0>", target.name)
+        return [target.path, "-t", f"(^| ){name}$"]
+    return [target.path]
+
+
+def cargo_run_args(entrypoint: str) -> list[str]:
+    """`--bin <x>` for `src/bin/<x>.rs` or `src/bin/<x>/main.rs`, `--example <x>` for
+    `examples/<x>.rs`; nothing for the default binary or a path that climbs out."""
+    parts = PurePosixPath(entrypoint.replace("\\", "/")).parts
+    if ".." in parts or not parts or PurePosixPath(parts[-1]).suffix != ".rs":
+        return []
+    if parts[:2] == ("src", "bin"):
+        rest = parts[2:]
+        if len(rest) == 1:
+            return ["--bin", PurePosixPath(rest[0]).stem]
+        return ["--bin", rest[0]] if rest[1:] == ("main.rs",) else []
+    if parts[0] == "examples" and len(parts) == 2:
+        return ["--example", PurePosixPath(parts[1]).stem]
+    return []
 
 
 _WRAPPERS = {"gradle": ("gradlew", "gradlew.bat"), "maven": ("mvnw", "mvnw.cmd")}

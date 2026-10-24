@@ -100,7 +100,9 @@
         "tests/unit/sandbox/language/core/test_test_targets.py",
         "tests/integration/sandbox/language/test_test_target_sizes_live.py",
         "tests/unit/sandbox/language/core/language/python/test_python_runner.py",
-        "tests/unit/sandbox/language/core/language/test_one_test_file.py"
+        "tests/unit/sandbox/language/core/language/test_one_test_file.py",
+        "tests/integration/sandbox/language/test_test_target_sizes_toolchain.py",
+        "tests/unit/scripts/test_toolchain_runner.py"
       ],
       "mutants": [
         {
@@ -141,7 +143,7 @@
           "old": "        return [*args, \"--\", target.name, \"--exact\"] if target.name else args\n",
           "new": "        return args\n",
           "breaks": "one Rust test runs its whole file",
-          "symbol_sha": "sha256:3e12c8c50d6817d07e5c1519ab099913f6791e5ec3fde94574c400af6cf862f3"
+          "symbol_sha": "sha256:1daa33c0c901bba53284c8175beb708a11934186be41938bce4ae1ef0611727b"
         },
         {
           "id": "cargo-name-not-exact",
@@ -151,7 +153,7 @@
           "old": "        return [*args, \"--\", target.name, \"--exact\"] if target.name else args\n",
           "new": "        return [*args, \"--\", target.name] if target.name else args\n",
           "breaks": "a Rust name runs every test it is a prefix of",
-          "symbol_sha": "sha256:3e12c8c50d6817d07e5c1519ab099913f6791e5ec3fde94574c400af6cf862f3"
+          "symbol_sha": "sha256:1daa33c0c901bba53284c8175beb708a11934186be41938bce4ae1ef0611727b"
         },
         {
           "id": "cargo-src-name-outside-tests-module",
@@ -181,7 +183,7 @@
           "old": "        if not parsed[\"total\"]:\n",
           "new": "        if False:\n",
           "breaks": "a misspelt Python target is green",
-          "symbol_sha": "sha256:5aa0027f24429e7700def1eeafab4aa9efeefe21a5735a81ae1565cb74366a09"
+          "symbol_sha": "sha256:44f8849fcbedb6151a44daf52edfd6cd4d0144a7fc65bd30a0e750d064780e03"
         },
         {
           "id": "python-marker-hides-named-test",
@@ -191,7 +193,7 @@
           "old": "        if kind and parse_target(target).kind != \"test\":\n",
           "new": "        if kind:\n",
           "breaks": "a named test without the marker runs nothing",
-          "symbol_sha": "sha256:5aa0027f24429e7700def1eeafab4aa9efeefe21a5735a81ae1565cb74366a09"
+          "symbol_sha": "sha256:44f8849fcbedb6151a44daf52edfd6cd4d0144a7fc65bd30a0e750d064780e03"
         },
         {
           "id": "rust-empty-run-passes",
@@ -222,6 +224,136 @@
           "new": "        if False:\n",
           "breaks": "a misspelt Kotlin target is green",
           "symbol_sha": "sha256:73bab5c2ab6410f5c4a3de488d4272a8a3f4f34a39abfb6239c9fe41e1a3f30d"
+        },
+        {
+          "id": "npm-folder-is-a-prefix",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "npm_test_args",
+          "old": "        return [f\"{target.path}/\"]\n",
+          "new": "        return [target.path]\n",
+          "breaks": "tests/shop also runs tests/shopping",
+          "symbol_sha": "sha256:57aeada913bfb222d6ab9eb003214ffdd02b9ba0a0fbec011badcab2c380816b"
+        },
+        {
+          "id": "npm-name-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "npm_test_args",
+          "old": "        return [target.path, \"-t\", f\"(^| ){name}$\"]\n",
+          "new": "        return [target.path]\n",
+          "breaks": "one TypeScript test runs its whole file",
+          "symbol_sha": "sha256:57aeada913bfb222d6ab9eb003214ffdd02b9ba0a0fbec011badcab2c380816b"
+        },
+        {
+          "id": "npm-name-not-escaped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "npm_test_args",
+          "old": "        name = _JS_REGEX_SPECIALS.sub(r\"\\\\\\g<0>\", target.name)\n",
+          "new": "        name = target.name\n",
+          "breaks": "a name with brackets is read as a pattern",
+          "symbol_sha": "sha256:57aeada913bfb222d6ab9eb003214ffdd02b9ba0a0fbec011badcab2c380816b"
+        },
+        {
+          "id": "npm-all-skipped-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "_ran_nothing",
+          "old": "        return counts.passed + counts.failed == 0\n",
+          "new": "        return counts.total == 0\n",
+          "breaks": "a name that matched nothing is green",
+          "symbol_sha": "sha256:94934c848628c8e9e0a96f05523739af64f0084a45965f84c2bbc6e9225f53ca"
+        },
+        {
+          "id": "npm-none-found-passes",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "_ran_nothing",
+          "old": "    return bool(_NO_TESTS.search(output))\n",
+          "new": "    return False\n",
+          "breaks": "a folder with no test files fails without naming it",
+          "symbol_sha": "sha256:94934c848628c8e9e0a96f05523739af64f0084a45965f84c2bbc6e9225f53ca"
+        },
+        {
+          "id": "toolchain-skips-integration",
+          "origin": "authored",
+          "file": "scripts/toolchain.py",
+          "symbol": "run",
+          "old": "            \"tests/integration\",\n",
+          "new": "            \"tests/e2e\",\n",
+          "breaks": "the nightly never runs the Gradle and Vitest sizes",
+          "symbol_sha": "sha256:3b9ec088b9ab2987dd0a6885af2e5139a78381ddc8424bd54f1055d013d12b31"
+        },
+        {
+          "id": "jest-summary-on-stderr-unread",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_tests",
+          "old": "        output = f\"{result.stdout}\\n{result.stderr}\"\n",
+          "new": "        output = result.stdout\n",
+          "breaks": "a Jest name that matched nothing is green",
+          "symbol_sha": "sha256:33d4d17a013486e741b8bca6969b52c9c2ae91385c9ea39eb466555e839dede0"
+        },
+        {
+          "id": "npm-name-matches-a-longer-name",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "npm_test_args",
+          "old": "        return [target.path, \"-t\", f\"(^| ){name}$\"]\n",
+          "new": "        return [target.path, \"-t\", f\"{name}$\"]\n",
+          "breaks": "a TypeScript name also runs a test whose name ends with it",
+          "symbol_sha": "sha256:57aeada913bfb222d6ab9eb003214ffdd02b9ba0a0fbec011badcab2c380816b"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "The Rust debugger runs the entrypoint it is given",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/rust/test_rust_debugger.py",
+        "tests/integration/sandbox/language/test_test_target_sizes_live.py"
+      ],
+      "mutants": [
+        {
+          "id": "debugger-ignores-entrypoint",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/rust/runner.py",
+          "symbol": "RustRunner.run_debugger",
+          "old": "            cmd = [\"cargo\", \"run\", *cargo_run_args(entrypoint)]\n",
+          "new": "            cmd = [\"cargo\", \"run\"]\n",
+          "breaks": "the debugger always runs the default binary",
+          "symbol_sha": "sha256:a0caf07e1c7e8f5d6794675f7ecf8914d2ebb695d5fcb2fabd2057c3f8baeb24"
+        },
+        {
+          "id": "bin-name-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "cargo_run_args",
+          "old": "            return [\"--bin\", PurePosixPath(rest[0]).stem]\n",
+          "new": "            return []\n",
+          "breaks": "src/bin/cli.rs runs the default binary",
+          "symbol_sha": "sha256:6d6d7b416cd8e4277d54f6f586993d83ee70c8866a64c5cc3033bcc634451bb6"
+        },
+        {
+          "id": "example-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "cargo_run_args",
+          "old": "        return [\"--example\", PurePosixPath(parts[1]).stem]\n",
+          "new": "        return []\n",
+          "breaks": "an example runs the default binary",
+          "symbol_sha": "sha256:6d6d7b416cd8e4277d54f6f586993d83ee70c8866a64c5cc3033bcc634451bb6"
+        },
+        {
+          "id": "climbing-path-names-a-target",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "cargo_run_args",
+          "old": "    if \"..\" in parts or not parts or PurePosixPath(parts[-1]).suffix != \".rs\":\n",
+          "new": "    if not parts or PurePosixPath(parts[-1]).suffix != \".rs\":\n",
+          "breaks": "a path that climbs out picks a binary",
+          "symbol_sha": "sha256:6d6d7b416cd8e4277d54f6f586993d83ee70c8866a64c5cc3033bcc634451bb6"
         }
       ]
     }

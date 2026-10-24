@@ -301,3 +301,86 @@ def test_an_empty_python_run_under_a_marker_says_so(tmp_path: Path) -> None:
     )
 
     assert "marker 'unit'" in _no_test_message(result)
+
+
+# --- TypeScript (Jest and Vitest through `npm test`) -------------------------------------------
+
+
+def _npm_project(tmp_path: Path) -> Path:
+    (tmp_path / "package.json").write_text('{"scripts": {"test": "jest"}}')
+    return tmp_path
+
+
+_JEST_OK = "Tests:       1 passed, 1 total\n"
+
+
+@pytest.mark.parametrize(
+    ("target", "after"),
+    [
+        ("tests/orders.test.ts::places", ["tests/orders.test.ts", "-t", "(^| )places$"]),
+        ("tests/orders.test.ts", ["tests/orders.test.ts"]),
+        ("tests/shop", ["tests/shop/"]),
+        ("tests/shop/", ["tests/shop/"]),
+        (".", []),
+        ("", []),
+    ],
+)
+def test_typescript_runs_each_size(tmp_path: Path, target: str, after: list[str]) -> None:
+    from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
+
+    executor = _executor(_JEST_OK)
+
+    TypeScriptRunner(cwd=_npm_project(tmp_path), executor=executor).run_tests(target=target)
+
+    command = _command(executor)
+    assert command[command.index("test") + 1 :] == (["--", *after] if after else [])
+
+
+def test_a_typescript_name_is_escaped_before_it_is_anchored(tmp_path: Path) -> None:
+    from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
+
+    executor = _executor(_JEST_OK)
+
+    TypeScriptRunner(cwd=_npm_project(tmp_path), executor=executor).run_tests(
+        target="tests/orders.test.ts::place (EUR) 1.5*"
+    )
+
+    assert _command(executor)[-1] == r"(^| )place \(EUR\) 1\.5\*$"
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "Tests:       2 skipped, 2 total\n",
+        " Tests  2 skipped (2)\n",
+        "No tests found, exiting with code 1\n",
+        "No test files found, exiting with code 1\n",
+    ],
+)
+def test_a_typescript_run_with_no_test_fails_naming_the_target(tmp_path: Path, stdout: str) -> None:
+    from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
+
+    result = TypeScriptRunner(cwd=_npm_project(tmp_path), executor=_executor(stdout)).run_tests(
+        target="tests/orders.test.ts::gone"
+    )
+
+    assert "tests/orders.test.ts::gone" in _no_test_message(result)
+
+
+def test_jest_writing_its_summary_to_stderr_is_still_read(tmp_path: Path) -> None:
+    from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
+
+    executor = MagicMock(spec=SubprocessExecutor)
+    executor.execute.return_value = SubprocessResult(
+        exit_code=0,
+        stdout="> jest tests/orders.test.ts -t gone$\n",
+        stderr="Tests:       2 skipped, 2 total\n",
+        timed_out=False,
+        duration_seconds=0.1,
+    )
+
+    result = TypeScriptRunner(cwd=_npm_project(tmp_path), executor=executor).run_tests(
+        target="tests/orders.test.ts::gone"
+    )
+
+    assert "tests/orders.test.ts::gone" in _no_test_message(result)
