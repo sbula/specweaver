@@ -50,6 +50,17 @@ def _lint_outcome(
     )
 
 
+def _lint_target(step: PipelineStep, context: RunContext) -> str:
+    """The step's `target`, else the task's code file relative to the project."""
+    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
+    from specweaver.core.flow.handlers.qa_targets import task_code_file
+
+    if step.params.get("target"):
+        return str(step.params["target"])
+    code = task_code_file(context)
+    return relative_to_root(code, context.project_path) or str(code)
+
+
 class LintFixHandler:
     """Handler for lint_fix+code — lint-fix reflection loop.
 
@@ -60,7 +71,7 @@ class LintFixHandler:
     Inspired by Aider's ``max_reflections`` pattern.
 
     Step params:
-        target: str — file or directory to lint (default: "src/").
+        target: str — file or directory to lint (default: the task's code file).
         max_reflections: int — max fix cycles (default: 3).
     """
 
@@ -68,7 +79,7 @@ class LintFixHandler:
         logger.debug("Executing %s", self.__class__.__name__)
         started = _now_iso()
         max_reflections: int = step.params.get("max_reflections", 3)
-        target: str = step.params.get("target", "src/")
+        target = _lint_target(step, context)
         logger.debug(
             "LintFixHandler: starting lint-fix loop (target=%s, max_reflections=%d)",
             target,

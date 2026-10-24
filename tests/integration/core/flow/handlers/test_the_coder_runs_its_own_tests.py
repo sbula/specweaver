@@ -55,7 +55,8 @@ async def test_the_coders_step_runs_the_coders_tests(tmp_path: Path) -> None:
 
     target = await _target_of("new_feature.yaml", "run_tests", tmp_path)
 
-    assert Path(target) == tmp_path / "tests" / "test_greeter.py"
+    # Relative: read from where the step runs, the run's worktree included.
+    assert target == "tests/test_greeter.py"
 
 
 @pytest.mark.asyncio

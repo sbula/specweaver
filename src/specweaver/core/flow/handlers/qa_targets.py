@@ -76,10 +76,10 @@ def default_test_target(context: RunContext, kind: str) -> str:
                 stem, scenarios_root(context).parent
             )
         )
-    tests = task_file(context, "tests")
-    if tests is not None:
-        return str(tests)
-    return str((context.output_dir or context.project_path / "tests") / f"test_{stem}.py")
+    from specweaver.core.flow.engine.task_files import task_files_for
+
+    # Relative: the QA atom reads it from where the step runs, the run's worktree included.
+    return task_files_for(context.project_path, context.spec_path, context.isolation.language).tests
 
 
 def task_file(context: RunContext, which: str) -> Path | None:

@@ -212,7 +212,7 @@
           "old": "                    \"steps_from_commits\": True,\n",
           "new": "                    \"steps_from_commits\": False,\n",
           "breaks": "in a session run no step rule ever keeps a doc",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         }
       ]
     },
@@ -244,7 +244,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
         },
         {
           "id": "api-start-skips-the-policy",
@@ -392,7 +392,7 @@
           "old": "    if exports.get(\"stdout_truncated\"):\n",
           "new": "    if False:\n",
           "breaks": "a cut output is written into the README with no word",
-          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+          "symbol_sha": "sha256:d13ee9cb6808bc1bff5291eab418b2109e57daa8f2cebd772c8d0d48f3b95843"
         },
         {
           "id": "every-step-fills",
@@ -402,7 +402,7 @@
           "old": "    block = next((b for b in context.isolation.doc_policy.block if b.step == step), None)\n",
           "new": "    block = next(iter(context.isolation.doc_policy.block), None)\n",
           "breaks": "any bash step overwrites the block",
-          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+          "symbol_sha": "sha256:d13ee9cb6808bc1bff5291eab418b2109e57daa8f2cebd772c8d0d48f3b95843"
         },
         {
           "id": "block-follows-a-symlink-out",
@@ -412,7 +412,7 @@
           "old": "    if not target.is_relative_to(root):\n",
           "new": "    if False:\n",
           "breaks": "a linked README writes a file outside the project",
-          "symbol_sha": "sha256:f556f357d06d7c9c7528507aef5d24d9113f32e561709c8db37c65a3df2fb16e"
+          "symbol_sha": "sha256:d13ee9cb6808bc1bff5291eab418b2109e57daa8f2cebd772c8d0d48f3b95843"
         },
         {
           "id": "model-step-fills-a-block",

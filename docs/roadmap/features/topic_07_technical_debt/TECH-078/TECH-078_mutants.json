@@ -46,10 +46,11 @@
           "id": "atom-skips-the-table",
           "origin": "authored",
           "file": "src/specweaver/sandbox/code_structure/core/atom.py",
-          "symbol": "_handle_read_symbol",
+          "symbol": "CodeStructureAtom._handle_read_symbol",
           "old": "            language = language_of(path) or \"\"\n",
           "new": "            language = \"\"\n",
-          "breaks": "the unrolled symbol is evaluated for no language"
+          "breaks": "the unrolled symbol is evaluated for no language",
+          "symbol_sha": "sha256:1cde455eaef87234e357f61cfd13345b5d1ea635bb15e83f3a60d8e28e955d29"
         },
         {
           "id": "skeleton-misses-javascript",
@@ -361,9 +362,11 @@
       "requirement": "FR-1",
       "title": "Every step finds the generated code one way",
       "scope": [
-        "tests/unit/core/flow/handlers/test_step_file.py",
+        "tests/integration/core/flow/engine/test_task_files_agree.py",
         "tests/integration/core/flow/handlers/test_step_files_java.py",
-        "tests/unit/core/flow/handlers/test_lint_fix_handler.py"
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py",
+        "tests/unit/core/flow/handlers/test_step_defaults.py",
+        "tests/unit/core/flow/handlers/test_step_file.py"
       ],
       "mutants": [
         {
@@ -385,6 +388,26 @@
           "new": "        return None\n",
           "breaks": "lint_fix on a folder target finds nothing to fix",
           "symbol_sha": "sha256:c20e110b50c113c6135f54a3aec5a3c48dbff500ce3b4af9ae34f9c87c462996"
+        },
+        {
+          "id": "python-tests-looked-for-in-src",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "default_test_target",
+          "old": "    return task_files_for(context.project_path, context.spec_path, context.isolation.language).tests\n",
+          "new": "    return task_files_for(\n        context.project_path, context.spec_path, context.isolation.language\n    ).tests.replace(\"tests/\", \"src/\", 1)\n",
+          "breaks": "a Python run_tests with no target runs src/test_<stem>.py, which generation never writes",
+          "symbol_sha": "sha256:603473c163017d68d481ebe3caa51e5a4b0bfec18743dbd90981a8e83448dcea"
+        },
+        {
+          "id": "lint-default-is-all-of-src",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "_lint_target",
+          "old": "    return relative_to_root(code, context.project_path) or str(code)\n",
+          "new": "    return \"src/\"\n",
+          "breaks": "a lint step with no target lints all of src/, not the task's file",
+          "symbol_sha": "sha256:5b48bd1bc92db1933624e511822cd3057277d4cc925c47d59bf9987ee59de619"
         }
       ]
     },
@@ -568,6 +591,68 @@
           "new": "                language=\"Python\",\n",
           "breaks": "the plan step tells the planner Python whatever the project",
           "symbol_sha": "sha256:9b7d57964ada124da4e650e99101789ff36ae94ce96ce67d243c08b070f76062"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "POST /implement runs the implement pipeline sw implement runs and reports the task's files",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_implement_languages.py",
+        "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py",
+        "tests/unit/workflows/implementation/test_implement_pipeline.py",
+        "tests/e2e/capabilities/workflows/test_implement_in_every_language_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "api-runs-two-steps",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/implement.py",
+          "symbol": "implement_spec",
+          "old": "        load_bundled_pipeline(\"implement_spec\"),\n",
+          "new": "        load_bundled_pipeline(\"implement_spec\").model_copy(\n            update={\"steps\": load_bundled_pipeline(\"implement_spec\").steps[:2]}\n        ),\n",
+          "breaks": "the API generates and stops: no tests run, no validation",
+          "symbol_sha": "sha256:5ff4d5e683b7e14e6484955dfa562b863ce9b51f464fea4c83fcbaaa6083871d"
+        },
+        {
+          "id": "api-reports-python-paths",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/implement.py",
+          "symbol": "implement_spec",
+          "old": "        code_path=str(project_root / task.code),\n",
+          "new": "        code_path=str(project_root / \"src\" / f\"{spec_path.stem}.py\"),\n",
+          "breaks": "a TypeScript project is told its code is a .py file",
+          "symbol_sha": "sha256:5ff4d5e683b7e14e6484955dfa562b863ce9b51f464fea4c83fcbaaa6083871d"
+        },
+        {
+          "id": "failing-tests-are-a-500",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/implement.py",
+          "symbol": "_status",
+          "old": "        return \"failed\"\n",
+          "new": "        pass\n",
+          "breaks": "failing tests answer 500 GENERATION_FAILED, as if the server broke",
+          "symbol_sha": "sha256:a8b87a768ed16e0b8f4acf68e4e515beb7e23eab1115c2baf42db3f18f1ee26c"
+        },
+        {
+          "id": "cli-runs-two-steps",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
+          "symbol": "implement",
+          "old": "    pipeline = load_bundled_pipeline(\"implement_spec\")\n",
+          "new": "    pipeline = load_bundled_pipeline(\"implement_spec\").model_copy(\n        update={\"steps\": load_bundled_pipeline(\"implement_spec\").steps[:2]}\n    )\n",
+          "breaks": "sw implement generates and stops",
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
+        },
+        {
+          "id": "api-error-leaks-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/implement.py",
+          "symbol": "_status",
+          "old": "        detail=message.split(\"\\nTraceback\", 1)[0],\n",
+          "new": "        detail=message,\n",
+          "breaks": "a failed generation sends the server's traceback, file paths included, to the client",
+          "symbol_sha": "sha256:a8b87a768ed16e0b8f4acf68e4e515beb7e23eab1115c2baf42db3f18f1ee26c"
         }
       ]
     }

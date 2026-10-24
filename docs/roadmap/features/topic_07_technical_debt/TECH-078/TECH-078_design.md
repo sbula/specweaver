@@ -206,7 +206,7 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One table of languages | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One way to find a step's files | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The API's implement and the planner | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The API's implement and the planner | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Test and debug targets | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
@@ -215,7 +215,8 @@ project through Gradle, each running exactly those tests (the `toolchain` tier).
 ([walkthrough](TECH-078_sf01_walkthrough.md)); SF-04 committed 2026-10-23
 ([walkthrough](TECH-078_sf04_walkthrough.md)); SF-02 committed 2026-10-24
 ([walkthrough](TECH-078_sf02_walkthrough.md)).
-SF-03 plan approved 2026-10-24.
-**Next step**: Trigger the dev skill for the SF-03 plan.
+SF-03 committed 2026-10-24
+([walkthrough](TECH-078_sf03_walkthrough.md)).
+**Next step**: the closure gate (`specweaver-feature` Phase 4): FR coverage, `tests.py feature`, the demo, README counts, sign-off.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

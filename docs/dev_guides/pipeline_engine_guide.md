@@ -39,6 +39,10 @@ steps:
   Without one, the step takes the task's code file from `task_files_for`, where generation wrote it
   (Python: the run's `output_dir/<stem>.py`), never the first `*.py` it finds
   (`qa_targets.step_file`, `TECH-078`).
+- A test step with no `target` runs the task's tests file (`tests/test_<stem>.py` in Python), and a
+  `lint_fix` step with no `target` lints the task's code file, both relative to where the step runs.
+- `implement_spec.yaml` (bundled) is the implement pipeline: `sw implement` and `POST /implement`
+  both load it with `load_bundled_pipeline("implement_spec")`. Its steps name no file.
 - **`gate`** stops the `PipelineRunner`. `auto` passes when static validation passes. `hitl` parks the
   run until a human approves it (the approval is persisted in the state DB).
 

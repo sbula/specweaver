@@ -101,10 +101,24 @@ def test_review_returns_the_models_verdict(client: TestClient) -> None:
     assert response.json()["verdict"] == "denied"
 
 
+_TESTS = "from greeter import greet\n\n\ndef test_greet():\n    assert greet() == 'hi'\n"
+
+
+def _answer(code: str):
+    """The model's code, or its tests when the test generator asks: `POST /implement` runs the
+    tests, so they must pass for the run to end in two calls."""
+
+    def answer(request: httpx2.Request) -> httpx2.Response:
+        asked_for_tests = b"test generator" in request.content
+        return httpx2.Response(200, json=_reply(_TESTS if asked_for_tests else code))
+
+    return answer
+
+
 def test_implement_writes_the_code_and_the_tests(client: TestClient, tmp_path: Path) -> None:
     code = "def greet() -> str:\n    return 'hi'\n"
 
-    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(code))) as seen:
+    with fake_httpx2(_answer(code)) as seen:
         response = client.post(
             "/api/v1/implement", json={"file": "specs/greeter_spec.md", "project": "api"}
         )
@@ -115,6 +129,8 @@ def test_implement_writes_the_code_and_the_tests(client: TestClient, tmp_path: P
     assert (tmp_path / "proj" / "src" / "greeter.py").read_text(encoding="utf-8").strip()
     assert body["code_path"].endswith("src/greeter.py")
     assert body["test_path"].endswith("tests/test_greeter.py")
+    assert body["status"] == "completed"
+    assert body["tests"]["passed"] == 1
 
 
 def _ledger(tmp_path: Path) -> list[tuple[str, str, str, int, int]]:
@@ -135,7 +151,7 @@ def _ledger(tmp_path: Path) -> list[tuple[str, str, str, int, int]]:
 def test_every_api_model_call_is_one_ledger_row(
     client: TestClient, tmp_path: Path, endpoint: str, reply: str, task_type: str, calls: int
 ) -> None:
-    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(reply))):
+    with fake_httpx2(_answer(reply)):
         response = client.post(
             f"/api/v1/{endpoint}", json={"file": "specs/greeter_spec.md", "project": "api"}
         )
@@ -147,7 +163,10 @@ def test_every_api_model_call_is_one_ledger_row(
 
 @pytest.mark.parametrize(
     ("endpoint", "reply", "calls"),
-    [("review", "VERDICT: ACCEPTED\nFine.", 1), ("implement", "def greet():\n    pass\n", 2)],
+    [
+        ("review", "VERDICT: ACCEPTED\nFine.", 1),
+        ("implement", "def greet():\n    return 'hi'\n", 2),
+    ],
 )
 def test_an_endpoint_whose_ledger_refuses_rows_answers_how_many_are_missing(
     client: TestClient, tmp_path: Path, monkeypatch, endpoint: str, reply: str, calls: int
@@ -159,7 +178,7 @@ def test_an_endpoint_whose_ledger_refuses_rows_answers_how_many_are_missing(
 
     monkeypatch.setattr(LlmRepository, "open_call", _refused)
 
-    with fake_httpx2(lambda _request: httpx2.Response(200, json=_reply(reply))):
+    with fake_httpx2(_answer(reply)):
         response = client.post(
             f"/api/v1/{endpoint}", json={"file": "specs/greeter_spec.md", "project": "api"}
         )

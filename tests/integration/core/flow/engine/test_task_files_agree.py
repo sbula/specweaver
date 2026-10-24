@@ -36,11 +36,9 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
-from specweaver.core.flow.engine.task_files import task_files_for
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import LLMResponse
-from specweaver.workflows.implementation.interfaces.cli import _build_implement_pipeline
 from tests.scripted_llm import FixedRouter
 
 pytestmark = pytest.mark.integration
@@ -123,12 +121,15 @@ def test_one_set_of_files_everywhere(tmp_path: Path, kind: str, code: str, tests
     assert (root / code).is_file()
     assert (root / tests).is_file()
     assert task_files(context)[:2] == [code, tests]
-    targets = {
-        s.name: s.params.get("target")
-        for s in _build_implement_pipeline(task_files_for(root, spec, None)).steps
-    }
-    assert (targets["lint_fix"], targets["validate_code"], targets["run_tests"]) == (
-        code,
-        code,
-        tests,
-    )
+    # The implement pipeline names no file: lint, validation and the test run each find the task's.
+    from specweaver.core.flow.handlers.lint_fix import _lint_target
+    from specweaver.core.flow.handlers.qa_targets import default_test_target, step_file
+
+    no_target = PipelineStep(name="any", action=StepAction.VALIDATE, target=StepTarget.CODE)
+    validated = step_file(no_target, context)
+    assert validated is not None
+    assert (
+        _lint_target(no_target, context),
+        validated.relative_to(root).as_posix(),
+        default_test_target(context, "unit"),
+    ) == (code, code, tests)

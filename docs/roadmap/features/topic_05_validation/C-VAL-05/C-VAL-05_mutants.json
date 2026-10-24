@@ -38,7 +38,8 @@
           "symbol": "_candidates",
           "old": "roots.insert(0, (project_dir / \".specweaver\" / \"rubrics\", True))",
           "new": "pass",
-          "breaks": "the project directory is never searched, so an override is silently ignored"
+          "breaks": "the project directory is never searched, so an override is silently ignored",
+          "symbol_sha": "sha256:2c55b5948b73ed0d7901c7a016c09002672c96c7330d4cd6fbc225d41fa389fa"
         }
       ]
     },
@@ -78,7 +79,8 @@
           "symbol": "load_rubric",
           "old": "checksum=hashlib.sha256(criteria.encode(\"utf-8\")).hexdigest(),",
           "new": "checksum=\"constant\",",
-          "breaks": "an edited rubric reports the same checksum, so the audit trail records nothing"
+          "breaks": "an edited rubric reports the same checksum, so the audit trail records nothing",
+          "symbol_sha": "sha256:30688bcad3ff29d75d45ee068de909f73bcbc447dc9521941043e50cdd0a3224"
         },
         {
           "id": "rubric-left-out-of-the-result",

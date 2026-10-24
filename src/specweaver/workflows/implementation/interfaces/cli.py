@@ -12,100 +12,16 @@ from typing import TYPE_CHECKING, Any
 
 import typer
 
-from specweaver.core.flow.engine.task_files import TaskFiles
 from specweaver.interfaces.cli import _core
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from specweaver.core.flow.engine.models import PipelineDefinition
 
 logger = logging.getLogger(__name__)
 
 
 implement_cli = typer.Typer(no_args_is_help=True)
-
-
-def _build_implement_pipeline(files: TaskFiles | str) -> PipelineDefinition:
-    """Build the autonomous ``implement_spec`` pipeline.
-
-    Generate code + tests, then run the tests and validate the code in one loop.
-    The QA steps target this run's freshly generated files — the task's files for the project's
-    language; a bare stem means the Python layout. ``run_tests`` loops back to regenerate on failure (bounded),
-    and ``validate_code`` is report-only (a C01-C08 miss never aborts the run). QA
-    steps leave ``use_worktree`` unset so SF-03 can thread the US-9 isolation policy
-    without touching this builder.
-    """
-    from specweaver.core.flow.engine.models import (
-        GateCondition,
-        GateDefinition,
-        GateType,
-        OnFailAction,
-        PipelineDefinition,
-        PipelineStep,
-        StepAction,
-        StepTarget,
-    )
-
-    task = (
-        files
-        if isinstance(files, TaskFiles)
-        else TaskFiles(f"src/{files}.py", f"tests/test_{files}.py")
-    )
-    return PipelineDefinition(
-        name="implement_spec",
-        description=f"Implement + QA for {task.code}",
-        steps=[
-            PipelineStep(
-                name="generate_code",
-                action=StepAction.GENERATE,
-                target=StepTarget.CODE,
-            ),
-            PipelineStep(
-                name="generate_tests",
-                action=StepAction.GENERATE,
-                target=StepTarget.TESTS,
-            ),
-            # Auto-fix lint BEFORE running tests, so run_tests and
-            # validate_code exercise the lint-fixed code. Report-only (CONTINUE):
-            # remaining lint errors after reflections never abort the run.
-            PipelineStep(
-                name="lint_fix",
-                action=StepAction.LINT_FIX,
-                target=StepTarget.CODE,
-                params={"target": task.code, "max_reflections": 3},
-                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
-            ),
-            PipelineStep(
-                name="run_tests",
-                action=StepAction.VALIDATE,
-                target=StepTarget.TESTS,
-                params={"target": task.tests, "kind": "unit", "coverage": True},
-                gate=GateDefinition(
-                    type=GateType.AUTO,
-                    condition=GateCondition.ALL_PASSED,
-                    on_fail=OnFailAction.LOOP_BACK,
-                    loop_target="generate_code",
-                    max_retries=2,
-                ),
-            ),
-            PipelineStep(
-                name="validate_code",
-                action=StepAction.VALIDATE,
-                target=StepTarget.CODE,
-                params={"target": task.code},
-                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
-            ),
-            # The kept scenario checks, for the person only; never stops the run.
-            PipelineStep(
-                name="acceptance",
-                action=StepAction.VALIDATE,
-                target=StepTarget.TESTS,
-                params={"kind": "acceptance"},
-                gate=GateDefinition(on_fail=OnFailAction.CONTINUE),
-            ),
-        ],
-    )
 
 
 def _report_implementation(run_state: object) -> None:
@@ -260,7 +176,9 @@ def implement(
     code_path = project_path / task.code
     test_path = project_path / task.tests
 
-    pipeline = _build_implement_pipeline(task)
+    from specweaver.core.flow.engine.parser import load_bundled_pipeline
+
+    pipeline = load_bundled_pipeline("implement_spec")
     context = build_run_or_exit(
         project_path, spec_path, pipeline, selector=selector, run_model=run_model
     )

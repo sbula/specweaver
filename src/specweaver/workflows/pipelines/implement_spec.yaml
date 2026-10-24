@@ -1,0 +1,62 @@
+# Implement Pipeline — what `sw implement` and `POST /implement` both run
+# generate code → generate tests → lint fix → run tests (loops back) → validate code → acceptance
+#
+# No step names a file: each finds the task's own, where generation writes it.
+
+name: implement_spec
+description: >
+  Generate code and tests from a spec, fix lint, run the tests with a bounded loop back to
+  generation, then validate the code and show the kept scenario checks.
+version: "1.0"
+
+steps:
+  - name: generate_code
+    action: generate
+    target: code
+    description: "Generate the task's code file"
+
+  - name: generate_tests
+    action: generate
+    target: tests
+    description: "Generate the task's tests file"
+
+  # Before the tests, so they and the code rules see the fixed code. Report-only.
+  - name: lint_fix
+    action: lint_fix
+    target: code
+    description: "Lint the task's code file and fix what the linter and the model can"
+    params:
+      max_reflections: 3
+    gate:
+      on_fail: continue
+
+  - name: run_tests
+    action: validate
+    target: tests
+    description: "Run the task's tests"
+    params:
+      kind: unit
+      coverage: true
+    gate:
+      type: auto
+      condition: all_passed
+      on_fail: loop_back
+      loop_target: generate_code
+      max_retries: 2
+
+  # Report-only: a rule miss never aborts an otherwise passing run.
+  - name: validate_code
+    action: validate
+    target: code
+    description: "Run the code rules on the task's code file"
+    gate:
+      on_fail: continue
+
+  - name: acceptance
+    action: validate
+    target: tests
+    description: "Kept scenario checks for the person; never feeds back"
+    params:
+      kind: acceptance
+    gate:
+      on_fail: continue

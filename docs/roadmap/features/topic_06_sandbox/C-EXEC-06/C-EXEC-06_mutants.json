@@ -78,7 +78,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if False:\n",
           "breaks": "every run leaves its worktree and branch behind",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         }
       ]
     },
@@ -98,7 +98,7 @@
           "old": "    runner._context = isolated\n",
           "new": "    runner._context = original\n",
           "breaks": "steps write the real repo directly",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "old": "        if add_res.status != AtomStatus.SUCCESS:\n",
           "new": "        if False:\n",
           "breaks": "a run without a worktree goes on, at the real root",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         }
       ]
     }

@@ -139,7 +139,13 @@ rate_date = 2026-09-26
   `sw run` sets it up: the rule file, the standards, the project's sections, the topology slice
   (`selector`, default `direct`) and isolation by the code's DAL. `new_feature` takes a module name
   as its `spec` and drafts `specs/<name>_spec.md`; with no interactive channel it parks for a gate
-  answer. `POST /implement` on a high-DAL project that is not a git repository answers 409
+  answer. `POST /implement` runs what `sw implement` runs (the bundled `implement_spec`
+  pipeline): code, tests, lint fix, the tests with up to two loops back to generation, validation.
+  It waits for all of it, so a request takes minutes. It answers the task's code and test files in
+  the project's language and `status`: `completed`, or `failed` when the tests still fail after the
+  loops (still 200), with the test counts, the lint errors left and the validation result. A spec
+  whose `Package` line is not a package answers 400 `SPEC_INVALID`. `POST /implement` on a high-DAL
+  project that is not a git repository answers 409
   `WORKTREE_UNAVAILABLE`; a background run there ends `failed`, naming the worktree.
   To see the refusal:
   `curl -X POST http://127.0.0.1:8000/api/v1/pipelines/validate_only/run -H "Authorization: Bearer $(cat ~/.specweaver/serve.token)" -H "Content-Type: application/json" -d '{"project":"<name>","spec":"../outside.md"}'`

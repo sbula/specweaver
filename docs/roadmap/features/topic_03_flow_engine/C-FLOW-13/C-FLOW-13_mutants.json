@@ -108,7 +108,7 @@
           "id": "show-broken-file-exits-zero",
           "origin": "authored",
           "file": "src/specweaver/interfaces/cli/_core.py",
-          "symbol": "refuse_llm_settings",
+          "symbol": "refuse_settings",
           "old": "    raise typer.Exit(code=1) from err\n",
           "new": "    return\n",
           "breaks": "a broken settings file no longer stops the command cleanly; it runs on with no settings and crashes",
@@ -697,7 +697,7 @@
           "old": "        cleared = clear_model_price(model)\n    except SettingsFileError as err:\n",
           "new": "        cleared = clear_model_price(model)\n    except ZeroDivisionError as err:\n",
           "breaks": "sw costs reset on a broken file ends in a raw traceback",
-          "symbol_sha": "sha256:d6300fbb60a0cbf2edcbbd192907c64f29c1ba0f9c554d957e674ca3c04f02e5"
+          "symbol_sha": "sha256:4e2d86e928348ba16da799de158dbe2ec4c196518ee4d4f156c98dc104e9eadc"
         },
         {
           "id": "crlf-lost",
@@ -798,7 +798,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=None\n    )\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
         },
         {
           "id": "run-drops-run-model",
@@ -818,7 +818,7 @@
           "old": "    run_model = run_model_option(model)\n    store = _get_state_store()\n",
           "new": "    run_model = None\n    store = _get_state_store()\n",
           "breaks": "sw resume ignores --model and a bad value passes",
-          "symbol_sha": "sha256:ed2f4126ee03d03bf1815ce5fa7f98f6a69e46a67a54691d7bdaeadfa0984d6f"
+          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
         },
         {
           "id": "project-role-keeps-its-model",

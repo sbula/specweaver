@@ -177,7 +177,7 @@
           "old": "api_key=kwargs.get(\"search_key\") or \"\"",
           "new": "api_key=\"\"",
           "breaks": "the key never reaches the web tool",
-          "symbol_sha": "sha256:60f37dabdbdc62e7cdfad1d0d9aa3c9ef91496cd83abd2731dba4adc725d56bc"
+          "symbol_sha": "sha256:2187e469857b777bd30d40b1e56b6b8c38b371e277fea62c2ecc0cf20ded4b9f"
         }
       ]
     }

@@ -60,7 +60,7 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
           "new": "        bridge.start_run(run_id, runner.run(), limit=limit)\n",
           "breaks": "GET /runs/{id} never finds a run started over REST",
-          "symbol_sha": "sha256:2ebcf68219a0165589de1143d60629b67d8529b4b17e0cbed059603dd8592d90"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         },
         {
           "id": "rest-run-without-models",
@@ -121,7 +121,7 @@
           "old": "    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)\n",
           "new": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_A\", nullable=False)\n",
           "breaks": "a new project defaults to DAL_A instead of the agreed DAL_C",
-          "symbol_sha": "sha256:0bb2edc6f83e4d89ca9775107ddd649e687294c033f649f873920ed0a1f7ba69"
+          "symbol_sha": "sha256:dd4baf8375068a112b0e885b63fa7b1f0aa202dfdba21c64f7d365f05bd02ecd"
         }
       ]
     },

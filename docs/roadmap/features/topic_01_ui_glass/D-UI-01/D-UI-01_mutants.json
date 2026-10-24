@@ -16,7 +16,8 @@
           "symbol": "serve",
           "old": "        \"127.0.0.1\",\n        \"--host\",",
           "new": "        \"0.0.0.0\",\n        \"--host\",",
-          "breaks": "an unauthenticated API binds every interface, so anything on the network can start pipeline runs"
+          "breaks": "an unauthenticated API binds every interface, so anything on the network can start pipeline runs",
+          "symbol_sha": "sha256:77171c911b21751d5dd71be979c84f37dcdc2507df7266dcc4799dc873c4e365"
         },
         {
           "id": "host-not-forwarded",
@@ -25,7 +26,8 @@
           "symbol": "serve",
           "old": "        host=host,",
           "new": "        host=\"0.0.0.0\",",
-          "breaks": "the declared default is ignored and the server binds every interface regardless"
+          "breaks": "the declared default is ignored and the server binds every interface regardless",
+          "symbol_sha": "sha256:77171c911b21751d5dd71be979c84f37dcdc2507df7266dcc4799dc873c4e365"
         }
       ]
     },
@@ -43,7 +45,8 @@
           "symbol": "specweaver_error_handler",
           "old": "content={\"detail\": exc.detail, \"error_code\": exc.error_code},",
           "new": "content={\"detail\": exc.detail},",
-          "breaks": "a client has nothing stable to branch on and must parse English"
+          "breaks": "a client has nothing stable to branch on and must parse English",
+          "symbol_sha": "sha256:7cb7682030815e38c673bb91a0e7b336fa890d6e0b71e8199c8d0bd33f75a6de"
         },
         {
           "id": "default-status-is-server-fault",
@@ -52,7 +55,8 @@
           "symbol": "SpecWeaverAPIError.__init__",
           "old": "        status_code: int = 400,",
           "new": "        status_code: int = 500,",
-          "breaks": "a caller error is reported as a server fault, telling the client to retry something that will fail identically"
+          "breaks": "a caller error is reported as a server fault, telling the client to retry something that will fail identically",
+          "symbol_sha": "sha256:b50822bcd60942992241a7b3ed31722a6299aea8323b8015138901c9a025d914"
         }
       ]
     },
@@ -70,7 +74,8 @@
           "symbol": "pipeline_ws",
           "old": "await websocket.send_text(json.dumps({\"event\": \"done\"}))",
           "new": "await websocket.send_text(json.dumps({\"event\": \"still-working\"}))",
-          "breaks": "the socket closes after announcing the wrong terminal event, so a dashboard cannot tell completion from a dropped connection"
+          "breaks": "the socket closes after announcing the wrong terminal event, so a dashboard cannot tell completion from a dropped connection",
+          "symbol_sha": "sha256:232f87a267d71c9520e0e1ce6fe803f306e7d5533aa3161aea019f5b50895066"
         }
       ]
     },
@@ -196,7 +201,7 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
           "new": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=3)\n",
           "breaks": "the user's number is read and ignored",
-          "symbol_sha": "sha256:2ebcf68219a0165589de1143d60629b67d8529b4b17e0cbed059603dd8592d90"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         },
         {
           "id": "unset-limit-accepted",

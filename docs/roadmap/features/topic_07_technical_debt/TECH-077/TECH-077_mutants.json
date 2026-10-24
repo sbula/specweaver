@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:1f3bc35182128681a8d5181b62769f633d825f60e8de3bbcb799abe872c46eb0"
+          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
         },
         {
           "id": "optional-model-refuses",
@@ -222,7 +222,7 @@
           "old": "        update={\"enforce_isolation\": settings.sandbox.enforce_worktree_isolation}\n",
           "new": "        update={\"enforce_isolation\": False}\n",
           "breaks": "enforce_worktree_isolation is ignored",
-          "symbol_sha": "sha256:e5b13d47e3900910e311612957f2ad5f79737e44dccd693f1067b7f69d31c75e"
+          "symbol_sha": "sha256:8bfa3121a89c4ae42dbc7e607e80d7a79407e8bcf6f280367890c85345fa3196"
         },
         {
           "id": "non-git-runs-on-host",
@@ -354,7 +354,7 @@
           "old": "    except UnknownProjectError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "an unregistered folder ends in a traceback",
-          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         },
         {
           "id": "resume-worktree-traceback",
@@ -374,7 +374,7 @@
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",
           "breaks": "a command never says its ledger missed calls",
-          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         },
         {
           "id": "no-folder-no-active-root",
@@ -384,7 +384,7 @@
           "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
           "new": "        root = project_path\n",
           "breaks": "a command with no folder has no project root",
-          "symbol_sha": "sha256:def1ceba54a1474f5f2d7e27121d7301f0a61ae13aaa7196f36ece625de9060c"
+          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
         },
         {
           "id": "implement-worktree-traceback",
@@ -394,7 +394,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
         },
         {
           "id": "draft-worktree-traceback",
@@ -513,7 +513,7 @@
           "old": "        selector=body.selector,\n",
           "new": "        selector=\"direct\",\n",
           "breaks": "POST /implement ignores its selector",
-          "symbol_sha": "sha256:753404a5733dd45123e92bc9287c33eb12b474da90f67f51461a21f55f29621e"
+          "symbol_sha": "sha256:5ff4d5e683b7e14e6484955dfa562b863ce9b51f464fea4c83fcbaaa6083871d"
         }
       ]
     },

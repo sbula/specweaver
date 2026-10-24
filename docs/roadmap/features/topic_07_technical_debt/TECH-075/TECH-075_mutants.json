@@ -17,7 +17,7 @@
           "old": "        if \"\\x00\" in str(requested):\n            raise WorkspaceBoundaryError(\"Path holds a null byte\")\n",
           "new": "        pass\n",
           "breaks": "a null byte escapes as ValueError instead of a boundary refusal",
-          "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
+          "symbol_sha": "sha256:846de84abb8ddf33382dca238dee51a313cdb99b0e7bf51488a96d731e9e1428"
         },
         {
           "id": "empty-path-is-root",
@@ -37,7 +37,7 @@
           "old": "            requested = self.roots[0] / requested\n",
           "new": "            pass\n",
           "breaks": "a relative path is judged against the process folder, not the root",
-          "symbol_sha": "sha256:98d4356b9a64f8c73c1dcedffb5b92e973c67444a8e47d41e086a0fa3e8a79c1"
+          "symbol_sha": "sha256:846de84abb8ddf33382dca238dee51a313cdb99b0e7bf51488a96d731e9e1428"
         },
         {
           "id": "unresolvable-path-crashes",
@@ -148,7 +148,7 @@
           "old": "    spec_path = project_file_or_400(project_root, body.spec)\n",
           "new": "    spec_path = project_root / body.spec\n",
           "breaks": "an API run starts on a spec outside the project",
-          "symbol_sha": "sha256:e90171839a6f8d0c6e0aa54d4945f833837ec5c7e0684630f4f2d11fd42df515"
+          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
         },
         {
           "id": "run-spec-checked-after-exists",

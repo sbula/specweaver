@@ -138,7 +138,7 @@
           "id": "unwritten-never-told",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/interfaces/command.py",
-          "symbol": "_tell_missing_at_end",
+          "symbol": "tell_missing_at_end",
           "old": "        context.call_on_close(lambda: _tell_missing(router))\n",
           "new": "        pass\n",
           "breaks": "no command says its ledger missed calls",

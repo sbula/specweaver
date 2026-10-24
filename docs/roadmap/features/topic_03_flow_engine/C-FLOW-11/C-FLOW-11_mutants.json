@@ -174,7 +174,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:260b4b03bded22801191fd305668bb133959e998b72251b9e4c8a14e661319ac"
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
         },
         {
           "id": "api-reads-another-file",

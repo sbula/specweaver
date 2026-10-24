@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -129,11 +130,33 @@ class ImplementRequest(BaseModel):
     selector: str = Field("direct", description="Topology selector: direct, nhop, constraint.")
 
 
+class ImplementTests(BaseModel):
+    """How the task's tests ended."""
+
+    passed: int = 0
+    failed: int = 0
+    coverage_pct: float | None = None
+
+
+class ImplementValidation(BaseModel):
+    """How the code rules judged the task's code file."""
+
+    passed: int = 0
+    total: int = 0
+    failed_rules: list[str] = Field(default_factory=list)
+
+
 class ImplementResponse(BaseModel):
-    """Response for POST /implement."""
+    """Response for POST /implement: the task's files and how the run ended."""
 
     code_path: str
     test_path: str
+    status: Literal["completed", "failed"] = Field(
+        "completed", description="failed: the tests still fail after the loop back to generation."
+    )
+    tests: ImplementTests | None = None
+    lint_errors_remaining: int | None = None
+    validation: ImplementValidation | None = None
     unwritten_calls: int = Field(0, description="Calls the cost ledger is missing or never closed.")
 
 

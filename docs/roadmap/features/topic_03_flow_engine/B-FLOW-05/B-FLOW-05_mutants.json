@@ -405,7 +405,7 @@
           "old": "    if run_state.status == \"parked\":\n",
           "new": "    if False:\n",
           "breaks": "sw implement stopped by the spend brake says the tests did not pass",
-          "symbol_sha": "sha256:942cbf09abf348f797287b7aa632eca20a4a1eef2a8b574b6d1f5f6e333fb76c"
+          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
         }
       ]
     },
@@ -475,7 +475,7 @@
           "old": "    if isinstance(stopped, SpendLimitReachedError):\n",
           "new": "    if False:\n",
           "breaks": "a spent budget looks to an API client like an ordinary result",
-          "symbol_sha": "sha256:050a72a38ccddf8fd25255103dc9d1638a718b1e614c11da8f37b7c162bc95e1"
+          "symbol_sha": "sha256:e2d09b3c5bfee6448f0209e6a364596eda11e5ed8a937c914f7b3aa3359239f3"
         }
       ]
     },
@@ -544,7 +544,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if True:\n",
           "breaks": "a parked run loses the paid work of its earlier steps",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         },
         {
           "id": "unresumable-park-leaks-worktree",
@@ -554,7 +554,7 @@
           "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
           "new": "        if not run.status == RunStatus.PARKED:\n",
           "breaks": "sw implement leaves a worktree behind that nothing can resume",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         },
         {
           "id": "resume-starts-fresh-worktree",
@@ -564,7 +564,7 @@
           "old": "    if approve_parked and run.current_step > 0:\n",
           "new": "    if False:\n",
           "breaks": "a resume runs the later steps without the files the earlier steps wrote",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         },
         {
           "id": "resume-without-worktree-runs",
@@ -574,7 +574,7 @@
           "old": "        if not worktree.is_dir():\n",
           "new": "        if False:\n",
           "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
-          "symbol_sha": "sha256:bf568ca35fd957b1cd8a2f82e12e1fc510d674f79aef779dd93d57ce67c4a8a3"
+          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
         }
       ]
     },
@@ -655,7 +655,7 @@
           "old": "    kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)",
           "new": "    kept = (StepStatus.PASSED,)",
           "breaks": "a scan at a limit throws away what it found",
-          "symbol_sha": "sha256:527aedcefcd29d6b12df16a8d9e88c0024c4404b4e24b0e459eb20f956d98fa8"
+          "symbol_sha": "sha256:78ef4109f9e800b3b3f6432ece59f35fff21f0c30b1458516f42b2d7971b6404"
         }
       ]
     },

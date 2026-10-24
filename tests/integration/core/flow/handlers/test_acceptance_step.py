@@ -200,9 +200,9 @@ async def test_without_a_container_it_says_it_did_not_run(world: tuple[RunContex
 
 
 def test_both_normal_pipelines_end_with_the_acceptance_step() -> None:
-    from specweaver.workflows.implementation.interfaces.cli import _build_implement_pipeline
+    from specweaver.core.flow.engine.parser import load_bundled_pipeline
 
-    implement = _build_implement_pipeline("greet")
+    implement = load_bundled_pipeline("implement_spec")
     feature = side_pipeline("new_feature.yaml", "", coder_side=False)
     for pipeline in (implement, feature):
         last = pipeline.steps[-1]

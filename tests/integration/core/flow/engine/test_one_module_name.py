@@ -35,7 +35,6 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import LLMResponse
-from specweaver.workflows.implementation.interfaces.cli import _build_implement_pipeline
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
@@ -71,15 +70,22 @@ def test_generation_writes_the_file_the_merge_allows(tmp_path: Path) -> None:
     assert (tmp_path / allowed[0]).is_file()
 
 
-def test_sw_implement_targets_the_same_module() -> None:
+def test_sw_implement_targets_the_same_module(tmp_path: Path) -> None:
+    """The implement pipeline names no file; its steps find the task's, the module the session
+    policy allows."""
     from pathlib import Path as _Path
 
-    from specweaver.commons.spec_names import module_stem
+    from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
+    from specweaver.core.flow.handlers.lint_fix import _lint_target
+    from specweaver.core.flow.handlers.qa_targets import default_test_target
 
     spec = _Path("specs/my_spec_tool_spec.md")
-    targets = {
-        s.name: s.params.get("target") for s in _build_implement_pipeline(module_stem(spec)).steps
-    }
+    (tmp_path / "specs").mkdir()
+    (tmp_path / spec).write_text("# Tool\n")
+    context = RunContext(
+        project_path=tmp_path, spec_path=tmp_path / spec, output_dir=tmp_path / "src"
+    )
+    step = PipelineStep(name="lint_fix", action=StepAction.LINT_FIX, target=StepTarget.CODE)
 
-    assert targets["validate_code"] == derive_allowed_paths(spec)[0]
-    assert targets["run_tests"] == derive_allowed_paths(spec)[1]
+    assert _lint_target(step, context) == derive_allowed_paths(spec)[0]
+    assert default_test_target(context, "unit") == derive_allowed_paths(spec)[1]
