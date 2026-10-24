@@ -163,10 +163,14 @@ Covered by FR-1 and FR-6.
 
 ## Works For Real
 
-On a Kotlin project, `sw run` with a pipeline of `generate_code`, `generate_tests`, `validate_code` and
-`review_code` reviews and validates the generated `.kt` file and C02 finds its `…Test.kt`; and
-`run_tests` runs one test (`<OrdersTest.kt>::placesOrder`), its file, its package folder and the whole
-project through Gradle, each running exactly those tests (the `toolchain` tier). Shown in the design's demo once built.
+The demo `[agreed 2026-10-24]`: real Gemini and real cargo run `sw implement` on a Rust crate —
+`SPECWEAVER_LIVE_KEYS=~/.specweaver/keys.env pytest -m live
+tests/e2e/capabilities/workflows/test_implement_rust_live_e2e.py`. The code and tests land at
+`src/greeter.rs` and `tests/greeter.rs`, `lib.rs` declares the module, cargo runs the task's tests and
+C02/C03 judge the Rust file by them. It runs in the nightly real-model run (`scripts/live.py`).
+The design's first demo (Kotlin on Gradle) is not possible here: Gradle is not installed. Kotlin on
+Maven runs with the real tools in the `toolchain` tier instead
+(`test_test_target_sizes_toolchain.py`, `test_c02_c03_languages_live.py`).
 
 ## Sub-Feature Breakdown
 

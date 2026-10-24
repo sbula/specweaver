@@ -54,8 +54,11 @@ api_key_env = "TAVILY_API_KEY"
 @pytest.fixture
 def tools(tmp_path: Path, _isolate_env: Path):  # type: ignore[no-untyped-def]
     real = os.environ.get("SPECWEAVER_LIVE_KEYS")
-    if not real or not load_keys(Path(real)).get("TAVILY_API_KEY"):
-        pytest.fail(f"TAVILY_API_KEY is not in {real}; run through scripts/live.py")
+    if not real:
+        pytest.fail("SPECWEAVER_LIVE_KEYS is not set; run through scripts/live.py")
+    if not load_keys(Path(real)).get("TAVILY_API_KEY"):
+        # Decided 2026-10-24: no Tavily account (it wants a card); Exa and SearXNG replace it.
+        pytest.skip("no TAVILY_API_KEY: web search moves to Exa and SearXNG, a planned feature")
     shutil.copy2(real, _isolate_env / "keys.env")
     (_isolate_env / "settings.toml").write_text(_SETTINGS, encoding="utf-8")
 
