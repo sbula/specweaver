@@ -109,6 +109,7 @@ The nightly live run (`scripts/live.py`): `test_plan_live_e2e.py` and
   the rate-limit wrapper.
 - **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6]
 - **Depends on**: none
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-092/TECH-092_sf01_implementation_plan.md
 
 ## Execution Order
 
@@ -118,11 +119,11 @@ The nightly live run (`scripts/live.py`): `test_plan_live_e2e.py` and
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Settle each tool round | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Settle each tool round | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-10-24.
-**Next step**: On approval, trigger the implementation-plan skill for SF-01.
+**Current status**: Design APPROVED 2026-10-24; SF-01 plan approved 2026-10-24.
+**Next step**: Trigger the dev skill for the SF-01 plan.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
