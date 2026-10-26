@@ -155,7 +155,8 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
 - **The spend brake stops tool loops early** (found 2026-10-24, `TECH-078` closure): each finished
   tool round keeps its worst-case reservation until the whole loop ends, so a plan or review that
   reads a few files is refused at a small limit while it has spent USD 0.00. The nightly live run
-  is red from this: `TECH-092` `[agreed 2026-10-24]`.
+  is red from this: `TECH-092` `[agreed 2026-10-24]`. Fixed 2026-10-26 (`3a8d3119`); the live
+  proof (FR-6) waits for local models in the live run `[agreed 2026-10-26]`.
 - **Web search has no service** `[agreed 2026-10-24]`: no Tavily account (it wants a card); Exa
   and SearXNG replace it as a capability feature. Until then the web-search live test skips.
 - **Nothing at commit time checks that a mutant still finds its code.** Moving code drifted 26

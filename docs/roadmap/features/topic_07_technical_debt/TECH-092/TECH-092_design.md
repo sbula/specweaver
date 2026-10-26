@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-092
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (by the user, 2026-10-24)
+- **Status**: IMPLEMENTED (2026-10-26) — FR-1..FR-5 proven; FR-6 (the live run) open `[agreed 2026-10-26]`
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-092/TECH-092_design.md
 - **Origin**: 2026-10-24, the `TECH-078` closure, reading why the nightly real-model run is red.
@@ -124,6 +124,7 @@ The nightly live run (`scripts/live.py`): `test_plan_live_e2e.py` and
 ## Session Handoff
 
 **Current status**: SF-01 committed 2026-10-24 ([walkthrough](TECH-092_sf01_walkthrough.md)).
-**Next step**: the closure gate, once the nightly live run proves FR-6 with a fresh Gemini quota.
+**Next step**: FR-6 waits for local models in the live run `[agreed 2026-10-26]`: the user pays
+no Gemini prepay, and the key's project lost its free tier. Then the closure gate.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
