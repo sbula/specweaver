@@ -97,7 +97,10 @@ class _Provider:
         before_request: Any = None,
     ) -> LLMResponse:
         self._look()
-        before_request(1, 40_000)  # a second round with a much longer prompt
+        # A second round with a much longer prompt, after a first that reported 420 tokens.
+        before_request(
+            1, 40_000, TokenUsage(prompt_tokens=300, completion_tokens=120, total_tokens=420)
+        )
         await asyncio.sleep(0.05)  # let the ledger hear about it
         return self._answer()
 

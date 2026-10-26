@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from specweaver.infrastructure.llm.models import TokenUsage
+
 pytest.importorskip("mistralai")
 
 from specweaver.infrastructure.llm.adapters.mistral import MistralAdapter
@@ -135,19 +137,20 @@ class TestMistralAdapter:
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
-        seen: list[tuple[int, int]] = []
+        seen: list[tuple[int, int, TokenUsage]] = []
 
         with pytest.raises(ToolRoundsExceededError):
             await adapter.generate_with_tools(
                 [],
                 config,
                 executor,
-                before_request=lambda round_num, chars: seen.append((round_num, chars)),
+                before_request=lambda round_num, chars, used: seen.append((round_num, chars, used)),
             )
 
-        assert [r for r, _ in seen] == [0, 1]
+        assert [r for r, _, _ in seen] == [0, 1]
+        assert [u.total_tokens for _, _, u in seen] == [0, 30]  # the rounds before each
         assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
-        assert all(chars > 8000 for _, chars in seen)  # the tool schemas are in every round
+        assert all(chars > 8000 for _, chars, _ in seen)  # the tool schemas are in every round
 
     @pytest.mark.asyncio
     async def test_generate_with_tools_max_rounds(self) -> None:

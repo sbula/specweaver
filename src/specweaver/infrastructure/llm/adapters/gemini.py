@@ -275,7 +275,7 @@ class GeminiAdapter(LLMAdapter):
         config: GenerationConfig,
         tool_executor: object,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
-        before_request: Callable[[int, int], None] | None = None,
+        before_request: Callable[[int, int, TokenUsage], None] | None = None,
     ) -> LLMResponse:
         """Agentic generation loop with tool use via Gemini function calling.
 
@@ -321,7 +321,9 @@ class GeminiAdapter(LLMAdapter):
 
                 if before_request:
                     before_request(
-                        round_num, payload_chars([system_instruction, gemini_tools, contents])
+                        round_num,
+                        payload_chars([system_instruction, gemini_tools, contents]),
+                        cumulative_usage,
                     )
                 try:
                     response = await client.aio.models.generate_content(

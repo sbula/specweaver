@@ -46,7 +46,7 @@
           "old": "            \"tools\": self._to_anthropic_tools(config.tools),\n            \"cache_control\": AUTOMATIC_CACHE,\n",
           "new": "            \"tools\": self._to_anthropic_tools(config.tools),\n",
           "breaks": "every tool round pays the full price again for the whole history it resends",
-          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
+          "symbol_sha": "sha256:b4da725ae3c50e1b91f68ac6edc2c518608a531c86016c95f202b8eed2d2c32d"
         },
         {
           "id": "single-call-uncached",
@@ -152,7 +152,7 @@
           "old": "        config = self._keyed(config)\n        scope, first = self._reserve(messages, config)\n",
           "new": "        scope, first = self._reserve(messages, config)\n",
           "breaks": "an agent step never shares its provider's cache with the run before",
-          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+          "symbol_sha": "sha256:4f1889881a4d2b555049cc5d3e656a7eced50b768838df9771200eb4561227dd"
         }
       ]
     },

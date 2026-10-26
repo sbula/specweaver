@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from specweaver.infrastructure.llm.models import TokenUsage
+
 pytest.importorskip("openai")
 
 from specweaver.infrastructure.llm.adapters.openai import OpenAIAdapter
@@ -183,18 +185,19 @@ class TestOpenAIAdapter:
         )
         executor = AsyncMock()
         executor.execute.return_value = {"content": "x" * 5000}
-        seen: list[tuple[int, int]] = []
+        seen: list[tuple[int, int, TokenUsage]] = []
 
         await adapter.generate_with_tools(
             [Message(role=Role.USER, content="hi")],
             config,
             executor,
-            before_request=lambda round_num, chars: seen.append((round_num, chars)),
+            before_request=lambda round_num, chars, used: seen.append((round_num, chars, used)),
         )
 
-        assert [r for r, _ in seen] == [0, 1]
+        assert [r for r, _, _ in seen] == [0, 1]
+        assert [u.total_tokens for _, _, u in seen] == [0, 0]  # the rounds before each
         assert seen[1][1] > seen[0][1] + 5000  # the tool result is in round 1's payload
-        assert all(chars > 8000 for _, chars in seen)  # the tool schemas are in every round
+        assert all(chars > 8000 for _, chars, _ in seen)  # the tool schemas are in every round
 
     @pytest.mark.asyncio
     async def test_a_tool_loop_that_fails_partway_keeps_the_usage_of_the_rounds_it_ran(

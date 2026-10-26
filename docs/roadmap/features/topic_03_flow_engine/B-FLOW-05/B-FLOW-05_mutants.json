@@ -54,7 +54,7 @@
           "old": "            self._record_failure(scope, Reservation.combined(rounds.held), exc, rounds.counted)\n",
           "new": "            pass\n",
           "breaks": "a tool call that failed after spending costs nothing",
-          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+          "symbol_sha": "sha256:4f1889881a4d2b555049cc5d3e656a7eced50b768838df9771200eb4561227dd"
         },
         {
           "id": "openai-loses-usage-on-error",
@@ -64,7 +64,7 @@
           "old": "            attach_usage(exc, cumulative_usage)\n",
           "new": "            pass\n",
           "breaks": "a tool loop that raises drops the usage of the rounds it ran",
-          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
         },
         {
           "id": "failure-usage-ignored",
@@ -171,17 +171,17 @@
           "old": "            if round_num > 0:\n",
           "new": "            if False:\n",
           "breaks": "only the first round of a tool loop is checked",
-          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+          "symbol_sha": "sha256:4f1889881a4d2b555049cc5d3e656a7eced50b768838df9771200eb4561227dd"
         },
         {
           "id": "round-payload-ignored",
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
           "symbol": "OpenAIAdapter.generate_with_tools",
-          "old": "                    before_request(round_num, payload_chars(kwargs))\n",
-          "new": "                    before_request(round_num, 0)\n",
+          "old": "                    before_request(round_num, payload_chars(kwargs), cumulative_usage)\n",
+          "new": "                    before_request(round_num, 0, cumulative_usage)\n",
           "breaks": "a tool round's growing prompt is never counted before it is sent",
-          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
         }
       ]
     },
@@ -704,10 +704,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
           "symbol": "OpenAIAdapter.generate_with_tools",
-          "old": "before_request(round_num, payload_chars(kwargs))",
-          "new": "before_request(round_num, payload_chars(oai_messages))",
+          "old": "before_request(round_num, payload_chars(kwargs), cumulative_usage)",
+          "new": "before_request(round_num, payload_chars(oai_messages), cumulative_usage)",
           "breaks": "a tool round's check leaves out the tool schemas and system prompt",
-          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
         },
         {
           "id": "system-instruction-free",

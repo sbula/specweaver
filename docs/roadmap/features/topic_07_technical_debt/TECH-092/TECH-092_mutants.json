@@ -15,10 +15,10 @@
           "origin": "authored",
           "file": "src/specweaver/infrastructure/llm/collector.py",
           "symbol": "TelemetryCollector.generate_with_tools",
-          "old": "                    rounds.settle(used_so_far)\n",
-          "new": "                    pass\n",
+          "old": "                rounds.settle(used_so_far)\n",
+          "new": "                pass\n",
           "breaks": "a plan that reads a few files is refused while it has spent nothing",
-          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+          "symbol_sha": "sha256:4f1889881a4d2b555049cc5d3e656a7eced50b768838df9771200eb4561227dd"
         }
       ]
     },
@@ -57,7 +57,7 @@
           "old": "                rounds.held.append(self._budget.before_call(scope, worst))\n",
           "new": "                rounds.held.append(Reservation({}))\n",
           "breaks": "a tool loop's later rounds are sent whatever they could cost",
-          "symbol_sha": "sha256:74be7813e280dd984bc65c900169b93d3645141ab9159b76276672ccad334054"
+          "symbol_sha": "sha256:4f1889881a4d2b555049cc5d3e656a7eced50b768838df9771200eb4561227dd"
         }
       ]
     },
@@ -88,6 +88,59 @@
           "new": "            usage = usage\n",
           "breaks": "a loop failing part-way counts its settled rounds twice",
           "symbol_sha": "sha256:56cc4456f62580d71f3132dbf89e4912a0929cd4f89a701bc8743cc722519cde"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "Every adapter's tool loop hands each round's usage to the round hook",
+      "scope": [
+        "tests/integration/infrastructure/llm/test_tool_rounds_settle.py",
+        "tests/unit/infrastructure/llm/test_adapters.py",
+        "tests/unit/infrastructure/llm/test_anthropic.py",
+        "tests/unit/infrastructure/llm/test_openai.py",
+        "tests/unit/infrastructure/llm/test_mistral.py"
+      ],
+      "mutants": [
+        {
+          "id": "gemini-round-usage-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/gemini.py",
+          "symbol": "GeminiAdapter.generate_with_tools",
+          "old": "                        cumulative_usage,\n                    )\n",
+          "new": "                        TokenUsage(),\n                    )\n",
+          "breaks": "the gemini tool loop hides each round's usage, so its finished rounds stay reserved",
+          "symbol_sha": "sha256:0d8088efa89e457de00bf61f42f236d75eff20468794f3081f3fec00be182ea1"
+        },
+        {
+          "id": "anthropic-round-usage-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/anthropic.py",
+          "symbol": "AnthropicAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(kwargs), cumulative_usage)\n",
+          "new": "                    before_request(round_num, payload_chars(kwargs), TokenUsage())\n",
+          "breaks": "the anthropic tool loop hides each round's usage, so its finished rounds stay reserved",
+          "symbol_sha": "sha256:b4da725ae3c50e1b91f68ac6edc2c518608a531c86016c95f202b8eed2d2c32d"
+        },
+        {
+          "id": "openai-round-usage-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/openai.py",
+          "symbol": "OpenAIAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(kwargs), cumulative_usage)\n",
+          "new": "                    before_request(round_num, payload_chars(kwargs), TokenUsage())\n",
+          "breaks": "the openai tool loop hides each round's usage, so its finished rounds stay reserved",
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
+        },
+        {
+          "id": "mistral-round-usage-hidden",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/adapters/mistral.py",
+          "symbol": "MistralAdapter.generate_with_tools",
+          "old": "                    before_request(round_num, payload_chars(kwargs), cumulative_usage)\n",
+          "new": "                    before_request(round_num, payload_chars(kwargs), TokenUsage())\n",
+          "breaks": "the mistral tool loop hides each round's usage, so its finished rounds stay reserved",
+          "symbol_sha": "sha256:bfc3bf673dd2d55915d86e9ae215cc8e53171cd6329875d9f015617f75c4f5e3"
         }
       ]
     }

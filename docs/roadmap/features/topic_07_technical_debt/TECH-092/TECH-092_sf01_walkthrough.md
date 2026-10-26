@@ -35,3 +35,38 @@ round 4 was refused, a round with no usage counts its worst case.
   `failure-counts-settled-rounds-again`), all killed. B-FLOW-05 `failed-tool-call-not-counted`,
   `failure-usage-ignored`, `no-usage-is-free` re-pointed at today's lines and killed; eight more
   collector mutants (B-FLOW-05, C-FLOW-01, C-FLOW-14, E-INTL-01, TECH-074) re-run and re-pinned.
+
+## CB-2 — every adapter hands the usage over (FR-5, FR-6)
+
+### What changed
+
+- Gemini, Anthropic, OpenAI (with its compatible and Qwen adapters) and Mistral call the round hook
+  with their `cumulative_usage` as its third argument; `LLMAdapter` and the rate-limit wrapper
+  declare `before_request: Callable[[int, int, TokenUsage], None]`; the collector's hook now
+  requires it.
+- `adding_llm_adapters.md`: the hook's third argument and what it settles.
+
+### Red first
+
+The four adapters' `test_each_round_reports_the_payload_it_is_about_to_send` take the usage
+(TypeError: the hook got two arguments). `test_tool_rounds_settle.py` (seam, each real adapter with
+its client faked, the real collector and budget) failed for all four with the nightly log's own
+message: "USD 0.00 of USD 7.00 spent, ... calls already running may add up to USD 3.52".
+
+### Tests changed
+
+`test_every_call_in_the_ledger.py`'s adapter double passes the first round's usage. Mutants: FR-5
+`gemini-`, `anthropic-`, `openai-`, `mistral-round-usage-hidden`, all killed. B-FLOW-05
+`round-payload-ignored`, `openai-round-without-schemas` and TECH-092 `finished-rounds-stay-reserved`
+re-pointed at today's lines and killed; 20 more adapter and collector mutants (B-FLOW-05, C-FLOW-01,
+C-FLOW-13, C-FLOW-14, E-INTL-01, TECH-074) re-run and re-pinned.
+Duplication baseline re-frozen: the five adapter signature clones were re-keyed by the hook's type.
+
+### Live run, 2026-10-24 (FR-6 not yet proven)
+
+`test_plan_live_e2e.py` and `test_spend_brake_live_e2e.py` with real Gemini: no spend-brake stop
+appeared. The plan step then failed on a different fault: Gemini's plan answer was cut off at about
+3,200 characters ("unexpected end of data", the test allows `max_output_tokens = 3000`), and the
+retries used the day's free quota, so three brake tests were skipped as `provider quota`, among them
+`test_a_review_under_its_limit_reaches_gemini`. FR-6 waits for the nightly run with a fresh quota.
+The cut-off plan is not this ticket's fault; if the nightly shows it again, it is its own finding.

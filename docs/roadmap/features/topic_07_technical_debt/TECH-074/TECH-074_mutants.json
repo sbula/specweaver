@@ -306,7 +306,7 @@
           "old": "                cumulative_usage = cumulative_usage + _usage_of(response)\n",
           "new": "                cumulative_usage = _usage_of(response)\n",
           "breaks": "a tool loop counts only its last round; the brake and the ledger miss the rest",
-          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
         },
         {
           "id": "anthropic-prompt-misses-cache",
@@ -336,7 +336,7 @@
           "old": "                cumulative_usage = cumulative_usage + _usage_of(getattr(response, \"usage\", None))\n",
           "new": "                cumulative_usage = _usage_of(getattr(response, \"usage\", None))\n",
           "breaks": "an Anthropic tool loop counts only its last round",
-          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
+          "symbol_sha": "sha256:b4da725ae3c50e1b91f68ac6edc2c518608a531c86016c95f202b8eed2d2c32d"
         },
         {
           "id": "mistral-unknown-as-zero",
@@ -356,7 +356,7 @@
           "old": "        cumulative_usage = cumulative_usage + _usage_of(getattr(response, \"usage\", None))\n",
           "new": "        cumulative_usage = _usage_of(getattr(response, \"usage\", None))\n",
           "breaks": "a Mistral tool loop counts only its last round",
-          "symbol_sha": "sha256:c188973626ca88ec2c666120630ff8a9cbcb62b68662bf838f429094ed6131bd"
+          "symbol_sha": "sha256:bfc3bf673dd2d55915d86e9ae215cc8e53171cd6329875d9f015617f75c4f5e3"
         },
         {
           "id": "gemini-unknown-as-zero",
@@ -376,7 +376,7 @@
           "old": "                cumulative_usage = cumulative_usage + self._extract_usage(response)\n",
           "new": "                cumulative_usage = self._extract_usage(response)\n",
           "breaks": "a Gemini tool loop counts only its last round",
-          "symbol_sha": "sha256:80fa41f880fcc06258fc3572fe92d1ec548a0cab18123566cf2d1856019a3d07"
+          "symbol_sha": "sha256:0d8088efa89e457de00bf61f42f236d75eff20468794f3081f3fec00be182ea1"
         },
         {
           "id": "unknown-part-summed-as-zero",

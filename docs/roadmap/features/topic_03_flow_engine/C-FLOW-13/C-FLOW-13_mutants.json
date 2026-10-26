@@ -292,7 +292,7 @@
           "old": "    output_limit_field: ClassVar[str] = \"max_completion_tokens\"\n",
           "new": "    output_limit_field: ClassVar[str] = \"max_tokens\"\n",
           "breaks": "OpenAI reasoning models refuse the call, and the limit does not cap reasoning tokens",
-          "symbol_sha": "sha256:36712c2f5e20e14d5d0b28c38438a9406e67b63425b46a3c7c4b08217c7d1585"
+          "symbol_sha": "sha256:373806b00fa5185682238628d2d1e53f4829b8e3ff3ea808d04d38216c587943"
         },
         {
           "id": "qwen-legacy-default-address",
@@ -312,7 +312,7 @@
           "old": "    sent_sampling: ClassVar[frozenset[str]] = frozenset()\n",
           "new": "    sent_sampling: ClassVar[frozenset[str]] = frozenset({\"temperature\", \"top_p\"})\n",
           "breaks": "every call to a current OpenAI model fails with a 400 for its temperature",
-          "symbol_sha": "sha256:36712c2f5e20e14d5d0b28c38438a9406e67b63425b46a3c7c4b08217c7d1585"
+          "symbol_sha": "sha256:373806b00fa5185682238628d2d1e53f4829b8e3ff3ea808d04d38216c587943"
         },
         {
           "id": "cloud-server-without-key-variable",
@@ -916,7 +916,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:0ad6e5acfa4581832e48dfaf33a9ee163ef2aaaa1ef6363f5d272e6336116855"
+          "symbol_sha": "sha256:ffdd9fbeaba179ded7675c67072ad951eae3de0cac70ddae6e0e75adae8aeb35"
         },
         {
           "id": "anthropic-fake-answer",
@@ -926,7 +926,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:880abef62de3870384c189813706e4947d80015fc2174e5f9bac1accc7d4e216"
+          "symbol_sha": "sha256:b4da725ae3c50e1b91f68ac6edc2c518608a531c86016c95f202b8eed2d2c32d"
         },
         {
           "id": "mistral-fake-answer",
@@ -936,7 +936,7 @@
           "old": "        raise ToolRoundsExceededError.reached(config.max_tool_rounds)\n",
           "new": "        return LLMResponse(text=\"Max tool rounds exceeded.\", model=config.model)\n",
           "breaks": "a tool loop at its limit returns canned text as the model's answer",
-          "symbol_sha": "sha256:c188973626ca88ec2c666120630ff8a9cbcb62b68662bf838f429094ed6131bd"
+          "symbol_sha": "sha256:bfc3bf673dd2d55915d86e9ae215cc8e53171cd6329875d9f015617f75c4f5e3"
         },
         {
           "id": "gemini-partial-answer",
@@ -946,7 +946,7 @@
           "old": "        raise ToolRoundsExceededError.reached(total_calls)\n",
           "new": "        return self._final_response(response, config.model, cumulative_usage)\n",
           "breaks": "a tool loop at its limit returns the last half-finished response as the answer",
-          "symbol_sha": "sha256:80fa41f880fcc06258fc3572fe92d1ec548a0cab18123566cf2d1856019a3d07"
+          "symbol_sha": "sha256:0d8088efa89e457de00bf61f42f236d75eff20468794f3081f3fec00be182ea1"
         },
         {
           "id": "warning-in-dollars",

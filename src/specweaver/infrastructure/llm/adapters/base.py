@@ -19,7 +19,12 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
-    from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, Message
+    from specweaver.infrastructure.llm.models import (
+        GenerationConfig,
+        LLMResponse,
+        Message,
+        TokenUsage,
+    )
 
 
 class LLMAdapter(ABC):
@@ -169,7 +174,7 @@ class LLMAdapter(ABC):
         config: GenerationConfig,
         tool_executor: object,
         on_tool_round: Callable[[int, list[Message]], None] | None = None,
-        before_request: Callable[[int, int], None] | None = None,
+        before_request: Callable[[int, int, TokenUsage], None] | None = None,
     ) -> LLMResponse:
         """Agentic generation loop with tool use.
 

@@ -212,13 +212,10 @@ class TelemetryCollector:
         start_hash = self._start_of(messages, config)
         widening: list[asyncio.Task[Any]] = []
 
-        def before_request(
-            round_num: int, prompt_chars: int, used_so_far: TokenUsage | None = None
-        ) -> None:
+        def before_request(round_num: int, prompt_chars: int, used_so_far: TokenUsage) -> None:
             if round_num > 0:
                 # Settle the finished rounds first: the check must see what was really spent.
-                if used_so_far is not None:
-                    rounds.settle(used_so_far)
+                rounds.settle(used_so_far)
                 worst = self._worst_of(_estimate_chars(prompt_chars), config, scope)
                 rounds.held.append(self._budget.before_call(scope, worst))
                 prompt_tokens.append(_estimate_chars(prompt_chars))
