@@ -284,7 +284,7 @@ for approval `[agreed 2026-10-27]`.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The check sees every module | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The check sees every module | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The manifests tell the truth | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -315,6 +315,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: After approval, trigger the implementation-plan skill for SF-01.
+**Next step**: dev SF-01 (plan approved 2026-10-27).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
