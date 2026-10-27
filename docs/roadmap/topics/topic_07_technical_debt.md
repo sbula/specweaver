@@ -85,7 +85,7 @@ critical for long-term project viability.
 
 * **`TECH-081` 🔴: The Layer Check Reports Clean While the Layers Are Broken**
   > [Description](../features/topic_07_technical_debt/TECH-081/TECH-081_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (18 findings)._ |
+  > DESIGN APPROVED 2026-10-27 (8 sub-features). Origin: 2026-10-22, architecture audit (18 findings)._ |
   > `tach check` passes while modules import the wrong way: four modules are not registered,
   > manifests describe modules that moved, and sandbox, flow and the CLIs have back-edges hidden
   > by lazy imports.
