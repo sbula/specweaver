@@ -1,9 +1,11 @@
 exclude = []
 source_roots = [ "src",]
 exact = true
+root_module = "forbid"
+ignore_type_checking_imports = false
 [[modules]]
 path = "specweaver.graph"
-depends_on = [ "specweaver.workspace.ast.adapters",]
+depends_on = [ "specweaver.workspace.ast.adapters", { path = "specweaver.assurance.graph", deprecated = true },]
 
 [[modules]]
 path = "specweaver.graph.lineage"
@@ -11,15 +13,15 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.graph.interfaces"
-depends_on = [ "specweaver.graph", "specweaver.interfaces.cli", "specweaver.core.config", "specweaver.graph.lineage",]
+depends_on = [ "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.assurance.standards"
-depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.ast.parsers",]
+depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.assurance.standards.interfaces"
-depends_on = [ "specweaver.workspace.project", "specweaver.interfaces.cli", "specweaver.assurance.standards", "specweaver.core.flow", "specweaver.workspace.analyzers",]
+depends_on = [ "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.assurance.validation"
@@ -27,7 +29,7 @@ depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.assurance.validation", "specweaver.interfaces.cli", "specweaver.workspace.project", "specweaver.core.config",]
+depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow", "specweaver.graph.lineage", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.config"
@@ -35,35 +37,35 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.core.config.bootstrap"
-depends_on = [ "specweaver.core.config", "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.memory", { path = "specweaver.core.flow", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
-depends_on = [ "specweaver.interfaces.cli", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.config.bootstrap",]
+depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.telemetry_logger", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.flow"
-depends_on = [ "specweaver.graph", "specweaver.workflows.planning", "specweaver.workflows.implementation", "specweaver.sandbox", "specweaver.workflows.review", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.core.config", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory", { path = "specweaver.workflows.drafting", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.interfaces.cli", "specweaver.core.flow", "specweaver.workspace.analyzers", "specweaver.infrastructure.llm.interfaces",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.core.flow", "specweaver.infrastructure.llm.interfaces", "specweaver.workspace.analyzers", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor", { path = "specweaver.core.flow", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true }, { path = "specweaver.workflows.scenarios", deprecated = true },]
 
 [[modules]]
 path = "specweaver.infrastructure.llm"
-depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.core.config",]
+depends_on = [ "specweaver.core.config", "specweaver.workspace.ast.parsers", { path = "specweaver.assurance.graph", deprecated = true },]
 
 [[modules]]
 path = "specweaver.infrastructure.llm.interfaces"
-depends_on = [ "specweaver.interfaces.cli", "specweaver.infrastructure.llm", "specweaver.core.config", "specweaver.core.config.bootstrap",]
+depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.infrastructure.llm", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.interfaces.run_setup"
-depends_on = [ "specweaver.core.flow", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workspace", "specweaver.workspace.project", "specweaver.workspace.analyzers", "specweaver.assurance.standards", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.api"
@@ -71,15 +73,15 @@ depends_on = [ "specweaver.workspace.analyzers", "specweaver.interfaces.run_setu
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver.graph.interfaces", "specweaver.workspace", "specweaver.core.flow.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.core.config.interfaces", "specweaver.workspace.project.interfaces", "specweaver.assurance.standards.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workflows.review.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.interfaces.api", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.interfaces.run_setup", "specweaver.workflows.drafting.interfaces", "specweaver.core.flow",]
+depends_on = [ "specweaver._version", "specweaver.assurance.standards.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.config.interfaces", "specweaver.core.flow", "specweaver.core.flow.interfaces", "specweaver.graph.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.interfaces.api", "specweaver.interfaces.run_setup", "specweaver.telemetry_logger", "specweaver.workflows.drafting.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.workflows.review.interfaces", "specweaver.workspace", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.workspace.project.interfaces",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
-depends_on = [ "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context", { path = "specweaver.assurance.graph", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.drafting.interfaces"
-depends_on = [ "specweaver.interfaces.cli", "specweaver.core.flow",]
+depends_on = [ "specweaver.core.flow", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.implementation"
@@ -87,7 +89,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = [ "specweaver.interfaces.cli", "specweaver.core.flow", "specweaver.infrastructure.llm.interfaces",]
+depends_on = [ "specweaver.core.flow", "specweaver.infrastructure.llm.interfaces", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
@@ -95,7 +97,7 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.workflows.planning"
-depends_on = [ "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context", { path = "specweaver.assurance.graph", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.review"
@@ -103,7 +105,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review.interfaces"
-depends_on = [ "specweaver.workflows.review", "specweaver.core.flow", "specweaver.interfaces.cli",]
+depends_on = [ "specweaver.core.flow", "specweaver.workflows.review", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workspace.context"
@@ -115,11 +117,11 @@ depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.context
 
 [[modules]]
 path = "specweaver.workspace.project"
-depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.analyzers",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.analyzers", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
-depends_on = [ "specweaver.graph", "specweaver.workspace.project", "specweaver.workspace.analyzers", "specweaver.interfaces.cli", "specweaver.workspace.context",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.context", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workspace.ast.parsers"
@@ -141,6 +143,31 @@ depends_on = [ "specweaver.core.config", "specweaver.workspace",]
 path = "specweaver.workspace"
 depends_on = [ "specweaver.core.config",]
 
+[[modules]]
+path = "specweaver.commons"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "specweaver.assurance.graph"
+depends_on = [ "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.context",]
+
+[[modules]]
+path = "specweaver.workflows.scenarios"
+depends_on = [ "specweaver.infrastructure.llm",]
+
+[[modules]]
+path = "specweaver.workflows.evaluators"
+depends_on = [ "specweaver.core.config",]
+
+[[modules]]
+path = "specweaver._version"
+depends_on = []
+
+[[modules]]
+path = "specweaver.telemetry_logger"
+depends_on = [ "specweaver.core.config",]
+
 [[interfaces]]
 from = [ "specweaver.workspace.ast.parsers",]
 expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.FileBindings", "interfaces.Reference", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "rust.parsers", "rust.parsers.parse_clippy_complexity", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
@@ -159,7 +186,7 @@ expose = [ "constitution", "constitution.find_constitution", "constitution.check
 
 [[interfaces]]
 from = [ "specweaver.workspace.context",]
-expose = [ "provider", "provider.ContextProvider", "inferrer", "inferrer.ContextInferrer", "analyzer_protocols", "analyzer_protocols.LanguageAnalyzer",]
+expose = [ "provider", "provider.ContextProvider", "inferrer", "inferrer.ContextInferrer", "analyzer_protocols", "analyzer_protocols.LanguageAnalyzer", "analyzer_protocols.AnalyzerFactoryProtocol",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.analyzers",]
@@ -171,7 +198,7 @@ expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm",]
-expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role", "models.ToolDispatcherProtocol", "models.ToolDefinition", "models.ToolParameter", "models.ProjectMetadata", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "factory.LLMAdapterError", "models.PromptSafeConfig", "mention_scanner.models.ResolvedMention", "adapters.registry.get_all_adapters", "adapters.gemini.GeminiAdapter", "mention_scanner.scanner.extract_mentions", "prompt_builder.PromptBuilder", "store.Base", "models.TaskType", "_prompt_profiles.RenderProfile", "router.ModelRouter", "collector.TelemetryCollector", "_prompt_profiles.PromptSlot", "store.LlmRepository", "budget", "budget.SpendBudget", "budget.BudgetExceededError", "budget.SpendLimitReachedError", "budget.step_refusal", "budget.track_step_refusals", "catalogue.shipped_catalogue", "catalogue.Catalogue", "resolve.RoleResolver", "router.build_router", "redaction.Redactor", "settings_view.role_rows", "store.record_step_outcomes", "models.TokenKind", "price_store.price_book", "price_store.seed_prices", "price_refresh.refresh_prices", "price_refresh.SOURCE", "price_refresh.last_reached",]
+expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role", "models.ToolDispatcherProtocol", "models.ToolDefinition", "models.ToolParameter", "models.ProjectMetadata", "adapters.base", "adapters.registry", "prompt_builder", "mention_scanner.models", "mention_scanner.scanner", "telemetry", "router", "collector", "factory", "factory.LLMAdapterError", "models.PromptSafeConfig", "mention_scanner.models.ResolvedMention", "adapters.registry.get_all_adapters", "adapters.gemini.GeminiAdapter", "mention_scanner.scanner.extract_mentions", "prompt_builder.PromptBuilder", "store.Base", "models.TaskType", "_prompt_profiles.RenderProfile", "router.ModelRouter", "collector.TelemetryCollector", "_prompt_profiles.PromptSlot", "store.LlmRepository", "budget", "budget.SpendBudget", "budget.BudgetExceededError", "budget.SpendLimitReachedError", "budget.step_refusal", "budget.track_step_refusals", "catalogue.shipped_catalogue", "catalogue.Catalogue", "resolve.RoleResolver", "router.build_router", "redaction.Redactor", "settings_view.role_rows", "store.record_step_outcomes", "models.TokenKind", "price_store.price_book", "price_store.seed_prices", "price_refresh.refresh_prices", "price_refresh.SOURCE", "price_refresh.last_reached", "adapters.base.LLMAdapter", "prompt.profiles.RenderProfile", "prices.Price", "prices.PriceBook",]
 
 [[interfaces]]
 from = [ "specweaver.sandbox",]
@@ -179,7 +206,7 @@ expose = [ "dispatcher", "security", "base", "rule_atom", "git.core", "git.inter
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]
-expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline", "rubrics", "rubrics.load_rubric", "rubrics.Rubric", "rubrics.RubricNotFoundError", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests",]
+expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline", "rubrics", "rubrics.load_rubric", "rubrics.Rubric", "rubrics.RubricNotFoundError", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.interfaces",]

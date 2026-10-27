@@ -3,7 +3,8 @@
 - **Feature ID**: TECH-081
 - **Phase**: Topic 07 (Technical Debt)
 - **Status**: APPROVED (by the user, 2026-10-27)
-- **Kind**: `refactor`
+- **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
+  SF-08), which add guard tests a refactor may not (`scripts/tests.py`)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
   findings into tickets by root cause `[agreed 2026-10-22]`; this ticket owns the 18 below.
@@ -284,7 +285,7 @@ for approval `[agreed 2026-10-27]`.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The check sees every module | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The check sees every module | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The manifests tell the truth | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -315,6 +316,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: dev SF-01 (plan approved 2026-10-27).
+**Next step**: implementation plan for SF-02 (SF-01 committed 2026-10-27, [walkthrough](TECH-081_sf01_walkthrough.md)).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

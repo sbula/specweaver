@@ -42,9 +42,11 @@ exposes:
   - inheritance
   - loader
   - models
+  - models.Rule
   - models.RuleResult
   - models.Status
   - pipeline
+  - pipeline.ValidationPipeline
   - pipeline_loader
   - pipeline_loader.load_pipeline_yaml
   - pipeline_loader.resolve_pipeline_name

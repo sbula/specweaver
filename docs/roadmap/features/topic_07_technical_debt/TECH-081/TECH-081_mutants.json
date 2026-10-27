@@ -1,0 +1,96 @@
+{
+  "schema": 2,
+  "feature": "TECH-081",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "No file hides outside a registered module",
+      "scope": [
+        "tests/unit/test_tach_sees_every_module.py"
+      ],
+      "mutants": [
+        {
+          "id": "stray-code-unchecked",
+          "origin": "authored",
+          "file": "tach.toml",
+          "symbol": "root_module",
+          "old": "root_module = \"forbid\"\n",
+          "new": "root_module = \"ignore\"\n",
+          "breaks": "a new package outside every module is never checked, as four were until 2026-10-27"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "Type-only imports obey the layers",
+      "scope": [
+        "tests/unit/test_tach_sees_every_module.py"
+      ],
+      "mutants": [
+        {
+          "id": "type-only-imports-ignored",
+          "origin": "authored",
+          "file": "tach.toml",
+          "symbol": "ignore_type_checking_imports",
+          "old": "ignore_type_checking_imports = false\n",
+          "new": "ignore_type_checking_imports = true\n",
+          "breaks": "a TYPE_CHECKING import crosses a layer unseen, as sandbox/security.py did"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Every wrong edge allowed is owed by a named FR",
+      "scope": [
+        "tests/unit/test_tach_sees_every_module.py"
+      ],
+      "mutants": [
+        {
+          "id": "owed-edge-made-plain",
+          "origin": "authored",
+          "file": "tach.toml",
+          "symbol": "specweaver.core.flow depends_on",
+          "old": "{ path = \"specweaver.workflows.drafting\", deprecated = true }",
+          "new": "\"specweaver.workflows.drafting\"",
+          "breaks": "a wrong edge becomes silently allowed and drops off the owed list"
+        },
+        {
+          "id": "owed-row-dropped",
+          "origin": "authored",
+          "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
+          "symbol": "Owed by TECH-081",
+          "old": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-10 |\n",
+          "new": "<!-- owed row dropped -->\n",
+          "breaks": "an edge stays deprecated with no FR that removes it"
+        },
+        {
+          "id": "owed-row-names-no-fr",
+          "origin": "authored",
+          "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
+          "symbol": "Owed by TECH-081",
+          "old": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-10 |",
+          "new": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-99 |",
+          "breaks": "an owed edge names an FR the design does not have"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "The ledger cites only paths that exist",
+      "scope": [
+        "tests/unit/test_tach_sees_every_module.py"
+      ],
+      "mutants": [
+        {
+          "id": "ledger-cites-moved-file",
+          "origin": "authored",
+          "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
+          "symbol": "Open and recently resolved",
+          "old": "`src/specweaver/graph/core/builder/orchestrator.py` (`load_topology`, lazy)",
+          "new": "`src/specweaver/graph/builder/orchestrator.py` (`load_topology`, lazy)",
+          "breaks": "a ledger row points at a file that moved, as five rows did until 2026-10-27"
+        }
+      ]
+    }
+  ]
+}
