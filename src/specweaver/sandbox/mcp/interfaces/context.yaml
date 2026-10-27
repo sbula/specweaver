@@ -1,3 +1,7 @@
+name: mcp-tool
+purpose: >
+  The agent's MCP tool: role-restricted MCP resource reads.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/mcp/core

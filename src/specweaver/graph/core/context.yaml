@@ -1,7 +1,11 @@
 # Bounded context for the Graph Core
+name: graph-core
+purpose: >
+  The graph mechanics shared by every graph topic: engine, store and builder.
+
 description: "Core logic for Knowledge Graph construction and traversal"
 
-archetype: core
+archetype: orchestrator
 
 exports:
   - builder

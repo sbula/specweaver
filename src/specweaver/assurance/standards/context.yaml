@@ -22,7 +22,6 @@ exposes:
   - PythonStandardsAnalyzer
   - CategoryResult
   - ScopeReport
-  - StandardsInferrer
   - StandardsReviewer
 
 # -- Operational Metadata --------------------------------------------------

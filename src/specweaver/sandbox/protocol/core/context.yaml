@@ -1,1 +1,5 @@
+name: protocol-atom
+purpose: >
+  Parses OpenAPI, AsyncAPI and gRPC protocol files for the engine.
+
 archetype: adapter

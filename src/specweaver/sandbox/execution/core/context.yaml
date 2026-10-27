@@ -1,1 +1,5 @@
+name: execution-atom
+purpose: >
+  The engine's atom for running one bash action through the executor.
+
 archetype: adapter

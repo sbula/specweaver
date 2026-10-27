@@ -1,3 +1,8 @@
+name: graph-engine
+purpose: >
+  The in-memory graph (NetworkX) and its ontology; no I/O.
+archetype: pure-logic
+
 module_name: "specweaver.graph.core.engine"
 description: "Pure logic layer of the Knowledge Graph. Contains the NetworkX wrapper and Ontology models."
 layer: "Domain.Core"

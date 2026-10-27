@@ -1,5 +1,9 @@
 # Workspace context boundary
-archetype: workspace
+name: workspace
+purpose: >
+  Projects, their SQLite store, the AST code and the project context.
+
+archetype: store
 description: |
   Contains all logic for managing user projects, AST parsing, and standards.
   Workspace MUST NOT depend on workflow orchestration or CLI interfaces.

@@ -1,1 +1,5 @@
+name: git-atom
+purpose: >
+  The engine's atom for git operations and worktrees.
+
 archetype: adapter

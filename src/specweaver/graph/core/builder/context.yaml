@@ -1,3 +1,8 @@
+name: graph-builder
+purpose: >
+  Builds a graph from a project's files and syncs it with the store.
+archetype: orchestrator
+
 module_name: "specweaver.graph.core.builder"
 description: "Application Orchestration layer. Builds graphs from files and syncs with the store."
 layer: "Application"

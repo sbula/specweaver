@@ -1,3 +1,7 @@
+name: code-structure-tool
+purpose: >
+  The agent's code-structure tool: role-restricted reads and edits of symbols.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/code_structure/core

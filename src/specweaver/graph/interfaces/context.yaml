@@ -1,4 +1,8 @@
 # Bounded context for the Graph Interfaces
+name: graph-cli
+purpose: >
+  The `sw graph` and `sw lineage` commands.
+
 description: "CLI interfaces for the Knowledge Graph and Lineage systems"
 
 archetype: orchestrator

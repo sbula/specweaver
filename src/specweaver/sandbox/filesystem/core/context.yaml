@@ -1,1 +1,5 @@
+name: filesystem-atom
+purpose: >
+  The engine's atom for file reads, writes and searches inside the workspace.
+
 archetype: adapter

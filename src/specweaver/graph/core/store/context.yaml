@@ -1,3 +1,8 @@
+name: graph-store
+purpose: >
+  Keeps the knowledge graph in SQLite.
+archetype: store
+
 module_name: "specweaver.graph.core.store"
 description: "Infrastructure layer. Handles SQLite database interactions for the Knowledge Graph."
 layer: "Infrastructure"

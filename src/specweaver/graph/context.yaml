@@ -1,3 +1,8 @@
+name: graph
+purpose: >
+  The knowledge graph: its engine, store and builder, plus lineage and topology.
+archetype: orchestrator
+
 module_name: "specweaver.graph"
 description: "Bounded context for the SpecWeaver graphs. Contains the universal 'core' mechanics (Engine, Store, Builder) as well as topic-specific extensions (Lineage, Topology)."
 layer: "Domain"

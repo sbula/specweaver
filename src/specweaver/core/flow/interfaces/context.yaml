@@ -1,5 +1,7 @@
 # src/specweaver/core/flow/interfaces/context.yaml
-archetype: interface
+name: flow-cli
+
+archetype: entry-point
 purpose: CLI entrypoints for pipeline execution and state management
 consumes:
   - src.specweaver.core.flow.engine

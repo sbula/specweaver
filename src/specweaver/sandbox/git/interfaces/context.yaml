@@ -1,3 +1,7 @@
+name: git-tool
+purpose: >
+  The agent's git tool: role-restricted git operations.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/git/core

@@ -1,3 +1,7 @@
+name: protocol-tool
+purpose: >
+  The agent's protocol tool: reads protocol definitions.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/protocol/core

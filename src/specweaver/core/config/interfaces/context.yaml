@@ -1,4 +1,8 @@
 # Bounded context for the L6 presentation layer of Core Config
+name: config-cli
+purpose: >
+  The `sw config` commands: show and change project and model settings.
+
 description: "Core Configuration and LLM Routing CLI commands"
 
 archetype: orchestrator

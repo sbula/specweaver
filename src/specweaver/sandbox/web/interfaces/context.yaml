@@ -1,2 +1,6 @@
-archetype: orchestrator
+name: web-tool
+purpose: >
+  The agent's web tool: searches and fetches pages over HTTP.
+
+archetype: adapter
 consumes:

@@ -91,6 +91,60 @@
           "breaks": "a ledger row points at a file that moved, as five rows did until 2026-10-27"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "Every manifest names its purpose and exposes only what exists",
+      "scope": [
+        "tests/unit/test_manifests_are_complete.py"
+      ],
+      "mutants": [
+        {
+          "id": "phantom-expose-back",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/context.yaml",
+          "symbol": "exposes",
+          "old": "  - Generator\n",
+          "new": "  - CodeGenerator\n",
+          "breaks": "a manifest promises a class that does not exist"
+        },
+        {
+          "id": "purpose-blank",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/context.yaml",
+          "symbol": "purpose",
+          "old": "  Keeps the knowledge graph in SQLite.\n",
+          "new": "  \n",
+          "breaks": "a module says nothing about what it is for"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Archetypes are real and match the code",
+      "scope": [
+        "tests/unit/test_manifests_are_complete.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-archetype",
+          "origin": "authored",
+          "file": "src/specweaver/commons/context.yaml",
+          "symbol": "archetype",
+          "old": "archetype: mixed\n",
+          "new": "archetype: raw-data\n",
+          "breaks": "a label no rule knows, so no rule checks the module"
+        },
+        {
+          "id": "web-tool-orchestrator",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/web/interfaces/context.yaml",
+          "symbol": "archetype",
+          "old": "archetype: adapter\n",
+          "new": "archetype: orchestrator\n",
+          "breaks": "a module that calls the web claims it only delegates"
+        }
+      ]
     }
   ]
 }

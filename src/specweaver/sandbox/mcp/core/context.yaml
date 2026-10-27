@@ -1,1 +1,5 @@
+name: mcp-atom
+purpose: >
+  The engine's atom for calling MCP servers over JSON-RPC.
+
 archetype: adapter

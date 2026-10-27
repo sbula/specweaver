@@ -1,1 +1,5 @@
+name: code-structure-atom
+purpose: >
+  The engine's atom for reading and editing code structure (symbols, changes).
+
 archetype: adapter

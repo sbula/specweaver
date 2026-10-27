@@ -1,3 +1,7 @@
+name: filesystem-tool
+purpose: >
+  The agent's filesystem tool: role-restricted file reads, writes and searches.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/filesystem/core

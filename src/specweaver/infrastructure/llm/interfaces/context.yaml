@@ -1,4 +1,8 @@
 # Bounded context for the L6 presentation layer of Infrastructure LLM
+name: llm-cli
+purpose: >
+  The `sw costs` and `sw usage` commands and the shared `--model` option.
+
 description: "LLM cost and usage CLI commands"
 
 archetype: orchestrator

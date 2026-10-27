@@ -1,3 +1,7 @@
+name: qa-runner-tool
+purpose: >
+  The agent's QA tool: role-restricted test, lint and complexity runs.
+
 archetype: orchestrator
 consumes:
   - specweaver/sandbox/qa_runner/core

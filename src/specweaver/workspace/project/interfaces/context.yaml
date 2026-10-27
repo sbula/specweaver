@@ -1,5 +1,7 @@
 # src/specweaver/workspace/project/interfaces/context.yaml
-archetype: interface
+name: workspace-cli
+
+archetype: entry-point
 purpose: CLI entrypoints for workspace project management
 consumes:
   - src.specweaver.workspace.project

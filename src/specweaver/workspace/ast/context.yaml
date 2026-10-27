@@ -11,7 +11,7 @@ description: |
   This boundary ensures AST-related mechanisms are kept isolated from
   project discovery or execution context.
 
-archetype: domain
+archetype: orchestrator
 
 consumes: []
 

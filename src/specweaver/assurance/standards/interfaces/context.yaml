@@ -1,4 +1,8 @@
 # Bounded context for the L6 presentation layer of Assurance Standards
+name: standards-cli
+purpose: >
+  The `sw standards` commands: scan a project's code for its standards and show them.
+
 description: "Standards and capabilities scanning CLI commands"
 
 archetype: orchestrator

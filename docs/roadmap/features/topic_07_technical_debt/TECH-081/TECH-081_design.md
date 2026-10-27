@@ -228,7 +228,8 @@ for approval `[agreed 2026-10-27]`.
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_sf02_implementation_plan.md
 
 ### SF-03: The sandbox sits below the workflows
-- **Scope**: `commons` pure; the sandbox stops importing `workflows` and `core/flow`.
+- **Scope**: `commons` pure; the sandbox stops importing `workflows` and `core/flow`. `commons` is labelled `mixed`
+  until its file reading leaves; then `pure-logic`.
 - **FRs**: [FR-9, FR-10]
 - **Inputs**: SF-01's deprecated edges.
 - **Outputs**: those edges removed.

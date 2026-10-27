@@ -1,1 +1,5 @@
+name: language-atom
+purpose: >
+  Detects a project's language and runs its toolchain: tests, reports, scenario conversion.
+
 archetype: adapter

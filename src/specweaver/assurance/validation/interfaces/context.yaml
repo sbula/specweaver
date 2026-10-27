@@ -1,4 +1,8 @@
 # Bounded context for the L6 presentation layer of Assurance Validation
+name: validation-cli
+purpose: >
+  The `sw check` and `sw drift` commands: run the validation rules and detect drift.
+
 description: "Validation and Drift Detection CLI commands"
 
 archetype: orchestrator

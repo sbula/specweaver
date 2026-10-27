@@ -26,7 +26,7 @@ forbids:
 
 exposes:
   - TopologyGraph
-  - Selectors
+  - ContextSelector
 
 # -- Operational Metadata --------------------------------------------------
 operational:
