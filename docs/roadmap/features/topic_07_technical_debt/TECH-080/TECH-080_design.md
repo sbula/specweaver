@@ -27,8 +27,8 @@ Filing-day evidence from the audit. Line numbers drift; re-measure each one befo
   `assurance/graph/topology.py:259`.
 - **AG-19** — A full topology load and hash just to read a service name; three ways to build a
   topology. Where: `orchestrator.py:258`.
-- **AG-15** — A different manifest schema; SpecWeaver's own topology loader skips these modules.
-  Where: `graph/**/context.yaml`.
+- **AG-15** — moved to `TECH-081` SF-02 `[agreed 2026-10-27]`: its manifests take the standard
+  schema there; this ticket keeps the code that reads manifests.
 
 ## Goal
 

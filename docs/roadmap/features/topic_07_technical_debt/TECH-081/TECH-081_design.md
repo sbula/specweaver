@@ -47,6 +47,7 @@ Re-measured 2026-10-26 (two read-only surveys; facts with `file:line` below and 
 | WV-13 | the Python scenario converter lives in `workflows/scenarios`, the other four in `sandbox/language/core/*` | FR-10 |
 | WV-14 | `assurance/validation` is `pure-logic` but reads files (`pipeline_loader.py:80`, `rubrics/loader.py:85`) and loads code (`loader.py:105-113`) | FR-18 |
 | CW-16 | `workspace/context` (`contract`) writes `context.yaml` (`inferrer.py:139`) | FR-19 |
+| AG-15 | the six `graph/**` manifests use another schema (`allowed_imports`, no `archetype`); moved here from `TECH-080` `[agreed 2026-10-27]` | FR-6 |
 
 ## Path List (`ADR-005`)
 
@@ -286,7 +287,7 @@ for approval `[agreed 2026-10-27]`.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The check sees every module | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The manifests tell the truth | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The manifests tell the truth | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -316,6 +317,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: implementation plan for SF-02 (SF-01 committed 2026-10-27, [walkthrough](TECH-081_sf01_walkthrough.md)).
+**Next step**: dev SF-02 (plan approved 2026-10-27).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
