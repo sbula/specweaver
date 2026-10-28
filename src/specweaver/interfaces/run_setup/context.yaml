@@ -16,6 +16,7 @@ consumes:
   - specweaver/assurance/standards
   - specweaver/assurance/graph
   - specweaver/infrastructure/llm
+  - specweaver/workflows/drafting
   - specweaver/commons
 
 forbids:

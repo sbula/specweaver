@@ -85,6 +85,7 @@ async def build_run(request: RunRequest) -> RunContext:
         ModelAccess,
         RunContext,
     )
+    from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.project.constitution import find_constitution
 
@@ -106,6 +107,7 @@ async def build_run(request: RunRequest) -> RunContext:
         model=ModelAccess(
             config=settings if needs_model else None,
             llm_router=_router(request) if needs_model else None,
+            drafters=WorkflowDrafters(),
         ),
         graph=GraphContext(topology=_topology(request)),
     )

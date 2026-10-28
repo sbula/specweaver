@@ -43,6 +43,15 @@ def _pop_step_feedback(step: PipelineStep, context: RunContext) -> dict[str, Any
     return None
 
 
+def _can_draft(context: RunContext) -> bool:
+    """Draft only with a human to ask, a model, and the drafters the run was given."""
+    return (
+        context.model.drafters is not None
+        and context.context_provider is not None
+        and context.model.llm_router is not None
+    )
+
+
 class DraftSpecHandler:
     """Handler for draft+spec — parks if spec doesn't exist yet."""
 
@@ -56,7 +65,7 @@ class DraftSpecHandler:
         # attempts.
         findings = self._pop_feedback(step, context)
         if findings is not None:
-            if context.context_provider is not None and context.model.llm_router is not None:
+            if _can_draft(context):
                 logger.info(
                     "DraftSpecHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -99,7 +108,7 @@ class DraftSpecHandler:
             )
 
         # Spec doesn't exist. If we have a context provider (HITL), do the drafting.
-        if context.context_provider is not None and context.model.llm_router is not None:
+        if _can_draft(context):
             return await self._execute_drafting(step, context, started)
 
         # Otherwise (e.g. headless autonomous run without provider), park and tell the user
@@ -135,7 +144,6 @@ class DraftSpecHandler:
         from specweaver.core.flow.handlers._llm import llm_for
         from specweaver.core.flow.handlers.base import _build_base_prompt
         from specweaver.infrastructure.llm.models import TaskType
-        from specweaver.workflows.drafting.drafter import Drafter
 
         adapter, gen_config = llm_for(context, TaskType.DRAFT)
 
@@ -160,7 +168,8 @@ class DraftSpecHandler:
 
             base_prompt.add_context(json.dumps(findings, ensure_ascii=False), "reviewer_findings")
 
-        drafter = Drafter(
+        assert context.model.drafters is not None
+        drafter = context.model.drafters.spec(
             llm=adapter,
             context_provider=context.context_provider,
             config=gen_config,
@@ -229,7 +238,7 @@ class DraftFeatureHandler:
             )
 
         if findings is not None:
-            if context.context_provider is not None and context.model.llm_router is not None:
+            if _can_draft(context):
                 logger.info(
                     "DraftFeatureHandler: reviewer feedback received — re-drafting '%s'",
                     context.spec_path,
@@ -277,7 +286,7 @@ class DraftFeatureHandler:
                 artifact_uuid=artifact_uuid,
             )
 
-        if context.context_provider is not None and context.model.llm_router is not None:
+        if _can_draft(context):
             return await self._execute_drafting(step, context, started, name)
 
         logger.info(
@@ -323,7 +332,6 @@ class DraftFeatureHandler:
         """Run the interactive FeatureDrafter and reconcile its output path."""
         from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
         from specweaver.core.flow.handlers.base import _build_base_prompt
-        from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
 
         try:
             profile = resolve_profile(step.params.get("render_profile"), default=INTERACTIVE)
@@ -347,7 +355,8 @@ class DraftFeatureHandler:
             base_prompt.add_context(json.dumps(findings, ensure_ascii=False), "reviewer_findings")
 
         # Keyword args only: FeatureDrafter's positional order differs from Drafter's.
-        drafter = FeatureDrafter(
+        assert context.model.drafters is not None
+        drafter = context.model.drafters.feature(
             base_prompt=base_prompt,
             llm=adapter,
             context_provider=context.context_provider,

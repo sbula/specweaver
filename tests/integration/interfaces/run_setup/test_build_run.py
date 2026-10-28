@@ -246,3 +246,18 @@ def test_the_sync_and_async_builders_agree(world: tuple[Database, Path]) -> None
     assert sync.isolation == async_.isolation
     assert sync.guidance == async_.guidance
     assert sync.graph.topology == async_.graph.topology
+
+
+def test_a_run_gets_drafters_that_build_the_real_drafters(world: tuple[Database, Path]) -> None:
+    """TECH-081 FR-13: the builder, not the flow engine, knows the drafting workflow."""
+    from specweaver.workflows.drafting.drafter import Drafter
+    from specweaver.workflows.drafting.feature_drafter import FeatureDrafter
+
+    db, root = world
+    kw = {"llm": MagicMock(), "context_provider": MagicMock(), "config": MagicMock()}
+
+    context = build_run_sync(_request(db, root, StepAction.VALIDATE))
+
+    assert context.model.drafters is not None
+    assert isinstance(context.model.drafters.spec(**kw, base_prompt=None), Drafter)
+    assert isinstance(context.model.drafters.feature(**kw, base_prompt=None), FeatureDrafter)

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -28,6 +28,16 @@ if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult  # noqa: F401
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class Drafters(Protocol):
+    """Builds the interactive drafters. The run's builder supplies it; the flow knows no drafting."""
+
+    def spec(self, **kw: Any) -> Any: ...
+
+    def feature(self, **kw: Any) -> Any: ...
+
 
 # RunContext — everything a handler needs
 # ---------------------------------------------------------------------------
@@ -72,17 +82,18 @@ class PlanContext(BaseModel):
 
 
 class ModelAccess(BaseModel):
-    """How this run reaches a language model: its settings and its router.
+    """How this run reaches a language model: its settings, its router and its drafters.
 
     Every step's model comes from the router, which the LLM settings files feed; there is no
     second adapter here. All ``Any``: importing the real types would cross a module boundary this
     package may not.
     """
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     config: Any = None  # SpecWeaverSettings | None
     llm_router: Any = None  # ModelRouter | None — every role's adapter and settings
+    drafters: Drafters | None = None
 
 
 class RunHandle(BaseModel):

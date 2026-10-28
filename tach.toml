@@ -49,7 +49,7 @@ depends_on = [ "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.core.flow"
-depends_on = [ "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory", { path = "specweaver.workflows.drafting", deprecated = true },]
+depends_on = [ "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
@@ -69,7 +69,7 @@ depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "sp
 
 [[modules]]
 path = "specweaver.interfaces.run_setup"
-depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.api"

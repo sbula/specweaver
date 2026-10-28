@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
+          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
+          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:0eabfc5ef8688dd88ced53bfd958cdad2d4b0248ebd002c7260d0ba1a1626b44"
+          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
         },
         {
           "id": "optional-model-refuses",

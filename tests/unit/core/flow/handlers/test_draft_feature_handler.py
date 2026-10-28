@@ -24,6 +24,7 @@ from specweaver.core.flow.handlers.draft import (
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
@@ -44,6 +45,7 @@ def _interactive_ctx(tmp_path: Path, spec: Path) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=spec)
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     ctx.context_provider = AsyncMock()
+    ctx.model = ctx.model.model_copy(update={"drafters": WorkflowDrafters()})
     ctx.context_provider.review.return_value = ""  # keeps every section
     return ctx
 

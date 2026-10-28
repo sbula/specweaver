@@ -276,6 +276,37 @@
           "symbol_sha": "sha256:00263c90c2b6c67b8a34c09222942b69cd901a258f499dcd519260f7d2fff79e"
         }
       ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "The draft handlers get their drafters from the run's builder",
+      "scope": [
+        "tests/unit/test_architecture.py",
+        "tests/unit/core/flow/handlers/test_draft_uses_injected_drafters.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py"
+      ],
+      "mutants": [
+        {
+          "id": "handler-imports-drafting",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/draft.py",
+          "symbol": "DraftSpecHandler._execute_drafting",
+          "old": "        assert context.model.drafters is not None\n        drafter = context.model.drafters.spec(\n",
+          "new": "        from specweaver.workflows.drafting.drafter import Drafter  # noqa: F401\n\n        assert context.model.drafters is not None\n        drafter = context.model.drafters.spec(\n",
+          "breaks": "the flow imports the drafting workflow again",
+          "symbol_sha": "sha256:4dd707d65a07f42c4c8548ff3d14ee46297f73bbc6376156a514ad8c02c81406"
+        },
+        {
+          "id": "builder-forgets-drafters",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "            drafters=WorkflowDrafters(),\n",
+          "new": "            drafters=None,\n",
+          "breaks": "runs built for the doors get no drafters, so draft steps park",
+          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+        }
+      ]
     }
   ]
 }

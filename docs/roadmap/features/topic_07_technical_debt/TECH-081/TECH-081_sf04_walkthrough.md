@@ -68,3 +68,42 @@ Kind `tooling` `[agreed 2026-10-28]`: test calls gained an argument.
 - R2 (MEDIUM) the runner still names the registry type. Blue: CB-4 swaps it for `HandlerLookup`.
 - R3 (LOW) tests patch `StepHandlerRegistry.get` on the class. Blue: as before; only the path changed.
 - Cycle 2: no new finding.
+
+## CB-3 — the builder hands the draft handlers their drafters (FR-13)
+
+### What changed
+
+- `tach.toml` and the ledger lost the owed `core.flow → workflows.drafting` edge (two rows: the owed
+  table and the violations table). `core/flow`'s `forbids: workflows/drafting` now holds.
+- `run_context.py`: a `Drafters` Protocol (`spec(**kw)`, `feature(**kw)`); `ModelAccess.drafters`
+  holds it. It sits in `ModelAccess`, not on `RunContext`: `RunContext` is at the 15-field limit
+  (`test_check_class_health`), and the drafters are how a run's model drafts.
+- `interfaces/run_setup/drafters.py`: `WorkflowDrafters` builds `Drafter` / `FeatureDrafter`.
+  `build_run` sets it on every run; `run_setup` gains the plain edge to `workflows.drafting`.
+- `draft.py`: one guard, `_can_draft` (drafters, a provider, a router); both handlers build their
+  drafter through `context.model.drafters`. No drafting import is left.
+- Six older test files that set a provider now also give the run `WorkflowDrafters()`; their patches
+  of `Drafter` still apply, because the factory imports at call time.
+- Four mutants re-pinned (`C-FLOW-13`, `TECH-077` ×3): `build_run` gained one argument.
+
+### Red first
+
+`test_draft_uses_injected_drafters.py` (5 tests) and
+`test_build_run.py::test_a_run_gets_drafters_that_build_the_real_drafters` failed before the change;
+removing the edge turned `test_tach_architectural_boundaries` red.
+
+### Proof
+
+Mutants `handler-imports-drafting` and `builder-forgets-drafters`: OBJECTED.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) every run gets drafters, even one with no model. Blue: a stateless object; `_can_draft`
+  also needs a router and a provider, so a headless run still parks.
+- R2 (MEDIUM) `assert context.model.drafters is not None` in `src`. Blue: type narrowing after the
+  `_can_draft` guard, the same idiom as the other narrowing asserts in `src`.
+- R3 (MEDIUM) `Drafters` returns `Any`. Blue: naming `Drafter` would import drafting; the handler only
+  calls `draft`, and the seam test checks the real classes come back.
+- R4 (LOW) `ModelAccess` now allows arbitrary types. Blue: needed for a Protocol field; `RunContext`
+  already does.
+- Cycle 2: no new finding.

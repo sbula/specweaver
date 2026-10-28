@@ -10,6 +10,7 @@ import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
 from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
+from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
 
 
@@ -59,6 +60,7 @@ async def test_draft_handler_uses_interactive_profile(mock_drafter_class, mock_b
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     if run_context.spec_path.exists():
@@ -91,6 +93,7 @@ async def test_generate_code_uses_full_profile(mock_generator_class, mock_build,
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
@@ -125,6 +128,7 @@ async def test_generate_tests_uses_full_profile(mock_generator_class, mock_build
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
@@ -159,6 +163,7 @@ async def test_plan_spec_uses_full_profile(mock_planner_class, mock_build, run_c
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
@@ -188,6 +193,7 @@ async def test_review_spec_uses_full_profile(mock_reviewer_class, mock_build, ru
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     step = PipelineStep(
@@ -219,6 +225,7 @@ async def test_review_code_uses_full_profile(
         update={"llm_router": FixedRouter(AsyncMock())}
     )
     run_context.context_provider = AsyncMock()
+    run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
     run_context.context_provider.review.return_value = ""  # keeps every section
 
     code_file = tmp_path / "code.py"

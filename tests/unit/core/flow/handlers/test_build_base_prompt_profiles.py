@@ -14,6 +14,7 @@ from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, 
 from specweaver.core.flow.handlers.base import _build_base_prompt
 from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
+from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from specweaver.workflows.implementation.languages import language_guide
 from tests.scripted_llm import FixedRouter
 
@@ -207,6 +208,7 @@ class TestHandlerProfileIntegration:
             update={"llm_router": FixedRouter(MagicMock())}
         )
         run_context.context_provider = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
 
         # We mock the specific generator/drafter/etc to prevent full execution.
         def mock_exists(self: Any) -> bool:
@@ -305,6 +307,7 @@ class TestHandlerProfileIntegration:
             update={"llm_router": FixedRouter(MagicMock())}
         )
         run_context.context_provider = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
 
         def mock_exists(self: Any) -> bool:
             return not ("draft" in handler_class.lower() and "spec" in str(self))
@@ -387,6 +390,7 @@ class TestHandlerProfileIntegration:
             update={"llm_router": FixedRouter(MagicMock())}
         )
         run_context.context_provider = MagicMock()
+        run_context.model = run_context.model.model_copy(update={"drafters": WorkflowDrafters()})
 
         # We don't need to mock Generator here because resolve_profile should fail before instantiation
         def mock_exists(self: Any) -> bool:

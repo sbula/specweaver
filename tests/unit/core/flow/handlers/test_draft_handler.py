@@ -13,6 +13,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
@@ -57,6 +58,7 @@ class TestDraftSpecHandler:
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
         ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
+        ctx.model = ctx.model.model_copy(update={"drafters": WorkflowDrafters()})
         ctx.context_provider.review.return_value = ""  # keeps every section
 
         mock_repo = MagicMock()
@@ -125,6 +127,7 @@ class TestDraftSpecHandlerFeedbackLoop:
         ctx = RunContext(project_path=tmp_path, spec_path=spec, db=MagicMock())
         ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
         ctx.context_provider = AsyncMock()
+        ctx.model = ctx.model.model_copy(update={"drafters": WorkflowDrafters()})
         ctx.context_provider.review.return_value = ""  # keeps every section
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         ctx.feedback = self._feedback()

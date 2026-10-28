@@ -23,6 +23,7 @@ from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _now_iso
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from specweaver.workflows.drafting.interfaces.cli import _build_draft_pipeline
 from tests.scripted_llm import FixedRouter
 
@@ -77,6 +78,7 @@ def _make_context(tmp_path: Path) -> RunContext:
     ctx = RunContext(project_path=tmp_path, spec_path=spec, model=ModelAccess(config=config))
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     ctx.context_provider = AsyncMock()
+    ctx.model = ctx.model.model_copy(update={"drafters": WorkflowDrafters()})
     return ctx
 
 
