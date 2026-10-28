@@ -27,7 +27,7 @@ from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.isolation import seed_dal_level
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.workspace.store import default_dal_at
 from tests.fixtures.db_utils import register_test_project
 
@@ -82,7 +82,7 @@ def test_a_folder_outside_every_project_gets_dal_c(tmp_path: Path, db: Database)
 
 
 def test_validation_uses_the_same_dal(tmp_path: Path, db: Database) -> None:
-    from specweaver.core.flow.handlers.validation import target_dal
+    from specweaver.core.flow.run_state.dal import target_dal
 
     root = _project(tmp_path, db)
 

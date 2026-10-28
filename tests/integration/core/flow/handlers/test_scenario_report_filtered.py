@@ -30,8 +30,8 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler, scenario_safe
 from specweaver.core.flow.handlers.reviewed_spec import record_review
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from tests.fixtures.db_utils import register_test_project
 from tests.scripted_llm import FixedRouter
 

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,

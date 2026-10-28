@@ -23,8 +23,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
-from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 from specweaver.sandbox.language.core.java.runner import JavaRunner
 from specweaver.sandbox.language.core.rust.runner import RustRunner
 

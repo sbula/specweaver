@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ async def build_run(request: RunRequest) -> RunContext:
     """The run's context, every part from the request's one project. Raises; never exits."""
     from specweaver.assurance.standards.loader import load_standards_content_async
     from specweaver.core.flow.handlers._llm import roles_of
-    from specweaver.core.flow.handlers.run_context import (
+    from specweaver.core.flow.run_state.run_context import (
         AnalysisContext,
         GraphContext,
         GuidanceContent,

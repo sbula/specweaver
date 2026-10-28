@@ -26,7 +26,7 @@ from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.config.autonomy_policy import AutonomyPolicy
 from specweaver.core.flow.engine.autonomy import ExecutionMode, ModeDecision, resolve_execution_mode
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 
 _GENERATE = {"action": StepAction.GENERATE, "target": StepTarget.CODE}
 

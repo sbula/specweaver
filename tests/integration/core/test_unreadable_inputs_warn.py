@@ -66,7 +66,7 @@ def test_a_broken_context_yaml_drops_its_archetype_with_a_warning(
 def test_a_run_reads_generic_from_a_broken_context_yaml_with_a_warning(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
     (tmp_path / "context.yaml").write_text(_BROKEN_YAML, encoding="utf-8")
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "a_spec.md")
@@ -100,7 +100,7 @@ def test_an_unreadable_spec_shows_no_coverage(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     from specweaver.core.flow.handlers.qa_targets import requirement_coverage_of
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "gone_spec.md")
 

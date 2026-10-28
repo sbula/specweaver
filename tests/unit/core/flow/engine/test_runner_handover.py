@@ -9,7 +9,7 @@ import pytest
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import IsolationPolicy
+from specweaver.core.flow.run_state.run_context import IsolationPolicy
 
 
 class MockPath:

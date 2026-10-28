@@ -15,7 +15,7 @@ from specweaver.sandbox.base import AtomStatus
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.sandbox.execution.core.atom import BashActionAtom
 
 logger = logging.getLogger(__name__)

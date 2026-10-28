@@ -23,7 +23,7 @@ from specweaver.core.flow.handlers.draft import (
     _pop_step_feedback,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
 

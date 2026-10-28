@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.core.flow.handlers.review import _inject_resolved_mentions
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.infrastructure.llm.models import Message, Role
 
 if TYPE_CHECKING:

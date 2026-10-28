@@ -19,12 +19,12 @@ from specweaver.core.flow.handlers.decomposition_artifacts import (
     persist_decomposition,
     write_component_stubs,
 )
-from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.core.flow.run_state.failures import log_step_failure
 from specweaver.workflows.planning.decomposer import FeatureDecomposer
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

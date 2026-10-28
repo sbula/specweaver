@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.engine.state import StepRecord
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 
 def build_run_or_exit(

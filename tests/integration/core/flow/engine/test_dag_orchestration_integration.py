@@ -35,7 +35,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 
 
 class TestDagOrchestratorIntegration:
@@ -178,7 +178,7 @@ async def test_integration_topological_join_wave_n_deferred() -> None:
 
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
     ctx = RunContext(project_path=Path("/tmp/path"), spec_path=Path("/tmp/path/spec.md"))
     ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})

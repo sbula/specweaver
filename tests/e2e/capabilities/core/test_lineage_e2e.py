@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 from typer.testing import CliRunner
 
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess
+from specweaver.core.flow.run_state.run_context import ModelAccess
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
 from tests.rendering import shows
@@ -238,7 +238,7 @@ class TestLineageE2EFlow:
         from specweaver.core.config.settings import SpecWeaverSettings
         from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
         from specweaver.core.flow.engine.runner import PipelineRunner
-        from specweaver.core.flow.handlers.run_context import RunContext
+        from specweaver.core.flow.run_state.run_context import RunContext
 
         pipeline = PipelineDefinition.create_single_step(
             name="plan_spec",

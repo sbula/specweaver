@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 
 from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 
 
 @pytest.fixture(autouse=True)

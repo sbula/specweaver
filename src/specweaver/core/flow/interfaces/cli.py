@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from specweaver.core.flow.engine.display import JsonPipelineDisplay, RichPipelineDisplay
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
     PipelineDisplay = JsonPipelineDisplay | RichPipelineDisplay
 

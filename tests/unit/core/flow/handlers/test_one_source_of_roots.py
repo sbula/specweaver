@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import ValidationError
 
-from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
+from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 from specweaver.sandbox.security import WorkspaceBoundary
 
 if TYPE_CHECKING:

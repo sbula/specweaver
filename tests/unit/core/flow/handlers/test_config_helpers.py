@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
 

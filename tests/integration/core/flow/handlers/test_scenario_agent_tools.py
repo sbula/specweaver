@@ -38,9 +38,9 @@ from specweaver.core.flow.engine.state import (
     StepStatus,
 )
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from specweaver.core.flow.interfaces import cli
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.sandbox.git.interfaces import facades
 from specweaver.sandbox.git.interfaces import tool as git_tool

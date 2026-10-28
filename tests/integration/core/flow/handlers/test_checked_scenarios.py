@@ -38,13 +38,13 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
+from specweaver.core.flow.run_state.run_context import (
     GraphContext,
     ModelAccess,
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from tests.fixtures.db_utils import register_test_project
 from tests.scripted_llm import FixedRouter
 

@@ -37,7 +37,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import LLMResponse
 from tests.scripted_llm import FixedRouter
 

@@ -13,7 +13,7 @@ from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers._profiles import ARBITER, MINIMAL
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
 from tests.scripted_llm import FixedRouter
 
 

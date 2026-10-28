@@ -6,7 +6,7 @@ import uuid
 
 from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepStatus
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.memory.store import TaskStatus
@@ -80,7 +80,7 @@ def _keep_in_scenario_store(
     Task memory reaches the next coder prompt, and even the pipeline's name would tell the coder
     that a scenario side exists.
     """
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     store = scenario_store(context)
     if store is None:

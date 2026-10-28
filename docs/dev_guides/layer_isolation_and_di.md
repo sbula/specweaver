@@ -39,6 +39,22 @@ Note (2026-09-25): today the parsing atom is `CodeStructureAtom` and the entry p
 **Rule:** pure-logic layers NEVER parse their own data. They define Protocols or accept `Any` typed
 payloads and expect upstream Orchestrators to inject the parsed context.
 
+## The flow engine knows no handler
+
+`core/flow` is three tach modules. `handlers` uses `engine`; `engine` never imports `handlers`.
+What both need lives in `core/flow/run_state`: `RunContext`, `log_step_failure`, `target_dal`,
+`scenario_store`, `registered`. `run_state` imports neither of the other two.
+
+The engine reaches a handler only through what its caller hands it:
+
+- `PipelineRunner(..., registry=StepHandlerRegistry())`: every caller passes the registry. The
+  engine types it as `HandlerLookup` (`engine/handler_port.py`), a port it owns.
+- The draft steps get their drafters from the run: `build_run` sets `context.model.drafters` to
+  `WorkflowDrafters` (`interfaces/run_setup/drafters.py`). The handlers import no drafting code.
+
+A new handler that needs a workflow gets it the same way: the builder injects it, the handler reads
+it from the context.
+
 ## Where language code goes
 
 Execution and structural analysis live in separate layers. For a new language (e.g. Go, C++):

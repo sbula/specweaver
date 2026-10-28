@@ -49,10 +49,10 @@ from specweaver.infrastructure.llm.budget import SpendBudget
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.events import RunnerEventCallback
+    from specweaver.core.flow.engine.handler_port import HandlerLookup
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class PipelineRunner:
         pipeline: PipelineDefinition,
         context: RunContext,
         *,
-        registry: StepHandlerRegistry,
+        registry: HandlerLookup,
         store: StateStore | None = None,
         on_event: RunnerEventCallback | None = None,
         memory_task: bool = False,

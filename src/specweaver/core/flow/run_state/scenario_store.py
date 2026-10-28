@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def scenario_store(context: RunContext) -> Path | None:
     """The scenario store of the run's registered project; None when it is not registered."""
     from specweaver.core.config.paths import scenario_store_for
-    from specweaver.core.flow.engine.registered import registered
+    from specweaver.core.flow.run_state.registered import registered
     from specweaver.workspace.store import project_name_at
 
     name = registered(context, project_name_at, "registered name")

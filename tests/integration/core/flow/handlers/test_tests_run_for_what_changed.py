@@ -24,8 +24,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.graph.hasher import DependencyHasher
-from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 if TYPE_CHECKING:

@@ -27,7 +27,7 @@ from specweaver.core.config.autonomy_policy import parse_autonomy
 from specweaver.core.config.bootstrap.project_settings import load_section
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

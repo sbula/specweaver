@@ -28,8 +28,8 @@ from specweaver.core.flow.handlers.drift import DriftCheckHandler
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.qa_targets import step_file, task_code_file
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler
+from specweaver.core.flow.run_state.run_context import RunContext
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:

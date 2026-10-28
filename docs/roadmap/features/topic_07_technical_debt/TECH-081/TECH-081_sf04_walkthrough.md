@@ -107,3 +107,49 @@ Mutants `handler-imports-drafting` and `builder-forgets-drafters`: OBJECTED.
 - R4 (LOW) `ModelAccess` now allows arbitrary types. Blue: needed for a Protocol field; `RunContext`
   already does.
 - Cycle 2: no new finding.
+
+## CB-4 — the engine stands alone (FR-11) — closes SF-04
+
+### What changed
+
+- `tach.toml`: `specweaver.core.flow` is gone. In its place: `core.flow.run_state`, `core.flow.engine`,
+  `core.flow.handlers` (plus CB-1's `core.flow.store`). `engine` depends on `run_state`, never on
+  `handlers`; `run_state` on neither. Every edge was pruned with tach's unused-dependency report, so
+  each module lists only what it imports.
+- Moved to `core/flow/run_state/`: `run_context.py`, `scenario_store.py` (from `handlers`),
+  `registered.py` (from `engine`); `log_step_failure` → `failures.py` (out of `handlers/results.py`),
+  `target_dal` → `dal.py` (out of `handlers/validation.py`, which imports it back for its own use).
+- `engine/handler_port.py`: `HandlerLookup` and `StepRunner`, the engine's own port; `PipelineRunner`
+  types `registry` with it. mypy checks that each caller's `StepHandlerRegistry` fits.
+- Manifests: new `run_state` (`mixed`, forbids `engine` and `handlers`); `engine` consumes
+  `run_state` and its `forbids: core/flow/handlers` now holds (the owed comment is gone); `handlers`
+  and `core/flow/interfaces` consume what tach allows them.
+- Imports re-pointed across `src` and tests (path-only); three tests moved to mirror `run_state`
+  (`test_registered.py`, `test_run_context_session_fields.py`, `test_scenario_store.py`);
+  `test_check_class_health` reads `run_context.py` at its new home.
+- `layer_isolation_and_di.md`: "The flow engine knows no handler".
+- Mutants: `B-FLOW-07 no-default-dal-fallback` re-pointed to `run_state/dal.py` and re-run
+  (OBJECTED); the rest re-pinned after their anchors were checked.
+
+### Red first
+
+Splitting `core.flow` in `tach.toml` first gave 15 `[FAIL]` lines, every one an engine file reaching
+`handlers`.
+
+### Proof
+
+Mutant `engine-imports-handlers` (`isolation.py` takes `target_dal` from `handlers.validation`):
+OBJECTED.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) `handlers/validation.py` still imports `target_dal`, so a test may reach it there.
+  Blue: `validation` uses it; the engine takes it from `run_state`, and the mutant proves the old
+  route is refused.
+- R2 (MEDIUM) `handlers` keeps 18 edges. Blue: tach-measured exact; SF-06 and SF-07 shrink the
+  assurance ones.
+- R3 (MEDIUM) `run_state` is `mixed`: `target_dal` and `scenario_store` read the workspace store.
+  Blue: lazy, read-only, and the reason they are shared (design FR-11).
+- R4 (LOW) `core/flow/context.yaml` remains with no tach module. Blue: it names the package; the
+  manifest tests judge only tach modules.
+- Cycle 2: no new finding.

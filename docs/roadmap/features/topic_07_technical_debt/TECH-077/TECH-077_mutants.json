@@ -7,7 +7,7 @@
       "title": "One lookup per project question",
       "scope": [
         "tests/integration/workspace/test_one_project_lookup.py",
-        "tests/unit/core/flow/engine/test_registered.py"
+        "tests/unit/core/flow/run_state/test_registered.py"
       ],
       "mutants": [
         {
@@ -33,7 +33,7 @@
         {
           "id": "failed-read-escapes",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/registered.py",
+          "file": "src/specweaver/core/flow/run_state/registered.py",
           "symbol": "registered",
           "old": "    except Exception:  # expected: the registry is unreadable; the caller falls back\n",
           "new": "    except ValueError:\n",
@@ -52,7 +52,7 @@
         {
           "id": "run-reads-root-archetype",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/run_context.py",
+          "file": "src/specweaver/core/flow/run_state/run_context.py",
           "symbol": "RunContext._read_archetype",
           "old": "        return ArchetypeResolver(self.project_path).resolve(self.spec_path) or \"generic\"\n",
           "new": "        return ArchetypeResolver(self.project_path).resolve(self.project_path) or \"generic\"\n",
@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
         },
         {
           "id": "optional-model-refuses",

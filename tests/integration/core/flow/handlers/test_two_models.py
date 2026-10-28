@@ -36,8 +36,8 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord, StepStatus
 from specweaver.core.flow.handlers._llm import roles_of
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.core.flow.interfaces import cli
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.catalogue import Catalogue
 from specweaver.infrastructure.llm.models import TaskType

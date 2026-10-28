@@ -16,7 +16,7 @@ from specweaver.infrastructure.llm.budget import SpendLimitReachedError
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

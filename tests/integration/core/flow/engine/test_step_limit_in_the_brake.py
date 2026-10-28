@@ -33,7 +33,7 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.handlers._llm import llm_for
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import Message, Role, TaskType
 from specweaver.infrastructure.llm.router import build_router
 from tests.fake_http import fake_httpx2

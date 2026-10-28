@@ -19,7 +19,7 @@ from specweaver.workspace.memory.store import TaskStatus, TransitionReason
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.state import PipelineRun
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.workspace.memory.repository import MemoryRepository
 
 logger = logging.getLogger(__name__)

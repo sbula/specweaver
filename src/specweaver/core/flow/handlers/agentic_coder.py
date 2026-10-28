@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.engine.task_files import TaskFiles
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 
 async def run_coder(

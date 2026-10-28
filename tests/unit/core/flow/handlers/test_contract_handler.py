@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 from specweaver.core.flow.handlers.generation import GenerateContractHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import GraphContext, IsolationPolicy
+from specweaver.core.flow.run_state.run_context import GraphContext, IsolationPolicy
 
 if typing.TYPE_CHECKING:
     from pathlib import Path

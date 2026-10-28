@@ -10,7 +10,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
 

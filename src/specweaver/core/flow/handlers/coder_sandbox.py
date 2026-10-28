@@ -16,7 +16,7 @@ from specweaver.core.config.settings import SandboxSettings
 from specweaver.sandbox.qa_runner.core.atom import container_available
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def coder_sandbox(context: RunContext) -> SandboxSettings | None:
 
 
 def _keeps_scenarios(context: RunContext) -> bool:
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     store = scenario_store(context)
     return store is not None and any((store / "generated").glob("*"))

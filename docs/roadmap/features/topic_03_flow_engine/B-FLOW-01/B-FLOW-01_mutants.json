@@ -254,7 +254,7 @@
       "title": "A dual run refuses to start without a container",
       "scope": [
         "tests/unit/core/flow/handlers/test_dual_run_feedback.py",
-        "tests/integration/core/flow/handlers/test_scenario_store.py"
+        "tests/integration/core/flow/run_state/test_scenario_store.py"
       ],
       "mutants": [
         {
@@ -275,7 +275,7 @@
           "old": "    if scenario_store(context) is None:\n",
           "new": "    if False:\n",
           "breaks": "a project with no store runs a dual run anyway",
-          "symbol_sha": "sha256:d9012ec0ee55095e291c13f141658631dd85ff6077d6fffe539238322faa12cb"
+          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
         },
         {
           "id": "old-scenarios-ignored",
@@ -285,7 +285,7 @@
           "old": "    if (context.project_path / \"scenarios\" / \"generated\").exists():\n",
           "new": "    if False:\n",
           "breaks": "old scenario tests stay readable in the project",
-          "symbol_sha": "sha256:d9012ec0ee55095e291c13f141658631dd85ff6077d6fffe539238322faa12cb"
+          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
         },
         {
           "id": "any-language-runs",
@@ -295,7 +295,7 @@
           "old": "    if detect_toolchain(context.project_path) not in (\"uv\", \"\"):\n",
           "new": "    if False:\n",
           "breaks": "a dual run starts for a language whose container is not proven",
-          "symbol_sha": "sha256:d9012ec0ee55095e291c13f141658631dd85ff6077d6fffe539238322faa12cb"
+          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
         }
       ]
     },
@@ -303,7 +303,7 @@
       "requirement": "FR-11",
       "title": "Scenario files live in SpecWeaver's store per registered project, never in the project",
       "scope": [
-        "tests/integration/core/flow/handlers/test_scenario_store.py",
+        "tests/integration/core/flow/run_state/test_scenario_store.py",
         "tests/unit/core/flow/handlers/test_scenario_handlers.py"
       ],
       "mutants": [
@@ -344,7 +344,7 @@
           "old": "    return store is not None and any((store / \"generated\").glob(\"*\"))\n",
           "new": "    return False\n",
           "breaks": "a project with kept scenario tests runs the coder's code on the host",
-          "symbol_sha": "sha256:e6924590d0d0b09da37004a42d933ae14ba2420c01da540056c8e75f0f723158"
+          "symbol_sha": "sha256:e9db4f12b0dd6cd388004435f5ffd3595a2d29866e8a6c9bc3f06faf776921bf"
         },
         {
           "id": "coder-side-on-host",
@@ -898,7 +898,7 @@
           "old": "            and record.get(\"spec_sha256\") == spec_sha(spec)\n",
           "new": "            and True\n",
           "breaks": "a set made for an older spec judges the new code",
-          "symbol_sha": "sha256:18feddc087c17793cdfc5b3a4d4cd68a1f3e0604d7cf0b9ffd255ee4895c767d"
+          "symbol_sha": "sha256:23c27868dba29feee84beba9470a56687ee8f16f6f8df617eafddcb019f36f82"
         },
         {
           "id": "acceptance-not-shown",

@@ -8,8 +8,8 @@ import pytest
 
 from specweaver.assurance.validation.models import Status
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
 

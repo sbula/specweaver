@@ -33,9 +33,9 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import side_pipeline
 from specweaver.core.flow.handlers.reviewed_spec import keep_set
-from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 from specweaver.core.flow.interfaces import cli
+from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from tests.fixtures.db_utils import register_test_project
 from tests.rendering import shows

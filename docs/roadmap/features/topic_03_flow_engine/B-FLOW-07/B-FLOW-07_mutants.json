@@ -106,12 +106,12 @@
         {
           "id": "no-default-dal-fallback",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "file": "src/specweaver/core/flow/run_state/dal.py",
           "symbol": "target_dal",
           "old": "    if dal is None:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
           "new": "    if False:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
           "breaks": "a target without a declared DAL has none, so its history group is unknown",
-          "symbol_sha": "sha256:f83cf31c77f05949bbb57df5fe9a7b19e09d271c3dab27e0f44c24dfe9e0544d"
+          "symbol_sha": "sha256:973e97afe09ad63f4045b102d50a84dfad136de651982301d3256224b906a308"
         },
         {
           "id": "old-default-dal-a",

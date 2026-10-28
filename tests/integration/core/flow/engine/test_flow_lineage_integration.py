@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 
 if TYPE_CHECKING:

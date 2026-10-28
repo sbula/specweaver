@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ def seed_dal_level(context: RunContext) -> Any:
     if context.isolation.dal_level is not None:
         return context.isolation.dal_level
 
-    from specweaver.core.flow.handlers.validation import target_dal
+    from specweaver.core.flow.run_state.dal import target_dal
 
     target = context.spec_path if context.spec_path.exists() else context.project_path
     dal = target_dal(context, target)

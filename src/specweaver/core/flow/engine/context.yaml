@@ -11,6 +11,7 @@ archetype: orchestrator
 consumes:
   - specweaver/commons
   - specweaver/core/config
+  - specweaver/core/flow/run_state
   - specweaver/infrastructure/llm
   - specweaver/sandbox
   - specweaver/workflows/implementation
@@ -19,5 +20,3 @@ consumes:
 
 forbids:
   - specweaver/core/flow/handlers
-
-# engine -> handlers is owed (TECH-081 FR-11); the forbid above states the goal.

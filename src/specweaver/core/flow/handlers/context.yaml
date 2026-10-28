@@ -12,6 +12,9 @@ consumes:
   - specweaver/commons
   - specweaver/core/config
   - specweaver/core/flow/engine
+  - specweaver/core/flow/run_state
+  - specweaver/core/flow/store
+  - specweaver/workspace/project
   - specweaver/infrastructure/llm
   - specweaver/assurance/validation
   - specweaver/assurance/standards
@@ -26,4 +29,3 @@ consumes:
   - specweaver/workspace/ast
   - specweaver/workspace/memory
 
-# handlers -> workflows/drafting and -> workflows/evaluators are owed (TECH-081 FR-13, FR-10).

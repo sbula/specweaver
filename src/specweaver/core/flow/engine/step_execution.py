@@ -38,7 +38,7 @@ from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.core.flow.run_state.failures import log_step_failure
 from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
 
 if TYPE_CHECKING:

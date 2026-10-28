@@ -13,7 +13,7 @@ from specweaver.commons.spec_names import module_stem
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def names_one_file(target: str) -> bool:
 def scenarios_root(context: RunContext) -> Path:
     """Where the scenario tests are kept, mounted at `/scenarios` for their run: the project's
     store, outside the project. An unregistered project's dual run has already refused."""
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     return scenario_store(context) or context.project_path / "scenarios"
 

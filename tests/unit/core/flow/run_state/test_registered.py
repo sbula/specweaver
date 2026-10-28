@@ -21,7 +21,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from specweaver.core.flow.engine.registered import registered
+from specweaver.core.flow.run_state.registered import registered
 
 
 def test_the_value_is_read_for_the_runs_folder() -> None:

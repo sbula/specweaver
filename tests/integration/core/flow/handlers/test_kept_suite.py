@@ -32,7 +32,7 @@ from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.reviewed_spec import record_review
-from specweaver.core.flow.handlers.run_context import GraphContext, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import GraphContext, RunContext, RunHandle
 from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:

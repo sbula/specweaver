@@ -233,7 +233,7 @@
           "file": "src/specweaver/sandbox/security.py",
           "symbol": "WorkspaceBoundary.from_run_context",
           "old": "        roots = [context.project_path]",
-          "new": "        from specweaver.core.flow.handlers.run_context import RunContext  # noqa: F401\n        roots = [context.project_path]",
+          "new": "        from specweaver.core.flow.run_state.run_context import RunContext  # noqa: F401\n        roots = [context.project_path]",
           "breaks": "the sandbox imports the flow engine's run state again",
           "symbol_sha": "sha256:026851d5e334dd7680e4d75c3cfa69bb2cd90229a1cc49d7f46345affcb48d7f"
         }
@@ -304,7 +304,26 @@
           "old": "            drafters=WorkflowDrafters(),\n",
           "new": "            drafters=None,\n",
           "breaks": "runs built for the doors get no drafters, so draft steps park",
-          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "The flow engine imports nothing from the handlers",
+      "scope": [
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "engine-imports-handlers",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "seed_dal_level",
+          "old": "    from specweaver.core.flow.run_state.dal import target_dal\n",
+          "new": "    from specweaver.core.flow.handlers.validation import target_dal\n",
+          "breaks": "the engine reaches into the handlers again",
+          "symbol_sha": "sha256:f0ba0091c907fb5390e650085d7edf15c10de10278f3030bf52073022bc4c58a"
         }
       ]
     }

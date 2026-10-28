@@ -13,7 +13,7 @@ from typer.testing import CliRunner
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess
+from specweaver.core.flow.run_state.run_context import ModelAccess
 from specweaver.interfaces.cli.main import app as app  # type: ignore
 from tests.scripted_llm import FixedRouter
 
@@ -74,7 +74,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._profiles import ARBITER
     from specweaver.core.flow.handlers.draft import DraftSpecHandler
-    from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+    from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 
     # Create a custom handler that strictly uses the ARBITER profile to ensure E2E connectivity
     class MockHandler(DraftSpecHandler):
@@ -215,7 +215,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers._profiles import FULL
     from specweaver.core.flow.handlers.draft import DraftSpecHandler
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
     class MockHandler(DraftSpecHandler):
         async def execute(self, step: PipelineStep, run_context: RunContext) -> StepResult:

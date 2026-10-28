@@ -17,7 +17,7 @@ from specweaver.commons.timestamps import now_iso
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def spec_sha(spec_path: Path) -> str:
 
 
 def _record_path(context: RunContext) -> Path | None:
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     store = scenario_store(context)
     return store / "reviewed" / f"{context.spec_path.stem}.json" if store else None
@@ -86,7 +86,7 @@ def _relative(path: Path | None, root: Path) -> str:
 
 
 def _kept_path(context: RunContext) -> Path | None:
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     store = scenario_store(context)
     return store / "kept" / f"{context.spec_path.stem}.json" if store else None
@@ -146,7 +146,7 @@ def review_refusal(context: RunContext, *, without_store: str | None = "refuse")
 
 def kept_sets(context: RunContext) -> list[dict[str, str | bool]]:
     """Every kept set of the project: its spec, its test files, and whether it is still fresh."""
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     store = scenario_store(context)
     folder = store / "kept" if store else None

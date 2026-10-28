@@ -175,8 +175,8 @@ Registers a customer.
 
     async def _rules_for(self, tmp_path: Path, **params: str) -> list[str]:
         from specweaver.core.flow.engine.models import StepAction, StepTarget
-        from specweaver.core.flow.handlers.run_context import RunContext
         from specweaver.core.flow.handlers.validation import ValidateSpecHandler
+        from specweaver.core.flow.run_state.run_context import RunContext
 
         step = PipelineStep(
             name="validate", action=StepAction.VALIDATE, target=StepTarget.SPEC, params=params

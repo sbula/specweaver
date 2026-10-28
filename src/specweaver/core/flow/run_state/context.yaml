@@ -1,0 +1,30 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: flow-run-state
+level: module
+purpose: >
+  The run's state that the engine and the step handlers share: the run context, the failure log
+  rule, and the target's DAL and scenario store read through the registered project.
+
+archetype: mixed
+
+consumes:
+  - specweaver/commons
+  - specweaver/core/config
+  - specweaver/infrastructure/llm
+  - specweaver/assurance/validation
+  - specweaver/workspace
+  - specweaver/workspace/ast/parsers
+
+forbids:
+  - specweaver/core/flow/engine
+  - specweaver/core/flow/handlers
+
+exposes:
+  - RunContext
+  - Drafters
+  - log_step_failure
+  - target_dal
+  - scenario_store
+  - registered

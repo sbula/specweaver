@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers.generation import _generation_prompt
 from specweaver.core.flow.handlers.review import _build_review_prompt
-from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
+from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

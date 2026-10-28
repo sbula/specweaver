@@ -17,20 +17,20 @@ from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
-from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.core.flow.handlers.reviewed_spec import review_refusal
+from specweaver.core.flow.run_state.failures import log_step_failure
 from specweaver.sandbox.qa_runner.core.atom import container_available
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
 
 def _isolation_refusal(context: RunContext) -> str | None:
     """Why the scenario side cannot be kept from the coder here; None when it can (FR-11, FR-18)."""
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
     from specweaver.workspace.project.prepare_plan import detect_toolchain
 
     if scenario_store(context) is None:

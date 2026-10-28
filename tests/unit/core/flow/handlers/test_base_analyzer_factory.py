@@ -4,7 +4,7 @@
 
 from pathlib import Path
 
-from specweaver.core.flow.handlers.run_context import AnalysisContext, RunContext
+from specweaver.core.flow.run_state.run_context import AnalysisContext, RunContext
 
 
 def test_run_context_accepts_analyzer_factory():

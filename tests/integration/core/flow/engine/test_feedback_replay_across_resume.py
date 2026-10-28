@@ -46,7 +46,7 @@ from specweaver.core.flow.engine.state import (
 )
 from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

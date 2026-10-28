@@ -28,7 +28,7 @@ import specweaver.core.flow.handlers.coder_sandbox as choice
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import RunStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path.parent / f"{tmp_path.name}-store"
 
     monkeypatch.setattr(
-        "specweaver.core.flow.handlers.scenario_store.scenario_store", lambda context: path
+        "specweaver.core.flow.run_state.scenario_store.scenario_store", lambda context: path
     )
     return path
 

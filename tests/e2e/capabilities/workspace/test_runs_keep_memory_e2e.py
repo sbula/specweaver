@@ -108,7 +108,7 @@ def test_the_next_run_reads_the_last_runs_notes(project: Path, _isolate_env: Pat
     from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.run_task import open_task
     from specweaver.core.flow.engine.state import PipelineRun
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.workspace.memory.hydrator import MemoryHydrator
 
     _run(project, "a_spec.md", 3)

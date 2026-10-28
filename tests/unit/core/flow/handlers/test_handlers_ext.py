@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

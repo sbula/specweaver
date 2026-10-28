@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.flow.handlers.prompting import _build_base_prompt
 from specweaver.core.flow.handlers.results import _error_result
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,

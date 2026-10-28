@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 
 def verify_vault_security(context: RunContext) -> None:

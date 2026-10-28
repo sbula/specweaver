@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
 from tests.scripted_llm import FixedRouter
 

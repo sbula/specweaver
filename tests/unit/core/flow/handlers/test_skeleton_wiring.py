@@ -10,7 +10,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from tests.scripted_llm import FixedRouter
 
 

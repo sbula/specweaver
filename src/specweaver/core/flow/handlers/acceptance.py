@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def _passed(report: dict[str, Any], started: str) -> StepResult:
 def run_acceptance(context: RunContext, atom: Callable[[], Any]) -> StepResult:
     """Run the fresh kept sets; list the stale ones; never fail."""
     from specweaver.core.flow.handlers.reviewed_spec import kept_sets
-    from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.core.flow.run_state.scenario_store import scenario_store
 
     started = _now_iso()
     sets = kept_sets(context)

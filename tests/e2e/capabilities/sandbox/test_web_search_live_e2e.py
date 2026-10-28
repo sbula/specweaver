@@ -29,7 +29,7 @@ import pytest
 
 from specweaver.core.config.bootstrap.llm_settings_loader import load_keys, load_llm_settings
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.resolve import RoleResolver
 from specweaver.infrastructure.llm.router import ModelRouter

@@ -32,7 +32,7 @@ from specweaver.core.flow.handlers.generation import (
     PlanSpecHandler,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import ModelAccess, PlanContext, RunContext
+from specweaver.core.flow.run_state.run_context import ModelAccess, PlanContext, RunContext
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.planning.models import PlanArtifact
 from specweaver.workflows.planning.renderer import render_plan_markdown

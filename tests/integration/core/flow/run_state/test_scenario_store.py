@@ -27,8 +27,8 @@ from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
-from specweaver.core.flow.handlers.scenario_store import scenario_store
+from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.scenario_store import scenario_store
 from tests.fixtures.db_utils import register_test_project, remove_test_project
 
 if TYPE_CHECKING:

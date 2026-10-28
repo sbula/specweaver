@@ -36,7 +36,7 @@ from specweaver.assurance.graph.topology import TopologyContext
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
-from specweaver.core.flow.handlers.run_context import GraphContext, ModelAccess, RunContext
+from specweaver.core.flow.run_state.run_context import GraphContext, ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
 

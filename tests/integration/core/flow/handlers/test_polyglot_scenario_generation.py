@@ -11,7 +11,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -19,7 +20,6 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler
 
 pytestmark = pytest.mark.integration
 
@@ -49,7 +49,7 @@ async def test_polyglot_scenario_generation_integration(
     # The store stands outside the project; the converter still names the file per language.
     store = tmp_path.parent / f"{tmp_path.name}-store"
     monkeypatch.setattr(
-        "specweaver.core.flow.handlers.scenario_store.scenario_store", lambda context: store
+        "specweaver.core.flow.run_state.scenario_store.scenario_store", lambda context: store
     )
 
     # The scenario_yaml produced by GenerateScenarioHandler

@@ -13,7 +13,7 @@ from specweaver.infrastructure.llm.store import record_step_outcomes
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.state import PipelineRun
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

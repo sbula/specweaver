@@ -5,6 +5,8 @@ archetype: entry-point
 purpose: CLI entrypoints for pipeline execution and state management
 consumes:
   - specweaver/core/flow/engine
+  - specweaver/core/flow/handlers
+  - specweaver/core/flow/run_state
   - specweaver/core/flow/store
   - specweaver/assurance/graph
   - specweaver/core/config

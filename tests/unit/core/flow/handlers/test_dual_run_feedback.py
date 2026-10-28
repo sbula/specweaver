@@ -34,7 +34,7 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
 
 if TYPE_CHECKING:
     from pathlib import Path

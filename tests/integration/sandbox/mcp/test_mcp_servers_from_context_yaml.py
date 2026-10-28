@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.assurance.graph.loader import load_topology
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
-from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
+from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

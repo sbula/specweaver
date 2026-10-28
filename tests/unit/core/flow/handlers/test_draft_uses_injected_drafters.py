@@ -26,7 +26,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers import draft as draft_module
 from specweaver.core.flow.handlers.draft import DraftFeatureHandler, DraftSpecHandler
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from tests.scripted_llm import FixedRouter
 
 

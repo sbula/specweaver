@@ -10,14 +10,14 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers import scenario_store as _stores
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.generation import _resolve_generation_routing
-from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.core.flow.run_state import scenario_store as _stores
+from specweaver.core.flow.run_state.failures import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

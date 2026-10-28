@@ -12,7 +12,7 @@ import pytest
 
 from specweaver.core.flow.handlers._profiles import ARBITER, FULL, INTERACTIVE, MINIMAL
 from specweaver.core.flow.handlers.base import _build_base_prompt
-from specweaver.core.flow.handlers.run_context import AnalysisContext, GuidanceContent, RunContext
+from specweaver.core.flow.run_state.run_context import AnalysisContext, GuidanceContent, RunContext
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from specweaver.workflows.implementation.languages import language_guide

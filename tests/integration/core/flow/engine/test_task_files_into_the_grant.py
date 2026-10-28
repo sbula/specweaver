@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from specweaver.core.flow.engine.isolation import apply_session_policy, task_files
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.sandbox.dispatcher import ToolDispatcher
 from specweaver.sandbox.security import WorkspaceBoundary
 

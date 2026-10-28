@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler, code_trace
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from specweaver.sandbox.language.core.python.stack_trace_filter import PythonStackTraceFilter
 from tests.scripted_llm import FixedRouter
 

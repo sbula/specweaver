@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.core.flow.handlers.review import resolve_review_instructions
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

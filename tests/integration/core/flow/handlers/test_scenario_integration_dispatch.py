@@ -25,7 +25,7 @@ from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from tests.scripted_llm import FixedRouter
 
@@ -56,7 +56,7 @@ def _a_container_is_available(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     monkeypatch.setattr(reviewed_spec, "review_refusal", lambda context, **_: None)
 
     monkeypatch.setattr(
-        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        "specweaver.core.flow.run_state.scenario_store.scenario_store",
         lambda context: tmp_path / "store",
     )
 

@@ -838,7 +838,7 @@
           "old": "    needs_model = bool(roles_of(request.pipeline)) and request.models != \"none\"\n",
           "new": "    needs_model = (bool(roles_of(request.pipeline)) or request.run_model is not None) and request.models != \"none\"\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
-          "symbol_sha": "sha256:5d6ec3d007cd627036f6e91ac5ba58533053b149905b47140db39d683c04519b"
+          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
         }
       ]
     },

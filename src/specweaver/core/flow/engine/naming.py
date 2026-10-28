@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def registered_name(context: RunContext) -> str:
     A resume (`POST /runs/{id}/gate`, `sw resume`) finds the project by this name, so a folder
     name here strands every run of a project named unlike its folder.
     """
-    from specweaver.core.flow.engine.registered import registered
+    from specweaver.core.flow.run_state.registered import registered
     from specweaver.workspace.store import project_name_at
 
     return registered(context, project_name_at, "registered name") or context.project_path.name

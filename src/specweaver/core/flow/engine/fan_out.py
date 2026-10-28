@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.state import PipelineRun
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 
 def isolate_sub_run_context(context: RunContext, parent_run_id: str | None) -> RunContext:

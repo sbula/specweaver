@@ -37,7 +37,8 @@ from specweaver.core.flow.engine.state import (
     StepResult,
     StepStatus,
 )
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -45,7 +46,6 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
 from tests.scripted_llm import FixedRouter

@@ -20,8 +20,8 @@ from specweaver.core.flow.handlers.artifact_lineage import (
 )
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
-from specweaver.core.flow.handlers.results import log_step_failure
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
+from specweaver.core.flow.run_state.failures import log_step_failure
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from specweaver.core.flow.engine.frameworks import FrameworkChoice
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.engine.task_files import TaskFiles
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
     from specweaver.workflows.implementation.languages import LanguageGuide

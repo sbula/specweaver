@@ -29,7 +29,7 @@ from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
 

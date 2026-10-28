@@ -32,8 +32,8 @@ import pytest
 
 from specweaver.assurance.validation.models import Finding, RuleResult, Severity, Status
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
+from specweaver.core.flow.run_state.run_context import RunContext
 
 if TYPE_CHECKING:
     from pathlib import Path

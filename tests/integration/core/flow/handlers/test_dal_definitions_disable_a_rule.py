@@ -33,8 +33,8 @@ from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.bootstrap.settings_loader import load_settings
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler
+from specweaver.core.flow.run_state.run_context import RunContext
 from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:

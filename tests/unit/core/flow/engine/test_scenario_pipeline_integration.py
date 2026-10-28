@@ -15,7 +15,7 @@ from ruamel.yaml import YAML
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -75,7 +75,7 @@ async def test_scenario_pipeline_end_to_end_integration(
 
     # The project's store stands at project_workspace/scenarios here.
     monkeypatch.setattr(
-        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        "specweaver.core.flow.run_state.scenario_store.scenario_store",
         lambda context: project_workspace / "scenarios",
     )
     yaml = YAML(typ="safe")

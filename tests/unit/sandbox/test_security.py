@@ -225,7 +225,7 @@ class TestFromRunContext:
     """Tests for boundary construction from RunContext."""
 
     def test_feature_level_uses_project_path(self, tmp_path: Path) -> None:
-        from specweaver.core.flow.handlers.run_context import RunContext
+        from specweaver.core.flow.run_state.run_context import RunContext
 
         ctx = RunContext(
             project_path=tmp_path,
@@ -235,7 +235,7 @@ class TestFromRunContext:
         assert boundary.roots == [tmp_path]
 
     def test_api_paths_come_with_the_project_root(self, tmp_path: Path) -> None:
-        from specweaver.core.flow.handlers.run_context import GraphContext, RunContext
+        from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 
         api_path = tmp_path / "services" / "payments" / "api"
         api_path.mkdir(parents=True)

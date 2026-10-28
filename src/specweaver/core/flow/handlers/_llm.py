@@ -17,7 +17,7 @@ from specweaver.infrastructure.llm.models import TaskType
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig
 
 #: The role each model-calling step uses. A run resolves every role its steps need before the first

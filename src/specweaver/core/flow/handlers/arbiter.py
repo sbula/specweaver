@@ -19,11 +19,11 @@ from pydantic import BaseModel
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
-from specweaver.core.flow.handlers.results import log_step_failure
+from specweaver.core.flow.run_state.failures import log_step_failure
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
 logger = logging.getLogger(__name__)

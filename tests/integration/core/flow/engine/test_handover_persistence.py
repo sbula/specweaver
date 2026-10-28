@@ -24,7 +24,7 @@ from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepResult
 from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.base import IsolationPolicy, ModelAccess
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
 

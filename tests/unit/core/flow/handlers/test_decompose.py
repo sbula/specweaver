@@ -44,7 +44,7 @@ from specweaver.core.flow.handlers.decompose import (
     DecomposeFeatureHandler,
     OrchestrateComponentsHandler,
 )
-from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from tests.scripted_llm import FixedRouter
 
 

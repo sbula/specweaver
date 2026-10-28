@@ -27,8 +27,8 @@ from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.base import StepHandler, _now_iso
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.validation import ValidateSpecHandler
+from specweaver.core.flow.run_state.run_context import RunContext
 
 # ---------------------------------------------------------------------------
 # Paths

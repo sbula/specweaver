@@ -43,7 +43,6 @@ from specweaver.core.flow.handlers.generation import (
 )
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
-from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.core.flow.handlers.scenario import (
     ConvertScenarioHandler,
     GenerateScenarioHandler,
@@ -54,6 +53,7 @@ from specweaver.core.flow.handlers.validation import (
     ValidateSpecHandler,
     ValidateTestsHandler,
 )
+from specweaver.core.flow.run_state.run_context import RunContext
 
 __all__ = [
     "ArbitrateDualPipelineHandler",

@@ -13,7 +13,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.handlers.run_context import (
+from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
+from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
@@ -21,7 +22,6 @@ from specweaver.core.flow.handlers.run_context import (
     RunContext,
     RunHandle,
 )
-from specweaver.core.flow.handlers.scenario import ConvertScenarioHandler, GenerateScenarioHandler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -43,11 +43,11 @@ def _a_scenario_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The handlers write to the project's store; here it stands at `tmp_path / "scenarios"`.
 
     The store's real place, outside a registered project, is proven in
-    `tests/integration/core/flow/handlers/test_scenario_store.py`.
+    `tests/integration/core/flow/run_state/test_scenario_store.py`.
     """
 
     monkeypatch.setattr(
-        "specweaver.core.flow.handlers.scenario_store.scenario_store",
+        "specweaver.core.flow.run_state.scenario_store.scenario_store",
         lambda context: tmp_path / "scenarios",
     )
 
