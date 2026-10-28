@@ -19,6 +19,7 @@ consumes:
 
 exposes:
   - factory
+  - inferrer
 
 # -- Operational Metadata --------------------------------------------------
 operational:

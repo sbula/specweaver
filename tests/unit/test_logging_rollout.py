@@ -76,9 +76,9 @@ class TestBatch1LoggingRollout:
 
     def test_context_modules_have_loggers(self):
         """workspace/context modules should declare loggers."""
+        from specweaver.workspace.analyzers import inferrer
         from specweaver.workspace.context import (
             analyzer_protocols,
-            inferrer,
             provider,
         )
 

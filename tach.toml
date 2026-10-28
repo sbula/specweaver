@@ -133,7 +133,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.analyzers", "
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.context", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workspace.ast.parsers"
@@ -198,11 +198,11 @@ expose = [ "constitution", "constitution.find_constitution", "constitution.check
 
 [[interfaces]]
 from = [ "specweaver.workspace.context",]
-expose = [ "provider", "provider.ContextProvider", "inferrer", "inferrer.ContextInferrer", "analyzer_protocols", "analyzer_protocols.LanguageAnalyzer", "analyzer_protocols.AnalyzerFactoryProtocol",]
+expose = [ "provider", "provider.ContextProvider", "analyzer_protocols", "analyzer_protocols.LanguageAnalyzer", "analyzer_protocols.AnalyzerFactoryProtocol",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.analyzers",]
-expose = [ "factory", "factory.AnalyzerFactory",]
+expose = [ "factory", "factory.AnalyzerFactory", "inferrer", "inferrer.ContextInferrer",]
 
 [[interfaces]]
 from = [ "specweaver.graph",]

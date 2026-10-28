@@ -184,7 +184,7 @@
       "scope": [
         "tests/unit/workspace/ast/parsers/test_visibility_filter.py",
         "tests/unit/workspace/ast/parsers/test_visibility_vocabulary.py",
-        "tests/integration/workspace/context/test_exposes_seam.py"
+        "tests/integration/workspace/analyzers/test_exposes_seam.py"
       ],
       "mutants": [
         {

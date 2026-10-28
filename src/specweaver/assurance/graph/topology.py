@@ -263,7 +263,7 @@ class TopologyGraph:
     ) -> None:
         """Auto-generate context.yaml for source directories missing one."""
         from specweaver.workspace.analyzers.factory import AnalyzerFactory
-        from specweaver.workspace.context.inferrer import ContextInferrer
+        from specweaver.workspace.analyzers.inferrer import ContextInferrer
 
         inferrer = ContextInferrer(analyzer_factory=AnalyzerFactory)
         known_dirs = {n.yaml_path.parent for n in nodes.values() if n.yaml_path is not None}

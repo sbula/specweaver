@@ -9,5 +9,4 @@ consumes:
   - specweaver/assurance/graph
   - specweaver/graph
   - specweaver/workspace/analyzers
-  - specweaver/workspace/context
 forbids: []

@@ -32,7 +32,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
-from specweaver.workspace.context.inferrer import ContextInferrer
+from specweaver.workspace.analyzers.inferrer import ContextInferrer
 
 if TYPE_CHECKING:
     from pathlib import Path

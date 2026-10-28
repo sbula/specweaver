@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.workspace.context.inferrer import ContextInferrer
+    from specweaver.workspace.analyzers.inferrer import ContextInferrer
 
 import typer
 from rich.table import Table
@@ -276,7 +276,7 @@ def scan() -> None:
     project_path = _core.existing_project_root_or_exit(active)
 
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
-    from specweaver.workspace.context.inferrer import ContextInferrer
+    from specweaver.workspace.analyzers.inferrer import ContextInferrer
 
     inferrer = ContextInferrer(AnalyzerFactory)
     _core.console.print(f"[bold]Scanning[/bold] {project_path}...")

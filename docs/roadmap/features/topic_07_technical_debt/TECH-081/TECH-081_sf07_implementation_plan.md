@@ -60,7 +60,7 @@ Read 2026-10-28.
 
 ## Approach (pseudocode, ordered)
 
-**CB-1 — the context writer leaves the contract module (FR-19)** — kind `refactor`
+**CB-1 — the context writer leaves the contract module (FR-19)** — kind `tooling` (`test_logging_rollout.py` splits one import; `[agreed 2026-10-28]`)
 1. Red: `workspace/context/context.yaml` and the guard are unchanged; tach unchanged. The red is
    CB-3's guard; this boundary is a pure move proven by the existing tests.
 2. Green: `git mv workspace/context/inferrer.py workspace/analyzers/inferrer.py`; the two `src`
@@ -155,8 +155,8 @@ The user chose A `[agreed 2026-10-28]`.
   - R4 (MEDIUM) the allow-list could drift from the ledger. Blue: step 5's new test fails when an
     allowed file has no ledger row; a row goes when its file is clean (`test_pure_modules_do_no_io`
     reports an allowed file with no I/O as stale).
-  - R5 (LOW) CB-1 has no red of its own. Blue: a pure move proven by the existing tests (kind
-    `refactor`); CB-3's guard is the check that keeps it.
+  - R5 (LOW) CB-1 has no red of its own. Blue: a move proven by the existing tests; CB-3's
+    guard is the check that keeps it.
   - R6 (LOW) `test_validation_context_exposes.py` pins the manifest to tach's expose. Blue: both
     change in the same step.
   - R7 (LOW) `test_logging_rollout.py:149` lists `pipeline_loader`. Blue: re-pointed in CB-2.
