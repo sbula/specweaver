@@ -1,0 +1,23 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: flow-engine
+level: module
+purpose: >
+  Runs a pipeline: steps in order, gates, retries, fan-out, isolation, handover and run state.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/commons
+  - specweaver/core/config
+  - specweaver/infrastructure/llm
+  - specweaver/sandbox
+  - specweaver/workflows/implementation
+  - specweaver/workspace
+  - specweaver/workspace/memory
+
+forbids:
+  - specweaver/core/flow/handlers
+
+# engine -> handlers is owed (TECH-081 FR-11); the forbid above states the goal.

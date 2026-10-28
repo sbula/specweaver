@@ -7,12 +7,8 @@ description: "Core logic for Knowledge Graph construction and traversal"
 
 archetype: orchestrator
 
-exports:
+exposes:
   - builder
   - engine
   - store
 
-dependencies:
-  - specweaver.core.config.database
-  - specweaver.core.config.paths
-  - specweaver.assurance.graph.topology

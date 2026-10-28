@@ -3,12 +3,9 @@ purpose: >
   Keeps the knowledge graph in SQLite.
 archetype: store
 
-module_name: "specweaver.graph.core.store"
 description: "Infrastructure layer. Handles SQLite database interactions for the Knowledge Graph."
-layer: "Infrastructure"
-allowed_imports:
-  - "specweaver.graph.core.engine"
-  - "specweaver.commons"
-  - "sqlite3"
-forbidden_imports:
-  - "specweaver.graph.core.builder"
+consumes:
+  - specweaver/graph/core/engine
+  - specweaver/commons
+forbids:
+  - specweaver/graph/core/builder

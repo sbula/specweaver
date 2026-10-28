@@ -16,7 +16,7 @@ consumes:
   - specweaver/infrastructure/llm
   - specweaver/workspace
   - specweaver/workspace/memory
-
+  - specweaver/core/config
 forbids:
   - specweaver/sandbox/*  # Same boundary rule as core.config itself — no raw process execution.
 

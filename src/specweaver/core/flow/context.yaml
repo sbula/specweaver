@@ -18,7 +18,7 @@ archetype: orchestrator
 consumes:
   - specweaver/core/config
   - specweaver/workspace/memory
-  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/infrastructure/llm
   - specweaver/workflows/review
   - specweaver/workflows/implementation
   - specweaver/workflows/planning
@@ -30,7 +30,11 @@ consumes:
   - specweaver/sandbox/execution/core
   - specweaver/sandbox/dispatcher
   - specweaver/sandbox/security
-
+  - specweaver/assurance/graph
+  - specweaver/assurance/standards
+  - specweaver/graph
+  - specweaver/workflows/scenarios
+  - specweaver/workspace/ast/parsers
 forbids:
   - specweaver/sandbox/*/interfaces  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
     # NB: this refers to sandbox/commons (loom-internal — only atoms/tools may consume it),

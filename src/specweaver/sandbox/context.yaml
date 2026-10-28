@@ -1,0 +1,19 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: sandbox
+level: module
+purpose: >
+  The execution boundary: agent tools, engine atoms, the dispatcher and the workspace security that every file, git, test and network action goes through.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/commons
+  - specweaver/core/config
+  - specweaver/infrastructure/llm
+  - specweaver/assurance/validation
+  - specweaver/workspace/ast/parsers
+  - specweaver/workspace/ast/refactor
+
+# sandbox -> workflows and -> core.flow are owed edges (ledger, TECH-081 FR-10), not declared here.

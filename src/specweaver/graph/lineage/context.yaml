@@ -1,0 +1,12 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: lineage
+level: module
+purpose: >
+  Records which artifact came from which (lineage) and scans files for lineage tags.
+
+archetype: store
+
+consumes:
+  - specweaver/commons

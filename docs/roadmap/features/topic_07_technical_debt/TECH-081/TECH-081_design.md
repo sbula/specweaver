@@ -95,7 +95,7 @@ None.
 | FR-4 | A test SHALL fail when a module's `tach.toml` `depends_on` is not covered by its manifest's `consumes`, or a manifest `forbids` what `tach.toml` allows; `tach.toml` and the manifests stay hand-written `[agreed 2026-10-27]` | test | compares | the two copies cannot drift silently |
 | FR-5 | The ledger SHALL hold only violations that exist: the stale rows go, the missing ones (topology I/O and the rows FR-3 adds) are listed | ledger | records | the ledger is true |
 | FR-6 | Every manifest SHALL carry `name`, `purpose` and `archetype`, and every name in `exposes` SHALL be defined somewhere in that module's package (test) | manifests, test | declare | no phantom surface |
-| FR-7 | The modules with code but no manifest SHALL get one: `core/flow/engine`, `core/flow/handlers`, `workflows/scenarios`, `workflows/evaluators`, `workspace/memory`; `core/config`, `workspace`, `workspace/project`, `assurance/standards`, `core/flow` manifests SHALL state what the code does | manifests | declare | the manifests describe today's code |
+| FR-7 | The modules with code but no manifest SHALL get one: `sandbox`, `core/flow/engine`, `core/flow/handlers`, `workflows/scenarios`, `workflows/evaluators`, `workspace/memory`, `graph/lineage`; `core/config`, `workspace`, `workspace/project`, `assurance/standards`, `core/flow` manifests SHALL state what the code does | manifests | declare | the manifests describe today's code |
 | FR-8 | A manifest whose archetype does not match its code SHALL be corrected, except `pure-logic` (FR-18): `sandbox/web/interfaces` → `adapter`; `sandbox/execution` gets one `[agreed 2026-10-27]` | manifests | label | labels say what modules do |
 | FR-9 | `commons` SHALL depend on nothing and read no files; the file-reading parts of `prepare_plan.py` and `tooling_sources.py` move into `sandbox/execution` `[agreed 2026-10-27]`; `commons` is a registered `utility` module | commons | — | the shared leaf is pure |
 | FR-10 | `sandbox` SHALL import nothing from `workflows` or `core.flow`: the Python scenario converter moves into `sandbox/language/core/python`, the scenario models into `commons`, the evaluator-schema loader into `sandbox`; `security.py` types its argument with a Protocol | sandbox | imports | the sandbox sits below the workflows |
@@ -288,7 +288,7 @@ for approval `[agreed 2026-10-27]`.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The check sees every module | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The manifests tell the truth | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The manifests tell the truth | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -318,6 +318,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: dev SF-02 (plan approved 2026-10-27).
+**Next step**: implementation plan for SF-03 (SF-02 committed 2026-10-27, [walkthrough](TECH-081_sf02_walkthrough.md)).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

@@ -1,0 +1,13 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: memory
+level: module
+purpose: >
+  The agent's task memory: tasks, their status and handover context, kept in SQLite.
+
+archetype: store
+
+consumes:
+  - specweaver/core/config
+  - specweaver/workspace

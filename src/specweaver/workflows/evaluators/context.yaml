@@ -1,0 +1,12 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: evaluators
+level: module
+purpose: >
+  Loads the evaluator schemas for each framework (YAML in `frameworks/`, merged with a project's own).
+
+archetype: adapter
+
+consumes:
+  - specweaver/core/config

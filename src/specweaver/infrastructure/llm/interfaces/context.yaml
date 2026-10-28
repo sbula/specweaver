@@ -7,10 +7,10 @@ description: "LLM cost and usage CLI commands"
 
 archetype: orchestrator
 
-exports:
+exposes:
   - cli
 
-dependencies:
-  - specweaver.infrastructure.llm.store
-  - specweaver.infrastructure.llm.telemetry
-  - specweaver.interfaces.cli
+consumes:
+  - specweaver/core/config
+  - specweaver/core/config/bootstrap
+  - specweaver/infrastructure/llm

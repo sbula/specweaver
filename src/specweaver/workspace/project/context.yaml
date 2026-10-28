@@ -14,7 +14,8 @@ consumes:
   - specweaver/graph
   - specweaver/workspace/context
   - specweaver/workspace/ast/parsers
-
+  - specweaver/assurance/graph
+  - specweaver/workspace/analyzers
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
   - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.

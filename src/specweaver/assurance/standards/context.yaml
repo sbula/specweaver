@@ -12,8 +12,11 @@ purpose: >
 archetype: orchestrator
 
 consumes:
-  - specweaver/core/config    # DB for standards storage
-
+  - specweaver/core/config
+  - specweaver/infrastructure/llm
+  - specweaver/workspace
+  - specweaver/workspace/ast/parsers
+  - specweaver/workspace/context
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
 

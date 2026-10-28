@@ -7,19 +7,11 @@ description: "Core Configuration and LLM Routing CLI commands"
 
 archetype: orchestrator
 
-exports:
+exposes:
   - cli
 
-dependencies:
-  - specweaver.core.config.database
-  - specweaver.core.config.paths
-  - specweaver.core.config.profiles
-  - specweaver.core.config.db_bootstrap
-  - specweaver.infrastructure.llm.models
-  - specweaver.infrastructure.llm.store
-  - specweaver.infrastructure.llm.adapters.registry
-  - specweaver.workspace.store
-  - specweaver.interfaces.cli
-  - specweaver.logging
-  - specweaver.assurance.validation.rules.spec
-  - specweaver.assurance.validation.pipeline_loader
+consumes:
+  - specweaver/assurance/validation
+  - specweaver/core/config
+  - specweaver/core/config/bootstrap
+  - specweaver/telemetry_logger

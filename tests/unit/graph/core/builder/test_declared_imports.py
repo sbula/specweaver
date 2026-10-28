@@ -36,7 +36,7 @@ PACKAGE = Path(__file__).resolve().parents[5] / "src" / "specweaver" / "graph" /
 
 def _declared() -> list[str]:
     context = yaml.safe_load((PACKAGE / "context.yaml").read_text(encoding="utf-8"))
-    return [str(entry) for entry in context.get("allowed_imports", [])]
+    return [str(entry).replace("/", ".") for entry in context.get("consumes", [])]
 
 
 def _module_level_specweaver_imports(source: Path) -> set[str]:
@@ -86,7 +86,7 @@ def test_every_module_level_crossing_is_declared() -> None:
         if _undeclared(source)
     }
     assert offenders == {}, (
-        f"module-level imports absent from builder/context.yaml allowed_imports: {offenders}"
+        f"module-level imports absent from builder/context.yaml consumes: {offenders}"
     )
 
 
@@ -156,4 +156,4 @@ def test_the_reader_finds_something_to_check() -> None:
     assert any(_module_level_specweaver_imports(s) for s in sources), (
         "no module-level specweaver import found at all — the reader is looking at the wrong thing"
     )
-    assert _declared(), "context.yaml declares no allowed_imports — nothing is being checked"
+    assert _declared(), "context.yaml declares no consumes — nothing is being checked"

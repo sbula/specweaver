@@ -3,15 +3,10 @@ purpose: >
   The in-memory graph (NetworkX) and its ontology; no I/O.
 archetype: pure-logic
 
-module_name: "specweaver.graph.core.engine"
 description: "Pure logic layer of the Knowledge Graph. Contains the NetworkX wrapper and Ontology models."
-layer: "Domain.Core"
-allowed_imports:
-  - "specweaver.graph.core.engine.*"
-  - "specweaver.commons"
-forbidden_imports:
-  - "specweaver.graph.core.store"
-  - "specweaver.graph.core.builder"
-  - "sqlite3"
-  - "os"
-  - "pathlib"
+consumes:
+  - specweaver/graph/core/engine/*
+  - specweaver/commons
+forbids:
+  - specweaver/graph/core/store
+  - specweaver/graph/core/builder

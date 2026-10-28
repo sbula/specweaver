@@ -7,17 +7,12 @@ description: "Standards and capabilities scanning CLI commands"
 
 archetype: orchestrator
 
-exports:
+exposes:
   - cli
 
-dependencies:
-  - specweaver.assurance.standards.analyzer
-  - specweaver.assurance.standards.factory
-  - specweaver.assurance.standards.interfaces
-  - specweaver.core.config.dal_resolver
-  - specweaver.infrastructure.llm.adapters.registry
-  - specweaver.infrastructure.llm.models
-  - specweaver.interfaces.cli
-  - specweaver.workspace.analyzers.factory
-  - specweaver.workspace.project.constitution
-  - specweaver.workspace.project.discovery
+consumes:
+  - specweaver/assurance/standards
+  - specweaver/core/config
+  - specweaver/core/flow
+  - specweaver/workspace/analyzers
+  - specweaver/workspace/project

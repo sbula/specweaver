@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-name: graph
+name: assurance-graph
 level: module
 purpose: >
   Topology graph and context selectors for cross-cutting dependency analysis.
@@ -15,9 +15,9 @@ description: |
 archetype: pure-logic
 
 consumes:
-  - workspace/context
+  - specweaver/workspace/context
   - specweaver/graph
-
+  - specweaver/workspace/analyzers
 forbids:
   - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
   - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.

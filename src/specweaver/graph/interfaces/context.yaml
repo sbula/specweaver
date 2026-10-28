@@ -7,17 +7,10 @@ description: "CLI interfaces for the Knowledge Graph and Lineage systems"
 
 archetype: orchestrator
 
-exports:
+exposes:
   - cli
 
-dependencies:
-  - specweaver.graph.core.builder
-  - specweaver.graph.core.engine
-  - specweaver.graph.core.store
-  - specweaver.graph.lineage.engine
-  - specweaver.graph.lineage.store
-  - specweaver.graph.topology.engine
-  - specweaver.interfaces.cli
-  - specweaver.workspace.ast.adapters
-  - specweaver.core.config.paths
-  - specweaver.assurance.graph.topology
+consumes:
+  - specweaver/core/config
+  - specweaver/graph
+  - specweaver/graph/lineage

@@ -1,0 +1,29 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: flow-handlers
+level: module
+purpose: >
+  One handler per pipeline step kind: validate, review, draft, implement, test, lint-fix, arbiter and the rest.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/commons
+  - specweaver/core/config
+  - specweaver/core/flow/engine
+  - specweaver/infrastructure/llm
+  - specweaver/assurance/validation
+  - specweaver/assurance/standards
+  - specweaver/assurance/graph
+  - specweaver/graph
+  - specweaver/sandbox
+  - specweaver/workflows/implementation
+  - specweaver/workflows/review
+  - specweaver/workflows/planning
+  - specweaver/workflows/scenarios
+  - specweaver/workspace
+  - specweaver/workspace/ast
+  - specweaver/workspace/memory
+
+# handlers -> workflows/drafting and -> workflows/evaluators are owed (TECH-081 FR-13, FR-10).

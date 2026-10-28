@@ -145,6 +145,51 @@
           "breaks": "a module that calls the web claims it only delegates"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "Each manifest declares what tach.toml allows, and forbids none of it",
+      "scope": [
+        "tests/unit/test_manifests_match_tach.py"
+      ],
+      "mutants": [
+        {
+          "id": "consumes-entry-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/context.yaml",
+          "symbol": "consumes",
+          "old": "  - specweaver/core/config\n",
+          "new": "  # core/config dropped\n",
+          "breaks": "tach.toml allows an edge its manifest never declares"
+        },
+        {
+          "id": "forbid-what-tach-allows",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/context.yaml",
+          "symbol": "consumes",
+          "old": "consumes:\n",
+          "new": "forbids:\n  - specweaver/core/config\n\nconsumes:\n",
+          "breaks": "a manifest forbids an edge tach.toml allows, so the two disagree"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "Every package module has its own manifest",
+      "scope": [
+        "tests/unit/test_manifests_match_tach.py"
+      ],
+      "mutants": [
+        {
+          "id": "manifest-emptied",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/evaluators/context.yaml",
+          "symbol": "whole file",
+          "old": "name: evaluators\n",
+          "new": "# emptied\n",
+          "breaks": "a module falls back to no manifest of its own"
+        }
+      ]
     }
   ]
 }
