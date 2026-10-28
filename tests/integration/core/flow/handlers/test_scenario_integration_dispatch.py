@@ -24,6 +24,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from tests.scripted_llm import FixedRouter
@@ -120,7 +121,7 @@ async def test_green_path_completes_with_zero_llm_calls(tmp_path: Path) -> None:
     # [Happy] contract → dual dispatch → scenario tests green → arbiter
     # short-circuits → COMPLETED. The LLM is never consulted.
     ctx = _ctx(tmp_path)
-    runner = PipelineRunner(pipeline=_load_pipeline(), context=ctx)
+    runner = PipelineRunner(pipeline=_load_pipeline(), context=ctx, registry=StepHandlerRegistry())
 
     stub_runner = MagicMock()
     stub_runner.run = AsyncMock(return_value=_sub_run_ok())
@@ -153,7 +154,7 @@ async def test_red_path_arbitrates_with_real_evidence_and_loops_back(tmp_path: P
     # evidence, verdicts code_bug (vocabulary-guarded feedback for the coding
     # side), loop_back re-runs the dual step; second round green → COMPLETED.
     ctx = _ctx(tmp_path)
-    runner = PipelineRunner(pipeline=_load_pipeline(), context=ctx)
+    runner = PipelineRunner(pipeline=_load_pipeline(), context=ctx, registry=StepHandlerRegistry())
 
     stub_runner = MagicMock()
     stub_runner.run = AsyncMock(return_value=_sub_run_ok())

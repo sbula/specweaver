@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
 from tests.scripted_llm import FixedRouter
@@ -41,7 +42,9 @@ async def test_full_execute_pipeline_generates_json_log_session(tmp_path: Path) 
 
             from specweaver.core.flow.engine.models import PipelineDefinition
 
-            _ = PipelineRunner(PipelineDefinition(name="test", steps=[]), context)
+            _ = PipelineRunner(
+                PipelineDefinition(name="test", steps=[]), context, registry=StepHandlerRegistry()
+            )
 
             target_logger.debug("Executing DraftSpecHandler")
             target_logger.info("Draft complete")

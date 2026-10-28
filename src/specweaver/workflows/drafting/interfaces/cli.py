@@ -169,6 +169,7 @@ def draft(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.engine.state import RunStatus
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
     from specweaver.interfaces.cli.run_doors import build_run_or_exit, refuse_unstarted_worktree
 
@@ -181,7 +182,7 @@ def draft(
         "[dim]Answer questions below. Press Enter to skip.[/dim]\n",
     )
 
-    runner = PipelineRunner(pipeline, context)
+    runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     try:
         run_state = asyncio.run(runner.run())
     except SessionWorktreeError as err:

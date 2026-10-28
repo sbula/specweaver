@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext
 
 if TYPE_CHECKING:
@@ -79,7 +80,7 @@ async def test_complex_edge_cases_scenario(temp_store: StateStore, tmp_path: Pat
     spec_path = tmp_path / "dummy.md"
     spec_path.write_text("# Dummy")
     context = RunContext(project_path=tmp_path, spec_path=spec_path)
-    runner = PipelineRunner(pipeline, context, store=temp_store)
+    runner = PipelineRunner(pipeline, context, store=temp_store, registry=StepHandlerRegistry())
 
     run = await runner.run()
 

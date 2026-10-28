@@ -53,6 +53,7 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     them needs, and a shared block is one place to forget it rather than two.
     """
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     project_root = await resolve_project_root(run.project_name, db)
@@ -68,6 +69,7 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     runner = PipelineRunner(
         pipeline_def,
         context,
+        registry=StepHandlerRegistry(),
         store=store,
         on_event=bridge.make_event_callback(run_id),
         memory_task=True,
@@ -99,6 +101,7 @@ async def start_pipeline_run(
 
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
     project_root = await resolve_project_root(body.project, db)
@@ -136,6 +139,7 @@ async def start_pipeline_run(
     runner = PipelineRunner(
         pipeline_def,
         context,
+        registry=StepHandlerRegistry(),
         store=store,
         on_event=event_cb,
         memory_task=True,

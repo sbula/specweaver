@@ -45,13 +45,13 @@ from specweaver.core.flow.engine.step_execution import (
     LoopState,
     run_one_step,
 )
-from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.infrastructure.llm.budget import SpendBudget
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.events import RunnerEventCallback
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.core.flow.handlers.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class PipelineRunner:
     Args:
         pipeline: The pipeline to execute.
         context: Run context with project paths, LLM, settings, etc.
-        registry: Handler registry (default: all built-in handlers).
+        registry: Handler registry, built by the caller.
         store: Optional state store for persistence and resume.
         on_event: Optional callback for progress reporting. Called with
             event name and keyword arguments describing the event.
@@ -79,7 +79,7 @@ class PipelineRunner:
         pipeline: PipelineDefinition,
         context: RunContext,
         *,
-        registry: StepHandlerRegistry | None = None,
+        registry: StepHandlerRegistry,
         store: StateStore | None = None,
         on_event: RunnerEventCallback | None = None,
         memory_task: bool = False,
@@ -90,7 +90,7 @@ class PipelineRunner:
         self._memory_task = memory_task
         self._task_id: str | None = None
         self._context = context
-        self._registry = registry or StepHandlerRegistry()
+        self._registry = registry
         self._store = store
         self._on_event = on_event
         self._gate_evaluator = GateEvaluator(pipeline, context)

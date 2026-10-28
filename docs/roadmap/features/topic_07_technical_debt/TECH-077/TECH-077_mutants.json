@@ -252,7 +252,7 @@
           "old": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=True\n",
           "new": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=False\n",
           "breaks": "sw review opens a per-run worktree",
-          "symbol_sha": "sha256:a4772d7b7d505f2a91493c0d10e34b03681dff3a6235bd9180c5ac93255ef760"
+          "symbol_sha": "sha256:0eaf14e20b5dc43074fc94e34f3705164e3a910e08e7aeee7b3a18be2aa20979"
         },
         {
           "id": "check-rot-opens-worktree",
@@ -321,7 +321,7 @@
           "old": "    project_path = recorded_project_root(run_state.project_name)\n",
           "new": "    project_path = Path.cwd()\n",
           "breaks": "a resume runs in the folder it is typed in",
-          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+          "symbol_sha": "sha256:aaecb078f08bf7e4e0bff5ff947938e03a3655502f6bf1aabf264b55191b57db"
         },
         {
           "id": "resume-pipeline-from-cwd",
@@ -331,7 +331,7 @@
           "old": "    pipeline_def = load_pipeline(project_path / run_state.pipeline_name)\n",
           "new": "    pipeline_def = load_pipeline(Path(run_state.pipeline_name))\n",
           "breaks": "a resume cannot find its project's pipeline file",
-          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+          "symbol_sha": "sha256:aaecb078f08bf7e4e0bff5ff947938e03a3655502f6bf1aabf264b55191b57db"
         }
       ]
     },
@@ -364,7 +364,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "a resume whose worktree is gone ends in a traceback",
-          "symbol_sha": "sha256:6e944b627dfc6fa86a35de6eac8d2cba4f524478eac0646a442a315ae9a10f19"
+          "symbol_sha": "sha256:aaecb078f08bf7e4e0bff5ff947938e03a3655502f6bf1aabf264b55191b57db"
         },
         {
           "id": "router-never-tells",
@@ -394,7 +394,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
+          "symbol_sha": "sha256:af29a910feb812c0398b07154cc1118f4617058dc89a4c79d60ba18672dc2bee"
         },
         {
           "id": "draft-worktree-traceback",
@@ -404,7 +404,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw draft on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
         },
         {
           "id": "draft-no-terminal",
@@ -414,7 +414,7 @@
           "old": "    context.context_provider = HITLProvider(console=_core.console)\n",
           "new": "    pass\n",
           "breaks": "sw draft asks the user nothing",
-          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
         },
         {
           "id": "no-model-said-nothing",
@@ -454,7 +454,7 @@
           "old": "@drafting_cli.command(name=\"draft\")\n",
           "new": "@drafting_cli.command(name=\"drafts\")\n",
           "breaks": "sw draft is no drafting command",
-          "symbol_sha": "sha256:a47111ebd3e363b49c7ed623f5d823c2924bc2033a9390a0f02059da6d2e2a55"
+          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
         },
         {
           "id": "one-step-drops-params",
@@ -464,7 +464,7 @@
           "old": "description=description, params=params or {}",
           "new": "description=description, params={}",
           "breaks": "a one-step run loses its params",
-          "symbol_sha": "sha256:2b99d583a4428a20758b195d28c7cb0599b980ce575644230d44e8efd06abc4c"
+          "symbol_sha": "sha256:3d20e0fc56e3b5a9f30256e841c5fffdb4fa8ece4089501398ca13442f6f76fd"
         }
       ]
     },
@@ -483,7 +483,7 @@
           "old": "project=body.project, db=db, selector=body.selector\n",
           "new": "project=body.project, db=db\n",
           "breaks": "an API run's selector is ignored",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "new-feature-needs-spec",
@@ -493,7 +493,7 @@
           "old": "    if pipeline_def.name != \"new_feature\" and not spec_path.exists():\n",
           "new": "    if not spec_path.exists():\n",
           "breaks": "an API new_feature is refused for its missing spec",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "new-feature-escapes",
@@ -503,7 +503,7 @@
           "old": "        spec_path = project_file_or_400(project_root, f\"specs/{body.spec}_spec.md\")\n",
           "new": "        spec_path = project_root / f\"specs/{body.spec}_spec.md\"\n",
           "breaks": "an API new_feature spec may lie outside the project",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "implement-selector-ignored",
@@ -564,7 +564,7 @@
           "old": "    except SessionWorktreeError as exc:\n",
           "new": "    except ImportError as exc:\n",
           "breaks": "POST /implement on a non-git high-DAL project ends in a bare 500",
-          "symbol_sha": "sha256:e2d09b3c5bfee6448f0209e6a364596eda11e5ed8a937c914f7b3aa3359239f3"
+          "symbol_sha": "sha256:e60c34375f76c31f19cdf5f9b7c48e20b266f3596e95dd620cc3a4413ced6cad"
         }
       ]
     },
@@ -602,7 +602,7 @@
           "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
           "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.graph = type(context.graph)()\n",
           "breaks": "an API run gets no topology while sw run does",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         }
       ]
     }

@@ -60,6 +60,7 @@ def review(
 
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.cli.run_doors import build_run_or_exit
 
     if spec:
@@ -91,7 +92,7 @@ def review(
     _core.console.print(f"\n[bold]Reviewing:[/bold] {target_path.name}")
     _core.console.print("[dim]Sending to LLM for semantic review...[/dim]\n")
 
-    runner = PipelineRunner(pipeline, context)
+    runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
 
     from specweaver.workflows.review.reviewer import result_from_run
 

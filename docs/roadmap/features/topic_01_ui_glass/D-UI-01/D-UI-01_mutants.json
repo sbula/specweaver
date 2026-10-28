@@ -201,7 +201,7 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
           "new": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=3)\n",
           "breaks": "the user's number is read and ignored",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "unset-limit-accepted",

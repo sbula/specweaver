@@ -307,7 +307,7 @@ class TestPipelineRunnerPersistence:
         store = StateStore(tmp_path / "state.db")
         pipeline = _make_pipeline()
         ctx = _make_context(tmp_path)
-        runner = PipelineRunner(pipeline, ctx, store=store)
+        runner = PipelineRunner(pipeline, ctx, store=store, registry=StepHandlerRegistry())
         with pytest.raises(ValueError, match="not found"):
             await runner.resume("nonexistent-id")
 
@@ -332,7 +332,7 @@ class TestPipelineRunnerEdgeCases:
     async def test_empty_pipeline(self, tmp_path: Path) -> None:
         pipeline = PipelineDefinition(name="empty", steps=[])
         ctx = _make_context(tmp_path)
-        runner = PipelineRunner(pipeline, ctx)
+        runner = PipelineRunner(pipeline, ctx, registry=StepHandlerRegistry())
 
         result = await runner.run()
         assert result.status == RunStatus.COMPLETED
@@ -380,7 +380,7 @@ class TestPipelineRunnerEdgeCases:
         """Resuming without a store configured should raise ValueError."""
         pipeline = _make_pipeline()
         ctx = _make_context(tmp_path)
-        runner = PipelineRunner(pipeline, ctx)  # no store
+        runner = PipelineRunner(pipeline, ctx, registry=StepHandlerRegistry())  # no store
         with pytest.raises(ValueError, match="no store"):
             await runner.resume("some-id")
 

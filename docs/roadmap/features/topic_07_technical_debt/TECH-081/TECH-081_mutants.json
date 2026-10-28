@@ -257,6 +257,25 @@
           "symbol_sha": "sha256:bdae228198f24abe162fc3e57eb0234c8d855074a93f28eccabbcc6ff38baac9"
         }
       ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "The caller hands the runner its registry",
+      "scope": [
+        "tests/unit/core/flow/engine/test_runner_takes_its_registry.py"
+      ],
+      "mutants": [
+        {
+          "id": "runner-builds-its-registry",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner.__init__",
+          "old": "        self._registry = registry\n",
+          "new": "        from specweaver.core.flow.handlers.registry import StepHandlerRegistry as _Built\n\n        self._registry = _Built()\n",
+          "breaks": "the engine builds its own registry and ignores the caller's",
+          "symbol_sha": "sha256:00263c90c2b6c67b8a34c09222942b69cd901a258f499dcd519260f7d2fff79e"
+        }
+      ]
     }
   ]
 }

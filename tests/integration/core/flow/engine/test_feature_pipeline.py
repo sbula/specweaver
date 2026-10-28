@@ -206,7 +206,7 @@ class TestFeatureDecompositionPipelineIntegration:
         store = _make_store(sample_project)
 
         # No registry= argument: the runner builds the real StepHandlerRegistry.
-        runner = PipelineRunner(pipeline, ctx, store=store)
+        runner = PipelineRunner(pipeline, ctx, store=store, registry=StepHandlerRegistry())
         run = asyncio.run(runner.run())
 
         # Parked at the draft_feature HITL gate — NOT errored on a missing handler.

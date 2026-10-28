@@ -12,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess
 from specweaver.interfaces.cli.main import app as app  # type: ignore
 from tests.scripted_llm import FixedRouter
@@ -160,7 +161,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
         db=Database(db_path),
     )
 
-    runner_instance = PipelineRunner(pipeline, context)
+    runner_instance = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     # Inject our mock handler
     runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
@@ -271,7 +272,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
         db=Database(db_path),
     )
 
-    runner_instance = PipelineRunner(pipeline, context)
+    runner_instance = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
     asyncio.run(runner_instance.run())

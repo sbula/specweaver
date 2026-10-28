@@ -14,6 +14,7 @@ from ruamel.yaml import YAML
 
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
@@ -122,7 +123,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.generation_config = None
     ctx.feedback = {}
 
-    runner = PipelineRunner(definition, ctx)
+    runner = PipelineRunner(definition, ctx, registry=StepHandlerRegistry())
     result = await runner.run()
 
     from specweaver.core.flow.engine.state import RunStatus

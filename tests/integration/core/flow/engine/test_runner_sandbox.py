@@ -17,6 +17,7 @@ from specweaver.core.flow.engine.models import (
 )
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import IsolationPolicy, RunContext
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
@@ -62,7 +63,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
             autospec=True,
             side_effect=fake_atom_run,
         ),
-        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
+        patch("specweaver.core.flow.handlers.registry.StepHandlerRegistry.get") as mock_get_handler,
     ):
         mock_handler = MagicMock()
 
@@ -74,7 +75,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
         mock_handler.execute.side_effect = fake_execute
         mock_get_handler.return_value = mock_handler
 
-        runner = PipelineRunner(pipeline, context)
+        runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         result_run = await runner.run()
 
         from specweaver.core.flow.engine.state import RunStatus
@@ -113,7 +114,7 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
     with patch(
         "specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
     ):
-        runner = PipelineRunner(pipeline, context)
+        runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         # It should catch the exception inside the runner and just mark the step/run as FAILED,
         # but let's see how _execute_loop catches errors.
         # Actually in runner, exceptions are caught as: `except Exception as exc: StepStatus.FAILED`
@@ -148,7 +149,7 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
             autospec=True,
             side_effect=fake_atom_run,
         ),
-        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get,
+        patch("specweaver.core.flow.handlers.registry.StepHandlerRegistry.get") as mock_get,
     ):
         mock_handler = MagicMock()
 
@@ -158,7 +159,7 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
         mock_handler.execute.side_effect = fake_execute
         mock_get.return_value = mock_handler
 
-        runner = PipelineRunner(pipeline, context)
+        runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         await runner.run()
 
         # Ensures teardown executed despite strip_merge failure!
@@ -188,7 +189,7 @@ async def test_symlink_cache_folders(tmp_path: Path):
         mock_fs_atom = mock_fs_atom_cls.return_value
         mock_fs_atom.run.return_value = AtomResult(status=AtomStatus.SUCCESS, message="")
 
-        PipelineRunner(pipeline, context)
+        PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
 
         import logging
 
@@ -265,13 +266,13 @@ async def test_isolation_gate_resolution(
             "specweaver.core.flow.engine.sandboxed_execution.execute_in_sandbox",
             new=AsyncMock(return_value=passed),
         ) as mock_sandbox,
-        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
+        patch("specweaver.core.flow.handlers.registry.StepHandlerRegistry.get") as mock_get_handler,
     ):
         mock_handler = MagicMock()
         mock_handler.execute = AsyncMock(return_value=passed)
         mock_get_handler.return_value = mock_handler
 
-        await PipelineRunner(pipeline, context).run()
+        await PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run()
 
         assert mock_sandbox.called is expect_isolated
         assert mock_handler.execute.called is (not expect_isolated)
@@ -323,13 +324,13 @@ async def test_execute_in_sandbox_rebinds_execution_root(
         patch(
             "specweaver.sandbox.git.core.atom.GitAtom.run", autospec=True, side_effect=fake_atom_run
         ),
-        patch("specweaver.core.flow.engine.runner.StepHandlerRegistry.get") as mock_get_handler,
+        patch("specweaver.core.flow.handlers.registry.StepHandlerRegistry.get") as mock_get_handler,
     ):
         mock_handler = MagicMock()
         mock_handler.execute.side_effect = fake_execute
         mock_get_handler.return_value = mock_handler
 
-        await PipelineRunner(pipeline, context).run()
+        await PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run()
 
     # The isolated context handed to the handler points execution_root inside the worktree.
     assert seen["execution_root"] is not None

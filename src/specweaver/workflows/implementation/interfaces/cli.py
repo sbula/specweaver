@@ -160,6 +160,7 @@ def implement(
 
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.cli.run_doors import build_run_or_exit, refuse_unstarted_worktree
 
     _doc_policy, _autonomy, language = _core.project_sections_at(project_path)
@@ -190,7 +191,7 @@ def implement(
     _print_framework(project_path, code_path, task.language)
 
     _core.console.print("[dim]Executing implementation pipeline...[/dim]")
-    runner = PipelineRunner(pipeline, context, memory_task=True)
+    runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry(), memory_task=True)
     try:
         run_state = asyncio.run(runner.run())
     except SessionWorktreeError as err:

@@ -37,6 +37,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import (
     GraphContext,
     ModelAccess,
@@ -202,7 +203,9 @@ async def test_both_sides_read_the_parents_contract(tmp_path: Path) -> None:
         spec_path=tmp_path / "specs" / "greet_spec.md",
         graph=GraphContext(api_contract_paths=[contract]),
     )
-    parent = PipelineRunner(PipelineDefinition(name="p", steps=[]), context)
+    parent = PipelineRunner(
+        PipelineDefinition(name="p", steps=[]), context, registry=StepHandlerRegistry()
+    )
     context.run = RunHandle(run_id="r", pipeline_runner=parent)
     seen: list[list[str] | None] = []
 

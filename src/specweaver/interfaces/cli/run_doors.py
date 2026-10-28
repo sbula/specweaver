@@ -90,6 +90,7 @@ def run_one_step(
 
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
     pipeline = PipelineDefinition.create_single_step(
         name=name, action=action, target=target, description=description, params=params or {}
@@ -97,7 +98,7 @@ def run_one_step(
     context = build_run_or_exit(
         project_path, spec_path, pipeline, models=models, read_only=read_only
     )
-    run = asyncio.run(PipelineRunner(pipeline, context).run())
+    run = asyncio.run(PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run())
     return (run.step_records[-1] if run.step_records else None), context
 
 

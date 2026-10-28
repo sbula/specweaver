@@ -22,6 +22,7 @@ import yaml
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
@@ -58,7 +59,7 @@ async def test_e2e_scenario_integration_pipeline_happy_path(tmp_path: Path):
         '{"verdict": "code_bug", "coding_feedback": "fixed"}'
     )
 
-    runner = PipelineRunner(pipeline=pipeline_def, context=ctx)
+    runner = PipelineRunner(pipeline=pipeline_def, context=ctx, registry=StepHandlerRegistry())
 
     visited_actions = []
 
@@ -88,7 +89,8 @@ async def test_e2e_scenario_integration_pipeline_happy_path(tmp_path: Path):
     mock_handler_inst = MockHandler()
 
     with patch(
-        "specweaver.core.flow.engine.runner.StepHandlerRegistry.get", return_value=mock_handler_inst
+        "specweaver.core.flow.handlers.registry.StepHandlerRegistry.get",
+        return_value=mock_handler_inst,
     ):
         result = await runner.run()
 

@@ -10,6 +10,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import (
     AnalysisContext,
     GraphContext,
@@ -62,7 +63,7 @@ def run_context():
     def _spawn(pipe: object, feedback: dict | None = None, side: str | None = None) -> object:
         from specweaver.core.flow.engine.runner import PipelineRunner
 
-        return PipelineRunner(pipeline=pipe)
+        return PipelineRunner(pipeline=pipe, registry=StepHandlerRegistry())
 
     ctx.run.pipeline_runner.spawn = _spawn
     return ctx

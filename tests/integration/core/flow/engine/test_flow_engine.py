@@ -237,7 +237,7 @@ class TestFlowEngineCompletion:
         ctx = _make_context(sample_project)
         store = _make_store(sample_project)
 
-        runner = PipelineRunner(pipeline, ctx, store=store)
+        runner = PipelineRunner(pipeline, ctx, store=store, registry=StepHandlerRegistry())
         run = asyncio.run(runner.run())
 
         assert run.status == RunStatus.COMPLETED

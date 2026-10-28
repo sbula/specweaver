@@ -313,6 +313,7 @@ def _execute_run(
     """Core run logic -- separated for testability."""
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 
     # Resolve project path
     project_path = _core.project_path_or_exit(project)
@@ -343,6 +344,7 @@ def _execute_run(
     runner = PipelineRunner(
         pipeline_def,
         context,
+        registry=StepHandlerRegistry(),
         store=store,
         on_event=display,
         memory_task=True,
@@ -448,6 +450,7 @@ def resume(
     """
     from specweaver.core.flow.engine.parser import load_pipeline
     from specweaver.core.flow.engine.runner import PipelineRunner
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.infrastructure.llm.interfaces.command import run_model_option
 
     run_model = run_model_option(model)
@@ -471,6 +474,7 @@ def resume(
     runner = PipelineRunner(
         pipeline_def,
         context,
+        registry=StepHandlerRegistry(),
         store=store,
         on_event=display,
         memory_task=True,

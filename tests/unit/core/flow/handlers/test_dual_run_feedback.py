@@ -33,6 +33,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import RunContext, RunHandle
 
 if TYPE_CHECKING:
@@ -62,7 +63,9 @@ def _pipeline() -> PipelineDefinition:
 
 
 def test_a_spawn_with_feedback_gets_its_own_dict(tmp_path: Path) -> None:
-    parent = PipelineRunner(_pipeline(), _context(tmp_path, _VERDICTS))
+    parent = PipelineRunner(
+        _pipeline(), _context(tmp_path, _VERDICTS), registry=StepHandlerRegistry()
+    )
 
     child = parent.spawn(_pipeline(), feedback={"generate_code": "x"})
     sub_run = isolate_sub_run_context(child._context, parent_run_id="parent")
@@ -73,7 +76,7 @@ def test_a_spawn_with_feedback_gets_its_own_dict(tmp_path: Path) -> None:
 
 
 def test_a_spawn_without_feedback_still_shares(tmp_path: Path) -> None:
-    parent = PipelineRunner(_pipeline(), _context(tmp_path, {}))
+    parent = PipelineRunner(_pipeline(), _context(tmp_path, {}), registry=StepHandlerRegistry())
 
     child = parent.spawn(_pipeline())
 

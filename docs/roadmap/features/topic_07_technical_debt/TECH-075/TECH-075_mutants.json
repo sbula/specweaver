@@ -148,7 +148,7 @@
           "old": "    spec_path = project_file_or_400(project_root, body.spec)\n",
           "new": "    spec_path = project_root / body.spec\n",
           "breaks": "an API run starts on a spec outside the project",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "run-spec-checked-after-exists",
@@ -158,7 +158,7 @@
           "old": "    else:\n        spec_path = project_file_or_400(project_root, body.spec)\n",
           "new": "    else:\n        spec_path = project_root / body.spec\n",
           "breaks": "a 404 tells the client that an outside file does not exist",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         }
       ]
     },

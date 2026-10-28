@@ -60,7 +60,7 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
           "new": "        bridge.start_run(run_id, runner.run(), limit=limit)\n",
           "breaks": "GET /runs/{id} never finds a run started over REST",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "rest-run-without-models",
@@ -70,7 +70,7 @@
           "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
           "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.model = type(context.model)()\n",
           "breaks": "a REST pipeline step that needs a model fails",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "rest-resume-without-models",
@@ -80,7 +80,7 @@
           "old": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n",
           "new": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n    context.model = type(context.model)()\n",
           "breaks": "a REST resume of a step that needs a model fails",
-          "symbol_sha": "sha256:d43f3f0534da08edc8a89a79d6532c665498dee470634141711deca619da62c4"
+          "symbol_sha": "sha256:57de589b1e91368b88e2fa951fc107e9f409db3220b717deb8994c4a3bd637c5"
         }
       ]
     },

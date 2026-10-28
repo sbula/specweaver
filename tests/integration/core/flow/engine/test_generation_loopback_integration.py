@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
@@ -67,7 +68,7 @@ def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
 
     # 2. Run the actual engine (using real GenerateCodeHandler internally)
     with patch("specweaver.sandbox.git.core.executor.GitExecutor.run", return_value=(0, "", "")):
-        runner = PipelineRunner(pipeline, context)
+        runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         run_state = asyncio.run(runner.run())
 
     # 3. Assert Runner completed successfully

@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 from typer.testing import CliRunner
 
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import ModelAccess
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app
@@ -258,7 +259,7 @@ class TestLineageE2EFlow:
             db=Database(db_path),
         )
 
-        pipe_runner = PipelineRunner(pipeline, context)
+        pipe_runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         asyncio.run(pipe_runner.run())
 
         conn = sqlite3.connect(db_path)

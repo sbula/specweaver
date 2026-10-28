@@ -162,7 +162,7 @@
           "old": "    return run, router.unwritten() if router is not None else 0\n",
           "new": "    return run, 0\n",
           "breaks": "REST always answers that nothing is missing",
-          "symbol_sha": "sha256:e2d09b3c5bfee6448f0209e6a364596eda11e5ed8a937c914f7b3aa3359239f3"
+          "symbol_sha": "sha256:e60c34375f76c31f19cdf5f9b7c48e20b266f3596e95dd620cc3a4413ced6cad"
         },
         {
           "id": "run-end-not-logged",

@@ -231,7 +231,7 @@ class TestQARunnerEventCallback:
         collector = EventCollector()
         pipeline = PipelineDefinition(name="empty", steps=[])
         ctx = _make_context(tmp_path)
-        runner = PipelineRunner(pipeline, ctx, on_event=collector)
+        runner = PipelineRunner(pipeline, ctx, on_event=collector, registry=StepHandlerRegistry())
 
         result = await runner.run()
         assert result.status == RunStatus.COMPLETED

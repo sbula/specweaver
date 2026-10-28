@@ -34,6 +34,7 @@ async def run_steps(
     Gives the run and how many of its calls the cost ledger misses."""
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
+    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.api.v1.run_doors import build_api_run, worktree_unavailable
 
     context = await build_api_run(
@@ -47,7 +48,9 @@ async def run_steps(
     )
     router = context.model.llm_router
     try:
-        run = await PipelineRunner(pipeline, context, memory_task=memory_task).run()
+        run = await PipelineRunner(
+            pipeline, context, registry=StepHandlerRegistry(), memory_task=memory_task
+        ).run()
     except SessionWorktreeError as exc:
         raise worktree_unavailable(exc) from exc
     stopped = getattr(getattr(router, "budget", None), "stopped", None)

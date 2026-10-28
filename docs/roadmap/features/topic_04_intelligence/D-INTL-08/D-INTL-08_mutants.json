@@ -93,7 +93,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"language\": None})\n",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:48b403b7e9af38908dfcd0c8d05b172326d09e743247d35e2517098a367a92f2"
+          "symbol_sha": "sha256:af29a910feb812c0398b07154cc1118f4617058dc89a4c79d60ba18672dc2bee"
         },
         {
           "id": "api-names-no-language",
@@ -103,7 +103,7 @@
           "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
           "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"language\": None})\n",
           "breaks": "an API run ignores [implement] language",
-          "symbol_sha": "sha256:b2c9999d9e26c6e3281d65600cc1f5ed1fd5e6f59b35f7bf555ea22ac9589494"
+          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
         },
         {
           "id": "lint-ignores-the-language",

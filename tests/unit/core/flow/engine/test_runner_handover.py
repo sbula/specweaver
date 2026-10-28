@@ -8,6 +8,7 @@ import pytest
 
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus
+from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.run_context import IsolationPolicy
 
 
@@ -62,7 +63,7 @@ def runner():
     # than the type it stands in for.
     run.current_step = 0
 
-    r = PipelineRunner(pipeline, context)
+    r = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     r._run = run
     r._store = MagicMock()
     r._store.load_run.return_value = run
