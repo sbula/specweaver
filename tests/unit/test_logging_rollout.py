@@ -146,11 +146,11 @@ class TestBatch2LoggingRollout:
             inheritance,
             loader,
             pipeline,
-            pipeline_loader,
             rule_registry,
             runner,
             spec_kind,
         )
+        from specweaver.assurance.validation.io import pipeline_loader
 
         for mod in (
             executor,

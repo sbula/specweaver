@@ -340,7 +340,7 @@ class TestCodeRulesPipeline:
 
     def test_code_pipeline_has_expected_rules(self) -> None:
         import specweaver.assurance.validation.rules.code  # noqa: F401
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         ids = {s.rule for s in pipeline.steps}
@@ -355,7 +355,7 @@ class TestCodeRulesPipeline:
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         code = "def greet(name: str) -> str:\n    return f'Hello {name}!'\n"

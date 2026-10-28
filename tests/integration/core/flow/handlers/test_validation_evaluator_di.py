@@ -118,7 +118,7 @@ decorators:
         from unittest.mock import patch
 
         with patch(
-            "specweaver.assurance.validation.pipeline_loader.load_pipeline_yaml",
+            "specweaver.assurance.validation.io.pipeline_loader.load_pipeline_yaml",
             return_value=dummy_pipeline,
         ):
             # Run the handler

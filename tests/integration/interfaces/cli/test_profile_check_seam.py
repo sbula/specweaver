@@ -61,7 +61,7 @@ def _loaded(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     was passed explicitly, so the selected name is invisible in the output and the tests were
     passing on the parenthesis. `TECH-017`.
     """
-    from specweaver.assurance.validation import pipeline_loader
+    from specweaver.assurance.validation.io import pipeline_loader
 
     seen: list[str] = []
     real = pipeline_loader.load_pipeline_yaml

@@ -12,6 +12,7 @@ exposes:
 
 consumes:
   - specweaver/assurance/validation
+  - specweaver/assurance/validation/io
   - specweaver/core/config
   - specweaver/core/flow
   - specweaver/graph/lineage

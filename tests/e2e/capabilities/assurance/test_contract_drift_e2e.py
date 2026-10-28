@@ -5,8 +5,8 @@
 import pytest
 
 from specweaver.assurance.validation.executor import execute_validation_pipeline
+from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 from specweaver.assurance.validation.models import Status
-from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 from specweaver.sandbox.protocol.core.models import ProtocolEndpoint
 
 

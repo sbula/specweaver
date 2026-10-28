@@ -40,6 +40,7 @@ exposes:
   - executor.apply_settings_to_pipeline
   - executor.execute_validation_pipeline
   - inheritance
+  - inheritance.resolve_pipeline
   - loader
   - models
   - models.Rule
@@ -47,16 +48,9 @@ exposes:
   - models.Status
   - pipeline
   - pipeline.ValidationPipeline
-  - pipeline_loader
-  - pipeline_loader.load_pipeline_yaml
-  - pipeline_loader.resolve_pipeline_name
   - project_root
   - project_root.find_tests
   - registry
-  - rubrics
-  - rubrics.Rubric
-  - rubrics.RubricNotFoundError
-  - rubrics.load_rubric
   - rules
   - rules.code.c09_traceability.requirement_coverage
   - spec_kind

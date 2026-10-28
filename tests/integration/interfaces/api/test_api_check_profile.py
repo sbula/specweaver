@@ -43,7 +43,7 @@ _SPEC = "# Orders\n\n## 1. Purpose\nTakes orders.\n"
 def world(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[tuple[TestClient, list[str]]]:
-    from specweaver.assurance.validation import pipeline_loader
+    from specweaver.assurance.validation.io import pipeline_loader
     from specweaver.workspace.store import WorkspaceRepository
 
     data = tmp_path / "data"

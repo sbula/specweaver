@@ -16,7 +16,7 @@ NOTE ON DESIGN (Feature 3.5b):
   **removed**.  Tests and application code must use the pipeline executor
   path:
 
-      from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+      from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
       from specweaver.assurance.validation.executor import (
           apply_settings_to_pipeline,
           execute_validation_pipeline,

@@ -1,0 +1,32 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: validation-io
+level: module
+purpose: >
+  Reads what the validation engine runs: pipeline YAML and rubric files.
+
+description: |
+  Loads validation pipelines from the project's `.specweaver/pipelines/` and the shipped
+  pipelines, and rubrics from the project's `.specweaver/rubrics/` and the shipped
+  `assurance/validation/rubrics/` files. The validation module itself reads no files.
+
+archetype: adapter
+
+consumes:
+  - specweaver/assurance/validation
+  - specweaver/core/config
+
+exposes:
+  - pipeline_loader
+  - pipeline_loader.load_pipeline_yaml
+  - pipeline_loader.resolve_pipeline_name
+  - rubrics
+  - rubrics.load_rubric
+  - rubrics.Rubric
+  - rubrics.RubricNotFoundError
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

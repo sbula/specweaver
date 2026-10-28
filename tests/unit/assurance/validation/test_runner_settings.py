@@ -36,7 +36,7 @@ from specweaver.assurance.validation.executor import (
     apply_settings_to_pipeline,
     execute_validation_pipeline,
 )
-from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
 # ---------------------------------------------------------------------------

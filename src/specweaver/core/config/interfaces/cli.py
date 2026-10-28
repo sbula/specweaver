@@ -206,7 +206,7 @@ def config_show_profile(
 ) -> None:
     """Show the pipeline overrides a domain profile applies."""
     import specweaver.assurance.validation.rules.spec  # noqa: F401
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
     from specweaver.core.config.profiles import get_profile, profile_to_pipeline_name
 
     profile = get_profile(profile_name)

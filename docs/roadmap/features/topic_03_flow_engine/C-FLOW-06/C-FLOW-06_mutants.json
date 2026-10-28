@@ -137,7 +137,7 @@
           "old": "    effective_strict = strict or (dal_level.is_strict if dal_level else False)\n",
           "new": "    effective_strict = strict\n",
           "breaks": "DAL_A code passes with warnings",
-          "symbol_sha": "sha256:518824d24d65d184edac307e3b9a24000a1ac565b2f3c8fc7ac996e60a821fa9"
+          "symbol_sha": "sha256:4b4ea2beae6f8135d78116422f4a6acf89675689135b943e5ceef39f7bbb512d"
         }
       ]
     },

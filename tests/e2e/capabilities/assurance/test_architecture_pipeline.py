@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 from specweaver.assurance.validation.models import Status
-from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
 from specweaver.core.config.settings import ValidationSettings
 from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 

@@ -124,7 +124,7 @@ def resolve_review_instructions(context: RunContext, rubric_id: str) -> tuple[st
 
 def _load_review_rubric(context: RunContext, rubric_id: str) -> Any:
     """The rubric that judges this run: the project's own first, then the run DAL's variant."""
-    from specweaver.assurance.validation.rubrics import load_rubric
+    from specweaver.assurance.validation.io.rubrics import load_rubric
 
     rubric = load_rubric(
         rubric_id,

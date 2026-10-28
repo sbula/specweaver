@@ -156,8 +156,8 @@ def test_declared_boundaries_become_the_config_that_catches_the_violation(
     )
 
     # 3. Enforce: the production validation path, judging the file against the config just generated.
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
     from specweaver.assurance.validation.models import Status
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
     from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
     target = project / "src" / "core" / "bad_impl.py"
@@ -192,8 +192,8 @@ def test_the_same_chain_passes_a_project_that_respects_its_declaration(
     _cli(env, "scan", cwd=project)
     assert (project / "tach.toml").exists()
 
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
     from specweaver.assurance.validation.models import Status
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
     from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
     # `api` importing `core` is exactly what its context.yaml declares it consumes.

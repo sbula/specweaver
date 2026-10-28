@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
 # ---------------------------------------------------------------------------
 # Load from packaged defaults
@@ -230,7 +230,7 @@ class TestFrameworksPluginLoading:
 
         with (
             patch(
-                "specweaver.assurance.validation.pipeline_loader.importlib.resources.files",
+                "specweaver.assurance.validation.io.pipeline_loader.importlib.resources.files",
                 side_effect=_mock_files,
             ),
             pytest.raises(
@@ -258,7 +258,7 @@ class TestFrameworksPluginLoading:
 
         with (
             patch(
-                "specweaver.assurance.validation.pipeline_loader.importlib.resources.files",
+                "specweaver.assurance.validation.io.pipeline_loader.importlib.resources.files",
                 side_effect=_mock_files,
             ),
             pytest.raises(

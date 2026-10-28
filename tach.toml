@@ -28,8 +28,12 @@ path = "specweaver.assurance.validation"
 depends_on = [ "specweaver.workspace.analyzers", "specweaver.core.config",]
 
 [[modules]]
+path = "specweaver.assurance.validation.io"
+depends_on = [ "specweaver.assurance.validation", "specweaver.core.config",]
+
+[[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.graph.lineage", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.graph.lineage", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.config"
@@ -41,7 +45,7 @@ depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specw
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
-depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.telemetry_logger", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.telemetry_logger", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.flow.store"
@@ -57,7 +61,7 @@ depends_on = [ "specweaver.core.flow.run_state", "specweaver.core.config", "spec
 
 [[modules]]
 path = "specweaver.core.flow.handlers"
-depends_on = [ "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
@@ -81,7 +85,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
@@ -218,7 +222,11 @@ expose = [ "dispatcher", "security", "base", "rule_atom", "git.core", "git.inter
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]
-expose = [ "executor", "loader", "models", "models.Status", "pipeline", "pipeline_loader", "registry", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "executor.execute_validation_pipeline", "rubrics", "rubrics.load_rubric", "rubrics.Rubric", "rubrics.RubricNotFoundError", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule",]
+expose = [ "executor", "loader", "models", "models.Status", "pipeline", "registry", "inheritance.resolve_pipeline", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "executor.execute_validation_pipeline", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule",]
+
+[[interfaces]]
+from = [ "specweaver.assurance.validation.io",]
+expose = [ "pipeline_loader", "pipeline_loader.load_pipeline_yaml", "pipeline_loader.resolve_pipeline_name", "rubrics", "rubrics.load_rubric", "rubrics.Rubric", "rubrics.RubricNotFoundError",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.interfaces",]

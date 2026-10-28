@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.assurance.validation.rubrics import Rubric, RubricNotFoundError, load_rubric
+from specweaver.assurance.validation.io.rubrics import Rubric, RubricNotFoundError, load_rubric
 from specweaver.commons.enums.dal import DALLevel
 
 if TYPE_CHECKING:

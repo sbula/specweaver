@@ -179,7 +179,7 @@ def covers(languages: list[str], path: Path) -> bool:
 
 
 def _load(name: str, project_path: Path | None) -> ValidationPipeline:
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
     return load_pipeline_yaml(name, project_dir=project_path)
 

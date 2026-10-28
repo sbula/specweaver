@@ -5,8 +5,8 @@
 - **Status**: APPROVED (by the user, 2026-10-27)
 - **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
   SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3 and SF-06 CB-2, whose test calls gain the
-  injected registry, drafters and service name, SF-07 CB-1, whose logging test imports the moved
-  inferrer, and SF-07 CB-3, which deletes `test_loader.py` and widens the purity test
+  injected registry, drafters and service name, SF-07 CB-1/CB-2, whose logging test imports the
+  moved inferrer and pipeline loader, and SF-07 CB-3, which deletes `test_loader.py` and widens the purity test
   `[agreed 2026-10-28]`), which add guard tests
   a refactor may not (`scripts/tests.py`)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_design.md

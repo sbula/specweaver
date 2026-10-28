@@ -237,7 +237,7 @@
           "old": "    if body.pipeline is not None:\n        require_bare_pipeline_name(body.pipeline)\n",
           "new": "    pass\n",
           "breaks": "POST /check loads a validation pipeline YAML outside the project",
-          "symbol_sha": "sha256:ae775709d33aede446d49f7f2593be3f587dd07ff964fbfe88939d957869ae87"
+          "symbol_sha": "sha256:69a0a12b22908540163668627329279887fd80960011d732a94726df700a2e89"
         }
       ]
     },

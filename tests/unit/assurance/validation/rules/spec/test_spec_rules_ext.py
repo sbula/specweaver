@@ -57,7 +57,7 @@ class QARunner:
 
     def test_spec_pipeline_has_eleven_rules(self) -> None:
         import specweaver.assurance.validation.rules.spec  # noqa: F401
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert len(pipeline.steps) == 11
@@ -65,7 +65,7 @@ class QARunner:
     def test_spec_pipeline_excludes_llm_rules(self) -> None:
         import specweaver.assurance.validation.rules.spec  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, "## 1. Purpose\nSimple.\n")
@@ -75,7 +75,7 @@ class QARunner:
 
     def test_spec_pipeline_rules_are_present(self) -> None:
         import specweaver.assurance.validation.rules.spec  # noqa: F401
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         ids = {s.rule for s in pipeline.steps}
@@ -86,7 +86,7 @@ class QARunner:
     def test_run_rules_collects_all_results(self, good_spec: str) -> None:
         import specweaver.assurance.validation.rules.spec  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, good_spec)
@@ -144,7 +144,7 @@ class QARunner:
         """The good_spec fixture should pass all 11 rules."""
         import specweaver.assurance.validation.rules.spec  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, good_spec)

@@ -187,7 +187,7 @@ class TestValidationRunnerFiltering:
     def test_code_pipeline_has_c01_c05_but_not_subprocess_by_default(self) -> None:
         """Verify code pipeline step IDs include C01, C05 and also C03/C04."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         ids = {s.rule for s in pipeline.steps}
@@ -200,7 +200,7 @@ class TestValidationRunnerFiltering:
         """Disabling C03/C04 via settings removes subprocess rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_code_default")
@@ -220,7 +220,7 @@ class TestValidationRunnerFiltering:
     def test_spec_pipeline_has_only_non_llm_rules(self) -> None:
         """Default spec pipeline has no LLM-requiring rules."""
         import specweaver.assurance.validation.rules.spec  # noqa: F401
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.assurance.validation.registry import get_registry
 
         pipeline = load_pipeline_yaml("validation_spec_default")

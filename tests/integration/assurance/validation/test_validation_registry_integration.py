@@ -133,7 +133,7 @@ class QARunnerRegistryIntegration:
         """Spec default pipeline produces 11 rule results (S01-S11)."""
         import specweaver.assurance.validation.rules.spec  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, "# Test")
@@ -143,7 +143,7 @@ class QARunnerRegistryIntegration:
         """Spec default pipeline returns results in S01-S11 order."""
         import specweaver.assurance.validation.rules.spec  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         results = execute_validation_pipeline(pipeline, "# Test")
@@ -167,7 +167,7 @@ class QARunnerRegistryIntegration:
         """Code default pipeline without subprocess rules returns 8 rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         # Load the non-subprocess code pipeline
         # C03 (subprocess_qa_runner) and C04 (coverage) are subprocess rules
@@ -186,7 +186,7 @@ class QARunnerRegistryIntegration:
         """Code default pipeline with all rules returns 10 rules."""
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         results = execute_validation_pipeline(pipeline, "# Test")

@@ -11,7 +11,7 @@ exposes:
   - cli
 
 consumes:
-  - specweaver/assurance/validation
+  - specweaver/assurance/validation/io
   - specweaver/core/config
   - specweaver/core/config/bootstrap
   - specweaver/telemetry_logger

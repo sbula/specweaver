@@ -69,7 +69,7 @@ Read 2026-10-28.
    `tests/integration/workspace/analyzers/`. Manifests: `workspace/analyzers` exposes
    `ContextInferrer`, `workspace/context` drops it.
 
-**CB-2 — the validation readers move to `assurance/validation/io` (FR-18)** — kind `refactor`
+**CB-2 — the validation readers move to `assurance/validation/io` (FR-18)** — kind `tooling` (`test_logging_rollout.py` splits one import, as in CB-1)
 3. Red: `tach.toml` registers `specweaver.assurance.validation.io` (`depends_on`
    `assurance.validation`, `core.config`); `assurance.validation`'s expose drops
    `pipeline_loader.*` and `rubrics.*`. Tach red on every caller.

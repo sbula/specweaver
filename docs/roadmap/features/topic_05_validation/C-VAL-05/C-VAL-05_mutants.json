@@ -13,7 +13,7 @@
         {
           "id": "missing-rubric-is-empty",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
           "symbol": "load_rubric",
           "old": "    raise RubricNotFoundError(f\"No rubric named {rubric_id!r} in: {', '.join(map(str, ordered))}\")\n",
           "new": "    return Rubric(id=rubric_id, version=\"0\", criteria=\"\", checksum=\"\", source=Path(), dal=None)\n",
@@ -34,7 +34,7 @@
         {
           "id": "override-ignored",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
           "symbol": "_candidates",
           "old": "roots.insert(0, (project_dir / \".specweaver\" / \"rubrics\", True))",
           "new": "pass",
@@ -54,7 +54,7 @@
         {
           "id": "dal-variant-ignored",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
           "symbol": "_candidates",
           "old": "        if dal is not None:\n            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n",
           "new": "        if False:\n            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n",
@@ -75,7 +75,7 @@
         {
           "id": "frozen-checksum",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
           "symbol": "load_rubric",
           "old": "checksum=hashlib.sha256(criteria.encode(\"utf-8\")).hexdigest(),",
           "new": "checksum=\"constant\",",
@@ -124,7 +124,7 @@
         {
           "id": "shipped-variant-first",
           "origin": "authored",
-          "file": "src/specweaver/assurance/validation/rubrics/loader.py",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
           "symbol": "_candidates",
           "old": "            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n        ordered.append(root / f\"{rubric_id}.md\")\n    return ordered\n",
           "new": "            ordered.append(root / f\"{rubric_id}.{dal.value}.md\")\n    ordered += [root / f\"{rubric_id}.md\" for root, _ in roots]\n    return ordered\n",

@@ -17,6 +17,7 @@ consumes:
   - specweaver/workspace/project
   - specweaver/infrastructure/llm
   - specweaver/assurance/validation
+  - specweaver/assurance/validation/io
   - specweaver/assurance/standards
   - specweaver/assurance/graph
   - specweaver/graph

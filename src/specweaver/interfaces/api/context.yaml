@@ -12,6 +12,7 @@ archetype: adapter
 consumes:
   - specweaver/core/config
   - specweaver/assurance/validation
+  - specweaver/assurance/validation/io
   - specweaver/workflows/review
   - specweaver/workflows/implementation
   - specweaver/core/flow

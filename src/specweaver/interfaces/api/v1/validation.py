@@ -68,7 +68,7 @@ def _rule_response(r: Any) -> RuleResultResponse:
 
 def _check_pipeline(body: CheckRequest, project_root: Path, active_profile: str | None) -> Any:
     """The validation pipeline `/check` runs: a bare name, the project's own or a packaged one."""
-    from specweaver.assurance.validation.pipeline_loader import (
+    from specweaver.assurance.validation.io.pipeline_loader import (
         load_pipeline_yaml,
         resolve_pipeline_name,
     )
@@ -142,7 +142,7 @@ def list_rules() -> list[RuleInfo]:
     """List all available validation rules."""
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
     rules: list[RuleInfo] = []
     seen: set[str] = set()

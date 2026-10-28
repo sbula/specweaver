@@ -37,3 +37,49 @@ Full suite 11834 passed, 9 skipped; `tests.py cb --kind tooling`, `quality.py cb
 - R3 (LOW) an empty `tests/integration/workspace/context/` with only `__pycache__` stays on disk.
   Blue: git does not track it; nothing collects from it.
 - Cycle 2: no new finding.
+
+## CB-2 — the validation readers move to `assurance/validation/io` (FR-18)
+
+### What changed
+
+- New tach module `specweaver.assurance.validation.io` (archetype `adapter`), depending on
+  `assurance.validation` and `core.config`. Its manifest and tach expose list name the two readers.
+- `pipeline_loader.py` moved whole to `io/pipeline_loader.py`; `rubrics/loader.py` to
+  `io/rubrics.py`, whose `_SHIPPED_DIR` points at the `rubrics/` data folder. `rubrics/__init__.py`
+  re-exports nothing; the folder keeps the shipped `.md` files.
+- `assurance.validation` no longer exposes the readers; it exposes `inheritance.resolve_pipeline`,
+  which the pipeline reader calls. The validation manifest equals the tach list.
+- Callers import the new path: `interfaces/api/v1/validation.py`,
+  `core/flow/handlers/archetype_pipelines.py` and `review.py`, `core/config/interfaces/cli.py`,
+  `assurance/validation/interfaces/cli.py`. Their modules depend on `assurance.validation.io`;
+  `core.config.interfaces` lost its unused `assurance.validation` edge.
+- 24 test files re-pointed (import paths; ruff re-sorted six import blocks).
+  `test_logging_rollout.py` imports `pipeline_loader` from `io`, so the kind is `tooling`, as in
+  CB-1.
+- `developer_guide.html` names the new path.
+- Mutants: the five `C-VAL-05` mutants point at `io/rubrics.py`; those and four others whose
+  symbol held a re-pointed import (`C-FLOW-06` `dal-ignored`, `B-INTL-01` x2, `TECH-075`
+  `check-name-not-bare`) were re-run, all OBJECTED, then re-pinned one by one. 0 stale.
+
+### Red first
+
+Registering the module and shrinking the expose list first turned `tach check` red on all nine
+caller imports.
+
+### Gate notes
+
+Full suite 11834 passed, 9 skipped; `tests.py cb --kind tooling`, `quality.py cb` (after the
+import re-sort), `doc`, `check_proof_tier.py`, `tach check`, mypy green.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) a package named `io` beside `import io` in `pipeline_loader.py`. Blue: absolute
+  imports resolve the stdlib; `io.StringIO` runs in every pipeline test.
+- R2 (MEDIUM) `from ...validation.rubrics import load_rubric` now fails. Blue: grep finds no user;
+  mypy covers `src`.
+- R3 (MEDIUM) the shipped rubrics must still be found and packaged. Blue: the files did not move;
+  hatchling ships every file in the package; `test_rubrics.py` loads them. CB-3 adds
+  `rubrics-from-old-dir`.
+- R4 (LOW) `validation` exposes one more name. Blue: only `io` uses it, and `io` depends on
+  `validation`, not the other way.
+- Cycle 2: no new finding.

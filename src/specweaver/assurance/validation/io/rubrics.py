@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from specweaver.commons.enums.dal import DALLevel
 
-_SHIPPED_DIR = Path(__file__).parent
+_SHIPPED_DIR = Path(__file__).parent.parent / "rubrics"
 
 #: `---\nkey: value\n---` at the head of the file. Deliberately not YAML: a rubric is prose with a
 #: label on it, and a parser dependency here would make the criteria harder to edit, not easier.

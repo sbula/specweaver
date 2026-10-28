@@ -656,7 +656,7 @@ flowchart LR
   <tr><th>File</th><th>Purpose</th></tr>
   <tr><td><code>validation/pipeline.py</code></td><td><code>ValidationStep</code> / <code>ValidationPipeline</code> Pydantic models</td></tr>
   <tr><td><code>validation/inheritance.py</code></td><td>extends/override/remove/add resolution + circular-extends guard</td></tr>
-  <tr><td><code>validation/pipeline_loader.py</code></td><td>Load YAML → resolve inheritance → return flat pipeline</td></tr>
+  <tr><td><code>validation/io/pipeline_loader.py</code></td><td>Load YAML → resolve inheritance → return flat pipeline</td></tr>
   <tr><td><code>validation/executor.py</code></td><td><code>execute_validation_pipeline()</code>, <code>apply_settings_to_pipeline()</code></td></tr>
   <tr><td><code>validation/registry.py</code></td><td><code>RuleRegistry</code> — built-in + custom rule lookup</td></tr>
   <tr><td><code>validation/loader.py</code></td><td>Custom D-prefix rule loader from external directories</td></tr>

@@ -86,7 +86,7 @@ class TestDefaultSpecPipeline:
     def test_load_and_execute_default_pipeline(self, tmp_path: Path) -> None:
         """Load validation_spec_default → execute → returns 11 results."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         assert pipeline.name == "validation_spec_default"
@@ -104,7 +104,7 @@ class TestDefaultSpecPipeline:
 
     def test_default_pipeline_step_order_preserved(self) -> None:
         """Pipeline steps are in the YAML-defined order (cheap-to-expensive)."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         rule_ids = [step.rule for step in pipeline.steps]
@@ -114,7 +114,7 @@ class TestDefaultSpecPipeline:
 
     def test_default_pipeline_params_applied(self) -> None:
         """Pipeline step params are correctly loaded from YAML."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         s01_step = next(s for s in pipeline.steps if s.rule == "S01")
@@ -137,7 +137,7 @@ class TestFeatureSpecPipeline:
 
     def test_feature_pipeline_excludes_s04(self) -> None:
         """Feature pipeline resolves inheritance: S04 removed."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_feature")
         assert pipeline.name == "validation_spec_feature"
@@ -148,7 +148,7 @@ class TestFeatureSpecPipeline:
 
     def test_feature_pipeline_inherits_params(self) -> None:
         """Feature pipeline inherits params from the default pipeline."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_feature")
         s01_step = next(s for s in pipeline.steps if s.rule == "S01")
@@ -162,7 +162,7 @@ class TestFeatureSpecPipeline:
     ) -> None:
         """Feature pipeline runs 11 rules (no S04)."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_feature")
         spec_file = tmp_path / "feature_spec.md"
@@ -175,7 +175,7 @@ class TestFeatureSpecPipeline:
     def test_default_vs_feature_s04_difference(self, tmp_path: Path) -> None:
         """Same spec content: default has S04 result, feature does not."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         spec_file = tmp_path / "diff_test.md"
         spec_file.write_text(_GOOD_SPEC, encoding="utf-8")
@@ -205,7 +205,7 @@ class TestCodePipeline:
     def test_load_and_execute_code_pipeline(self, tmp_path: Path) -> None:
         """Load validation_code_default → execute → returns expected results."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_code_default")
         assert pipeline.name == "validation_code_default"
@@ -231,7 +231,7 @@ class TestApplySettingsIntegration:
     def test_disable_rule_removes_step(self) -> None:
         """Disabling S04 via settings removes S04 step from default pipeline."""
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
@@ -248,7 +248,7 @@ class TestApplySettingsIntegration:
     def test_threshold_override_merges_into_params(self) -> None:
         """Threshold override merges into the step params."""
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
@@ -273,7 +273,7 @@ class TestApplySettingsIntegration:
     def test_settings_none_returns_same_pipeline(self) -> None:
         """None settings returns the pipeline unchanged."""
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml("validation_spec_default")
         result = apply_settings_to_pipeline(pipeline, None)
@@ -285,7 +285,7 @@ class TestApplySettingsIntegration:
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
@@ -311,7 +311,7 @@ class TestApplySettingsIntegration:
     def test_override_for_rule_not_in_pipeline(self) -> None:
         """Override for a rule not in the pipeline is silently ignored (#2)."""
         from specweaver.assurance.validation.executor import apply_settings_to_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
@@ -336,7 +336,7 @@ class TestApplySettingsIntegration:
             apply_settings_to_pipeline,
             execute_validation_pipeline,
         )
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
         from specweaver.core.config.settings import RuleOverride, ValidationSettings
 
         pipeline = load_pipeline_yaml("validation_spec_default")
@@ -363,7 +363,7 @@ class TestProjectLocalPipeline:
 
     def test_project_local_pipeline_takes_precedence(self, tmp_path: Path) -> None:
         """Project-local validation_spec_default.yaml overrides packaged one."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         # Create project-local pipeline with only 2 rules
         pipelines_dir = tmp_path / ".specweaver" / "pipelines"
@@ -389,7 +389,7 @@ class TestProjectLocalPipeline:
 
     def test_unknown_pipeline_raises_file_not_found(self) -> None:
         """Loading a non-existent pipeline raises FileNotFoundError."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         with pytest.raises(FileNotFoundError, match="not found"):
             load_pipeline_yaml("nonexistent_pipeline_xyz")
@@ -415,7 +415,7 @@ class TestProfilePipelines:
     )
     def test_profile_pipeline_loads_and_resolves(self, profile: str) -> None:
         """Every profile pipeline loads and resolves without error."""
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml(profile)
         assert pipeline.name == profile
@@ -438,7 +438,7 @@ class TestProfilePipelines:
     ) -> None:
         """Every profile pipeline executes against a good spec without crashing."""
         from specweaver.assurance.validation.executor import execute_validation_pipeline
-        from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+        from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
         pipeline = load_pipeline_yaml(profile)
         spec_file = tmp_path / "spec.md"

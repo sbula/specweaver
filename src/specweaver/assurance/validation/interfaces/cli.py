@@ -103,12 +103,12 @@ def _resolve_pipeline_name(
     """Resolve the YAML pipeline name from --pipeline, --level, or active profile.
 
     Thin CLI wrapper around
-    :func:`specweaver.assurance.validation.pipeline_loader.resolve_pipeline_name`.
+    :func:`specweaver.assurance.validation.io.pipeline_loader.resolve_pipeline_name`.
     Translates :class:`ValueError` into ``typer.Exit(1)``.
     """
     import contextlib
 
-    from specweaver.assurance.validation.pipeline_loader import resolve_pipeline_name
+    from specweaver.assurance.validation.io.pipeline_loader import resolve_pipeline_name
 
     active_profile = None
     if active_project:
@@ -240,7 +240,7 @@ def check(
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401
     from specweaver.assurance.validation.executor import execute_validation_pipeline
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
     if lineage:
         _run_lineage_scan(project)
@@ -324,7 +324,7 @@ def list_rules(
     # Trigger auto-registration
     import specweaver.assurance.validation.rules.code
     import specweaver.assurance.validation.rules.spec  # noqa: F401
-    from specweaver.assurance.validation.pipeline_loader import load_pipeline_yaml
+    from specweaver.assurance.validation.io.pipeline_loader import load_pipeline_yaml
 
     project_dir = Path(project) if project else None
 

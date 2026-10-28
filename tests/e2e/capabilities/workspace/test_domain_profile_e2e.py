@@ -313,7 +313,7 @@ class TestDomainProfileCLI:
         verified profile thresholds; that accepts a pass and a failure alike, and stayed green with
         the profile lookup disabled entirely. `TECH-017`.
         """
-        from specweaver.assurance.validation import pipeline_loader
+        from specweaver.assurance.validation.io import pipeline_loader
 
         loaded: list[str] = []
         real = pipeline_loader.load_pipeline_yaml
