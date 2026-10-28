@@ -294,7 +294,7 @@ for approval `[agreed 2026-10-27]`.
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -320,6 +320,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: dev SF-06 ([plan](TECH-081_sf06_implementation_plan.md), approved 2026-10-28).
+**Next step**: implementation plan for SF-07 (SF-06 committed 2026-10-28).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
