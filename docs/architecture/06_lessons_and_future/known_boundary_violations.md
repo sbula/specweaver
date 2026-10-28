@@ -30,7 +30,6 @@ this table and `tach.toml` equal. A row goes when its edge goes; none may be add
 | `specweaver.infrastructure.llm` → `specweaver.assurance.graph` | `prompt/adders.py` types `TopologyContext` | FR-17 |
 | `specweaver.workflows.drafting` → `specweaver.assurance.graph` | `_base.py` types `TopologyContext` | FR-17 |
 | `specweaver.workflows.planning` → `specweaver.assurance.graph` | `decomposer.py` types `TopologyContext` | FR-17 |
-| `specweaver.core.config.bootstrap` → `specweaver.core.flow` | `db_bootstrap.py` imports the flow tables | FR-16 |
 | `specweaver.graph.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 | `specweaver.assurance.standards.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 | `specweaver.assurance.validation.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |

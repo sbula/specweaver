@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from specweaver.sandbox.language.core._detect import detect_language
+from specweaver.sandbox.language.core.detect import detect_language
 
 logger = logging.getLogger(__name__)
 

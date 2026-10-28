@@ -90,7 +90,7 @@
           "old": "_tests(f\"{stem}.py\", \"python\")",
           "new": "f\"tests/{stem}_test.py\"",
           "breaks": "a Python task's tests are written where the rules never look",
-          "symbol_sha": "sha256:d6789e866e9f6f79ee6c8b8736910ef32d9502a9e04dc18a0d3915ba1e2ab080"
+          "symbol_sha": "sha256:5053a91732a2a55928c45f6b62b1bb23569d2ef48c16e0dff2cc109e3f52c9ab"
         }
       ]
     },

@@ -238,6 +238,25 @@
           "symbol_sha": "sha256:026851d5e334dd7680e4d75c3cfa69bb2cd90229a1cc49d7f46345affcb48d7f"
         }
       ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "Bootstrap depends only on the flow tables",
+      "scope": [
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "bootstrap-imports-flow",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "get_db",
+          "old": "    db_path = config_db_path()",
+          "new": "    from specweaver.core.flow.engine.models import PipelineStep  # noqa: F401\n    db_path = config_db_path()",
+          "breaks": "bootstrap reaches all of core.flow again",
+          "symbol_sha": "sha256:bdae228198f24abe162fc3e57eb0234c8d855074a93f28eccabbcc6ff38baac9"
+        }
+      ]
     }
   ]
 }

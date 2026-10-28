@@ -57,7 +57,7 @@ def task_files_for(project_root: Path, spec_path: Path, language: str | None) ->
 
     Raises `ValueError` naming the spec line when its `Package` line is not a dotted identifier.
     """
-    from specweaver.sandbox.language.core._detect import detect_language
+    from specweaver.sandbox.language.core.detect import detect_language
 
     stem = module_stem(spec_path)
     chosen = language or detect_language(project_root)

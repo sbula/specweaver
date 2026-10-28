@@ -27,7 +27,7 @@ Why `QARunner`, not `TestRunner`: the old name `TestRunnerTool` collided with Py
 `resolve_runner(cwd)` in `src/specweaver/sandbox/qa_runner/core/factory.py` picks the runner by
 manifest file: `package.json` (TypeScript), `Cargo.toml` (Rust), `build.gradle` / `build.gradle.kts`
 (Kotlin), `pom.xml` (Java), default Python. `create_scenario_converter` and
-`create_stack_trace_filter` use `detect_language` from `sandbox/language/core/_detect.py`
+`create_stack_trace_filter` use `detect_language` from `sandbox/language/core/detect.py`
 (`SUPPORTED_LANGUAGES`).
 
 A new language registers its manifest trigger in all three.
@@ -74,7 +74,7 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 7. **Task files**: `task_files_for` (`core/flow/engine/task_files.py`) says where the task's code and
    test files go; every step after generation finds the file there (`qa_targets.step_file`).
 8. **Detection and scenarios**: the manifest in `detect_language`, the name in `SUPPORTED_LANGUAGES`
-   and its scenario file ending in `_SCENARIO_EXTENSIONS` (`sandbox/language/core/_detect.py`).
+   and its scenario file ending in `_SCENARIO_EXTENSIONS` (`sandbox/language/core/detect.py`).
 9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py`, registered in
    `rename._RESOLVERS`; without it `rename_symbol` and `move_module` refuse the language.
 10. **Standards**: an analyzer in `assurance/standards/languages/<lang>/`, registered in

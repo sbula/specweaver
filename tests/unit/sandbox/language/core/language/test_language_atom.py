@@ -36,7 +36,7 @@ class TestLanguageAtom:
         assert result.status == AtomStatus.FAILED
         assert "some_unknown_intent" in result.message
 
-    @patch("specweaver.sandbox.language.core._detect.detect_language")
+    @patch("specweaver.sandbox.language.core.detect.detect_language")
     def test_detects_valid_language(self, mock_detect: MagicMock, tmp_path: Path) -> None:
         """Should successfully detect the language and return it in exports."""
         mock_detect.return_value = "rust"
@@ -49,7 +49,7 @@ class TestLanguageAtom:
         assert result.exports["language"] == "rust"
         mock_detect.assert_called_once_with(tmp_path)
 
-    @patch("specweaver.sandbox.language.core._detect.detect_language")
+    @patch("specweaver.sandbox.language.core.detect.detect_language")
     def test_raises_for_unsupported_language_if_detect_fails(
         self, mock_detect: MagicMock, tmp_path: Path
     ) -> None:

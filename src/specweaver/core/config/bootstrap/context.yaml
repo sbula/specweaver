@@ -12,7 +12,7 @@ purpose: >
 archetype: adapter
 
 consumes:
-  - specweaver/core/flow
+  - specweaver/core/flow/store
   - specweaver/infrastructure/llm
   - specweaver/workspace
   - specweaver/workspace/memory

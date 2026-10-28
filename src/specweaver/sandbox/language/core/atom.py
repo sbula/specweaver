@@ -42,7 +42,7 @@ class LanguageAtom(Atom):
             )
 
         if intent == "detect_language":
-            from specweaver.sandbox.language.core._detect import detect_language
+            from specweaver.sandbox.language.core.detect import detect_language
 
             lang = detect_language(self._cwd)
             return AtomResult(

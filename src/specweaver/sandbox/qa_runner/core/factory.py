@@ -46,7 +46,7 @@ def resolve_runner(
             None lets each runner build its own host executor.
         language: The run's language; None asks `detect_language`, the one detector.
     """
-    from specweaver.sandbox.language.core._detect import detect_language
+    from specweaver.sandbox.language.core.detect import detect_language
 
     chosen = language or detect_language(cwd)
     if chosen != "python":

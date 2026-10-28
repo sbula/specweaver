@@ -17,6 +17,7 @@ archetype: orchestrator
 
 consumes:
   - specweaver/core/config
+  - specweaver/core/flow/store
   - specweaver/workspace/memory
   - specweaver/workspace/project
   - specweaver/infrastructure/llm

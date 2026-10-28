@@ -38,7 +38,7 @@
         {
           "id": "gradle-java-is-kotlin",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/_detect.py",
+          "file": "src/specweaver/sandbox/language/core/detect.py",
           "symbol": "detect_language",
           "old": "        return \"kotlin\" if _is_kotlin(cwd, builds) else \"java\"\n",
           "new": "        return \"kotlin\"\n",
@@ -48,7 +48,7 @@
         {
           "id": "kotlin-sources-ignored",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/_detect.py",
+          "file": "src/specweaver/sandbox/language/core/detect.py",
           "symbol": "_is_kotlin",
           "old": "    if (cwd / \"src\" / \"main\" / \"kotlin\").is_dir():\n        return True\n",
           "new": "    if False:\n        return True\n",
@@ -63,7 +63,7 @@
           "old": "    chosen = language or detect_language(cwd)\n",
           "new": "    chosen = detect_language(cwd)\n",
           "breaks": "[implement] language never reaches the QA tools",
-          "symbol_sha": "sha256:2772389639fcfc83ac75849a5e4386121a9a589be8e243ec2437f704794feb01"
+          "symbol_sha": "sha256:084b16dbc33975bcb954971bf6b8b2e43e6ca7d6c499639a277a9acdc63ec1ad"
         },
         {
           "id": "atom-drops-the-language",
@@ -695,7 +695,7 @@
           "old": "    if chosen != \"python\":\n        _warn_if_container_non_python(executor, chosen)\n",
           "new": "    pass\n",
           "breaks": "a non-Python runner in the container gives no warning",
-          "symbol_sha": "sha256:2772389639fcfc83ac75849a5e4386121a9a589be8e243ec2437f704794feb01"
+          "symbol_sha": "sha256:084b16dbc33975bcb954971bf6b8b2e43e6ca7d6c499639a277a9acdc63ec1ad"
         }
       ]
     }
