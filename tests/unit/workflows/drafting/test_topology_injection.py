@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyContext
+from specweaver.commons.topology_context import TopologyContext
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from tests.scripted_llm import TEST_CONFIG
@@ -387,7 +387,7 @@ class TestAutoBudgetScaling:
 
     def test_small_content_scales_up(self) -> None:
         """When main content is small relative to budget, topology gets more room."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
         from specweaver.infrastructure.llm.models import TokenBudget
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
@@ -416,7 +416,7 @@ class TestAutoBudgetScaling:
 
     def test_large_content_scales_down(self) -> None:
         """When content is large relative to budget, topology compressed."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
         from specweaver.infrastructure.llm.models import TokenBudget
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 
@@ -442,7 +442,7 @@ class TestAutoBudgetScaling:
 
     def test_explicit_factor_disables_auto(self) -> None:
         """When user sets budget_scale_factor explicitly, auto-scaling off."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
         from specweaver.infrastructure.llm.models import TokenBudget
         from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 

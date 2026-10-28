@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     from jinja2 import Template
 
-    from specweaver.assurance.graph.topology import TopologyContext
+    from specweaver.commons.topology_context import TopologyContext
     from specweaver.infrastructure.llm.adapters.base import LLMAdapter
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
     from specweaver.workspace.context.provider import ContextProvider

@@ -69,7 +69,7 @@ depends_on = [ "specweaver.workspace.project", "specweaver.assurance.validation"
 
 [[modules]]
 path = "specweaver.infrastructure.llm"
-depends_on = [ "specweaver.core.config", "specweaver.workspace.ast.parsers", { path = "specweaver.assurance.graph", deprecated = true },]
+depends_on = [ "specweaver.core.config", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm.interfaces"
@@ -89,7 +89,7 @@ depends_on = [ "specweaver._version", "specweaver.assurance.standards.interfaces
 
 [[modules]]
 path = "specweaver.workflows.drafting"
-depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context", { path = "specweaver.assurance.graph", deprecated = true },]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.drafting.interfaces"
@@ -109,7 +109,7 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.workflows.planning"
-depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context", { path = "specweaver.assurance.graph", deprecated = true },]
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.review"

@@ -320,7 +320,7 @@ class TestAddTopology:
     """Test topology context rendering."""
 
     def test_topology_renders_xml(self) -> None:
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
 
         contexts = [
             TopologyContext(
@@ -340,7 +340,7 @@ class TestAddTopology:
         assert "</topology>" in result
 
     def test_topology_before_files(self, tmp_path: Path) -> None:
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
 
         f = tmp_path / "x.py"
         f.write_text("pass", encoding="utf-8")
@@ -358,7 +358,7 @@ class TestAddTopology:
         assert topo_pos < file_pos
 
     def test_topology_no_constraints_renders_none(self) -> None:
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
 
         ctx = [
             TopologyContext(
@@ -377,7 +377,7 @@ class TestAddTopology:
         assert result == ""
 
     def test_topology_chaining(self) -> None:
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
 
         pb = PromptBuilder()
         ret = pb.add_topology(

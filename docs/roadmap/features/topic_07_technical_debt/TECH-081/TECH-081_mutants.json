@@ -326,6 +326,25 @@
           "symbol_sha": "sha256:f0ba0091c907fb5390e650085d7edf15c10de10278f3030bf52073022bc4c58a"
         }
       ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "graph and the layers above it import nothing from assurance.graph",
+      "scope": [
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "llm-imports-topology",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prompt/adders.py",
+          "symbol": "PromptBuilderAddersMixin.add_topology",
+          "old": "            logger.debug(\"Slot %s inactive — skipping add_topology\", PromptSlot.TOPOLOGY)\n",
+          "new": "            from specweaver.assurance.graph.topology import TopologyGraph  # noqa: F401\n\n            logger.debug(\"Slot %s inactive — skipping add_topology\", PromptSlot.TOPOLOGY)\n",
+          "breaks": "the LLM layer reaches into assurance.graph again",
+          "symbol_sha": "sha256:2bf433ea0e1728b0601674e06869e64bfa1070a97647629f734e236166c26b52"
+        }
+      ]
     }
   ]
 }

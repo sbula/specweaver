@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext
+    from specweaver.commons.topology_context import TopologyContext
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
     from specweaver.infrastructure.llm.models import ProjectMetadata
     from specweaver.infrastructure.llm.prompt.builder import PromptBuilder

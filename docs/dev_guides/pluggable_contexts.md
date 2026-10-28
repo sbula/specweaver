@@ -35,7 +35,7 @@ Protocols resolve structurally: any class with `get_prompt_content` and `get_pro
 conforms, with no LLM package imports.
 
 ```python
-# specweaver/assurance/graph/topology.py
+# specweaver/commons/topology_context.py
 # NO LLM IMPORTS HERE
 
 class TopologyContext:

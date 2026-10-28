@@ -15,7 +15,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyContext, TopologyGraph
+    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.commons.topology_context import TopologyContext
 
 logger = logging.getLogger(__name__)
 

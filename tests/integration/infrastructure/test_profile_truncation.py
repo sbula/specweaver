@@ -6,7 +6,7 @@
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyContext
+from specweaver.commons.topology_context import TopologyContext
 from specweaver.core.flow.handlers._profiles import FULL, MINIMAL
 from specweaver.infrastructure.llm.models import ProjectMetadata, TokenBudget
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder

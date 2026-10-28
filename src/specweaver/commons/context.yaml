@@ -43,6 +43,7 @@ exposes:
   - root_of_tests
   - ScenarioDefinition
   - ScenarioSet
+  - TopologyContext
 
 # -- Operational Metadata --------------------------------------------------
 operational:

@@ -25,9 +25,6 @@ this table and `tach.toml` equal. A row goes when its edge goes; none may be add
 | Edge | What | Removed by |
 |---|---|---|
 | `specweaver.graph` → `specweaver.assurance.graph` | `orchestrator.py` loads the topology for a service name | FR-17 |
-| `specweaver.infrastructure.llm` → `specweaver.assurance.graph` | `prompt/adders.py` types `TopologyContext` | FR-17 |
-| `specweaver.workflows.drafting` → `specweaver.assurance.graph` | `_base.py` types `TopologyContext` | FR-17 |
-| `specweaver.workflows.planning` → `specweaver.assurance.graph` | `decomposer.py` types `TopologyContext` | FR-17 |
 | `specweaver.graph.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 | `specweaver.assurance.standards.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 | `specweaver.assurance.validation.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |

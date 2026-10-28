@@ -162,7 +162,7 @@ class TestAddConstitution:
 
     def test_constitution_renders_after_instructions(self) -> None:
         """Constitution renders after instructions, before topology."""
-        from specweaver.assurance.graph.topology import TopologyContext
+        from specweaver.commons.topology_context import TopologyContext
 
         ctx = [
             TopologyContext(

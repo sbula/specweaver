@@ -13,7 +13,7 @@ an unbounded neighbourhood makes it worse by crowding out the thing being asked 
 carrying that is thin, and it is the reason this FR was worth writing down rather than assuming.
 """
 
-from specweaver.assurance.graph.topology import TopologyContext
+from specweaver.commons.topology_context import TopologyContext
 from specweaver.infrastructure.llm.prompt.interfaces import PromptContentSource
 from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 

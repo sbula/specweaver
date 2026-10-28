@@ -32,7 +32,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyContext
+from specweaver.commons.topology_context import TopologyContext
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
