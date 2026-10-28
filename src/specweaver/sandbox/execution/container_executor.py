@@ -20,13 +20,6 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from specweaver.commons.prepare_plan import (
-    _DEFAULT_GROUP,
-    _LAST_RESORT_RUNNER,
-    PreparePlan,
-    detect_toolchain,
-    plan_for,
-)
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.execution.sandbox_image import (
     _ENGINES,
@@ -34,14 +27,21 @@ from specweaver.sandbox.execution.sandbox_image import (
     _resolve_image,
     ensure_sandbox_image,
 )
+from specweaver.workspace.project.prepare_plan import (
+    DEFAULT_GROUP,
+    LAST_RESORT_RUNNER,
+    PreparePlan,
+    detect_toolchain,
+    plan_for,
+)
 
 if TYPE_CHECKING:
-    from specweaver.commons.tooling_sources import ToolingSource
     from specweaver.sandbox.execution.models import (
         ContainerMounts,
         ResourceLimits,
         SubprocessResult,
     )
+    from specweaver.workspace.project.tooling_sources import ToolingSource
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +221,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         # Last resort, and deliberately last: the project has named no runner anywhere this can
         # read, so the sandbox installs one. Recorded rather than merely logged, because a green
         # result then attests to a suite run against a version nobody chose.
-        self.supplied_toolchain = (_LAST_RESORT_RUNNER,) if plan.runner_source == "sandbox" else ()
+        self.supplied_toolchain = (LAST_RESORT_RUNNER,) if plan.runner_source == "sandbox" else ()
         for warning in plan.warnings:
             logger.warning(
                 "ContainerSubprocessExecutor: %s — %s", self._mounts.source_root, warning
@@ -344,7 +344,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         if locked:
             # `uv sync` installs `dev` and nothing else, so a project whose runner sits in `tests`
             # gets a venv the QA runner cannot use. Naming `dev` again would only be noise.
-            synced = [arg for arg in group_flags if arg != _DEFAULT_GROUP]
+            synced = [arg for arg in group_flags if arg != DEFAULT_GROUP]
             if synced[-1:] == ["--group"]:
                 synced = synced[:-1]
             return [

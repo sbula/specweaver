@@ -45,7 +45,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "spe
 
 [[modules]]
 path = "specweaver.core.flow"
-depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory", { path = "specweaver.workflows.drafting", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true },]
+depends_on = [ "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory", { path = "specweaver.workflows.drafting", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
@@ -53,7 +53,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweav
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor", { path = "specweaver.core.flow", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true }, { path = "specweaver.workflows.scenarios", deprecated = true },]
+depends_on = [ "specweaver.workspace.project", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor", { path = "specweaver.core.flow", deprecated = true }, { path = "specweaver.workflows.evaluators", deprecated = true }, { path = "specweaver.workflows.scenarios", deprecated = true },]
 
 [[modules]]
 path = "specweaver.infrastructure.llm"
@@ -182,7 +182,7 @@ expose = [ "graph_adapter", "graph_adapter.extract_ast_dict", "graph_adapter.par
 
 [[interfaces]]
 from = [ "specweaver.workspace.project",]
-expose = [ "constitution", "constitution.find_constitution", "constitution.check_constitution", "constitution.generate_constitution", "constitution.generate_constitution_from_standards", "scaffold", "scaffold.scaffold_project", "discovery", "discovery.resolve_project_path", "tach_sync", "tach_sync.sync_tach_toml", "constitution.CONSTITUTION_FILENAME", "constitution.is_unmodified_starter",]
+expose = [ "constitution", "constitution.find_constitution", "constitution.check_constitution", "constitution.generate_constitution", "constitution.generate_constitution_from_standards", "scaffold", "scaffold.scaffold_project", "discovery", "discovery.resolve_project_path", "tach_sync", "tach_sync.sync_tach_toml", "constitution.CONSTITUTION_FILENAME", "constitution.is_unmodified_starter", "prepare_plan.DEFAULT_GROUP", "prepare_plan.LAST_RESORT_RUNNER", "prepare_plan.PreparePlan", "prepare_plan.detect_toolchain", "prepare_plan.plan_for", "tooling_sources.ToolingSource",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.context",]

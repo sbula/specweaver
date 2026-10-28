@@ -90,7 +90,7 @@
         {
           "id": "no-dependency-carries-a-runner",
           "origin": "authored",
-          "file": "src/specweaver/commons/prepare_plan.py",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
           "symbol": "_declares_a_runner",
           "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
           "new": "        if False:",
@@ -100,7 +100,7 @@
         {
           "id": "a-runner-is-matched-as-a-substring",
           "origin": "authored",
-          "file": "src/specweaver/commons/prepare_plan.py",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
           "symbol": "_declares_a_runner",
           "old": "        if any(name == runner or name.startswith(f\"{runner}-\") for runner in _TEST_RUNNERS):",
           "new": "        if any(runner in name for runner in _TEST_RUNNERS):",
@@ -132,13 +132,13 @@
       "requirement": "FR-7",
       "title": "A runner declared outside the manifest is installed",
       "scope": [
-        "tests/unit/commons/test_tooling_sources.py"
+        "tests/unit/workspace/project/test_tooling_sources.py"
       ],
       "mutants": [
         {
           "id": "requirements-files-are-never-read",
           "origin": "authored",
-          "file": "src/specweaver/commons/tooling_sources.py",
+          "file": "src/specweaver/workspace/project/tooling_sources.py",
           "symbol": "declared_pytest",
           "old": "    for name in _REQUIREMENT_FILES:",
           "new": "    for name in ():",
@@ -189,13 +189,13 @@
       "requirement": "FR-10",
       "title": "The plan is readable before a run",
       "scope": [
-        "tests/unit/commons/test_prepare_plan.py"
+        "tests/unit/workspace/project/test_prepare_plan.py"
       ],
       "mutants": [
         {
           "id": "every-project-claims-to-be-reproducible",
           "origin": "authored",
-          "file": "src/specweaver/commons/prepare_plan.py",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
           "symbol": "plan_for",
           "old": "route = \"locked\" if locked else \"resolved\"",
           "new": "route = \"locked\"",
@@ -285,13 +285,13 @@
       "requirement": "FR-16",
       "title": "Non-Python projects have a prepare plan at all",
       "scope": [
-        "tests/unit/commons/test_prepare_plan_languages.py"
+        "tests/unit/workspace/project/test_prepare_plan_languages.py"
       ],
       "mutants": [
         {
           "id": "rust-is-not-recognised",
           "origin": "authored",
-          "file": "src/specweaver/commons/prepare_plan.py",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
           "symbol": "_plan_for_other",
           "old": "    if toolchain == \"cargo\":",
           "new": "    if False:",

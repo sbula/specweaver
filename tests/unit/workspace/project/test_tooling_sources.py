@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.commons.tooling_sources import declared_pytest
+from specweaver.workspace.project.tooling_sources import declared_pytest
 
 if TYPE_CHECKING:
     from pathlib import Path

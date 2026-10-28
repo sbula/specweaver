@@ -9,7 +9,7 @@
 ## Scope
 
 FR-9 (`commons` depends on nothing and reads no files) and FR-10 (`sandbox` imports nothing from
-`workflows` or `core.flow`), with AD-4 (the `sw sandbox` CLI leaves the shell), AD-5 (scenario
+`workflows` or `core.flow`), with AD-5 (scenario
 models to `commons`), AD-6 (evaluator-schema loader to `sandbox`), AD-14 (a Protocol in
 `security.py`). Kind `refactor`: no command, option or output changes (NFR-1). Four `deprecated`
 edges and their ledger rows go.
@@ -60,21 +60,20 @@ Read 2026-10-28.
 
 ## Approach (pseudocode, ordered)
 
-**CB-1 — `commons` is pure (FR-9, AD-4)**
+**CB-1 — `commons` is pure (FR-9)**
 1. Test first (red): `tests/unit/test_pure_modules_do_no_io.py` — for each module in a short list
    (today: `commons`), parse every file and fail on file or process calls (`open`, `.read_text`,
    `.read_bytes`, `.write_*`, `.is_file`, `.exists`, `.is_dir`, `.iterdir`, `.glob`, `.rglob`;
    imports of `subprocess`, `shutil`, `os`). Red: `prepare_plan.py`, `tooling_sources.py`. The list
    is a constant; SF-07 adds `assurance/validation`.
-2. `git mv` both files to `sandbox/execution/`; fix the imports in `src` and the moved tests
+2. `git mv` both files to `workspace/project/`; fix the imports in `src` and the moved tests
    (`tests/unit/commons/test_{prepare_plan,prepare_plan_languages,tooling_sources}.py` →
-   `tests/unit/sandbox/execution/`).
-3. AD-4: `git mv interfaces/cli/routers/sandbox_router.py sandbox/interfaces/cli.py`; a new tach
-   module `specweaver.sandbox.interfaces` (`depends_on = ["specweaver.sandbox"]`), its manifest
-   (`entry-point`); `main.py` imports it; `interfaces.cli` gains the plain edge to
-   `specweaver.sandbox.interfaces`. Expose `execution.prepare_plan` in the sandbox interfaces.
-4. `commons/context.yaml`: `archetype: pure-logic`.
-5. Re-point the `TECH-031` corpus; update `cli_architecture.md:26`.
+   `tests/unit/workspace/project/`). `tach.toml`: `sandbox` and `core.flow` gain the plain edge to
+   `workspace.project`; its interfaces expose `prepare_plan`. The router stays in the shell
+   (AD-4 dropped `[agreed 2026-10-28]`: `TECH-002` FR-6 bars `interfaces/` from the sandbox).
+3. Manifests: `commons` → `pure-logic`; `sandbox`, `core/flow` consume `workspace/project`.
+4. Re-point the `TECH-031` corpus; fix the router's docstring.
+5. Mutant `commons-reads-again`; pre-commit; commit.
 
 **CB-2 — the sandbox imports no workflow (FR-10, AD-5, AD-6, AD-14)** — closes SF-03
 6. Red first: delete the 4 `deprecated` edges (`core.flow → workflows.evaluators`,
@@ -121,16 +120,15 @@ Mutants (each must turn a test red):
 
 ## Documentation
 
-`language_support_guide.md`, `cli_architecture.md` (paths). The design's tracker and handoff.
+`language_support_guide.md`, the router docstring. The design's tracker and handoff.
 
 ## Architecture Verification (Phase 3)
 
-- `sandbox/execution` is an `adapter` that already reads files and runs processes: the readers
-  fit. `commons` becomes `pure-logic` with nothing left that does I/O.
+- `workspace/project` is an `adapter` for project discovery that already reads files: the readers
+  fit. `commons` becomes `pure-logic` with nothing left that does I/O. `sandbox → workspace.project`
+  makes no loop (its reach: `assurance.graph`, `graph`, `workspace.*`; measured 2026-10-28).
 - `sandbox/evaluator_schemas.py` reads package resources and project YAML: `sandbox` is an
   `orchestrator` that consumes `core/config` — allowed.
-- `sandbox.interfaces` (`entry-point`) → `sandbox`; `interfaces.cli` → `sandbox.interfaces`.
-  No loop: `sandbox` imports neither.
 - Scenario models in `commons`: pydantic data, no imports from `specweaver`.
 - No `deprecated` edge is added (NFR-2); four are removed.
 
@@ -139,7 +137,7 @@ Mutants (each must turn a test red):
 ❓ **Q1 — move the two readers whole, or split them.** The design says "the file-reading parts"
 move. In both files the pure parts (manifest-text parsing, tox-line sorting) are private helpers
 with no other user.
-- **A:** move both files whole to `sandbox/execution/`; one home, tests move unchanged.
+- **A:** move both files whole (to `sandbox/execution/`, later `workspace/project/`, see below); one home, tests move unchanged.
 - **B:** split: pure parsers stay in `commons`, readers move; two files each, tests split.
 
 ❓ **Q2 — a guard test in a `refactor` sub-feature.** FR-9's "reads no files" has no check today;
@@ -162,3 +160,7 @@ and runs `--kind tooling`.
   - R4 (LOW) `git mv` of a test plus an import edit may still trip the refactor gate in CB-2. Blue:
     stage first; if it blocks, CB-2 also runs `tooling` and the walkthrough says why.
   - Cycle 2: no new finding.
+
+**Found in dev, 2026-10-28:** AD-4 would make `interfaces/cli/main.py` import the sandbox, which
+`tests/unit/test_layer_import_isolation.py` (`TECH-002` FR-6) forbids. The user chose B
+`[agreed 2026-10-28]`: the readers go to `workspace/project`, the router stays.

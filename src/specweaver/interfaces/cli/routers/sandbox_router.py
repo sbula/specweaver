@@ -8,7 +8,7 @@ run: a project without a lockfile is resolved fresh and stops reproducing its ow
 needing substitution are skipped, and a project declaring no runner is given one the sandbox chose.
 
 This prints the same plan the executor acts on, so it cannot describe a different phase. It reads
-that plan from `commons`, never from the sandbox — the delivery layer delegates rather than
+that plan from `workspace/project`, never from the sandbox — the delivery layer delegates rather than
 importing execution.
 """
 
@@ -20,7 +20,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from specweaver.commons.prepare_plan import plan_for
+from specweaver.workspace.project.prepare_plan import plan_for
 
 sandbox_cli = typer.Typer(name="sandbox", help="Inspect how the sandbox will treat a project.")
 console = Console()

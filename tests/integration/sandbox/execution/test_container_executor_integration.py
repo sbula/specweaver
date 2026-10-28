@@ -26,10 +26,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.commons.prepare_plan import plan_for
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.workspace.project.prepare_plan import plan_for
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -657,7 +657,7 @@ class TestNonPythonToolchainsRunInTheContainer:
         )
         (project / "src" / "lib.rs").write_text("pub fn v() -> i32 { 42 }\n", encoding="utf-8")
 
-        from specweaver.commons.prepare_plan import plan_for
+        from specweaver.workspace.project.prepare_plan import plan_for
 
         plan = plan_for(project)
 

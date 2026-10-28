@@ -190,6 +190,25 @@
           "breaks": "a module falls back to no manifest of its own"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "commons reads no files",
+      "scope": [
+        "tests/unit/test_pure_modules_do_no_io.py"
+      ],
+      "mutants": [
+        {
+          "id": "commons-reads-again",
+          "origin": "authored",
+          "file": "src/specweaver/commons/json.py",
+          "symbol": "load",
+          "old": "    return loads(fp.read())",
+          "new": "    return loads(open(fp).read())",
+          "breaks": "the shared leaf reads a file again",
+          "symbol_sha": "sha256:4500554b6f6a09eb0c42a9f89de5e7c7d3f459900eef49ab43f4fa6de6db48f1"
+        }
+      ]
     }
   ]
 }

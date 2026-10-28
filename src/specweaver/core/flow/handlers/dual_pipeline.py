@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 def _isolation_refusal(context: RunContext) -> str | None:
     """Why the scenario side cannot be kept from the coder here; None when it can (FR-11, FR-18)."""
-    from specweaver.commons.prepare_plan import detect_toolchain
     from specweaver.core.flow.handlers.scenario_store import scenario_store
+    from specweaver.workspace.project.prepare_plan import detect_toolchain
 
     if scenario_store(context) is None:
         return (

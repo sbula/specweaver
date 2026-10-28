@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.commons.prepare_plan import plan_for
+from specweaver.workspace.project.prepare_plan import plan_for
 
 if TYPE_CHECKING:
     from pathlib import Path

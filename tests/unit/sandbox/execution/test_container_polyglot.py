@@ -3,7 +3,7 @@
 
 """The container executor acting on a plan for a toolchain that is not Python.
 
-The plan is decided in `commons.prepare_plan` and has its own tests. What is asserted here is that
+The plan is decided in `workspace.project.prepare_plan` and has its own tests. What is asserted here is that
 the executor *acts* on it: runs the fetch, carries the environment into both phases, and picks an
 image that contains the toolchain at all. A plan nothing consumes is half a deliverable.
 

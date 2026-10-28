@@ -11,7 +11,7 @@ description: |
   components require for type-safety without introducing inter-layer dependencies.
   This module strictly resides at layer L0.
 
-archetype: mixed
+archetype: pure-logic
 
 consumes: []
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.commons.prepare_plan import detect_toolchain, plan_for
+from specweaver.workspace.project.prepare_plan import detect_toolchain, plan_for
 
 if TYPE_CHECKING:
     from pathlib import Path

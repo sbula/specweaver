@@ -7,9 +7,8 @@ The container executor acts on this and `sw sandbox preflight` prints it. Decidi
 is the point: a preflight that re-derived the decision would agree with the sandbox only until one
 of them changed, and a report describing something other than what runs is worse than no report.
 
-Resides in L0 commons for the same reason as the QA result models beside it — the delivery layer
-must be able to read this without importing the sandbox, and reading a manifest is knowledge about
-packaging rather than a way to execute anything.
+Lives in `workspace/project`, not the sandbox: the delivery layer must read it without importing
+the sandbox, and reading a project's manifests is project discovery, not execution.
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ import tomllib
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from specweaver.commons.tooling_sources import ToolingSource, declared_pytest
+from specweaver.workspace.project.tooling_sources import ToolingSource, declared_pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -39,12 +38,12 @@ logger = logging.getLogger(__name__)
 _TEST_RUNNERS: tuple[str, ...] = ("pytest",)
 
 #: `uv sync` installs this group unasked. Requesting it again would be noise.
-_DEFAULT_GROUP = "dev"
+DEFAULT_GROUP = "dev"
 
 #: Installed only when the project names no runner anywhere. Bare: which plugins a suite needs
 #: is exactly what the project failed to say, so guessing at them would add arbitrary packages
 #: to an already arbitrary choice.
-_LAST_RESORT_RUNNER = "pytest"
+LAST_RESORT_RUNNER = "pytest"
 
 
 def _declares_a_runner(deps: list[object]) -> bool:

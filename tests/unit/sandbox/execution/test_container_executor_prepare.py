@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from specweaver.commons.prepare_plan import _groups_holding_a_runner, plan_for
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.workspace.project.prepare_plan import _groups_holding_a_runner, plan_for
 from tests.fixtures.container_sandbox import find_call as _find_call
 from tests.fixtures.container_sandbox import mounts as _mounts
 from tests.fixtures.container_sandbox import ok_result as _ok_result

@@ -18,6 +18,7 @@ archetype: orchestrator
 consumes:
   - specweaver/core/config
   - specweaver/workspace/memory
+  - specweaver/workspace/project
   - specweaver/infrastructure/llm
   - specweaver/workflows/review
   - specweaver/workflows/implementation
@@ -38,7 +39,7 @@ consumes:
 forbids:
   - specweaver/sandbox/*/interfaces  # Atoms and raw orchestrators must not execute intent-gated agent tools directly.
     # NB: this refers to sandbox/commons (loom-internal — only atoms/tools may consume it),
-    # NOT the top-level specweaver/commons, which is an L0 `raw-data` foundation leaf
+    # NOT the top-level specweaver/commons, which is an L0 `pure-logic` foundation leaf
     # (consumes: [], forbids: specweaver/*) that every layer may legally depend on.
   - specweaver/workflows/drafting  # Rules and adapters must remain isolated from interactive drafts.
   - specweaver/workspace/context

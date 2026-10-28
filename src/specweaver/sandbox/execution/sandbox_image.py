@@ -18,8 +18,8 @@ import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from specweaver.commons.prepare_plan import detect_toolchain
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.workspace.project.prepare_plan import detect_toolchain
 
 if TYPE_CHECKING:
     from collections.abc import Callable
