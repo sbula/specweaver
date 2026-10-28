@@ -4,8 +4,8 @@
 - **Phase**: Topic 07 (Technical Debt)
 - **Status**: APPROVED (by the user, 2026-10-27)
 - **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
-  SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3, whose test calls gain the
-  injected registry and drafters `[agreed 2026-10-28]`), which add guard tests
+  SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3 and SF-06 CB-2, whose test calls gain the
+  injected registry, drafters and service name `[agreed 2026-10-28]`), which add guard tests
   a refactor may not (`scripts/tests.py`)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -294,7 +294,7 @@ for approval `[agreed 2026-10-27]`.
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -320,6 +320,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: implementation plan for SF-06 (SF-04 committed 2026-10-28).
+**Next step**: dev SF-06 ([plan](TECH-081_sf06_implementation_plan.md), approved 2026-10-28).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
