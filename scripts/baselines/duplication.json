@@ -244,7 +244,7 @@
     "first": "src/specweaver/sandbox/language/core/java/scenario_converter.py:75",
     "second": "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py:77"
   },
-  "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @bf1470247b7b": {
+  "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @595ae2f0d8e0": {
     "lines": 18,
     "first": "src/specweaver/sandbox/language/core/java/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"
@@ -264,7 +264,7 @@
     "first": "src/specweaver/sandbox/language/core/kotlin/runner.py:78",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:97"
   },
-  "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @624509f14dc5": {
+  "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @e10a41fe01ba": {
     "lines": 17,
     "first": "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"

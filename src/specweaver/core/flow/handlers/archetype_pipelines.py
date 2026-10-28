@@ -111,7 +111,7 @@ def add_payload(
 ) -> None:
     """Give every step the file's structure, and with `markers` its framework markers."""
     from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
-    from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+    from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
 
     cwd = project_path or path.parent
     atom = CodeStructureAtom(
@@ -161,7 +161,7 @@ def languages_of(archetype: str, project_path: Path | None) -> list[str]:
     Raises `ValueError` on a name `LANGUAGE_SUFFIXES` does not know: a misspelt language would
     otherwise make the archetype judge no file at all, silently.
     """
-    from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+    from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
 
     schema = load_evaluator_schemas(project_dir=project_path).get(archetype) or {}
     languages = list((schema.get("metadata") or {}).get("supported_languages") or [])

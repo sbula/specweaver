@@ -4,7 +4,7 @@
 name: scenarios
 level: module
 purpose: >
-  Generates test scenarios from a spec with the model, and converts them to Python tests.
+  Generates test scenarios from a spec with the model.
 
 archetype: orchestrator
 

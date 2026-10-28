@@ -290,7 +290,7 @@ for approval `[agreed 2026-10-27]`.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The check sees every module | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The manifests tell the truth | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -319,6 +319,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: dev SF-03 CB-1 (plan approved 2026-10-28).
+**Next step**: implementation plan for SF-04 (SF-03 committed 2026-10-28, [walkthrough](TECH-081_sf03_walkthrough.md)).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

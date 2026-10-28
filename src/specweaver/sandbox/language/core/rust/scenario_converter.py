@@ -24,7 +24,7 @@ from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterfa
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.workflows.scenarios.scenario_models import ScenarioSet
+    from specweaver.commons.scenario_models import ScenarioSet
 
 
 def _to_snake_case(name: str) -> str:

@@ -23,8 +23,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from specweaver.workflows.scenarios.scenario_converter import ScenarioConverter
-from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
+from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
+from specweaver.sandbox.language.core.python.scenario_converter import ScenarioConverter
 
 if TYPE_CHECKING:
     from pathlib import Path

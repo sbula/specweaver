@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
+from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
 
 
 class TestScenarioDefinition:

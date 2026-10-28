@@ -499,7 +499,7 @@ written. More proof than claimed, so nothing is over-stated; the count is simply
 | Cited proof file | Tier | Tests |
 |---|---|---|
 | `tests/e2e/capabilities/workflows/test_scenario_verification_e2e.py` | e2e | 9 |
-| `tests/integration/workflows/scenarios/test_converter_execution.py` | integration | 4 |
+| `tests/integration/sandbox/language/test_converter_execution.py` | integration | 4 |
 
 | # | Claim | Verdict | Evidence |
 |---|---|---|---|

@@ -25,11 +25,7 @@ this table and `tach.toml` equal. A row goes when its edge goes; none may be add
 
 | Edge | What | Removed by |
 |---|---|---|
-| `specweaver.core.flow` → `specweaver.workflows.evaluators` | `archetype_pipelines.py` loads evaluator schemas | FR-10 |
 | `specweaver.core.flow` → `specweaver.workflows.drafting` | `draft.py` builds `Drafter`/`FeatureDrafter` | FR-13 |
-| `specweaver.sandbox` → `specweaver.workflows.scenarios` | the Python converter delegates; 5 converters type `ScenarioSet` | FR-10 |
-| `specweaver.sandbox` → `specweaver.workflows.evaluators` | `dispatcher.py` loads evaluator schemas | FR-10 |
-| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-10 |
 | `specweaver.graph` → `specweaver.assurance.graph` | `orchestrator.py` loads the topology for a service name | FR-17 |
 | `specweaver.infrastructure.llm` → `specweaver.assurance.graph` | `prompt/adders.py` types `TopologyContext` | FR-17 |
 | `specweaver.workflows.drafting` → `specweaver.assurance.graph` | `_base.py` types `TopologyContext` | FR-17 |

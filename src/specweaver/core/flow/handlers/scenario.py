@@ -172,7 +172,7 @@ class ConvertScenarioHandler:
         try:
             from ruamel.yaml import YAML
 
-            from specweaver.workflows.scenarios.scenario_models import ScenarioSet
+            from specweaver.commons.scenario_models import ScenarioSet
 
             # Find scenario YAML from previous step
             store = _stores.scenario_store(context)

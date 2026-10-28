@@ -16,7 +16,7 @@ import re
 from typing import Any
 
 from specweaver.commons import json
-from specweaver.workflows.scenarios.scenario_models import ScenarioSet
+from specweaver.commons.scenario_models import ScenarioSet
 
 logger = logging.getLogger(__name__)
 

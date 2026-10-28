@@ -454,11 +454,11 @@ container engine, or a toolchain the test drives. Those are the only reasons any
 
 - `tests/unit/sandbox/execution/test_container_executor_prepare.py` — FR-1 to FR-6, FR-8
 - `tests/unit/sandbox/execution/test_container_polyglot.py` — FR-17, FR-18
-- `tests/unit/commons/test_tooling_sources.py` — FR-7, including a run against all 30 real `tox.ini`
+- `tests/unit/workspace/project/test_tooling_sources.py` — FR-7, including a run against all 30 real `tox.ini`
   files from the corpus
-- `tests/unit/commons/test_prepare_plan.py` — FR-10, and the two tests tying the plan to what the
+- `tests/unit/workspace/project/test_prepare_plan.py` — FR-10, and the two tests tying the plan to what the
   executor does
-- `tests/unit/commons/test_prepare_plan_languages.py` — FR-16
+- `tests/unit/workspace/project/test_prepare_plan_languages.py` — FR-16
 - `tests/unit/sandbox/language/core/language/python/test_toolchain_absence.py` — FR-9
 - `tests/unit/sandbox/language/core/language/rust/test_cargo_output.py` — FR-11
 - `tests/unit/sandbox/language/core/language/rust/test_cargo_diagnostics.py` — FR-19

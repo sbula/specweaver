@@ -17,4 +17,3 @@ consumes:
   - specweaver/workspace/ast/refactor
   - specweaver/workspace/project
 
-# sandbox -> workflows and -> core.flow are owed edges (ledger, TECH-081 FR-10), not declared here.

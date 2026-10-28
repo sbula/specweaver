@@ -209,6 +209,35 @@
           "symbol_sha": "sha256:4500554b6f6a09eb0c42a9f89de5e7c7d3f459900eef49ab43f4fa6de6db48f1"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The sandbox imports nothing from workflows or core.flow",
+      "scope": [
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "sandbox-imports-workflows",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._build_ast_kwargs",
+          "old": "        from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas",
+          "new": "        from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas\n        from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator  # noqa: F401",
+          "breaks": "the sandbox imports a workflow again",
+          "symbol_sha": "sha256:5174af6f4216bc9e733fdf89de6b550c86f6001793394ec91b0b162d63fb0f37"
+        },
+        {
+          "id": "security-imports-runcontext",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/security.py",
+          "symbol": "WorkspaceBoundary.from_run_context",
+          "old": "        roots = [context.project_path]",
+          "new": "        from specweaver.core.flow.handlers.run_context import RunContext  # noqa: F401\n        roots = [context.project_path]",
+          "breaks": "the sandbox imports the flow engine's run state again",
+          "symbol_sha": "sha256:026851d5e334dd7680e4d75c3cfa69bb2cd90229a1cc49d7f46345affcb48d7f"
+        }
+      ]
     }
   ]
 }

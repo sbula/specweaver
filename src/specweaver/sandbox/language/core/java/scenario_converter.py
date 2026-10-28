@@ -24,7 +24,7 @@ from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterfa
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.workflows.scenarios.scenario_models import ScenarioSet
+    from specweaver.commons.scenario_models import ScenarioSet
 
 
 def _to_pascal_case(stem: str) -> str:
@@ -39,7 +39,7 @@ class JavaScenarioConverter(ScenarioConverterInterface):
         # `stem` is consumed by the python converter's real-body emission; accepted (and
         # unused) here for interface parity.
         """Return JUnit 5 test class content (string)."""
-        from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition  # noqa: F401
+        from specweaver.commons.scenario_models import ScenarioDefinition  # noqa: F401
 
         stem = module_stem(Path(scenario_set.spec_path))
         class_name = _to_pascal_case(stem)

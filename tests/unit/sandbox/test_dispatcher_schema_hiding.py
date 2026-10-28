@@ -15,7 +15,7 @@ def test_dispatcher_handles_null_intents(tmp_path: Path) -> None:
 
     # Mocking atom logic because create_standard_set uses local imports and instantiates Atoms internally.
     # To test extraction natively, we can mock the loader that returns the evaluator schemas.
-    import specweaver.workflows.evaluators.loader as loader_module
+    import specweaver.sandbox.evaluator_schemas as loader_module
 
     original_load = loader_module.load_evaluator_schemas
 
@@ -41,7 +41,7 @@ def test_dispatcher_handles_null_intents(tmp_path: Path) -> None:
 def test_dispatcher_handles_intents_scalar_value(tmp_path: Path) -> None:
     """FR-3/FR-4 Edge Case: Dispatcher wraps scalar hide intents cleanly in a list."""
     boundary = WorkspaceBoundary(roots=[tmp_path])
-    import specweaver.workflows.evaluators.loader as loader_module
+    import specweaver.sandbox.evaluator_schemas as loader_module
 
     original_load = loader_module.load_evaluator_schemas
 

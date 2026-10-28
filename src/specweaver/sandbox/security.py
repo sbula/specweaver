@@ -12,16 +12,29 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from fnmatch import fnmatchcase
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from specweaver.core.config.doc_policy import DocPolicy, DocRule
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from specweaver.core.flow.handlers.run_context import RunContext
-
 logger = logging.getLogger(__name__)
+
+
+class _Graph(Protocol):
+    @property
+    def api_contract_paths(self) -> list[str] | None: ...
+
+
+class BoundaryContext(Protocol):
+    """What a boundary needs from a run: its project root and its API contract paths."""
+
+    @property
+    def project_path(self) -> Path: ...
+
+    @property
+    def graph(self) -> _Graph: ...
 
 
 class AccessMode(StrEnum):
@@ -150,7 +163,7 @@ class WorkspaceBoundary:
         return self.validate_path(Path(relative))
 
     @classmethod
-    def from_run_context(cls, context: RunContext) -> WorkspaceBoundary:
+    def from_run_context(cls, context: BoundaryContext) -> WorkspaceBoundary:
         """Build boundary from pipeline context: the project root, and its API paths read-only."""
         roots = [context.project_path]
 

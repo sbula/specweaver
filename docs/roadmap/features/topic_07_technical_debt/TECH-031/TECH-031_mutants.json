@@ -36,7 +36,7 @@
           "old": "[\"uv\", \"sync\", \"--frozen\", *synced],",
           "new": "[\"uv\", \"sync\", *synced],",
           "breaks": "a drifted lockfile makes uv re-resolve and rewrite /workspace/uv.lock, reporting a read-only error that names the lockfile rather than the sandbox",
-          "symbol_sha": "sha256:45d97242281f79f3c5c72eb95495f4ddca87f69cc487fcc3dbb9c2d3bd0ad1f4"
+          "symbol_sha": "sha256:70a774ecfc0b29c99cc54ba95043705e29ff88259d4a5fd26417ec868d2d960c"
         }
       ]
     },
@@ -75,7 +75,7 @@
           "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
-          "symbol_sha": "sha256:651f127bbfd6dc1f1234a08391e69f04395b7a47b25d1f3241ae657df5ab6817"
+          "symbol_sha": "sha256:da6f9be4b29c87b93d8163722f6c38833f5802e31701c10ef8f7546fe2289db4"
         }
       ]
     },
@@ -124,7 +124,7 @@
           "old": "locked=lockfile.exists()",
           "new": "locked=True",
           "breaks": "a project with no uv.lock is sent to `uv sync --frozen`, which refuses, so it gets no environment at all",
-          "symbol_sha": "sha256:651f127bbfd6dc1f1234a08391e69f04395b7a47b25d1f3241ae657df5ab6817"
+          "symbol_sha": "sha256:da6f9be4b29c87b93d8163722f6c38833f5802e31701c10ef8f7546fe2289db4"
         }
       ]
     },

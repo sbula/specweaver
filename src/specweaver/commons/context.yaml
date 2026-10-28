@@ -41,6 +41,8 @@ exposes:
   - language_of
   - name_tests_for
   - root_of_tests
+  - ScenarioDefinition
+  - ScenarioSet
 
 # -- Operational Metadata --------------------------------------------------
 operational:

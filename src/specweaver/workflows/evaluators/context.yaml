@@ -4,9 +4,7 @@
 name: evaluators
 level: module
 purpose: >
-  Loads the evaluator schemas for each framework (YAML in `frameworks/`, merged with a project's own).
+  The evaluator schema for each framework, as YAML in `frameworks/`; `sandbox/evaluator_schemas.py`
+  reads it as a package resource.
 
-archetype: adapter
-
-consumes:
-  - specweaver/core/config
+archetype: data

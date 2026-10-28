@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
+from specweaver.sandbox.language.core.python.scenario_converter import ScenarioConverter
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-from specweaver.workflows.scenarios.scenario_converter import ScenarioConverter
-from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
 
 if TYPE_CHECKING:
     from pathlib import Path

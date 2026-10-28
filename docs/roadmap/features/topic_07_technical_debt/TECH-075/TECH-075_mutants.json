@@ -347,7 +347,7 @@
           "old": "    if relative is None:\n        logger.warning",
           "new": "    if False:\n        logger.warning",
           "breaks": "the structure atom is called with no path check",
-          "symbol_sha": "sha256:15657d6b20ad2b2a8b9ba857f1e4a3f09da81057a1ce723c6ca2e4f7a10eaf35"
+          "symbol_sha": "sha256:1141cd3dedc922da5c4489f09457939beb59d14e24092b22d02e0fc441679f16"
         },
         {
           "id": "outside-module-is-source",

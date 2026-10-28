@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.workflows.scenarios.scenario_models import ScenarioDefinition, ScenarioSet
+from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -101,8 +101,8 @@ class TestPythonScenarioConverter:
         """
         from specweaver.sandbox.language.core.python.scenario_converter import (
             PythonScenarioConverter,
+            ScenarioConverter,
         )
-        from specweaver.workflows.scenarios.scenario_converter import ScenarioConverter
 
         ss = _make_scenario_set()
         # Old-style static call must still work

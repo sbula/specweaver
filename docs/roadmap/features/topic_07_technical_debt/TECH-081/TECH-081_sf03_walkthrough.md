@@ -42,3 +42,51 @@ green. Ruff sorted two moved imports.
 - R3 (LOW) `TECH-079`'s design cites `commons/prepare_plan.py` lines. Blue: dated filing evidence
   for an audit ticket, re-measured before it is planned.
 - Cycle 2: no new finding.
+
+## CB-2 — the sandbox imports no workflow (FR-10) — closes SF-03
+
+### What changed
+
+- `tach.toml` and the ledger lost four owed edges: `core.flow → workflows.evaluators`,
+  `sandbox → workflows.scenarios`, `sandbox → workflows.evaluators`, `sandbox → core.flow`.
+- `workflows/scenarios/scenario_models.py` → `commons/scenario_models.py` (AD-5).
+- `ScenarioConverter` moved into `sandbox/language/core/python/scenario_converter.py` beside
+  `PythonScenarioConverter`, which now calls it directly; the lazy import "to break a circular import"
+  and `workflows/scenarios/scenario_converter.py` are gone (NFR-3).
+- `workflows/evaluators/loader.py` → `sandbox/evaluator_schemas.py` (AD-6). The YAML stays and is
+  read as a package resource; `workflows/evaluators` is `data` with no `depends_on`.
+- `sandbox/security.py` types `from_run_context` with `BoundaryContext`, a Protocol of its own
+  (AD-14).
+- Tests moved to mirror the new homes; three proof citations (`US-24.md`, the integration proof
+  matrix, `TECH-031` design) point at the new paths. Ten mutants in five corpora were re-pinned:
+  only import lines inside their symbols changed, every anchor still matches.
+- The duplication baseline was re-frozen: the same two converter clone pairs, re-keyed because an
+  import line inside them changed.
+
+### Red first
+
+Deleting the four edges first turned `test_tach_architectural_boundaries` red; the moves turned it
+green.
+
+### Proof
+
+Mutants `sandbox-imports-workflows` and `security-imports-runcontext`: OBJECTED.
+`flow-imports-evaluators` came back SILENT and was dropped: `workflows/evaluators` holds no Python
+now, so there is nothing an import could reach.
+
+### Gate notes
+
+Full suite 11822 passed, 9 skipped; `quality.py cb`, `doc`, `tach check` green. Kind `tooling`, not
+`refactor`: ruff merged two imports in `test_scenario_converters.py` into one, which the refactor
+rule cannot read as path-only (plan R4).
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) `evaluator_schemas.py` still names `specweaver.workflows.evaluators.frameworks` as a
+  string, a dependency tach cannot see. Blue: it is data, not code (AD-6); `test_framework_schemas`
+  fails if the package moves.
+- R2 (MEDIUM) `BoundaryContext` duplicates two fields of `RunContext`. Blue: a structural type, not
+  a copy; mypy checks `review.py` passes a `RunContext`.
+- R3 (LOW) `tests/unit/workflows/scenarios/` still holds the generator tests. Blue: the generator
+  stayed in `workflows/scenarios`.
+- Cycle 2: no new finding.

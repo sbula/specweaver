@@ -230,8 +230,8 @@ class ToolDispatcher:
             return None, []
 
         from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
+        from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
         from specweaver.sandbox.filesystem.core.executor import FileExecutor
-        from specweaver.workflows.evaluators.loader import load_evaluator_schemas
 
         project_dir = boundary.roots[0] if boundary.roots else None
         schemas = load_evaluator_schemas(project_dir=project_dir)

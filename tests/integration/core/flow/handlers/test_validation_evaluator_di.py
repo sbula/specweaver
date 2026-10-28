@@ -129,7 +129,7 @@ decorators:
             # To test the integration directly, let's just grab the dynamically created schema from
             # the loader when we pass project_dir!
 
-            from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+            from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
 
             loaded = load_evaluator_schemas(project_dir)
             assert "fastapi" in loaded
@@ -176,7 +176,7 @@ decorators:
     assert "read_unrolled_symbol" in registry_names
 
     # Direct validation of loader against boundary root
-    from specweaver.workflows.evaluators.loader import load_evaluator_schemas
+    from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
 
     schemas = load_evaluator_schemas(boundary.roots[0])
     assert (
