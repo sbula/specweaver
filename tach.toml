@@ -5,7 +5,7 @@ root_module = "forbid"
 ignore_type_checking_imports = false
 [[modules]]
 path = "specweaver.graph"
-depends_on = [ "specweaver.workspace.ast.adapters", { path = "specweaver.assurance.graph", deprecated = true },]
+depends_on = [ "specweaver.workspace.ast.adapters",]
 
 [[modules]]
 path = "specweaver.graph.lineage"
@@ -13,7 +13,7 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.graph.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.assurance.standards"

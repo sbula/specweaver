@@ -11,6 +11,7 @@ exposes:
   - cli
 
 consumes:
+  - specweaver/assurance/graph
   - specweaver/core/config
   - specweaver/graph
   - specweaver/graph/lineage

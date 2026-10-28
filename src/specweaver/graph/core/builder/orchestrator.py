@@ -251,12 +251,9 @@ class GraphOrchestrator:
     """High-level service coordinating graph ingestion and persistence."""
 
     @staticmethod
-    def build_target(target_path: Path, project_path: Path) -> int:
-        from specweaver.assurance.graph.loader import load_topology, resolve_service_name
+    def build_target(target_path: Path, project_path: Path, *, service_name: str) -> int:
         from specweaver.graph.core.engine.core import InMemoryGraphEngine
         from specweaver.graph.core.store.repository import SqliteGraphRepository
-
-        service_name = resolve_service_name(load_topology(project_path), project_path)
 
         db_path = str(project_path / ".specweaver" / "graph.db")
         repo = SqliteGraphRepository(db_path, service_name)

@@ -33,12 +33,12 @@
         {
           "id": "build-ignores-name",
           "origin": "authored",
-          "file": "src/specweaver/graph/core/builder/orchestrator.py",
-          "symbol": "GraphOrchestrator.build_target",
+          "file": "src/specweaver/graph/interfaces/cli.py",
+          "symbol": "build",
           "old": "        service_name = resolve_service_name(load_topology(project_path), project_path)\n",
           "new": "        service_name = \"default\"\n",
-          "breaks": "a graph build ignores the project's service name",
-          "symbol_sha": "sha256:8428d329eaaeb60773dba85ae881cac45019ce6ebe2186799e74baebf6ca41e0"
+          "breaks": "`sw graph build` ignores the project's service name",
+          "symbol_sha": "sha256:5034338febaf92f0016f353ef7968c8cf42556fe7cec59b3a1065b993b29eea6"
         }
       ]
     },

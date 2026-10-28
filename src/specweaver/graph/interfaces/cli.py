@@ -53,9 +53,13 @@ def build(
     Extracts the AST, hashes it, and persists it to the local SQLite database.
     """
     try:
+        from specweaver.assurance.graph.loader import load_topology, resolve_service_name
         from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
 
-        count = GraphOrchestrator.build_target(Path(target), project_path)
+        service_name = resolve_service_name(load_topology(project_path), project_path)
+        count = GraphOrchestrator.build_target(
+            Path(target), project_path, service_name=service_name
+        )
         console.print(f"[green]Successfully built graph for {target} ({count} files)[/green]")
     except Exception as e:
         console.print(f"[red]Failed to build graph: {e}[/red]")

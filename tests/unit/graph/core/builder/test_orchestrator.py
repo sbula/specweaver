@@ -5,6 +5,7 @@
 """The build orchestrator: file collection, ingestion, and GraphML export.
 
 Proves: B-SENS-02 FR-7
+Proves: TECH-081 FR-17
 
 Cited from `INT-US-10-MIG`. Mutant-verified: making `export_graph_to_disk` return an empty path
 without writing fails a test here.
@@ -181,17 +182,10 @@ def test_orchestrator_build_target_happy_path(tmp_path):
 
     from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
 
-    mock_topology = MagicMock()
-    mock_node = MagicMock()
-    mock_node.name = "my_service"
-    mock_node.yaml_path = tmp_path / "context.yaml"
-    mock_topology.nodes = {"my_service": mock_node}
-
     mock_repo = MagicMock()
     mock_repo.load_from_db.return_value = nx.DiGraph()
 
     with (
-        patch("specweaver.assurance.graph.loader.load_topology", return_value=mock_topology),
         patch(
             "specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo
         ),
@@ -202,14 +196,17 @@ def test_orchestrator_build_target_happy_path(tmp_path):
         mock_builder.ingest_target.return_value = 1
         mock_builder_class.return_value = mock_builder
 
-        count = GraphOrchestrator.build_target(tmp_path / "file1.py", tmp_path)
+        count = GraphOrchestrator.build_target(
+            tmp_path / "file1.py", tmp_path, service_name="my_service"
+        )
         assert count == 1
         mock_repo.purge_stale_entries.assert_called_once_with({"file1.py"})
         mock_repo.load_from_db.assert_called_once()
         mock_repo.persist_semantic_digraph.assert_called_once()
 
 
-def test_orchestrator_build_target_fallback(tmp_path):
+def test_the_builder_stores_under_the_name_it_was_given(tmp_path):
+    """FR-17: the caller names the service; the builder reads no topology."""
     from unittest.mock import MagicMock, patch
 
     import networkx as nx
@@ -220,19 +217,23 @@ def test_orchestrator_build_target_fallback(tmp_path):
     mock_repo.load_from_db.return_value = nx.DiGraph()
 
     with (
-        patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
         patch(
             "specweaver.graph.core.store.repository.SqliteGraphRepository", return_value=mock_repo
         ) as mock_repo_class,
         patch("specweaver.graph.core.builder.orchestrator.GraphBuilder") as mock_builder_class,
     ):
-        mock_builder = MagicMock()
-        mock_builder.collect_files.return_value = set()
-        mock_builder.ingest_target.return_value = 0
-        mock_builder_class.return_value = mock_builder
+        mock_builder_class.return_value.collect_files.return_value = set()
+        mock_builder_class.return_value.ingest_target.return_value = 0
 
-        count = GraphOrchestrator.build_target(tmp_path, tmp_path)
-        assert count == 0
-        mock_repo_class.assert_called_once_with(
-            str(tmp_path / ".specweaver" / "graph.db"), "default"
-        )
+        GraphOrchestrator.build_target(tmp_path, tmp_path, service_name="billing")
+
+    mock_repo_class.assert_called_once_with(str(tmp_path / ".specweaver" / "graph.db"), "billing")
+    _, kwargs = mock_builder_class.call_args
+    assert kwargs["id_prefix"] == "billing"
+
+
+def test_the_service_name_is_required(tmp_path):
+    from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
+
+    with pytest.raises(TypeError, match="service_name"):
+        GraphOrchestrator.build_target(tmp_path, tmp_path)

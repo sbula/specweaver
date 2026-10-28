@@ -4,8 +4,10 @@
 """A graph build stores its nodes under the project's service name.
 
 Proves: TECH-004 FR-6
+Proves: TECH-081 FR-17
 
-`GraphOrchestrator.build_target` with the real topology loader and the real SQLite store.
+`sw graph build` with the real topology loader, the real builder and the real SQLite store: the
+command reads the name and hands it to the builder (`TECH-081` FR-17).
 
 | Bucket | Case |
 |---|---|
@@ -21,8 +23,9 @@ import sqlite3
 from typing import TYPE_CHECKING
 
 import pytest
+from typer.testing import CliRunner
 
-from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
+from specweaver.interfaces.cli.main import app
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,5 +57,9 @@ def test_the_build_stores_the_project_service_name(
 ) -> None:
     root = _project(tmp_path / "p", root_name)
 
-    assert GraphOrchestrator.build_target(root / "src" / "a", root) > 0
+    result = CliRunner().invoke(
+        app, ["graph", "build", str(root / "src" / "a"), "--project-path", str(root)]
+    )
+
+    assert result.exit_code == 0, result.output
     assert _services(root) == expected

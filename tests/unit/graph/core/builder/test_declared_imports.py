@@ -18,10 +18,7 @@ every module in the package and asserts each one is covered by a declared prefix
 
 **Module level only, deliberately.** The anti-pattern `AD-3` names is *hiding a dependency inline*,
 and a test that also swept inline imports would silently bless them by making them declarable.
-`build_target`'s inline `specweaver.assurance.graph.loader` is a real undeclared crossing; it is
-NOT in `AD-3`'s scope, it stays inline, and it is recorded in Known Boundary Violations rather than
-waved through here. Lifting it means adding `specweaver.assurance` to this package's allowed set,
-which is an architectural claim nobody has made.
+Inline imports are `tach`'s job: it counts them.
 """
 
 from __future__ import annotations

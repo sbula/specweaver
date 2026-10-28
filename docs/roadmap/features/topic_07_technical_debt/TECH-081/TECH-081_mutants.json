@@ -86,8 +86,8 @@
           "origin": "authored",
           "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
           "symbol": "Open and recently resolved",
-          "old": "`src/specweaver/graph/core/builder/orchestrator.py` (`load_topology`, lazy)",
-          "new": "`src/specweaver/graph/builder/orchestrator.py` (`load_topology`, lazy)",
+          "old": "`src/specweaver/assurance/graph/topology.py` (`TopologyGraph.from_project` globs `context.yaml`",
+          "new": "`src/specweaver/assurance/graph/topo.py` (`TopologyGraph.from_project` globs `context.yaml`",
           "breaks": "a ledger row points at a file that moved, as five rows did until 2026-10-27"
         }
       ]
@@ -343,6 +343,16 @@
           "new": "            from specweaver.assurance.graph.topology import TopologyGraph  # noqa: F401\n\n            logger.debug(\"Slot %s inactive — skipping add_topology\", PromptSlot.TOPOLOGY)\n",
           "breaks": "the LLM layer reaches into assurance.graph again",
           "symbol_sha": "sha256:2bf433ea0e1728b0601674e06869e64bfa1070a97647629f734e236166c26b52"
+        },
+        {
+          "id": "graph-imports-assurance",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphOrchestrator.build_target",
+          "old": "        from specweaver.graph.core.engine.core import InMemoryGraphEngine\n",
+          "new": "        from specweaver.assurance.graph.loader import load_topology  # noqa: F401\n        from specweaver.graph.core.engine.core import InMemoryGraphEngine\n",
+          "breaks": "the graph builder reaches into assurance.graph again, closing the loop",
+          "symbol_sha": "sha256:22ad84fb06cab897723d717dadbf55d9a2d33139d476eff4e63bb761dd629058"
         }
       ]
     }

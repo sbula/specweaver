@@ -17,14 +17,30 @@ runner = CliRunner()
 
 
 def test_graph_build_success() -> None:
-    with patch("specweaver.graph.core.builder.orchestrator.GraphOrchestrator") as mock_orchestrator:
+    with (
+        patch("specweaver.graph.core.builder.orchestrator.GraphOrchestrator") as mock_orchestrator,
+        patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
+    ):
         mock_orchestrator.build_target.return_value = 1
 
         result = runner.invoke(app, ["src/foo.py"])
 
         assert result.exit_code == 0
         assert "Successfully built graph" in result.stdout
-        mock_orchestrator.build_target.assert_called_once_with(Path("src/foo.py"), Path("."))
+        mock_orchestrator.build_target.assert_called_once_with(
+            Path("src/foo.py"), Path("."), service_name="default"
+        )
+
+
+def test_a_broken_topology_is_reported_not_raised() -> None:
+    with patch(
+        "specweaver.assurance.graph.loader.load_topology", side_effect=ValueError("bad yaml")
+    ):
+        result = runner.invoke(app, ["src/foo.py"])
+
+    assert result.exit_code == 1
+    assert "Failed to build graph" in result.stdout
+    assert "bad yaml" in result.stdout
 
 
 def test_graph_build_failure() -> None:

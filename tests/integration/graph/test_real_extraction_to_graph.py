@@ -99,7 +99,9 @@ def test_a_real_build_persists_symbols_the_extractor_found(tmp_path: Path) -> No
     """
     project = _project(tmp_path, {"src/orders.py": PYTHON_SOURCE})
 
-    count = GraphOrchestrator.build_target(project / "src" / "orders.py", project)
+    count = GraphOrchestrator.build_target(
+        project / "src" / "orders.py", project, service_name="default"
+    )
     assert count >= 1, "build_target reported no files processed"
 
     db = project / ".specweaver" / "graph.db"
@@ -121,10 +123,10 @@ def test_a_second_build_does_not_duplicate_nodes(tmp_path: Path) -> None:
     project = _project(tmp_path, {"src/orders.py": PYTHON_SOURCE})
     target = project / "src" / "orders.py"
 
-    GraphOrchestrator.build_target(target, project)
+    GraphOrchestrator.build_target(target, project, service_name="default")
     first = _nodes(project / ".specweaver" / "graph.db")
 
-    GraphOrchestrator.build_target(target, project)
+    GraphOrchestrator.build_target(target, project, service_name="default")
     second = _nodes(project / ".specweaver" / "graph.db")
 
     assert len(second) == len(first), f"a re-build duplicated nodes: {len(first)} -> {len(second)}"
@@ -152,7 +154,7 @@ def test_a_non_python_source_also_reaches_the_graph(tmp_path: Path) -> None:
     ast_data = extract_ast_dict(str(source))
     assert ast_data["children"], "the shipped Java extractor reported no symbols at all"
 
-    GraphOrchestrator.build_target(source, project)
+    GraphOrchestrator.build_target(source, project, service_name="default")
     persisted = _nodes(project / ".specweaver" / "graph.db")
     assert len(persisted) > 1, f"Java symbols did not reach the graph: {persisted}"
 
@@ -175,7 +177,7 @@ def test_a_polyglot_directory_reaches_the_graph(tmp_path: Path) -> None:
         },
     )
 
-    GraphOrchestrator.build_target(project / "src", project)
+    GraphOrchestrator.build_target(project / "src", project, service_name="default")
 
     # `_nodes` reports the SERVICE name, which is "default" for every row here. The file each node
     # came from is what says which languages the walk reached.
