@@ -5,7 +5,8 @@
 - **Status**: APPROVED (by the user, 2026-10-27)
 - **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
   SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3 and SF-06 CB-2, whose test calls gain the
-  injected registry, drafters and service name `[agreed 2026-10-28]`), which add guard tests
+  injected registry, drafters and service name, and SF-07 CB-3, which deletes `test_loader.py` and
+  widens the purity test `[agreed 2026-10-28]`), which add guard tests
   a refactor may not (`scripts/tests.py`)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -108,7 +109,7 @@ None.
 | FR-15 | No domain CLI SHALL import `interfaces/cli`: the shared helpers move to `interfaces/cli_kit`, the run doors to `interfaces/run_doors`; only the shell (`interfaces/cli`) imports the domain CLIs | domain CLIs | import | no CLI loop |
 | FR-16 | `core/config/bootstrap` SHALL depend only on the flow table definitions (`core/flow/store` as its own module), not on all of `core/flow` | bootstrap | imports | no config ↔ flow loop |
 | FR-17 | `graph` SHALL import nothing from `assurance/graph`; `graph/interfaces` passes the service name in; `TopologyContext` moves to `commons` | graph | imports | `assurance.graph` uses `graph`, never the reverse |
-| FR-18 | `assurance/validation` SHALL read no files and load no code: the readers move to `assurance/validation/io` (archetype `adapter`), the parsers stay pure `[agreed 2026-10-27]` | validation | — | pure-logic is pure |
+| FR-18 | `assurance/validation` SHALL read no files and load no code, except the files the ledger names (`project_root.py`, the C09 and S04 rules) `[agreed 2026-10-28]`: the readers move to `assurance/validation/io` (archetype `adapter`), the parsers stay pure `[agreed 2026-10-27]` | validation | — | pure-logic is pure |
 | FR-19 | `workspace/context` SHALL hold contracts only: the `context.yaml` writer (`inferrer.py`) moves to `workspace/analyzers` | workspace/context | — | the contract module writes nothing |
 | FR-20 | `tach check` SHALL fail on any import loop (`forbid_circular_dependencies = true`), and no `deprecated` dependency is left | tach gate | checks | the fix cannot regrow |
 
@@ -295,7 +296,7 @@ for approval `[agreed 2026-10-27]`.
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -320,6 +321,6 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: implementation plan for SF-07 (SF-06 committed 2026-10-28).
+**Next step**: dev SF-07 ([plan](TECH-081_sf07_implementation_plan.md), approved 2026-10-28).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
