@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-081
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (by the user, 2026-10-27)
+- **Status**: COMPLETE (signed off by the user, 2026-10-29)
 - **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
   SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3 and SF-06 CB-2, whose test calls gain the
   injected registry, drafters and service name, SF-07 CB-1/CB-2, whose logging test imports the
@@ -322,10 +322,10 @@ for approval `[agreed 2026-10-27]`.
   removes it, so FR-4 goes green only after SF-04: SF-02 marks that one pair as owed by FR-13). No
   new finding.
 
-**Current status**: Design APPROVED 2026-10-27.
+**Current status**: COMPLETE, signed off by the user 2026-10-29.
 **Live demo**: `python -m tach check` prints "All modules validated" with no `deprecated` line; an
 import loop or a `deprecated` edge fails it (or `test_tach_sees_every_module`).
-**Next step**: the user's sign-off. All SFs committed 2026-10-29; the closure gate passed
+**Next step**: none. All SFs committed 2026-10-29; the closure gate passed
 (`check_fr_coverage.py TECH-081` 20/20, `tests.py feature TECH-081 --kind tooling`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
