@@ -68,7 +68,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Precondition:** `E-VAL-01` → the engine
   > - **Reads:** YAML pipelines — with extends / override / remove / add — and project-local overrides
   > - **Produces:** memory → a resolved validation pipeline
-  > - **Enables:** `sw list-rules` · `--pipeline` override · custom D-prefix rules
+  > - **Enables:** `sw list-rules` · `--pipeline` override (custom D-prefix rules removed, never wired: `TECH-081` AD-11)
   > - **Done when:** a project changes its rule set without changing code, and a circular `extends` is refused
 
 * **`D-VAL-03` ✅: Polyglot QARunner** (Legacy: 3.19)

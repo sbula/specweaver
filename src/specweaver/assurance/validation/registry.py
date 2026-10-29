@@ -15,7 +15,6 @@ Architecture:
     - This module adds the one thing that cannot live there: importing the built-in rule modules
       so they self-register. The two are separate because a module that both defines the registry
       and imports its clients is a cycle by construction.
-    - Phase B: custom rules register via loader.
 """
 
 from __future__ import annotations

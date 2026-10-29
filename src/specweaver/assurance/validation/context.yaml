@@ -41,7 +41,6 @@ exposes:
   - executor.execute_validation_pipeline
   - inheritance
   - inheritance.resolve_pipeline
-  - loader
   - models
   - models.Rule
   - models.RuleResult

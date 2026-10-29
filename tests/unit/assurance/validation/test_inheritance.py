@@ -258,6 +258,18 @@ class TestAdd:
         names = [s.name for s in resolved.steps]
         assert names.index("d01") == names.index("s04") - 1
 
+    def test_an_added_step_with_an_old_path_key_still_resolves(self):
+        """A file written for the removed custom-rule loader still resolves; the key is dropped."""
+        child = ValidationPipeline(
+            name="child",
+            steps=[],
+            extends="base_pipeline",
+            add=[{"name": "d01", "rule": "D01", "path": "./rules/d01.py"}],
+        )
+        resolved = resolve_pipeline(child, _base_loader)
+        added = next(s for s in resolved.steps if s.name == "d01")
+        assert "path" not in added.model_dump()
+
     def test_add_after_nonexistent_raises(self):
         """Add with 'after' referencing nonexistent step raises ValueError."""
         child = ValidationPipeline(

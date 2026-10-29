@@ -274,7 +274,6 @@ def apply_settings_to_pipeline(
                 name=step.name,
                 rule=step.rule,
                 params=merged,
-                path=step.path,
             )
 
         new_steps.append(step)

@@ -355,6 +355,66 @@
           "symbol_sha": "sha256:22ad84fb06cab897723d717dadbf55d9a2d33139d476eff4e63bb761dd629058"
         }
       ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "assurance/validation reads no files, except the files the ledger names",
+      "scope": [
+        "tests/unit/test_pure_modules_do_no_io.py",
+        "tests/unit/assurance/validation/test_rubrics.py",
+        "tests/unit/assurance/validation/test_pipeline_model.py"
+      ],
+      "mutants": [
+        {
+          "id": "validation-reads-again",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/pipeline.py",
+          "symbol": "ValidationPipeline.get_step",
+          "old": "        return None\n",
+          "new": "        open(__file__).close()\n        return None\n",
+          "breaks": "the pure validation module reads a file again",
+          "symbol_sha": "sha256:f7aa2c8ae7650b849b400d1cfb21a0387ac3a7a39f198ac31c7334d6fad9dd2b"
+        },
+        {
+          "id": "rubrics-from-old-dir",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/io/rubrics.py",
+          "symbol": "_candidates",
+          "old": "    roots = [(_SHIPPED_DIR, False)]\n",
+          "new": "    roots = [(Path(__file__).parent, False)]\n",
+          "breaks": "the shipped rubrics are looked for beside the reader, where none are",
+          "symbol_sha": "sha256:2c55b5948b73ed0d7901c7a016c09002672c96c7330d4cd6fbc225d41fa389fa"
+        },
+        {
+          "id": "dead-path-field-back",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/pipeline.py",
+          "symbol": "ValidationStep",
+          "old": "    params: dict[str, Any] = Field(default_factory=dict)\n",
+          "new": "    params: dict[str, Any] = Field(default_factory=dict)\n    path: str | None = None\n",
+          "breaks": "the custom-rule path field, which nothing loads, comes back",
+          "symbol_sha": "sha256:3f0440038dbe3c492440074853e5a6239f60e06cbafde56ffe1c2637098459b6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-19",
+      "title": "workspace/context holds contracts only",
+      "scope": [
+        "tests/unit/test_pure_modules_do_no_io.py"
+      ],
+      "mutants": [
+        {
+          "id": "context-writes-again",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/context/provider.py",
+          "symbol": "ContextProvider.review",
+          "old": "        return \"\"\n",
+          "new": "        open(section, \"w\").write(text)\n        return \"\"\n",
+          "breaks": "the contract module writes a file again",
+          "symbol_sha": "sha256:3da4303ce1cfb071d39e8ec4618f709784b3082e9e842393c18fd4384debe256"
+        }
+      ]
     }
   ]
 }

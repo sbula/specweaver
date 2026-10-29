@@ -83,3 +83,48 @@ import re-sort), `doc`, `check_proof_tier.py`, `tach check`, mypy green.
 - R4 (LOW) `validation` exposes one more name. Blue: only `io` uses it, and `io` depends on
   `validation`, not the other way.
 - Cycle 2: no new finding.
+
+## CB-3 — the guard holds both labels (FR-18, FR-19) — closes SF-07
+
+### What changed
+
+- `test_pure_modules_do_no_io.py` reads `commons`, `assurance/validation` and `workspace/context`.
+  A sub-folder whose own `context.yaml` names another archetype (`io/`, `interfaces/`) is not read;
+  a pure one (`rules/`) is. Three files may do I/O while the ledger names them (`project_root.py`,
+  C09, S04); a new test fails when one has no ledger row, another when one does no I/O any more.
+- `assurance/validation/loader.py` and `test_loader.py` deleted (AD-11); `loader` left the expose
+  list, the manifest, `registry.py`'s docstring, `test_logging_rollout.py` and the developer guide.
+- Ledger rows for C09 and S04 (DEFERRED, Q1 `[agreed 2026-10-28]`).
+- `D-VAL-02` FR-3 ("a project's own rules run") removed from its design with the reason: the loader
+  had no caller in `src`, so it never ran `[agreed 2026-10-28]`. The topic entry says so.
+- `ValidationStep.path` (the custom rule file the loader read) removed, with its copies in
+  `executor.py` and `inheritance.py` `[agreed 2026-10-29]`. A pipeline file that still has `path:`
+  loads; the key is dropped (two new tests).
+
+### Red first
+
+The widened guard failed on `loader.py` (`is_dir`, `glob`), and the ledger test on C09 and S04.
+Deleting the loader first turned the FR sweep red (29 → 30 uncited): `test_loader.py` was
+`D-VAL-02` FR-3's only proof. The user chose to remove the FR.
+
+### Proof
+
+Mutants `validation-reads-again` (FR-18, `pipeline.py` opens a file), `context-writes-again`
+(FR-19, `provider.py` writes one), `rubrics-from-old-dir` (FR-18, the shipped rubrics looked for
+beside the reader), `dead-path-field-back` (FR-18, the field returns): all OBJECTED. 0 stale.
+
+### Gate notes
+
+Full suite 11829 passed, 9 skipped (the loader's tests went; guard and path tests came);
+`tests.py cb --kind tooling`, `quality.py cb`, `doc`, `check_proof_tier.py`, mypy, `tach check`
+green.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) the guard reads archetypes from `context.yaml`, so relabelling a folder `adapter`
+  hides its I/O. Blue: the label is the claim; `test_manifests_match_tach` and review hold the
+  labels, and this test then checks the code against them.
+- R2 (MEDIUM) `ValidationStep.path` was left with nothing to load it. Blue: removed in this
+  boundary; old pipeline files still load (pydantic drops unknown keys).
+- R3 (LOW) aliased I/O passes the guard. Blue: unchanged limit, stated in the docstring.
+- Cycle 2: no new finding.

@@ -1,12 +1,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""A `pure-logic` module reads no files and runs no processes.
+"""A `pure-logic` or `contract` module reads no files and runs no processes.
 
-Proves: TECH-081 FR-9
+Proves: TECH-081 FR-9, FR-18, FR-19, FR-5
 
 tach sees imports, not I/O, so this test is the only check of the label. It matches direct calls
-and imports; an aliased call passes, and review covers that.
+and imports; an aliased call passes, and review covers that. A sub-folder whose own `context.yaml`
+names another archetype (`io/`, `interfaces/`) is another module and is not read. A file the ledger
+names may do I/O; it must still do some, or its allowance is stale.
 
 | Bucket | Case |
 |---|---|
@@ -14,6 +16,8 @@ and imports; an aliased call passes, and review covers that.
 | Boundary | a name like `opened`, or `open(` inside a string, is not a call |
 | Degradation | a listed module that does not exist fails instead of passing on nothing |
 | Hostile | `import subprocess as sp` and `from os import path` are still found |
+| Boundary | an allowed file with no I/O left fails as stale; an allowed file needs a ledger row |
+| Hostile | a pure sub-folder (`rules/`) is read; an `adapter` sub-folder (`io/`) is not |
 """
 
 from __future__ import annotations
@@ -21,9 +25,20 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-_SRC = Path(__file__).resolve().parents[2] / "src" / "specweaver"
-#: Modules labelled `pure-logic` whose code this test reads.
-_PURE = ("commons",)
+import yaml
+
+_ROOT = Path(__file__).resolve().parents[2]
+_SRC = _ROOT / "src" / "specweaver"
+_LEDGER = _ROOT / "docs" / "architecture" / "06_lessons_and_future" / "known_boundary_violations.md"
+#: Modules labelled `pure-logic` or `contract` whose code this test reads.
+_PURE = ("commons", "assurance/validation", "workspace/context")
+_PURE_ARCHETYPES = frozenset({"pure-logic", "contract"})
+#: Files that may do I/O while the ledger names them.
+_ALLOWED = (
+    "assurance/validation/project_root.py",
+    "assurance/validation/rules/code/c09_traceability.py",
+    "assurance/validation/rules/spec/s04_dependency_dir.py",
+)
 _IO_METHODS = frozenset(
     {
         "read_text",
@@ -57,15 +72,52 @@ def _io_calls(source: str) -> list[str]:
     return found
 
 
+def _archetype(folder: Path) -> str | None:
+    """The archetype of the nearest `context.yaml` at or above `folder`."""
+    for d in (folder, *folder.parents):
+        manifest = d / "context.yaml"
+        if manifest.is_file():
+            return yaml.safe_load(manifest.read_text(encoding="utf-8")).get("archetype")
+    return None
+
+
+def _pure_files(module: str) -> list[Path]:
+    return [
+        f for f in sorted((_SRC / module).rglob("*.py")) if _archetype(f.parent) in _PURE_ARCHETYPES
+    ]
+
+
+def _calls(rel: str) -> list[str]:
+    return _io_calls((_SRC / rel).read_text(encoding="utf-8"))
+
+
 def test_pure_modules_do_no_io() -> None:
     offenders = {
-        str(f.relative_to(_SRC)): calls
+        rel: calls
         for module in _PURE
-        for f in sorted((_SRC / module).rglob("*.py"))
-        if (calls := _io_calls(f.read_text(encoding="utf-8")))
+        for f in _pure_files(module)
+        if (rel := str(f.relative_to(_SRC))) not in _ALLOWED and (calls := _calls(rel))
     }
 
     assert offenders == {}
+
+
+def test_every_allowed_file_still_does_io() -> None:
+    assert [rel for rel in _ALLOWED if not _calls(rel)] == []
+
+
+def test_every_allowed_file_has_a_ledger_row() -> None:
+    ledger = _LEDGER.read_text(encoding="utf-8")
+    assert [rel for rel in _ALLOWED if f"src/specweaver/{rel}" not in ledger] == []
+
+
+def test_a_pure_sub_folder_is_read_and_an_adapter_one_is_not() -> None:
+    files = {str(f.relative_to(_SRC)) for f in _pure_files("assurance/validation")}
+    assert "assurance/validation/rules/code/c09_traceability.py" in files
+    assert not any(
+        f.startswith(("assurance/validation/io/", "assurance/validation/interfaces/"))
+        for f in files
+    )
 
 
 def test_every_listed_module_exists() -> None:

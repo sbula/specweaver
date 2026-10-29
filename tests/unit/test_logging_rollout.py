@@ -144,7 +144,6 @@ class TestBatch2LoggingRollout:
         from specweaver.assurance.validation import (
             executor,
             inheritance,
-            loader,
             pipeline,
             rule_registry,
             runner,
@@ -155,7 +154,6 @@ class TestBatch2LoggingRollout:
         for mod in (
             executor,
             inheritance,
-            loader,
             pipeline,
             pipeline_loader,
             rule_registry,

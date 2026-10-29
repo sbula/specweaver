@@ -34,13 +34,11 @@ class ValidationStep(BaseModel):
         name: Human-readable step identifier (e.g. 's01_one_sentence').
         rule: Rule ID to look up in the registry (e.g. 'S01', 'D01').
         params: Threshold and config kwargs passed to the rule constructor.
-        path: Path to custom rule .py file (D-prefix rules only).
     """
 
     name: str
     rule: str
     params: dict[str, Any] = Field(default_factory=dict)
-    path: str | None = None
 
 
 class ValidationPipeline(BaseModel):

@@ -160,7 +160,6 @@ def _apply_adds(
             name=add_spec["name"],
             rule=add_spec["rule"],
             params=add_spec.get("params", {}),
-            path=add_spec.get("path"),
         )
         after = add_spec.get("after")
         before = add_spec.get("before")

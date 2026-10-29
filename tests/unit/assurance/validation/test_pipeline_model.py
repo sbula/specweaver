@@ -22,7 +22,6 @@ class TestValidationStep:
         assert step.name == "s01_one_sentence"
         assert step.rule == "S01"
         assert step.params == {}
-        assert step.path is None
 
     def test_step_with_params(self):
         """Step with threshold params."""
@@ -34,16 +33,22 @@ class TestValidationStep:
         assert step.params["warn_threshold"] == 30
         assert step.params["fail_threshold"] == 60
 
-    def test_step_with_custom_path(self):
-        """Custom rule step with path to .py file."""
-        step = ValidationStep(
-            name="d01_schema",
-            rule="D01",
-            path="./rules/d01_schema.py",
-            params={"strict_mode": True},
+    def test_an_old_path_key_still_loads_and_is_dropped(self):
+        """A pipeline file written for the removed custom-rule loader still loads.
+
+        Proves: TECH-081 FR-18
+        """
+        step = ValidationStep.model_validate(
+            {
+                "name": "d01_schema",
+                "rule": "D01",
+                "path": "./rules/d01_schema.py",
+                "params": {"strict_mode": True},
+            }
         )
-        assert step.path == "./rules/d01_schema.py"
         assert step.rule == "D01"
+        assert step.params == {"strict_mode": True}
+        assert "path" not in step.model_dump()
 
 
 # ---------------------------------------------------------------------------
