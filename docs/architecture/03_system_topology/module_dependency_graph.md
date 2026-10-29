@@ -1,66 +1,22 @@
 # Module Dependency Graph
 
-Which top-level module may import which. Each node shows its archetype. The per-module rules
-(consumes / forbids) are in [Hard Dependency Rules](hard_dependency_rules.md).
+Which module may import which. A hand-drawn graph here went stale, so this page does not draw one.
+`tach.toml` is the graph, and the `tach` gate fails any import that leaves it. The rules and their
+checks: [Hard Dependency Rules](hard_dependency_rules.md).
 
-```mermaid
-graph TD
-    CLI[cli<br/>orchestrator] --> Config[config<br/>pure-logic]
-    CLI --> Validation[validation<br/>pure-logic]
-    CLI --> Review[review<br/>orchestrator]
-    CLI --> Drafting[drafting<br/>orchestrator]
-    CLI --> Implementation[implementation<br/>orchestrator]
-    CLI --> Flow[flow<br/>orchestrator]
-    CLI --> Graph[graph<br/>pure-logic]
-    CLI --> LLM[llm<br/>adapter]
-    CLI --> Project[project<br/>adapter]
-    CLI --> Standards[standards<br/>orchestrator]
-    CLI --> Context[context<br/>contract]
+To see the live graph:
 
-    API[api<br/>adapter] --> Config
-    API --> Validation
-    API --> Review
-    API --> Implementation
-    API --> Flow
-    API --> Graph
-    API --> LLM
-    API --> Project
-    API --> Standards
-
-    Flow --> LoomAtoms[sandbox]
-    Flow --> LoomCommons[sandbox]
-
-    Review --> LLM
-    Review --> Config
-    Drafting --> LLM
-    Drafting --> Config
-    Drafting --> Context
-    Planning[planning<br/>orchestrator] --> LLM
-    Planning --> Config
-    Planning --> Context
-    Implementation --> LLM
-    Implementation --> Config
-    Implementation --> Validation
-    Graph --> Context
-    Validation --> Config
-    Standards --> Config
-    LLM --> Config
-    Project --> Config
-
-    LoomAtoms --> LoomCommons
-    LoomTools[sandbox] --> LoomCommons
-
-    style Flow fill:#f9e,stroke:#333
-    style LoomAtoms fill:#bbf,stroke:#333
-    style LoomTools fill:#bfb,stroke:#333
-    style LoomCommons fill:#fdb,stroke:#333
+```bash
+python -m tach show --mermaid -o .tmp/module_graph.mmd
 ```
 
-**Since moved (2026-09-25):** the graph uses the old flat module names. `src/specweaver/` is now
-grouped into `assurance/`, `core/`, `infrastructure/`, `interfaces/`, `sandbox/`, `workflows/`,
-`workspace/`, `commons/`, `graph/`. The enforced graph is `tach.toml` (`exact = true`), checked by
-the `tach` gate in `scripts/quality.py`.
+The top level of `src/specweaver/` is grouped into `assurance/`, `commons/`, `core/`, `graph/`,
+`infrastructure/`, `interfaces/`, `sandbox/`, `workflows/` and `workspace/`.
 
 **Run setup (`TECH-077`):** `interfaces/run_setup` builds every run's context for the CLI and the
 API (rule file, standards, settings sections, isolation, model router, topology). It sits beside
 the doors, not in the engine, so `core/flow` keeps its rule of never using `workspace/project`.
+
+**The shell and the CLIs (`TECH-081`):** `interfaces/cli` is the shell; it imports every domain
+CLI, and no domain CLI imports it. The helpers the CLIs share live in `interfaces/cli_kit`, and the
+code that starts a run from a command lives in `interfaces/run_doors`.

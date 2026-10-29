@@ -389,8 +389,8 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "GenerateContractHandler.execute",
-          "old": "(\n                context.project_path, context.spec_path, context.isolation.language",
-          "new": "(\n                context.project_path, context.spec_path, None",
+          "old": "            from specweaver.core.flow.engine.task_files import task_files_for\n\n            language = task_files_for(\n                context.project_path, context.spec_path, context.isolation.language",
+          "new": "            from specweaver.core.flow.engine.task_files import task_files_for\n\n            language = task_files_for(\n                context.project_path, context.spec_path, None",
           "breaks": "[implement] language is ignored by the contract step",
           "symbol_sha": "sha256:a4b1a0fe753ac91f32910af6eee3ab8e870bfbbc21985965466dd68dddff01c3"
         },

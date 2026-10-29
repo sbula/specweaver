@@ -1,50 +1,37 @@
 # Hard Dependency Rules
 
-Per module: what it may import (`consumes`) and what it must not (`forbids`). Picture:
+What each module may import, and what it must not. This page does not list the rules: a copy here
+went stale twice. It says where they live and which check keeps each one true. Picture:
 [Module Dependency Graph](module_dependency_graph.md). Field semantics:
 [Context YAML Specification](context_yaml_spec.md).
 
-**Since moved (2026-09-25):** these tables use the old flat module names and the old
-`commons/`/`tools/`/`atoms/` sandbox layout. The live, enforced rules are in `tach.toml`
-(`exact = true`), checked by the `tach` gate in `scripts/quality.py`.
+## Where the rules live
 
-## Top-Level Modules
+| Rule | Lives in |
+|---|---|
+| The modules, and which module may import which | `tach.toml`: each `[[modules]]` entry and its `depends_on` |
+| What a module offers to others | `tach.toml`: its `[[interfaces]]` `expose` list |
+| A module's archetype, its consumes and its forbids | the module's `context.yaml` |
+| Violations that are known and kept on purpose | [Known Boundary Violations](../06_lessons_and_future/known_boundary_violations.md) |
 
-| Module | Archetype | Consumes | Forbids |
-|--------|-----------|----------|---------|
-| `cli` | orchestrator | config, validation, review, drafting, implementation, flow, graph, llm, project, standards, context | sandbox/* |
-| `api` | adapter | config, validation, review, implementation, flow, graph, llm, project, standards | cli, sandbox/* |
-| `config` | pure-logic | *(leaf)* | sandbox/* |
-| `context` | contract | *(leaf)* | sandbox/* |
-| `drafting` | orchestrator | llm, config, context | sandbox/* |
-| `flow` | orchestrator | config, llm, review, implementation, planning, validation, sandbox/git, sandbox/qa_runner, sandbox/code_structure, sandbox/mcp, sandbox/execution, sandbox/dispatcher, sandbox/security, workspace/memory | sandbox/* (except git/qa_runner/code_structure/mcp/execution/dispatcher/security), drafting, context |
-| `graph` | pure-logic | context | sandbox/*, llm, drafting, implementation |
-| `implementation` | orchestrator | llm, config, validation | *(none)* |
-| `llm` | adapter | config | sandbox/* |
-| `llm/adapters` | adapter | llm | sandbox/*, validation, drafting |
-| `pipelines` | data | *(leaf)* | *(none)* |
-| `planning` | orchestrator | llm, config, context, sandbox/dispatcher (type-only) | sandbox/* (except dispatcher) |
-| `project` | adapter | config | sandbox/*, llm |
-| `review` | orchestrator | llm, config, sandbox/dispatcher (type-only) | sandbox/* (except dispatcher) |
-| `standards` | orchestrator | config | sandbox/* |
-| `validation` | pure-logic | config | sandbox/*, llm |
+## The settings that make the check strict
 
-> [!CAUTION]
-> **12 of 16 modules explicitly `forbid: sandbox/*`.** Only `flow/` is allowed to
-> touch sandbox (via atoms only, NOT tools or commons). The sandbox layer is isolated.
+| Setting in `tach.toml` | Effect |
+|---|---|
+| `exact = true` | a declared dependency that no import uses fails |
+| `root_module = "forbid"` | a file in no module fails |
+| `ignore_type_checking_imports = false` | an import under `if TYPE_CHECKING:` counts |
+| `forbid_circular_dependencies = true` | an import loop between modules fails |
 
-Exception: `planning` and `review` may import `sandbox/dispatcher` for types only.
+No dependency is marked `deprecated` (reported but allowed), and none may be added (`TECH-081`
+FR-20).
 
-## Loom Sub-Layers
+## The checks
 
-| Layer | Consumes | Forbids |
-|-------|----------|---------|
-| `commons/` | *(leaf — nothing)* | `tools/*`, `atoms/*` |
-| `tools/` | `commons/*` | `atoms/*` |
-| `atoms/` | `commons/*` | `tools/*` |
-| `sandbox/` (root) | `tools/*`, `atoms/*`, `commons/*` | — |
-
-> [!CAUTION]
-> **Dependency flows UPWARD only within sandbox.** Commons NEVER imports from
-> tools or atoms. Tools NEVER import from atoms (and vice versa).
-> Only `sandbox/` root level can import across sub-layers.
+| Check | Keeps true |
+|---|---|
+| the `tach` gate in `scripts/quality.py`, and `tests/unit/test_architecture.py::test_tach_architectural_boundaries` | `tach check` passes: every import follows `tach.toml` |
+| `tests/unit/test_tach_sees_every_module.py` | the four settings above; every file is in a module; no `deprecated` edge |
+| `tests/unit/test_manifests_match_tach.py` | each `depends_on` edge is covered by a `consumes` entry; no manifest forbids what tach allows |
+| `tests/unit/test_manifests_are_complete.py` | each manifest has `name`, `purpose` and `archetype`, and each name in its `exposes` exists |
+| `tests/unit/test_pure_modules_do_no_io.py` | a `pure-logic` or `contract` module reads no files and runs no processes, except files the ledger names |

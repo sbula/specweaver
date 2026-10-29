@@ -3,6 +3,7 @@ source_roots = [ "src",]
 exact = true
 root_module = "forbid"
 ignore_type_checking_imports = false
+forbid_circular_dependencies = true
 [[modules]]
 path = "specweaver.graph"
 depends_on = [ "specweaver.workspace.ast.adapters",]

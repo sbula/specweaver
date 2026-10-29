@@ -4,6 +4,10 @@
 """SpecWeaver's own layer cake: declared in `tach.toml`, enforced at zero, surfaces named explicitly.
 
 Proves: C-EXEC-01 FR-1, C-EXEC-01 FR-2, C-EXEC-01 FR-3
+Proves: TECH-081 FR-10, FR-11, FR-14, FR-16
+
+`TECH-081` FR-10, FR-11, FR-14 and FR-16 are import rules `tach.toml` encodes;
+`test_tach_architectural_boundaries` fails on any breach (mutants in `TECH-081_mutants.json`).
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF02-MIG`. `C-EXEC-01` declared its four
 requirements as prose bullets rather than table rows, so both requirement gates read it as declaring

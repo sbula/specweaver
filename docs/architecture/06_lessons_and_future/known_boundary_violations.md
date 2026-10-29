@@ -19,14 +19,9 @@ with what, where, and which rule is broken. None may be skipped silently.
 
 ## Owed by TECH-081
 
-Every edge `tach.toml` marks `deprecated` (`tach check` reports each import as `‼️`, never fails).
-Each row names the `TECH-081` FR that removes it; `tests/unit/test_tach_sees_every_module.py` keeps
-this table and `tach.toml` equal. A row goes when its edge goes; none may be added.
-
-| Edge | What | Removed by |
-|---|---|---|
-
-None are left: SF-05 removed the last ten (FR-15), 2026-10-29.
+Closed 2026-10-29. `tach.toml` holds no `deprecated` edge, and none may be added:
+`tests/unit/test_tach_sees_every_module.py` fails on one (`TECH-081` FR-20). The ten
+`interfaces.cli` edges went in SF-05, the others earlier in `TECH-081`.
 
 ## Resolved earlier
 

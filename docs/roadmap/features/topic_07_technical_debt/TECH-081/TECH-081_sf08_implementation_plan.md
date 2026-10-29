@@ -53,8 +53,7 @@ Read 2026-10-29.
    graph goes; `tach show --mermaid` draws the live one; the `run_setup` note stays and gains
    `cli_kit` and `run_doors`. Design doc row ✅.
 4. Mutants (FR-20 campaign, corpus `TECH-081`): `loops-allowed-again` (the setting removed →
-   the new test red); `a-loop-declared` (the probe's cycle edge added → `tach check` red);
-   `deprecated-edge-back` (one edge marked `deprecated` → the new test red).
+   the new test red); `deprecated-edge-back` (one edge marked `deprecated` → the new test red).
 
 ## Test Plan
 
@@ -62,14 +61,14 @@ Read 2026-10-29.
 |---|---|---|---|
 | arch | `test_import_loops_fail_the_check` | FR-20 (loops fail) | the setting is unset |
 | arch | `test_no_deprecated_edge_is_left` | FR-20 (none left) | mutant `deprecated-edge-back`; green today by SF-05 |
-| arch | `test_tach_architectural_boundaries` | FR-20 (a declared loop fails `tach check`) | mutant `a-loop-declared` |
+| arch | `test_tach_architectural_boundaries` | FR-20 (a declared loop fails `tach check`) | the probe in Research Notes; as a corpus mutant it crashes tach's pytest plugin (`CircularDependency` panic), so the runner cannot judge it |
 | all | the suite | NFR-1 | — |
 
 ## Commit Boundaries
 
 | CB | Holds | Done when |
 |---|---|---|
-| CB-1 | steps 1–4 | suite green; three mutants killed; stage and stop (closes SF-08) |
+| CB-1 | steps 1–4 | suite green; two mutants killed; stage and stop (closes SF-08) |
 
 After it: the closure gate (`check_fr_coverage.py TECH-081`, `tests.py feature TECH-081`), README
 counts, the finished message (`specweaver-feature` Phase 4).

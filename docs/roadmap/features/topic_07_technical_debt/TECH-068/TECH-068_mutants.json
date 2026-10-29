@@ -813,8 +813,8 @@
           "origin": "authored",
           "file": "src/specweaver/graph/core/builder/context.yaml",
           "symbol": "allowed_imports",
-          "old": "  - \"specweaver.workspace.ast.adapters\"\n",
-          "new": "  # - \"specweaver.workspace.ast.adapters\"  # MUTANT\n",
+          "old": "  - specweaver/workspace/ast/adapters\n",
+          "new": "  # - specweaver/workspace/ast/adapters  # MUTANT\n",
           "breaks": "the import stays and the declaration goes, which is exactly the state AD-3 was approved to fix and sat in undetected for the whole ticket -- tach cannot see it because tach.toml already permits the crossing and the rule lives only in context.yaml"
         }
       ]

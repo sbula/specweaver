@@ -15,8 +15,8 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_reconcile_failed",
-          "old": "    run.status = RunStatus.FAILED\n",
-          "new": "    pass\n",
+          "old": "    run.status = RunStatus.FAILED\n    runner._persist(run)\n",
+          "new": "    runner._persist(run)\n",
           "breaks": "a run whose work never landed is stored as COMPLETED",
           "symbol_sha": "sha256:4f111e3533ab68e3743d2aba00945b1d3526e7a78e86caedcbaa3d515a44d17b"
         },

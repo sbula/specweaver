@@ -46,31 +46,13 @@
       ],
       "mutants": [
         {
-          "id": "owed-edge-made-plain",
+          "id": "unowned-edge-back",
           "origin": "authored",
           "file": "tach.toml",
-          "symbol": "specweaver.core.flow depends_on",
-          "old": "{ path = \"specweaver.workflows.drafting\", deprecated = true }",
-          "new": "\"specweaver.workflows.drafting\"",
-          "breaks": "a wrong edge becomes silently allowed and drops off the owed list"
-        },
-        {
-          "id": "owed-row-dropped",
-          "origin": "authored",
-          "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
-          "symbol": "Owed by TECH-081",
-          "old": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-10 |\n",
-          "new": "<!-- owed row dropped -->\n",
-          "breaks": "an edge stays deprecated with no FR that removes it"
-        },
-        {
-          "id": "owed-row-names-no-fr",
-          "origin": "authored",
-          "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
-          "symbol": "Owed by TECH-081",
-          "old": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-10 |",
-          "new": "| `specweaver.sandbox` → `specweaver.core.flow` | `security.py` types `RunContext` | FR-99 |",
-          "breaks": "an owed edge names an FR the design does not have"
+          "symbol": "specweaver.graph depends_on",
+          "old": "path = \"specweaver.graph\"\ndepends_on = [ \"specweaver.workspace.ast.adapters\",]",
+          "new": "path = \"specweaver.graph\"\ndepends_on = [ { path = \"specweaver.workspace.ast.adapters\", deprecated = true },]",
+          "breaks": "a wrong edge is allowed again, reported but never failed"
         }
       ]
     },
@@ -131,7 +113,7 @@
           "origin": "authored",
           "file": "src/specweaver/commons/context.yaml",
           "symbol": "archetype",
-          "old": "archetype: mixed\n",
+          "old": "archetype: pure-logic\n",
           "new": "archetype: raw-data\n",
           "breaks": "a label no rule knows, so no rule checks the module"
         },
@@ -453,6 +435,53 @@
           "new": "    return None\n",
           "breaks": "sw draft runs with no one to ask",
           "symbol_sha": "sha256:4ef8bb8c09f9b55669b3ece6bcf02e1dbc3a44c57d570c0e09eb676dd8679afd"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-20",
+      "title": "an import loop fails the check, and no deprecated edge is left",
+      "scope": [
+        "tests/unit/test_tach_sees_every_module.py",
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "loops-allowed-again",
+          "origin": "authored",
+          "file": "tach.toml",
+          "symbol": "settings",
+          "old": "forbid_circular_dependencies = true\n",
+          "new": "forbid_circular_dependencies = false\n",
+          "breaks": "import loops pass the check again"
+        },
+        {
+          "id": "deprecated-edge-back",
+          "origin": "authored",
+          "file": "tach.toml",
+          "symbol": "specweaver.workspace.ast.adapters depends_on",
+          "old": "path = \"specweaver.workspace.ast.adapters\"\ndepends_on = [ \"specweaver.workspace.ast.parsers\",]",
+          "new": "path = \"specweaver.workspace.ast.adapters\"\ndepends_on = [ { path = \"specweaver.workspace.ast.parsers\", deprecated = true },]",
+          "breaks": "a deprecated edge comes back"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "core/flow reaches sandbox/language only through public names",
+      "scope": [
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "flow-uses-a-private-detector",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "symbol": "task_files_for",
+          "old": "    from specweaver.sandbox.language.core.detect import detect_language\n",
+          "new": "    from specweaver.sandbox.language.core.detect import _is_kotlin, detect_language  # noqa: F401\n",
+          "breaks": "the flow engine reaches past the language interface into a private helper",
+          "symbol_sha": "sha256:5053a91732a2a55928c45f6b62b1bb23569d2ef48c16e0dff2cc109e3f52c9ab"
         }
       ]
     }
