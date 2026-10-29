@@ -299,7 +299,7 @@ for approval `[agreed 2026-10-27]`.
 | SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -323,7 +323,9 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: dev SF-08 ([plan](TECH-081_sf08_implementation_plan.md), approved 2026-10-29), then
-the closure gate. SF-05 committed 2026-10-29; no `deprecated` edge is left.
+**Live demo**: `python -m tach check` prints "All modules validated" with no `deprecated` line; an
+import loop or a `deprecated` edge fails it (or `test_tach_sees_every_module`).
+**Next step**: the user's sign-off. All SFs committed 2026-10-29; the closure gate passed
+(`check_fr_coverage.py TECH-081` 20/20, `tests.py feature TECH-081 --kind tooling`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
