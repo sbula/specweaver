@@ -6,7 +6,7 @@
 - **Kind**: `refactor` for the moves (SF-03..SF-07); `tooling` for the gate changes (SF-01, SF-02,
   SF-08, SF-03 CB-1, which adds the purity test, and SF-04 CB-2/CB-3 and SF-06 CB-2, whose test calls gain the
   injected registry, drafters and service name, SF-07 CB-1/CB-2, whose logging test imports the
-  moved inferrer and pipeline loader, and SF-07 CB-3, which deletes `test_loader.py` and widens the purity test
+  moved inferrer and pipeline loader, SF-05 CB-3, which adds the draft-factory test, and SF-07 CB-3, which deletes `test_loader.py` and widens the purity test
   `[agreed 2026-10-28]`), which add guard tests
   a refactor may not (`scripts/tests.py`)
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-081/TECH-081_design.md
@@ -295,7 +295,7 @@ for approval `[agreed 2026-10-27]`.
 | SF-02 | The manifests tell the truth | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The sandbox sits below the workflows | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | The flow engine stands alone | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | The CLIs stop importing the shell | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Graph and assurance in one direction | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Pure-logic and contract modules do no I/O | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-08 | The guard | SF-02, SF-03, SF-05, SF-06, SF-07 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -322,7 +322,7 @@ for approval `[agreed 2026-10-27]`.
   new finding.
 
 **Current status**: Design APPROVED 2026-10-27.
-**Next step**: the SF-05 implementation plan. SF-07 committed 2026-10-29 (walkthrough:
-[TECH-081_sf07_walkthrough.md](TECH-081_sf07_walkthrough.md)); it also removed `D-VAL-02` FR-3.
+**Next step**: dev SF-05 ([plan](TECH-081_sf05_implementation_plan.md), approved 2026-10-29).
+SF-07 committed 2026-10-29 ([walkthrough](TECH-081_sf07_walkthrough.md)); it also removed `D-VAL-02` FR-3.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
