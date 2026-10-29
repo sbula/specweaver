@@ -118,9 +118,18 @@ try:
 except ImportError as e:
     console.print(f"[bold red]Failed to load implementation workflow plugin:[/bold red] {e}")
 
-try:
-    from specweaver.workflows.drafting.interfaces.cli import drafting_cli
 
+def _hitl_provider() -> object:
+    """`sw draft`'s question channel; looked up per call so a patched `HITLProvider` is used."""
+    from specweaver.interfaces.cli import hitl_provider
+
+    return hitl_provider.HITLProvider(console=console)
+
+
+try:
+    from specweaver.workflows.drafting.interfaces.cli import drafting_cli, set_hitl_provider_factory
+
+    set_hitl_provider_factory(_hitl_provider)
     app.add_typer(drafting_cli)
 except ImportError as e:
     console.print(f"[bold red]Failed to load drafting workflow plugin:[/bold red] {e}")

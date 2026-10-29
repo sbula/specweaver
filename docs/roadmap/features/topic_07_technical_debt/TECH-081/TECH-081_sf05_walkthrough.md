@@ -76,3 +76,47 @@ Full suite 11829 passed, 9 skipped; `tests.py cb --kind refactor`, `quality.py c
 - R3 (LOW) the shell manifest still lists consumes it no longer uses (`run_setup`, `workspace`).
   Blue: the manifest test checks edges are covered, not the reverse; CB-3 tidies the shell manifest.
 - Cycle 2: no new finding.
+
+## CB-3 — `sw draft` gets its channel from the shell (FR-15) — closes SF-05
+
+### What changed
+
+- `workflows/drafting/interfaces/cli.py` gained `set_hitl_provider_factory`, the same shape as
+  `core/flow`'s setter. `sw draft` calls the factory per run; with none registered it attaches no
+  provider. It no longer imports `interfaces/cli`.
+- `main.py` registers `_hitl_provider`, which imports `hitl_provider` when called, so tests that
+  patch `HITLProvider` still see their double. No TTY check: `sw draft` asks as before (NFR-1).
+- The last `deprecated` edge (`workflows.drafting.interfaces → interfaces.cli`) and its row are
+  gone. `tach.toml` has no `deprecated` edge left; the ledger's "Owed by TECH-081" table says none
+  are left, and `test_tach_sees_every_module` accepts that state only while the section says so.
+- `domain_driven_cli_creation.md` imports from `cli_kit` and names the setter pattern; the shell
+  manifest dropped an unused consume.
+
+### Red first
+
+The five new tests (`test_draft_channel.py`) failed: no setter. Deleting the edge turned `tach
+check` red on `cli.py:173`. `test_tach_sees_every_module` then failed on "no deprecated edge",
+the guard written when some were still owed.
+
+### Proof
+
+FR-15 mutants `cli-imports-shell-again`, `door-back-in-shell` (tach), `draft-loses-its-channel`
+(the new test and the draft e2e): all OBJECTED. `TECH-077` `draft-no-terminal` re-anchored on the
+factory call; it and two other draft mutants re-run (OBJECTED) and re-pinned. 0 stale.
+
+### Gate notes
+
+Full suite 11834 passed, 9 skipped; `tests.py cb --kind tooling`, `quality.py cb`, `doc`,
+`check_proof_tier.py`, `tach check`, mypy green.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) a `sw draft` reached without the shell asks nothing. Blue: only a test that calls
+  `drafting_cli` alone gets there; `test_the_shell_registers_its_hitl_provider` and the mutant hold
+  the shell's registration.
+- R2 (MEDIUM) the factory is typed `Callable[[], Any]`. Blue: drafting may not import
+  `workspace.context` (tach); `core/flow`'s setter has the same type.
+- R3 (MEDIUM) relaxing the "no deprecated edge" guard could hide a dropped list. Blue: tach fails
+  any import whose edge was dropped, and the test still fails if the section disappears or stops
+  saying none are left.
+- Cycle 2: no new finding.

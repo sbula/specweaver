@@ -46,7 +46,6 @@ consumes:
   - specweaver/assurance/standards
   - specweaver/workspace/context
   - specweaver/telemetry_logger
-  - specweaver/interfaces/run_setup
   - specweaver/workspace
   - specweaver/_version
   - specweaver/interfaces/api

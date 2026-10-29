@@ -43,7 +43,7 @@ def run_task(
     force: bool = typer.Option(False, "--force", "-f", help="Force execution")
 ) -> None:
     """Execute a specific task in your domain."""
-    from specweaver.interfaces.cli._core import get_db, _require_active_project
+    from specweaver.interfaces.cli_kit._core import get_db, _require_active_project
     from specweaver.your_domain.core.service import MyDomainService
 
     # Always lazy load heavy dependencies and core services inside the function
@@ -89,8 +89,10 @@ except ImportError as e:
 - **No heavy global imports.** Import core services, SQLAlchemy or heavy ML libraries *inside* the
   command function. Typer parses all CLI scripts at boot; a heavy global import slows every `sw`
   command and invites cyclic imports.
-- **Shared CLI state comes from `_core.py`.** Import `get_db` and `_require_active_project` from
-  `specweaver.interfaces.cli._core`, never from `main.py` (circular imports).
+- **Shared CLI state comes from `interfaces/cli_kit/_core.py`.** Import `get_db` and
+  `_require_active_project` from `specweaver.interfaces.cli_kit._core`. A domain CLI never imports
+  `interfaces/cli`: the shell imports the CLIs, and tach fails the reverse. A CLI that needs
+  something only the shell has (like `sw draft`'s `HITLProvider`) offers a setter the shell calls.
 - **Pure adapter.** Parse arguments, call an Orchestrator/Service in `core/`, print the result.
   **Never** business logic or SQL queries.
 - **Registration is isolated.** The `try/except ImportError` enforces **NFR-4 (Native Healer
@@ -124,7 +126,7 @@ def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db_path = str(data_dir / "specweaver.db")
     bootstrap_database(db_path)
     db = Database(db_path)
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
     return db
 
 def test_run_task_success():
@@ -132,7 +134,7 @@ def test_run_task_success():
     from specweaver.interfaces.cli.main import app
     
     # 2. Set up test state
-    with patch("specweaver.interfaces.cli._core._require_active_project", return_value="test_proj"):
+    with patch("specweaver.interfaces.cli_kit._core._require_active_project", return_value="test_proj"):
         # 3. Invoke
         result = runner.invoke(app, ["your-domain", "run-task", "my_target"])
         

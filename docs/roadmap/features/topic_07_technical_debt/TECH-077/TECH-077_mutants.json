@@ -404,17 +404,17 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw draft on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
+          "symbol_sha": "sha256:dbc3fd0a071090880495911c2dd96ad5cdf46abe92d58fcab561dda8ed556f4e"
         },
         {
           "id": "draft-no-terminal",
           "origin": "authored",
           "file": "src/specweaver/workflows/drafting/interfaces/cli.py",
           "symbol": "draft",
-          "old": "    context.context_provider = HITLProvider(console=_core.console)\n",
-          "new": "    pass\n",
+          "old": "        context.context_provider = _hitl_provider_factory()\n",
+          "new": "        pass\n",
           "breaks": "sw draft asks the user nothing",
-          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
+          "symbol_sha": "sha256:dbc3fd0a071090880495911c2dd96ad5cdf46abe92d58fcab561dda8ed556f4e"
         },
         {
           "id": "no-model-said-nothing",
@@ -454,7 +454,7 @@
           "old": "@drafting_cli.command(name=\"draft\")\n",
           "new": "@drafting_cli.command(name=\"drafts\")\n",
           "breaks": "sw draft is no drafting command",
-          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
+          "symbol_sha": "sha256:dbc3fd0a071090880495911c2dd96ad5cdf46abe92d58fcab561dda8ed556f4e"
         },
         {
           "id": "one-step-drops-params",

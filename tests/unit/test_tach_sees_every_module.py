@@ -73,7 +73,10 @@ def test_every_deprecated_edge_is_owed_in_the_ledger() -> None:
     deprecated = _deprecated_edges()
     owed = _owed_rows()
 
-    assert deprecated, "no deprecated edge: the owed list was dropped, not paid"
+    if not deprecated:  # all paid: the section stays and says so, so a dropped list still fails
+        assert (
+            "None are left" in _LEDGER.read_text(encoding="utf-8").split("## Owed by TECH-081")[1]
+        )
     assert deprecated - owed.keys() == set(), "deprecated edges with no ledger row"
     assert owed.keys() - deprecated == set(), "ledger rows whose edge is no longer deprecated"
 

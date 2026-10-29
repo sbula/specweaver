@@ -25,7 +25,8 @@ this table and `tach.toml` equal. A row goes when its edge goes; none may be add
 
 | Edge | What | Removed by |
 |---|---|---|
-| `specweaver.workflows.drafting.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
+
+None are left: SF-05 removed the last ten (FR-15), 2026-10-29.
 
 ## Resolved earlier
 

@@ -105,7 +105,7 @@ depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.drafting.interfaces"
-depends_on = [ "specweaver.interfaces.run_doors", "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.run_doors", "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers",]
 
 [[modules]]
 path = "specweaver.workflows.implementation"

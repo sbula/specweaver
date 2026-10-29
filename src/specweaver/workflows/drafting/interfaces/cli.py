@@ -15,6 +15,7 @@ from rich.markup import escape
 from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
     from specweaver.core.flow.engine.models import PipelineDefinition
@@ -22,6 +23,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 drafting_cli = typer.Typer(no_args_is_help=True)
+
+_hitl_provider_factory: Callable[[], Any] | None = None
+
+
+def set_hitl_provider_factory(factory: Callable[[], Any] | None) -> None:
+    """Register (or clear, with None) where `sw draft` gets its question channel.
+
+    The shell registers it at composition time, so drafting imports nothing from the shell.
+    """
+    global _hitl_provider_factory
+    _hitl_provider_factory = factory
 
 
 def _build_draft_pipeline(name: str) -> PipelineDefinition:
@@ -170,7 +182,6 @@ def draft(
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.engine.state import RunStatus
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-    from specweaver.interfaces.cli.hitl_provider import HITLProvider
     from specweaver.interfaces.run_doors.run_doors import (
         build_run_or_exit,
         refuse_unstarted_worktree,
@@ -178,7 +189,8 @@ def draft(
 
     pipeline = _build_draft_pipeline(name)
     context = build_run_or_exit(project_path, spec_path, pipeline, selector=selector)
-    context.context_provider = HITLProvider(console=_core.console)
+    if _hitl_provider_factory is not None:
+        context.context_provider = _hitl_provider_factory()
 
     _core.console.print(
         f"\n[bold]Drafting spec for[/bold] [cyan]{name}[/cyan]\n"

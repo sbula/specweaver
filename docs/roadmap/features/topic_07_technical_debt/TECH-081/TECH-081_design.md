@@ -198,7 +198,7 @@ for approval `[agreed 2026-10-27]`.
 |-------------|-------------|--------|
 | `docs/architecture/03_system_topology/hard_dependency_rules.md`, `module_dependency_graph.md` | replace the stale tables with a pointer to `tach.toml` and the manifests, and the three tach settings | ⬜ SF-08 |
 | `docs/dev_guides/layer_isolation_and_di.md` | the run-state module, registry and drafter injection | ✅ SF-04 |
-| `docs/dev_guides/domain_driven_cli_creation.md` | `cli_kit` and `run_doors` instead of `_core` | ⬜ SF-05 |
+| `docs/dev_guides/domain_driven_cli_creation.md` | `cli_kit` and `run_doors` instead of `_core` | ✅ SF-05 |
 
 ## Works For Real
 

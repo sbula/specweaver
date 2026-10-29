@@ -415,6 +415,46 @@
           "symbol_sha": "sha256:3da4303ce1cfb071d39e8ec4618f709784b3082e9e842393c18fd4384debe256"
         }
       ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "no domain CLI imports the shell; sw draft gets its channel from it",
+      "scope": [
+        "tests/unit/test_architecture.py",
+        "tests/unit/workflows/drafting/interfaces/test_draft_channel.py"
+      ],
+      "mutants": [
+        {
+          "id": "cli-imports-shell-again",
+          "origin": "authored",
+          "file": "src/specweaver/graph/interfaces/cli.py",
+          "symbol": "_require_active_project",
+          "old": "    \"\"\"Exit 1 unless an active project is set and still resolvable. Written out twice.\"\"\"\n",
+          "new": "    \"\"\"Exit 1 unless an active project is set and still resolvable. Written out twice.\"\"\"\n    from specweaver.interfaces.cli.main import console  # noqa: F401\n",
+          "breaks": "the graph CLI imports the shell again, closing the loop",
+          "symbol_sha": "sha256:1110a30e9b4e49ac133078e89e23e53298df0ecb3f320a2a7b9080abba9de3ef"
+        },
+        {
+          "id": "door-back-in-shell",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/review/interfaces/cli.py",
+          "symbol": "review",
+          "old": "    from specweaver.interfaces.run_doors.run_doors import build_run_or_exit\n",
+          "new": "    from specweaver.interfaces.cli.main import app  # noqa: F401\n    from specweaver.interfaces.run_doors.run_doors import build_run_or_exit\n",
+          "breaks": "the review CLI reaches into the shell again",
+          "symbol_sha": "sha256:aa6fb34038b40d51854e99487e7eb3219f9aeca3d106f1bfc7e403d2ad3b460d"
+        },
+        {
+          "id": "draft-loses-its-channel",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/main.py",
+          "symbol": "_hitl_provider",
+          "old": "    return hitl_provider.HITLProvider(console=console)\n",
+          "new": "    return None\n",
+          "breaks": "sw draft runs with no one to ask",
+          "symbol_sha": "sha256:4ef8bb8c09f9b55669b3ece6bcf02e1dbc3a44c57d570c0e09eb676dd8679afd"
+        }
+      ]
     }
   ]
 }
