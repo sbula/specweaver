@@ -25,12 +25,7 @@ this table and `tach.toml` equal. A row goes when its edge goes; none may be add
 
 | Edge | What | Removed by |
 |---|---|---|
-| `specweaver.assurance.standards.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
-| `specweaver.assurance.validation.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
-| `specweaver.core.flow.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 | `specweaver.workflows.drafting.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
-| `specweaver.workflows.implementation.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
-| `specweaver.workflows.review.interfaces` → `specweaver.interfaces.cli` | the domain CLI imports the shell's `_core` helpers | FR-15 |
 
 ## Resolved earlier
 

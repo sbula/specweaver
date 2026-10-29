@@ -97,8 +97,9 @@ Read 2026-10-29.
    `core.flow.handlers`, `core.flow.run_state`, `workspace`); delete the shell edge from
    `assurance.standards.interfaces`, `assurance.validation.interfaces`, `core.flow.interfaces`,
    `workflows.implementation.interfaces`, `workflows.review.interfaces`. Tach red.
-4. Green: `git mv interfaces/cli/run_doors.py interfaces/run_doors/doors.py`; callers import
-   `specweaver.interfaces.run_doors.doors`. Tests re-pointed (paths); unit and integration tests whose
+4. Green: `git mv interfaces/cli/run_doors.py interfaces/run_doors/run_doors.py` (the file keeps its name, so
+   `from … import run_doors` and `run_doors.x` in tests change only their path); callers import
+   `specweaver.interfaces.run_doors.run_doors`. Tests re-pointed (paths); unit and integration tests whose
    subject is a door move to `tests/{unit,integration}/interfaces/run_doors/`. Manifest
    `interfaces/run_doors/context.yaml` (archetype `orchestrator`: it builds and runs pipelines).
    Ledger: 5 rows go.
@@ -166,7 +167,7 @@ The user chose A `[agreed 2026-10-29]`.
 
 Settled without a question (mine to take, recorded for review):
 - File names: `cli_kit/_core.py` keeps its name so the 335 `_core.x` uses in `src` and the test patches change
-  only their path; `run_doors/doors.py`.
+  only their path; `run_doors/run_doors.py` (path-only test edits).
 - `app` and `_version_callback` stay in the shell (`main.py`).
 - `sw draft` with no factory registered attaches no provider (only a test that calls
   `drafting_cli` without the shell can reach that).

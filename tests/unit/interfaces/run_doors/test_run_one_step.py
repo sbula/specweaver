@@ -22,7 +22,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from specweaver.core.flow.engine.models import StepAction, StepTarget
-from specweaver.interfaces.cli import run_doors
+from specweaver.interfaces.run_doors import run_doors
 
 
 def _run(records: list[object], **kw: object) -> tuple[MagicMock, MagicMock, object]:

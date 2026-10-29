@@ -178,13 +178,13 @@
       "scope": [
         "tests/integration/interfaces/cli/test_cli_broken_settings_refuse.py",
         "tests/unit/interfaces/cli_kit/test_project_path_or_exit.py",
-        "tests/integration/interfaces/cli/test_run_doors.py"
+        "tests/integration/interfaces/run_doors/test_run_doors.py"
       ],
       "mutants": [
         {
           "id": "cli-settings-error-escapes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "build_run_or_exit",
           "old": "    except SettingsFileError as err:\n",
           "new": "    except ImportError as err:\n",
@@ -212,7 +212,7 @@
         "tests/unit/interfaces/api/v1/test_settings_error_codes.py",
         "tests/unit/core/flow/handlers/test_validation_dal_merge_stops.py",
         "tests/integration/interfaces/run_setup/test_build_run.py",
-        "tests/integration/interfaces/cli/test_run_doors.py"
+        "tests/integration/interfaces/run_doors/test_run_doors.py"
       ],
       "mutants": [
         {

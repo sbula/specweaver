@@ -25,8 +25,8 @@ from tests.fixtures.db_utils import register_test_project, set_test_active_proje
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.naming import registered_name
-from specweaver.interfaces.cli import run_doors
 from specweaver.interfaces.cli_kit import _core
+from specweaver.interfaces.run_doors import run_doors
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -6,7 +6,7 @@
 Proves: C-FLOW-01 FR-5
 
 A real Typer command hands its router to `tell_missing_at_end`, as every command's run setup does
-(`interfaces/cli/run_doors.py`); only the router is a double.
+(`interfaces/run_doors/run_doors.py`); only the router is a double.
 
 | Bucket | Case |
 |---|---|

@@ -642,7 +642,7 @@
           "old": "    pipeline = load_bundled_pipeline(\"implement_spec\")\n",
           "new": "    pipeline = load_bundled_pipeline(\"implement_spec\").model_copy(\n        update={\"steps\": load_bundled_pipeline(\"implement_spec\").steps[:2]}\n    )\n",
           "breaks": "sw implement generates and stops",
-          "symbol_sha": "sha256:af29a910feb812c0398b07154cc1118f4617058dc89a4c79d60ba18672dc2bee"
+          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
         },
         {
           "id": "api-error-leaks-traceback",

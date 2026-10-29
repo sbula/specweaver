@@ -12,6 +12,7 @@ exposes:
 
 consumes:
   - specweaver/interfaces/cli_kit
+  - specweaver/interfaces/run_doors
   - specweaver/assurance/standards
   - specweaver/core/config
   - specweaver/core/flow

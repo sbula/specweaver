@@ -61,7 +61,7 @@ def review(
     from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-    from specweaver.interfaces.cli.run_doors import build_run_or_exit
+    from specweaver.interfaces.run_doors.run_doors import build_run_or_exit
 
     if spec:
         spec_path = Path(spec)

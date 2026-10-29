@@ -252,7 +252,7 @@
           "old": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=True\n",
           "new": "        project_path, actual_spec_path, pipeline, selector=selector, read_only=False\n",
           "breaks": "sw review opens a per-run worktree",
-          "symbol_sha": "sha256:0eaf14e20b5dc43074fc94e34f3705164e3a910e08e7aeee7b3a18be2aa20979"
+          "symbol_sha": "sha256:aa6fb34038b40d51854e99487e7eb3219f9aeca3d106f1bfc7e403d2ad3b460d"
         },
         {
           "id": "check-rot-opens-worktree",
@@ -262,7 +262,7 @@
           "old": "        models=\"none\",\n        read_only=True,\n",
           "new": "        models=\"none\",\n        read_only=False,\n",
           "breaks": "the commit hook opens a per-run worktree",
-          "symbol_sha": "sha256:5f9466dd7337acaf65310ad3945a9df2ea5d4f413f2cc509f18bd84022fc21b8"
+          "symbol_sha": "sha256:66a595c78f38dbb55e65ac8cf0020e8ce2ae3956accd09b1b5a7d5afe6571385"
         },
         {
           "id": "scan-opens-worktree",
@@ -272,7 +272,7 @@
           "old": "        models=\"optional\",\n        read_only=True,\n",
           "new": "        models=\"optional\",\n        read_only=False,\n",
           "breaks": "sw standards scan opens a per-run worktree",
-          "symbol_sha": "sha256:78ef4109f9e800b3b3f6432ece59f35fff21f0c30b1458516f42b2d7971b6404"
+          "symbol_sha": "sha256:d05694a06615a0eb832e5a297587ce31c636d3106c8053dee7173a123d9e38d5"
         },
         {
           "id": "api-review-not-read-only",
@@ -310,7 +310,7 @@
       "title": "sw resume rebuilds the run for the project the run recorded",
       "scope": [
         "tests/e2e/capabilities/core/test_resume_uses_runs_project_e2e.py",
-        "tests/integration/interfaces/cli/test_run_doors.py"
+        "tests/integration/interfaces/run_doors/test_run_doors.py"
       ],
       "mutants": [
         {
@@ -341,7 +341,7 @@
       "scope": [
         "tests/e2e/capabilities/assurance/test_scan_without_brake_e2e.py",
         "tests/integration/interfaces/cli/test_cli_doors_build_alike.py",
-        "tests/integration/interfaces/cli/test_run_doors.py",
+        "tests/integration/interfaces/run_doors/test_run_doors.py",
         "tests/integration/interfaces/cli/test_run_wiring.py",
         "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py"
       ],
@@ -349,7 +349,7 @@
         {
           "id": "unknown-project-traceback",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "build_run_or_exit",
           "old": "    except UnknownProjectError as err:\n",
           "new": "    except ImportError as err:\n",
@@ -369,7 +369,7 @@
         {
           "id": "router-never-tells",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "build_run_or_exit",
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",
@@ -379,7 +379,7 @@
         {
           "id": "no-folder-no-active-root",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "build_run_or_exit",
           "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
           "new": "        root = project_path\n",
@@ -394,7 +394,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:af29a910feb812c0398b07154cc1118f4617058dc89a4c79d60ba18672dc2bee"
+          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
         },
         {
           "id": "draft-worktree-traceback",
@@ -404,7 +404,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw draft on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
+          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
         },
         {
           "id": "draft-no-terminal",
@@ -414,7 +414,7 @@
           "old": "    context.context_provider = HITLProvider(console=_core.console)\n",
           "new": "    pass\n",
           "breaks": "sw draft asks the user nothing",
-          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
+          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
         },
         {
           "id": "no-model-said-nothing",
@@ -434,7 +434,7 @@
           "old": "    last_record, _context = run_one_step(\n        project_path,\n        plan_path,\n",
           "new": "    last_record, _context = run_one_step(\n        target_path.parent,\n        plan_path,\n",
           "breaks": "sw drift check builds its run for the file's folder, not the project",
-          "symbol_sha": "sha256:d5e1e712c94469d046e1dc61f50bc95b10c6d472a631e80ca35a1feac2327ca8"
+          "symbol_sha": "sha256:cb1d53ba79f3bcf3889e5e173a9bc9e64dd2b15d457934dffb0f25fb305dbe41"
         }
       ]
     },
@@ -443,7 +443,7 @@
       "title": "sw draft lives in the drafting workflow",
       "scope": [
         "tests/integration/workflows/drafting/interfaces/test_draft_lives_in_drafting.py",
-        "tests/unit/interfaces/cli/test_run_one_step.py"
+        "tests/unit/interfaces/run_doors/test_run_one_step.py"
       ],
       "mutants": [
         {
@@ -454,12 +454,12 @@
           "old": "@drafting_cli.command(name=\"draft\")\n",
           "new": "@drafting_cli.command(name=\"drafts\")\n",
           "breaks": "sw draft is no drafting command",
-          "symbol_sha": "sha256:09ff3a4dcbeb67baa552b570c344c2e2261256d038a0c095da2c368c0e6ac10a"
+          "symbol_sha": "sha256:60537096c5db4fc3b3df1f9d874e4be0a31cb7aedd9766463562168959a529d7"
         },
         {
           "id": "one-step-drops-params",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "run_one_step",
           "old": "description=description, params=params or {}",
           "new": "description=description, params={}",

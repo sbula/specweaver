@@ -24,8 +24,8 @@ import typer
 from typer.testing import CliRunner
 
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
-from specweaver.interfaces.cli import run_doors
 from specweaver.interfaces.cli.main import app
+from specweaver.interfaces.run_doors import run_doors
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -172,8 +172,9 @@ def test_a_router_tells_its_missing_calls_at_the_end(
 ) -> None:
     from unittest.mock import MagicMock
 
-    from specweaver.infrastructure.llm.interfaces import command
     from tests.scripted_llm import doubled_llm
+
+    from specweaver.infrastructure.llm.interfaces import command
 
     (tmp_path / ".specweaver-test" / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     told: list[object] = []

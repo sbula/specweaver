@@ -101,7 +101,7 @@
         "tests/e2e/capabilities/infrastructure/test_missing_calls_e2e.py",
         "tests/e2e/capabilities/interfaces/test_api_llm_endpoints_e2e.py",
         "tests/unit/core/flow/engine/test_runner_telemetry.py",
-        "tests/integration/interfaces/cli/test_run_doors.py"
+        "tests/integration/interfaces/run_doors/test_run_doors.py"
       ],
       "mutants": [
         {
@@ -147,7 +147,7 @@
         {
           "id": "optional-router-never-tells",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/run_doors.py",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
           "symbol": "build_run_or_exit",
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",

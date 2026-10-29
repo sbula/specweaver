@@ -161,7 +161,10 @@ def implement(
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-    from specweaver.interfaces.cli.run_doors import build_run_or_exit, refuse_unstarted_worktree
+    from specweaver.interfaces.run_doors.run_doors import (
+        build_run_or_exit,
+        refuse_unstarted_worktree,
+    )
 
     _doc_policy, _autonomy, language = _core.project_sections_at(project_path)
 

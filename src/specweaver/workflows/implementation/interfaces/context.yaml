@@ -5,6 +5,7 @@ archetype: entry-point
 purpose: CLI entrypoints for implementation workflows
 consumes:
   - specweaver/interfaces/cli_kit
+  - specweaver/interfaces/run_doors
   - specweaver/core/flow
   - specweaver/infrastructure/llm
   - specweaver/workspace/project

@@ -171,7 +171,10 @@ def draft(
     from specweaver.core.flow.engine.state import RunStatus
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
     from specweaver.interfaces.cli.hitl_provider import HITLProvider
-    from specweaver.interfaces.cli.run_doors import build_run_or_exit, refuse_unstarted_worktree
+    from specweaver.interfaces.run_doors.run_doors import (
+        build_run_or_exit,
+        refuse_unstarted_worktree,
+    )
 
     pipeline = _build_draft_pipeline(name)
     context = build_run_or_exit(project_path, spec_path, pipeline, selector=selector)

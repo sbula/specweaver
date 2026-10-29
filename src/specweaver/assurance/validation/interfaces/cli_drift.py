@@ -55,7 +55,7 @@ def drift_check(
 
     from specweaver.core.flow.engine.models import StepAction, StepTarget
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.interfaces.cli.run_doors import run_one_step
+    from specweaver.interfaces.run_doors.run_doors import run_one_step
 
     last_record, _context = run_one_step(
         project_path,
@@ -171,7 +171,7 @@ def _plan_declaring(
 def _run_rot_check(target_path: Path, matched_plan: Path, project_path: Path) -> Any:
     """Run the single-step drift check for one file against its plan; its last step record."""
     from specweaver.core.flow.engine.models import StepAction, StepTarget
-    from specweaver.interfaces.cli.run_doors import run_one_step
+    from specweaver.interfaces.run_doors.run_doors import run_one_step
 
     record, _context = run_one_step(
         project_path,

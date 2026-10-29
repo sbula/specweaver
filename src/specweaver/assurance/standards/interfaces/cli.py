@@ -79,7 +79,7 @@ def _enrich_scope(
     """
     from specweaver.core.flow.engine.models import StepAction, StepTarget
     from specweaver.core.flow.engine.state import StepStatus
-    from specweaver.interfaces.cli.run_doors import run_one_step
+    from specweaver.interfaces.run_doors.run_doors import run_one_step
 
     # The scan is project-wide, so the step's spec is the project's rule file.
     last_record, context = run_one_step(

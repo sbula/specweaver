@@ -80,7 +80,7 @@ except ImportError as e:
 
 ## Rules for `cli.py`
 
-- **A command that runs a pipeline sets up its run through `interfaces/cli/run_doors.py`.**
+- **A command that runs a pipeline sets up its run through `interfaces/run_doors/run_doors.py`.**
   `build_run_or_exit` gives the rule file, standards, project sections, isolation, router and
   topology from one project, and turns the builder's errors into refusals; `run_one_step` does the
   same for a one-step pipeline and returns its last step record. Pass `read_only=True` when the

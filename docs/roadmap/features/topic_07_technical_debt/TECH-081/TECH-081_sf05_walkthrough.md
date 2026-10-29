@@ -40,3 +40,39 @@ mixed imports above.
 - R3 (LOW) `pyproject.toml`'s `sw = specweaver.interfaces.cli.main:app` still holds: `app` lives in
   `main.py`.
 - Cycle 2: no new finding.
+
+## CB-2 — the run doors move to `interfaces/run_doors` (FR-15)
+
+### What changed
+
+- `interfaces/cli/run_doors.py` moved to `interfaces/run_doors/run_doors.py` (new tach module,
+  archetype `orchestrator`). The file kept its name, so every test edit is a path change and the
+  boundary runs the `refactor` gate.
+- `assurance.standards`, `assurance.validation`, `core.flow`, `workflows.implementation` and
+  `workflows.review` interfaces lost their `deprecated` edge to the shell and its ledger row; they
+  and `workflows.drafting.interfaces` depend on `interfaces.run_doors` and their manifests consume
+  it. The shell lost five unused edges (`core.flow.*`, `run_setup`, `workspace`).
+- `test_run_one_step.py` and `test_run_doors.py` moved to `tests/{unit,integration}/interfaces/run_doors/`.
+- `domain_driven_cli_creation.md` and one test docstring name the new path.
+- Mutants: the corpora name the moved file and tests. 15 mutants whose symbol held a re-pointed
+  import were re-run (all OBJECTED), then re-pinned one by one. 0 stale.
+
+### Red first
+
+Registering `run_doors` and deleting the five edges first turned `tach check` red (9 failures).
+
+### Gate notes
+
+Full suite 11829 passed, 9 skipped; `tests.py cb --kind refactor`, `quality.py cb`, `doc`,
+`check_proof_tier.py`, `tach check`, mypy green. A path sed also touched a finished plan
+(`TECH-077_sf03_implementation_plan.md`); reverted before staging.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) `run_doors.run_doors` repeats its name. Blue: the price of path-only test edits,
+  which is what lets this boundary prove it changed no behaviour; the plan records the choice.
+- R2 (MEDIUM) `drafting.interfaces` now holds both a `run_doors` edge and its shell edge. Blue: the
+  shell edge is for `HITLProvider` only; CB-3 removes it.
+- R3 (LOW) the shell manifest still lists consumes it no longer uses (`run_setup`, `workspace`).
+  Blue: the manifest test checks edges are covered, not the reverse; CB-3 tidies the shell manifest.
+- Cycle 2: no new finding.
