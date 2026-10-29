@@ -4,6 +4,7 @@ name: flow-cli
 archetype: entry-point
 purpose: CLI entrypoints for pipeline execution and state management
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/core/flow/engine
   - specweaver/core/flow/handlers
   - specweaver/core/flow/run_state

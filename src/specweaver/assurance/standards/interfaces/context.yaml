@@ -11,6 +11,7 @@ exposes:
   - cli
 
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/assurance/standards
   - specweaver/core/config
   - specweaver/core/flow

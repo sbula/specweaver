@@ -11,6 +11,7 @@ exposes:
   - cli
 
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/core/config
   - specweaver/core/config/bootstrap
   - specweaver/infrastructure/llm

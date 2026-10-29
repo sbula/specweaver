@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 import typer
 
 from specweaver.core.flow.engine.resumability import resumability_error
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.store import StateStore

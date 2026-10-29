@@ -35,7 +35,7 @@ from specweaver.interfaces.cli.main import app
 def _mock_workspace(monkeypatch):
     """Patch _run_workspace_op so we don't hit the real DB and cause aiosqlite warnings."""
     monkeypatch.setattr(
-        "specweaver.interfaces.cli._core.run_repo_op",
+        "specweaver.interfaces.cli_kit._core.run_repo_op",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr("specweaver.telemetry_logger.setup_logging", lambda *args, **kwargs: None)
@@ -51,7 +51,7 @@ def test_hooks_install_pre_commit_success(tmp_path: Path):
     hooks_dir.mkdir(parents=True)
 
     with patch(
-        "specweaver.interfaces.cli._core.resolve_project_path",
+        "specweaver.interfaces.cli_kit._core.resolve_project_path",
         return_value=tmp_path,
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
@@ -82,7 +82,7 @@ def test_hooks_install_no_git_dir(tmp_path: Path):
     # We deliberately do not create .git/ directory here
 
     with patch(
-        "specweaver.interfaces.cli._core.resolve_project_path",
+        "specweaver.interfaces.cli_kit._core.resolve_project_path",
         return_value=tmp_path,
     ):
         result = runner.invoke(app, ["hooks", "install", "--pre-commit"])
@@ -96,7 +96,7 @@ def test_hooks_install_resolve_error():
     runner = CliRunner()
 
     with patch(
-        "specweaver.interfaces.cli._core.resolve_project_path",
+        "specweaver.interfaces.cli_kit._core.resolve_project_path",
         side_effect=FileNotFoundError("Invalid path"),
     ):
         result = runner.invoke(app, ["hooks", "install"])
@@ -113,7 +113,7 @@ def test_hooks_install_no_pre_commit(tmp_path: Path):
     git_dir.mkdir(parents=True)
 
     with patch(
-        "specweaver.interfaces.cli._core.resolve_project_path",
+        "specweaver.interfaces.cli_kit._core.resolve_project_path",
         return_value=tmp_path,
     ):
         result = runner.invoke(app, ["hooks", "install", "--no-pre-commit"])

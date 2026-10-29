@@ -390,7 +390,7 @@
         {
           "id": "enter-is-yes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "ask_to_spend",
           "old": "    return answer.strip().lower() in (\"y\", \"yes\")\n",
           "new": "    return answer.strip().lower() in (\"y\", \"yes\", \"\")\n",
@@ -583,7 +583,7 @@
       "title": "One answer per run, asked where a person sees it",
       "scope": [
         "tests/unit/infrastructure/llm/test_spend_budget.py",
-        "tests/unit/interfaces/cli/test_spend_question.py",
+        "tests/unit/interfaces/cli_kit/test_spend_question.py",
         "tests/e2e/capabilities/assurance/test_scan_at_a_spend_limit_e2e.py"
       ],
       "mutants": [
@@ -630,7 +630,7 @@
         {
           "id": "ctrl-d-crashes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "ask_to_spend",
           "old": "    except EOFError:  # expected: no answer means no\n",
           "new": "    except ZeroDivisionError:  # expected: no answer means no\n",
@@ -640,7 +640,7 @@
         {
           "id": "question-in-stdout",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "ask_to_spend",
           "old": "console=Console(stderr=True)",
           "new": "console=console",

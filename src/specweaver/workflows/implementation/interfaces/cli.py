@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import typer
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from collections.abc import Callable

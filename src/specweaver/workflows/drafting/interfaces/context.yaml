@@ -6,6 +6,7 @@ name: drafting-cli
 archetype: entry-point
 purpose: CLI entrypoint for drafting a spec (sw draft)
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/core/flow
   - specweaver/interfaces/cli
 forbids:

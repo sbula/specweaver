@@ -1,0 +1,25 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: cli_kit
+level: module
+purpose: >
+  The helpers every CLI shares: the console, the database, project lookup, and settings errors
+  turned into a message and exit code 1.
+
+archetype: adapter
+
+consumes:
+  - specweaver/core/config
+  - specweaver/workspace
+
+forbids:
+  - specweaver/interfaces/cli  # the shell imports the CLIs; the kit sits below all of them
+
+exposes:
+  - _core
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

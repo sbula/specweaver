@@ -20,12 +20,13 @@ from unittest.mock import patch
 
 import pytest
 import typer
+from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.naming import registered_name
-from specweaver.interfaces.cli import _core, run_doors
-from tests.fixtures.db_utils import register_test_project, set_test_active_project
+from specweaver.interfaces.cli import run_doors
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from pathlib import Path

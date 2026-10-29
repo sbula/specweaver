@@ -119,7 +119,7 @@ def _stored_standards(project: str) -> list[dict]:
     richer fixtures the `Dominant Patterns` value is truncated to `function_styl…`, so a table
     assertion would be testing column widths rather than what was stored.
     """
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
 
     return _core.run_repo_op(lambda r: r.get_standards(project, scope="src", language="python"))
 

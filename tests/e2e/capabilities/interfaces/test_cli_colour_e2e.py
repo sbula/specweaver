@@ -8,7 +8,7 @@ Proves: TECH-050 FR-3
 `tests/conftest.py` pins the whole suite colour-free, which fixes 28 failures and costs one thing:
 nothing would then exercise the coloured path at all. This buys that back.
 
-It has to be a **subprocess**. `specweaver.interfaces.cli._core` builds its `Console` at module
+It has to be a **subprocess**. `specweaver.interfaces.cli_kit._core` builds its `Console` at module
 import, so the renderer has already decided about colour before any fixture runs — `monkeypatch`
 cannot change its mind, and an in-process test would prove only that the decision was cached. The
 claim is about the shipped command, so the shipped command is what runs.

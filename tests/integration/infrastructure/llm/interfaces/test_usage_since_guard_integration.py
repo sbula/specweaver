@@ -51,7 +51,7 @@ def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data_dir))
     bootstrap_database(str(data_dir / "specweaver.db"))
     instance = Database(data_dir / "specweaver.db")
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: instance)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: instance)
     return instance
 
 

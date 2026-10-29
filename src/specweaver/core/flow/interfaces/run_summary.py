@@ -9,7 +9,7 @@ from typing import Any
 
 from rich.markup import escape
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 _COVERED_BY = {"both": "both", "coder": "coder only", "scenario": "scenario only"}
 

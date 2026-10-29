@@ -9,7 +9,7 @@ import typer
 
 from specweaver.core.config.bootstrap.llm_settings_writer import set_role
 from specweaver.core.config.settings_file import SettingsFileError
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 
 def config_set_role(

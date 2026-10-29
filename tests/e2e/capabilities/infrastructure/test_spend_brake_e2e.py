@@ -181,7 +181,7 @@ class TestThePause:
         pipeline.write_text(_ONE_REVIEW, encoding="utf-8")
 
         with (
-            patch("specweaver.interfaces.cli._core.stdin_is_interactive", return_value=True),
+            patch("specweaver.interfaces.cli_kit._core.stdin_is_interactive", return_value=True),
             patch("rich.prompt.Prompt.ask", return_value="y") as asked,
             fake_httpx2(lambda _request: httpx2.Response(200, json=_REPLY)) as seen,
         ):
@@ -210,7 +210,7 @@ class TestThePause:
         replies = iter([_TOOL_CALL, _REPLY])
 
         with (
-            patch("specweaver.interfaces.cli._core.stdin_is_interactive", return_value=True),
+            patch("specweaver.interfaces.cli_kit._core.stdin_is_interactive", return_value=True),
             patch("rich.prompt.Prompt.ask", return_value="y") as asked,
             fake_httpx2(lambda _request: httpx2.Response(200, json=next(replies))) as seen,
         ):
@@ -236,7 +236,7 @@ class TestThePause:
         pipeline.write_text(_ONE_REVIEW, encoding="utf-8")
 
         with (
-            patch("specweaver.interfaces.cli._core.stdin_is_interactive", return_value=True),
+            patch("specweaver.interfaces.cli_kit._core.stdin_is_interactive", return_value=True),
             patch("rich.prompt.Prompt.ask", return_value=""),  # Enter: no
             fake_httpx2(lambda _request: httpx2.Response(200, json=_REPLY)) as seen,
         ):

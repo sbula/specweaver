@@ -46,7 +46,7 @@
         {
           "id": "error-cut-by-markup",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "print_error",
           "old": "    console.print(\"Error:\", str(err), style=\"red\", markup=False, highlight=False, soft_wrap=True)\n",
           "new": "    console.print(f\"[red]Error:[/red] {err}\")\n",

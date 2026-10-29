@@ -1,10 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Core shared objects for the CLI package.
+"""Shared helpers for every CLI: console, database, project lookup, settings refusals.
 
-All submodules import this module (not individual names) so that
-``monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", ...)`` works
+All callers import this module (not individual names) so that
+``monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", ...)`` works
 in tests — the lookup goes through the module attribute, not a
 local binding.
 """
@@ -27,18 +27,10 @@ import anyio
 import typer
 from rich.console import Console
 
-from specweaver._version import __version__
 from specweaver.core.config.bootstrap.db_bootstrap import get_db
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
-
-app = typer.Typer(
-    name="sw",
-    help="SpecWeaver \u2014 Specification-driven development lifecycle tool.",
-    no_args_is_help=True,
-    rich_markup_mode="rich",
-)
 
 console = Console()
 
@@ -46,7 +38,6 @@ _T = TypeVar("_T")
 
 __all__ = [
     "_require_active_project",
-    "app",
     "console",
     "get_db",
     "logger",
@@ -216,10 +207,3 @@ def ask_to_spend(question: str) -> bool:
 def spend_asker() -> Callable[[str], bool] | None:
     """The spend question for a command with a terminal; none without one."""
     return ask_to_spend if stdin_is_interactive() else None
-
-
-def _version_callback(value: bool) -> None:
-    logger.debug("Executing _version_callback (value=%s)", value)
-    if value:
-        console.print(f"SpecWeaver v{__version__}")
-        raise typer.Exit()

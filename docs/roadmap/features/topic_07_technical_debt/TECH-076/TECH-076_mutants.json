@@ -177,7 +177,7 @@
       "title": "Every CLI command that loads project settings stops on a broken one",
       "scope": [
         "tests/integration/interfaces/cli/test_cli_broken_settings_refuse.py",
-        "tests/unit/interfaces/cli/test_project_path_or_exit.py",
+        "tests/unit/interfaces/cli_kit/test_project_path_or_exit.py",
         "tests/integration/interfaces/cli/test_run_doors.py"
       ],
       "mutants": [
@@ -194,7 +194,7 @@
         {
           "id": "project-path-error-escapes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "project_path_or_exit",
           "old": "        console.print(f\"[red]Error:[/red] {exc}\")\n        raise typer.Exit(code=1) from exc\n",
           "new": "        raise\n",
@@ -272,7 +272,7 @@
       "title": "One loader reads every project section; one CLI wrapper refuses it",
       "scope": [
         "tests/unit/core/config/bootstrap/test_project_settings.py",
-        "tests/unit/interfaces/cli/test_project_path_or_exit.py"
+        "tests/unit/interfaces/cli_kit/test_project_path_or_exit.py"
       ],
       "mutants": [
         {
@@ -288,7 +288,7 @@
         {
           "id": "cli-section-error-escapes",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "load_section_at",
           "old": "    except SettingsFileError as err:\n        refuse_settings(err)\n\n\ndef project_sections_at",
           "new": "    except SettingsFileError:\n        raise\n\n\ndef project_sections_at",

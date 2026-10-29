@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import typer
 from rich.markup import escape
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 logger = logging.getLogger(__name__)
 

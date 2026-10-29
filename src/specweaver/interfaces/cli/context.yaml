@@ -13,9 +13,9 @@ purpose: >
 # This module serves as the primary entry point for users interacting with SpecWeaver via the terminal.
 
 ## 2. Contract
-# Provides the global Typer `app`, Rich `console`, and `get_db` initialization routines for downstream CLI commands.
+# Provides the root Typer `app` (`main.py`); the shared `console` and `get_db` live in `interfaces/cli_kit`.
 # ```python
-# from specweaver.interfaces.cli._core import app, console, get_db
+# from specweaver.interfaces.cli_kit import _core
 # ```
 
 ## 4. Policy
@@ -33,6 +33,7 @@ description: |
 archetype: orchestrator
 
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/core/config
   - specweaver/assurance/validation
   - specweaver/workflows/review
@@ -54,8 +55,6 @@ forbids:
 
 exposes:
   - app
-  - console
-  - get_db
   - HITLProvider
 
 # -- Operational Metadata --------------------------------------------------

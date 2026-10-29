@@ -188,7 +188,7 @@ class TestTheTwoHintBranchesDiffer:
         from rich.console import Console
 
         from specweaver.core.flow.interfaces import resume_policy
-        from specweaver.interfaces.cli import _core
+        from specweaver.interfaces.cli_kit import _core
 
         buffer = io.StringIO()
         original, _core.console = _core.console, Console(file=buffer, width=200)

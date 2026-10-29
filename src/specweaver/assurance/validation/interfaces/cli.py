@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import typer
 from rich.table import Table
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.project.discovery import resolve_project_path
 
 if TYPE_CHECKING:

@@ -40,7 +40,7 @@ runner = CliRunner()
 
 
 def _register(name: str, root: Path) -> None:
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
     from tests.fixtures.db_utils import register_test_project
 
     register_test_project(_core.get_db(), name, str(root))
@@ -58,7 +58,7 @@ def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     db_path = str(data_dir / "specweaver.db")
     bootstrap_database(db_path)
     db = Database(db_path)
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
     return db
 
 

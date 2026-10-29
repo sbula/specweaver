@@ -15,13 +15,26 @@ from __future__ import annotations
 # App callback (uses shared objects)
 import typer
 
-from specweaver.interfaces.cli._core import (  # noqa: F401
+from specweaver._version import __version__
+from specweaver.interfaces.cli_kit._core import (  # noqa: F401
     _require_active_project,
-    _version_callback,
-    app,
     console,
     logger,
 )
+
+app = typer.Typer(
+    name="sw",
+    help="SpecWeaver \u2014 Specification-driven development lifecycle tool.",
+    no_args_is_help=True,
+    rich_markup_mode="rich",
+)
+
+
+def _version_callback(value: bool) -> None:
+    logger.debug("Executing _version_callback (value=%s)", value)
+    if value:
+        console.print(f"SpecWeaver v{__version__}")
+        raise typer.Exit()
 
 
 @app.callback()
@@ -37,7 +50,7 @@ def _app_callback(
     ),
 ) -> None:
     """SpecWeaver \u2014 Specification-driven development lifecycle tool."""
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
     from specweaver.telemetry_logger import setup_logging
 
     # db = _core.get_db()

@@ -41,7 +41,7 @@ def _mock_db(tmp_path: Path, monkeypatch):
     # `db_bootstrap.get_db` alone leaves `_core.run_repo_op` on the real database — the target
     # `_core.py:7` names explicitly. Harmless while these tests patched `load_settings` and never
     # asked the repository anything; not harmless now that the command reads the active project.
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
 
     # `sw implement` refuses without an active project (INT-US-16 FR-2), since telemetry is
     # attributed per project. These tests are about output PATHS and used to reach their

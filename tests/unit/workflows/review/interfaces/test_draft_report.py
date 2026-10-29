@@ -27,7 +27,7 @@ def _record(step_name: str, status: StepStatus, output):
 
 
 def _run_report(monkeypatch, records) -> str:
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
 
     buf = StringIO()
     monkeypatch.setattr(_core, "console", Console(file=buf, force_terminal=False, width=200))
@@ -114,7 +114,7 @@ class TestReportDraftChain:
         assert _run_report(monkeypatch, []).strip() == ""
 
     def test_boundary_none_step_records_prints_nothing(self, monkeypatch) -> None:
-        from specweaver.interfaces.cli import _core
+        from specweaver.interfaces.cli_kit import _core
 
         buf = StringIO()
         monkeypatch.setattr(_core, "console", Console(file=buf, force_terminal=False, width=200))
@@ -186,7 +186,7 @@ class TestDisplayReviewResultHostileMarkup:
     def test_hostile_markup_in_summary_and_findings_does_not_crash(self, monkeypatch) -> None:
         import typer
 
-        from specweaver.interfaces.cli import _core
+        from specweaver.interfaces.cli_kit import _core
         from specweaver.workflows.review.interfaces.cli import _display_review_result
         from specweaver.workflows.review.reviewer import (
             ReviewFinding,

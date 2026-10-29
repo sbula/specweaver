@@ -13,7 +13,7 @@ depends_on = []
 
 [[modules]]
 path = "specweaver.graph.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", "specweaver.interfaces.cli_kit",]
 
 [[modules]]
 path = "specweaver.assurance.standards"
@@ -21,7 +21,7 @@ depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specw
 
 [[modules]]
 path = "specweaver.assurance.standards.interfaces"
-depends_on = [ "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.workspace.analyzers", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.workspace.analyzers", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.assurance.validation"
@@ -33,7 +33,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.graph.lineage", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.graph.lineage", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.core.config"
@@ -45,7 +45,7 @@ depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specw
 
 [[modules]]
 path = "specweaver.core.config.interfaces"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.telemetry_logger", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.telemetry_logger", "specweaver.interfaces.cli_kit",]
 
 [[modules]]
 path = "specweaver.core.flow.store"
@@ -65,7 +65,7 @@ depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.flow.engin
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.llm.interfaces", "specweaver.workspace.analyzers", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.assurance.graph", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.llm.interfaces", "specweaver.workspace.analyzers", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.sandbox"
@@ -77,7 +77,11 @@ depends_on = [ "specweaver.core.config", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm.interfaces"
-depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.infrastructure.llm", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.infrastructure.llm", "specweaver.interfaces.cli_kit",]
+
+[[modules]]
+path = "specweaver.interfaces.cli_kit"
+depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workspace", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.run_setup"
@@ -89,7 +93,7 @@ depends_on = [ "specweaver.assurance.validation.io", "specweaver.workspace.analy
 
 [[modules]]
 path = "specweaver.interfaces.cli"
-depends_on = [ "specweaver._version", "specweaver.assurance.standards.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.config.interfaces", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.core.flow.interfaces", "specweaver.graph.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.interfaces.api", "specweaver.interfaces.run_setup", "specweaver.telemetry_logger", "specweaver.workflows.drafting.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.workflows.review.interfaces", "specweaver.workspace", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.workspace.project.interfaces",]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver._version", "specweaver.assurance.standards.interfaces", "specweaver.assurance.validation.interfaces", "specweaver.core.config", "specweaver.core.config.interfaces", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.core.flow.interfaces", "specweaver.graph.interfaces", "specweaver.infrastructure.llm.interfaces", "specweaver.interfaces.api", "specweaver.interfaces.run_setup", "specweaver.telemetry_logger", "specweaver.workflows.drafting.interfaces", "specweaver.workflows.implementation.interfaces", "specweaver.workflows.review.interfaces", "specweaver.workspace", "specweaver.workspace.context", "specweaver.workspace.project", "specweaver.workspace.project.interfaces",]
 
 [[modules]]
 path = "specweaver.workflows.drafting"
@@ -97,7 +101,7 @@ depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.workflows.drafting.interfaces"
-depends_on = [ "specweaver.core.flow.engine", "specweaver.core.flow.handlers", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.implementation"
@@ -105,7 +109,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = [ "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.infrastructure.llm.interfaces", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.infrastructure.llm.interfaces", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
@@ -121,7 +125,7 @@ depends_on = [ "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.review.interfaces"
-depends_on = [ "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.workflows.review", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.workflows.review", { path = "specweaver.interfaces.cli", deprecated = true },]
 
 [[modules]]
 path = "specweaver.workspace.context"
@@ -137,7 +141,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.analyzers", "
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.project", { path = "specweaver.interfaces.cli", deprecated = true },]
+depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.project", "specweaver.interfaces.cli_kit",]
 
 [[modules]]
 path = "specweaver.workspace.ast.parsers"

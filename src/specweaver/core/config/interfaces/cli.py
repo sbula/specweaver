@@ -12,7 +12,7 @@ import typer
 from rich.table import Table
 
 from specweaver.core.config.interfaces.llm_show import config_set_role
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 logger = logging.getLogger(__name__)
 

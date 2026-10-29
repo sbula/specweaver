@@ -16,8 +16,8 @@ from rich.tree import Tree
 from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.graph.lineage.engine import LineageEngine
 from specweaver.graph.lineage.store.lineage_repository import LineageRepository
-from specweaver.interfaces.cli import _core
-from specweaver.interfaces.cli._core import console, get_db
+from specweaver.interfaces.cli_kit import _core
+from specweaver.interfaces.cli_kit._core import console, get_db
 
 logger = logging.getLogger(__name__)
 

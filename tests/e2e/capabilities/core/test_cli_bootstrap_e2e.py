@@ -25,7 +25,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
 
     # We MUST bypass the conftest mock that pre-initializes the DB.
     # We must also mock config_db_path inside cli_db_utils.
-    # The E2E conftest does: `monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", ...)`
+    # The E2E conftest does: `monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", ...)`
     # We will undo that specific patch by re-importing the original get_db logic directly.
     def _native_get_db():
         from specweaver.core.config.database import Database
@@ -38,7 +38,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
             pass
         return Database(db_path)
 
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", _native_get_db)
     monkeypatch.setattr(
         "specweaver.core.config.bootstrap.db_bootstrap.config_db_path", lambda: db_path
     )
@@ -80,7 +80,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
             pass
         return Database(db_path)
 
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", _native_get_db)
     monkeypatch.setattr(
         "specweaver.core.config.bootstrap.db_bootstrap.config_db_path", lambda: db_path
     )

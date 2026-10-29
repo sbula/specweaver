@@ -49,7 +49,7 @@ def test_lineage_tag_and_tree_e2e_happy_path(tmp_path, isolated_db):
     target_file.write_text("def some_function():\n    pass\n", encoding="utf-8")
 
     # We patch _core.get_db to return our isolated DB so it doesn't pollute the user's ~/.specweaver/
-    with patch("specweaver.interfaces.cli._core.get_db") as mock_get_db:
+    with patch("specweaver.interfaces.cli_kit._core.get_db") as mock_get_db:
         mock_get_db.return_value = isolated_db
 
         with patch("specweaver.graph.interfaces.cli.get_db") as mock_lineage_get_db:

@@ -45,7 +45,7 @@ def project_with_spec(
     project_dir.mkdir()
 
     # Patch the CLI's cached DB so `init` hits _mock_db
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: _mock_db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: _mock_db)
 
     result = runner.invoke(app, ["init", "e2e-pipe", "--path", str(project_dir)])
     assert result.exit_code == 0

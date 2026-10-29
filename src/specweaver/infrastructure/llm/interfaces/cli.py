@@ -23,7 +23,7 @@ from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.price_refresh import SOURCE, last_reached, refresh_prices
 from specweaver.infrastructure.llm.price_store import price_book
 from specweaver.infrastructure.llm.store import LlmRepository
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from specweaver.core.config.llm_roles import ResolvedRole

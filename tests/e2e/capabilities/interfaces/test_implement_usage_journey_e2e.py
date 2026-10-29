@@ -195,7 +195,7 @@ class TestImplementSpendIsVisibleInUsage:
         #
         # **The model name is deliberately NOT asserted.** Rich truncates cells to the terminal
         # width, so it renders as `fake-j…`, and passing `COLUMNS` to `invoke()` does not help: the
-        # CLI's `Console` is constructed at module IMPORT (`interfaces/cli/_core.py:37`), which is
+        # CLI's `Console` is constructed at module IMPORT (`interfaces/cli_kit/_core.py:35`), which is
         # before any test can set an environment variable. An earlier draft asserted the full name,
         # passed when run alone and failed under `-n auto`, where xdist's import-time width is
         # narrower — the same import-time-Console trap `TECH-050` was written for.

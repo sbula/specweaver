@@ -42,7 +42,7 @@ def test_usage_with_a_broken_settings_file_reports_in_usd(
     (data_dir / "settings.toml").write_text("[currency\n", encoding="utf-8")
     bootstrap_database(str(data_dir / "specweaver.db"))
     instance = Database(data_dir / "specweaver.db")
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: instance)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: instance)
 
     result = runner.invoke(app, ["usage", "--all"])
 

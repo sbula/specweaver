@@ -4,6 +4,7 @@ name: workspace-cli
 archetype: entry-point
 purpose: CLI entrypoints for workspace project management
 consumes:
+  - specweaver/interfaces/cli_kit
   - specweaver/workspace/project
   - specweaver/workspace/store
   - specweaver/assurance/graph

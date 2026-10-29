@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 import typer
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from pathlib import Path

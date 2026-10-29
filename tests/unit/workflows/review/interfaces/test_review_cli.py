@@ -34,7 +34,7 @@ def _mock_db(tmp_path: Path, monkeypatch):
     monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
     # `_core` binds `get_db` with a `from … import`, so patching only `db_bootstrap.get_db` leaves
     # `run_repo_op` on the real database — the target `_core.py:7` names explicitly.
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
 
     # `sw review` now refuses without an active project (INT-US-16 FR-2, extended from
     # `sw implement`): telemetry is attributed per project, so a review that cannot be attributed

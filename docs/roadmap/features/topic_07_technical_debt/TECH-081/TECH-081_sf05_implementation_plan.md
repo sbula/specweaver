@@ -75,7 +75,7 @@ Read 2026-10-29.
 
 ## Approach (pseudocode, ordered)
 
-**CB-1 — the shared helpers move to `interfaces/cli_kit`** — kind `refactor` (a non-path test edit makes it `tooling`, Q1 `[agreed 2026-10-29]`)
+**CB-1 — the shared helpers move to `interfaces/cli_kit`** — kind `tooling` (two tests split a mixed import; Q1 `[agreed 2026-10-29]`)
 1. Red: `tach.toml` registers `specweaver.interfaces.cli_kit` (`depends_on` `core.config`,
    `core.config.bootstrap`, `workspace`, `workspace.project`); delete the `deprecated` shell edge
    from `graph.interfaces`, `core.config.interfaces`, `infrastructure.llm.interfaces`,

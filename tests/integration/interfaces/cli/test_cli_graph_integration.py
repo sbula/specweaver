@@ -6,8 +6,8 @@ import sqlite3
 
 from typer.testing import CliRunner
 
-from specweaver.interfaces.cli._core import get_db
 from specweaver.interfaces.cli.main import app
+from specweaver.interfaces.cli_kit._core import get_db
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 
 runner = CliRunner()

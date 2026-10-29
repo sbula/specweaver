@@ -31,9 +31,9 @@ async def test_cli_execution_suppresses_debug_and_writes_json(tmp_path: Path) ->
 
     with (
         patch("specweaver.telemetry_logger._get_logs_dir", return_value=tmp_path),
-        patch("specweaver.interfaces.cli._core.run_repo_op", side_effect=_mock_op),
+        patch("specweaver.interfaces.cli_kit._core.run_repo_op", side_effect=_mock_op),
         patch("specweaver.core.config.bootstrap.db_bootstrap.get_db"),
-        patch("specweaver.interfaces.cli._core.get_db"),
+        patch("specweaver.interfaces.cli_kit._core.get_db"),
     ):
         teardown_logging()
         setup_logging("test_project")

@@ -131,7 +131,7 @@ def test_a_project_without_a_root_path_still_shows_the_machine_settings(
 ) -> None:
     (_isolate_env / "settings.toml").write_text(_MACHINE, encoding="utf-8")
     _project(tmp_path)
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
 
     class _RegistryWithoutRoot:
         def get_active_project(self) -> str:

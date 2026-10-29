@@ -63,7 +63,7 @@ def _mock_db(tmp_path, monkeypatch):
     db = Database(db_path)
 
     monkeypatch.setattr("specweaver.core.config.bootstrap.db_bootstrap.get_db", lambda: db)
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
     monkeypatch.setattr("specweaver.core.config.paths.config_db_path", lambda: db_path)
     return db
 

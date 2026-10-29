@@ -86,7 +86,7 @@ def test_a_prefix_name_does_not_match(world: tuple[Database, Path]) -> None:
 def test_every_door_answers_alike(world: tuple[Database, Path]) -> None:
     """The CLI helpers and the API ask the store; they cannot disagree with it."""
     from specweaver.interfaces.api.v1.paths import resolve_project_root
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
 
     db, root = world
 

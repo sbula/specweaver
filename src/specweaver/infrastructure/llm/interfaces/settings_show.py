@@ -9,7 +9,7 @@ from specweaver.core.config.llm_roles import resolve_roles, settings_report
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.settings_view import role_rows
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 
 def config_show() -> None:

@@ -77,7 +77,7 @@ def test_the_api_layer_does_not_import_the_cli_layer() -> None:
 def test_run_repo_op_is_the_one_typed_replacement() -> None:
     """The string-dispatched `_run_workspace_op` had two copies; a single typed helper replaced
     them. Both copies staying gone is the point."""
-    from specweaver.interfaces.cli import _core
+    from specweaver.interfaces.cli_kit import _core
 
     assert callable(_core.run_repo_op)
     assert "_run_workspace_op" not in _defined_names(SRC / "workspace/project/interfaces/cli.py")

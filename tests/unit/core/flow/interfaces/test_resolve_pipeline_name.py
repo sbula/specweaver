@@ -109,7 +109,7 @@ class TestActiveProfileRouting:
     def test_component_with_profile_uses_profile_pipeline(self, monkeypatch) -> None:
         """Active profile for a project auto-selects profile YAML."""
         monkeypatch.setattr(
-            "specweaver.interfaces.cli._core.run_repo_op",
+            "specweaver.interfaces.cli_kit._core.run_repo_op",
             lambda fn: "web-app",
         )
         monkeypatch.setattr(
@@ -124,7 +124,7 @@ class TestActiveProfileRouting:
 
     def test_component_with_library_profile(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "specweaver.interfaces.cli._core.run_repo_op",
+            "specweaver.interfaces.cli_kit._core.run_repo_op",
             lambda fn: "library",
         )
         monkeypatch.setattr(
@@ -139,7 +139,7 @@ class TestActiveProfileRouting:
 
     def test_component_with_data_pipeline_profile(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "specweaver.interfaces.cli._core.run_repo_op",
+            "specweaver.interfaces.cli_kit._core.run_repo_op",
             lambda fn: "data-pipeline",
         )
         monkeypatch.setattr(
@@ -173,7 +173,7 @@ class TestDefaultLevelFallback:
     def test_component_no_profile_returns_default(self, monkeypatch) -> None:
         """Project with no profile set falls back to spec_default."""
         monkeypatch.setattr(
-            "specweaver.interfaces.cli._core.run_repo_op",
+            "specweaver.interfaces.cli_kit._core.run_repo_op",
             lambda fn: None,
         )
         monkeypatch.setattr(
@@ -193,7 +193,7 @@ class TestDefaultLevelFallback:
     def test_code_level_ignores_active_profile(self, monkeypatch) -> None:
         """code level routes to code pipeline regardless of profile."""
         monkeypatch.setattr(
-            "specweaver.interfaces.cli._core.run_repo_op",
+            "specweaver.interfaces.cli_kit._core.run_repo_op",
             lambda fn: "web-app",
         )
         monkeypatch.setattr(

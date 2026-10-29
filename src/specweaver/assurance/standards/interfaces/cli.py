@@ -12,7 +12,7 @@ import typer
 from rich.table import Table
 
 from specweaver.commons import json
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)

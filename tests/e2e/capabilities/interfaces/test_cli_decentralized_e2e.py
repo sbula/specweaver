@@ -47,7 +47,7 @@ def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
             pass
         return Database(db_path)
 
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", _native_get_db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", _native_get_db)
 
 
 def test_costs_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -119,7 +119,7 @@ def test_standards_scan_locked_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
             return BrokenContext()
 
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", BrokenDB)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", BrokenDB)
 
     result = runner.invoke(app, ["standards", "scan"])
     # It should fail loudly but not with a raw traceback (typer exit or handled exception)

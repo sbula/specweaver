@@ -19,7 +19,7 @@ import io
 
 import pytest
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 
 @pytest.mark.parametrize(("typed", "spends"), [("y\n", True), ("yes\n", True), ("\n", False)])

@@ -107,7 +107,7 @@
         {
           "id": "show-broken-file-exits-zero",
           "origin": "authored",
-          "file": "src/specweaver/interfaces/cli/_core.py",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "refuse_settings",
           "old": "    raise typer.Exit(code=1) from err\n",
           "new": "    return\n",
@@ -150,7 +150,7 @@
       "requirement": "FR-9",
       "title": "A command reads the settings of the project it works on, not the active one",
       "scope": [
-        "tests/unit/interfaces/cli/test_target_project.py",
+        "tests/unit/interfaces/cli_kit/test_target_project.py",
         "tests/e2e/capabilities/infrastructure/test_llm_servers_e2e.py",
         "tests/integration/interfaces/cli/test_cli_drift.py",
         "tests/integration/interfaces/cli/test_cli_doors_build_alike.py"

@@ -7,7 +7,7 @@ import logging
 
 import typer
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.project.constitution import check_constitution, find_constitution
 
 logger = logging.getLogger(__name__)

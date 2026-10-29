@@ -9,7 +9,7 @@ import sys
 
 import typer
 
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 hooks_app = typer.Typer(
     name="hooks",

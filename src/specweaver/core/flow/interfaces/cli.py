@@ -16,12 +16,12 @@ from specweaver.core.config.paths import state_db_path
 from specweaver.core.flow.engine.session import SessionWorktreeError
 from specweaver.core.flow.interfaces.resume_policy import guard_resumable, print_resume_hint
 from specweaver.core.flow.interfaces.spec_path_resolution import resolve_spec_path
-from specweaver.interfaces.cli import _core
 from specweaver.interfaces.cli.run_doors import (
     build_run_or_exit,
     recorded_project_root,
     refuse_unstarted_worktree,
 )
+from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 logger = logging.getLogger(__name__)

@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from rich.console import Console
 
 from specweaver.core.config.llm_settings import RoleEntry
-from specweaver.interfaces.cli import _core
+from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.llm.router import ModelRouter

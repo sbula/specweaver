@@ -43,7 +43,7 @@ def _mock_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     db_path = str(data_dir / "specweaver.db")
     bootstrap_database(db_path)
     db = Database(db_path)
-    monkeypatch.setattr("specweaver.interfaces.cli._core.get_db", lambda: db)
+    monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", lambda: db)
     return db
 
 
