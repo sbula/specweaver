@@ -135,6 +135,20 @@ def build_failed_without_results(result: SubprocessResult, tool: str, total: int
 # one that reported it at all.
 
 
+def did_not_run_reason(errors: list[dict[str, object]]) -> str | None:
+    """The reasons of the not-run results among a lint's exported errors, or None if none.
+
+    Reads the code `failed_lint` writes, so a lint that did not run cannot be mistaken for errors
+    a model could fix.
+    """
+    reasons = [
+        str(error.get("message", ""))
+        for error in errors
+        if isinstance(error, dict) and error.get("code") == "ToolchainUnavailable"
+    ]
+    return "; ".join(reasons) if reasons else None
+
+
 def failed_tests(reason: str, duration_seconds: float = 0.0) -> TestRunResult:
     return TestRunResult(
         passed=0,

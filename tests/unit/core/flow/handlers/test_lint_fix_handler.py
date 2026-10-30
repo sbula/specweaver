@@ -447,3 +447,106 @@ class TestGetAtomSandboxSettings:
         mock_atom_cls.assert_called_once_with(
             cwd=tmp_path, language=None, sandbox_settings=config.sandbox
         )
+
+
+def _not_run(reason: str = "ruff timed out after 120 s") -> AtomResult:
+    from dataclasses import asdict
+
+    from specweaver.sandbox.language.core.toolchain import failed_lint
+
+    lint = failed_lint(reason)
+    return AtomResult(
+        status=AtomStatus.FAILED,
+        message="1 lint error(s) found.",
+        exports={
+            "error_count": lint.error_count,
+            "fixable_count": 0,
+            "fixed_count": 0,
+            "errors": [asdict(e) for e in lint.errors],
+        },
+    )
+
+
+class TestLintThatDidNotRun:
+    """TECH-087 FR-4: any lint of the step that did not run stops it, with no further work.
+
+    Proves: TECH-087 FR-4
+    """
+
+    @pytest.mark.asyncio
+    async def test_first_lint_not_run_stops_before_auto_fix(self, tmp_path: Path) -> None:
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = _not_run("ruff did not run: no engine")
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock()
+        _setup_code(tmp_path)
+
+        result = await _handler(mock_atom).execute(
+            _make_step(), _make_context(tmp_path, llm=mock_llm)
+        )
+
+        assert result.status == StepStatus.FAILED
+        assert result.error_message == "The linter did not run: ruff did not run: no engine"
+        assert result.output == {"reflections_used": 0, "lint_errors_remaining": 1}
+        assert mock_atom.run.call_count == 1
+        mock_llm.generate.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_relint_after_auto_fix_not_run_calls_no_model(self, tmp_path: Path) -> None:
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(2), _dirty(2), _not_run()]
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock()
+        _setup_code(tmp_path)
+
+        result = await _handler(mock_atom).execute(
+            _make_step(), _make_context(tmp_path, llm=mock_llm)
+        )
+
+        assert result.status == StepStatus.FAILED
+        assert "ruff timed out after 120 s" in result.error_message
+        assert mock_atom.run.call_count == 3
+        mock_llm.generate.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_relint_after_a_model_fix_not_run_stops_the_loop(self, tmp_path: Path) -> None:
+        mock_atom = MagicMock()
+        mock_atom.run.side_effect = [_dirty(2), _dirty(2), _dirty(2), _not_run()]
+        mock_llm = MagicMock()
+        mock_llm.generate = AsyncMock(return_value=MagicMock(text="fixed code"))
+        _setup_code(tmp_path)
+
+        result = await _handler(mock_atom).execute(
+            _make_step(max_reflections=3), _make_context(tmp_path, llm=mock_llm)
+        )
+
+        assert result.status == StepStatus.FAILED
+        assert "ruff timed out" in result.error_message
+        assert result.output["reflections_used"] == 1
+        assert mock_llm.generate.await_count == 1
+        assert mock_atom.run.call_count == 4
+
+    @pytest.mark.asyncio
+    async def test_a_refused_lint_with_no_verdict_is_not_clean(self, tmp_path: Path) -> None:
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.FAILED, message="target '../x' is outside the sandbox directory."
+        )
+
+        result = await _handler(mock_atom).execute(_make_step(), _make_context(tmp_path))
+
+        assert result.status == StepStatus.FAILED
+        assert "outside the sandbox directory" in result.error_message
+        assert mock_atom.run.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_a_lint_with_no_exports_at_all_is_not_clean(self, tmp_path: Path) -> None:
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.FAILED, message="Missing 'target'", exports=None
+        )
+
+        result = await _handler(mock_atom).execute(_make_step(), _make_context(tmp_path))
+
+        assert result.status == StepStatus.FAILED
+        assert "Missing 'target'" in result.error_message

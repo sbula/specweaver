@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
@@ -50,6 +51,20 @@ def _lint_outcome(
     )
 
 
+def _did_not_run(lint_result: Any) -> str | None:
+    """Why this lint did not run, or None when it reached a verdict.
+
+    A result with no `error_count` is no verdict either: the atom refused the target or failed
+    before linting, and a missing count must not read as zero errors.
+    """
+    from specweaver.sandbox.language.core.toolchain import did_not_run_reason
+
+    exports = lint_result.exports or {}
+    if "error_count" not in exports:
+        return lint_result.message or "the lint returned no result"
+    return did_not_run_reason(exports.get("errors", []))
+
+
 def _lint_target(step: PipelineStep, context: RunContext) -> str:
     """The step's `target`, else the task's code file relative to the project."""
     from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
@@ -59,6 +74,15 @@ def _lint_target(step: PipelineStep, context: RunContext) -> str:
         return str(step.params["target"])
     code = task_code_file(context)
     return relative_to_root(code, context.project_path) or str(code)
+
+
+@dataclass(frozen=True)
+class _Loop:
+    """What every round of one lint-fix run shares."""
+
+    context: RunContext
+    target: str
+    started: str
 
 
 class LintFixHandler:
@@ -96,13 +120,11 @@ class LintFixHandler:
         lint_result = atom.run(run_kwargs)
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: initial lint found %d errors", last_error_count)
-
-        # Clean on first run → done
-        if last_error_count == 0:
-            logger.info("LintFixHandler: code is clean — no lint errors")
-            return _lint_outcome(
-                started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=False
-            )
+        verdict = self._verdict_without_model(
+            lint_result, started, last_error_count, auto_fixed=False
+        )
+        if verdict:
+            return verdict
 
         # Phase 1: the linter's own fix first (cheaper than the LLM)
         logger.info(
@@ -116,64 +138,19 @@ class LintFixHandler:
         lint_result = atom.run(run_kwargs)
         last_error_count = lint_result.exports.get("error_count", 0) if lint_result.exports else 0
         logger.debug("LintFixHandler: after auto-fix, %d errors remain", last_error_count)
-
-        if last_error_count == 0:
-            logger.info("LintFixHandler: all errors resolved by the linter's auto-fix")
-            return _lint_outcome(
-                started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=True
-            )
+        verdict = self._verdict_without_model(
+            lint_result, started, last_error_count, auto_fixed=True
+        )
+        if verdict:
+            return verdict
 
         # Phase 2: LLM reflection loop for remaining errors
         for _ in range(max_reflections):
-            # No LLM → can't fix
-            if context.model.llm_router is None:
-                return _lint_outcome(
-                    started,
-                    status=StepStatus.FAILED,
-                    reflections=reflections_used,
-                    remaining=last_error_count,
-                    error="Lint errors found but no LLM configured for auto-fix",
-                )
-
-            # Find code to fix
-            code_file, refused = self._file_to_fix(context, target)
-            if code_file is None:
-                return StepResult(
-                    status=StepStatus.FAILED,
-                    error_message=refused,
-                    output={
-                        "reflections_used": reflections_used,
-                        "lint_errors_remaining": last_error_count,
-                    },
-                    started_at=started,
-                    completed_at=_now_iso(),
-                )
-
-            # Ask LLM to fix
-            try:
-                logger.debug(
-                    "LintFixHandler: LLM reflection %d/%d on '%s'",
-                    reflections_used + 1,
-                    max_reflections,
-                    code_file.name,
-                )
-                await self._llm_fix(
-                    code_file,
-                    lint_result.exports.get("errors", []) if lint_result.exports else [],
-                    context=context,
-                )
-            except Exception as exc:
-                log_step_failure(
-                    logger, "LintFixHandler: LLM fix failed on reflection %d", reflections_used + 1
-                )
-                return _lint_outcome(
-                    started,
-                    status=StepStatus.ERROR,
-                    reflections=reflections_used,
-                    remaining=last_error_count,
-                    error=str(exc),
-                )
-
+            failed = await self._model_fix(
+                _Loop(context, target, started), lint_result, reflections_used, last_error_count
+            )
+            if failed:
+                return failed
             reflections_used += 1
 
             # Re-lint
@@ -181,6 +158,11 @@ class LintFixHandler:
             last_error_count = (
                 lint_result.exports.get("error_count", 0) if lint_result.exports else 0
             )
+            stopped = self._stop_if_not_run(
+                lint_result, started, reflections_used, last_error_count
+            )
+            if stopped:
+                return stopped
 
             if last_error_count == 0:
                 return _lint_outcome(
@@ -203,6 +185,81 @@ class LintFixHandler:
             f"{last_error_count} errors remain",
             started_at=started,
             completed_at=_now_iso(),
+        )
+
+    async def _model_fix(
+        self, loop: _Loop, lint_result: Any, reflections: int, remaining: int
+    ) -> StepResult | None:
+        """One model fix of the lint errors; the step's FAILED or ERROR result when none can run."""
+        if loop.context.model.llm_router is None:
+            return _lint_outcome(
+                loop.started,
+                status=StepStatus.FAILED,
+                reflections=reflections,
+                remaining=remaining,
+                error="Lint errors found but no LLM configured for auto-fix",
+            )
+        code_file, refused = self._file_to_fix(loop.context, loop.target)
+        if code_file is None:
+            return StepResult(
+                status=StepStatus.FAILED,
+                error_message=refused,
+                output={"reflections_used": reflections, "lint_errors_remaining": remaining},
+                started_at=loop.started,
+                completed_at=_now_iso(),
+            )
+        try:
+            logger.debug(
+                "LintFixHandler: LLM reflection %d on '%s'", reflections + 1, code_file.name
+            )
+            await self._llm_fix(
+                code_file,
+                lint_result.exports.get("errors", []) if lint_result.exports else [],
+                context=loop.context,
+            )
+        except Exception as exc:
+            log_step_failure(
+                logger, "LintFixHandler: LLM fix failed on reflection %d", reflections + 1
+            )
+            return _lint_outcome(
+                loop.started,
+                status=StepStatus.ERROR,
+                reflections=reflections,
+                remaining=remaining,
+                error=str(exc),
+            )
+        return None
+
+    @classmethod
+    def _verdict_without_model(
+        cls, lint_result: Any, started: str, remaining: int, *, auto_fixed: bool
+    ) -> StepResult | None:
+        """The step's result when no model is needed: the lint did not run, or it is clean."""
+        stopped = cls._stop_if_not_run(lint_result, started, 0, remaining)
+        if stopped:
+            return stopped
+        if remaining:
+            return None
+        logger.info("LintFixHandler: no lint errors (after the linter's auto-fix: %s)", auto_fixed)
+        return _lint_outcome(
+            started, status=StepStatus.PASSED, reflections=0, remaining=0, auto_fixed=auto_fixed
+        )
+
+    @staticmethod
+    def _stop_if_not_run(
+        lint_result: Any, started: str, reflections: int, remaining: int
+    ) -> StepResult | None:
+        """FAILED at once when the lint did not run: no auto-fix or model can fix that."""
+        reason = _did_not_run(lint_result)
+        if reason is None:
+            return None
+        logger.warning("LintFixHandler: the linter did not run: %s", reason)
+        return _lint_outcome(
+            started,
+            status=StepStatus.FAILED,
+            reflections=reflections,
+            remaining=remaining,
+            error=f"The linter did not run: {reason}",
         )
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:

@@ -57,3 +57,40 @@ timeout check removed from `run_sarif_analysis`; TS stub back to zero; ruff garb
 - R3 (LOW) container mode with Maven's overlay workspace never writes the report to the host. Not
   changed by this boundary: it was already a missing report, now reached after the clear.
 - Cycle 2: no new finding.
+
+## CB-2 — the lint step stops on a lint that did not run (FR-4, P-1)
+
+### What changed
+
+- `toolchain.did_not_run_reason(errors)`: the reasons of the `ToolchainUnavailable` entries among a
+  lint's exported errors (AD-2), exposed in `tach.toml` for the handler.
+- `core/flow/handlers/lint_fix.py`: after the first lint, the re-lint after the linter's auto-fix, and
+  each re-lint after a model fix, a lint that did not run returns FAILED "The linter did not run:
+  <reason>" at once. Found in Phase 2 and fixed here: a lint result with no `error_count` (the atom
+  refused the target, or failed before linting) read as zero errors and the step PASSED; it is now
+  a lint that did not run. `execute` was split (`_verdict_without_model`, `_model_fix`) to stay
+  under the complexity limits.
+- `docs/dev_guides/pipeline_engine_guide.md`: one rule line.
+
+### Red first
+
+- P-1 `tests/integration/core/flow/handlers/test_lint_step_tool_did_not_run.py`: real handler, atom,
+  Python runner and container executor, `PATH` with no Podman or Docker. Before the change the step
+  spent both model reflections and failed with "Lint-fix exhausted after 2 reflections".
+- `test_lint_fix_handler.py::TestLintThatDidNotRun`: five cases (first lint, re-lint after auto-fix,
+  re-lint after a model fix, a refused lint, a result with no exports); all failed before.
+- `test_did_not_run_reason.py`: the helper on the factory's own output (`asdict(failed_lint(...))`).
+
+### Proof
+
+Three FR-4 mutants, all killed: the not-run check in `_verdict_without_model` removed; the code
+compared against a wrong string; the "no `error_count`" branch disabled.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) a project lint rule whose code is literally `ToolchainUnavailable` would stop the step.
+  Accepted: ruff, ESLint, PMD, detekt and clippy emit no such code, and the outcome fails closed.
+- R2 (MEDIUM) the auto-fix call's own result is not read. Blue: the re-lint after it is, and that is
+  the lint that decides.
+- R3 (LOW) the refused-lint message is the atom's text. Blue: it names the target and why.
+- Cycle 2: no new finding.

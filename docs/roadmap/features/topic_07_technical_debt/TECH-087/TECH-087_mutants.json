@@ -88,6 +88,47 @@
           "symbol_sha": "sha256:960bc34fc1f6dcfdb112a626f4541c9d3cb26a2d3dc343a82b6404d2d514ec01"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A lint that did not run stops the step with no model call",
+      "scope": [
+        "tests/integration/core/flow/handlers/test_lint_step_tool_did_not_run.py",
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py",
+        "tests/unit/sandbox/language/core/language/test_did_not_run_reason.py"
+      ],
+      "mutants": [
+        {
+          "id": "lint-step-feeds-not-run",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._verdict_without_model",
+          "old": "stopped = cls._stop_if_not_run(lint_result, started, 0, remaining)",
+          "new": "stopped = None",
+          "breaks": "a ruff that did not run is sent to the auto-fix and then to the model, as before TECH-087",
+          "symbol_sha": "sha256:238f4f07b893ae3a25a865cf7126d6ad287cbb76cd3e5ae990be5f01d544fcd8"
+        },
+        {
+          "id": "not-run-code-unrecognised",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/toolchain.py",
+          "symbol": "did_not_run_reason",
+          "old": "error.get(\"code\") == \"ToolchainUnavailable\"",
+          "new": "error.get(\"code\") == \"Toolchain\"",
+          "breaks": "the step no longer recognises the shared not-run result and pays a model to fix it",
+          "symbol_sha": "sha256:be46330db251019c86894598a9d917ef4d25449898a57823f1d5aa17070e2abb"
+        },
+        {
+          "id": "refused-lint-reads-clean",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "_did_not_run",
+          "old": "if \"error_count\" not in exports:",
+          "new": "if False:",
+          "breaks": "a lint the atom refused, with no count, reads as zero errors and the step passes",
+          "symbol_sha": "sha256:eb5a13c405ae218b496472e7495e3baa84296bd1dd76d2967415b15dc2192f74"
+        }
+      ]
     }
   ]
 }

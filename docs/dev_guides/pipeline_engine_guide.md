@@ -41,6 +41,9 @@ steps:
   (`qa_targets.step_file`, `TECH-078`).
 - A test step with no `target` runs the task's tests file (`tests/test_<stem>.py` in Python), and a
   `lint_fix` step with no `target` lints the task's code file, both relative to where the step runs.
+- A `lint_fix` lint that reached no verdict (the linter timed out, found no container engine, wrote
+  no readable report, or the atom refused the target) fails the step at once, with the reason. No
+  auto-fix and no model call follow: there is no error in the code to fix (`TECH-087` FR-4).
 - `implement_spec.yaml` (bundled) is the implement pipeline: `sw implement` and `POST /implement`
   both load it with `load_bundled_pipeline("implement_spec")`. Its steps name no file.
 - **`gate`** stops the `PipelineRunner`. `auto` passes when static validation passes. `hitl` parks the
