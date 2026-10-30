@@ -171,8 +171,6 @@ class TestQaAtom:
         assert atom._scenarios_mounted
 
     def test_the_scenario_scratch_goes_with_the_atom(self, tmp_path: Path) -> None:
-        import gc
-
         from specweaver.sandbox.language.core.runner_factory import qa_atom
 
         atom = qa_atom(tmp_path, scenarios_root=tmp_path / "scenarios")
@@ -180,8 +178,7 @@ class TestQaAtom:
         assert scratch.is_dir()
         assert not scratch.is_relative_to(tmp_path)
 
-        del atom
-        gc.collect()
+        del atom  # no cycle holds it, so this runs its finalizer
 
         assert not scratch.exists()
 

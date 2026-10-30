@@ -361,23 +361,23 @@
       "requirement": "FR-20",
       "title": "A Java compile error and a program's output are both readable",
       "scope": [
-        "tests/unit/sandbox/language/core/test_maven_output.py"
+        "tests/unit/sandbox/language/core/jvm/test_build_output.py"
       ],
       "mutants": [
         {
           "id": "each-diagnostic-is-reported-twice",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/maven_output.py",
+          "file": "src/specweaver/sandbox/language/core/jvm/build_output.py",
           "symbol": "compile_errors",
           "old": "        if key in seen:",
           "new": "        if False:",
           "breaks": "Maven prints every diagnostic twice — once compiling, once in the failure summary — so the caller sees double the errors that exist",
-          "symbol_sha": "sha256:950311bf13c353a758df3db1b28e0b3f074ebdf8ea92494adb2a0cebe60b3b8b"
+          "symbol_sha": "sha256:dfe3b941eab1c229a47a5f8198b4e50046896c0903e202c8243c85de5cbc593e"
         },
         {
           "id": "the-build-log-is-returned-as-program-output",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/maven_output.py",
+          "file": "src/specweaver/sandbox/language/core/jvm/build_output.py",
           "symbol": "program_output",
           "old": "        if _EXEC_BANNER.match(line.strip()):",
           "new": "        if False:",

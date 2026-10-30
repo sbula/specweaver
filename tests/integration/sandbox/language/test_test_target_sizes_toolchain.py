@@ -4,6 +4,7 @@
 """Real Kotlin (Maven and Gradle) and Vitest run exactly what a target names, at every size.
 
 Proves: TECH-078 FR-7
+Proves: TECH-087 FR-13
 
 The `toolchain` tier: these builds download their packages, so they run nightly
 (`scripts/toolchain.py`), not in the default suite. Each project holds two test files in a folder
@@ -16,6 +17,7 @@ of the failing one's.
 | Boundary | a folder runs its subfolder's tests too |
 | Degradation | a missing tool or registry skips, saying which; a target naming no test fails, naming it |
 | Hostile | a name that is a prefix or a suffix of another test's runs only its own |
+| Degradation | a Kotlin file that does not compile gives located errors, not the raw build log |
 """
 
 from __future__ import annotations
@@ -128,6 +130,34 @@ class TestKotlinMaven:
         target = "src/test/kotlin/shop/OrdersTest.kt::gone"
 
         assert _names_the_target(_kotlin(root, target), target)
+
+
+class TestKotlinMavenCompile:
+    """TECH-087 FR-13 through the real Kotlin compiler: each error names its file and line."""
+
+    def test_a_broken_source_gives_located_errors(
+        self, tmp_path_factory: pytest.TempPathFactory
+    ) -> None:
+        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+
+        _require(("mvn", "java"), "repo.maven.apache.org")
+        root = tmp_path_factory.mktemp("compile") / "kt"
+        shutil.copytree(SAMPLES / "kotlin", root)
+        _write(
+            root,
+            {
+                "src/main/kotlin/shop/Broken.kt": """
+            package shop
+            fun total(): Int = "no"
+            fun twice() = missing()
+            """
+            },
+        )
+
+        result = KotlinRunner(cwd=root, executor=SubprocessExecutor(cwd=root)).run_compiler("")
+
+        located = sorted((Path(e.file).name, e.line) for e in result.errors)
+        assert located == [("Broken.kt", 2), ("Broken.kt", 3)]
 
 
 class TestKotlinGradle:

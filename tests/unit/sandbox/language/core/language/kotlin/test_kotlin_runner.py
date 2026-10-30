@@ -4,6 +4,7 @@
 """The Kotlin QA runner: one command per intent, and the parsing of what comes back.
 
 Proves: D-VAL-03 FR-6
+Proves: TECH-087 FR-13
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `gradlew compileKotlin` replaced by `gradlew build` — 1 fails, the same conflation as Java's.
 
@@ -65,17 +66,49 @@ class TestKotlinRunner:
         assert "compileKotlin" in cmd
         assert res.error_count == 0
 
-    def test_run_compiler_failure(self, tmp_path: Path) -> None:
+    def test_a_failed_build_reports_where_each_error_is(self, tmp_path: Path) -> None:
         (tmp_path / "pom.xml").touch()
+        line = "[ERROR] file:///w/src/main/kotlin/A.kt:3:11 Unresolved reference 'nope'.\n"
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(exit_code=1, stdout=line + line)
+        runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
+
+        res = runner.run_compiler(target="")
+
+        assert res.error_count == 1
+        error = res.errors[0]
+        assert (error.file, error.line, error.column) == ("/w/src/main/kotlin/A.kt", 3, 11)
+        assert error.message == "Unresolved reference 'nope'."
+
+    def test_a_gradle_error_on_stderr_is_located(self, tmp_path: Path) -> None:
+        (tmp_path / "build.gradle.kts").touch()
         mock_executor = MagicMock(spec=SubprocessExecutor)
         mock_executor.execute.return_value = _make_result(
-            exit_code=1, stdout="", stderr="COMPILATION ERROR"
+            exit_code=1,
+            stdout="> Task :compileKotlin FAILED\n",
+            stderr="e: file:///w/src/main/kotlin/A.kt:7:3 Unresolved reference 'x'.\n",
         )
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
 
         res = runner.run_compiler(target="")
+
+        assert [(e.file, e.line) for e in res.errors] == [("/w/src/main/kotlin/A.kt", 7)]
+
+    def test_a_failed_build_with_no_location_says_so(self, tmp_path: Path) -> None:
+        (tmp_path / "pom.xml").touch()
+        mock_executor = MagicMock(spec=SubprocessExecutor)
+        mock_executor.execute.return_value = _make_result(
+            exit_code=1, stdout="[ERROR] Plugin could not be resolved", stderr=""
+        )
+        runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
+
+        res = runner.run_compiler(target="")
+
         assert res.error_count == 1
-        assert res.errors[0].code == "COMPILE_ERROR"
+        error = res.errors[0]
+        assert (error.file, error.code) == ("<toolchain>", "BuildFailed")
+        assert "exited 1 without a compiler diagnostic" in error.message
+        assert "Plugin could not be resolved" in error.message
 
     def test_run_tests_wipes_stale_xml(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").touch()

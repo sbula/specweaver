@@ -315,6 +315,36 @@
           "symbol_sha": "sha256:bfed2bbb9c6063f2458976ef7ba899f9762dc680843127c5e3770de08be57e4a"
         }
       ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "a failed Kotlin build reports file and line, as Java does",
+      "scope": [
+        "tests/unit/sandbox/language/core/jvm/test_build_output.py",
+        "tests/unit/sandbox/language/core/language/kotlin/test_kotlin_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "kotlin-compile-raw-stderr",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/jvm/build_output.py",
+          "symbol": "_diagnostic",
+          "old": "    return next((m for pattern in _DIAGNOSTICS if (m := pattern.match(line))), None)\n",
+          "new": "    return _DIAGNOSTICS[0].match(line)\n",
+          "breaks": "a failed Kotlin build loses its file and line; only javac's form is read",
+          "symbol_sha": "sha256:199dba404b9f0364cacf054720093e27650b9e67cf11349ebd117811101ca403"
+        },
+        {
+          "id": "gradle-stderr-unread",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/jvm/runner.py",
+          "symbol": "JvmRunner.run_compiler",
+          "old": "            for d in compile_errors(f\"{result.stdout}\\n{result.stderr}\")\n",
+          "new": "            for d in compile_errors(result.stdout)\n",
+          "breaks": "a Gradle Kotlin error, written to stderr, reads as a build with no location",
+          "symbol_sha": "sha256:929d9e5a8fa2620f4019558b548087d9f4d68da5804ae2488f418950ebd4fa27"
+        }
+      ]
     }
   ]
 }

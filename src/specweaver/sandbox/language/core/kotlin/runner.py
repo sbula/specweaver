@@ -13,51 +13,31 @@ import logging
 from typing import TYPE_CHECKING, ClassVar
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
-from specweaver.sandbox.language.core.run_targets import (
-    TargetError,
-    build_launcher,
-    jvm_test_args,
-    no_test_ran,
-    parse_target,
-)
-from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, run_sarif_analysis
-from specweaver.sandbox.language.core.toolchain import (
-    build_failed_without_results,
-    did_not_run,
-    failed_complexity,
-    failed_lint,
-    failed_tests,
-)
+from specweaver.sandbox.language.core.junit_reports import report_search_paths
+from specweaver.sandbox.language.core.jvm.runner import JvmRunner
+from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_args, parse_target
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
-    CompileError,
-    CompileRunResult,
-    ComplexityRunResult,
     DebugRunResult,
-    LintRunResult,
     OutputEvent,
-    QARunnerInterface,
-    TestRunResult,
 )
 from specweaver.workspace.ast.parsers.kotlin.parsers import parse_detekt_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
-    from specweaver.sandbox.execution.executor import SubprocessExecutor
+    from specweaver.commons.qa import ComplexityViolation
 
 logger = logging.getLogger(__name__)
 
 
-class KotlinRunner(QARunnerInterface):
+class KotlinRunner(JvmRunner):
     """Kotlin compilation, testing, and linting pipeline."""
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
-        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
-
-        self._cwd = cwd
-        self._executor = executor or _Executor(cwd=cwd)
+    _BUILD_TOOL_NAME = "the Kotlin build tool"
+    _ANALYZER = "detekt"
+    _COMPLEXITY_RULES = "complex"
 
     @property
     def language_name(self) -> str:
@@ -71,61 +51,17 @@ class KotlinRunner(QARunnerInterface):
             return "maven"
         return "gradle"
 
-    def run_tests(
-        self,
-        target: str,
-        kind: str = "unit",
-        scope: str = "",
-        timeout: int = 120,
-        coverage: bool = False,
-        coverage_threshold: int = 70,
-        coverage_source: str = "",
-        source: str = "",
-    ) -> TestRunResult:
-        try:
-            filters = jvm_test_args(parse_target(target), "kotlin", self._get_build_tool())
-        except TargetError as exc:
-            return failed_tests(no_test_ran(target, str(exc)))
-        cmd, search_path = self._test_command()
-        cmd += filters
-        result = self._executor.execute(cmd, timeout_seconds=timeout)
-        reason = did_not_run(result, "the Kotlin build tool")
-        if reason:
-            return failed_tests(reason)
-
-        harvest = harvest_junit(search_path)
-        # A compile failure exits non-zero, prints freely, and leaves the report directory
-        # empty — so it passes `did_not_run` and would harvest as an empty suite.
-        if not harvest.total:
-            broken_build = build_failed_without_results(
-                result, "the Kotlin build tool", harvest.total
-            )
-            return failed_tests(no_test_ran(target, broken_build or ""))
-
-        return TestRunResult(
-            passed=harvest.passed,
-            failed=harvest.failed,
-            errors=0,
-            skipped=harvest.skipped,
-            total=harvest.total,
-            failures=harvest.failures,
-            coverage_pct=None,
-            duration_seconds=0.0,
-        )
-
     #: Per build tool: where its test reports land.
     _REPORT_DIRS: ClassVar[dict[str, tuple[str, ...]]] = {
         "gradle": ("build", "test-results"),
         "maven": ("target", "surefire-reports"),
     }
 
-    def _test_command(self) -> tuple[list[str], list[Path]]:
-        """The test command for this project's build tool, and where its reports will land.
-
-        The two build tools differ only in where reports land, so that is a table rather than two
-        branches.
-        """
-        tool = "gradle" if self._get_build_tool() == "gradle" else "maven"
+    def _test_command(self, target: str) -> tuple[list[str], list[Path]]:
+        """The two build tools differ only in where reports land, so that is a table rather than
+        two branches."""
+        tool = self._get_build_tool()
+        filters = jvm_test_args(parse_target(target), "kotlin", tool)
         report_dir = self._REPORT_DIRS[tool]
         launcher = build_launcher(self._cwd, tool)
         # Both places the reports can land: inside the project on a host run, or mounted out to
@@ -133,7 +69,7 @@ class KotlinRunner(QARunnerInterface):
         search_paths = report_search_paths(self._cwd, "/".join(report_dir))
         for path in search_paths:
             self._clear_stale_reports(path)
-        return [launcher, "test"], search_paths
+        return [launcher, "test", *filters], search_paths
 
     @staticmethod
     def _clear_stale_reports(search_path: Path) -> None:
@@ -144,7 +80,6 @@ class KotlinRunner(QARunnerInterface):
             stale_xml.unlink(missing_ok=True)
 
     def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
-        """The detekt run that lint and complexity both read, and the SARIF report it writes."""
         if tool == "gradle":
             return [
                 build_launcher(self._cwd, "gradle"),
@@ -155,54 +90,15 @@ class KotlinRunner(QARunnerInterface):
             "antrun:run@detekt",
         ], self._cwd / "target" / "detekt.sarif"
 
-    def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        tool = self._get_build_tool()
-        cmd, report = self._analysis_command(tool)
-        read = run_sarif_analysis(self._executor, cmd, report, analyzer="detekt", build_tool=tool)
-        if isinstance(read, str):
-            return failed_lint(read)
-        errors = lint_errors_from_sarif(read, skip_rules_containing="complex")
-        return LintRunResult(
-            error_count=len(errors),
-            fixable_count=0,
-            fixed_count=0,
-            errors=errors,
-        )
-
-    def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        tool = self._get_build_tool()
-        cmd, report = self._analysis_command(tool)
-        read = run_sarif_analysis(self._executor, cmd, report, analyzer="detekt", build_tool=tool)
-        if isinstance(read, str):
-            return failed_complexity(read, max_complexity)
-        violations = parse_detekt_complexity(read, max_complexity)
-        return ComplexityRunResult(
-            violation_count=len(violations),
-            max_complexity=max_complexity,
-            violations=violations,
-        )
-
-    def run_compiler(self, target: str) -> CompileRunResult:
-        tool = self._get_build_tool()
-
+    def _compile_command(self, tool: str) -> list[str]:
         if tool == "gradle":
-            cmd = [build_launcher(self._cwd, "gradle"), "compileKotlin"]
-        else:
-            cmd = [build_launcher(self._cwd, "maven"), "compile"]
+            return [build_launcher(self._cwd, "gradle"), "compileKotlin"]
+        return [build_launcher(self._cwd, "maven"), "compile"]
 
-        result = self._executor.execute(cmd)
-
-        errors: list[CompileError] = []
-        if result.exit_code != 0:
-            errors.append(
-                CompileError(file="", line=0, column=0, code="COMPILE_ERROR", message=result.stderr)
-            )
-
-        return CompileRunResult(
-            error_count=len(errors),
-            warning_count=0,
-            errors=errors,
-        )
+    def _complexity_violations(
+        self, report: dict[str, Any], max_complexity: int
+    ) -> list[ComplexityViolation]:
+        return parse_detekt_complexity(report, max_complexity)
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()

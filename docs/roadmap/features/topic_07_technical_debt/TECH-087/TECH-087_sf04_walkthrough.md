@@ -49,3 +49,54 @@ Plan: [TECH-087_sf04_implementation_plan.md](TECH-087_sf04_implementation_plan.m
   entry point or guide names it; `qa_atom` is the documented way.
 - R3 (LOW) `create_qa_runner_interface` changed its parameters. Accepted: no `src` caller.
 - Cycle 2: no new finding (the guard runs on every file, so a new lazy import fails at once).
+
+## CB-2 — one JVM base; Kotlin compile errors located (FR-13)
+
+### What changed
+
+- New `sandbox/language/core/jvm/runner.py` `JvmRunner`: `run_tests`, `run_linter`,
+  `run_complexity`, `run_compiler`, with abstract hooks for the build tool, the test, analysis and
+  compile commands, and the complexity reader. `JavaRunner` and `KotlinRunner` keep only those
+  hooks, their debugger and their architecture check. Kotlin keeps its own default build tool
+  (Gradle) and report-dir table; Java keeps Maven and its cached choice.
+- `maven_output.py` → `jvm/build_output.py` `[agreed 2026-10-30]`: `compile_errors` also reads the
+  Kotlin plugin's `[ERROR] file:///…:L:C` and Gradle's `e: file:///…:L:C` lines; the URI becomes a
+  path (`%20` decoded). `MavenDiagnostic` is `BuildDiagnostic`.
+- Kotlin's `run_compiler` is Java's: located errors from stdout and stderr (Gradle writes Kotlin's
+  to stderr), else one `BuildFailed` naming the exit code and the output tail. Java now reads stderr
+  too, which only adds diagnostics.
+- Duplication baseline re-frozen: 6 Java↔Kotlin and runner clones gone; the constructor and
+  `run_tests` signature clones every runner shares are re-keyed onto `jvm/runner.py` (SF-05's FR-9
+  removes the constructor default).
+
+### Red first
+
+- `tests/unit/sandbox/language/core/jvm/test_build_output.py` (moved from `test_maven_output.py`):
+  the measured Kotlin lines, a Gradle `e:` line, a `%20` path and Kotlin warnings; red (no module).
+- `test_kotlin_runner.py`: located errors from Maven's doubled lines, a Gradle error on stderr, and
+  `BuildFailed` with the tail; all three red against the raw-stderr error.
+- Toolchain tier: `TestKotlinMavenCompile` compiles a broken file with the real compiler and expects
+  `Broken.kt` lines 2 and 3. It downloads packages, so it runs nightly; not run here (no network
+  from this session). Its expected form was measured offline on the same `pom.xml`.
+
+### Proof
+
+- New FR-13 campaign: `kotlin-compile-raw-stderr` (only javac's form read) and
+  `gradle-stderr-unread` (stderr dropped), both killed.
+- Moved and re-pinned: `TECH-031` FR-20 (2, now on `build_output.py`; scope the moved test);
+  `TECH-078` FR-7 `java-empty-run-passes` and `kotlin-empty-run-passes` are one line now, so one
+  mutant, `jvm-empty-run-passes`. Corpora: `TECH-087` 23/23, `TECH-031` 22/22, `TECH-078` 53/53;
+  0 stale.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) a hook left unimplemented in a new JVM runner would fail only when called. Fixed: the
+  hooks are `@abstractmethod`, so such a class cannot be built.
+- R2 (MEDIUM) Kotlin 1.x prints `/path/A.kt: (3, 5)`. Accepted (plan): not measured; it falls to
+  `BuildFailed`, which shows the output.
+- R3 (LOW) a program line shaped like `e: file:///x.kt:1:1 …` during compile would count. Accepted:
+  `run_compiler` runs no program.
+- R4 (MEDIUM) found by the gated commit: CB-1's scratch test called `gc.collect()`, which can
+  finalize another test's leftovers in the same worker and fail on their warnings. Fixed: `del`
+  alone frees the atom (no cycle holds it); the finalizer mutant is still killed.
+- Cycle 2: no new finding.

@@ -13,37 +13,21 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
-from specweaver.sandbox.language.core.maven_output import compile_errors, program_output
-from specweaver.sandbox.language.core.run_targets import (
-    TargetError,
-    build_launcher,
-    jvm_test_args,
-    no_test_ran,
-    parse_target,
-)
-from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, run_sarif_analysis
-from specweaver.sandbox.language.core.toolchain import (
-    build_failed_without_results,
-    did_not_run,
-    failed_complexity,
-    failed_lint,
-    failed_tests,
-)
+from specweaver.sandbox.language.core.junit_reports import report_search_paths
+from specweaver.sandbox.language.core.jvm.build_output import program_output
+from specweaver.sandbox.language.core.jvm.runner import JvmRunner
+from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_args, parse_target
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
-    CompileRunResult,
-    ComplexityRunResult,
     DebugRunResult,
-    LintRunResult,
-    QARunnerInterface,
-    TestRunResult,
 )
 from specweaver.workspace.ast.parsers.java.parsers import parse_pmd_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
+    from specweaver.commons.qa import ComplexityViolation
     from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 
@@ -75,18 +59,18 @@ def _forbids_for(target_path: Path, cwd: Path) -> list[str]:
     return forbids
 
 
-class JavaRunner(QARunnerInterface):
+class JavaRunner(JvmRunner):
     """Java compilation, testing, and linting pipeline."""
 
     _DEFAULT_TIMEOUT: int = 120
     _BUILD_TIMEOUT: int = 300
+    _BUILD_TOOL_NAME = "the Java build tool"
+    _ANALYZER = "pmd"
+    _COMPLEXITY_RULES = "complexity"
 
     def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
-        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
-
-        self._cwd = cwd
+        super().__init__(cwd, executor)
         self._build_tool: str | None = None
-        self._executor = executor or _Executor(cwd=cwd)
 
     @property
     def language_name(self) -> str:
@@ -108,52 +92,7 @@ class JavaRunner(QARunnerInterface):
 
         return self._build_tool
 
-    def run_tests(
-        self,
-        target: str,
-        kind: str = "unit",
-        scope: str = "",
-        timeout: int = 120,
-        coverage: bool = False,
-        coverage_threshold: int = 70,
-        coverage_source: str = "",
-        source: str = "",
-    ) -> TestRunResult:
-        try:
-            cmd, search_path = self._test_command(target)
-        except TargetError as exc:
-            return failed_tests(no_test_ran(target, str(exc)))
-        result = self._executor.execute(cmd, timeout_seconds=timeout)
-        reason = did_not_run(result, "the Java build tool")
-        if reason:
-            return failed_tests(reason)
-
-        harvest = harvest_junit(search_path)
-        passed, failed, skipped, total = (
-            harvest.passed,
-            harvest.failed,
-            harvest.skipped,
-            harvest.total,
-        )
-        # A build that never compiled writes no reports and exits non-zero with plenty on
-        # stdout, so it passes `did_not_run` and would harvest as an empty suite.
-        if not total:
-            broken_build = build_failed_without_results(result, "the Java build tool", total)
-            return failed_tests(no_test_ran(target, broken_build or ""))
-
-        return TestRunResult(
-            passed=passed,
-            failed=failed,
-            errors=0,
-            skipped=skipped,
-            total=total,
-            failures=harvest.failures,
-            coverage_pct=None,
-        )
-
     def _test_command(self, target: str) -> tuple[list[str], list[Path]]:
-        """The build tool's test command, filtered to exactly what `target` names, and where its
-        reports land; stale reports are deleted first."""
         tool = self._get_build_tool()
         filters = jvm_test_args(parse_target(target), "java", tool)
         if tool == "gradle":
@@ -167,7 +106,6 @@ class JavaRunner(QARunnerInterface):
         return cmd + filters, report_search_paths(self._cwd, reports)
 
     def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
-        """The PMD run that lint and complexity both read, and the SARIF report it writes."""
         if tool == "gradle":
             return [
                 build_launcher(self._cwd, "gradle"),
@@ -179,72 +117,15 @@ class JavaRunner(QARunnerInterface):
             "-Dpmd.format=sarif",
         ], self._cwd / "target" / "pmd.sarif"
 
-    def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
-        tool = self._get_build_tool()
-        cmd, report = self._analysis_command(tool)
-        read = run_sarif_analysis(self._executor, cmd, report, analyzer="pmd", build_tool=tool)
-        if isinstance(read, str):
-            return failed_lint(read)
-        errors = lint_errors_from_sarif(read, skip_rules_containing="complexity")
-        return LintRunResult(
-            error_count=len(errors),
-            fixable_count=0,
-            fixed_count=0,
-            errors=errors,
-        )
-
-    def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        tool = self._get_build_tool()
-        cmd, report = self._analysis_command(tool)
-        read = run_sarif_analysis(self._executor, cmd, report, analyzer="pmd", build_tool=tool)
-        if isinstance(read, str):
-            return failed_complexity(read, max_complexity)
-        violations = parse_pmd_complexity(read, max_complexity)
-        return ComplexityRunResult(
-            violation_count=len(violations),
-            max_complexity=max_complexity,
-            violations=violations,
-        )
-
-    def run_compiler(self, target: str) -> CompileRunResult:
-        from specweaver.sandbox.qa_runner.core.interface import CompileError
-
-        tool = self._get_build_tool()
+    def _compile_command(self, tool: str) -> list[str]:
         if tool == "gradle":
-            cmd = [build_launcher(self._cwd, "gradle"), "compileJava"]
-        else:
-            cmd = [build_launcher(self._cwd, "maven"), "compile"]
+            return [build_launcher(self._cwd, "gradle"), "compileJava"]
+        return [build_launcher(self._cwd, "maven"), "compile"]
 
-        result = self._executor.execute(cmd)
-        # The count alone said a build failed, which the exit code already said. These carry the
-        # file, line and message, which is the part a caller can act on.
-        diagnostics = [
-            CompileError(
-                file=d.file,
-                line=d.line,
-                column=d.column,
-                code="",
-                message=d.message,
-                is_warning=False,
-            )
-            for d in compile_errors(result.stdout)
-        ]
-        if result.exit_code != 0 and not diagnostics:
-            # Failed without naming a location — a missing toolchain, a bad goal, a plugin error.
-            diagnostics = [
-                CompileError(
-                    file="<toolchain>",
-                    line=0,
-                    column=0,
-                    code="BuildFailed",
-                    message=(
-                        f"{cmd[0]} exited {result.exit_code} without a compiler diagnostic: "
-                        f"{(result.stderr or result.stdout or '').strip()[-200:]}"
-                    ),
-                    is_warning=False,
-                )
-            ]
-        return CompileRunResult(error_count=len(diagnostics), warning_count=0, errors=diagnostics)
+    def _complexity_violations(
+        self, report: dict[str, Any], max_complexity: int
+    ) -> list[ComplexityViolation]:
+        return parse_pmd_complexity(report, max_complexity)
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()
