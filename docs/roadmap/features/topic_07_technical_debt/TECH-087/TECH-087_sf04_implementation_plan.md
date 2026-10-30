@@ -145,7 +145,9 @@ commit fixes SB-1's two-way imports, proven red first by the step-1 guard)
 8. Mutant `kotlin-compile-raw-stderr` (Kotlin's compile back to one raw-stderr error). Move and
    re-pin the Java, Kotlin and `maven_output` mutants.
 
-**CB-3 — one copy of each; parsers beside the runners (FR-14)** — kind `refactor` — closes SF-04
+**CB-3 — one copy of each; parsers beside the runners (FR-14)** — kind `bugfix` (planned `refactor`;
+the removed copies take their names with them, so 5 tests change and the refactor gate refuses; the
+step-12 guard is the red-first proof) — closes SF-04
 
 9. `jvm/stack_trace_filter.py` `JvmStackTraceFilter`; the filter factory returns it for Java and
    Kotlin; the two files go. `test_stack_trace_filters.py` keeps both languages' cases.

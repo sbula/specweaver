@@ -16,12 +16,12 @@ from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import report_search_paths
 from specweaver.sandbox.language.core.jvm.runner import JvmRunner
 from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_args, parse_target
+from specweaver.sandbox.language.core.sarif import parse_sarif_complexity
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     DebugRunResult,
     OutputEvent,
 )
-from specweaver.workspace.ast.parsers.kotlin.parsers import parse_detekt_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -98,7 +98,12 @@ class KotlinRunner(JvmRunner):
     def _complexity_violations(
         self, report: dict[str, Any], max_complexity: int
     ) -> list[ComplexityViolation]:
-        return parse_detekt_complexity(report, max_complexity)
+        return parse_sarif_complexity(
+            report,
+            max_complexity,
+            rule_markers=("complex",),
+            drift_hint="Missing detekt property mapping?",
+        )
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()

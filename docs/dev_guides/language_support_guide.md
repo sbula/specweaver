@@ -73,11 +73,14 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
      no violations (C05 skips, naming the note). Any other method returns its `failed_*` result
      with "<Language> <check> checks are not implemented", as `run_complexity` does for TypeScript.
      An open tool (like `gocyclo`) is better than either.
-2. **Output parser**: pure-logic functions like `extract_go_test_results(stdout: str) -> TestRunResult`.
+2. **Output parser**: pure-logic functions like `extract_go_test_results(stdout: str) -> TestRunResult`,
+   beside the runner (`typescript/tsc_output.py`, `rust/cargo_output.py`). A SARIF-emitting tool
+   reuses `sarif.py` (`lint_errors_from_sarif`, `parse_sarif_complexity`); a JVM language subclasses
+   `jvm/runner.py` `JvmRunner` and reads its build with `jvm/build_output.py`.
 3. **`scenario_converter.py`**: implements `ScenarioConverterInterface`; turns JSON/YAML abstract
    scenarios into `_test.<ext>` parameterized blocks.
 4. **`stack_trace_filter.py`**: implements `StackTraceFilterInterface`; strips system frames and keeps
-   the domain payload of native test failures.
+   the domain payload of native test failures. JVM languages share `jvm/stack_trace_filter.py`.
 5. **Tree-Sitter parser**: inherit `BaseTreeSitterParser` in
    `src/specweaver/workspace/ast/parsers/<lang>/codestructure.py` and register it in
    `get_default_parsers()`. Implement `get_binary_ignore_patterns()` and

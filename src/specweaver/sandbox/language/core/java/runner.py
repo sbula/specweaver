@@ -17,11 +17,11 @@ from specweaver.sandbox.language.core.junit_reports import report_search_paths
 from specweaver.sandbox.language.core.jvm.build_output import program_output
 from specweaver.sandbox.language.core.jvm.runner import JvmRunner
 from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_args, parse_target
+from specweaver.sandbox.language.core.sarif import parse_sarif_complexity
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     DebugRunResult,
 )
-from specweaver.workspace.ast.parsers.java.parsers import parse_pmd_complexity
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -125,7 +125,12 @@ class JavaRunner(JvmRunner):
     def _complexity_violations(
         self, report: dict[str, Any], max_complexity: int
     ) -> list[ComplexityViolation]:
-        return parse_pmd_complexity(report, max_complexity)
+        return parse_sarif_complexity(
+            report,
+            max_complexity,
+            rule_markers=("complexity", "ncss"),
+            drift_hint="Missing compiler version drift?",
+        )
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         tool = self._get_build_tool()

@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import pytest
 
+from specweaver.sandbox.code_structure.core.evaluator import SchemaEvaluator
 from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
-from specweaver.sandbox.language.core.evaluator import SchemaEvaluator
 
 pytestmark = pytest.mark.integration
 

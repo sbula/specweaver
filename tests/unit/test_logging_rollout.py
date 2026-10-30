@@ -108,9 +108,6 @@ class TestBatch1LoggingRollout:
         from specweaver.workspace.ast.parsers import factory, interfaces
         from specweaver.workspace.ast.parsers.c import codestructure as c_cs
         from specweaver.workspace.ast.parsers.cpp import codestructure as cpp_cs
-        from specweaver.workspace.ast.parsers.java import parsers as java_p
-        from specweaver.workspace.ast.parsers.kotlin import parsers as kotlin_p
-        from specweaver.workspace.ast.parsers.typescript import parsers as ts_p
 
         for mod in (
             graph_adapter,
@@ -118,9 +115,6 @@ class TestBatch1LoggingRollout:
             interfaces,
             c_cs,
             cpp_cs,
-            java_p,
-            kotlin_p,
-            ts_p,
         ):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)

@@ -224,6 +224,11 @@
     "first": "src/specweaver/sandbox/git/interfaces/facades.py:203",
     "second": "src/specweaver/sandbox/git/interfaces/facades.py:51"
   },
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @f5b97d87b950": {
+    "lines": 7,
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:18",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:17"
+  },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
     "lines": 10,
     "first": "src/specweaver/sandbox/language/core/java/scenario_converter.py:75",
@@ -233,11 +238,6 @@
     "lines": 18,
     "first": "src/specweaver/sandbox/language/core/java/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"
-  },
-  "src/specweaver/sandbox/language/core/java/stack_trace_filter.py <-> src/specweaver/sandbox/language/core/kotlin/stack_trace_filter.py @049a595605c8": {
-    "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/java/stack_trace_filter.py:29",
-    "second": "src/specweaver/sandbox/language/core/kotlin/stack_trace_filter.py:28"
   },
   "src/specweaver/sandbox/language/core/jvm/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @fb802095d985": {
     "lines": 7,
@@ -268,11 +268,6 @@
     "lines": 12,
     "first": "src/specweaver/sandbox/language/core/rust/runner.py:62",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
-  },
-  "src/specweaver/sandbox/language/core/sarif.py <-> src/specweaver/workspace/ast/parsers/_sarif_complexity.py @1ebcd44d9751": {
-    "lines": 10,
-    "first": "src/specweaver/sandbox/language/core/sarif.py:37",
-    "second": "src/specweaver/workspace/ast/parsers/_sarif_complexity.py:32"
   },
   "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @8cf753d0a6a4": {
     "lines": 26,

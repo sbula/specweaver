@@ -4,7 +4,7 @@
 
 import pytest
 
-from specweaver.sandbox.language.core.evaluator import EvaluatorDepthError, SchemaEvaluator
+from specweaver.sandbox.code_structure.core.evaluator import EvaluatorDepthError, SchemaEvaluator
 
 
 @pytest.fixture

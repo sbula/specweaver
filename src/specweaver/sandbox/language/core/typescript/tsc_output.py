@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""TypeScript parsing utilities for log extraction."""
+"""Reading tsc's console output: one located error per diagnostic line."""
 
 import logging
 import re

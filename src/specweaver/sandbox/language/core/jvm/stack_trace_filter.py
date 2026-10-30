@@ -1,12 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Kotlin stack trace filter — strips scenarios.generated JVM frames.
+"""JVM stack trace filter — strips scenarios.generated. frames, for Java and Kotlin.
 
-Implements ``StackTraceFilterInterface`` for Kotlin/JUnit 5 projects.
-Uses the same ``scenarios.generated.`` package prefix as the Java filter
-because Kotlin compiles to JVM bytecode and produces identical frame format:
-  \tat scenarios.generated.PaymentScenariosTest.testChargeScenarios(PaymentScenariosTest.kt:42)
+Implements ``StackTraceFilterInterface`` for Java and Kotlin JUnit 5 projects. Kotlin compiles to
+JVM bytecode, so both give the same frame format, e.g.
+``\tat scenarios.generated.PaymentScenariosTest.testCharge(PaymentScenariosTest.kt:42)``.
+Frames are identified by the package prefix ``scenarios.generated.``, which matches both scenario
+converters' ``output_path()`` and the ``package scenarios.generated`` declaration they write.
 """
 
 from __future__ import annotations
@@ -17,14 +18,15 @@ from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterfac
 
 logger = logging.getLogger(__name__)
 
+# JVM at-frame format: \tat package.ClassName.methodName(FileName.java:line)
 _SCENARIO_PACKAGE_PREFIX = "scenarios.generated."
 
 
-class KotlinStackTraceFilter(StackTraceFilterInterface):
-    """Strips JVM frames from the ``scenarios.generated`` package (Kotlin source)."""
+class JvmStackTraceFilter(StackTraceFilterInterface):
+    """Strips JVM frames from the ``scenarios.generated`` package."""
 
     def is_scenario_frame(self, line: str) -> bool:
-        """Return True if this is a JVM frame referencing a Kotlin scenario file."""
+        """Return True if this is a JVM frame in the scenarios.generated package."""
         stripped = line.lstrip()
         return stripped.startswith("at ") and _SCENARIO_PACKAGE_PREFIX in stripped
 

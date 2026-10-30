@@ -1,9 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The dead QA code stays deleted: no run used it, so no test keeps it alive.
+"""The dead QA code and the old copies stay deleted: one copy each, beside the runners.
 
 Proves: TECH-087 FR-11
+Proves: TECH-087 FR-14
 
 Each case imports the parent first, so a wrong path fails instead of passing.
 
@@ -44,6 +45,26 @@ def test_the_dead_kotlin_reader_is_gone() -> None:
     [
         ("specweaver.workspace.ast.parsers.rust", "specweaver.workspace.ast.parsers.rust.parsers"),
         ("specweaver.sandbox", "specweaver.sandbox.rule_atom"),
+        (
+            "specweaver.sandbox.language.core.java",
+            "specweaver.sandbox.language.core.java.stack_trace_filter",
+        ),
+        (
+            "specweaver.sandbox.language.core.kotlin",
+            "specweaver.sandbox.language.core.kotlin.stack_trace_filter",
+        ),
+        ("specweaver.sandbox.language.core", "specweaver.sandbox.language.core.maven_output"),
+        ("specweaver.sandbox.language.core", "specweaver.sandbox.language.core.evaluator"),
+        ("specweaver.workspace.ast.parsers", "specweaver.workspace.ast.parsers._sarif_complexity"),
+        ("specweaver.workspace.ast.parsers.java", "specweaver.workspace.ast.parsers.java.parsers"),
+        (
+            "specweaver.workspace.ast.parsers.kotlin",
+            "specweaver.workspace.ast.parsers.kotlin.parsers",
+        ),
+        (
+            "specweaver.workspace.ast.parsers.typescript",
+            "specweaver.workspace.ast.parsers.typescript.parsers",
+        ),
     ],
 )
 def test_a_dead_module_is_gone(package: str, module: str) -> None:

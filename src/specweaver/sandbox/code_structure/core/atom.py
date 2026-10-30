@@ -319,7 +319,7 @@ class CodeStructureAtom(Atom):
             all_markers = parser.extract_framework_markers(code)
             symbol_markers = all_markers.get(symbol_name, {})
 
-            from specweaver.sandbox.language.core.evaluator import SchemaEvaluator
+            from specweaver.sandbox.code_structure.core.evaluator import SchemaEvaluator
 
             # Use the merged evaluator so plugins unroll appropriately alongside the base archetype
             evaluator = SchemaEvaluator({self._active_archetype: self.active_evaluator})

@@ -27,6 +27,7 @@ from specweaver.sandbox.language.core.typescript.npm_output import (
     eslint_findings,
     summary_counts,
 )
+from specweaver.sandbox.language.core.typescript.tsc_output import extract_tsc_errors
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -39,7 +40,6 @@ from specweaver.sandbox.qa_runner.core.interface import (
     QARunnerInterface,
     TestRunResult,
 )
-from specweaver.workspace.ast.parsers.typescript.parsers import extract_tsc_errors
 
 logger = logging.getLogger(__name__)
 

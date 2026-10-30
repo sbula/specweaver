@@ -29,19 +29,10 @@ def create_stack_trace_filter(cwd: Path) -> StackTraceFilterInterface:
     """
     language = detect_language(cwd)
 
-    if language == "java":
-        from specweaver.sandbox.language.core.java.stack_trace_filter import (
-            JavaStackTraceFilter,
-        )
+    if language in ("java", "kotlin"):
+        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
 
-        return JavaStackTraceFilter()
-
-    if language == "kotlin":
-        from specweaver.sandbox.language.core.kotlin.stack_trace_filter import (
-            KotlinStackTraceFilter,
-        )
-
-        return KotlinStackTraceFilter()
+        return JvmStackTraceFilter()
 
     if language == "typescript":
         from specweaver.sandbox.language.core.typescript.stack_trace_filter import (

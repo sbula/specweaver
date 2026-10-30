@@ -77,7 +77,7 @@ def test_the_code_structure_atom_names_every_ending(
     from types import SimpleNamespace
 
     from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
-    from specweaver.sandbox.language.core.evaluator import SchemaEvaluator
+    from specweaver.sandbox.code_structure.core.evaluator import SchemaEvaluator
 
     seen: list[str] = []
     monkeypatch.setattr(

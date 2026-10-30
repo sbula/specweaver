@@ -68,11 +68,9 @@ class TestPythonStackTraceFilter:
 
 class TestJavaStackTraceFilter:
     def _get_filter(self) -> object:
-        from specweaver.sandbox.language.core.java.stack_trace_filter import (
-            JavaStackTraceFilter,
-        )
+        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
 
-        return JavaStackTraceFilter()
+        return JvmStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
         f = self._get_filter()
@@ -112,11 +110,9 @@ class TestJavaStackTraceFilter:
 
 class TestKotlinStackTraceFilter:
     def _get_filter(self) -> object:
-        from specweaver.sandbox.language.core.kotlin.stack_trace_filter import (
-            KotlinStackTraceFilter,
-        )
+        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
 
-        return KotlinStackTraceFilter()
+        return JvmStackTraceFilter()
 
     def test_is_scenario_frame_true(self) -> None:
         f = self._get_filter()
@@ -234,26 +230,22 @@ class TestStackTraceFilterFactory:
         assert isinstance(create_stack_trace_filter(tmp_path), PythonStackTraceFilter)
 
     def test_factory_returns_java(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.java.stack_trace_filter import (
-            JavaStackTraceFilter,
-        )
+        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
         from specweaver.sandbox.language.core.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
 
         (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), JavaStackTraceFilter)
+        assert isinstance(create_stack_trace_filter(tmp_path), JvmStackTraceFilter)
 
     def test_factory_returns_kotlin(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.kotlin.stack_trace_filter import (
-            KotlinStackTraceFilter,
-        )
+        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
         from specweaver.sandbox.language.core.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
 
         (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), KotlinStackTraceFilter)
+        assert isinstance(create_stack_trace_filter(tmp_path), JvmStackTraceFilter)
 
     def test_factory_returns_typescript(self, tmp_path: Path) -> None:
         from specweaver.sandbox.language.core.stack_trace_filter_factory import (

@@ -100,3 +100,47 @@ Plan: [TECH-087_sf04_implementation_plan.md](TECH-087_sf04_implementation_plan.m
   finalize another test's leftovers in the same worker and fail on their warnings. Fixed: `del`
   alone frees the atom (no cycle holds it); the finalizer mutant is still killed.
 - Cycle 2: no new finding.
+
+## CB-3 — one copy of each; parsers beside the runners (FR-14)
+
+### What changed
+
+- `jvm/stack_trace_filter.py` `JvmStackTraceFilter` (was Java's); the Kotlin copy is gone; the
+  filter factory returns it for Java and Kotlin. Both scenario converters write
+  `package scenarios.generated`, which is what it matches (checked).
+- `parse_sarif_complexity` (with `_complexity_of`, `_first_location`) moved into
+  `language/core/sarif.py` and uses its one `_findings`; `workspace/ast/parsers/_sarif_complexity.py`
+  is gone. The PMD and detekt wrappers are gone: each runner passes its rule markers and drift hint.
+- `extract_tsc_errors` → `typescript/tsc_output.py`; `workspace/ast/parsers/{java,kotlin,typescript}/
+  parsers.py` are gone, with their three `tach.toml` exposes.
+- `evaluator.py` → `sandbox/code_structure/core/evaluator.py`, beside its one user.
+- `language_support_guide.md`: output parsers live beside the runner; the shared SARIF, JVM base,
+  build-output and stack-trace pieces are named.
+- Kind changed from the planned `refactor` to `bugfix`, as in CB-1: removing the copies removes their
+  names, so 5 test files change.
+- Duplication baseline re-frozen: the filter and the SARIF-walker clones are gone; the 7-line import
+  block the two JVM runners both need is frozen (imports cannot be shared).
+
+### Red first
+
+- `test_dead_qa_code_is_gone.py` (now also `Proves: TECH-087 FR-14`): 8 removed modules; red while
+  they existed.
+- `test_stack_trace_filters.py`: Java and Kotlin cases and both factory cases expect
+  `JvmStackTraceFilter`; red (no module).
+- Moved to mirror `src`: `test_tsc_output.py`, `test_schema_evaluator.py`; the PMD and detekt tests
+  became `test_{java,kotlin}_sarif_complexity.py` and call the runner's reader.
+- `test_logging_rollout.py` drops the three deleted parser modules.
+
+### Proof
+
+- `TECH-078` FR-6 `atom-skips-the-table` re-pinned (its symbol moved by the import change). Corpora:
+  `TECH-087` 23/23, `TECH-031` 22/22, `TECH-078` 53/53; 0 stale in 51.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) one filter for two languages is wrong if Kotlin scenarios used another package.
+  Checked: both converters write `scenarios.generated`; the Kotlin cases stay in the test file.
+- R2 (LOW) `workspace.ast.parsers` no longer offers the PMD, detekt and tsc helpers. Accepted: no
+  other user (grep); `workspace` was not their place.
+- R3 (LOW) `sarif.py` grows to 196 lines. Within the file-size gate; one subject (SARIF reading).
+- Cycle 2: no new finding.

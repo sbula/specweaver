@@ -50,7 +50,7 @@
           "old": "            language = language_of(path) or \"\"\n",
           "new": "            language = \"\"\n",
           "breaks": "the unrolled symbol is evaluated for no language",
-          "symbol_sha": "sha256:1cde455eaef87234e357f61cfd13345b5d1ea635bb15e83f3a60d8e28e955d29"
+          "symbol_sha": "sha256:f7f85f9ad2786e3867ab72db8f4c5009d08ac90819fe7235573102db3361d27d"
         },
         {
           "id": "skeleton-misses-javascript",
