@@ -38,6 +38,18 @@ def _make_result(
     )
 
 
+def _writes_report_on_run(report: Path, result: SubprocessResult):
+    """The run writes the report the test prepared; a report left from before is removed first."""
+    text = report.read_text("utf-8")
+
+    def run(*_args, **_kwargs) -> SubprocessResult:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(text, "utf-8")
+        return result
+
+    return run
+
+
 class TestKotlinRunner:
     def test_run_compiler_gradle(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").touch()
@@ -133,7 +145,7 @@ class TestKotlinRunner:
         sarif_file.write_text(json.dumps(mock_sarif), "utf-8")
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result()
+        mock_executor.execute.side_effect = _writes_report_on_run(sarif_file, _make_result())
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
 
         res = runner.run_linter(target="")
@@ -177,7 +189,7 @@ class TestKotlinRunner:
         sarif_file.write_text(json.dumps(mock_sarif), "utf-8")
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result()
+        mock_executor.execute.side_effect = _writes_report_on_run(sarif_file, _make_result())
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
 
         res = runner.run_complexity(target="")

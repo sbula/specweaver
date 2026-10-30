@@ -26,6 +26,7 @@ from specweaver.sandbox.language.core.toolchain import (
     failed_complexity,
     failed_lint,
     failed_tests,
+    timed_out,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -162,7 +163,9 @@ class RustRunner(QARunnerInterface):
                 clippy_cmd.insert(3, "--allow-staged")
 
             clippy_result = self._executor.execute(clippy_cmd)
-            reason = did_not_run(clippy_result, "cargo clippy")
+            reason = timed_out(clippy_result, "cargo clippy") or did_not_run(
+                clippy_result, "cargo clippy"
+            )
             if reason:
                 return failed_lint(reason)
 
@@ -196,7 +199,9 @@ class RustRunner(QARunnerInterface):
             ]
 
             clippy_result = self._executor.execute(clippy_cmd)
-            reason = did_not_run(clippy_result, "cargo clippy")
+            reason = timed_out(clippy_result, "cargo clippy") or did_not_run(
+                clippy_result, "cargo clippy"
+            )
             if reason:
                 return failed_complexity(reason, max_complexity)
 
@@ -222,20 +227,9 @@ class RustRunner(QARunnerInterface):
                 violations=violations,
             )
         except Exception as exc:
-            # A phantom violation with no detail is what this returned, so an internal error looked
-            # like a complexity finding. It says which error, since the count alone cannot.
-            return ComplexityRunResult(
-                violation_count=1,
-                max_complexity=max_complexity,
-                violations=[
-                    ComplexityViolation(
-                        file="<toolchain>",
-                        line=0,
-                        function="run_complexity",
-                        complexity=max_complexity + 1,
-                        message=f"complexity check failed: {type(exc).__name__}: {exc}",
-                    )
-                ],
+            logger.warning("cargo clippy could not run: %s", exc)
+            return failed_complexity(
+                f"cargo clippy could not run: {type(exc).__name__}: {exc}", max_complexity
             )
 
     def run_compiler(self, target: str) -> CompileRunResult:

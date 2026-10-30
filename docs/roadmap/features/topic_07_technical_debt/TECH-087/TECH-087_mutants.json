@@ -1,0 +1,93 @@
+{
+  "schema": 2,
+  "feature": "TECH-087",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "A lint that did not run is never clean",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_no_false_clean.py"
+      ],
+      "mutants": [
+        {
+          "id": "py-lint-timeout-clean",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_linter",
+          "old": "return failed_lint(f\"ruff timed out after {self._DEFAULT_TIMEOUT} s\")",
+          "new": "return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])",
+          "breaks": "a ruff run cut off by its timeout reads as no lint errors",
+          "symbol_sha": "sha256:54aac11888c5e009a183e749d8584951d02670c8d198456704c734fcc0242bd2"
+        },
+        {
+          "id": "jvm-timeout-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/sarif.py",
+          "symbol": "run_sarif_analysis",
+          "old": "timed_out(result, analyzer)\n        or did_not_run",
+          "new": "did_not_run",
+          "breaks": "a PMD or detekt run cut off by its timeout is judged by whatever report it left",
+          "symbol_sha": "sha256:960bc34fc1f6dcfdb112a626f4541c9d3cb26a2d3dc343a82b6404d2d514ec01"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A complexity check that did not run or is not built is never clean",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_no_false_clean.py"
+      ],
+      "mutants": [
+        {
+          "id": "ts-complexity-stub-clean",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_complexity",
+          "old": "return failed_complexity(\"TypeScript complexity checks are not implemented\", max_complexity)",
+          "new": "return ComplexityRunResult(violation_count=0, max_complexity=max_complexity)",
+          "breaks": "the unbuilt TypeScript complexity check says every function is within threshold",
+          "symbol_sha": "sha256:88bdd5d71a517b868dfa5725996272c052652ddae3dae51b09cd3078ccc8b255"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A report that cannot be read, or is not today's, is never clean",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/test_no_false_clean.py"
+      ],
+      "mutants": [
+        {
+          "id": "py-ruff-garbage-clean",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner._parse_ruff_json",
+          "old": "logger.warning(\"ruff's report is not valid JSON: %s\", exc)\n            return None",
+          "new": "logger.warning(\"ruff's report is not valid JSON: %s\", exc)\n            return {\"errors\": []}",
+          "breaks": "ruff output that is not JSON reads as no findings",
+          "symbol_sha": "sha256:976977fd00019ab73e8736808a43863988a35d034140a3fdc07e7b1e3e84ec22"
+        },
+        {
+          "id": "sarif-malformed-clean",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/sarif.py",
+          "symbol": "read_sarif_report",
+          "old": "logger.warning(\"%s cannot be read: %s\", path, exc)\n        return None",
+          "new": "logger.warning(\"%s cannot be read: %s\", path, exc)\n        return {}",
+          "breaks": "a malformed PMD or detekt report reads as no findings",
+          "symbol_sha": "sha256:f586f21d6ec0bf8c55d76bd7e2c08172fb738d348dfd3ea44eaa36ca32a1f5a8"
+        },
+        {
+          "id": "jvm-stale-report-read",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/sarif.py",
+          "symbol": "run_sarif_analysis",
+          "old": "cleared = clear_old_report(report)",
+          "new": "cleared = None",
+          "breaks": "an earlier run's clean PMD or detekt report is read as today's verdict",
+          "symbol_sha": "sha256:960bc34fc1f6dcfdb112a626f4541c9d3cb26a2d3dc343a82b6404d2d514ec01"
+        }
+      ]
+    }
+  ]
+}

@@ -19,11 +19,20 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.language.core.toolchain import (
+    clear_old_report,
+    did_not_run,
+    report_never_written,
+    timed_out,
+    unreadable_report,
+)
 from specweaver.sandbox.qa_runner.core.interface import LintError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
+
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +71,42 @@ def lint_errors_from_sarif(
     return errors
 
 
-def read_sarif_report(path: Path) -> dict[str, Any]:
-    """A SARIF report as a mapping, or an empty one when it cannot be read.
+def read_sarif_report(path: Path) -> dict[str, Any] | None:
+    """A SARIF report as a mapping, or None when it cannot be read as one.
 
-    Callers check `report_never_written` first, so reaching here with an unreadable file means the
-    tool wrote something malformed — which is its problem to fix and not a lint verdict either way.
+    Callers check `report_never_written` first, so None means the tool wrote something malformed.
+    That is no verdict, and the caller reports the check as not run.
     """
     try:
         report = json.loads(path.read_text("utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        logger.warning("%s is malformed, so its findings are lost: %s", path, exc)
-        return {}
-    return report if isinstance(report, dict) else {}
+        logger.warning("%s cannot be read: %s", path, exc)
+        return None
+    if not isinstance(report, dict):
+        logger.warning("%s is not a SARIF object", path)
+        return None
+    return report
+
+
+def run_sarif_analysis(
+    executor: SubprocessExecutor, cmd: list[str], report: Path, *, analyzer: str, build_tool: str
+) -> dict[str, Any] | str:
+    """Today's SARIF report from one analysis run, or why there is none.
+
+    A string means the check did not run: the old report could not be cleared, the run timed out
+    or never started, it wrote no report, or the report cannot be read. The old report is removed
+    first, so a run that writes none cannot be judged by an earlier run's verdict.
+    """
+    cleared = clear_old_report(report)
+    if cleared:
+        return cleared
+    result = executor.execute(cmd)
+    reason = (
+        timed_out(result, analyzer)
+        or did_not_run(result, analyzer)
+        or report_never_written(result, build_tool, report)
+    )
+    if reason:
+        return reason
+    data = read_sarif_report(report)
+    return unreadable_report(analyzer, report) if data is None else data

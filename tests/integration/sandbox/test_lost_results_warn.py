@@ -106,8 +106,8 @@ def test_a_malformed_sarif_report_warns(tmp_path: Path, caplog: pytest.LogCaptur
     report = tmp_path / "report.sarif"
     report.write_text("{not json", encoding="utf-8")
 
-    assert read_sarif_report(report) == {}
-    assert _warned(caplog, "report.sarif", "lost")
+    assert read_sarif_report(report) is None
+    assert _warned(caplog, "report.sarif", "cannot be read")
 
 
 def test_a_ruff_report_that_is_not_json_warns(
@@ -115,8 +115,8 @@ def test_a_ruff_report_that_is_not_json_warns(
 ) -> None:
     from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-    assert PythonQARunner(tmp_path)._parse_ruff_json("not json") == {"errors": []}
-    assert _warned(caplog, "ruff", "lost")
+    assert PythonQARunner(tmp_path)._parse_ruff_json("not json") is None
+    assert _warned(caplog, "ruff", "not valid JSON")
 
 
 def test_an_import_report_that_is_not_json_warns(caplog: pytest.LogCaptureFixture) -> None:

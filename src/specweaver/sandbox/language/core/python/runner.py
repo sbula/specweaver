@@ -28,7 +28,11 @@ from specweaver.sandbox.language.core.python.toolchain_absence import (
 )
 from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
 from specweaver.sandbox.language.core.run_targets import no_test_ran, parse_target
-from specweaver.sandbox.language.core.toolchain import failed_architecture
+from specweaver.sandbox.language.core.toolchain import (
+    failed_architecture,
+    failed_complexity,
+    failed_lint,
+)
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
@@ -206,7 +210,7 @@ class PythonQARunner(QARunnerInterface):
                     timeout_seconds=self._DEFAULT_TIMEOUT,
                 )
                 if not fix_result.timed_out:
-                    fix_data = self._parse_ruff_json(fix_result.stdout)
+                    fix_data = self._parse_ruff_json(fix_result.stdout) or {}
                     fixed_count = len(fix_data.get("fixed", []))
 
             # Run final check to get current state
@@ -218,44 +222,35 @@ class PythonQARunner(QARunnerInterface):
             logger.warning(
                 "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
             )
-            return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
+            return failed_lint(f"ruff did not run: {exc}")
 
         if result.timed_out:
             logger.warning("PythonQARunner: ruff linting timed out (target=%s)", target)
-            return LintRunResult(error_count=0, fixable_count=0, fixed_count=0, errors=[])
+            return failed_lint(f"ruff timed out after {self._DEFAULT_TIMEOUT} s")
 
-        # `_parse_ruff_json` swallows the JSONDecodeError from an empty stdout and returns no
-        # errors — which is exactly what ruff's own `[]` means, so an absent ruff read as clean.
         reason = why_it_did_not_run(result, "ruff")
         if reason:
-            return LintRunResult(
-                error_count=1,
-                fixable_count=0,
-                fixed_count=fixed_count,
-                errors=[
-                    LintError(
-                        file="<validation_engine>",
-                        line=0,
-                        code="ToolchainUnavailable",
-                        message=reason,
-                    )
-                ],
-            )
+            return failed_lint(reason)
 
         return self._build_lint_result(result.stdout, fixed_count)
 
-    def _parse_ruff_json(self, stdout: str) -> dict[str, list[dict[str, object]]]:
-        """Parse ruff --output-format=json output."""
+    def _parse_ruff_json(self, stdout: str) -> dict[str, list[dict[str, object]]] | None:
+        """Ruff's `--output-format=json` findings; None when the output is not that list."""
         try:
             data = json.loads(stdout)
-            return {"errors": data if isinstance(data, list) else []}
         except (json.JSONDecodeError, TypeError) as exc:
-            logger.warning("ruff's report is not valid JSON, so its findings are lost: %s", exc)
-            return {"errors": []}
+            logger.warning("ruff's report is not valid JSON: %s", exc)
+            return None
+        if not isinstance(data, list):
+            logger.warning("ruff's report is not a list of findings: %.200s", stdout)
+            return None
+        return {"errors": data}
 
     def _build_lint_result(self, stdout: str, fixed_count: int) -> LintRunResult:
         """Build LintRunResult from ruff JSON output."""
         parsed = self._parse_ruff_json(stdout)
+        if parsed is None:
+            return failed_lint(f"ruff's report could not be read: {stdout.strip()[:200]}")
         raw_errors = parsed.get("errors", [])
 
         errors: list[LintError] = []
@@ -310,30 +305,17 @@ class PythonQARunner(QARunnerInterface):
             logger.warning(
                 "PythonQARunner: container engine unavailable (target=%s): %s", target, exc
             )
-            return ComplexityRunResult(violation_count=0, max_complexity=max_complexity)
+            return failed_complexity(f"ruff did not run: {exc}", max_complexity)
 
         if result.timed_out:
             logger.warning("PythonQARunner: complexity check timed out (target=%s)", target)
-            return ComplexityRunResult(
-                violation_count=0,
-                max_complexity=max_complexity,
+            return failed_complexity(
+                f"ruff timed out after {self._DEFAULT_TIMEOUT} s", max_complexity
             )
 
-        reason = why_it_did_not_run(result, "complexipy")
+        reason = why_it_did_not_run(result, "ruff")
         if reason:
-            return ComplexityRunResult(
-                violation_count=1,
-                max_complexity=max_complexity,
-                violations=[
-                    ComplexityViolation(
-                        file="<validation_engine>",
-                        line=0,
-                        function="<toolchain>",
-                        complexity=0,
-                        message=reason,
-                    )
-                ],
-            )
+            return failed_complexity(reason, max_complexity)
 
         return self._build_complexity_result(result.stdout, max_complexity)
 
@@ -344,6 +326,10 @@ class PythonQARunner(QARunnerInterface):
     ) -> ComplexityRunResult:
         """Build ComplexityRunResult from ruff --select C90 JSON output."""
         parsed = self._parse_ruff_json(stdout)
+        if parsed is None:
+            return failed_complexity(
+                f"ruff's report could not be read: {stdout.strip()[:200]}", max_complexity
+            )
         raw_errors = parsed.get("errors", [])
 
         violations: list[ComplexityViolation] = []

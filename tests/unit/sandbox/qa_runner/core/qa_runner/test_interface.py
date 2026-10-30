@@ -309,7 +309,8 @@ class TestPythonQARunnerLinter:
 
         result = runner.run_linter(target="src/")
 
-        assert result.error_count >= 0  # Should not crash
+        assert result.error_count == 1
+        assert "timed out" in result.errors[0].message
 
 
 # ---------------------------------------------------------------------------
@@ -376,4 +377,5 @@ class TestPythonQARunnerComplexity:
 
         result = runner.run_complexity(target="src/")
 
-        assert result.violation_count == 0  # Should not crash
+        assert result.violation_count == 1
+        assert "timed out" in result.violations[0].message

@@ -79,6 +79,32 @@ def report_never_written(result: SubprocessResult, tool: str, report: Path) -> s
     )
 
 
+def timed_out(result: SubprocessResult, tool: str) -> str | None:
+    """Why a run's output is no verdict: it was cut off. Partial output parses as a partial clean."""
+    if not result.timed_out:
+        return None
+    logger.error("%s timed out", tool)
+    return f"{tool} timed out"
+
+
+def clear_old_report(report: Path) -> str | None:
+    """Remove an earlier run's report, or say why it cannot be removed.
+
+    A run that writes no report would otherwise leave the old one to be read as today's verdict.
+    """
+    try:
+        report.unlink(missing_ok=True)
+    except OSError as exc:
+        logger.error("cannot clear the old report %s: %s", report, exc)
+        return f"cannot clear the old report {report.name}: {exc}"
+    return None
+
+
+def unreadable_report(tool: str, report: Path) -> str:
+    """Why a report that exists gives no verdict: it cannot be read as one."""
+    return f"{tool} wrote a report at {report.name} that cannot be read, so there is no verdict"
+
+
 def build_failed_without_results(result: SubprocessResult, tool: str, total: int) -> str | None:
     """Why a non-zero build that produced no test reports is not an empty suite.
 

@@ -39,6 +39,18 @@ def _make_result(
     )
 
 
+def _writes_report_on_run(report: Path, result: SubprocessResult):
+    """The run writes the report the test prepared; a report left from before is removed first."""
+    text = report.read_text("utf-8")
+
+    def run(*_args, **_kwargs) -> SubprocessResult:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text(text, "utf-8")
+        return result
+
+    return run
+
+
 class TestJavaRunner:
     def test_detects_gradle_over_maven(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("")
@@ -151,8 +163,8 @@ class TestJavaRunner:
         )
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="BUILD SUCCESSFUL", stderr=""
+        mock_executor.execute.side_effect = _writes_report_on_run(
+            pmd_file, _make_result(exit_code=0, stdout="BUILD SUCCESSFUL", stderr="")
         )
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
@@ -174,8 +186,8 @@ class TestJavaRunner:
         )
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="BUILD SUCCESS", stderr=""
+        mock_executor.execute.side_effect = _writes_report_on_run(
+            pmd_file, _make_result(exit_code=0, stdout="BUILD SUCCESS", stderr="")
         )
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 
@@ -195,8 +207,8 @@ class TestJavaRunner:
         )
 
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=0, stdout="BUILD SUCCESSFUL", stderr=""
+        mock_executor.execute.side_effect = _writes_report_on_run(
+            pmd_file, _make_result(exit_code=0, stdout="BUILD SUCCESSFUL", stderr="")
         )
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
 

@@ -162,11 +162,6 @@ class TestTypeScriptRunner:
         assert result.exit_code == 124
         assert "Timeout" in result.events[0].output
 
-    def test_run_complexity_stub(self, tmp_path: Path) -> None:
-        runner = TypeScriptRunner(cwd=tmp_path)
-        result = runner.run_complexity(target="src/")
-        assert result.violation_count == 0
-
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path)
         assert runner.language_name == "typescript"

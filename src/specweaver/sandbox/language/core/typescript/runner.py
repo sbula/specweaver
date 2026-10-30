@@ -17,6 +17,7 @@ from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
     failed_architecture,
     failed_compile,
+    failed_complexity,
     failed_lint,
     failed_tests,
 )
@@ -167,12 +168,8 @@ class TypeScriptRunner(QARunnerInterface):
         )
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
-        """Run standard JS complexity check. STUB."""
-        return ComplexityRunResult(
-            violation_count=0,
-            max_complexity=max_complexity,
-            violations=[],
-        )
+        """Not built: says so, because a zero here would read as "within threshold"."""
+        return failed_complexity("TypeScript complexity checks are not implemented", max_complexity)
 
     def run_compiler(self, target: str) -> CompileRunResult:
         """Run TypeScript compiler (tsc --noEmit) and extract diagnostics."""

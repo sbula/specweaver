@@ -262,8 +262,9 @@ class TestContainerModeIntegration:
 
         result = runner.run_linter(target="src/")
 
-        assert result.error_count == 0
-        assert result.errors == []
+        assert result.error_count == 1
+        assert result.errors[0].code == "ToolchainUnavailable"
+        assert "no engine" in result.errors[0].message
 
     def test_run_complexity_engine_unavailable_becomes_synthetic_failure(
         self, tmp_path: Path
@@ -276,7 +277,8 @@ class TestContainerModeIntegration:
 
         result = runner.run_complexity(target="src/")
 
-        assert result.violation_count == 0
+        assert result.violation_count == 1
+        assert "no engine" in result.violations[0].message
 
     def test_run_debugger_engine_unavailable_becomes_synthetic_failure(
         self, tmp_path: Path

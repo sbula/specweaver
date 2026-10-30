@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import harvest_junit, report_search_paths
 from specweaver.sandbox.language.core.run_targets import (
@@ -22,23 +21,20 @@ from specweaver.sandbox.language.core.run_targets import (
     no_test_ran,
     parse_target,
 )
-from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif
+from specweaver.sandbox.language.core.sarif import lint_errors_from_sarif, run_sarif_analysis
 from specweaver.sandbox.language.core.toolchain import (
     build_failed_without_results,
     did_not_run,
     failed_complexity,
     failed_lint,
     failed_tests,
-    report_never_written,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     CompileError,
     CompileRunResult,
     ComplexityRunResult,
-    ComplexityViolation,
     DebugRunResult,
-    LintError,
     LintRunResult,
     OutputEvent,
     QARunnerInterface,
@@ -179,29 +175,11 @@ class KotlinRunner(QARunnerInterface):
 
     def run_linter(self, target: str, fix: bool = False) -> LintRunResult:
         tool = self._get_build_tool()
-        errors: list[LintError] = []
-
-        cmd, sarif_path = self._analysis_command(tool)
-
-        result = self._executor.execute(cmd)
-        reason = did_not_run(result, "detekt")
-        if reason:
-            return failed_lint(reason)
-
-        # A missing report is not a clean project: the plugin may not be configured, or the
-        # build may have stopped before reaching it. Either way there is no verdict to read.
-        missing = report_never_written(result, tool, sarif_path)
-        if missing:
-            return failed_lint(missing)
-        if sarif_path.exists():
-            try:
-                data = json.loads(sarif_path.read_text("utf-8"))
-                errors.extend(lint_errors_from_sarif(data, skip_rules_containing="complex"))
-            except json.JSONDecodeError as exc:
-                logger.warning(
-                    "%s is not valid JSON, so its findings are lost: %s", sarif_path, exc
-                )
-
+        cmd, report = self._analysis_command(tool)
+        read = run_sarif_analysis(self._executor, cmd, report, analyzer="detekt", build_tool=tool)
+        if isinstance(read, str):
+            return failed_lint(read)
+        errors = lint_errors_from_sarif(read, skip_rules_containing="complex")
         return LintRunResult(
             error_count=len(errors),
             fixable_count=0,
@@ -211,27 +189,11 @@ class KotlinRunner(QARunnerInterface):
 
     def run_complexity(self, target: str, max_complexity: int = 10) -> ComplexityRunResult:
         tool = self._get_build_tool()
-        violations: list[ComplexityViolation] = []
-
-        cmd, sarif_path = self._analysis_command(tool)
-
-        result = self._executor.execute(cmd)
-        reason = did_not_run(result, "detekt")
-        if reason:
-            return failed_complexity(reason, max_complexity)
-
-        missing = report_never_written(result, tool, sarif_path)
-        if missing:
-            return failed_complexity(missing, max_complexity)
-        if sarif_path.exists():
-            try:
-                data = json.loads(sarif_path.read_text("utf-8"))
-                violations.extend(parse_detekt_complexity(data, max_complexity))
-            except json.JSONDecodeError as exc:
-                logger.warning(
-                    "%s is not valid JSON, so its findings are lost: %s", sarif_path, exc
-                )
-
+        cmd, report = self._analysis_command(tool)
+        read = run_sarif_analysis(self._executor, cmd, report, analyzer="detekt", build_tool=tool)
+        if isinstance(read, str):
+            return failed_complexity(read, max_complexity)
+        violations = parse_detekt_complexity(read, max_complexity)
         return ComplexityRunResult(
             violation_count=len(violations),
             max_complexity=max_complexity,
