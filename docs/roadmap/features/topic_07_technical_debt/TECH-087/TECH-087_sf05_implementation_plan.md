@@ -85,6 +85,11 @@ Measured 2026-10-30 against `0e98dc16`. Paths under `src/specweaver/`.
   sampled; the user accepted that. The NFR-4 parity fixture holds no folder from the skip list, so
   the set equality still proves the `.gitignore` logic.
 
+- **Q2 — `TECH-002`'s layer test and the drift import** (found during CB-2). The test forbids every
+  sandbox import under `assurance/validation`, which AD-5's import broke. The test now names
+  `cli_drift.py: specweaver.sandbox.execution.executor` as its one exception, by equality, so an
+  unused exception fails too. Chosen over keeping raw `subprocess` in drift `[agreed 2026-10-30]`.
+
 ### Settled by the design or the code
 
 1. **FR-9 signature.** Each constructor takes `executor` as a required parameter, with no default:

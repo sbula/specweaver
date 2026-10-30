@@ -18,4 +18,5 @@ consumes:
   - specweaver/core/config
   - specweaver/core/flow
   - specweaver/graph/lineage
+  - specweaver/sandbox/execution
   - specweaver/workspace/project

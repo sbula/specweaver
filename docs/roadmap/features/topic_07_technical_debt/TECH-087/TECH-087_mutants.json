@@ -398,6 +398,86 @@
           "symbol_sha": "sha256:6b86f682bfa5ddf4129e5985a6b0695d4c8480a92a263c6ec0278164d1729e72"
         }
       ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "standards discovery honours the project's .gitignore files without running git",
+      "scope": [
+        "tests/unit/assurance/standards/test_standards_discovery.py",
+        "tests/integration/assurance/standards/test_discovery_matches_git.py"
+      ],
+      "mutants": [
+        {
+          "id": "discovery-ignores-gitignore",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/discovery.py",
+          "symbol": "_walk",
+          "old": "        rules = rules_of.pop(here, []) + _gitignore(here)\n",
+          "new": "        rules: _Rules = []\n",
+          "breaks": "files the project ignores are sampled as conventions",
+          "symbol_sha": "sha256:de705be2a49f82989e8d459d9cbbeaf8f24b8b8f61cf48d0e61a2e3328357ab0"
+        },
+        {
+          "id": "parent-rules-not-inherited",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/discovery.py",
+          "symbol": "_walk",
+          "old": "        rules = rules_of.pop(here, []) + _gitignore(here)\n",
+          "new": "        rules = _gitignore(here)\n",
+          "breaks": "a root .gitignore stops applying below the first folder",
+          "symbol_sha": "sha256:de705be2a49f82989e8d459d9cbbeaf8f24b8b8f61cf48d0e61a2e3328357ab0"
+        },
+        {
+          "id": "nested-gitignore-unscoped",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/discovery.py",
+          "symbol": "_ignored",
+          "old": "        rel = path.relative_to(base).as_posix() + (\"/\" if is_dir else \"\")\n",
+          "new": "        rel = path.relative_to(rules[0][0]).as_posix() + (\"/\" if is_dir else \"\")\n",
+          "breaks": "a nested .gitignore's patterns are read from the root, so anchored and folder patterns miss",
+          "symbol_sha": "sha256:8d255ef0e62637243aea380352d54b4d7b61f3d531718450004c570d642998f0"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "sw drift --staged reads the index through SubprocessExecutor and fails in one line",
+      "scope": [
+        "tests/unit/assurance/validation/interfaces/test_cli_drift_staged_files.py",
+        "tests/integration/assurance/validation/test_drift_staged_files_git.py"
+      ],
+      "mutants": [
+        {
+          "id": "drift-error-swallowed",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "_staged_files",
+          "old": "    if result.timed_out or result.exit_code != 0:\n",
+          "new": "    if result.timed_out:\n",
+          "breaks": "a missing or failing git reads as nothing staged, and the hook lets the commit through",
+          "symbol_sha": "sha256:77f286ef5e880a6a855fe09e87f4a11b702d651307bef810f8cd898505d2d4aa"
+        },
+        {
+          "id": "drift-timeout-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "_staged_files",
+          "old": "        reason = \"timed out\" if result.timed_out else result.stderr.strip()\n",
+          "new": "        reason = result.stderr.strip()\n",
+          "breaks": "a timed-out git query prints an empty reason",
+          "symbol_sha": "sha256:77f286ef5e880a6a855fe09e87f4a11b702d651307bef810f8cd898505d2d4aa"
+        },
+        {
+          "id": "drift-hook-index-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "_staged_files",
+          "old": "extra_env=hook_env)",
+          "new": "extra_env={})",
+          "breaks": "inside a pre-commit hook, drift checks the main index instead of the commit's files",
+          "symbol_sha": "sha256:77f286ef5e880a6a855fe09e87f4a11b702d651307bef810f8cd898505d2d4aa"
+        }
+      ]
     }
   ]
 }

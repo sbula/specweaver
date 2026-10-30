@@ -5,6 +5,7 @@
 """Which files get to teach the agent what this project's conventions are.
 
 Proves: E-VAL-02 FR-1
+Proves: TECH-087 FR-16
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-01-SF03-MIG`. `E-VAL-02` shipped with an
 implementation plan and no design document, so no requirement of it existed in the ledger's form.
@@ -29,6 +30,7 @@ much as a correctness one: the files are still findable, they simply must not be
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -37,6 +39,8 @@ from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
 # ---------------------------------------------------------------------------
 # Basic discovery (non-git fallback)
@@ -173,65 +177,107 @@ class TestSpecweaverIgnore:
 # ---------------------------------------------------------------------------
 
 
-class TestGitLsFiles:
-    """Tests for git ls-files integration (when .git/ exists)."""
+class TestGitignore:
+    """The project's `.gitignore` files, root and nested, decide what is skipped (TECH-087 FR-16).
 
-    def test_git_discovered_files_respect_gitignore(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        """In a git repo, gitignored files should be excluded."""
-        # Initialize a real git repo. `check=True` matters: the previous
-        # `os.system` form used Windows shell idioms (`> nul`, `cd /d`) that
-        # failed silently on Linux, so a broken setup could not be seen.
-        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
-        (tmp_path / "tracked.py").write_text("pass")
-        (tmp_path / ".gitignore").write_text("ignored.py\n")
-        (tmp_path / "ignored.py").write_text("pass")
-        subprocess.run(
-            ["git", "add", "tracked.py", ".gitignore"],
-            cwd=tmp_path,
-            capture_output=True,
-            check=True,
+    | Bucket | Case |
+    |---|---|
+    | Happy | a root pattern hides a file anywhere below it |
+    | Boundary | a nested file applies only under its own folder; `/x` anchors to that folder; `!` re-includes; an ignored folder is not entered |
+    | Degradation | a `.gitignore` that cannot be read is skipped with a warning |
+    | Hostile | a `.git` folder and a broken `git` change nothing: no process runs |
+    """
+
+    @staticmethod
+    def _found(root: Path) -> set[str]:
+        return {
+            p.relative_to(root.resolve()).as_posix() for p in discover_files(root, AnalyzerFactory)
+        }
+
+    @staticmethod
+    def _write(root: Path, files: dict[str, str]) -> None:
+        for rel, body in files.items():
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text(body, encoding="utf-8")
+
+    def test_a_root_pattern_hides_matching_files_at_any_depth(self, tmp_path: Path) -> None:
+        self._write(tmp_path, {".gitignore": "*.log\n", "a.py": "", "a.log": "", "d/b.log": ""})
+
+        assert self._found(tmp_path) == {".gitignore", "a.py"}
+
+    def test_a_nested_file_applies_only_under_its_folder(self, tmp_path: Path) -> None:
+        self._write(tmp_path, {"pkg/.gitignore": "gen.py\n", "gen.py": "", "pkg/gen.py": ""})
+
+        assert self._found(tmp_path) == {"pkg/.gitignore", "gen.py"}
+
+    def test_a_leading_slash_anchors_to_the_folder_of_its_file(self, tmp_path: Path) -> None:
+        self._write(
+            tmp_path, {"pkg/.gitignore": "/local.py\n", "pkg/local.py": "", "pkg/sub/local.py": ""}
         )
 
-        # Staging must have worked, or the assertions below would pass through
-        # `--others` alone and never exercise the `--cached` half of
-        # `_git_ls_files`. This is the guard the silent `cd /d` failure removed.
-        staged = subprocess.run(
-            ["git", "ls-files", "--cached"],
-            cwd=tmp_path,
-            capture_output=True,
-            text=True,
-            check=True,
+        assert self._found(tmp_path) == {"pkg/.gitignore", "pkg/sub/local.py"}
+
+    def test_a_nested_negation_re_includes_a_file(self, tmp_path: Path) -> None:
+        self._write(
+            tmp_path,
+            {
+                ".gitignore": "*.log\n",
+                "pkg/.gitignore": "!keep.log\n",
+                "pkg/keep.log": "",
+                "x.log": "",
+            },
         )
-        assert "tracked.py" in staged.stdout.split()
 
-        files = discover_files(tmp_path, AnalyzerFactory)
-        names = [f.name for f in files]
-        assert "tracked.py" in names
-        assert "ignored.py" not in names
+        assert self._found(tmp_path) == {".gitignore", "pkg/.gitignore", "pkg/keep.log"}
 
-    def test_falls_back_to_walk_when_git_unavailable(
-        self,
-        tmp_path: Path,
-        monkeypatch,
+    def test_an_ignored_folder_is_not_entered(self, tmp_path: Path) -> None:
+        self._write(
+            tmp_path,
+            {".gitignore": "out/\n!out/a.py\n", "out/a.py": "", "out/.gitignore": "!a.py\n"},
+        )
+
+        assert self._found(tmp_path) == {".gitignore"}
+
+    def test_an_unreadable_gitignore_is_skipped_with_a_warning(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """If git is not available, should fall back to os.walk."""
-        # Create a .git dir (looks like git repo) but mock git command to fail
+        self._write(tmp_path, {"a.py": "", "pkg/b.py": ""})
+        (tmp_path / "pkg" / ".gitignore").write_bytes(b"\xff\xfe\x00not utf-8 b.py\n")
+
+        with caplog.at_level(logging.WARNING):
+            found = self._found(tmp_path)
+
+        assert found == {"a.py", "pkg/.gitignore", "pkg/b.py"}
+        assert any("pkg/.gitignore" in r.getMessage().replace("\\", "/") for r in caplog.records)
+
+    def test_no_process_runs_even_in_a_git_repo(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def refuse(*args: object, **kwargs: object) -> None:
+            raise AssertionError(f"a process was started: {args}")
+
+        monkeypatch.setattr(subprocess, "Popen", refuse)
+        monkeypatch.setattr(subprocess, "run", refuse)
         (tmp_path / ".git").mkdir()
-        (tmp_path / "main.py").write_text("pass")
+        self._write(tmp_path, {".gitignore": "skip.py\n", "main.py": "", "skip.py": ""})
 
-        import subprocess
+        assert self._found(tmp_path) == {".gitignore", "main.py"}
 
-        def mock_run(*args, **kwargs):
-            raise FileNotFoundError("git not found")
+    def test_the_module_does_not_import_subprocess(self) -> None:
+        import ast
+        import inspect
 
-        monkeypatch.setattr(subprocess, "run", mock_run)
+        from specweaver.assurance.standards import discovery
 
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-        assert files[0].name == "main.py"
+        tree = ast.parse(inspect.getsource(discovery))
+        imported = {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import | ast.ImportFrom)
+            for alias in node.names
+        } | {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)}
+
+        assert "subprocess" not in imported
 
 
 # ---------------------------------------------------------------------------
@@ -300,190 +346,12 @@ class TestDiscoveryEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# _git_ls_files — isolated scenarios
-# ---------------------------------------------------------------------------
-
-
-class TestGitLsFilesIsolated:
-    """Test _git_ls_files edge cases via monkeypatching subprocess."""
-
-    def test_git_nonzero_exit_returns_none(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """git ls-files exits non-zero → returns None, falls back to walk."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        (tmp_path / "main.py").write_text("pass")
-
-        def mock_run(*_args, **_kw):
-            result = sp.CompletedProcess(args=[], returncode=128, stdout="", stderr="")
-            return result
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        # discover_files should fall back to walk
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-        assert files[0].name == "main.py"
-
-    def test_git_timeout_returns_none(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """git ls-files times out → falls back to walk."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        (tmp_path / "main.py").write_text("pass")
-
-        def mock_run(*_args, **_kw):
-            raise sp.TimeoutExpired(cmd="git", timeout=30)
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        # After fix: TimeoutExpired is now caught → falls back to walk
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-        assert files[0].name == "main.py"
-
-    def test_git_oserror_returns_none(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """git raises OSError (e.g. permission denied) → returns None."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        (tmp_path / "main.py").write_text("pass")
-
-        def mock_run(*_args, **_kw):
-            raise OSError("Permission denied")
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-        assert files[0].name == "main.py"
-
-    def test_git_output_with_deleted_file(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """git ls-files reports a file that no longer exists → skipped."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        (tmp_path / "exists.py").write_text("pass")
-        # Don't create "deleted.py" — git reports it but it's gone
-
-        def mock_run(*_args, **_kw):
-            return sp.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout="exists.py\ndeleted.py\n",
-                stderr="",
-            )
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        files = discover_files(tmp_path, AnalyzerFactory)
-        names = [f.name for f in files]
-        assert "exists.py" in names
-        assert "deleted.py" not in names
-
-    def test_git_output_with_blank_lines(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """Blank lines in git ls-files output are ignored."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        (tmp_path / "main.py").write_text("pass")
-
-        def mock_run(*_args, **_kw):
-            return sp.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout="\n  \nmain.py\n\n",
-                stderr="",
-            )
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-
-    def test_git_success_returns_resolved_paths(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """Successful git ls-files returns resolved absolute paths."""
-        import subprocess as sp
-
-        (tmp_path / ".git").mkdir()
-        sub = tmp_path / "src"
-        sub.mkdir()
-        (sub / "app.py").write_text("pass")
-
-        def mock_run(*_args, **_kw):
-            return sp.CompletedProcess(
-                args=[],
-                returncode=0,
-                stdout="src/app.py\n",
-                stderr="",
-            )
-
-        monkeypatch.setattr(sp, "run", mock_run)
-
-        files = discover_files(tmp_path, AnalyzerFactory)
-        assert len(files) == 1
-        assert files[0].is_absolute()
-        assert files[0].name == "app.py"
-
-
-# ---------------------------------------------------------------------------
 # _apply_specweaverignore — isolated scenarios
 # ---------------------------------------------------------------------------
 
 
 class TestApplySpecweaverignoreIsolated:
     """Test .specweaverignore edge cases."""
-
-    def test_pathspec_not_installed_returns_files_unchanged(
-        self,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """If pathspec is not installed, files are returned unfiltered."""
-        import builtins
-
-        original_import = builtins.__import__
-
-        def mock_import(name, *args, **kwargs):
-            if name == "pathspec":
-                raise ImportError("No module named 'pathspec'")
-            return original_import(name, *args, **kwargs)
-
-        (tmp_path / "main.py").write_text("pass")
-        (tmp_path / "generated.py").write_text("pass")
-        (tmp_path / ".specweaverignore").write_text("generated.py\n")
-
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-
-        files = discover_files(tmp_path, AnalyzerFactory)
-        names = [f.name for f in files]
-        # Both should be included since pathspec can't filter
-        assert "main.py" in names
-        assert "generated.py" in names
 
     def test_file_outside_project_root_is_kept(
         self,

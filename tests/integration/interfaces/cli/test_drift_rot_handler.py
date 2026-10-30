@@ -103,11 +103,16 @@ tasks:
 
     class MockGitResult:
         stdout = str(code_file) + "\n"
+        exit_code = 0
+        stderr = ""
+        timed_out = False
 
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli_drift.SubprocessExecutor.execute"
+        ) as mock_run,
         patch(
             "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
@@ -170,11 +175,16 @@ tasks:
 
     class MockGitResult:
         stdout = str(code_file) + "\n"
+        exit_code = 0
+        stderr = ""
+        timed_out = False
 
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli_drift.SubprocessExecutor.execute"
+        ) as mock_run,
         patch(
             "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
@@ -215,11 +225,16 @@ def test_rot_check_polyglot_ts(tmp_path: Path) -> None:
 
     class MockGitResult:
         stdout = str(code_file) + "\n"
+        exit_code = 0
+        stderr = ""
+        timed_out = False
 
     from specweaver.interfaces.cli.main import app
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli_drift.SubprocessExecutor.execute"
+        ) as mock_run,
         patch(
             "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,
@@ -248,9 +263,14 @@ def test_rot_check_windows_newlines(tmp_path: Path) -> None:
 
     class MockGitResult:
         stdout = f'"{code_file!s}"\r\n'
+        exit_code = 0
+        stderr = ""
+        timed_out = False
 
     with (
-        patch("specweaver.assurance.validation.interfaces.cli_drift.subprocess.run") as mock_run,
+        patch(
+            "specweaver.assurance.validation.interfaces.cli_drift.SubprocessExecutor.execute"
+        ) as mock_run,
         patch(
             "specweaver.assurance.validation.interfaces.cli_drift.resolve_project_path"
         ) as mock_resolve,

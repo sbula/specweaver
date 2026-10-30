@@ -9,7 +9,12 @@ Use when: your code needs to run an external process — a tool, a test runner, 
   MUST use `SubprocessExecutor`.
 - Exempt: `src/specweaver/sandbox/execution/` (the executor itself), test files, `scripts/**`
   (quality gates must not import the product they check), and `MCPExecutor`'s declared inline
-  `noqa` (a long-lived JSON-RPC pipe; see `special_patterns_and_adaptations.md` §17).
+  `noqa` (see `special_patterns_and_adaptations.md` §17).
+- `MCPExecutor` (`sandbox/mcp/core/executor.py`) is the only `src` module that starts a process with
+  raw `subprocess.Popen`. The reason: an MCP server is a long-lived JSON-RPC pipe, many calls over
+  stdin/stdout, and `SubprocessExecutor` runs one command to its end. The safeguard: the child's
+  environment still goes through `build_child_env` (`sandbox/execution/child_env.py`), the same
+  allowlist and credential strip as `SubprocessExecutor`. MCP servers run on the host (`TECH-087` AD-6).
 
 ## What it gives you
 

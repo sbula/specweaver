@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-import subprocess  # noqa: TID251 — see usage comment below; narrow CLI-only exemption
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +12,7 @@ import typer
 from rich.table import Table
 
 from specweaver.interfaces.cli_kit import _core
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -117,24 +118,20 @@ def _present_result(result: Any, target_name: str, analyze: bool) -> None:
     raise typer.Exit(code=42)
 
 
+_HOOK_GIT_ENV = ("GIT_INDEX_FILE", "GIT_WORK_TREE")
+
+
 def _staged_files() -> list[str]:
     """The paths git has staged, or an exit if the index cannot be read."""
-    # TID251 exemption: a narrow, one-off CLI git query against the developer's own repo — not
-    # agent-facing/untrusted input, so SubprocessExecutor's env-isolation/credential-stripping
-    # doesn't carry the same security value here it does elsewhere. Routing this through
-    # sandbox.git's GitExecutor (rather than raw subprocess OR a direct SubprocessExecutor import,
-    # both of which would newly couple assurance.validation to sandbox) is the proper fix.
-    try:
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
-            capture_output=True,
-            text=True,
-            check=True,
-            encoding="utf-8",
-        )
-    except subprocess.CalledProcessError as exc:
-        _core.console.print(f"[red]Error:[/red] Failed to query git index: {exc}")
-        raise typer.Exit(code=1) from exc
+    cmd = ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"]
+    # A pre-commit hook after `git commit -a` points these at the commit's own index; the
+    # executor's allowlist drops them, which would read the main index instead.
+    hook_env = {k: v for k in _HOOK_GIT_ENV if (v := os.environ.get(k)) is not None}
+    result = SubprocessExecutor(cwd=Path.cwd()).execute(cmd, timeout_seconds=30, extra_env=hook_env)
+    if result.timed_out or result.exit_code != 0:
+        reason = "timed out" if result.timed_out else result.stderr.strip()
+        _core.console.print(f"[red]Error:[/red] Failed to query git index: {reason}")
+        raise typer.Exit(code=1)
 
     return [f.strip() for f in result.stdout.splitlines() if f.strip()]
 

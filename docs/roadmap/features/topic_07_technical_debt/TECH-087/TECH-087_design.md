@@ -158,7 +158,7 @@ None. `TECH-064` (the architecture `note`) is the in-repo precedent.
 | AD-2 | The lint-fix step recognises a not-run result by the `ToolchainUnavailable` code of the shared factory, through one helper beside the factories | one place defines the shape and the test for it | No |
 | AD-3 | The factory moves to `sandbox/language`; `qa_runner` keeps the contract `[agreed 2026-10-29]` | smaller move; imports go language → qa_runner only | No |
 | AD-4 | Standards discovery drops git and walks with `pathspec` `[agreed 2026-10-30]` | `assurance/standards` forbids `sandbox/*`; injecting a git lister would add sandbox edges to two interface modules | No — the forbid stays |
-| AD-5 | `assurance.validation.interfaces` gains `specweaver.sandbox` in `depends_on` and `consumes` for `SubprocessExecutor` `[agreed 2026-10-29]` | rule 4 "no subprocess"; no forbids rule, no loop (`tach.toml:36, 72`) | No |
+| AD-5 | `assurance.validation.interfaces` gains `specweaver.sandbox` in `depends_on` and `consumes` for `SubprocessExecutor` `[agreed 2026-10-29]`. `TECH-002`'s layer test (`tests/unit/test_layer_import_isolation.py`) names this one import in `cli_drift.py` as its only exception; any other sandbox import under `assurance/validation` still fails `[agreed 2026-10-30]` | rule 4 "no subprocess"; no forbids rule, no loop (`tach.toml:36, 72`); `TECH-002` FR-5 is about the rules, and the drift command runs no rule | No |
 | AD-6 | MCP servers stay on the host; a container for them is not this ticket `[agreed 2026-10-29]` | a security feature of its own | No |
 
 ## ROI Analysis
@@ -198,12 +198,15 @@ None. `TECH-064` (the architecture `note`) is the in-repo precedent.
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
 | `language_support_guide.md` | FR-19: did-not-run vs not-built per QA method | ✅ SF-01 |
-| `subprocess_execution.md` | FR-18: MCP's recorded exception | ⬜ SF-05 |
+| `subprocess_execution.md` | FR-18: MCP's recorded exception | ✅ SF-05 |
 
 ## Works For Real
 
 `sw check` on a Kotlin file of a scratch project (temporary `HOME`) shows C05 SKIPPED with
-"Kotlin architecture checks are not implemented". The P-1 and P-3 integration tests run the real
+"Kotlin architecture checks are not implemented". Run 2026-10-30:
+`HOME=<scratch> SPECWEAVER_DATA_DIR=<scratch>/.specweaver sw check --level code src/main/kotlin/shop/Cart.kt`
+in a Maven Kotlin project gave `C05 Import Direction SKIP Kotlin architecture checks are not
+implemented; no boundary was examined.` The P-1 and P-3 integration tests run the real
 ruff path and real git in the suite.
 
 ## Non-Goals
@@ -269,7 +272,7 @@ ruff path and real git in the suite.
 | SF-02 | Generated code is never lost | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Dead code goes, TypeScript timeouts say what timed out | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Runners beside their factory, one JVM base | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | Every command through a runner the caller chose | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Every command through a runner the caller chose | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -289,7 +292,7 @@ ruff path and real git in the suite.
 - Cycle 2: challenged R1 (does git on the host contradict FR-9? No: the rule is "no silent
   fallback", and an explicit host choice is a choice). No new finding.
 
-**Current status**: SF-01 to SF-04 committed 2026-10-30; SF-05 plan approved 2026-10-30.
-**Next step**: The dev skill for the SF-05 plan.
+**Current status**: SF-01 to SF-05 committed 2026-10-30. The closure gate passed (`check_fr_coverage.py`, `tests.py feature --kind bugfix`); waiting for the user's sign-off.
+**Next step**: The user's sign-off, then `Status: COMPLETE`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

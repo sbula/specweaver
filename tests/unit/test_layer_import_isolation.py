@@ -50,6 +50,12 @@ def _token(n: int) -> str:
 #: The prefix neither layer may import. A tuple because the scanner takes one.
 SANDBOX_PREFIXES = ("specweaver.sandbox",)
 
+#: The one sandbox import the validation layer may hold: `sw drift check-rot --staged` reads the git
+#: index through `SubprocessExecutor`, because the repo bans raw `subprocess` outside the executor.
+#: The command is presentation; no rule executes anything. Agreed by the user 2026-10-30. Any other
+#: sandbox import, or this one in another file, still fails.
+_VALIDATION_MAY_IMPORT = ["cli_drift.py: specweaver.sandbox.execution.executor"]
+
 #: The two roots this module asserts about, relative to `src/specweaver/`.
 VALIDATION_ROOT = SRC_ROOT / "assurance" / "validation"
 INTERFACES_ROOT = SRC_ROOT / "interfaces"
@@ -92,7 +98,9 @@ def test_a_nonexistent_root_reports_clean_which_is_why_that_guard_exists() -> No
 
 
 def test_validation_layer_does_not_import_the_sandbox() -> None:
-    """No module under `assurance/validation/` imports the sandbox, at any depth.
+    """No module under `assurance/validation/` imports the sandbox, at any depth, but the one
+    executor import named in `_VALIDATION_MAY_IMPORT`. Equality, not a subset: an exception that is no
+    longer used fails too, so it cannot outlive its reason.
 
     `tach` also enforces this: the layer declares a dependency list that omits the sandbox, and a
     planted import makes `tach check` fail. This test is not redundant with that. It is the
@@ -103,7 +111,9 @@ def test_validation_layer_does_not_import_the_sandbox() -> None:
     Do not delete this as a duplicate of the tach run without first reading the sibling invariant
     below, which has no second enforcement at all.
     """
-    assert import_offenders(VALIDATION_ROOT, SANDBOX_PREFIXES, recursive=True) == []
+    assert import_offenders(VALIDATION_ROOT, SANDBOX_PREFIXES, recursive=True) == (
+        _VALIDATION_MAY_IMPORT
+    )
 
 
 def test_interfaces_layer_does_not_import_the_sandbox() -> None:

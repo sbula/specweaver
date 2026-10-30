@@ -61,3 +61,86 @@ Plan: [TECH-087_sf05_implementation_plan.md](TECH-087_sf05_implementation_plan.m
 - R4 (LOW) The `conflict_resolver` facade had no test. Fixed (Proof).
 - Cycle 2: challenged R1 (could a caller pass `None` through `qa_atom`? No: `qa_atom` always
   builds one). No new finding.
+
+## CB-2 — discovery without git, drift through the executor, MCP recorded (FR-16, FR-17, FR-18)
+
+### What changed
+
+- `assurance/standards/discovery.py` is one `os.walk`, and it runs no process.
+  - It still skips `.git`, hidden folders and the analyzers' build and cache folders (Q1).
+  - Each folder's `.gitignore` is scoped to that folder. The last matching pattern wins, and a
+    deeper file comes later.
+  - It does not enter an ignored folder.
+  - `.specweaverignore` and the binary patterns apply on top, as before.
+  - Removed: `_git_ls_files`, its tests, and the raw `subprocess` import with its `noqa`.
+  - Also removed: the "pathspec not installed" fallback and its test. `pathspec` is a required
+    dependency, and the walk needs it.
+- `cli_drift._staged_files` runs `git diff --cached` through `SubprocessExecutor`, with a 30 s
+  timeout.
+  - When git is missing, fails or times out, it prints one line `Failed to query git index:
+    <reason>` and exits 1. Before, a missing git gave a traceback.
+  - It forwards `GIT_INDEX_FILE` and `GIT_WORK_TREE` when they are set, so a pre-commit hook after
+    `git commit -a` checks the commit's own index.
+- Boundaries:
+  - `tach.toml`: `assurance.validation.interfaces` depends on `specweaver.sandbox`, which exposes
+    `execution.executor.SubprocessExecutor`. The interfaces `context.yaml` consumes
+    `specweaver/sandbox/execution` (AD-5).
+  - `TECH-002`'s layer test names that one import as its only exception, by equality (Q2,
+    `[agreed 2026-10-30]`).
+- Suppression baseline re-frozen down: `noqa:TID251` 3 → 1 (MCP only), total 189 → 185.
+- `subprocess_execution.md` (FR-18): MCP's raw `subprocess.Popen` is listed with its reason (a
+  long-lived JSON-RPC pipe) and its safeguard (`build_child_env`, the same allowlist and credential
+  strip). The design's guide row is ✅.
+- `README.md` counts: 12,051 tests (9,581 unit, 2,020 integration), 24 toolchain, 11,988 by
+  default, 51 corpora with 1,253 mutants.
+
+### Red first
+
+- `tests/integration/assurance/standards/test_discovery_matches_git.py` (NFR-4) runs real git on a
+  fixture with a root and a nested `.gitignore`, a `!` negation, an anchored pattern, an ignored
+  folder, tracked and untracked files. It was red with 6 extra files: discovery on the copy without
+  `.git` read no `.gitignore`.
+- `test_standards_discovery.py::TestGitignore`:
+  - red: root scope, nested scope, anchoring, negation, "no process in a git repo" (it caught
+    `git ls-files`), and "no `subprocess` import";
+  - green from the start, because the old walk already behaved this way: the pruned folder and the
+    unreadable `.gitignore`.
+- `tests/unit/assurance/validation/interfaces/test_cli_drift_staged_files.py` was red (no executor
+  in `cli_drift`). It now has 7 cases, including the forwarded variables and nothing else.
+- `tests/integration/assurance/validation/test_drift_staged_files_git.py` (real git):
+  - "no git on PATH" was red with a `FileNotFoundError` traceback;
+  - "the hook's index" passed on raw `subprocess`. It went red (`[] == ['b.py']`) once drift moved
+    to the executor without forwarding, and green with it.
+- `tests/unit/test_subprocess_guide_records_mcp.py` was red until the guide named
+  `subprocess.Popen` and `build_child_env`. It also pins MCP as the only `noqa: TID251` in `src`.
+- `test_drift_rot_handler.py` patches `cli_drift.SubprocessExecutor.execute`.
+
+### Proof
+
+- New FR-16 campaign, 3 killed: `discovery-ignores-gitignore`, `parent-rules-not-inherited` and
+  `nested-gitignore-unscoped`.
+- New FR-17 campaign, 3 killed: `drift-error-swallowed`, `drift-timeout-unnamed` and
+  `drift-hook-index-dropped`.
+  - The plan's `drift-traceback-on-missing-git` (a narrowed `except`) has no line to mutate now:
+    there is no `try`. `drift-timeout-unnamed` takes its place.
+- 0 stale mutants in 51 corpora.
+- Probes:
+  - `_HOOK_GIT_ENV` without `GIT_WORK_TREE` survived at first; the Phase 3 test kills it;
+  - a second sandbox import in `cli_drift.py` is killed by the layer test.
+- `check_fr_coverage.py TECH-087`: 19 of 19 FRs planned and cited.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) In a git repo, hidden and tool folders (`.github/`, `migrations/`) are now skipped
+  where git listed them. Accepted by the user (Q1).
+- R2 (MEDIUM) A tracked file that `.gitignore` names is listed by git but skipped by the walk.
+  Accepted (plan R4): rare, and not a source the standards should learn from.
+- R3 (MEDIUM) A project inside a larger repo does not read the parent repo's `.gitignore`.
+  Accepted: FR-16 names the project's own files.
+- R4 (LOW) Other hook variables (`GIT_OBJECT_DIRECTORY`, `GIT_COMMON_DIR`) are not forwarded.
+  `GIT_DIR` is on the allowlist already, and the two forwarded variables are the ones `git commit
+  -a` and `git commit <paths>` set for a hook. Accepted.
+- R5 (LOW) `.env` and other hidden *files* are listed when not ignored. Git lists them too, and the
+  old walk did as well. Unchanged.
+- Cycle 2: challenged R4 by testing the forwarded set exactly, not a subset, so a credential cannot
+  ride along. Found the untested `GIT_WORK_TREE` and fixed it. No new finding.
