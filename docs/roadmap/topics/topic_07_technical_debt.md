@@ -47,7 +47,7 @@ critical for long-term project viability.
 
 * **`TECH-087` 🔴: QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean**
   > [Description](../features/topic_07_technical_debt/TECH-087/TECH-087_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (14 findings)._ |
+  > DESIGN APPROVED 2026-10-30 (5 sub-features). Origin: 2026-10-22, architecture audit (14 findings)._ |
   > The runner contract and the runners live in two packages; Java and Kotlin are ~70% copies;
   > dead parsers are kept by a test; a complexity timeout or stub reads as clean; git commit and
   > executor choice are done several ways.
