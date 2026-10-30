@@ -189,7 +189,59 @@
           "old": "if diff.exit_code not in (0, 1):",
           "new": "if False:",
           "breaks": "a git diff that failed reads as changes staged, and the commit then fails with a confusing error",
-          "symbol_sha": "sha256:24afeb278a3ad1ed9082cce4aee0ebd1f31cd9fc0a0b5b9b625ba1743a4e0c67"
+          "symbol_sha": "sha256:b8cd4bd726e4c0e7970474e60f0b90673fc57e65f1271e94c41ae930858ddcf6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A failed commit or merge keeps the worktree; a rerun refuses while it is kept",
+      "scope": [
+        "tests/integration/core/flow/engine/test_failed_commit_keeps_worktree.py",
+        "tests/unit/core/flow/engine/test_kept_worktree.py",
+        "tests/integration/core/flow/engine/test_session_reconcile.py",
+        "tests/integration/core/flow/engine/test_runner_sandbox.py"
+      ],
+      "mutants": [
+        {
+          "id": "failed-commit-tears-down",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "        if not kept:\n",
+          "new": "        if True:\n",
+          "breaks": "a sandboxed step whose commit or merge failed deletes the worktree with the step's work",
+          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
+        },
+        {
+          "id": "snapshot-failure-tears-down",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/session.py",
+          "symbol": "_teardown_unless_kept",
+          "old": "if not (resumable or runner._session_kept):",
+          "new": "if not resumable:",
+          "breaks": "a session whose snapshot, commit or merge failed deletes the worktree with the run's work",
+          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
+        },
+        {
+          "id": "failed-merge-tears-down",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/sandboxed_execution.py",
+          "symbol": "execute_in_sandbox",
+          "old": "            kept = True\n            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
+          "new": "            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
+          "breaks": "a failed strip-merge deletes the worktree and branch, and the committed work with them",
+          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
+        },
+        {
+          "id": "rerun-removes-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/kept_worktree.py",
+          "symbol": "refuse_if_kept",
+          "old": "    if not marker.is_file():\n",
+          "new": "    if True:\n",
+          "breaks": "a rerun of the same task removes the kept worktree as a crash leftover",
+          "symbol_sha": "sha256:8d38c504ba1987ad92a109acce4f9ec12e86aca6fb671e6ba7e0bccf37de21f4"
         }
       ]
     }

@@ -182,7 +182,7 @@
           "old": "                \"step\": step_def.name,\n",
           "new": "                \"step\": None,\n",
           "breaks": "a step rule never keeps its own step's doc",
-          "symbol_sha": "sha256:fb670cff191d30d5e2df4cc6c5b3f6744e2b37356621d5ee9c61e0d456ecd9c4"
+          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
         },
         {
           "id": "session-judged-by-one-step",
@@ -202,7 +202,7 @@
           "old": "            if getattr(runner, \"_session_active\", False):\n",
           "new": "            if getattr(runner, \"_session_active\", False) and result.status == StepStatus.PASSED:\n",
           "breaks": "a failed step's leftover is merged under the next step's name",
-          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
+          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
         },
         {
           "id": "session-merge-ignores-steps",
@@ -212,7 +212,7 @@
           "old": "                    \"steps_from_commits\": True,\n",
           "new": "                    \"steps_from_commits\": False,\n",
           "breaks": "in a session run no step rule ever keeps a doc",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
         }
       ]
     },

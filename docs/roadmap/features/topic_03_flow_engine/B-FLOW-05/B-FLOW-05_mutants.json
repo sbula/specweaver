@@ -264,7 +264,7 @@
           "old": "    track_step_refusals()\n    try:\n",
           "new": "    try:\n",
           "breaks": "a stopped step is not parked, and a sibling's stop leaks into the next step",
-          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
+          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
         },
         {
           "id": "refusal-not-recorded",
@@ -325,7 +325,7 @@
           "old": "    return _parked_by_brake(result) or result\n",
           "new": "    return result\n",
           "breaks": "a step that caught the stop reports success, and a retry gate retries into the spent limit",
-          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
+          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
         },
         {
           "id": "stop-not-remembered",
@@ -515,7 +515,7 @@
           "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
-          "symbol_sha": "sha256:d2e80b0198bfc8746fa1129e9f2c1f429ff1021c7833177fd91011b89850751d"
+          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
         },
         {
           "id": "worktree-merges-stopped-work",
@@ -525,7 +525,7 @@
           "old": "        if step_refusal() is not None or result.status != StepStatus.PASSED:\n",
           "new": "        if result.status != StepStatus.PASSED:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
-          "symbol_sha": "sha256:fb670cff191d30d5e2df4cc6c5b3f6744e2b37356621d5ee9c61e0d456ecd9c4"
+          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
         }
       ]
     },
@@ -540,21 +540,21 @@
           "id": "park-tears-down-worktree",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
-          "symbol": "execute_run",
-          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
-          "new": "        if True:\n",
+          "symbol": "_teardown_unless_kept",
+          "old": "resumable = run.status == RunStatus.PARKED and runner._store is not None",
+          "new": "resumable = False",
           "breaks": "a parked run loses the paid work of its earlier steps",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
         },
         {
           "id": "unresumable-park-leaks-worktree",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
-          "symbol": "execute_run",
-          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
-          "new": "        if not run.status == RunStatus.PARKED:\n",
+          "symbol": "_teardown_unless_kept",
+          "old": "resumable = run.status == RunStatus.PARKED and runner._store is not None",
+          "new": "resumable = run.status == RunStatus.PARKED",
           "breaks": "sw implement leaves a worktree behind that nothing can resume",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
         },
         {
           "id": "resume-starts-fresh-worktree",
@@ -564,7 +564,7 @@
           "old": "    if approve_parked and run.current_step > 0:\n",
           "new": "    if False:\n",
           "breaks": "a resume runs the later steps without the files the earlier steps wrote",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
         },
         {
           "id": "resume-without-worktree-runs",
@@ -574,7 +574,7 @@
           "old": "        if not worktree.is_dir():\n",
           "new": "        if False:\n",
           "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
         }
       ]
     },

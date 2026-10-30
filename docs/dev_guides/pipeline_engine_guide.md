@@ -243,6 +243,12 @@ collides on the branch name (`TECH-012`). Use per-run mode for that.
   file locks, e.g. Defender), it retries `shutil.rmtree` with a 5-step backoff (0.05 → 0.75 s, under
   2 s total), then `git worktree prune`. Given a `branch`, it also deletes it (`branch -D`). With no
   worktree on disk it only prunes and drops a leftover branch, without a warning.
+- **Kept work** (`TECH-087` FR-7): when a worktree commit (a step snapshot, a per-step commit, the
+  session's final commit) or a strip-merge fails, the run fails and the worktree and its branch
+  are **not** torn down. The error names the path and `git worktree remove --force <path>`; a
+  marker `<worktree>.kept` beside it makes a later run with the same name refuse to start
+  instead of removing it as a crash leftover. Nothing removes it but the user
+  (`core/flow/engine/kept_worktree.py`).
 
 ### 7.2 Per-step mode (`INT-US-09`, the US-9 zero-trust contract)
 

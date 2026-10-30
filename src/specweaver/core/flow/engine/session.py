@@ -49,6 +49,7 @@ async def execute_run(
 
     import copy
 
+    from specweaver.core.flow.engine.kept_worktree import clear_for_new_run, keep
     from specweaver.core.flow.engine.state import RunStatus
     from specweaver.sandbox.base import AtomStatus
     from specweaver.sandbox.git.core.atom import GitAtom
@@ -68,8 +69,9 @@ async def execute_run(
                 "its earlier steps. Start the run again.",
             )
     else:
-        # Prune a stale same-named worktree and branch left by a crash, so the add cannot collide.
-        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+        refused = clear_for_new_run(atom, worktree, wt_path, branch)
+        if refused:
+            _worktree_failed(runner, run, refused)
         add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
         if add_res.status != AtomStatus.SUCCESS:
             _worktree_failed(
@@ -90,6 +92,7 @@ async def execute_run(
     )
     runner._context = isolated
     runner._session_active = True
+    runner._session_kept = False
     try:
         result = cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
         # SF-02: reconcile ONLY on successful completion — never write back the generated
@@ -98,10 +101,14 @@ async def execute_run(
         if run.status == RunStatus.COMPLETED:
             commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
             if commit_res.status != AtomStatus.SUCCESS:
+                runner._session_kept = True
                 _reconcile_failed(
                     runner,
                     run,
-                    f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}",
+                    keep(
+                        worktree,
+                        f"C-EXEC-06 reconcile: worktree commit failed: {commit_res.message}",
+                    ),
                 )
             merge_res = atom.run(
                 {
@@ -114,18 +121,31 @@ async def execute_run(
                 }
             )
             if merge_res.status != AtomStatus.SUCCESS:
+                runner._session_kept = True
                 _reconcile_failed(
                     runner,
                     run,
-                    f"C-EXEC-06 reconcile: authorized strip-merge failed: {merge_res.message}",
+                    keep(
+                        worktree,
+                        f"C-EXEC-06 reconcile: authorized strip-merge failed: {merge_res.message}",
+                    ),
                 )
         return result
     finally:
         runner._session_active = False
         runner._context = original
-        # A parked run keeps its worktree when it can be resumed.
-        if not (run.status == RunStatus.PARKED and runner._store is not None):
-            atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+        _teardown_unless_kept(runner, run, atom, wt_path, branch)
+
+
+def _teardown_unless_kept(
+    runner: Any, run: PipelineRun, atom: Any, wt_path: str, branch: str
+) -> None:
+    """Tear the session worktree down, unless a parked run can resume in it or it holds kept work."""
+    from specweaver.core.flow.engine.state import RunStatus
+
+    resumable = run.status == RunStatus.PARKED and runner._store is not None
+    if not (resumable or runner._session_kept):
+        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
 
 
 def _worktree_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:

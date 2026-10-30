@@ -74,11 +74,11 @@
           "id": "no-teardown",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
-          "symbol": "execute_run",
-          "old": "        if not (run.status == RunStatus.PARKED and runner._store is not None):\n",
-          "new": "        if False:\n",
+          "symbol": "_teardown_unless_kept",
+          "old": "    if not (resumable or runner._session_kept):\n",
+          "new": "    if False:\n",
           "breaks": "every run leaves its worktree and branch behind",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
         }
       ]
     },
@@ -98,7 +98,7 @@
           "old": "    runner._context = isolated\n",
           "new": "    runner._context = original\n",
           "breaks": "steps write the real repo directly",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "old": "        if add_res.status != AtomStatus.SUCCESS:\n",
           "new": "        if False:\n",
           "breaks": "a run without a worktree goes on, at the real root",
-          "symbol_sha": "sha256:134e3c9f77290809ab4f586b14a31e5f6044523191431de32606ca72a30552ff"
+          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
         }
       ]
     }

@@ -127,7 +127,8 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
-    """Logs Warning but survives strip_merge fail and GUARANTEES teardown."""
+    """A failed strip_merge fails the step and keeps the worktree and branch (TECH-087 FR-7, the
+    user's choice 2026-10-30): its committed work would be lost with them."""
     step = PipelineStep(
         name="s1", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
     )
@@ -162,10 +163,9 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
         runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
         await runner.run()
 
-        # Ensures teardown executed despite strip_merge failure!
-        assert "strip_merge" in intents_called
-        assert "worktree_teardown" in intents_called
-        assert intents_called[-1] == "worktree_teardown"
+        # The only teardown is the crash-leftover one before the add; none after the failure.
+        assert intents_called[-1] == "strip_merge"
+        assert intents_called.count("worktree_teardown") == 1
 
 
 @pytest.mark.asyncio

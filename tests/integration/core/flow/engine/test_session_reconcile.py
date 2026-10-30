@@ -249,18 +249,20 @@ def test_reconcile_raises_on_commit_failure(tmp_path: Path) -> None:
         )
 
 
-# --- G4 [Graceful teardown]: worktree + branch cleaned up on reconcile fail -
+# --- G4: a failed merge keeps worktree + branch (TECH-087 FR-7, chosen 2026-10-30) -
 
 
-def test_worktree_torn_down_on_reconcile_failure(tmp_path: Path) -> None:
+def test_worktree_kept_on_reconcile_failure(tmp_path: Path) -> None:
     _commit_project(tmp_path, ("gen.sh", _GEN))
     with _patch_intent_fail("strip_merge"), pytest.raises(RuntimeError):
         _run(
             PipelineDefinition(name="p", steps=[_bash("g", "gen.sh")]),
             _ctx(tmp_path, allowed=["src/foo.py"]),
         )
-    # The finally teardown ran despite the reconcile failure — no orphaned worktree/branch.
-    _no_worktrees_or_branch(tmp_path)
+    # The committed work stays for the user: the worktree with its file, and its branch.
+    (worktree,) = [p for p in (tmp_path / ".worktrees").iterdir() if p.is_dir()]
+    assert (worktree / "src" / "foo.py").is_file()
+    assert "sf-session-" in _git(tmp_path, "branch").stdout
 
 
 # --- G5 [Boundary]: all files stripped → no commit, repo clean ------------

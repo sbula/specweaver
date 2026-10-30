@@ -73,8 +73,12 @@ async def execute_in_sandbox(
     branch = f"sf-{clean_pipeline}-{task_id}"
     wt_path = f".worktrees/{task_id}"
 
-    # Prune a stale same-named worktree and branch left by a crash, so the add cannot collide.
-    atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+    from specweaver.core.flow.engine.kept_worktree import clear_for_new_run, keep
+
+    worktree = context.project_path / wt_path
+    refused = clear_for_new_run(atom, worktree, wt_path, branch)
+    if refused:
+        raise RuntimeError(refused)
     add_res = atom.run({"intent": "worktree_add", "path": wt_path, "branch": branch})
     if add_res.status != AtomStatus.SUCCESS:
         # Fail closed: isolation was requested but the worktree could not be created.
@@ -87,7 +91,6 @@ async def execute_in_sandbox(
     setup_sandbox_caches(context, wt_path, logger)
 
     # The step sees the worktree as its project, as a session step does.
-    worktree = context.project_path / wt_path
     isolated_context = copy.copy(context)
     isolated_context.project_path = worktree
     isolated_context.output_dir = None
@@ -95,6 +98,7 @@ async def execute_in_sandbox(
         update={"execution_root": worktree}
     )
 
+    kept = False
     try:
         result = cast("StepResult", await handler.execute(step_def, isolated_context))
         if step_refusal() is not None or result.status != StepStatus.PASSED:
@@ -102,7 +106,8 @@ async def execute_in_sandbox(
 
         commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
         if commit_res.status != AtomStatus.SUCCESS:
-            raise RuntimeError(f"worktree commit failed: {commit_res.message}")
+            kept = True
+            raise RuntimeError(keep(worktree, f"worktree commit failed: {commit_res.message}"))
         merge_res = atom.run(
             {
                 "intent": "strip_merge",
@@ -116,11 +121,15 @@ async def execute_in_sandbox(
             }
         )
         if merge_res.status != AtomStatus.SUCCESS:
-            raise RuntimeError(f"authorized strip-merge failed: {merge_res.message}")
+            kept = True
+            raise RuntimeError(
+                keep(worktree, f"authorized strip-merge failed: {merge_res.message}")
+            )
         return result
 
     finally:
-        atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
+        if not kept:
+            atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
 
         try:
             from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
