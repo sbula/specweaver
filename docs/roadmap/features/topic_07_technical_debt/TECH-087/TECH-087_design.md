@@ -117,7 +117,7 @@ None. `TECH-064` (the architecture `note`) is the in-repo precedent.
 | FR-11 | The dead code SHALL be deleted: `java/runner.py _harvest_junit`, `KotlinRunner._parse_junit_results`, `rust/runner.py _tally_junit`, `parse_clippy_complexity`, `sandbox/rule_atom.py` and their tests `[agreed 2026-10-29]` | — | delete | no test keeps code no run uses |
 | FR-12 | The runner factory SHALL live in `sandbox/language`, beside the runners; `sandbox/qa_runner` holds the contract and the atom/tool, and imports nothing from `sandbox/language` at any depth, lazy imports included `[agreed 2026-10-29]` | `sandbox/qa_runner`, `sandbox/language` | move | the two packages import one way |
 | FR-13 | Java and Kotlin runners SHALL share one JVM base; a failed Kotlin build SHALL report its diagnostics with file and line as Java does, falling back to the build output (stdout and stderr) when none parse | JVM runners | report | a Kotlin compile error shows where it is |
-| FR-14 | One copy each SHALL remain of: the JVM stack-trace filter, the SARIF walker; the PMD, detekt and tsc report parsers SHALL move from `workspace/ast/parsers` to `sandbox/language`; `evaluator.py` SHALL move beside `code_structure`, `maven_output.py` beside the Java runner | `sandbox/language`, `workspace/ast/parsers` | move | report parsing lives with the runners that read the reports |
+| FR-14 | One copy each SHALL remain of: the JVM stack-trace filter, the SARIF walker; the PMD, detekt and tsc report parsers SHALL move from `workspace/ast/parsers` to `sandbox/language`; `evaluator.py` SHALL move beside `code_structure`, `maven_output.py` into the JVM base package as `build_output.py` `[agreed 2026-10-30]` | `sandbox/language`, `workspace/ast/parsers` | move | report parsing lives with the runners that read the reports |
 | FR-15 | The TypeScript runner SHALL report a timeout of ESLint (architecture) and of tsc as "<tool> timed out after N s", and of a debugged program, in the TypeScript and the Python runner, as "<entrypoint> timed out after N s" `[agreed 2026-10-30]`, checking the timeout before `did_not_run`; the dead `getattr(__builtins__, …)` branches go | TypeScript and Python runners | report | a timeout names the right tool and says it timed out |
 | FR-16 | Standards discovery SHALL run no process: it walks the project, skips what the project's `.gitignore` files (root and nested) and `.specweaverignore` ignore, using `pathspec`; git's global ignore file is not read `[agreed 2026-10-30]` | `assurance/standards/discovery` | walk | `sw standards` and the API find the same files with or without git |
 | FR-17 | `sw check --drift` SHALL read the staged files through `SubprocessExecutor`; when git is missing or fails it SHALL print "Failed to query git index: <reason>" and exit 1, without a traceback `[agreed 2026-10-29]` | `cli_drift._staged_files` | read | no raw subprocess, no traceback |
@@ -268,7 +268,7 @@ ruff path and real git in the suite.
 | SF-01 | A check that did not run is never clean | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Generated code is never lost | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Dead code goes, TypeScript timeouts say what timed out | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Runners beside their factory, one JVM base | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Runners beside their factory, one JVM base | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Every command through a runner the caller chose | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -290,6 +290,6 @@ ruff path and real git in the suite.
   fallback", and an explicit host choice is a choice). No new finding.
 
 **Current status**: SF-01, SF-02 and SF-03 committed 2026-10-30; SF-04, SF-05 not planned.
-**Next step**: The implementation plan for SF-04 (after SF-03).
+**Next step**: Dev for SF-04 (its plan is approved), then the SF-05 plan.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
