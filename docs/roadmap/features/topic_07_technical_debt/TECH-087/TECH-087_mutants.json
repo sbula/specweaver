@@ -35,7 +35,8 @@
       "requirement": "FR-2",
       "title": "A complexity check that did not run or is not built is never clean",
       "scope": [
-        "tests/unit/sandbox/language/core/language/test_no_false_clean.py"
+        "tests/unit/sandbox/language/core/language/test_no_false_clean.py",
+        "tests/unit/sandbox/qa_runner/interfaces/qa_runner/test_qa_runner_tool.py"
       ],
       "mutants": [
         {
@@ -127,6 +128,26 @@
           "new": "if False:",
           "breaks": "a lint the atom refused, with no count, reads as zero errors and the step passes",
           "symbol_sha": "sha256:eb5a13c405ae218b496472e7495e3baa84296bd1dd76d2967415b15dc2192f74"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "C05 skips a language with no architecture check",
+      "scope": [
+        "tests/integration/assurance/validation/test_c05_not_built.py",
+        "tests/unit/assurance/validation/rules/code/test_code_rules.py"
+      ],
+      "mutants": [
+        {
+          "id": "c05-ignores-note",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c05_import_direction.py",
+          "symbol": "ImportDirectionRule.check",
+          "old": "if not violation_count and exports.get(\"note\"):",
+          "new": "if False:",
+          "breaks": "sw check says all imports follow layering rules for Kotlin and Rust, where nothing was checked",
+          "symbol_sha": "sha256:395f544501f2348dec170a1bc58de7ba5931592b3cf1533b469223ea59772dc2"
         }
       ]
     }

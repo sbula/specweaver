@@ -55,8 +55,19 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    - `run_architecture_check(target: str) -> ArchitectureRunResult` (Feature 3.20a: maps native
      boundary violations into SpecWeaver)
 
-   No native complexity checker? Map `run_complexity` to a static no-op violation array or an open
-   equivalent (like `gocyclo`).
+   Each QA method ends in one of three ways, and never a bare zero, which every reader takes as a
+   clean result (`TECH-087`):
+   - **It ran:** report what the tool found. Zero findings is clean only when the tool ran and
+     its report was read.
+   - **It did not run:** the tool is missing, timed out, found no container engine, or wrote no
+     report or one that cannot be read. Return the shared result from
+     `sandbox/language/core/toolchain.py` (`failed_tests`, `failed_lint`, `failed_complexity`,
+     `failed_compile`, `failed_architecture`); the step fails and says why. Check `timed_out`
+     before reading output, and remove an earlier run's report before the run.
+   - **It is not built for this language:** say so. `run_architecture_check` returns a `note` and
+     no violations (C05 skips, naming the note). Any other method returns its `failed_*` result
+     with "<Language> <check> checks are not implemented", as `run_complexity` does for TypeScript.
+     An open tool (like `gocyclo`) is better than either.
 2. **Output parser**: pure-logic functions like `extract_go_test_results(stdout: str) -> TestRunResult`.
 3. **`scenario_converter.py`**: implements `ScenarioConverterInterface`; turns JSON/YAML abstract
    scenarios into `_test.<ext>` parameterized blocks.

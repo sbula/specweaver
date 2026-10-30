@@ -462,3 +462,23 @@ class TestToolLegacyProxyGaps:
         """Factory triggers value error for invalid roles directly (missing path)."""
         with pytest.raises(ValueError, match="Unknown role"):
             create_qa_runner_interface("non_existent_role", tmp_path, language="python")
+
+
+class TestComplexityNotBuilt:
+    """TECH-087 FR-2, path P-6: an agent asking for TypeScript complexity gets an error, not
+    "within threshold". Real atom, real TypeScript runner; the check runs no process.
+
+    Proves: TECH-087 FR-2
+    """
+
+    def test_typescript_complexity_is_an_error_for_the_agent(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+
+        tool = QARunnerTool(atom=QARunnerAtom(cwd=tmp_path, language="typescript"), role="planner")
+
+        result = tool.run_complexity(target="src/", max_complexity=10)
+
+        assert result.status == "error"
+        assert result.data["violations"][0]["message"] == (
+            "TypeScript complexity checks are not implemented"
+        )

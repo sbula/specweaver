@@ -94,3 +94,37 @@ compared against a wrong string; the "no `error_count`" branch disabled.
   the lint that decides.
 - R3 (LOW) the refused-lint message is the atom's text. Blue: it names the target and why.
 - Cycle 2: no new finding.
+
+## CB-3 — C05 skips what was not built; the guide says so (FR-5, FR-19, P-2, P-6)
+
+### What changed
+
+- `c05_import_direction.py`: zero violations and a `note` → SKIPPED with the note. A note never
+  hides a violation (found in Phase 2: the first version checked the note first).
+- `docs/dev_guides/language_support_guide.md`: the "static no-op violation array" advice is gone;
+  each QA method ends as ran / did not run (shared `failed_*`) / not built (`note`, or `failed_*`
+  with "not implemented"), never a bare zero.
+
+### Red first
+
+- P-2 `tests/integration/assurance/validation/test_c05_not_built.py`: real atom with the Kotlin and
+  the Rust runner → `_hydrate_architecture` → C05. Both PASSED before the change.
+- `test_code_rules.py`: note → SKIP (failed before), note with a violation → FAIL (failed against
+  the first version), empty note → PASS (control).
+- `tests/unit/test_language_guide_says_no_bare_zero.py`: both cases failed on the old guide.
+- P-6 `test_qa_runner_tool.py::TestComplexityNotBuilt`: green on arrival (CB-1 built it); the CB-1
+  mutant `ts-complexity-stub-clean` kills it (probe, one test protects it from this side).
+
+### Proof
+
+Mutant `c05-ignores-note` killed. Corpus: 10 mutants over FR-1..FR-5, all killed.
+`check_fr_coverage.py TECH-087`: FR-1..FR-5 and FR-19 carried and cited; FR-6..FR-18 belong to
+SF-02..SF-05.
+
+### Red/Blue (Phase 7.5), 2 cycles
+
+- R1 (MEDIUM) a note beside a violation would hide it. Fixed: the skip needs zero violations.
+- R2 (LOW) a non-string note. Blue: `str(note)`; runners always set a string.
+- R3 (LOW) `sw check` output for Kotlin projects changes from PASS to SKIP. Intended (FR-5,
+  `[agreed 2026-10-29]`); the live demo in the design's Works For Real runs at closure.
+- Cycle 2: no new finding.

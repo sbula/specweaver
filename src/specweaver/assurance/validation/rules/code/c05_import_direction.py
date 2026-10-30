@@ -51,6 +51,9 @@ class ImportDirectionRule(Rule):
                 ],
             )
         violation_count = exports.get("violation_count", 0)
+        # A note with no violation means no check exists for the language: no verdict to pass.
+        if not violation_count and exports.get("note"):
+            return self._skip(str(exports["note"]))
 
         if violation_count == 0:
             return self._pass("All imports follow layering rules")

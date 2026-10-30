@@ -153,6 +153,50 @@ class TestC05ImportDirection:
         assert result.status == Status.FAIL
         assert "Architecture boundary violated" in result.findings[0].message
 
+    def test_a_check_that_is_not_built_skips_with_its_note(
+        self, tmp_path: pytest.TempPathFactory
+    ) -> None:
+        """TECH-087 FR-5: a `note` means no verdict, so C05 does not claim one."""
+        rule = ImportDirectionRule()
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "SUCCESS",
+                "message": "Architecture check did not run: no check for Go",
+                "exports": {"violation_count": 0, "violations": [], "note": "no check for Go"},
+            }
+        }
+        result = rule.check("", spec_path=tmp_path / "main.go")
+        assert result.status == Status.SKIP
+        assert result.message == "no check for Go"
+
+    def test_a_note_never_hides_a_violation(self, tmp_path: pytest.TempPathFactory) -> None:
+        rule = ImportDirectionRule()
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "FAILED",
+                "message": "1 architectural violation(s) found.",
+                "exports": {
+                    "violation_count": 1,
+                    "violations": [{"file": "a.py", "code": "C05", "message": "core imports ui"}],
+                    "note": "partial check",
+                },
+            }
+        }
+        result = rule.check("", spec_path=tmp_path / "a.py")
+        assert result.status == Status.FAIL
+        assert "core imports ui" in result.findings[0].message
+
+    def test_an_empty_note_is_a_verdict(self, tmp_path: pytest.TempPathFactory) -> None:
+        rule = ImportDirectionRule()
+        rule.context = {
+            "qa_architecture_result": {
+                "status": "SUCCESS",
+                "message": "No architectural violations.",
+                "exports": {"violation_count": 0, "violations": [], "note": ""},
+            }
+        }
+        assert rule.check("", spec_path=tmp_path / "a.py").status == Status.PASS
+
     def test_no_file_path_skips(self) -> None:
         rule = ImportDirectionRule()
         result = rule.check("")  # No spec_path

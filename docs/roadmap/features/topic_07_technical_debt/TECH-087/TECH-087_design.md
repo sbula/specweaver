@@ -197,7 +197,7 @@ None. `TECH-064` (the architecture `note`) is the in-repo precedent.
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| `language_support_guide.md` | FR-19: did-not-run vs not-built per QA method | ⬜ SF-01 |
+| `language_support_guide.md` | FR-19: did-not-run vs not-built per QA method | ✅ SF-01 |
 | `subprocess_execution.md` | FR-18: MCP's recorded exception | ⬜ SF-05 |
 
 ## Works For Real
@@ -265,7 +265,7 @@ ruff path and real git in the suite.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | A check that did not run is never clean | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | A check that did not run is never clean | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Generated code is never lost | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Dead code goes, TypeScript timeouts say what timed out | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runners beside their factory, one JVM base | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -289,7 +289,7 @@ ruff path and real git in the suite.
 - Cycle 2: challenged R1 (does git on the host contradict FR-9? No: the rule is "no silent
   fallback", and an explicit host choice is a choice). No new finding.
 
-**Current status**: Design APPROVED 2026-10-30; SF-01 plan APPROVED 2026-10-30.
-**Next step**: The dev skill for SF-01 (TECH-087_sf01_implementation_plan.md), CB-1.
+**Current status**: SF-01 committed 2026-10-30 (3 boundaries); SF-02..SF-05 not planned.
+**Next step**: The implementation plan for SF-02 (independent) or SF-03 (after SF-01).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
