@@ -10,7 +10,9 @@
 
 FR-10 (the live JUnit reader warns on an unreadable report), FR-11 (the dead code and its tests
 go), FR-15 (TypeScript tsc and ESLint-architecture timeouts say "<tool> timed out after N s",
-checked before `did_not_run`; the dead `getattr(__builtins__, …)` branches go). No command,
+checked before `did_not_run`; the dead `getattr(__builtins__, …)` branches go). At the CB-2 gate the
+user widened FR-15 to the debugger timeout of the TypeScript and the Python runner: "<entrypoint>
+timed out after 300 s" `[agreed 2026-10-30]`. No command,
 option or output field changes beyond those messages.
 
 ## Research Notes

@@ -53,9 +53,8 @@ def test_typescript_atom_integration_compile_error(tmp_path: Path) -> None:
     atom = QARunnerAtom(cwd=tmp_path, language="typescript")
     res_compile = atom.run_compiler(target="src/")
 
-    # Normally this should be 'error' because tsc detects the mismatch
-    # If the system does not have npx/tsc, it returns 'error' with ENOENT
+    # 'error' either way: tsc finds the mismatch, or tsc is missing and did not run
     assert res_compile.status == "error"
-    if res_compile.message != "TypeScript compiler not found in PATH.":
-        # If TSC actually ran, we should have trapped a compile error
-        assert "is not assignable" in "".join(err.message for err in res_compile.data.errors)  # type: ignore
+    errors = res_compile.data.errors  # type: ignore
+    if not any(err.code == "ToolchainUnavailable" for err in errors):
+        assert "is not assignable" in "".join(err.message for err in errors)

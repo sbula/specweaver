@@ -263,6 +263,58 @@
           "symbol_sha": "sha256:6e4ee9c058985304df20166726e3a0cf154071fe331f96af4d902d7d526dcac4"
         }
       ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "A TypeScript timeout names the tool and says it timed out",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/typescript/test_typescript_runner.py",
+        "tests/integration/sandbox/atoms/qa_runner/typescript/test_typescript_timeouts.py",
+        "tests/integration/sandbox/atoms/qa_runner/python/test_python_debug_timeout.py",
+        "tests/unit/sandbox/language/core/language/python/test_python_runner.py"
+      ],
+      "mutants": [
+        {
+          "id": "ts-arch-timeout-says-jest",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_architecture_check",
+          "old": "reason = timed_out(result, \"ESLint\", _ESLINT_TIMEOUT_SECONDS) or did_not_run(",
+          "new": "reason = timed_out(result, \"Jest\") or did_not_run(",
+          "breaks": "an ESLint architecture timeout names the wrong tool and drops how long it waited",
+          "symbol_sha": "sha256:0839f4f79d939f2bdff7af5959a5dad19db0dc58e10205e616fa6c9f77c6bdb1"
+        },
+        {
+          "id": "ts-timeout-after-did-not-run",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_compiler",
+          "old": "reason = timed_out(result, \"tsc\", _TSC_TIMEOUT_SECONDS) or did_not_run(result, \"tsc\")",
+          "new": "reason = did_not_run(result, \"tsc\") or timed_out(result, \"tsc\", _TSC_TIMEOUT_SECONDS)",
+          "breaks": "a tsc timeout with no output reads as tsc did not run, losing the timeout",
+          "symbol_sha": "sha256:ae78584c8d8036ab6d437c0b8676357499e279be030026c1586c5eee13e91ffd"
+        },
+        {
+          "id": "ts-debug-timeout-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_debugger",
+          "old": "events=[OutputEvent(category=\"stderr\", output=reason)]",
+          "new": "events=[OutputEvent(category=\"stderr\", output=\"Timeout expired\")]",
+          "breaks": "a hung debugged program reads as \"Timeout expired\", naming neither the program nor the limit",
+          "symbol_sha": "sha256:080ec6ac8a453abe518117c5f962f34c7598612644beab3a1496b4e1d32fb68d"
+        },
+        {
+          "id": "py-debug-timeout-unnamed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/python/runner.py",
+          "symbol": "PythonQARunner.run_debugger",
+          "old": "events=[OutputEvent(category=\"stderr\", output=reason)]",
+          "new": "events=[OutputEvent(category=\"stderr\", output=\"Timeout expired\")]",
+          "breaks": "a hung Python program reads as \"Timeout expired\", naming neither the program nor the limit",
+          "symbol_sha": "sha256:bfed2bbb9c6063f2458976ef7ba899f9762dc680843127c5e3770de08be57e4a"
+        }
+      ]
     }
   ]
 }

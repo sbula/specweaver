@@ -32,6 +32,7 @@ from specweaver.sandbox.language.core.toolchain import (
     failed_architecture,
     failed_complexity,
     failed_lint,
+    timed_out,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -398,11 +399,12 @@ class PythonQARunner(QARunnerInterface):
                 events=[OutputEvent(category="stderr", output=str(exc))],
             )
 
-        if result.timed_out:
+        reason = timed_out(result, entrypoint, self._BUILD_TIMEOUT)
+        if reason:
             return DebugRunResult(
                 exit_code=124,
                 duration_seconds=result.duration_seconds,
-                events=[OutputEvent(category="stderr", output="Timeout expired")],
+                events=[OutputEvent(category="stderr", output=reason)],
             )
 
         return DebugRunResult(

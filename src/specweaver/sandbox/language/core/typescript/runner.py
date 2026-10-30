@@ -20,6 +20,7 @@ from specweaver.sandbox.language.core.toolchain import (
     failed_complexity,
     failed_lint,
     failed_tests,
+    timed_out,
 )
 from specweaver.sandbox.language.core.typescript.npm_output import (
     TestCounts,
@@ -29,7 +30,6 @@ from specweaver.sandbox.language.core.typescript.npm_output import (
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
     ArchitectureViolation,
-    CompileError,
     CompileRunResult,
     ComplexityRunResult,
     DebugRunResult,
@@ -42,6 +42,10 @@ from specweaver.sandbox.qa_runner.core.interface import (
 from specweaver.workspace.ast.parsers.typescript.parsers import extract_tsc_errors
 
 logger = logging.getLogger(__name__)
+
+_TSC_TIMEOUT_SECONDS = 120
+_ESLINT_TIMEOUT_SECONDS = 60
+_DEBUG_TIMEOUT_SECONDS = 300
 
 
 def _restricted_import_violations(stdout: str) -> list[ArchitectureViolation]:
@@ -181,48 +185,10 @@ class TypeScriptRunner(QARunnerInterface):
 
         logger.debug("Running TypeScript compiler: %s", shlex.join(cmd))
 
-        try:
-            result = self._executor.execute(
-                cmd,
-                timeout_seconds=120,
-            )
-        except getattr(__builtins__, "FileNotFoundError", OSError):
-            logger.error("TypeScript toolchain not found (tsc or npx missing)")
-            return CompileRunResult(
-                error_count=1,
-                warning_count=0,
-                errors=[
-                    CompileError(
-                        file=target,
-                        line=0,
-                        column=0,
-                        message="TypeScript compiler not found in PATH.",
-                        code="ENOENT",
-                        is_warning=False,
-                    )
-                ],
-            )
-
-        reason = did_not_run(result, "tsc")
+        result = self._executor.execute(cmd, timeout_seconds=_TSC_TIMEOUT_SECONDS)
+        reason = timed_out(result, "tsc", _TSC_TIMEOUT_SECONDS) or did_not_run(result, "tsc")
         if reason:
             return failed_compile(reason)
-
-        if result.timed_out:
-            logger.error("tsc process timed out after 120s")
-            return CompileRunResult(
-                error_count=1,
-                warning_count=0,
-                errors=[
-                    CompileError(
-                        file=target,
-                        line=0,
-                        column=0,
-                        message="Timeout during compilation",
-                        code="TIMEOUT",
-                        is_warning=False,
-                    )
-                ],
-            )
 
         errors = extract_tsc_errors(result.stdout)
 
@@ -281,29 +247,14 @@ class TypeScriptRunner(QARunnerInterface):
             cmd = [node_bin, entrypoint]
         logger.debug("Running TypeScript debugger wrapper: %s", shlex.join(cmd))
 
-        try:
-            result = self._executor.execute(
-                cmd,
-                timeout_seconds=300,
-            )
-        except getattr(
-            __builtins__, "FileNotFoundError", OSError
-        ):  # expected: the result says the runner is missing
-            return DebugRunResult(
-                exit_code=127,
-                duration_seconds=0.0,
-                events=[
-                    OutputEvent(
-                        category="stderr", output="Node/TypeScript runner not found in PATH"
-                    )
-                ],
-            )
+        result = self._executor.execute(cmd, timeout_seconds=_DEBUG_TIMEOUT_SECONDS)
 
-        if result.timed_out:
+        reason = timed_out(result, entrypoint, _DEBUG_TIMEOUT_SECONDS)
+        if reason:
             return DebugRunResult(
                 exit_code=124,
                 duration_seconds=result.duration_seconds,
-                events=[OutputEvent(category="stderr", output="Timeout expired")],
+                events=[OutputEvent(category="stderr", output=reason)],
             )
 
         events: list[OutputEvent] = []
@@ -327,7 +278,6 @@ class TypeScriptRunner(QARunnerInterface):
         import yaml
 
         from specweaver.commons import json
-        from specweaver.sandbox.qa_runner.core.interface import ArchitectureViolation
 
         logger.debug(
             "TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level
@@ -379,21 +329,15 @@ class TypeScriptRunner(QARunnerInterface):
         ]
 
         try:
-            result = self._executor.execute(cmd, timeout_seconds=60)
+            result = self._executor.execute(cmd, timeout_seconds=_ESLINT_TIMEOUT_SECONDS)
         finally:
             config_path.unlink(missing_ok=True)
 
-        reason = did_not_run(result, "the TypeScript architecture checker")
+        reason = timed_out(result, "ESLint", _ESLINT_TIMEOUT_SECONDS) or did_not_run(
+            result, "the TypeScript architecture checker"
+        )
         if reason:
             return failed_architecture(reason)
-
-        if result.timed_out:
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(file=target, code="Timeout", message="Jest timed out")
-                ],
-            )
 
         violations = _restricted_import_violations(result.stdout)
 

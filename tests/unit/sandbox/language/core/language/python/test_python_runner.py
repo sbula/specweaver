@@ -4,6 +4,7 @@
 """The Python QA runner: one command per intent, and the parsing of what comes back.
 
 Proves: D-VAL-03 FR-3
+Proves: TECH-087 FR-15
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: the pytest invocation replaced by `unittest`, which cannot honour the same flags or emit the same
 report — **28 fail across all three tiers**, because Python is the default runner and nearly every
@@ -88,7 +89,7 @@ class TestPythonQARunner:
         assert result.duration_seconds == 300.0
         assert len(result.events) == 1
         assert result.events[0].category == "stderr"
-        assert "Timeout expired" in result.events[0].output
+        assert result.events[0].output == "src/main.py timed out after 300 s"
 
     def test_run_architecture_check_success(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)

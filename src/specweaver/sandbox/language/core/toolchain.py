@@ -79,12 +79,13 @@ def report_never_written(result: SubprocessResult, tool: str, report: Path) -> s
     )
 
 
-def timed_out(result: SubprocessResult, tool: str) -> str | None:
+def timed_out(result: SubprocessResult, tool: str, seconds: int | None = None) -> str | None:
     """Why a run's output is no verdict: it was cut off. Partial output parses as a partial clean."""
     if not result.timed_out:
         return None
-    logger.error("%s timed out", tool)
-    return f"{tool} timed out"
+    reason = f"{tool} timed out" if seconds is None else f"{tool} timed out after {seconds} s"
+    logger.error("%s", reason)
+    return reason
 
 
 def clear_old_report(report: Path) -> str | None:
