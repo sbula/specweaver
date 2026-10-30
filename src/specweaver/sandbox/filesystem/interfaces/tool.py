@@ -17,6 +17,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import BaseTool
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.filesystem.interfaces.models import (
     ROLE_INTENTS,
     FileSystemToolError,
@@ -195,6 +196,7 @@ class FileSystemTool(BaseTool):
             case_sensitive=case_sensitive,
             max_results=max_results,
             exclude_dirs=self._exclude_dirs,
+            executor=SubprocessExecutor(cwd=resolved),
         )
         return ToolResult(status="success", data=_rooted(results, self._from_root(path), "file"))
 

@@ -154,7 +154,7 @@ class TestInterfaceContract:
             QARunnerInterface()  # type: ignore[abstract]
 
     def test_python_runner_is_instance(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
+        runner = PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, QARunnerInterface)
 
 

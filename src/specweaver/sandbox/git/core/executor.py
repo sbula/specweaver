@@ -13,12 +13,12 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from specweaver.sandbox.execution.executor import SubprocessExecutor
-
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 
 @dataclass(frozen=True)
@@ -42,6 +42,7 @@ class GitExecutor:
         cwd: Working directory for git commands (the target project).
               Set by setup/config — the agent cannot change this.
         whitelist: Set of allowed git subcommands (e.g., {"status", "diff", "add"}).
+        subprocess_executor: Where git runs; the caller chooses.
     """
 
     # Commands that are NEVER allowed, regardless of whitelist.
@@ -60,7 +61,7 @@ class GitExecutor:
         self,
         cwd: Path,
         whitelist: set[str],
-        subprocess_executor: SubprocessExecutor | None = None,
+        subprocess_executor: SubprocessExecutor,
     ) -> None:
         # Validate no blocked commands snuck into the whitelist
         violations = self._BLOCKED_ALWAYS & whitelist
@@ -70,7 +71,7 @@ class GitExecutor:
 
         self._cwd = cwd
         self._whitelist = frozenset(whitelist)
-        self._executor = subprocess_executor or SubprocessExecutor(cwd=cwd)
+        self._executor = subprocess_executor
 
     @property
     def cwd(self) -> Path:

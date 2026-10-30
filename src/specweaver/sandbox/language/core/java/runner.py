@@ -68,7 +68,7 @@ class JavaRunner(JvmRunner):
     _ANALYZER = "pmd"
     _COMPLEXITY_RULES = "complexity"
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:
         super().__init__(cwd, executor)
         self._build_tool: str | None = None
 

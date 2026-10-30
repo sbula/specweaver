@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for GitExecutor — low-level git command executor."""
+"""Tests for GitExecutor — low-level git command executor.
+
+Proves: TECH-087 FR-9
+"""
 
 from __future__ import annotations
 
@@ -59,16 +62,22 @@ class TestGitExecutorWhitelist:
     """Whitelist enforcement is the core security feature."""
 
     def test_whitelisted_command_allowed(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         assert "status" in executor.whitelist
 
     def test_non_whitelisted_command_raises(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         with pytest.raises(GitExecutorError, match="not in the whitelist"):
             executor.run("commit", "-m", "sneaky")
 
     def test_blocked_command_always_raises(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         with pytest.raises(GitExecutorError, match="permanently blocked"):
             executor.run("push")
 
@@ -77,27 +86,41 @@ class TestGitExecutorWhitelist:
         tmp_path: Path,
     ) -> None:
         with pytest.raises(GitExecutorError, match="Cannot whitelist blocked commands"):
-            GitExecutor(cwd=tmp_path, whitelist={"status", "push"})
+            GitExecutor(
+                cwd=tmp_path,
+                whitelist={"status", "push"},
+                subprocess_executor=SubprocessExecutor(cwd=tmp_path),
+            )
 
     def test_blocked_command_in_args_raises(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status", "add"})
+        executor = GitExecutor(
+            cwd=tmp_path,
+            whitelist={"status", "add"},
+            subprocess_executor=SubprocessExecutor(cwd=tmp_path),
+        )
         with pytest.raises(GitExecutorError, match="Blocked command"):
             executor.run("add", "push")
 
     def test_all_blocked_commands(self, tmp_path: Path) -> None:
         blocked = {"push", "pull", "fetch", "merge", "rebase", "tag"}
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         for cmd in blocked:
             with pytest.raises(GitExecutorError):
                 executor.run(cmd)
 
     def test_empty_whitelist(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist=set())
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist=set(), subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         with pytest.raises(GitExecutorError, match="not in the whitelist"):
             executor.run("status")
 
     def test_cwd_is_read_only(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         assert executor.cwd == tmp_path
 
 
@@ -171,13 +194,19 @@ class TestGitExecutorEdgeCases:
     """Edge cases for whitelist, error messages, and security."""
 
     def test_error_message_includes_command_name_on_block(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"status"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         with pytest.raises(GitExecutorError) as exc_info:
             executor.run("push")
         assert "git push" in str(exc_info.value)
 
     def test_error_message_includes_allowed_list_on_deny(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"status", "diff"})
+        executor = GitExecutor(
+            cwd=tmp_path,
+            whitelist={"status", "diff"},
+            subprocess_executor=SubprocessExecutor(cwd=tmp_path),
+        )
         with pytest.raises(GitExecutorError) as exc_info:
             executor.run("commit")
         error_msg = str(exc_info.value)
@@ -185,21 +214,29 @@ class TestGitExecutorEdgeCases:
         assert "status" in error_msg
 
     def test_error_message_on_blocked_arg(self, tmp_path: Path) -> None:
-        executor = GitExecutor(cwd=tmp_path, whitelist={"log"})
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist={"log"}, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         with pytest.raises(GitExecutorError) as exc_info:
             executor.run("log", "merge")
         assert "git merge" in str(exc_info.value)
 
     def test_whitelist_is_immutable_after_construction(self, tmp_path: Path) -> None:
         original = {"status", "diff"}
-        executor = GitExecutor(cwd=tmp_path, whitelist=original)
+        executor = GitExecutor(
+            cwd=tmp_path, whitelist=original, subprocess_executor=SubprocessExecutor(cwd=tmp_path)
+        )
         # Mutating the original set should not affect the executor
         original.add("push")
         assert "push" not in executor.whitelist
 
     def test_multiple_blocked_commands_in_whitelist(self, tmp_path: Path) -> None:
         with pytest.raises(GitExecutorError, match="Cannot whitelist blocked commands"):
-            GitExecutor(cwd=tmp_path, whitelist={"push", "merge", "status"})
+            GitExecutor(
+                cwd=tmp_path,
+                whitelist={"push", "merge", "status"},
+                subprocess_executor=SubprocessExecutor(cwd=tmp_path),
+            )
 
     def test_exit_code_minus_one_on_timeout(self, tmp_path: Path) -> None:
         mock_executor = _mock_executor(exit_code=-1, timed_out=True, duration_seconds=5.0)
@@ -232,3 +269,17 @@ class TestGitExecutorEdgeCases:
         result = executor.run("status")
         assert result.stderr == "fatal: not a git repository"
         assert result.exit_code == 128
+
+
+class TestNeedsAnExecutor:
+    """Git runs where the caller says; a missing executor is refused (TECH-087 FR-9)."""
+
+    def test_git_executor_without_one_is_refused(self, tmp_path: Path) -> None:
+        with pytest.raises(TypeError):
+            GitExecutor(cwd=tmp_path, whitelist={"status"})  # type: ignore[call-arg]
+
+    def test_the_engine_executor_without_one_is_refused(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
+
+        with pytest.raises(TypeError):
+            EngineGitExecutor(cwd=tmp_path, whitelist={"push"})  # type: ignore[call-arg]

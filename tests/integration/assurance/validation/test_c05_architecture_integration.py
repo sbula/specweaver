@@ -23,6 +23,7 @@ import pytest
 
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
@@ -79,7 +80,7 @@ depends_on = ["my_project.core"] # UI CAN depend on Core
 
 def _run_architecture_and_build_context(workspace: Path) -> dict:
     """Run native architecture check and return hydrated context dict."""
-    runner = PythonQARunner(cwd=workspace)
+    runner = PythonQARunner(cwd=workspace, executor=SubprocessExecutor(cwd=workspace))
     result = runner.run_architecture_check(target=".")
     return {
         "qa_architecture_result": {
@@ -99,7 +100,7 @@ class TestArchitectureIntegration:
     @pytest.mark.integration
     def test_tach_execution_produces_physical_payload(self, tach_workspace: Path) -> None:
         """Story 4: execution of run_architecture_check shells out to tach natively."""
-        runner = PythonQARunner(cwd=tach_workspace)
+        runner = PythonQARunner(cwd=tach_workspace, executor=SubprocessExecutor(cwd=tach_workspace))
         result = runner.run_architecture_check(target=".")
 
         # It should run successfully, catching the violation in bad_core
@@ -109,7 +110,7 @@ class TestArchitectureIntegration:
     @pytest.mark.integration
     def test_native_violation_mapping(self, tach_workspace: Path) -> None:
         """Story 5: Execution against real invalid python maps correctly."""
-        runner = PythonQARunner(cwd=tach_workspace)
+        runner = PythonQARunner(cwd=tach_workspace, executor=SubprocessExecutor(cwd=tach_workspace))
         result = runner.run_architecture_check(target=".")
 
         print(f"DEBUG: result.violation_count = {result.violation_count}")

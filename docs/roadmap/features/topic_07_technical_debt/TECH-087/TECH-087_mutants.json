@@ -345,6 +345,59 @@
           "symbol_sha": "sha256:929d9e5a8fa2620f4019558b548087d9f4d68da5804ae2488f418950ebd4fa27"
         }
       ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "no runner, git executor or file search builds its own host executor",
+      "scope": [
+        "tests/unit/sandbox/test_no_host_executor_fallback.py",
+        "tests/unit/sandbox/language/core/test_runner_migration.py",
+        "tests/unit/sandbox/language/core/test_runner_factory.py",
+        "tests/unit/sandbox/git/interfaces/git/test_git_executor.py",
+        "tests/unit/sandbox/filesystem/core/filesystem/test_search.py"
+      ],
+      "mutants": [
+        {
+          "id": "runner-builds-host-executor",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/jvm/runner.py",
+          "symbol": "JvmRunner.__init__",
+          "old": "    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:\n",
+          "new": "    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:\n",
+          "breaks": "a Java or Kotlin runner built without an executor is accepted; a forgotten container becomes a host run",
+          "symbol_sha": "sha256:7c188c7425d028e10d727de892e04a80c7cba84f6f29c1274d4cee48b634cd94"
+        },
+        {
+          "id": "factory-passes-no-executor",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
+          "symbol": "qa_atom",
+          "old": "        executor = SubprocessExecutor(cwd=cwd)\n",
+          "new": "        executor = None  # type: ignore[assignment]\n",
+          "breaks": "on the host the factory hands the runner no executor, leaving the choice to the runner",
+          "symbol_sha": "sha256:4d70c2771478ab9bda17981b483e404de9258f105a69bc3a3772f7a94011205c"
+        },
+        {
+          "id": "git-builds-host-executor",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/executor.py",
+          "symbol": "GitExecutor.__init__",
+          "old": "        subprocess_executor: SubprocessExecutor,\n",
+          "new": "        subprocess_executor: SubprocessExecutor | None = None,\n",
+          "breaks": "a git executor built without an executor is accepted",
+          "symbol_sha": "sha256:558473c42b1d3b0914104e69139df815a1afc2d8a7eb99553938ed30c86c75e9"
+        },
+        {
+          "id": "grep-builds-host-executor",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/filesystem/core/search.py",
+          "symbol": "grep_content",
+          "old": "    executor: SubprocessExecutor,\n) -> list[dict[str, Any]]:\n",
+          "new": "    executor: SubprocessExecutor | None = None,\n) -> list[dict[str, Any]]:\n",
+          "breaks": "a file search with no executor is accepted",
+          "symbol_sha": "sha256:6b86f682bfa5ddf4129e5985a6b0695d4c8480a92a263c6ec0278164d1729e72"
+        }
+      ]
     }
   ]
 }

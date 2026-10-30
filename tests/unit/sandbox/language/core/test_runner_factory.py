@@ -7,6 +7,7 @@ Proves: D-VAL-03 FR-1
 Proves: B-EXEC-01 NFR-7
 Proves: D-INTL-08 NFR-2
 Proves: TECH-087 FR-12
+Proves: TECH-087 FR-9
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `run_compiler` renamed on the
 abstract base, so compilation leaves the interface's bounds — **228 fail and 11 collection errors**,
@@ -17,15 +18,17 @@ narrowing the interface makes every one of them abstract and un-instantiable, an
 reached from almost every pipeline. An interface is not a document that describes the runners; it is
 the thing that makes them exist.
 
-**`B-EXEC-01` NFR-7** is the executor-passthrough half: with no executor supplied, the runner builds
-its own plain `SubprocessExecutor` and never a `ContainerSubprocessExecutor`, so leaving
+**`B-EXEC-01` NFR-7** is the executor-passthrough half: on the host path `qa_atom` hands the runner
+a plain `SubprocessExecutor` and never a `ContainerSubprocessExecutor`, so leaving
 `execution_mode` at its default changes nothing. The citation was carried in this file's old docstring
 as a bare `(B-EXEC-01)` plus an `(NFR-7)` comment thirty lines down, which the NFR sweep credited by
 proximity; it is explicit now.
 
 **`D-INTL-08` NFR-2**: non-Python toolchains run on the host; the container stays Python-validated.
 A non-Python runner handed a container executor says so in a warning naming its language, and one
-built without an executor runs on the host.
+handed a host executor runs on the host.
+
+**`TECH-087` FR-9**: the runner never chooses; `qa_atom` builds the host executor itself and passes it.
 """
 
 from __future__ import annotations
@@ -47,29 +50,31 @@ from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
 class TestLanguageAutoDiscovery:
     def test_defaults_to_python_with_no_manifest(self, tmp_path: Path) -> None:
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, PythonQARunner)
 
     def test_selects_typescript_with_package_json(self, tmp_path: Path) -> None:
         (tmp_path / "package.json").write_text("{}")
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, TypeScriptRunner)
 
     def test_selects_rust_with_cargo_toml(self, tmp_path: Path) -> None:
         (tmp_path / "Cargo.toml").write_text("")
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, RustRunner)
 
     def test_selects_kotlin_with_kotlin_sources(self, tmp_path: Path) -> None:
         (tmp_path / "build.gradle").write_text("")
         (tmp_path / "src" / "main" / "kotlin").mkdir(parents=True)
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, KotlinRunner)
 
     def test_selects_java_with_a_bare_gradle_build(self, tmp_path: Path) -> None:
         """D-INTL-08 FR-2: the factory asks `detect_language`, so the two cannot disagree."""
         (tmp_path / "build.gradle").write_text("")
-        assert isinstance(resolve_runner(tmp_path), JavaRunner)
+        assert isinstance(
+            resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path)), JavaRunner
+        )
 
     @pytest.mark.parametrize(
         ("language", "runner_type"),
@@ -79,11 +84,14 @@ class TestLanguageAutoDiscovery:
         self, tmp_path: Path, language: str, runner_type: type
     ) -> None:
         (tmp_path / "pyproject.toml").write_text("")
-        assert isinstance(resolve_runner(tmp_path, language=language), runner_type)
+        assert isinstance(
+            resolve_runner(tmp_path, language=language, executor=SubprocessExecutor(cwd=tmp_path)),
+            runner_type,
+        )
 
     def test_selects_java_with_pom_xml(self, tmp_path: Path) -> None:
         (tmp_path / "pom.xml").write_text("")
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner, JavaRunner)
 
 
@@ -104,7 +112,7 @@ class TestExecutorPassthrough:
     def test_no_executor_defaults_to_none_passthrough(self, tmp_path: Path) -> None:
         # No explicit executor → runner builds its own default SubprocessExecutor,
         # matching pre-SF-01 behavior exactly (NFR-7).
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert isinstance(runner._executor, SubprocessExecutor)
         assert not isinstance(runner._executor, ContainerSubprocessExecutor)
 
@@ -156,6 +164,28 @@ class TestQaAtom:
 
         assert isinstance(atom._runner, RustRunner)
         assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+
+    def test_on_the_host_the_factory_chooses_the_executor(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+        from specweaver.sandbox.language.core import runner_factory
+
+        given: list[object] = []
+        real = runner_factory.resolve_runner
+
+        def spy(cwd: Path, executor: object, language: str | None = None) -> object:
+            given.append(executor)
+            return real(cwd, executor=executor, language=language)
+
+        monkeypatch.setattr(runner_factory, "resolve_runner", spy)
+
+        atom = runner_factory.qa_atom(tmp_path, language="python")
+
+        assert len(given) == 1
+        assert type(given[0]) is SubprocessExecutor
+        assert given[0]._cwd == tmp_path
+        assert atom._runner._executor is given[0]
 
     def test_a_scenario_store_wins_over_host_settings(self, tmp_path: Path) -> None:
         from specweaver.core.config.settings import SandboxSettings

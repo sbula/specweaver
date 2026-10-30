@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.interface import (
@@ -49,7 +50,7 @@ class TestRealLinting:
         """Clean greeter module → zero lint errors."""
         clean_dir = sample_project / "src" / "greeter"
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_linter(target=str(clean_dir))
 
         assert isinstance(result, LintRunResult)
@@ -65,7 +66,7 @@ class TestRealLinting:
             encoding="utf-8",
         )
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_linter(target=str(broken_dir))
 
         assert isinstance(result, LintRunResult)
@@ -83,7 +84,7 @@ class TestRealLinting:
             encoding="utf-8",
         )
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
 
         before = runner.run_linter(target=str(fixable_dir))
         assert before.error_count > 0
@@ -104,7 +105,7 @@ class TestRealComplexity:
         """Clean greeter module → no complexity violations."""
         clean_dir = sample_project / "src" / "greeter"
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_complexity(target=str(clean_dir))
 
         assert isinstance(result, ComplexityRunResult)
@@ -131,7 +132,7 @@ class TestRealComplexity:
         lines.append('    return "default"\n')
         (complex_dir / "complex.py").write_text("".join(lines), encoding="utf-8")
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_complexity(target=str(complex_dir))
 
         assert isinstance(result, ComplexityRunResult)
@@ -158,7 +159,7 @@ class TestRealComplexity:
             encoding="utf-8",
         )
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
 
         result_default = runner.run_complexity(target=str(moderate_dir))
         assert result_default.violation_count == 0
@@ -252,7 +253,7 @@ class TestPythonRunnerExecution:
 
     def test_run_compiler_stub(self, sample_project: Path) -> None:
         """Python compiler just returns a 0 error stub organically."""
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_compiler(target=".")
         assert result.error_count == 0
 
@@ -266,7 +267,7 @@ class TestPythonRunnerExecution:
             encoding="utf-8",
         )
 
-        runner = PythonQARunner(cwd=sample_project)
+        runner = PythonQARunner(cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project))
         result = runner.run_debugger(target=str(target_dir), entrypoint=str(py_file))
         assert result.exit_code == 0
         outputs = [e.output for e in result.events]
@@ -303,7 +304,9 @@ class TestTypeScriptRunnerRealTooling:
             capture_output=True,
         )
 
-        runner = TypeScriptRunner(cwd=sample_project)
+        runner = TypeScriptRunner(
+            cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project)
+        )
         result = runner.run_compiler(target=".")
         assert result.error_count > 0
         assert result.errors[0].code == "TS2322"
@@ -329,7 +332,9 @@ class TestTypeScriptRunnerRealTooling:
             capture_output=True,
         )
 
-        runner = TypeScriptRunner(cwd=sample_project)
+        runner = TypeScriptRunner(
+            cwd=sample_project, executor=SubprocessExecutor(cwd=sample_project)
+        )
         result = runner.run_debugger(target=str(target_dir), entrypoint=str(ts_file))
         assert result.exit_code == 0
         outputs = [e.output for e in result.events]

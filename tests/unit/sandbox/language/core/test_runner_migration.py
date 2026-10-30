@@ -3,11 +3,11 @@
 
 """Migration verification tests for language runners → SubprocessExecutor.
 
-Proves: E-EXEC-01 FR-8
+Proves: E-EXEC-01 FR-8, TECH-087 FR-9
 
 Verifies each runner:
-1. Accepts an optional executor parameter (DI)
-2. Creates a default executor when none provided
+1. Uses the executor it is given (DI)
+2. Refuses to be built without one: host or container is the caller's choice
 3. Has private _cwd attribute (consistency)
 """
 
@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
+
+import pytest
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 
@@ -33,18 +35,18 @@ class TestPythonRunnerMigration:
         runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
         assert runner._executor is mock_executor
 
-    def test_creates_default_executor(self, tmp_path: Path) -> None:
-        """PythonQARunner(cwd) auto-creates a SubprocessExecutor."""
+    def test_needs_an_executor(self, tmp_path: Path) -> None:
+        """PythonQARunner(cwd) without an executor is refused, not given a host one."""
         from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-        runner = PythonQARunner(cwd=tmp_path)
-        assert isinstance(runner._executor, SubprocessExecutor)
+        with pytest.raises(TypeError):
+            PythonQARunner(cwd=tmp_path)  # type: ignore[call-arg]
 
     def test_has_private_cwd(self, tmp_path: Path) -> None:
         """PythonQARunner uses _cwd (private) attribute."""
         from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-        runner = PythonQARunner(cwd=tmp_path)
+        runner = PythonQARunner(cwd=tmp_path, executor=MagicMock(spec=SubprocessExecutor))
         assert runner._cwd == tmp_path
 
 
@@ -58,16 +60,17 @@ class TestTypeScriptRunnerMigration:
         runner = TypeScriptRunner(cwd=tmp_path, executor=mock_executor)
         assert runner._executor is mock_executor
 
-    def test_creates_default_executor(self, tmp_path: Path) -> None:
+    def test_needs_an_executor(self, tmp_path: Path) -> None:
+        """TypeScriptRunner(cwd) without an executor is refused, not given a host one."""
         from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
-        runner = TypeScriptRunner(cwd=tmp_path)
-        assert isinstance(runner._executor, SubprocessExecutor)
+        with pytest.raises(TypeError):
+            TypeScriptRunner(cwd=tmp_path)  # type: ignore[call-arg]
 
     def test_has_private_cwd(self, tmp_path: Path) -> None:
         from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
-        runner = TypeScriptRunner(cwd=tmp_path)
+        runner = TypeScriptRunner(cwd=tmp_path, executor=MagicMock(spec=SubprocessExecutor))
         assert runner._cwd == tmp_path
 
 
@@ -81,16 +84,17 @@ class TestRustRunnerMigration:
         runner = RustRunner(cwd=tmp_path, executor=mock_executor)
         assert runner._executor is mock_executor
 
-    def test_creates_default_executor(self, tmp_path: Path) -> None:
+    def test_needs_an_executor(self, tmp_path: Path) -> None:
+        """RustRunner(cwd) without an executor is refused, not given a host one."""
         from specweaver.sandbox.language.core.rust.runner import RustRunner
 
-        runner = RustRunner(cwd=tmp_path)
-        assert isinstance(runner._executor, SubprocessExecutor)
+        with pytest.raises(TypeError):
+            RustRunner(cwd=tmp_path)  # type: ignore[call-arg]
 
     def test_has_private_cwd(self, tmp_path: Path) -> None:
         from specweaver.sandbox.language.core.rust.runner import RustRunner
 
-        runner = RustRunner(cwd=tmp_path)
+        runner = RustRunner(cwd=tmp_path, executor=MagicMock(spec=SubprocessExecutor))
         assert runner._cwd == tmp_path
 
 
@@ -105,18 +109,18 @@ class TestJavaRunnerMigration:
         runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
         assert runner._executor is mock_executor
 
-    def test_creates_default_executor(self, tmp_path: Path) -> None:
-        """JavaRunner(cwd) auto-creates a SubprocessExecutor."""
+    def test_needs_an_executor(self, tmp_path: Path) -> None:
+        """JavaRunner(cwd) without an executor is refused, not given a host one."""
         from specweaver.sandbox.language.core.java.runner import JavaRunner
 
-        runner = JavaRunner(cwd=tmp_path)
-        assert isinstance(runner._executor, SubprocessExecutor)
+        with pytest.raises(TypeError):
+            JavaRunner(cwd=tmp_path)  # type: ignore[call-arg]
 
     def test_has_private_cwd(self, tmp_path: Path) -> None:
         """JavaRunner uses _cwd (private) attribute."""
         from specweaver.sandbox.language.core.java.runner import JavaRunner
 
-        runner = JavaRunner(cwd=tmp_path)
+        runner = JavaRunner(cwd=tmp_path, executor=MagicMock(spec=SubprocessExecutor))
         assert runner._cwd == tmp_path
 
 
@@ -131,18 +135,18 @@ class TestKotlinRunnerMigration:
         runner = KotlinRunner(cwd=tmp_path, executor=mock_executor)
         assert runner._executor is mock_executor
 
-    def test_creates_default_executor(self, tmp_path: Path) -> None:
-        """KotlinRunner(cwd) auto-creates a SubprocessExecutor."""
+    def test_needs_an_executor(self, tmp_path: Path) -> None:
+        """KotlinRunner(cwd) without an executor is refused, not given a host one."""
         from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 
-        runner = KotlinRunner(cwd=tmp_path)
-        assert isinstance(runner._executor, SubprocessExecutor)
+        with pytest.raises(TypeError):
+            KotlinRunner(cwd=tmp_path)  # type: ignore[call-arg]
 
     def test_has_private_cwd(self, tmp_path: Path) -> None:
         """KotlinRunner uses _cwd (private) attribute."""
         from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 
-        runner = KotlinRunner(cwd=tmp_path)
+        runner = KotlinRunner(cwd=tmp_path, executor=MagicMock(spec=SubprocessExecutor))
         assert runner._cwd == tmp_path
 
 

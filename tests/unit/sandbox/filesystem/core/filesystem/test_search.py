@@ -1,6 +1,11 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""File search: glob, grep with ripgrep or the Python fallback.
+
+Proves: TECH-087 FR-9
+"""
+
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -143,9 +148,11 @@ def test_grep_content_falls_back_to_python_when_rg_missing(
     (tmp_path / "needle.txt").write_text("needle here\n", encoding="utf-8")
     monkeypatch.setattr(search_module.shutil, "which", lambda _name: None)  # type: ignore[attr-defined]
 
-    results = grep_content(tmp_path, "needle")
+    unused = MagicMock(spec=SubprocessExecutor)
+    results = grep_content(tmp_path, "needle", executor=unused)
 
     assert any("needle" in str(r.get("content", "")) for r in results)
+    unused.execute.assert_not_called()
 
 
 @pytest.mark.skipif(_RIPGREP_UNAVAILABLE, reason="ripgrep (rg) not on PATH")
@@ -155,6 +162,14 @@ def test_grep_content_real_ripgrep_end_to_end(tmp_path: Path) -> None:
     (TECH-009) doesn't silently break ripgrep in practice, not just in mocks."""
     (tmp_path / "file.txt").write_text("needle_target_string\n", encoding="utf-8")
 
-    results = grep_content(tmp_path, "needle_target_string")
+    results = grep_content(
+        tmp_path, "needle_target_string", executor=SubprocessExecutor(cwd=tmp_path)
+    )
 
     assert any("needle_target_string" in str(r.get("content", "")) for r in results)
+
+
+def test_grep_without_an_executor_is_refused(tmp_path: Path) -> None:
+    """The caller chooses where ripgrep runs; there is no host default (TECH-087 FR-9)."""
+    with pytest.raises(TypeError):
+        grep_content(tmp_path, "x")  # type: ignore[call-arg]

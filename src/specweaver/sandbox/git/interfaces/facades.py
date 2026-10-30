@@ -20,6 +20,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.base import BaseTool
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 from specweaver.sandbox.git.core.executor import GitExecutor
 from specweaver.sandbox.git.interfaces.tool import (
@@ -278,10 +279,14 @@ def create_git_interface(role: str, cwd: Path) -> GitInterface:
     whitelist = whitelist_for_role(role)
 
     # conflict_resolver needs EngineGitExecutor (merge is in its whitelist)
+    # The agent's git runs on the host, against the project it was given.
+    host = SubprocessExecutor(cwd=cwd)
     if role == "conflict_resolver":
-        executor: EngineGitExecutor | GitExecutor = EngineGitExecutor(cwd=cwd, whitelist=whitelist)
+        executor: EngineGitExecutor | GitExecutor = EngineGitExecutor(
+            cwd=cwd, whitelist=whitelist, subprocess_executor=host
+        )
     else:
-        executor = GitExecutor(cwd=cwd, whitelist=whitelist)
+        executor = GitExecutor(cwd=cwd, whitelist=whitelist, subprocess_executor=host)
 
     tool = GitTool(executor=executor, role=role)
 

@@ -73,13 +73,14 @@ junit_result = executor.execute(
 
 ### Injecting an executor into language runners
 
-Every language runner takes an optional `executor`:
+Every language runner, `GitExecutor` and `grep_content` require an executor. None builds its own:
+host or container is the caller's choice (`TECH-087` FR-9). Leaving it out is a `TypeError`.
 
 ```python
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-# Production: auto-creates a default executor
-runner = PythonQARunner(cwd=workspace_path)
+# Production: the caller chooses where the tools run
+runner = PythonQARunner(cwd=workspace_path, executor=SubprocessExecutor(cwd=workspace_path))
 
 # Testing: inject a mock executor
 mock_executor = MagicMock(spec=SubprocessExecutor)
@@ -160,22 +161,22 @@ result = executor.execute(["python", "-m", "pytest", "tests/"])  # same Subproce
   widened. The subclass is Liskov-substitutable and delegates to, not duplicates, the parent. General
   pattern: `docs/dev_guides/special_patterns_and_adaptations.md` §23.
 
-### Opt in via `QARunnerAtom`
+### Opt in via `qa_atom`
 
-Give `QARunnerAtom` a `SandboxSettings` with `execution_mode="container"` and it builds the executor:
+Give `qa_atom` a `SandboxSettings` with `execution_mode="container"` and it builds the executor:
 
 ```python
 from specweaver.core.config.settings import SandboxSettings
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-atom = QARunnerAtom(cwd=project_root, sandbox_settings=SandboxSettings(execution_mode="container"))
+atom = qa_atom(project_root, sandbox_settings=SandboxSettings(execution_mode="container"))
 result = atom.run({"intent": "run_tests", "target": "tests/"})  # runs inside a container
 ```
 
 - Mounts derive from `cwd` (`.specweaver/.sandbox/{scratch,cache}`).
-- No `sandbox_settings`, or `execution_mode="host"`, keeps host behavior byte-for-byte (NFR-7). Opt-in,
-  not a default.
-- `factory.resolve_runner()` accepts a container executor for all 5 language runners, but only
+- No `sandbox_settings`, or `execution_mode="host"`, gives the runner a host `SubprocessExecutor`
+  (NFR-7). Opt-in, not a default.
+- `resolve_runner()` accepts a container executor for all 5 language runners, but only
   `PythonQARunner` is validated end-to-end (mounts, artifact redirection, the bare-`"python"` rule
   below). A non-Python project given a container executor logs a warning, not a silent no-op.
 

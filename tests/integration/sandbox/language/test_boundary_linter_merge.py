@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
 if TYPE_CHECKING:
@@ -75,7 +76,7 @@ def _project(tmp_path: Path) -> Path:
 def test_the_real_linter_is_actually_invoked(tmp_path: Path) -> None:
     """Nothing is patched: if tach were absent the runner reports that, and this would say so."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root)
+    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
 
     result = runner.run_architecture_check(target="high/uses_low.py")
 
@@ -87,7 +88,7 @@ def test_the_real_linter_is_actually_invoked(tmp_path: Path) -> None:
 def test_a_forbids_violation_is_reported(tmp_path: Path) -> None:
     """The half that needs no external tool, asserted separately so a failure says which broke."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root)
+    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
 
     result = runner.run_architecture_check(target="high/uses_low.py")
 
@@ -98,7 +99,7 @@ def test_a_forbids_violation_is_reported(tmp_path: Path) -> None:
 def test_both_sources_arrive_from_one_call(tmp_path: Path) -> None:
     """FR-5's actual claim: the linter's findings and the per-file ones are merged, not chosen."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root)
+    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
 
     result = runner.run_architecture_check(target="high/uses_low.py")
 

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.git.core.atom import GitAtom
 from specweaver.sandbox.git.core.executor import GitExecutor
 from specweaver.sandbox.git.interfaces.tool import GitTool, whitelist_for_role
@@ -58,7 +59,11 @@ def _checkpoint(repo: Path) -> tuple[bool, str]:
 
 
 def _agent_commit(repo: Path) -> tuple[bool, str]:
-    executor = GitExecutor(cwd=repo, whitelist=whitelist_for_role("implementer"))
+    executor = GitExecutor(
+        cwd=repo,
+        whitelist=whitelist_for_role("implementer"),
+        subprocess_executor=SubprocessExecutor(cwd=repo),
+    )
     result = GitTool(executor, role="implementer").commit("feat: change")
     return result.status == "success", result.message
 

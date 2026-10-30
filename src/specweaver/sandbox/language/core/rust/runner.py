@@ -10,7 +10,6 @@ import re
 from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
-from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.run_targets import (
     TargetError,
     cargo_run_args,
@@ -36,6 +35,7 @@ from specweaver.sandbox.qa_runner.core.interface import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
     from specweaver.sandbox.qa_runner.core.interface import (
         CompileRunResult,
         ComplexityRunResult,
@@ -50,9 +50,9 @@ logger = logging.getLogger(__name__)
 class RustRunner(QARunnerInterface):
     """Test runner bindings for Rust using cargo, cargo2junit, and clippy-sarif."""
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:
         self._cwd = cwd
-        self._executor = executor or SubprocessExecutor(cwd=cwd)
+        self._executor = executor
 
     @property
     def language_name(self) -> str:

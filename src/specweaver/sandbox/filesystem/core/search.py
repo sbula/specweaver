@@ -15,10 +15,10 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.sandbox.execution.executor import SubprocessExecutor
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from specweaver.sandbox.execution.executor import SubprocessExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def grep_content(
     case_sensitive: bool = False,
     max_results: int = 20,
     exclude_dirs: set[str] | None = None,
-    executor: SubprocessExecutor | None = None,
+    executor: SubprocessExecutor,
 ) -> list[dict[str, Any]]:
     """Search for a pattern in file contents.
 
@@ -56,8 +56,7 @@ def grep_content(
         context_lines: Lines of context before/after each match.
         case_sensitive: Whether to perform case-sensitive search.
         max_results: Maximum number of matches to return.
-        executor: Optional SubprocessExecutor for the ripgrep path (DI for
-            testability); a default one (cwd=search_dir) is created if omitted.
+        executor: Where ripgrep runs; the caller chooses.
 
     Returns:
         List of match dicts with file, line_number, content, context.
@@ -110,8 +109,8 @@ def _grep_ripgrep(
     context_lines: int,
     case_sensitive: bool,
     max_results: int,
-    exclude_dirs: set[str] | None = None,
-    executor: SubprocessExecutor | None = None,
+    exclude_dirs: set[str] | None,
+    executor: SubprocessExecutor,
 ) -> tuple[list[dict[str, Any]], bool, str]:
     """Run grep using ripgrep."""
     cmd = [
@@ -128,8 +127,7 @@ def _grep_ripgrep(
 
     cmd.extend([pattern, str(search_dir)])
 
-    active_executor = executor or SubprocessExecutor(cwd=search_dir)
-    result = active_executor.execute(cmd, timeout_seconds=TOOL_TIMEOUT_SECONDS)
+    result = executor.execute(cmd, timeout_seconds=TOOL_TIMEOUT_SECONDS)
     if result.timed_out:
         return [], True, f"Search timed out after {TOOL_TIMEOUT_SECONDS}s"
 

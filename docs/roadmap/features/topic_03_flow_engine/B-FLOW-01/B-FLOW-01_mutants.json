@@ -215,7 +215,7 @@
           "old": "        executor = _build_container_executor(cwd)\n",
           "new": "        executor = _build_container_executor(cwd, cwd / \"scenarios\")\n",
           "breaks": "the coder's own test run sees the scenario tests",
-          "symbol_sha": "sha256:d3962665e96d6041b20a87aa8e69d808632c96784f3e08ced8be7970445db37d"
+          "symbol_sha": "sha256:4d70c2771478ab9bda17981b483e404de9258f105a69bc3a3772f7a94011205c"
         },
         {
           "id": "traversal-allowlist-widened",

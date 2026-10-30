@@ -16,6 +16,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.sandbox.base import Atom, AtomResult, AtomStatus
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 
 logger = logging.getLogger(__name__)
@@ -63,9 +64,11 @@ class GitAtom(Atom):
     )
 
     def __init__(self, cwd: Path) -> None:
+        # Git runs on the host: the worktrees and the branches it moves are the host's.
         self._executor = EngineGitExecutor(
             cwd=cwd,
             whitelist=set(self._ENGINE_WHITELIST),
+            subprocess_executor=SubprocessExecutor(cwd=cwd),
         )
         self._cwd = cwd
 
@@ -457,7 +460,12 @@ class GitAtom(Atom):
         from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
         from specweaver.sandbox.git.core.worktree_ops import handle_worktree_commit
 
-        wt_executor = EngineGitExecutor(cwd=self._cwd / path, whitelist=set(self._ENGINE_WHITELIST))
+        worktree = self._cwd / path
+        wt_executor = EngineGitExecutor(
+            cwd=worktree,
+            whitelist=set(self._ENGINE_WHITELIST),
+            subprocess_executor=SubprocessExecutor(cwd=worktree),
+        )
         return handle_worktree_commit(wt_executor, context.get("step"))
 
     def _intent_is_tracked(self, context: dict[str, Any]) -> AtomResult:

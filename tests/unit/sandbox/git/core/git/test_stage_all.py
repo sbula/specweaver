@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.git.core.atom import GitAtom
 from specweaver.sandbox.git.core.engine_executor import EngineGitExecutor
 from specweaver.sandbox.git.core.staging import stage_all
@@ -50,7 +51,11 @@ def _index_locked(repo: Path) -> Path:
 
 
 def _engine(repo: Path) -> EngineGitExecutor:
-    return EngineGitExecutor(cwd=repo, whitelist=set(GitAtom._ENGINE_WHITELIST))
+    return EngineGitExecutor(
+        cwd=repo,
+        whitelist=set(GitAtom._ENGINE_WHITELIST),
+        subprocess_executor=SubprocessExecutor(cwd=repo),
+    )
 
 
 class _Scripted:

@@ -186,5 +186,5 @@ class TestRustRunner:
         assert "process crashed" in result.events[0].output
 
     def test_language_name_property(self, tmp_path: Path) -> None:
-        runner = RustRunner(cwd=tmp_path)
+        runner = RustRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "rust"

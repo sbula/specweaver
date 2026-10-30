@@ -7,12 +7,15 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.java.runner import JavaRunner
 
 
 def parse_pmd_complexity(data: dict, max_complexity: int) -> list:
     """The runner's complexity reader, as `run_complexity` calls it."""
-    return JavaRunner(cwd=Path("."))._complexity_violations(data, max_complexity)
+    return JavaRunner(
+        cwd=Path("."), executor=SubprocessExecutor(cwd=Path("."))
+    )._complexity_violations(data, max_complexity)
 
 
 def test_parse_pmd_complexity_strict_mapping() -> None:

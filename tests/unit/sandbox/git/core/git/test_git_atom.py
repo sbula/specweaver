@@ -87,7 +87,7 @@ class TestCheckpoint:
     """checkpoint stages all + commits with config message."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
                 SubprocessResult(
@@ -104,7 +104,7 @@ class TestCheckpoint:
         assert "commit_output" in result.exports
 
     def test_nothing_to_commit_is_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
                 SubprocessResult(
@@ -117,7 +117,7 @@ class TestCheckpoint:
         assert "idempotent" in result.message
 
     def test_add_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="add err", duration_seconds=0.0
             )
@@ -127,7 +127,7 @@ class TestCheckpoint:
         assert "git add failed" in result.message
 
     def test_commit_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # add
                 SubprocessResult(
@@ -143,7 +143,7 @@ class TestCheckpoint:
         assert "git commit failed" in result.message
 
     def test_default_message(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
@@ -164,7 +164,7 @@ class TestIsolate:
     """isolate creates and switches to a new branch."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -180,7 +180,7 @@ class TestIsolate:
         assert "Missing 'branch'" in result.message
 
     def test_branch_already_exists_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0
             )
@@ -199,7 +199,7 @@ class TestRestore:
     """restore switches back to the original branch."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -214,7 +214,7 @@ class TestRestore:
         assert result.status == AtomStatus.FAILED
 
     def test_switch_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0
             )
@@ -232,7 +232,7 @@ class TestDiscardAll:
     """discard_all cleans the working tree."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -241,7 +241,7 @@ class TestDiscardAll:
         assert result.status == AtomStatus.SUCCESS
 
     def test_restore_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="err", duration_seconds=0.0
             )
@@ -259,7 +259,7 @@ class TestRollback:
     """rollback undoes the last commit."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -269,7 +269,7 @@ class TestRollback:
         assert "staged" in result.message
 
     def test_no_commits_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=128, stdout="", stderr="unknown rev", duration_seconds=0.0
             )
@@ -287,7 +287,7 @@ class TestPublish:
     """publish pushes the current branch to remote."""
 
     def test_success_default_remote(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -297,7 +297,7 @@ class TestPublish:
         assert "origin" in result.message
 
     def test_success_with_branch(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -308,7 +308,7 @@ class TestPublish:
         assert "main" in result.message
 
     def test_push_rejected(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="rejected", duration_seconds=0.0
             )
@@ -327,7 +327,7 @@ class TestIntegrate:
     """integrate merges source branch into target."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
@@ -360,7 +360,7 @@ class TestIntegrate:
         assert result.status == AtomStatus.FAILED
 
     def test_checkout_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="no such branch", duration_seconds=0.0
             )
@@ -376,7 +376,7 @@ class TestIntegrate:
         assert "git checkout" in result.message
 
     def test_conflict_default_fail(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
@@ -404,7 +404,7 @@ class TestIntegrate:
         assert "app.py" in result.exports.get("conflict_files", [])
 
     def test_conflict_resolve_returns_retry(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
@@ -445,7 +445,7 @@ class TestSync:
     """sync fetches and pulls from remote."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),  # fetch
                 SubprocessResult(
@@ -458,7 +458,7 @@ class TestSync:
         assert "origin" in result.message
 
     def test_fetch_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="network err", duration_seconds=0.0
             )
@@ -468,7 +468,7 @@ class TestSync:
         assert "git fetch failed" in result.message
 
     def test_pull_conflict_aborts(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(
                     exit_code=0, stdout="", stderr="", duration_seconds=0.0
@@ -486,7 +486,7 @@ class TestSync:
         assert "git pull failed" in result.message
 
     def test_custom_remote_and_branch(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
@@ -512,7 +512,7 @@ class TestTag:
     """tag labels the current commit."""
 
     def test_success(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -528,7 +528,7 @@ class TestTag:
         assert "Missing 'name'" in result.message
 
     def test_tag_already_exists_fails(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=128, stdout="", stderr="already exists", duration_seconds=0.0
             )
@@ -579,7 +579,7 @@ class TestEdgeCases:
 
     def test_empty_context_message_default(self, tmp_path: Path) -> None:
         """checkpoint without message uses default."""
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=1, stdout="", stderr="", duration_seconds=0.0),
@@ -591,7 +591,7 @@ class TestEdgeCases:
 
     def test_integrate_on_conflict_unrecognized_defaults_to_fail(self, tmp_path: Path) -> None:
         """Unknown on_conflict value falls through to FAILED."""
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
                 SubprocessResult(exit_code=1, stdout="", stderr="CONFLICT", duration_seconds=0.0),
@@ -619,7 +619,7 @@ class TestWorktreeAdd:
     """worktree_add creates a new worktree tracking a branch."""
 
     def test_success_with_defaults(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -643,7 +643,7 @@ class TestWorktreeAdd:
         assert result2.status == AtomStatus.FAILED
 
     def test_git_failure(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=128, stdout="", stderr="fatal", duration_seconds=0.0
             )
@@ -674,7 +674,7 @@ class TestIsTracked:
         assert "Missing 'path'" in result.message
 
     def test_tracked_file_returns_true(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="path/file.txt\n", stderr="", duration_seconds=0.0
             )
@@ -684,7 +684,7 @@ class TestIsTracked:
         assert result.exports["is_tracked"] is True
 
     def test_untracked_file_returns_false(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="", duration_seconds=0.0
             )
@@ -704,7 +704,7 @@ class TestWorktreeTeardown:
 
     def test_success_clean_removal(self, tmp_path: Path) -> None:
         (tmp_path / ".worktrees" / "agent").mkdir(parents=True)
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.return_value = SubprocessResult(
                 exit_code=0, stdout="", stderr="", duration_seconds=0.0
             )
@@ -729,7 +729,7 @@ class TestWorktreeTeardown:
         worktree_path = tmp_path / ".worktrees" / "stub"
         worktree_path.mkdir(parents=True)
 
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock_run:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock_run:
             # First subproc fails (git worktree remove --force ...), second succeeds (git worktree prune)
             mock_run.side_effect = [
                 SubprocessResult(
@@ -759,7 +759,7 @@ class TestWorktreeTeardown:
 
         mock_rmtree.side_effect = PermissionError("Locked")
 
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock_run:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock_run:
             mock_run.return_value = SubprocessResult(
                 exit_code=1, stdout="", stderr="", duration_seconds=0.0
             )
@@ -790,7 +790,7 @@ class TestStripMerge:
     """strip_merge applies bounded allowed paths and merges using 'ours'."""
 
     def test_success_strip_allowed(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 # git merge
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),
@@ -849,7 +849,7 @@ class TestStripMerge:
 
     def test_strip_merge_preserves_doc_updates(self, tmp_path: Path) -> None:
         """The root doc_updates.md is preserved (FR-8) regardless of allowed_paths."""
-        with patch("specweaver.sandbox.git.core.executor.SubprocessExecutor.execute") as mock:
+        with patch("specweaver.sandbox.execution.executor.SubprocessExecutor.execute") as mock:
             mock.side_effect = [
                 # git merge
                 SubprocessResult(exit_code=0, stdout="", stderr="", duration_seconds=0.0),

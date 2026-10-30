@@ -50,7 +50,7 @@ def _make_result(
 
 class TestPythonQARunner:
     def test_run_compiler_stub(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
+        runner = PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         result = runner.run_compiler(target="src/")
 
         assert result.error_count == 0
@@ -204,7 +204,7 @@ class TestPythonQARunner:
         assert result.violations[0].code == "InvalidOutput"
 
     def test_language_name_property(self, tmp_path: Path) -> None:
-        runner = PythonQARunner(cwd=tmp_path)
+        runner = PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "python"
 
 

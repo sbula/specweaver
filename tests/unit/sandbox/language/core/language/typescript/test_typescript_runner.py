@@ -208,5 +208,5 @@ class TestTypeScriptRunner:
         assert [e.output for e in result.events] == ["src/index.ts timed out after 300 s"]
 
     def test_language_name_property(self, tmp_path: Path) -> None:
-        runner = TypeScriptRunner(cwd=tmp_path)
+        runner = TypeScriptRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "typescript"

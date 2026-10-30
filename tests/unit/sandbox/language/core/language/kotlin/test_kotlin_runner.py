@@ -248,5 +248,5 @@ class TestKotlinRunner:
         assert len(res.events) > 0
 
     def test_language_name_property(self, tmp_path: Path) -> None:
-        runner = KotlinRunner(cwd=tmp_path)
+        runner = KotlinRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "kotlin"

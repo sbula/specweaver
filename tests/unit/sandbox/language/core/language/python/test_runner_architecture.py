@@ -30,6 +30,7 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 from specweaver.sandbox.qa_runner.core.interface import (
     ArchitectureRunResult,
@@ -43,7 +44,7 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def runner(tmp_path: Path) -> PythonQARunner:
     """Create a PythonQARunner rooted at tmp_path."""
-    return PythonQARunner(cwd=tmp_path)
+    return PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
 
 
 def _write_py(tmp_path: Path, rel_path: str, content: str) -> Path:

@@ -55,11 +55,9 @@ class JvmRunner(QARunnerInterface):
     #: Lint skips the rules whose id contains this; complexity reports them.
     _COMPLEXITY_RULES: ClassVar[str]
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
-        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
-
+    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:
         self._cwd = cwd
-        self._executor = executor or _Executor(cwd=cwd)
+        self._executor = executor
 
     @abstractmethod
     def _get_build_tool(self) -> str: ...

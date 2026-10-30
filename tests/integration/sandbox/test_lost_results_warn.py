@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -142,7 +144,12 @@ def test_a_ruff_report_that_is_not_json_warns(
 ) -> None:
     from specweaver.sandbox.language.core.python.runner import PythonQARunner
 
-    assert PythonQARunner(tmp_path)._parse_ruff_json("not json") is None
+    assert (
+        PythonQARunner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))._parse_ruff_json(
+            "not json"
+        )
+        is None
+    )
     assert _warned(caplog, "ruff", "not valid JSON")
 
 

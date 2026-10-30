@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for git role interfaces and the factory function."""
+"""Tests for git role interfaces and the factory function.
+
+Proves: TECH-087 FR-9
+"""
 
 from __future__ import annotations
 
@@ -232,6 +235,27 @@ class TestFactory:
         mock_executor_cls.assert_called_once()
         call_kwargs = mock_executor_cls.call_args
         assert call_kwargs.kwargs["cwd"] == tmp_path
+
+
+class TestTheFactoryChoosesTheHost:
+    """The agent's git runs on the host, and the factory says so explicitly (TECH-087 FR-9)."""
+
+    @pytest.mark.parametrize(
+        ("role", "executor_type"),
+        [("implementer", "GitExecutor"), ("conflict_resolver", "EngineGitExecutor")],
+    )
+    def test_each_role_gets_a_host_executor_for_its_project(
+        self, role: str, executor_type: str, tmp_path: Path
+    ) -> None:
+        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
+        from specweaver.sandbox.execution.executor import SubprocessExecutor
+
+        git = create_git_interface(role, tmp_path)._tool._executor
+
+        assert type(git).__name__ == executor_type
+        assert isinstance(git._executor, SubprocessExecutor)
+        assert not isinstance(git._executor, ContainerSubprocessExecutor)
+        assert git._executor._cwd == tmp_path
 
 
 # ---------------------------------------------------------------------------

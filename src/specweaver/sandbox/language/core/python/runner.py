@@ -92,17 +92,15 @@ class PythonQARunner(QARunnerInterface):
 
     Args:
         cwd: Project root directory.
-        executor: Optional SubprocessExecutor instance (DI). Creates one from cwd if None.
+        executor: Where the tools run, host or container; the caller chooses.
     """
 
     _DEFAULT_TIMEOUT: int = 120
     _BUILD_TIMEOUT: int = 300
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
-        from specweaver.sandbox.execution.executor import SubprocessExecutor as _Executor
-
+    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:
         self._cwd = cwd
-        self._executor = executor or _Executor(cwd=cwd)
+        self._executor = executor
 
     @property
     def language_name(self) -> str:

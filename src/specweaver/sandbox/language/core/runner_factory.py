@@ -16,11 +16,11 @@ import weakref
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 if TYPE_CHECKING:
     from specweaver.core.config.settings import SandboxSettings
-    from specweaver.sandbox.execution.executor import SubprocessExecutor
     from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
 
 logger = logging.getLogger(__name__)
@@ -41,14 +41,13 @@ def _warn_if_container_non_python(executor: SubprocessExecutor | None, language_
 
 
 def resolve_runner(
-    cwd: Path, executor: SubprocessExecutor | None = None, language: str | None = None
+    cwd: Path, executor: SubprocessExecutor, language: str | None = None
 ) -> QARunnerInterface:
     """The QA runner for the project's language: `language` when given, else detected.
 
     Args:
         cwd: The project root.
-        executor: Optional SubprocessExecutor (or a container one) threaded through to the runner;
-            None lets each runner build its own host executor.
+        executor: Where the runner's tools run: a host `SubprocessExecutor` or a container one.
         language: The run's language; None asks `detect_language`, the one detector.
     """
     from specweaver.sandbox.language.core.detect import detect_language
@@ -97,13 +96,15 @@ def qa_atom(
             None or `"host"` runs on the host.
         scenarios_root: A scenario store to mount read-only; implies a container.
     """
-    executor: SubprocessExecutor | None = None
+    executor: SubprocessExecutor
     scratch: Path | None = None
     if scenarios_root is not None:
         scratch = Path(tempfile.mkdtemp(prefix="specweaver-scenario-"))
         executor = _build_container_executor(cwd, scenarios_root, scratch)
     elif sandbox_settings is not None and sandbox_settings.execution_mode == "container":
         executor = _build_container_executor(cwd)
+    else:
+        executor = SubprocessExecutor(cwd=cwd)
 
     try:
         runner = resolve_runner(cwd, executor=executor, language=language)

@@ -90,9 +90,9 @@ def _ran_nothing(counts: TestCounts | None, output: str) -> bool:
 class TypeScriptRunner(QARunnerInterface):
     """Executes tests, compilation, and debugging for TypeScript projects."""
 
-    def __init__(self, cwd: Path, executor: SubprocessExecutor | None = None) -> None:
+    def __init__(self, cwd: Path, executor: SubprocessExecutor) -> None:
         self._cwd = cwd
-        self._executor = executor or SubprocessExecutor(cwd=cwd)
+        self._executor = executor
 
     @property
     def language_name(self) -> str:

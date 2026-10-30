@@ -36,6 +36,9 @@ executor (host or container), resolves the runner and hands it to `QARunnerAtom`
 never imports `sandbox/language` (`TECH-087` FR-12; `test_qa_runner_imports_no_language.py` holds it).
 
 A new language registers its manifest trigger in `detect.py` and its runner class in the factory.
+Its constructor is `__init__(self, cwd, executor)` with no default for `executor`: host or container
+is the caller's choice, and `qa_atom` makes it (`TECH-087` FR-9;
+`test_no_host_executor_fallback.py` fails a runner that builds its own).
 
 ## Steps
 

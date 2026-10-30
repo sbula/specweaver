@@ -56,13 +56,13 @@ class TestJavaRunner:
         (tmp_path / "build.gradle").write_text("")
         (tmp_path / "pom.xml").write_text("")
 
-        runner = JavaRunner(cwd=tmp_path)
+        runner = JavaRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner._get_build_tool() == "gradle"
 
     def test_detects_maven(self, tmp_path: Path) -> None:
         (tmp_path / "pom.xml").write_text("")
 
-        runner = JavaRunner(cwd=tmp_path)
+        runner = JavaRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner._get_build_tool() == "maven"
 
     def test_run_compiler_gradle_success(self, tmp_path: Path) -> None:
@@ -285,5 +285,5 @@ class TestJavaRunner:
         assert result.violations[1].file == "src/main/java/Svc.java"
 
     def test_language_name_property(self, tmp_path: Path) -> None:
-        runner = JavaRunner(cwd=tmp_path)
+        runner = JavaRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "java"

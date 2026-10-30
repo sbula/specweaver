@@ -7,12 +7,15 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 
 
 def parse_detekt_complexity(data: dict, max_complexity: int) -> list:
     """The runner's complexity reader, as `run_complexity` calls it."""
-    return KotlinRunner(cwd=Path("."))._complexity_violations(data, max_complexity)
+    return KotlinRunner(
+        cwd=Path("."), executor=SubprocessExecutor(cwd=Path("."))
+    )._complexity_violations(data, max_complexity)
 
 
 def test_parse_detekt_complexity_strict_mapping() -> None:

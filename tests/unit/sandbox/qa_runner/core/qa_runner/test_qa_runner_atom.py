@@ -614,30 +614,30 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
     # Default is python
-    runner = resolve_runner(tmp_path)
+    runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
     assert isinstance(runner, PythonQARunner)
 
     # TypeScript
     (tmp_path / "package.json").touch()
-    runner = resolve_runner(tmp_path)
+    runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
     assert isinstance(runner, TypeScriptRunner)
     (tmp_path / "package.json").unlink()
 
     # Java
     (tmp_path / "pom.xml").touch()
-    runner = resolve_runner(tmp_path)
+    runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
     assert isinstance(runner, JavaRunner)
     (tmp_path / "pom.xml").unlink()
 
     # Kotlin
     (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }")
-    runner = resolve_runner(tmp_path)
+    runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
     assert isinstance(runner, KotlinRunner)
     (tmp_path / "build.gradle").unlink()
 
     # Rust
     (tmp_path / "Cargo.toml").touch()
-    runner = resolve_runner(tmp_path)
+    runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
     assert isinstance(runner, RustRunner)
     (tmp_path / "Cargo.toml").unlink()
 
@@ -653,7 +653,7 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
     markers = ["package.json", "pom.xml", "build.gradle", "Cargo.toml"]
     for marker in markers:
         (tmp_path / marker).touch()
-        runner = resolve_runner(tmp_path)
+        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner is not None
         (tmp_path / marker).unlink()
 
