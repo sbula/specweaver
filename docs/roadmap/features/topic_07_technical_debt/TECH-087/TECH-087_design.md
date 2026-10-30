@@ -269,7 +269,7 @@ ruff path and real git in the suite.
 | SF-02 | Generated code is never lost | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Dead code goes, TypeScript timeouts say what timed out | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Runners beside their factory, one JVM base | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | Every command through a runner the caller chose | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Every command through a runner the caller chose | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -289,7 +289,7 @@ ruff path and real git in the suite.
 - Cycle 2: challenged R1 (does git on the host contradict FR-9? No: the rule is "no silent
   fallback", and an explicit host choice is a choice). No new finding.
 
-**Current status**: SF-01 to SF-04 committed 2026-10-30; SF-05 not planned.
-**Next step**: The implementation plan for SF-05 (after SF-04).
+**Current status**: SF-01 to SF-04 committed 2026-10-30; SF-05 plan approved 2026-10-30.
+**Next step**: The dev skill for the SF-05 plan.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
