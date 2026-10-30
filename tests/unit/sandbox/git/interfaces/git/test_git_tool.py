@@ -125,8 +125,8 @@ class TestConventionalCommits:
             run_side_effect=[
                 ExecutorResult(status="success", exit_code=0),  # git add
                 ExecutorResult(
-                    status="success", stdout="1 file\n", exit_code=0
-                ),  # git diff --staged
+                    status="error", exit_code=1
+                ),  # git diff --cached --quiet: 1 = staged
                 ExecutorResult(status="success", stdout="committed\n", exit_code=0),  # git commit
             ]
         )
@@ -208,7 +208,7 @@ class TestCommitIntent:
                 ExecutorResult(status="success", exit_code=0),  # git add
                 ExecutorResult(
                     status="success", stdout="", exit_code=0
-                ),  # git diff --staged (empty)
+                ),  # git diff --cached --quiet: 1 = staged (empty)
             ]
         )
         tool = GitTool(executor=executor, role="implementer")

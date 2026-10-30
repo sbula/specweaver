@@ -118,7 +118,7 @@
           "old": "    commit = executor.run(\"commit\", \"-m\", message)\n",
           "new": "    commit = executor.run(\"status\")\n",
           "breaks": "the run's work is never merged back",
-          "symbol_sha": "sha256:51c197ce8eb4b3b9e7d25d3414985b0f5f6215ae3c8a94630ccff8c19e364d24"
+          "symbol_sha": "sha256:c13c9e97a339fdd64276e7e4f5a8f5bc9e69edf5ad72f61c410792a36e545c43"
         }
       ]
     },

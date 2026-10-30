@@ -171,7 +171,7 @@ class TestCommitFailureAtEachStep:
         executor = _make_executor(
             run_side_effect=[
                 ExecutorResult(status="success", exit_code=0),  # add OK
-                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),  # diff OK
+                ExecutorResult(status="error", exit_code=1),  # diff: 1 = staged
                 ExecutorResult(
                     status="error", stderr="author identity unknown", exit_code=128
                 ),  # commit FAIL
@@ -470,7 +470,7 @@ class TestExecutorCallVerification:
         executor = _make_executor(
             run_side_effect=[
                 ExecutorResult(status="success", exit_code=0),
-                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+                ExecutorResult(status="error", exit_code=1),
                 ExecutorResult(status="success", stdout="ok\n", exit_code=0),
             ]
         )
@@ -530,7 +530,7 @@ class TestSuccessPathData:
         executor = _make_executor(
             run_side_effect=[
                 ExecutorResult(status="success", exit_code=0),
-                ExecutorResult(status="success", stdout="1 file changed\n", exit_code=0),
+                ExecutorResult(status="error", exit_code=1),
                 ExecutorResult(status="success", stdout="[main abc1234] feat: hi\n", exit_code=0),
             ]
         )
@@ -610,7 +610,7 @@ class TestGitToolAdditionalEdgeCases:
         executor = _make_executor(
             run_side_effect=[
                 ExecutorResult(status="success", exit_code=0),
-                ExecutorResult(status="success", stdout="1 file\n", exit_code=0),
+                ExecutorResult(status="error", exit_code=1),
                 ExecutorResult(status="success", stdout="ok\n", exit_code=0),
             ]
         )

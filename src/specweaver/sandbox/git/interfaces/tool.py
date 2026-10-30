@@ -162,17 +162,12 @@ class GitTool(BaseTool):
                 ),
             )
 
-        # Stage all changes
-        add_result = self._executor.run("add", "-A")
-        if add_result.exit_code != 0:
-            return ToolResult(
-                status="error",
-                message=f"git add failed: {add_result.stderr}",
-            )
+        from specweaver.sandbox.git.core.staging import stage_all
 
-        # Check there's something to commit
-        diff_result = self._executor.run("diff", "--staged", "--stat")
-        if not diff_result.stdout.strip():
+        staged = stage_all(self._executor)
+        if staged.error:
+            return ToolResult(status="error", message=staged.error)
+        if not staged.staged:
             return ToolResult(
                 status="error",
                 message="Nothing to commit (no staged changes).",

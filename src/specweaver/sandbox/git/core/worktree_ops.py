@@ -114,9 +114,14 @@ def handle_worktree_commit(executor: "EngineGitExecutor", step: str | None = Non
     ``step`` names the pipeline step whose changes these are, in a ``SW-Step`` trailer: the merge
     judges each file by the steps that changed it.
     """
-    executor.run("add", "-A")
-    diff = executor.run("diff", "--cached", "--quiet")
-    if getattr(diff, "exit_code", 0) == 0:
+    from specweaver.sandbox.git.core.staging import stage_all
+
+    staged = stage_all(executor)
+    if staged.error:
+        return AtomResult(
+            status=AtomStatus.FAILED, message=f"Session commit failed: {staged.error}"
+        )
+    if not staged.staged:
         return AtomResult(
             status=AtomStatus.SUCCESS, message="Nothing to commit.", exports={"committed": False}
         )

@@ -150,6 +150,48 @@
           "symbol_sha": "sha256:395f544501f2348dec170a1bc58de7ba5931592b3cf1533b469223ea59772dc2"
         }
       ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "A failed git add fails the worktree commit",
+      "scope": [
+        "tests/unit/sandbox/git/core/git/test_stage_all.py",
+        "tests/unit/sandbox/git/core/git/test_worktree_commit.py",
+        "tests/integration/sandbox/git/test_commit_paths_agree.py"
+      ],
+      "mutants": [
+        {
+          "id": "worktree-add-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/worktree_ops.py",
+          "symbol": "handle_worktree_commit",
+          "old": "if staged.error:",
+          "new": "if False:",
+          "breaks": "a failed stage reads as Nothing to commit, and the engine deletes the worktree",
+          "symbol_sha": "sha256:c13c9e97a339fdd64276e7e4f5a8f5bc9e69edf5ad72f61c410792a36e545c43"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "One stage-and-check; a git error is never staged",
+      "scope": [
+        "tests/unit/sandbox/git/core/git/test_stage_all.py",
+        "tests/unit/sandbox/git/core/git/test_worktree_commit.py",
+        "tests/integration/sandbox/git/test_commit_paths_agree.py"
+      ],
+      "mutants": [
+        {
+          "id": "diff-error-reads-staged",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/git/core/staging.py",
+          "symbol": "stage_all",
+          "old": "if diff.exit_code not in (0, 1):",
+          "new": "if False:",
+          "breaks": "a git diff that failed reads as changes staged, and the commit then fails with a confusing error",
+          "symbol_sha": "sha256:24afeb278a3ad1ed9082cce4aee0ebd1f31cd9fc0a0b5b9b625ba1743a4e0c67"
+        }
+      ]
     }
   ]
 }

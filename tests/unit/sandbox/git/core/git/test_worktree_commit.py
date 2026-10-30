@@ -88,3 +88,17 @@ def test_intent_missing_path_fails(tmp_path: Path) -> None:
     res = atom.run({"intent": "worktree_commit"})  # no 'path'
     assert res.status == AtomStatus.FAILED
     assert "path" in res.message.lower()
+
+
+# --- TECH-087 FR-6: a failed stage is never "Nothing to commit" ---------------
+
+
+def test_a_failed_add_fails_the_commit() -> None:
+    """Proves: TECH-087 FR-6"""
+    ex = _FakeExec([SimpleNamespace(exit_code=128, stderr="fatal: adding files failed", stdout="")])
+
+    res = handle_worktree_commit(ex)
+
+    assert res.status == AtomStatus.FAILED
+    assert "adding files failed" in res.message
+    assert ex.calls == [("add", "-A")]

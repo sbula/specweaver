@@ -117,18 +117,12 @@ class GitAtom(Atom):
         """
         message = context.get("message", "checkpoint")
 
-        # Stage all changes
-        add_result = self._executor.run("add", "-A")
-        if add_result.exit_code != 0:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"git add failed: {add_result.stderr}",
-            )
+        from specweaver.sandbox.git.core.staging import stage_all
 
-        # Check if there's anything to commit
-        diff_result = self._executor.run("diff", "--staged", "--quiet")
-        if diff_result.exit_code == 0:
-            # exit code 0 = no diff = nothing to commit
+        staged = stage_all(self._executor)
+        if staged.error:
+            return AtomResult(status=AtomStatus.FAILED, message=staged.error)
+        if not staged.staged:
             return AtomResult(
                 status=AtomStatus.SUCCESS,
                 message="No changes to commit (idempotent).",
