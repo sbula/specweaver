@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.executor import SubprocessExecutor
@@ -45,47 +45,6 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
-
-
-def _tally_junit(xml_stdout: str) -> tuple[int, int, int, int, list[Any]]:
-    """(passed, failed, errors, skipped, failures) from a cargo2junit report.
-
-    A case with no `result` element passed — junitparser only attaches one for a non-success — and
-    an unrecognised result type is counted as a pass for the same reason.
-    """
-    import junitparser
-
-    from specweaver.sandbox.qa_runner.core.interface import TestFailure
-
-    passed = failed = errors = skipped = 0
-    failures: list[Any] = []
-
-    xml_str = xml_stdout.strip()
-    if not xml_str:
-        return passed, failed, errors, skipped, failures
-
-    for suite in junitparser.JUnitXml.fromstring(xml_str):
-        for case in suite:
-            outcome = getattr(case, "result", None)
-            if isinstance(outcome, junitparser.Failure):
-                failed += 1
-                failures.append(
-                    # `nodeid`, not `name`: TestFailure has no `name` field, so this raised
-                    # TypeError for every failing Rust test and the bare `except` below reported
-                    # a flat `failed=1` instead of the real tally. Pre-existing; surfaced by
-                    # moving the loop to module scope where mypy could see it.
-                    TestFailure(
-                        nodeid=f"{case.classname}::{case.name}",
-                        message=outcome.message or "Failed",
-                    )
-                )
-            elif isinstance(outcome, junitparser.Error):
-                errors += 1
-            elif isinstance(outcome, junitparser.Skipped):
-                skipped += 1
-            else:
-                passed += 1
-    return passed, failed, errors, skipped, failures
 
 
 class RustRunner(QARunnerInterface):

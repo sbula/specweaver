@@ -244,6 +244,25 @@
           "symbol_sha": "sha256:8d38c504ba1987ad92a109acce4f9ec12e86aca6fb671e6ba7e0bccf37de21f4"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The JUnit reader that runs warns on an unreadable report",
+      "scope": [
+        "tests/integration/sandbox/test_lost_results_warn.py"
+      ],
+      "mutants": [
+        {
+          "id": "junit-unreadable-silent",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/junit_reports.py",
+          "symbol": "harvest_junit",
+          "old": "            logger.warning(\"%s is unreadable, so its tests are not counted: %s\", xml_file, exc)\n",
+          "new": "            logger.debug(\"%s is unreadable, so its tests are not counted: %s\", xml_file, exc)\n",
+          "breaks": "an unreadable JUnit report drops its tests from the count with no warning",
+          "symbol_sha": "sha256:6e4ee9c058985304df20166726e3a0cf154071fe331f96af4d902d7d526dcac4"
+        }
+      ]
     }
   ]
 }

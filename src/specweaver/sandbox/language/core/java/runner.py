@@ -50,27 +50,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _harvest_junit(search_path: Path) -> tuple[int, int, int]:
-    """(passed, failed, skipped) across every JUnit XML report under `search_path`.
-
-    A report that cannot be parsed is skipped rather than failing the run: a partially-written
-    file from a killed build should not be reported as a test failure.
-    """
-    import junitparser
-
-    passed = failed = skipped = 0
-    for xml_file in search_path.rglob("*.xml"):
-        try:
-            xml = junitparser.JUnitXml.fromfile(str(xml_file))
-        except Exception as exc:
-            logger.warning("%s is unreadable, so its tests are not counted: %s", xml_file, exc)
-            continue
-        passed += xml.tests - xml.failures - xml.skipped - xml.errors
-        failed += xml.failures + xml.errors
-        skipped += xml.skipped
-    return passed, failed, skipped
-
-
 def _forbids_for(target_path: Path, cwd: Path) -> list[str]:
     """The `forbids` list from the nearest enclosing `context.yaml`, walking up from `target_path`.
 

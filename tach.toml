@@ -70,7 +70,7 @@ depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.assurance.graph", "s
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = [ "specweaver.workspace.project", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor",]
+depends_on = [ "specweaver.workspace.project", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor",]
 
 [[modules]]
 path = "specweaver.infrastructure.llm"
@@ -195,7 +195,7 @@ depends_on = [ "specweaver.core.config",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.parsers",]
-expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.FileBindings", "interfaces.Reference", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "rust.parsers", "rust.parsers.parse_clippy_complexity", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
+expose = [ "interfaces", "interfaces.CodeStructureError", "interfaces.CodeStructureInterface", "interfaces.FileBindings", "interfaces.Reference", "interfaces.ScenarioConverterInterface", "interfaces.StackTraceFilterInterface", "factory", "factory.get_default_parsers", "python.codestructure", "python.codestructure.PythonCodeStructure", "java.codestructure", "java.codestructure.JavaCodeStructure", "java.parsers", "java.parsers.parse_pmd_complexity", "kotlin.codestructure", "kotlin.codestructure.KotlinCodeStructure", "kotlin.parsers", "kotlin.parsers.parse_detekt_complexity", "rust.codestructure", "rust.codestructure.RustCodeStructure", "typescript.codestructure", "typescript.codestructure.TypeScriptCodeStructure", "typescript.parsers", "typescript.parsers.extract_tsc_errors", "c.codestructure", "cpp.codestructure", "go.codestructure", "markdown.codestructure", "sql.codestructure", "exclusions", "exclusions.SpecWeaverIgnoreParser",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.ast.refactor",]
@@ -227,7 +227,7 @@ expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role",
 
 [[interfaces]]
 from = [ "specweaver.sandbox",]
-expose = [ "dispatcher", "security", "base", "rule_atom", "git.core", "git.interfaces", "filesystem.core", "filesystem.interfaces", "qa_runner.core", "qa_runner.interfaces", "mcp.core", "mcp.interfaces", "protocol.core", "protocol.interfaces", "web.interfaces", "language.core", "language.core.detect.detect_language", "code_structure.core", "code_structure.interfaces", "registry", "language.core.atom.LanguageAtom", "code_structure.core.atom.CodeStructureAtom", "security.WorkspaceBoundary", "security.PROTECTED_NAMES", "language.core.scenario_converter_factory.create_scenario_converter", "dispatcher.ToolDispatcher", "git.core.atom.GitAtom", "base.AtomStatus", "qa_runner.core.atom.QARunnerAtom", "qa_runner.core.atom.container_available", "language.core.stack_trace_filter_factory.create_stack_trace_filter", "mcp.core.atom.MCPAtom", "filesystem.core.atom.FileSystemAtom", "execution.core", "execution.core.atom.BashActionAtom", "execution.core.atom.bash_param_errors", "protocol.core.atom.ProtocolAtom", "evaluator_schemas.load_evaluator_schemas", "language.core.toolchain.did_not_run_reason",]
+expose = [ "dispatcher", "security", "base", "git.core", "git.interfaces", "filesystem.core", "filesystem.interfaces", "qa_runner.core", "qa_runner.interfaces", "mcp.core", "mcp.interfaces", "protocol.core", "protocol.interfaces", "web.interfaces", "language.core", "language.core.detect.detect_language", "code_structure.core", "code_structure.interfaces", "registry", "language.core.atom.LanguageAtom", "code_structure.core.atom.CodeStructureAtom", "security.WorkspaceBoundary", "security.PROTECTED_NAMES", "language.core.scenario_converter_factory.create_scenario_converter", "dispatcher.ToolDispatcher", "git.core.atom.GitAtom", "base.AtomStatus", "qa_runner.core.atom.QARunnerAtom", "qa_runner.core.atom.container_available", "language.core.stack_trace_filter_factory.create_stack_trace_filter", "mcp.core.atom.MCPAtom", "filesystem.core.atom.FileSystemAtom", "execution.core", "execution.core.atom.BashActionAtom", "execution.core.atom.bash_param_errors", "protocol.core.atom.ProtocolAtom", "evaluator_schemas.load_evaluator_schemas", "language.core.toolchain.did_not_run_reason",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]

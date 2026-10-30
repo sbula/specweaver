@@ -4,15 +4,16 @@
 """A tool report the sandbox cannot read is a warning, and a runner that crashed says why.
 
 Proves: D-FLOW-04 FR-8
+Proves: TECH-087 FR-10
 
 Real report files on disk; the runners' executor is a double that raises.
 
 | Bucket | Case |
 |---|---|
-| Happy | not applicable — readable reports are each runner's own tests |
+| Happy | a good JUnit report beside an unreadable one is still counted |
 | Boundary | not applicable — the same fallback as before; only its trace is new |
 | Degradation | unreadable JUnit XML, SARIF, ruff and import reports; cargo that cannot start |
-| Hostile | not applicable — the reports are the tools' own output |
+| Hostile | a folder named like a JUnit report |
 """
 
 from __future__ import annotations
@@ -78,26 +79,52 @@ def test_cargo_run_that_cannot_start_says_why(
     assert _warned(caplog, "cargo run")
 
 
+_GOOD_REPORT = (
+    '<testsuite name="s" tests="2" failures="1" errors="0" skipped="0">'
+    '<testcase name="ok"/><testcase name="bad"><failure message="boom"/></testcase>'
+    "</testsuite>"
+)
+
+
 def test_an_unreadable_junit_report_is_not_counted_with_a_warning(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    from specweaver.sandbox.language.core.java.runner import _harvest_junit
+    from specweaver.sandbox.language.core.junit_reports import harvest_junit
 
     (tmp_path / "TEST-x.xml").write_text("<testsuite", encoding="utf-8")
 
-    assert _harvest_junit(tmp_path) == (0, 0, 0)
+    harvest = harvest_junit(tmp_path)
+
+    assert (harvest.passed, harvest.failed, harvest.skipped) == (0, 0, 0)
     assert _warned(caplog, "TEST-x.xml", "not counted")
 
 
-def test_a_kotlin_junit_report_that_is_unreadable_warns(
+def test_a_good_report_beside_an_unreadable_one_is_still_counted(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
+    from specweaver.sandbox.language.core.junit_reports import harvest_junit
 
+    (tmp_path / "TEST-good.xml").write_text(_GOOD_REPORT, encoding="utf-8")
     (tmp_path / "TEST-x.xml").write_text("<testsuite", encoding="utf-8")
 
-    assert KotlinRunner(tmp_path)._parse_junit_results(tmp_path) == (0, 0)
+    harvest = harvest_junit(tmp_path)
+
+    assert (harvest.passed, harvest.failed) == (1, 1)
     assert _warned(caplog, "TEST-x.xml", "not counted")
+    assert not _warned(caplog, "TEST-good.xml")
+
+
+def test_a_folder_named_like_a_report_warns_and_is_not_counted(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    from specweaver.sandbox.language.core.junit_reports import harvest_junit
+
+    (tmp_path / "TEST-dir.xml").mkdir()
+
+    harvest = harvest_junit(tmp_path)
+
+    assert (harvest.passed, harvest.failed, harvest.skipped) == (0, 0, 0)
+    assert _warned(caplog, "TEST-dir.xml", "not counted")
 
 
 def test_a_malformed_sarif_report_warns(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:

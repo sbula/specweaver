@@ -12,7 +12,6 @@ consumes:
   - specweaver/commons
   - specweaver/core/config
   - specweaver/infrastructure/llm
-  - specweaver/assurance/validation
   - specweaver/workspace/ast/parsers
   - specweaver/workspace/ast/refactor
   - specweaver/workspace/project

@@ -88,7 +88,7 @@ the flow context for downstream atoms.
 An Atom is one indivisible **unit of the flow**: one `run()` call, one `AtomResult`. How much
 `run()` does inside is an ordinary design choice:
 
-- **Single-operation** (`RuleAtom`): reads its expected keys straight off `context` and does one thing.
+- **Single-operation** (`BashActionAtom`): reads its expected keys straight off `context` and does one thing.
 - **Multi-operation** (`QARunnerAtom`, `LanguageAtom`, `ProtocolAtom`): reads an `intent`/`action`
   key from `context` and dispatches internally (e.g. `QARunnerAtom` alone handles `run_tests`,
   `run_linter`, `run_complexity`, `run_compiler`, `run_debugger`, `run_architecture`).

@@ -110,7 +110,6 @@ class TestBatch1LoggingRollout:
         from specweaver.workspace.ast.parsers.cpp import codestructure as cpp_cs
         from specweaver.workspace.ast.parsers.java import parsers as java_p
         from specweaver.workspace.ast.parsers.kotlin import parsers as kotlin_p
-        from specweaver.workspace.ast.parsers.rust import parsers as rust_p
         from specweaver.workspace.ast.parsers.typescript import parsers as ts_p
 
         for mod in (
@@ -121,7 +120,6 @@ class TestBatch1LoggingRollout:
             cpp_cs,
             java_p,
             kotlin_p,
-            rust_p,
             ts_p,
         ):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"

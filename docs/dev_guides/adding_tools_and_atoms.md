@@ -54,7 +54,7 @@ Example: `SearchWeb`.
    non-LLM use by the Flow Engine.
 6. **Single-op or multi-op**: decide per domain. "Atom" only means *engine-internal, not
    agent-facing*; it says nothing about how many operations `run()` covers.
-   - One operation: read the expected keys straight off `context` (see `RuleAtom`).
+   - One operation: read the expected keys straight off `context` (see `BashActionAtom`).
    - Several related operations: read an `intent`/`action` key and dispatch internally (see
      `QARunnerAtom`'s `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`,
      or `LanguageAtom`'s `detect_language`/`convert_scenario`).

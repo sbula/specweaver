@@ -143,24 +143,6 @@ class KotlinRunner(QARunnerInterface):
         for stale_xml in search_path.rglob("*.xml"):
             stale_xml.unlink(missing_ok=True)
 
-    def _parse_junit_results(self, search_path: Path) -> tuple[int, int]:
-        import junitparser
-
-        passed = 0
-        failed = 0
-
-        if search_path.exists():
-            for xml_file in search_path.rglob("*.xml"):
-                try:
-                    xml = junitparser.JUnitXml.fromfile(str(xml_file))
-                    failed += xml.failures + xml.errors
-                    passed += xml.tests - (xml.failures + xml.errors + xml.skipped)
-                except Exception as exc:
-                    logger.warning(
-                        "%s is unreadable, so its tests are not counted: %s", xml_file, exc
-                    )
-        return passed, failed
-
     def _analysis_command(self, tool: str) -> tuple[list[str], Path]:
         """The detekt run that lint and complexity both read, and the SARIF report it writes."""
         if tool == "gradle":

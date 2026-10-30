@@ -80,8 +80,8 @@ def harvest_junit(search_path: Path | Iterable[Path]) -> JUnitHarvest:
     for xml_file in xml_files:
         try:
             xml = junitparser.JUnitXml.fromfile(str(xml_file))
-        except Exception:
-            logger.debug("harvest_junit: unreadable report skipped: %s", xml_file)
+        except Exception as exc:
+            logger.warning("%s is unreadable, so its tests are not counted: %s", xml_file, exc)
             continue
         passed += xml.tests - xml.failures - xml.skipped - xml.errors
         failed += xml.failures + xml.errors
