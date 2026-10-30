@@ -103,7 +103,7 @@ def test_sw_implement_asks_for_the_frameworks_style(
     with (
         doubled_llm(model),
         patch(
-            "specweaver.sandbox.qa_runner.core.factory.resolve_runner",
+            "specweaver.sandbox.language.core.runner_factory.resolve_runner",
             side_effect=lambda *_a, **_k: _Runner(),
         ),
     ):

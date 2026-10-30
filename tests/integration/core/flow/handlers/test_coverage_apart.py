@@ -83,7 +83,7 @@ async def _scenario_step(context: RunContext, store: Path, status: AtomStatus) -
         target=StepTarget.TESTS,
         params={"kind": "scenario", "target": str(store / "generated" / "test_greet_scenarios.py")},
     )
-    with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom", return_value=atom):
+    with patch("specweaver.sandbox.language.core.runner_factory.qa_atom", return_value=atom):
         return await ValidateTestsHandler().execute(step, context)
 
 

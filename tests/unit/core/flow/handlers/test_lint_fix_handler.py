@@ -426,7 +426,7 @@ class TestGetAtomSandboxSettings:
         context = _make_context(tmp_path)
         assert context.model.config is None
 
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
@@ -441,7 +441,7 @@ class TestGetAtomSandboxSettings:
         context = _make_context(tmp_path)
         context.model = context.model.model_copy(update={"config": config})
 
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(

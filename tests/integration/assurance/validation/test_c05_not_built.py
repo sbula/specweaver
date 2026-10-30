@@ -19,7 +19,7 @@ import pytest
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
 from specweaver.core.flow.handlers.validation_hydrator import _hydrate_architecture
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -39,7 +39,7 @@ def test_c05_skips_a_language_with_no_architecture_check(
     code = tmp_path / code_file
     code.parent.mkdir(parents=True)
     code.write_text("fun main() {}\n" if language == "kotlin" else "fn main() {}\n")
-    atom = QARunnerAtom(cwd=tmp_path, language=language)
+    atom = qa_atom(cwd=tmp_path, language=language)
 
     rule = ImportDirectionRule()
     rule.context = {"qa_architecture_result": _hydrate_architecture(atom, code, tmp_path, None)}

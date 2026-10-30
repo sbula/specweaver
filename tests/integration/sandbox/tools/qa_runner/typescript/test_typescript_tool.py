@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool as _QARunnerTool
 
@@ -27,7 +28,7 @@ def ts_project_dir(tmp_path: Path) -> Path:
 
 
 def test_typescript_tool_integration(ts_project_dir: Path) -> None:
-    atom = QARunnerAtom(cwd=ts_project_dir, language="typescript")
+    atom = qa_atom(cwd=ts_project_dir, language="typescript")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     res_compile = tool.run_compiler(target="src/")

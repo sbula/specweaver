@@ -29,7 +29,7 @@ from specweaver.sandbox.execution.sandbox_image import (
     own_image,
     sandbox_ready,
 )
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 
 def _mounts(tmp_path: Path, scenarios: Path | None) -> ContainerMounts:
@@ -83,11 +83,11 @@ def _refused(tmp_path: Path, scenarios: Path | None, target: str) -> bool:
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
     with (
-        patch("specweaver.sandbox.qa_runner.core.atom._build_container_executor"),
-        patch("specweaver.sandbox.qa_runner.core.atom._resolve_runner") as resolve,
+        patch("specweaver.sandbox.language.core.runner_factory._build_container_executor"),
+        patch("specweaver.sandbox.language.core.runner_factory.resolve_runner") as resolve,
         suppress(TypeError),  # a mock runner's result is not a real one
     ):
-        QARunnerAtom(cwd=project, scenarios_root=scenarios).run(
+        qa_atom(cwd=project, scenarios_root=scenarios).run(
             {"intent": "run_tests", "target": target}
         )
     return not resolve.return_value.run_tests.called
@@ -195,5 +195,5 @@ def test_a_coder_container_run_never_mounts_the_scenarios(tmp_path: Path) -> Non
 
     project = tmp_path / "project"
     project.mkdir()
-    atom = QARunnerAtom(cwd=project, sandbox_settings=SandboxSettings(execution_mode="container"))
+    atom = qa_atom(cwd=project, sandbox_settings=SandboxSettings(execution_mode="container"))
     assert atom._runner._executor._mounts.scenarios_root is None

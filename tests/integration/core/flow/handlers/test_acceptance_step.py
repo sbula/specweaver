@@ -110,7 +110,7 @@ def _atom(failures: list[dict[str, Any]]) -> MagicMock:
 
 async def _accept(context: RunContext, atom: MagicMock, *, container: bool = True) -> Any:
     with (
-        patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom", return_value=atom),
+        patch("specweaver.sandbox.language.core.runner_factory.qa_atom", return_value=atom),
         patch(
             "specweaver.core.flow.handlers.acceptance.container_available", lambda root: container
         ),

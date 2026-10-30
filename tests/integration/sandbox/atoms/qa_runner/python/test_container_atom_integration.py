@@ -27,7 +27,7 @@ import pytest
 
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
-from specweaver.sandbox.qa_runner.core.factory import resolve_runner
+from specweaver.sandbox.language.core.runner_factory import resolve_runner
 
 if TYPE_CHECKING:
     from pathlib import Path

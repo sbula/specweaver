@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool as _QARunnerTool
 
@@ -24,7 +25,7 @@ def python_project() -> Path:
 
 def test_python_tool_integration(python_project: Path) -> None:
     assert python_project.exists(), "Python fixture missing"
-    atom = QARunnerAtom(cwd=python_project, language="python")
+    atom = qa_atom(cwd=python_project, language="python")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     res_compile = tool.run_compiler(target="tests/")

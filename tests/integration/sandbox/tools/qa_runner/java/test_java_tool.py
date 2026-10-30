@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool as _QARunnerTool
 
@@ -35,7 +36,7 @@ def maven_project() -> Path:
 
 def test_java_tool_gradle_integration(gradle_project: Path) -> None:
     assert gradle_project.exists(), "Gradle fixture missing"
-    atom = QARunnerAtom(cwd=gradle_project, language="java")
+    atom = qa_atom(cwd=gradle_project, language="java")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     res_compile = tool.run_compiler(target="src/")
@@ -59,7 +60,7 @@ def test_java_tool_gradle_integration(gradle_project: Path) -> None:
 
 def test_java_tool_maven_integration(maven_project: Path) -> None:
     assert maven_project.exists(), "Maven fixture missing"
-    atom = QARunnerAtom(cwd=maven_project, language="java")
+    atom = qa_atom(cwd=maven_project, language="java")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     res_compile = tool.run_compiler(target="src/")

@@ -265,9 +265,9 @@ class LintFixHandler:
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project."""
         from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-        return QARunnerAtom(
+        return qa_atom(
             cwd=context.project_path,
             language=context.isolation.language,
             sandbox_settings=coder_sandbox(context),

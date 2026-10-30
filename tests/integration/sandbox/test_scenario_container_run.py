@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.execution.sandbox_image import container_available
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -52,7 +52,7 @@ def _project(root: Path) -> Path:
 
 def test_a_scenario_test_runs_from_the_mount_and_leaves_no_trace(tmp_path: Path) -> None:
     project = _project(tmp_path / "project")
-    atom = QARunnerAtom(cwd=project, scenarios_root=project / "scenarios")
+    atom = qa_atom(cwd=project, scenarios_root=project / "scenarios")
     scratch = atom._runner._executor._mounts.scratch_root
 
     result = atom.run(

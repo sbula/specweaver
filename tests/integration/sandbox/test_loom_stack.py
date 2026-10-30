@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
     LintRunResult,
@@ -184,9 +185,7 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-        atom = QARunnerAtom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project)
         result = atom.run(
             {
                 "intent": "run_linter",
@@ -201,9 +200,7 @@ class TestAtomToolStack:
         """QARunnerAtom handles run_complexity intent — clean code."""
         clean_dir = sample_project / "src" / "greeter"
 
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-        atom = QARunnerAtom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project)
         result = atom.run(
             {
                 "intent": "run_complexity",
@@ -215,13 +212,12 @@ class TestAtomToolStack:
 
     def test_tool_role_gating_blocks_reviewer_fix(self, sample_project: Path) -> None:
         """QARunnerTool blocks reviewer from using fix=True."""
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
         from specweaver.sandbox.qa_runner.interfaces.tool import (
             QARunnerTool,
             QARunnerToolError,
         )
 
-        atom = QARunnerAtom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project)
         tool = QARunnerTool(atom, role="reviewer")
         with pytest.raises(QARunnerToolError, match="not allowed"):
             tool.run_linter(target=".", fix=True)
@@ -236,10 +232,9 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
         from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
-        atom = QARunnerAtom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project)
         tool = QARunnerTool(atom, role="implementer")
         tool.run_linter(target=str(fix_dir), fix=True)
 

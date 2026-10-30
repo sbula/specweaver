@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool as _QARunnerTool
 
@@ -26,7 +27,7 @@ def rust_project() -> Path:
 
 def test_rust_tool_integration(rust_project: Path) -> None:
     assert rust_project.exists(), "Rust fixture missing"
-    atom = QARunnerAtom(cwd=rust_project, language="rust")
+    atom = qa_atom(cwd=rust_project, language="rust")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     res_compile = tool.run_compiler(target="src/")

@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.interfaces.facades import create_qa_runner_interface
 
 if TYPE_CHECKING:
@@ -71,7 +72,7 @@ def test_an_outside_target_starts_nothing(
     project: Path, started: list[Any], intent: str, target: str
 ) -> None:
     given = str(project.parent / "outside") if target == "ABSOLUTE" else target
-    qa = create_qa_runner_interface(role="implementer", cwd=project, language="python")
+    qa = create_qa_runner_interface("implementer", qa_atom(project, language="python"))
 
     result = _CALLS[intent](qa, given)
 
@@ -81,14 +82,14 @@ def test_an_outside_target_starts_nothing(
 
 
 def test_an_outside_entrypoint_starts_nothing(project: Path, started: list[Any]) -> None:
-    qa = create_qa_runner_interface(role="implementer", cwd=project, language="python")
+    qa = create_qa_runner_interface("implementer", qa_atom(project, language="python"))
     result = qa.run_debugger(target="src", entrypoint="../outside/evil.py")
     assert result.status == "error"
     assert started == []
 
 
 def test_a_target_inside_starts_the_tool(project: Path, started: list[Any]) -> None:
-    qa = create_qa_runner_interface(role="implementer", cwd=project, language="python")
+    qa = create_qa_runner_interface("implementer", qa_atom(project, language="python"))
     with suppress(RuntimeError):  # the recorder stops the process start
         qa.run_linter(target="src/mod.py")
     assert started != []

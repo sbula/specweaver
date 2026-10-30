@@ -120,7 +120,7 @@ class TestGetAtomSandboxSettings:
         context = _ctx(tmp_path)
         assert context.model.config is None
 
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
@@ -135,7 +135,7 @@ class TestGetAtomSandboxSettings:
         context = _ctx(tmp_path)
         context.model = context.model.model_copy(update={"config": config})
 
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
@@ -160,7 +160,7 @@ class TestGetAtomExecutionRoot:
         context = _ctx(tmp_path)
         context.isolation = context.isolation.model_copy(update={"execution_root": wt})
         assert context.model.config is None
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=wt, language=None, sandbox_settings=None)
 
@@ -169,7 +169,7 @@ class TestGetAtomExecutionRoot:
         handler = ValidateTestsHandler()
         context = _ctx(tmp_path)
         assert context.isolation.execution_root is None
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
 
@@ -190,7 +190,7 @@ class TestGetAtomExecutionRoot:
                 )
             }
         )
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
+        with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(
             cwd=wt, language=None, sandbox_settings=context.model.config.sandbox

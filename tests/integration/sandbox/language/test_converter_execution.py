@@ -20,7 +20,7 @@ import pytest
 
 from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
 from specweaver.sandbox.language.core.python.scenario_converter import ScenarioConverter
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -89,7 +89,7 @@ def _project_with(tmp_path: Path, impl: str, stem: str = "greet") -> Path:
 
 def _run(project: Path, stem: str = "greet") -> dict:
     target = f"scenarios/generated/test_{stem}_scenarios.py".replace("-", "_")
-    result = QARunnerAtom(cwd=project).run(
+    result = qa_atom(cwd=project).run(
         {
             "intent": "run_tests",
             "target": target,

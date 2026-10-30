@@ -97,10 +97,10 @@ class TestPytest:
         assert _names_the_target(result, "tests/shop/test_orders.py::test_gone"), result
 
     def test_the_qa_step_fails_a_folder_with_no_tests(self, root: Path) -> None:
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
 
         (root / "tests" / "empty").mkdir(exist_ok=True)
-        result = QARunnerAtom(cwd=root, language="python").run(
+        result = qa_atom(cwd=root, language="python").run(
             {"intent": "run_tests", "target": "tests/empty", "kind": ""}
         )
 

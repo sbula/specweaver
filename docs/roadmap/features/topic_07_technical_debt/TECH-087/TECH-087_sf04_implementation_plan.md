@@ -111,7 +111,9 @@ filter factory).
 
 ## Approach (pseudocode, ordered)
 
-**CB-1 — the factory moves; the atom takes a runner (FR-12)** — kind `refactor`
+**CB-1 — the factory moves; the atom takes a runner (FR-12)** — kind `bugfix` (planned `refactor`;
+Q1 A changes the atom's constructor, so 14 tests change and the refactor gate rightly refuses; the
+commit fixes SB-1's two-way imports, proven red first by the step-1 guard)
 
 1. Red, unit `tests/unit/sandbox/qa_runner/test_qa_runner_imports_no_language.py`: no file under
    `sandbox/qa_runner` imports `specweaver.sandbox.language`. Red today (the factory).

@@ -210,12 +210,12 @@
         {
           "id": "scenario-mount-on-coder",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
-          "symbol": "QARunnerAtom.__init__",
-          "old": "            executor = _build_container_executor(cwd)\n",
-          "new": "            executor = _build_container_executor(cwd, cwd / \"scenarios\")\n",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
+          "symbol": "qa_atom",
+          "old": "        executor = _build_container_executor(cwd)\n",
+          "new": "        executor = _build_container_executor(cwd, cwd / \"scenarios\")\n",
           "breaks": "the coder's own test run sees the scenario tests",
-          "symbol_sha": "sha256:78dbc3ac29473eb1f832872611852f21bd365a04957044751c6e07b3cefa0209"
+          "symbol_sha": "sha256:d3962665e96d6041b20a87aa8e69d808632c96784f3e08ced8be7970445db37d"
         },
         {
           "id": "traversal-allowlist-widened",
@@ -371,10 +371,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
           "symbol": "hydrate_code_validation_context",
-          "old": "    atom = QARunnerAtom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
-          "new": "    atom = QARunnerAtom(cwd=project_root, language=language)\n",
+          "old": "    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
+          "new": "    atom = qa_atom(cwd=project_root, language=language)\n",
           "breaks": "C03 and C04 run the coder's tests on the host",
-          "symbol_sha": "sha256:1f541767b655ef70f444a6f126e68326baba5be281419e1b2975cc59bb0b4cc8"
+          "symbol_sha": "sha256:a7c0782ff65ee70baef22388155556bb94739b9ec2b1324b05224a780c7119a4"
         },
         {
           "id": "lint-on-host",
@@ -384,7 +384,7 @@
           "old": "            sandbox_settings=coder_sandbox(context),\n        )\n",
           "new": "        )\n",
           "breaks": "lint fix runs the coder's tools on the host",
-          "symbol_sha": "sha256:58c6739e386d75630ac82ed785ee9bdeecf7e33364f068fc1c6e33be0b2fa2a0"
+          "symbol_sha": "sha256:973fe5b49474d6ffad4be3887a167c41d10b14bcc279dbdedbef332b997ae3ac"
         }
       ]
     },

@@ -24,13 +24,18 @@ Why `QARunner`, not `TestRunner`: the old name `TestRunnerTool` collided with Py
 
 ## Selection
 
-`resolve_runner(cwd)` in `src/specweaver/sandbox/qa_runner/core/factory.py` picks the runner by
-manifest file: `package.json` (TypeScript), `Cargo.toml` (Rust), `build.gradle` / `build.gradle.kts`
-(Kotlin), `pom.xml` (Java), default Python. `create_scenario_converter` and
-`create_stack_trace_filter` use `detect_language` from `sandbox/language/core/detect.py`
-(`SUPPORTED_LANGUAGES`).
+`resolve_runner(cwd, executor, language)` in `src/specweaver/sandbox/language/core/runner_factory.py`
+picks the runner: the run's `language` when given, else `detect_language` from
+`sandbox/language/core/detect.py` (`SUPPORTED_LANGUAGES`), which reads the manifest files:
+`package.json` (TypeScript), `Cargo.toml` (Rust), `build.gradle` / `build.gradle.kts` (Kotlin),
+`pom.xml` (Java), default Python. `create_scenario_converter` and `create_stack_trace_filter` use the
+same detector.
 
-A new language registers its manifest trigger in all three.
+`qa_atom(cwd, language, sandbox_settings, scenarios_root)` beside it builds the QA atom: it picks the
+executor (host or container), resolves the runner and hands it to `QARunnerAtom`. `sandbox/qa_runner`
+never imports `sandbox/language` (`TECH-087` FR-12; `test_qa_runner_imports_no_language.py` holds it).
+
+A new language registers its manifest trigger in `detect.py` and its runner class in the factory.
 
 ## Steps
 
@@ -125,7 +130,7 @@ Keep mocks out of live test files.
 - [ ] Submodule at `sandbox/language/core/<lang>/` with `runner.py`, output parser,
   `scenario_converter.py`, `stack_trace_filter.py`.
 - [ ] No Regex where JSON/SARIF is supported.
-- [ ] Manifest trigger in `resolve_runner`, `_detect.py` and both factories.
+- [ ] Manifest trigger in `detect.py`; runner class in `runner_factory.py`; both other factories.
 - [ ] Tree-Sitter parser registered in `get_default_parsers()` (used by `CodeStructureAtom`).
 - [ ] Row in `commons/languages.py`, with its test convention if it has one.
 - [ ] Generator text in `workflows/languages/<lang>.md` and `_LANGUAGES`.

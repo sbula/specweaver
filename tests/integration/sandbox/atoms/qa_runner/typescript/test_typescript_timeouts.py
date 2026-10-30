@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -35,7 +37,6 @@ _TSC_ERROR = "src/a.ts(1,7): error TS2322: Type 'string' is not assignable to ty
 
 def _atom(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, npx_body: str) -> QARunnerAtom:
     from specweaver.sandbox.language.core.typescript import runner
-    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -52,7 +53,7 @@ def _atom(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, npx_body: str) -> QAR
     project = tmp_path / "project"
     (project / "src").mkdir(parents=True)
     (project / "src" / "a.ts").write_text("const x: number = 'y';\n", encoding="utf-8")
-    return QARunnerAtom(cwd=project, language="typescript")
+    return qa_atom(cwd=project, language="typescript")
 
 
 def test_a_tsc_error_is_counted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

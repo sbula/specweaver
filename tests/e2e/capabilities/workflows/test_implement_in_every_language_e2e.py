@@ -206,7 +206,7 @@ def _implement(project: Path, language: _Language) -> tuple[Any, _Model, dict[st
     with (
         doubled_llm(model),
         patch(
-            "specweaver.sandbox.qa_runner.core.factory.resolve_runner",
+            "specweaver.sandbox.language.core.runner_factory.resolve_runner",
             side_effect=lambda cwd, executor=None, language=None: _Runner(language or "?", log),
         ),
     ):

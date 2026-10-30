@@ -123,9 +123,9 @@ def hydrate_code_validation_context(
     )
 
     # Lazy import — only when we actually need to run atoms
-    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+    from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-    atom = QARunnerAtom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)
+    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)
 
     # --- C03: Tests Pass ---
     if "C03" in qa_rules_active:

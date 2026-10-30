@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 # Patch targets: QARunnerAtom and execute_validation_pipeline are lazy-imported
 # inside functions, so we must patch at the SOURCE module, not the hydrator.
-_PATCH_ATOM = "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom"
+_PATCH_ATOM = "specweaver.sandbox.language.core.runner_factory.qa_atom"
 _PATCH_EXEC = "specweaver.assurance.validation.executor.execute_validation_pipeline"
 
 

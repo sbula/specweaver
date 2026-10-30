@@ -484,17 +484,17 @@ class ValidateTestsHandler:
         tree; bind the QA-runner cwd there so tests run worktree-bounded. Falls back to
         ``project_path`` when not isolated. ``sandbox_settings`` is threaded unchanged.
         """
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
 
         cwd = context.isolation.execution_root or context.project_path
         if kind == "scenario":
             # Always in a container, with the scenario tests mounted read-only at /scenarios.
-            return QARunnerAtom(
+            return qa_atom(
                 cwd=cwd,
                 language=context.isolation.language,
                 scenarios_root=scenarios_root(context),
             )
-        return QARunnerAtom(
+        return qa_atom(
             cwd=cwd, language=context.isolation.language, sandbox_settings=coder_sandbox(context)
         )
 

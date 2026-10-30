@@ -161,3 +161,40 @@ class TestImplementErrors:
         )
         assert result.exit_code == 1
         assert "not found" in result.output.lower()
+
+
+class TestCodeValidationLine:
+    """D-INTL-08 FR-7: a code-validation step that no rule judged prints its note, never
+    "0/0 rules passed". Since TECH-078 gave every language its test rules, no journey reaches the
+    note, so it is held here."""
+
+    @pytest.fixture
+    def console(self, monkeypatch):
+        from rich.console import Console
+
+        from specweaver.interfaces.cli_kit import _core
+
+        recording = Console(record=True, width=200)
+        monkeypatch.setattr(_core, "console", recording)
+        return recording
+
+    def test_a_step_no_rule_judged_prints_its_note(self, console) -> None:
+        from tests.rendering import shows
+
+        from specweaver.workflows.implementation.interfaces.cli import _report_code_validation
+
+        out = {"note": "no code rules for sql", "total": 0, "passed": 0, "failed": 0, "results": []}
+        _report_code_validation("✓", "validate_code", out)
+
+        text = console.export_text()
+        assert shows(text, "code validation: no code rules for sql")
+        assert "rules passed" not in text
+
+    def test_a_judged_step_prints_its_count(self, console) -> None:
+        from tests.rendering import shows
+
+        from specweaver.workflows.implementation.interfaces.cli import _report_code_validation
+
+        _report_code_validation("✓", "validate_code", {"total": 2, "passed": 2, "results": []})
+
+        assert shows(console.export_text(), "code validation: 2/2 rules passed")

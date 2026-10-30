@@ -87,7 +87,7 @@ def _implement(client: TestClient, runner: type[_Runner] = _Runner) -> tuple[Any
     with (
         doubled_llm(_Model(_TYPESCRIPT)),
         patch(
-            "specweaver.sandbox.qa_runner.core.factory.resolve_runner",
+            "specweaver.sandbox.language.core.runner_factory.resolve_runner",
             side_effect=lambda cwd, executor=None, language=None: runner(language or "?", log),
         ),
         patch.object(PipelineRunner, "__init__", _capture),
@@ -162,7 +162,7 @@ def test_a_generation_error_answers_500_without_a_traceback(api) -> None:
     with (
         doubled_llm(_BrokenModel(_TYPESCRIPT)),
         patch(
-            "specweaver.sandbox.qa_runner.core.factory.resolve_runner",
+            "specweaver.sandbox.language.core.runner_factory.resolve_runner",
             side_effect=lambda cwd, executor=None, language=None: _Runner("?", {}),
         ),
     ):

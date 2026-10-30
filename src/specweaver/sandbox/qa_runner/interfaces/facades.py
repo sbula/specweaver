@@ -18,9 +18,8 @@ from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool, ToolResul
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.infrastructure.llm.models import ToolDefinition
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 
 # ---------------------------------------------------------------------------
@@ -155,15 +154,13 @@ TestInterface = ImplementerTestInterface | ReviewerTestInterface
 
 def create_qa_runner_interface(
     role: str,
-    cwd: Path,
-    language: str | None = None,
+    atom: QARunnerAtom,
 ) -> ImplementerTestInterface | ReviewerTestInterface:
     """Create a role-specific test runner interface.
 
     Args:
         role: The agent's role ("implementer" or "reviewer").
-        cwd: The target project's working directory.
-        language: The run's language; None detects it from the project's manifests.
+        atom: The QA atom to run through (`sandbox.language.core.runner_factory.qa_atom`).
 
     Returns:
         A role-specific interface with only the allowed methods.
@@ -175,9 +172,6 @@ def create_qa_runner_interface(
         msg = f"Unknown role: {role!r}. Known roles: {sorted(_ROLE_INTERFACE_MAP)}"
         raise ValueError(msg)
 
-    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
-
-    atom = QARunnerAtom(cwd=cwd, language=language)
     tool = QARunnerTool(atom=atom, role=role)
 
     interface_cls = _ROLE_INTERFACE_MAP[role]

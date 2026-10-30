@@ -14,9 +14,6 @@ from __future__ import annotations
 
 import logging
 import posixpath
-import shutil
-import tempfile
-import weakref
 from dataclasses import asdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -29,28 +26,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from specweaver.core.config.settings import SandboxSettings
-    from specweaver.sandbox.execution.executor import SubprocessExecutor
     from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
-
-
-# ---------------------------------------------------------------------------
-# Language resolver
-# ---------------------------------------------------------------------------
-
-_LANGUAGE_RUNNERS: dict[str, type] = {}
-
-
-def _resolve_runner(
-    language: str | None, cwd: Any, executor: SubprocessExecutor | None = None
-) -> QARunnerInterface:
-    """Create a runner for the target.
-
-    Forwards to the factory: `language` when the run names one, else the project's manifests.
-    """
-    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
-
-    return resolve_runner(cwd, executor=executor, language=language)
 
 
 def container_available(project_root: Path) -> bool:
@@ -61,28 +37,6 @@ def container_available(project_root: Path) -> bool:
     return sandbox_ready(project_root)
 
 
-def _build_container_executor(
-    cwd: Path, scenarios_root: Path | None = None, scratch_root: Path | None = None
-) -> SubprocessExecutor:
-    """Derive the RO-source / RW-scratch-cache mount layout under `.specweaver/.sandbox/`
-    and build a ContainerSubprocessExecutor from it.
-
-    A scenario run also mounts its store read-only, and writes its scratch outside the project:
-    a pytest cache in the project would carry scenario test names to the coder's next run.
-    """
-    from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
-    from specweaver.sandbox.execution.models import ContainerMounts
-
-    sandbox_dir = cwd / ".specweaver" / ".sandbox"
-    mounts = ContainerMounts(
-        source_root=cwd,
-        scratch_root=scratch_root or sandbox_dir / "scratch",
-        cache_root=sandbox_dir / "cache",
-        scenarios_root=scenarios_root,
-    )
-    return ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)
-
-
 # ---------------------------------------------------------------------------
 # QARunnerAtom
 # ---------------------------------------------------------------------------
@@ -91,37 +45,23 @@ def _build_container_executor(
 class QARunnerAtom(Atom):
     """Engine-level test runner — stateless, intent-based.
 
-    Delegates to a language-specific QARunnerInterface implementation.
+    Delegates to a language-specific QARunnerInterface implementation. Build it with
+    `sandbox.language.core.runner_factory.qa_atom`, which picks the runner and its executor.
 
     Args:
         cwd: Project root directory.
-        language: The run's language; None detects it from the project's manifests.
-        sandbox_settings: Optional opt-in container sandboxing config
-            `None` or `execution_mode="host"` keeps execution unsandboxed;
-            `execution_mode="container"`
-            routes execution through a ContainerSubprocessExecutor.
+        runner: The language runner every intent goes to.
+        scenarios_mounted: The runner's executor mounts the scenario store at `/scenarios/`.
     """
 
     __test__ = False
 
     def __init__(
-        self,
-        cwd: Path,
-        language: str | None = None,
-        sandbox_settings: SandboxSettings | None = None,
-        scenarios_root: Path | None = None,
+        self, cwd: Path, runner: QARunnerInterface, *, scenarios_mounted: bool = False
     ) -> None:
-        executor: SubprocessExecutor | None = None
-        if scenarios_root is not None:
-            scratch = Path(tempfile.mkdtemp(prefix="specweaver-scenario-"))
-            weakref.finalize(self, shutil.rmtree, scratch, True)
-            executor = _build_container_executor(cwd, scenarios_root, scratch)
-        elif sandbox_settings is not None and sandbox_settings.execution_mode == "container":
-            executor = _build_container_executor(cwd)
-
-        self._runner = _resolve_runner(language, cwd, executor)
+        self._runner = runner
         self._cwd = cwd
-        self._scenarios_mounted = scenarios_root is not None
+        self._scenarios_mounted = scenarios_mounted
 
     def run(self, context: dict[str, Any]) -> AtomResult:
         """Dispatch to the appropriate intent based on context.

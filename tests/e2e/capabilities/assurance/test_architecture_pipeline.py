@@ -84,10 +84,11 @@ class TestArchitectureE2E:
     @pytest.mark.asyncio
     async def test_agent_tool_can_run_architecture(self, architecture_workspace: Path) -> None:
         """Story 8: E2E tool capability for agent role 'implementer'."""
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
         from specweaver.sandbox.qa_runner.interfaces.facades import create_qa_runner_interface
 
         # Instantiate the Implementer role tool
-        tool_interface = create_qa_runner_interface(role="implementer", cwd=architecture_workspace)
+        tool_interface = create_qa_runner_interface("implementer", qa_atom(architecture_workspace))
 
         # Run the architecture tool manually as an agent would
         result = tool_interface.run_architecture(target=".")

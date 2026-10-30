@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom as _QARunnerAtom
 
 # Prevent pytest collection warnings
@@ -28,7 +29,7 @@ def ts_project_dir(tmp_path: Path) -> Path:
 
 
 def test_typescript_atom_integration(ts_project_dir: Path) -> None:
-    atom = QARunnerAtom(cwd=ts_project_dir, language="typescript")
+    atom = qa_atom(cwd=ts_project_dir, language="typescript")
 
     # 1. Compiler (tsc)
     res_compile = atom.run_compiler(target="src/")
@@ -50,7 +51,7 @@ def test_typescript_atom_integration_compile_error(tmp_path: Path) -> None:
     (tmp_path / "src" / "bad.ts").write_text("const x: number = 'this is a string';")
     (tmp_path / "tsconfig.json").write_text('{"compilerOptions": {"strict": true, "noEmit": true}}')
 
-    atom = QARunnerAtom(cwd=tmp_path, language="typescript")
+    atom = qa_atom(cwd=tmp_path, language="typescript")
     res_compile = atom.run_compiler(target="src/")
 
     # 'error' either way: tsc finds the mismatch, or tsc is missing and did not run

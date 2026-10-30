@@ -28,7 +28,7 @@
       "title": "The project's language",
       "scope": [
         "tests/unit/sandbox/language/core/language/test_detect.py",
-        "tests/unit/sandbox/qa_runner/core/qa_runner/test_qa_runner_factory.py",
+        "tests/unit/sandbox/language/core/test_runner_factory.py",
         "tests/unit/core/config/test_implement_policy.py",
         "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
         "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
@@ -58,7 +58,7 @@
         {
           "id": "named-language-ignored",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/qa_runner/core/factory.py",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
           "symbol": "resolve_runner",
           "old": "    chosen = language or detect_language(cwd)\n",
           "new": "    chosen = detect_language(cwd)\n",
@@ -68,12 +68,12 @@
         {
           "id": "atom-drops-the-language",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/qa_runner/core/atom.py",
-          "symbol": "_resolve_runner",
-          "old": "    return resolve_runner(cwd, executor=executor, language=language)\n",
-          "new": "    return resolve_runner(cwd, executor=executor)\n",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
+          "symbol": "qa_atom",
+          "old": "        runner = resolve_runner(cwd, executor=executor, language=language)\n",
+          "new": "        runner = resolve_runner(cwd, executor=executor)\n",
           "breaks": "QA steps ignore the run's language",
-          "symbol_sha": "sha256:27ea756a83eea6921b7930f59b4989864501766e92ba9113130a8eb6458984c8"
+          "symbol_sha": "sha256:d3962665e96d6041b20a87aa8e69d808632c96784f3e08ced8be7970445db37d"
         },
         {
           "id": "sw-run-names-no-language",
@@ -113,7 +113,7 @@
           "old": "            language=context.isolation.language,\n",
           "new": "            language=None,\n",
           "breaks": "lint_fix runs the manifests' linter, not the named language's",
-          "symbol_sha": "sha256:58c6739e386d75630ac82ed785ee9bdeecf7e33364f068fc1c6e33be0b2fa2a0"
+          "symbol_sha": "sha256:973fe5b49474d6ffad4be3887a167c41d10b14bcc279dbdedbef332b997ae3ac"
         }
       ]
     },
@@ -473,7 +473,8 @@
       "scope": [
         "tests/unit/core/flow/handlers/test_lint_and_rules_in_the_language.py",
         "tests/e2e/capabilities/workflows/test_implement_in_every_language_e2e.py",
-        "tests/unit/core/flow/handlers/test_handlers_di_payload.py"
+        "tests/unit/core/flow/handlers/test_handlers_di_payload.py",
+        "tests/unit/workflows/implementation/interfaces/test_implementation_cli.py"
       ],
       "mutants": [
         {
@@ -684,13 +685,13 @@
       "requirement": "NFR-2",
       "title": "Host mode only",
       "scope": [
-        "tests/unit/sandbox/qa_runner/core/qa_runner/test_qa_runner_factory.py"
+        "tests/unit/sandbox/language/core/test_runner_factory.py"
       ],
       "mutants": [
         {
           "id": "container-runs-silently",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/qa_runner/core/factory.py",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
           "symbol": "resolve_runner",
           "old": "    if chosen != \"python\":\n        _warn_if_container_non_python(executor, chosen)\n",
           "new": "    pass\n",

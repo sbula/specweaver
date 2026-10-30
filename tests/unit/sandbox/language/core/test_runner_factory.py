@@ -6,6 +6,7 @@
 Proves: D-VAL-03 FR-1
 Proves: B-EXEC-01 NFR-7
 Proves: D-INTL-08 NFR-2
+Proves: TECH-087 FR-12
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `run_compiler` renamed on the
 abstract base, so compilation leaves the interface's bounds — **228 fail and 11 collection errors**,
@@ -29,7 +30,7 @@ built without an executor runs on the host.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -39,12 +40,9 @@ from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.java.runner import JavaRunner
 from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.language.core.runner_factory import resolve_runner
 from specweaver.sandbox.language.core.rust.runner import RustRunner
 from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
-from specweaver.sandbox.qa_runner.core.factory import resolve_runner
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TestLanguageAutoDiscovery:
@@ -146,3 +144,67 @@ class TestNonPythonContainerWarning:
             resolve_runner(tmp_path, executor=plain_executor)
 
         assert not any("may not have its toolchain" in rec.message for rec in caplog.records)
+
+
+class TestQaAtom:
+    """`qa_atom` picks the executor and the runner, and hands both to the atom (TECH-087 FR-12)."""
+
+    def test_the_atom_gets_the_runner_for_the_named_language(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
+
+        atom = qa_atom(tmp_path, language="rust")
+
+        assert isinstance(atom._runner, RustRunner)
+        assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+
+    def test_a_scenario_store_wins_over_host_settings(self, tmp_path: Path) -> None:
+        from specweaver.core.config.settings import SandboxSettings
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
+
+        atom = qa_atom(
+            tmp_path,
+            sandbox_settings=SandboxSettings(execution_mode="host"),
+            scenarios_root=tmp_path / "scenarios",
+        )
+
+        assert isinstance(atom._runner._executor, ContainerSubprocessExecutor)
+        assert atom._scenarios_mounted
+
+    def test_the_scenario_scratch_goes_with_the_atom(self, tmp_path: Path) -> None:
+        import gc
+
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
+
+        atom = qa_atom(tmp_path, scenarios_root=tmp_path / "scenarios")
+        scratch = atom._runner._executor._mounts.scratch_root
+        assert scratch.is_dir()
+        assert not scratch.is_relative_to(tmp_path)
+
+        del atom
+        gc.collect()
+
+        assert not scratch.exists()
+
+    def test_the_scenario_scratch_goes_when_no_runner_is_built(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from specweaver.sandbox.language.core import runner_factory
+
+        made: list[Path] = []
+        real_mkdtemp = runner_factory.tempfile.mkdtemp
+
+        def mkdtemp(**kwargs: str) -> str:
+            made.append(Path(real_mkdtemp(**kwargs)))
+            return str(made[-1])
+
+        def no_runner(*_args: object, **_kwargs: object) -> None:
+            raise RuntimeError("no runner")
+
+        monkeypatch.setattr(runner_factory.tempfile, "mkdtemp", mkdtemp)
+        monkeypatch.setattr(runner_factory, "resolve_runner", no_runner)
+
+        with pytest.raises(RuntimeError, match="no runner"):
+            runner_factory.qa_atom(tmp_path, scenarios_root=tmp_path / "scenarios")
+
+        assert made
+        assert not made[0].exists()

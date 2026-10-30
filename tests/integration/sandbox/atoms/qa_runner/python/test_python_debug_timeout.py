@@ -21,6 +21,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.sandbox.language.core.runner_factory import qa_atom
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -31,11 +33,10 @@ pytestmark = pytest.mark.integration
 
 def _atom(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) -> QARunnerAtom:
     from specweaver.sandbox.language.core.python.runner import PythonQARunner
-    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
     monkeypatch.setattr(PythonQARunner, "_BUILD_TIMEOUT", 1)
     (tmp_path / "main.py").write_text(body, encoding="utf-8")
-    return QARunnerAtom(cwd=tmp_path, language="python")
+    return qa_atom(cwd=tmp_path, language="python")
 
 
 def test_a_program_that_exits_returns_its_output(

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from specweaver.sandbox.base import AtomStatus
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 QARunnerAtom.__test__ = False  # type: ignore[attr-defined]
@@ -34,7 +35,7 @@ def maven_project() -> Path:
 
 def test_kotlin_atom_gradle_integration(gradle_project: Path) -> None:
     assert gradle_project.exists(), "Gradle fixture missing"
-    atom = QARunnerAtom(cwd=gradle_project, language="kotlin")
+    atom = qa_atom(cwd=gradle_project, language="kotlin")
 
     # 1. Compile
     res_compile = atom.run({"intent": "run_compiler", "target": "src/"})
@@ -62,7 +63,7 @@ def test_kotlin_atom_gradle_integration(gradle_project: Path) -> None:
 
 def test_kotlin_atom_maven_integration(maven_project: Path) -> None:
     assert maven_project.exists(), "Maven fixture missing"
-    atom = QARunnerAtom(cwd=maven_project, language="kotlin")
+    atom = qa_atom(cwd=maven_project, language="kotlin")
 
     res_compile = atom.run({"intent": "run_compiler", "target": "src/"})
     assert res_compile.status == AtomStatus.SUCCESS, res_compile.message

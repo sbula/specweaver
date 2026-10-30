@@ -137,50 +137,39 @@ class TestInterfaces:
     """Tests for role-specific interfaces."""
 
     def test_implementer_interface(self, tmp_path: Path) -> None:
-        with patch(
-            "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom",
-        ) as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"passed": 5, "total": 5},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"passed": 5, "total": 5},
+        )
 
-            iface = create_qa_runner_interface("implementer", tmp_path)
+        iface = create_qa_runner_interface("implementer", mock_atom)
 
         assert isinstance(iface, ImplementerTestInterface)
 
     def test_reviewer_interface(self, tmp_path: Path) -> None:
-        with patch(
-            "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom",
-        ) as mock_atom_cls:
-            mock_atom_cls.return_value = MagicMock()
-            iface = create_qa_runner_interface("reviewer", tmp_path)
+        mock_atom = MagicMock()
+        iface = create_qa_runner_interface("reviewer", mock_atom)
 
         assert isinstance(iface, ReviewerTestInterface)
 
     def test_drafter_interface_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="Unknown role"):
-            create_qa_runner_interface("drafter", tmp_path)
+            create_qa_runner_interface("drafter", MagicMock())
 
     def test_reviewer_interface_has_no_fix(self, tmp_path: Path) -> None:
         """ReviewerTestInterface.run_linter should NOT allow fix=True."""
-        with patch(
-            "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom",
-        ) as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"error_count": 0, "errors": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"error_count": 0, "errors": []},
+        )
 
-            iface = create_qa_runner_interface("reviewer", tmp_path)
-            # ReviewerTestInterface.run_linter should force fix=False
-            result = iface.run_linter(target="src/")
+        iface = create_qa_runner_interface("reviewer", mock_atom)
+        # ReviewerTestInterface.run_linter should force fix=False
+        result = iface.run_linter(target="src/")
 
         assert result.status == "success"
 
@@ -251,36 +240,28 @@ class TestInterfaceComplexity:
     """Tests that role-specific interfaces expose run_complexity."""
 
     def test_implementer_has_run_complexity(self, tmp_path: Path) -> None:
-        with patch(
-            "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom",
-        ) as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"violation_count": 0, "max_complexity": 10, "violations": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"violation_count": 0, "max_complexity": 10, "violations": []},
+        )
 
-            iface = create_qa_runner_interface("implementer", tmp_path)
-            result = iface.run_complexity(target="src/")
+        iface = create_qa_runner_interface("implementer", mock_atom)
+        result = iface.run_complexity(target="src/")
 
         assert result.status == "success"
 
     def test_reviewer_has_run_complexity(self, tmp_path: Path) -> None:
-        with patch(
-            "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom",
-        ) as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"violation_count": 0, "max_complexity": 10, "violations": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"violation_count": 0, "max_complexity": 10, "violations": []},
+        )
 
-            iface = create_qa_runner_interface("reviewer", tmp_path)
-            result = iface.run_complexity(target="src/")
+        iface = create_qa_runner_interface("reviewer", mock_atom)
+        result = iface.run_complexity(target="src/")
 
         assert result.status == "success"
 
@@ -333,48 +314,42 @@ class TestInterfaceCompileDebug:
     """Tests that role-specific interfaces expose compilation and debugging."""
 
     def test_implementer_has_run_compiler(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"error_count": 0, "warning_count": 0, "errors": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"error_count": 0, "warning_count": 0, "errors": []},
+        )
 
-            iface = create_qa_runner_interface("implementer", tmp_path)
-            result = iface.run_compiler(target="src/")
+        iface = create_qa_runner_interface("implementer", mock_atom)
+        result = iface.run_compiler(target="src/")
 
         assert result.status == "success"
 
     def test_implementer_has_run_debugger(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"exit_code": 0, "duration_seconds": 1.0, "events": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"exit_code": 0, "duration_seconds": 1.0, "events": []},
+        )
 
-            iface = create_qa_runner_interface("implementer", tmp_path)
-            result = iface.run_debugger(target="src/", entrypoint="main.py")
+        iface = create_qa_runner_interface("implementer", mock_atom)
+        result = iface.run_debugger(target="src/", entrypoint="main.py")
 
         assert result.status == "success"
 
     def test_interfaces_has_run_architecture(self, tmp_path: Path) -> None:
-        with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as mock_atom_cls:
-            mock_atom = MagicMock()
-            mock_atom.run.return_value = AtomResult(
-                status=AtomStatus.SUCCESS,
-                message="ok",
-                exports={"violation_count": 0, "violations": []},
-            )
-            mock_atom_cls.return_value = mock_atom
+        mock_atom = MagicMock()
+        mock_atom.run.return_value = AtomResult(
+            status=AtomStatus.SUCCESS,
+            message="ok",
+            exports={"violation_count": 0, "violations": []},
+        )
 
-            iface = create_qa_runner_interface("implementer", tmp_path)
-            result = iface.run_architecture(target="src/")
-            assert result.status == "success"
+        iface = create_qa_runner_interface("implementer", mock_atom)
+        result = iface.run_architecture(target="src/")
+        assert result.status == "success"
 
 
 # ---------------------------------------------------------------------------
@@ -461,7 +436,7 @@ class TestToolLegacyProxyGaps:
     def test_factory_invalid_role(self, tmp_path: Path) -> None:
         """Factory triggers value error for invalid roles directly (missing path)."""
         with pytest.raises(ValueError, match="Unknown role"):
-            create_qa_runner_interface("non_existent_role", tmp_path, language="python")
+            create_qa_runner_interface("non_existent_role", MagicMock())
 
 
 class TestComplexityNotBuilt:
@@ -472,9 +447,9 @@ class TestComplexityNotBuilt:
     """
 
     def test_typescript_complexity_is_an_error_for_the_agent(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+        from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-        tool = QARunnerTool(atom=QARunnerAtom(cwd=tmp_path, language="typescript"), role="planner")
+        tool = QARunnerTool(atom=qa_atom(cwd=tmp_path, language="typescript"), role="planner")
 
         result = tool.run_complexity(target="src/", max_complexity=10)
 

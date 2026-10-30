@@ -15,7 +15,7 @@ from specweaver.core.config.settings import SandboxSettings
 from specweaver.sandbox.base import AtomStatus
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.sandbox.qa_runner.core.interface import (
     ComplexityRunResult,
     ComplexityViolation,
@@ -38,19 +38,19 @@ class TestAtomBasics:
     """Tests for QARunnerAtom construction and intent dispatch."""
 
     def test_missing_intent(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({})
         assert result.status == AtomStatus.FAILED
         assert "intent" in result.message.lower()
 
     def test_unknown_intent(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "fly_to_moon"})
         assert result.status == AtomStatus.FAILED
         assert "fly_to_moon" in result.message
 
     def test_known_intents(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "fly_to_moon"})
         # Error message should list known intents
         assert "run_tests" in result.message
@@ -68,7 +68,7 @@ class TestAtomRunTests:
     """Tests for the run_tests intent."""
 
     def test_run_tests_success(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = TestRunResult(
             passed=5,
             failed=0,
@@ -94,7 +94,7 @@ class TestAtomRunTests:
         assert result.exports["failed"] == 0
 
     def test_run_tests_failures(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = TestRunResult(
             passed=3,
             failed=2,
@@ -118,13 +118,13 @@ class TestAtomRunTests:
         assert result.exports["failed"] == 2
 
     def test_run_tests_missing_target(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_tests"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
 
     def test_run_tests_with_coverage(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = TestRunResult(
             passed=5,
             failed=0,
@@ -150,7 +150,7 @@ class TestAtomRunTests:
 
     def test_run_tests_prevents_path_traversal(self, tmp_path: Path) -> None:
         """NFR-3 Edge Case: Must prevent execution if target traverses outside cwd."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
 
         result = atom.run(
             {
@@ -169,7 +169,7 @@ class TestAtomRunTests:
 
     def test_run_tests_enforces_timeout(self, tmp_path: Path) -> None:
         """NFR-4 Edge Case: Must handle sub-process timeouts gracefully."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
 
         with patch.object(
             atom._runner, "run_tests", side_effect=TimeoutError("Process timed out after 120s")
@@ -186,7 +186,7 @@ class TestAtomRunTests:
 
     def test_run_tests_with_stale_nodes_target_rewriting(self, tmp_path: Path) -> None:
         """SF-4 Edge Case: test target rewriting dynamically bounds runs."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         # Mock results
         result1 = TestRunResult(
             passed=2,
@@ -230,7 +230,7 @@ class TestAtomRunTests:
 
     def test_run_tests_with_empty_stale_nodes_shortcuts(self, tmp_path: Path) -> None:
         """SF-4 Edge Case: 0 stale nodes shortcut out."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
 
         with patch.object(atom._runner, "run_tests") as mock_rt:
             result = atom.run(
@@ -252,7 +252,7 @@ class TestAtomRunTests:
 
     def test_run_linter_with_empty_stale_nodes_shortcuts(self, tmp_path: Path) -> None:
         """SF-4 Edge Case: 0 stale nodes shortcut out for linter without errors."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
 
         with patch.object(atom._runner, "run_linter") as mock_rl:
             result = atom.run(
@@ -273,7 +273,7 @@ class TestAtomRunLinter:
     """Tests for the run_linter intent."""
 
     def test_linter_clean(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = LintRunResult(
             error_count=0,
             fixable_count=0,
@@ -293,7 +293,7 @@ class TestAtomRunLinter:
         assert result.exports["error_count"] == 0
 
     def test_linter_errors(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = LintRunResult(
             error_count=2,
             fixable_count=1,
@@ -317,14 +317,14 @@ class TestAtomRunLinter:
         assert len(result.exports["errors"]) == 2
 
     def test_linter_missing_target(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_linter"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
 
     def test_linter_with_stale_nodes_target_rewriting(self, tmp_path: Path) -> None:
         """SF-4 Edge Case: lint target rewriting."""
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
 
         result1 = LintRunResult(
             error_count=1,
@@ -364,7 +364,7 @@ class TestAtomRunComplexity:
     """Tests for the run_complexity intent."""
 
     def test_complexity_clean(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = ComplexityRunResult(
             violation_count=0,
             max_complexity=10,
@@ -383,7 +383,7 @@ class TestAtomRunComplexity:
         assert "threshold" in result.message.lower()
 
     def test_complexity_violations(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = ComplexityRunResult(
             violation_count=2,
             max_complexity=10,
@@ -419,13 +419,13 @@ class TestAtomRunComplexity:
         assert result.exports["violations"][0]["function"] == "big_func"
 
     def test_complexity_missing_target(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_complexity"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
 
     def test_complexity_custom_threshold(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = ComplexityRunResult(
             violation_count=0,
             max_complexity=5,
@@ -453,7 +453,7 @@ class TestAtomRunCompiler:
     """Tests for the run_compiler intent."""
 
     def test_run_compiler_clean(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import CompileRunResult
 
         mock_result = CompileRunResult(error_count=0, warning_count=0, errors=[])
@@ -464,7 +464,7 @@ class TestAtomRunCompiler:
         assert result.exports["error_count"] == 0
 
     def test_run_compiler_errors(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import CompileError, CompileRunResult
 
         mock_result = CompileRunResult(
@@ -483,7 +483,7 @@ class TestAtomRunCompiler:
         assert result.exports["error_count"] == 1
 
     def test_run_compiler_missing_target(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_compiler"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
@@ -498,7 +498,7 @@ class TestAtomRunDebugger:
     """Tests for the run_debugger intent."""
 
     def test_run_debugger_success(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import DebugRunResult
 
         mock_result = DebugRunResult(exit_code=0, duration_seconds=1.0, events=[])
@@ -509,7 +509,7 @@ class TestAtomRunDebugger:
         assert result.exports["exit_code"] == 0
 
     def test_run_debugger_failure(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import DebugRunResult, OutputEvent
 
         mock_result = DebugRunResult(
@@ -524,7 +524,7 @@ class TestAtomRunDebugger:
         assert result.exports["exit_code"] == 1
 
     def test_run_debugger_missing_args(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_debugger", "target": "src/"})
         assert result.status == AtomStatus.FAILED
         assert "entrypoint" in result.message.lower()
@@ -543,7 +543,7 @@ class TestAtomRunArchitecture:
     """Tests for the run_architecture intent."""
 
     def test_architecture_clean(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
 
         mock_result = ArchitectureRunResult(violation_count=0, violations=[])
@@ -554,7 +554,7 @@ class TestAtomRunArchitecture:
         assert result.exports["violation_count"] == 0
 
     def test_architecture_violations(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import (
             ArchitectureRunResult,
             ArchitectureViolation,
@@ -572,7 +572,7 @@ class TestAtomRunArchitecture:
         assert len(result.exports["violations"]) == 1
 
     def test_architecture_missing_target(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         result = atom.run({"intent": "run_architecture"})
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
@@ -582,7 +582,7 @@ class TestAtomRunArchitecture:
         from specweaver.commons.enums.dal import DALLevel
         from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
 
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = ArchitectureRunResult(violation_count=0, violations=[])
         with patch.object(
             atom._runner, "run_architecture_check", return_value=mock_result
@@ -595,7 +595,7 @@ class TestAtomRunArchitecture:
         """When dal_level is absent from context, None must be forwarded."""
         from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
 
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         mock_result = ArchitectureRunResult(violation_count=0, violations=[])
         with patch.object(
             atom._runner, "run_architecture_check", return_value=mock_result
@@ -609,9 +609,9 @@ def test_resolve_runner_languages(tmp_path: Path) -> None:
     from specweaver.sandbox.language.core.java.runner import JavaRunner
     from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
     from specweaver.sandbox.language.core.python.runner import PythonQARunner
+    from specweaver.sandbox.language.core.runner_factory import resolve_runner
     from specweaver.sandbox.language.core.rust.runner import RustRunner
     from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
-    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
 
     # Default is python
     runner = resolve_runner(tmp_path)
@@ -648,7 +648,7 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
     Proves consecutive dynamic traversals over the proxy-less PEP 420 `sandbox.qa_runner.*`
     paths do not fail from sys.path thrashing or incorrect __package__ resolution.
     """
-    from specweaver.sandbox.qa_runner.core.factory import resolve_runner
+    from specweaver.sandbox.language.core.runner_factory import resolve_runner
 
     markers = ["package.json", "pom.xml", "build.gradle", "Cargo.toml"]
     for marker in markers:
@@ -665,25 +665,21 @@ def test_resolve_runner_multi_language_dynamic_namespace_stability(tmp_path: Pat
 
 class TestSandboxSettingsExecutorSelection:
     def test_no_sandbox_settings_defaults_to_host_executor(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path)
+        atom = qa_atom(cwd=tmp_path)
         assert isinstance(atom._runner._executor, SubprocessExecutor)
         assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
 
     def test_explicit_host_mode_uses_host_executor(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
+        atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
         assert isinstance(atom._runner._executor, SubprocessExecutor)
         assert not isinstance(atom._runner._executor, ContainerSubprocessExecutor)
 
     def test_container_mode_builds_container_executor(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(
-            cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container")
-        )
+        atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container"))
         assert isinstance(atom._runner._executor, ContainerSubprocessExecutor)
 
     def test_container_mode_derives_mounts_from_cwd(self, tmp_path: Path) -> None:
-        atom = QARunnerAtom(
-            cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container")
-        )
+        atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container"))
         mounts = atom._runner._executor._mounts
         assert mounts.source_root == tmp_path
         assert mounts.scratch_root == tmp_path / ".specweaver" / ".sandbox" / "scratch"
@@ -730,7 +726,7 @@ class TestEveryIntentStaysInside:
         self, tmp_path: Path, intent: str, target: str
     ) -> None:
         """[Hostile] climbing out, an absolute path, a null byte — for every intent."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run(_context(intent, target))
         assert result.status == AtomStatus.FAILED
@@ -742,7 +738,7 @@ class TestEveryIntentStaysInside:
         """[Hostile] links are resolved before the check (NFR-3)."""
         project = self._project(tmp_path)
         (project / "escape").symlink_to(tmp_path, target_is_directory=True)
-        atom = QARunnerAtom(cwd=project)
+        atom = qa_atom(cwd=project)
         with patch.object(atom, "_runner") as runner:
             result = atom.run(_context(intent, "escape/x.py"))
         assert result.status == AtomStatus.FAILED
@@ -753,7 +749,7 @@ class TestEveryIntentStaysInside:
         self, tmp_path: Path, intent: str
     ) -> None:
         """[Hostile] a list is only as safe as its worst entry."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run({"intent": intent, "targets": ["tests/a.py", "../b.py"]})
         assert result.status == AtomStatus.FAILED
@@ -761,7 +757,7 @@ class TestEveryIntentStaysInside:
 
     def test_an_entrypoint_outside_is_refused(self, tmp_path: Path) -> None:
         """[Hostile] the debugger runs `python <entrypoint>` (agreed 2026-10-22)."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run(_context("run_debugger", "src/", entrypoint="../evil.py"))
         assert result.status == AtomStatus.FAILED
@@ -770,7 +766,7 @@ class TestEveryIntentStaysInside:
 
     def test_a_class_name_entrypoint_passes(self, tmp_path: Path) -> None:
         """[Boundary] Java and Kotlin pass a main class, which lies inside as a name."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner, suppress(TypeError):
             atom.run(_context("run_debugger", ".", entrypoint="com.example.Main"))
         assert runner.run_debugger.called
@@ -780,7 +776,7 @@ class TestEveryIntentStaysInside:
         self, tmp_path: Path, target: object
     ) -> None:
         """[Hostile] a wrong type never reaches a tool."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run(_context("run_linter", target))
         assert result.status == AtomStatus.FAILED
@@ -794,7 +790,7 @@ class TestEveryIntentStaysInside:
         """[Happy] relative, the root itself, and an absolute path inside."""
         project = self._project(tmp_path)
         target = str(project / "src") if target == "PROJECT_ABSOLUTE" else target
-        atom = QARunnerAtom(cwd=project)
+        atom = qa_atom(cwd=project)
         with patch.object(atom, "_runner") as runner, suppress(TypeError):
             atom.run(_context(intent, target))  # the mock's result is not a real one
         assert runner.method_calls != []
@@ -804,15 +800,15 @@ class TestEveryIntentStaysInside:
         project = self._project(tmp_path)
         context = {"intent": "run_tests", "target": "/scenarios/generated/test_x.py"}
         with (
-            patch("specweaver.sandbox.qa_runner.core.atom._build_container_executor"),
-            patch("specweaver.sandbox.qa_runner.core.atom._resolve_runner") as resolve,
+            patch("specweaver.sandbox.language.core.runner_factory._build_container_executor"),
+            patch("specweaver.sandbox.language.core.runner_factory.resolve_runner") as resolve,
         ):
-            mounted = QARunnerAtom(cwd=project, scenarios_root=tmp_path / "store")
+            mounted = qa_atom(cwd=project, scenarios_root=tmp_path / "store")
             with suppress(TypeError):
                 mounted.run(context)
         assert resolve.return_value.run_tests.called
 
-        plain = QARunnerAtom(cwd=project)
+        plain = qa_atom(cwd=project)
         with patch.object(plain, "_runner") as runner:
             assert plain.run(context).status == AtomStatus.FAILED
         assert runner.method_calls == []
@@ -820,14 +816,14 @@ class TestEveryIntentStaysInside:
     @pytest.mark.parametrize("intent", _INTENTS)
     def test_a_missing_target_keeps_its_own_message(self, tmp_path: Path, intent: str) -> None:
         """[Degradation] the check skips empty values, so each intent still names what is missing."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         result = atom.run(_context(intent, ""))
         assert result.status == AtomStatus.FAILED
         assert "Missing" in result.message
 
     def test_targets_given_as_one_string_is_still_checked(self, tmp_path: Path) -> None:
         """[Hostile] a wrongly shaped `targets` is checked as one path, not skipped."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run({"intent": "run_linter", "targets": "../b.py"})
         assert result.status == AtomStatus.FAILED
@@ -835,7 +831,7 @@ class TestEveryIntentStaysInside:
 
     def test_a_whitespace_target_is_refused(self, tmp_path: Path) -> None:
         """[Boundary] blank is not the project root."""
-        atom = QARunnerAtom(cwd=self._project(tmp_path))
+        atom = qa_atom(cwd=self._project(tmp_path))
         with patch.object(atom, "_runner") as runner:
             result = atom.run({"intent": "run_linter", "target": "   "})
         assert result.status == AtomStatus.FAILED

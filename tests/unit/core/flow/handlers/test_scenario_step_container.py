@@ -41,7 +41,9 @@ async def _run(tmp_path: Path, kind: str) -> tuple[dict[str, Any], dict[str, Any
         target=StepTarget.TESTS,
         params={"kind": kind},
     )
-    with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom", return_value=atom) as built:
+    with patch(
+        "specweaver.sandbox.language.core.runner_factory.qa_atom", return_value=atom
+    ) as built:
         await ValidateTestsHandler().execute(step, context)
     return built.call_args.kwargs, atom.run.call_args[0][0]
 

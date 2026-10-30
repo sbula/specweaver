@@ -112,7 +112,7 @@ async def test_the_test_step_asks_the_rule(
     _available(monkeypatch, True)
     step = PipelineStep(name="run_tests", action=StepAction.VALIDATE, target=StepTarget.TESTS)
     with patch(
-        "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom", return_value=_ok_atom()
+        "specweaver.sandbox.language.core.runner_factory.qa_atom", return_value=_ok_atom()
     ) as built:
         await ValidateTestsHandler().execute(step, _context(tmp_path, dual=True))
 
@@ -125,7 +125,7 @@ def test_lint_fix_asks_the_rule(
     from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 
     _available(monkeypatch, True)
-    with patch("specweaver.sandbox.qa_runner.core.atom.QARunnerAtom") as built:
+    with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as built:
         LintFixHandler()._get_atom(_context(tmp_path, dual=True))
 
     assert built.call_args.kwargs["sandbox_settings"].execution_mode == "container"
@@ -142,7 +142,7 @@ def test_c03_and_c04_get_the_settings(tmp_path: Path) -> None:
     code.write_text("x = 1\n")
     container = SandboxSettings(execution_mode="container")
     with patch(
-        "specweaver.sandbox.qa_runner.core.atom.QARunnerAtom", return_value=_ok_atom()
+        "specweaver.sandbox.language.core.runner_factory.qa_atom", return_value=_ok_atom()
     ) as built:
         hydrate_code_validation_context(pipeline, code, tmp_path, sandbox_settings=container)
 

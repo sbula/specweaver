@@ -24,10 +24,12 @@ import pytest
 
 from specweaver.core.config.settings import SandboxSettings
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
-from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 pytestmark = pytest.mark.integration
 
@@ -38,20 +40,20 @@ def _executor(atom: QARunnerAtom) -> object | None:
 
 
 def test_container_mode_routes_through_the_container_executor(tmp_path: Path) -> None:
-    atom = QARunnerAtom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container"))
+    atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container"))
 
     assert isinstance(_executor(atom), ContainerSubprocessExecutor)
 
 
 def test_host_mode_does_not(tmp_path: Path) -> None:
     """The control. A router that always containerised would pass the test above."""
-    atom = QARunnerAtom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
+    atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
 
     assert not isinstance(_executor(atom), ContainerSubprocessExecutor)
 
 
 def test_no_settings_at_all_stays_on_the_host(tmp_path: Path) -> None:
     """`None` is the common case — a caller that never mentions sandboxing must not get one."""
-    atom = QARunnerAtom(cwd=tmp_path)
+    atom = qa_atom(cwd=tmp_path)
 
     assert not isinstance(_executor(atom), ContainerSubprocessExecutor)
