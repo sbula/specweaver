@@ -45,9 +45,10 @@ critical for long-term project viability.
   > use lives under `assurance`, while `graph/` holds a knowledge graph nothing reads; lineage
   > is spread over three packages.
 
-* **`TECH-087` 🔴: QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean**
+* **`TECH-087` 🟢: QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean**
   > [Description](../features/topic_07_technical_debt/TECH-087/TECH-087_design.md) | _Status:
-  > DESIGN APPROVED 2026-10-30 (5 sub-features). Origin: 2026-10-22, architecture audit (14 findings)._ |
+  > closed by the user 2026-10-31. Origin: 2026-10-22, architecture audit (14 findings)._ |
+  > Verifiable Proof: `tests/unit/sandbox/test_no_host_executor_fallback.py` |
   > The runner contract and the runners live in two packages; Java and Kotlin are ~70% copies;
   > dead parsers are kept by a test; a complexity timeout or stub reads as clean; git commit and
   > executor choice are done several ways.

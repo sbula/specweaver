@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-087
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Kind**: `bugfix` (SF-01, SF-02, SF-03, SF-05); `refactor` for SF-04's moves, `bugfix` for its
   Kotlin diagnostics (FR-13). The plan names the kind per commit boundary (`scripts/tests.py`).
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-087/TECH-087_design.md
@@ -292,7 +292,7 @@ ruff path and real git in the suite.
 - Cycle 2: challenged R1 (does git on the host contradict FR-9? No: the rule is "no silent
   fallback", and an explicit host choice is a choice). No new finding.
 
-**Current status**: SF-01 to SF-05 committed 2026-10-30. The closure gate passed (`check_fr_coverage.py`, `tests.py feature --kind bugfix`); waiting for the user's sign-off.
-**Next step**: The user's sign-off, then `Status: COMPLETE`.
+**Current status**: SF-01 to SF-05 committed 2026-10-30. The closure gate passed (`check_fr_coverage.py`, `tests.py feature --kind bugfix`). Signed off by the user 2026-10-31.
+**Next step**: None. The ticket is closed.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
