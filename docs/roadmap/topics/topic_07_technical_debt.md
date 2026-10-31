@@ -241,9 +241,11 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
-* **`TECH-093` 🔴: Three Code Checks Read Every Language as Python**
+* **`TECH-093` 🟢: Three Code Checks Read Every Language as Python**
   > [Description](../features/topic_07_technical_debt/TECH-093/TECH-093_design.md) | _Status:
-  > STUB. Origin: 2026-10-31, the `TECH-087` live demo; a defect in delivered work._ |
+  > closed by the user 2026-10-31. Origin: 2026-10-31, the `TECH-087` live demo; a defect in
+  > delivered work._ |
+  > Verifiable Proof: `tests/unit/assurance/validation/rules/code/test_python_only.py` |
   > C01, C06 and C08 run Python's parser on every file: valid Kotlin, Java and Rust fail C01, and a
   > TypeScript file that happens to parse as Python passes all three.
 

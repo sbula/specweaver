@@ -641,4 +641,4 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-090:** [The Database Is Opened Three Ways, and the API Server Skips Migrations](features/topic_07_technical_debt/TECH-090/TECH-090_design.md)
     *   `🔴` **TECH-091:** [CLI Errors Print as Markup, and Commands Live Anywhere](features/topic_07_technical_debt/TECH-091/TECH-091_design.md)
     *   `🟡` **TECH-092:** [The Spend Brake Stops Tool Loops That Have Spent Nothing](features/topic_07_technical_debt/TECH-092/TECH-092_design.md)
-    *   `🔴` **TECH-093:** [Three Code Checks Read Every Language as Python](features/topic_07_technical_debt/TECH-093/TECH-093_design.md)
+    *   `🟢` **TECH-093:** [Three Code Checks Read Every Language as Python](features/topic_07_technical_debt/TECH-093/TECH-093_design.md)

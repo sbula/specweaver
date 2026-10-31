@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-093
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED
+- **Status**: COMPLETE
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-093/TECH-093_design.md
 - **Origin**: 2026-10-31, the `TECH-087` live demo (`sw check --level code Cart.kt`). A defect in
@@ -192,7 +192,7 @@ Single feature — no decomposition.
   the rule `[agreed 2026-10-31]`, and a rule that skips itself covers a custom `--pipeline` too.
   No new finding.
 
-**Current status**: CB-1 committed 2026-10-31. The closure gate passed (`check_fr_coverage.py`, `tests.py feature --kind bugfix`); waiting for the user's sign-off.
-**Next step**: The user's sign-off, then `Status: COMPLETE`.
+**Current status**: CB-1 committed 2026-10-31. The closure gate passed (`check_fr_coverage.py`, `tests.py feature --kind bugfix`); Signed off by the user 2026-10-31.
+**Next step**: None. The ticket is closed.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
