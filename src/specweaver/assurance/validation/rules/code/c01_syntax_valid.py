@@ -9,6 +9,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
+from specweaver.assurance.validation.rules.code._python_only import python_only
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,6 +32,9 @@ class SyntaxValidRule(Rule):
         Note: For code rules, spec_text contains the code content,
         and spec_path points to the code file.
         """
+        reason = python_only(self.rule_id, spec_path)
+        if reason is not None:
+            return self._skip(reason)
         try:
             ast.parse(spec_text)
         except SyntaxError as exc:

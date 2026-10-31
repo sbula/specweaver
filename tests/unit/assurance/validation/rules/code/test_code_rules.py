@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -22,6 +23,9 @@ from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
 from specweaver.workflows.implementation.generator import Generator, strip_fences
 from tests.scripted_llm import TEST_CONFIG
 
+# C01, C06 and C08 judge Python only (TECH-093).
+_PY = Path("module.py")
+
 # ---------------------------------------------------------------------------
 # C01 Syntax Valid
 # ---------------------------------------------------------------------------
@@ -32,24 +36,24 @@ class TestC01SyntaxValid:
 
     def test_valid_python(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("def foo() -> int:\n    return 42\n")
+        result = rule.check("def foo() -> int:\n    return 42\n", _PY)
         assert result.status == Status.PASS
 
     def test_invalid_python(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("def foo(\n")
+        result = rule.check("def foo(\n", _PY)
         assert result.status == Status.FAIL
         assert result.findings
         assert result.findings[0].line is not None
 
     def test_empty_code(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("")
+        result = rule.check("", _PY)
         assert result.status == Status.PASS
 
     def test_syntax_error_message(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("class:\n  pass")
+        result = rule.check("class:\n  pass", _PY)
         assert result.status == Status.FAIL
         assert "SyntaxError" in result.findings[0].message
 
@@ -236,20 +240,20 @@ class TestC06NoBareExcept:
     def test_no_bare_except(self) -> None:
         code = "try:\n    pass\nexcept Exception:\n    pass\n"
         rule = NoBareExceptRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.PASS
 
     def test_bare_except_found(self) -> None:
         code = "try:\n    pass\nexcept:\n    pass\n"
         rule = NoBareExceptRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.WARN
         assert len(result.findings) == 1
 
     def test_multiple_bare_excepts(self) -> None:
         code = "try:\n    pass\nexcept:\n    pass\ntry:\n    pass\nexcept:\n    pass\n"
         rule = NoBareExceptRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.WARN
         assert len(result.findings) == 2
 
@@ -259,12 +263,12 @@ class TestC06NoBareExcept:
     def test_syntax_error_skips(self) -> None:
         code = "def foo(\n"
         rule = NoBareExceptRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.SKIP
 
     def test_empty_code(self) -> None:
         rule = NoBareExceptRule()
-        result = rule.check("")
+        result = rule.check("", _PY)
         assert result.status == Status.PASS
 
 
@@ -332,20 +336,20 @@ class TestC08TypeHints:
     def test_all_typed(self) -> None:
         code = "def foo() -> int:\n    return 42\ndef bar() -> str:\n    return 'hi'\n"
         rule = TypeHintsRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.PASS
 
     def test_missing_return_type(self) -> None:
         code = "def foo():\n    return 42\n"
         rule = TypeHintsRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         # With only 1 public function missing -> 0% -> FAIL
         assert result.status == Status.FAIL
 
     def test_private_functions_ignored(self) -> None:
         code = "def _private():\n    pass\ndef __dunder__():\n    pass\n"
         rule = TypeHintsRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.PASS  # No public functions
 
     def test_mixed_coverage(self) -> None:
@@ -355,7 +359,7 @@ class TestC08TypeHints:
             "def baz():\n    pass\n"
         )
         rule = TypeHintsRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         # 2/3 typed = 66% -> WARN
         assert result.status == Status.WARN
 
@@ -365,12 +369,12 @@ class TestC08TypeHints:
     def test_syntax_error_skips(self) -> None:
         code = "def foo(\n"
         rule = TypeHintsRule()
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.SKIP
 
     def test_empty_code(self) -> None:
         rule = TypeHintsRule()
-        result = rule.check("")
+        result = rule.check("", _PY)
         assert result.status == Status.PASS
 
 
@@ -393,7 +397,7 @@ class TestCodeRulesPipeline:
         assert "C04" in ids
         assert "C13" in ids
 
-    def test_run_code_rules_on_clean_code(self) -> None:
+    def test_run_code_rules_on_clean_code(self, tmp_path: Path) -> None:
         import specweaver.assurance.validation.rules.code  # noqa: F401
         from specweaver.assurance.validation.executor import (
             apply_settings_to_pipeline,
@@ -413,7 +417,7 @@ class TestCodeRulesPipeline:
             }
         )
         pipeline = apply_settings_to_pipeline(pipeline, settings)
-        results = execute_validation_pipeline(pipeline, code)
+        results = execute_validation_pipeline(pipeline, code, tmp_path / "greet.py")
 
         c01 = next(r for r in results if r.rule_id == "C01")
         assert c01.status == Status.PASS

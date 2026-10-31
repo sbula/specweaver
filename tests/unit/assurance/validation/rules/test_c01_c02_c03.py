@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
 
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.rules.code.c01_syntax_valid import SyntaxValidRule
 from specweaver.assurance.validation.rules.code.c02_tests_exist import TestsExistRule
+
+# C01 judges Python only (TECH-093).
+_PY = Path("module.py")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # C01: SyntaxValidRule
@@ -29,25 +29,25 @@ class TestSyntaxValidRule:
     def test_valid_code_passes(self) -> None:
         rule = SyntaxValidRule()
         code = "def greet(name: str) -> str:\n    return f'Hello {name}'\n"
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.PASS
 
     def test_syntax_error_fails(self) -> None:
         rule = SyntaxValidRule()
         code = "def broken(:\n    pass\n"
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.FAIL
         assert len(result.findings) == 1
         assert result.findings[0].line is not None
 
     def test_empty_code_passes(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("")
+        result = rule.check("", _PY)
         assert result.status == Status.PASS
 
     def test_whitespace_only_passes(self) -> None:
         rule = SyntaxValidRule()
-        result = rule.check("   \n\n   \n")
+        result = rule.check("   \n\n   \n", _PY)
         assert result.status == Status.PASS
 
     def test_complex_valid_code(self) -> None:
@@ -61,20 +61,20 @@ class TestSyntaxValidRule:
             "    async def bar(self) -> str:\n"
             "        return 'baz'\n"
         )
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.PASS
 
     def test_error_message_includes_line_info(self) -> None:
         rule = SyntaxValidRule()
         code = "x = 1\ny = 2\nz = (\n"  # unclosed paren
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.FAIL
         assert "SyntaxError" in result.findings[0].message
 
     def test_indentation_error_caught(self) -> None:
         rule = SyntaxValidRule()
         code = "def f():\nreturn 1\n"  # missing indent
-        result = rule.check(code)
+        result = rule.check(code, _PY)
         assert result.status == Status.FAIL
 
 

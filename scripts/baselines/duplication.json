@@ -44,10 +44,10 @@
     "first": "src/specweaver/assurance/validation/rules/code/c03_tests_pass.py:41",
     "second": "src/specweaver/assurance/validation/rules/code/c04_coverage.py:49"
   },
-  "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @ec4c87116c22": {
-    "lines": 9,
-    "first": "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py:28",
-    "second": "src/specweaver/assurance/validation/rules/code/c08_type_hints.py:28"
+  "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py <-> src/specweaver/assurance/validation/rules/code/c08_type_hints.py @3b3d8787e19a": {
+    "lines": 8,
+    "first": "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py:29",
+    "second": "src/specweaver/assurance/validation/rules/code/c08_type_hints.py:29"
   },
   "src/specweaver/assurance/validation/rules/spec/s03_stranger.py <-> src/specweaver/assurance/validation/rules/spec/s04_dependency_dir.py @781db2edc3eb": {
     "lines": 14,
@@ -206,23 +206,23 @@
   },
   "src/specweaver/sandbox/git/interfaces/facades.py <-> src/specweaver/sandbox/git/interfaces/facades.py @0ea7cdc9d38b": {
     "lines": 11,
-    "first": "src/specweaver/sandbox/git/interfaces/facades.py:93",
-    "second": "src/specweaver/sandbox/git/interfaces/facades.py:51"
+    "first": "src/specweaver/sandbox/git/interfaces/facades.py:94",
+    "second": "src/specweaver/sandbox/git/interfaces/facades.py:52"
   },
   "src/specweaver/sandbox/git/interfaces/facades.py <-> src/specweaver/sandbox/git/interfaces/facades.py @2384c243d37c": {
     "lines": 24,
-    "first": "src/specweaver/sandbox/git/interfaces/facades.py:172",
-    "second": "src/specweaver/sandbox/git/interfaces/facades.py:51"
+    "first": "src/specweaver/sandbox/git/interfaces/facades.py:173",
+    "second": "src/specweaver/sandbox/git/interfaces/facades.py:52"
   },
   "src/specweaver/sandbox/git/interfaces/facades.py <-> src/specweaver/sandbox/git/interfaces/facades.py @3bea2d13c148": {
     "lines": 15,
-    "first": "src/specweaver/sandbox/git/interfaces/facades.py:131",
-    "second": "src/specweaver/sandbox/git/interfaces/facades.py:51"
+    "first": "src/specweaver/sandbox/git/interfaces/facades.py:132",
+    "second": "src/specweaver/sandbox/git/interfaces/facades.py:52"
   },
   "src/specweaver/sandbox/git/interfaces/facades.py <-> src/specweaver/sandbox/git/interfaces/facades.py @c2f530014ab2": {
     "lines": 11,
-    "first": "src/specweaver/sandbox/git/interfaces/facades.py:203",
-    "second": "src/specweaver/sandbox/git/interfaces/facades.py:51"
+    "first": "src/specweaver/sandbox/git/interfaces/facades.py:204",
+    "second": "src/specweaver/sandbox/git/interfaces/facades.py:52"
   },
   "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @f5b97d87b950": {
     "lines": 7,
@@ -239,14 +239,9 @@
     "first": "src/specweaver/sandbox/language/core/java/scenario_converter.py:14",
     "second": "src/specweaver/sandbox/language/core/typescript/scenario_converter.py:13"
   },
-  "src/specweaver/sandbox/language/core/jvm/runner.py <-> src/specweaver/sandbox/language/core/python/runner.py @fb802095d985": {
-    "lines": 7,
-    "first": "src/specweaver/sandbox/language/core/jvm/runner.py:58",
-    "second": "src/specweaver/sandbox/language/core/python/runner.py:101"
-  },
   "src/specweaver/sandbox/language/core/jvm/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @676517d7708b": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/jvm/runner.py:84",
+    "first": "src/specweaver/sandbox/language/core/jvm/runner.py:82",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
   },
   "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @e10a41fe01ba": {
@@ -256,13 +251,8 @@
   },
   "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2f393c255cf8": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/python/runner.py:112",
+    "first": "src/specweaver/sandbox/language/core/python/runner.py:110",
     "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
-  },
-  "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @215e96f23a4f": {
-    "lines": 8,
-    "first": "src/specweaver/sandbox/language/core/rust/runner.py:53",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:93"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4264be866118": {
     "lines": 12,

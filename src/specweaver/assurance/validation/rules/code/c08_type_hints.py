@@ -9,6 +9,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
+from specweaver.assurance.validation.rules.code._python_only import python_tree
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,10 +27,9 @@ class TypeHintsRule(Rule):
         return "Type Hints"
 
     def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
-        try:
-            tree = ast.parse(spec_text)
-        except SyntaxError:  # expected: the rule reports itself skipped
-            return self._skip("Cannot parse file (syntax error)")
+        tree = python_tree(self.rule_id, spec_text, spec_path)
+        if isinstance(tree, str):
+            return self._skip(tree)
 
         findings: list[Finding] = []
         total_public = 0

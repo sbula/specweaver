@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "feature": "TECH-093",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "C01, C06 and C08 skip a file in another language, naming it",
+      "scope": [
+        "tests/unit/assurance/validation/rules/code/test_python_only.py",
+        "tests/integration/assurance/validation/test_code_checks_skip_other_languages.py",
+        "tests/integration/interfaces/api/test_api_check_other_languages.py"
+      ],
+      "mutants": [
+        {
+          "id": "language-check-removed",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/_python_only.py",
+          "symbol": "python_only",
+          "old": "    if language == \"python\":\n        return None",
+          "new": "    if True:\n        return None",
+          "breaks": "every language is parsed as Python again: valid Kotlin fails C01",
+          "symbol_sha": "sha256:fcdb2a0261191a368ddcc7ce21b15bc70416c6e9c345777021d05af96cf55ccf"
+        },
+        {
+          "id": "c01-skips-the-check",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c01_syntax_valid.py",
+          "symbol": "SyntaxValidRule.check",
+          "old": "reason = python_only(self.rule_id, spec_path)",
+          "new": "reason = None",
+          "breaks": "C01 fails a valid Kotlin file",
+          "symbol_sha": "sha256:2686ee1afb3b4d0a78871cb33c45dba32cfd476f70bd89689bf90f3812881215"
+        },
+        {
+          "id": "c06-skips-the-check",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c06_no_bare_except.py",
+          "symbol": "NoBareExceptRule.check",
+          "old": "tree = python_tree(self.rule_id, spec_text, spec_path)",
+          "new": "tree = ast.parse(spec_text)",
+          "breaks": "C06 passes a TypeScript file that parses as Python",
+          "symbol_sha": "sha256:d7f4572ad3d6b19f77e224dda3ee27069ad362de54b016e4ce9e150a6ba95526"
+        },
+        {
+          "id": "c08-skips-the-check",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/c08_type_hints.py",
+          "symbol": "TypeHintsRule.check",
+          "old": "tree = python_tree(self.rule_id, spec_text, spec_path)",
+          "new": "tree = ast.parse(spec_text)",
+          "breaks": "C08 passes a TypeScript file that parses as Python",
+          "symbol_sha": "sha256:a142d97b45684b1048e84549ddf79b77911cad1fd90aa39435bc80682275f4e4"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "An unknown language is skipped, never parsed as Python",
+      "scope": [
+        "tests/unit/assurance/validation/rules/code/test_python_only.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-language-parsed",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/_python_only.py",
+          "symbol": "python_only",
+          "old": "    if language == \"python\":",
+          "new": "    if language in (\"python\", None):",
+          "breaks": "a file with no path or an unknown ending is parsed as Python again",
+          "symbol_sha": "sha256:fcdb2a0261191a368ddcc7ce21b15bc70416c6e9c345777021d05af96cf55ccf"
+        }
+      ]
+    }
+  ]
+}
