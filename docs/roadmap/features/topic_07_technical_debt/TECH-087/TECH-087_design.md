@@ -208,6 +208,7 @@ None. `TECH-064` (the architecture `note`) is the in-repo precedent.
 in a Maven Kotlin project gave `C05 Import Direction SKIP Kotlin architecture checks are not
 implemented; no boundary was examined.` The P-1 and P-3 integration tests run the real
 ruff path and real git in the suite.
+The same run showed C01 failing valid Kotlin; that defect is `TECH-093`.
 
 ## Non-Goals
 

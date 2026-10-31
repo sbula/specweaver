@@ -154,6 +154,9 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
   `TECH-078` (every language gets review, validation, test runs and the API) closed 2026-10-24.
   `TECH-081` (`tach check` sees every module and import; no wrong-way edge, no loop) closed 2026-10-29.
   `TECH-087` (a QA tool that did not run is never clean; every command runs through the caller's executor) closed 2026-10-31.
+- **C01, C06 and C08 read every language as Python** (found 2026-10-31, `TECH-087` demo): valid
+  Kotlin, Java and Rust fail C01; a TypeScript file that parses as Python passes. `TECH-093`
+  `[agreed 2026-10-31]`.
 - **The spend brake stops tool loops early** (found 2026-10-24, `TECH-078` closure): each finished
   tool round keeps its worst-case reservation until the whole loop ends, so a plan or review that
   reads a few files is refused at a small limit while it has spent USD 0.00. The nightly live run

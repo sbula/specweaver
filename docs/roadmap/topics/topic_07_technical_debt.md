@@ -241,6 +241,12 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-093` 🔴: Three Code Checks Read Every Language as Python**
+  > [Description](../features/topic_07_technical_debt/TECH-093/TECH-093_design.md) | _Status:
+  > STUB. Origin: 2026-10-31, the `TECH-087` live demo; a defect in delivered work._ |
+  > C01, C06 and C08 run Python's parser on every file: valid Kotlin, Java and Rust fail C01, and a
+  > TypeScript file that happens to parse as Python passes all three.
+
 * **`TECH-092` 🟡: The Spend Brake Stops Tool Loops That Have Spent Nothing**
   > [Description](../features/topic_07_technical_debt/TECH-092/TECH-092_design.md) | _Status:
   > IMPLEMENTED; FR-6 (live proof) waits for local models. Origin: 2026-10-24, the `TECH-078`
