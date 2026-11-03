@@ -79,7 +79,7 @@ structured verdicts (ACCEPTED/DENIED with findings). This catches semantic issue
   the QA atom checks every `target`, `targets` entry and debugger `entrypoint` before any tool
   starts (`/scenarios/…` passes only in a scenario run).
   Code outside `sandbox` asks `contains(path)`, which answers without raising. The REST API reaches
-  the boundary through `core.flow.engine.project_paths.project_file`: a pipeline run's `spec` and
+  the boundary through `assurance.validation.orchestration.project_paths.project_file`: a pipeline run's `spec` and
   every `file` field answer `PATH_TRAVERSAL` 400 naming only the input, before any existence check.
   A pipeline named over the API (run, resume, `/check`) is a bare name: the project's own
   `.specweaver/pipelines/<name>.yaml`, else a packaged one; never a file beside the server.

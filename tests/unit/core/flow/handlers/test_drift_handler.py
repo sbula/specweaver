@@ -9,8 +9,7 @@ import pytest
 
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.drift import DriftCheckHandler, _load_plan
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
-from tests.scripted_llm import FixedRouter
+from specweaver.core.flow.run_state.run_context import RunContext
 
 
 @pytest.mark.asyncio
@@ -81,46 +80,30 @@ def test_drift_handler_load_plan_raises_exception_on_invalid_yaml(tmp_path: Path
         _load_plan(str(plan_path))
 
 
+def test_the_drift_handler_asks_no_model_itself() -> None:
+    """Proves: TECH-082 FR-2. The model call lives in validation orchestration's `explain_drift`."""
+    import inspect
+
+    from specweaver.core.flow.handlers import drift
+
+    source = inspect.getsource(drift)
+
+    assert ".generate(" not in source
+    assert "explain_drift" in source
+
+
 @pytest.mark.asyncio
-async def test_drift_handler_analyze_drift_logic(tmp_path: Path) -> None:
-    from unittest.mock import AsyncMock
+async def test_no_model_for_the_analysis_is_reported_not_raised(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from specweaver.core.flow.handlers import drift
 
-    from specweaver.assurance.validation.models import DriftFinding, DriftReport, Severity
-    from specweaver.core.flow.run_state.run_context import RunContext
+    def no_model(*_a, **_k):
+        raise RuntimeError("no model configured for review")
 
-    class MockConfig:
-        llm = "mock_config_llm"
+    monkeypatch.setattr(drift, "llm_for", no_model)
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "plan.yaml", db=MagicMock())
 
-    mock_llm = MagicMock()
+    text = await DriftCheckHandler()._analyze_drift(context, MagicMock(findings=[]), "a.py")
 
-    class MockGen:
-        text = "Mock root cause"
-
-    mock_llm.generate = AsyncMock(return_value=MockGen())
-
-    context = RunContext(
-        project_path=tmp_path,
-        spec_path=tmp_path / "plan.yaml",
-        db=MagicMock(),
-        model=ModelAccess(config=MockConfig()),
-    )  # type: ignore
-    context.model = context.model.model_copy(update={"llm_router": FixedRouter(mock_llm)})
-
-    report = DriftReport(
-        is_drifted=True,
-        findings=[
-            DriftFinding(
-                severity=Severity.ERROR,
-                node_type="function",
-                description="Bad signature",
-                expected_signature="exp",
-                actual_signature="act",
-            )
-        ],
-    )
-
-    handler = DriftCheckHandler()
-    result = await handler._analyze_drift(context, report, "src/drifted.py")
-
-    assert "Mock root cause" in result
-    mock_llm.generate.assert_called_once()
+    assert text == "LLM analysis failed: no model configured for review"

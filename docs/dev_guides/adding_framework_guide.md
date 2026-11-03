@@ -41,7 +41,7 @@ decorators:
   GetMapping: "@RequestMapping(method = RequestMethod.GET)"
 ```
 
-A language name must be one of `LANGUAGE_SUFFIXES` in `core/flow/handlers/archetype_pipelines.py`;
+A language name must be one of `LANGUAGE_SUFFIXES` in `assurance/validation/orchestration/archetype_pipelines.py`;
 an unknown one is refused.
 
 Evaluation is recursive with depth protection (Max Depth 5). Agents calling
@@ -75,7 +75,7 @@ orchestrator's Python classes.
 ## 4. Write the rule
 
 **Do not** parse the framework AST inside the rule. The validate steps and `sw check` both call
-`core/flow/handlers/archetype_pipelines.py`, which:
+`assurance/validation/orchestration/archetype_pipelines.py`, which:
 
 1. finds the `archetype` in the nearest `context.yaml` (`spring-boot`);
 2. takes `validation_code_<archetype>` when the file is in one of the schema's

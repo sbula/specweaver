@@ -96,7 +96,7 @@ class TestsPassRule(Rule):
 
 ### Entry points
 
-All three route through `execute_validation_flow()` in `core.flow.handlers.validation_hydrator`,
+All three route through `execute_validation_flow()` in `assurance.validation.orchestration.validation_hydrator`,
 which does hydration + pipeline execution:
 
 - **Flow handler**: `ValidateCodeHandler._run_validation()` → `execute_validation_flow()`

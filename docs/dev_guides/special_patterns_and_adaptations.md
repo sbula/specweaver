@@ -76,7 +76,7 @@ Markdown design's constraints **before** tests run.
 layer, `Loom Commons`). The C05 rule
 (`c05_import_direction.py`) still needs the polyglot architecture check that `sandbox.qa_runner`
 provides. It gets it without importing it: the flow layer's validation hydrator
-(`core/flow/handlers/validation_hydrator.py`) runs the check and puts the result in
+(`assurance/validation/orchestration/validation_hydrator.py`) runs the check and puts the result in
 `rule.context["qa_architecture_result"]`; C05 only reads it.
 
 Replaced: C05 used to call `PythonQARunner.run_architecture_check()` itself under a boundary

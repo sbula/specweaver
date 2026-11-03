@@ -9,10 +9,12 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from specweaver.assurance.validation.orchestration.drift_analysis import explain_drift
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.handlers._llm import llm_for
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
-from specweaver.infrastructure.llm.budget import SpendLimitReachedError
+from specweaver.infrastructure.llm.models import TaskType
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -148,33 +150,10 @@ class DriftCheckHandler:
         )
 
     async def _analyze_drift(self, context: RunContext, report: Any, file_path: str) -> str | None:
-        """Invoke LLM to determine drift root cause; None when the spend brake stopped it."""
-        from specweaver.infrastructure.llm.models import Message, Role
-
-        prompt = (
-            f"You are investigating architectural drift in {file_path}.\n"
-            f"The AST Drift Engine found {len(report.findings)} violations:\n"
-        )
-        for f in report.findings:
-            prompt += f"- {f.severity.name}: {f.description}\n"
-        prompt += "\nExplain the root cause of these discrepancies concisely."
-
-        messages = [
-            Message(
-                role=Role.SYSTEM, content="You are a code architecture expert diagnosing AST drift."
-            ),
-            Message(role=Role.USER, content=prompt),
-        ]
-
+        """The model's root cause, asked by validation orchestration; None when the brake stopped it."""
         try:
-            from specweaver.core.flow.handlers._llm import llm_for
-            from specweaver.infrastructure.llm.models import TaskType
-
             adapter, config = llm_for(context, TaskType.REVIEW)
-            response = await adapter.generate(messages, config)
-            return str(response.text)
-        except SpendLimitReachedError:  # expected: the brake stopped the run, which reports it
-            return None
         except Exception as exc:
-            logger.exception("DriftCheckHandler: Failed LLM root-cause analysis.")
+            logger.exception("DriftCheckHandler: no model for the root-cause analysis.")
             return f"LLM analysis failed: {exc}"
+        return await explain_drift(adapter, config, report.findings, file_path)

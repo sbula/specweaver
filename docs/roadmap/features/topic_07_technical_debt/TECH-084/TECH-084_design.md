@@ -22,7 +22,7 @@ Filing-day evidence from the audit. Line numbers drift; re-measure each one befo
 - **Fix first #9** — A file's validation pipeline is chosen three ways (the API never applies the
   archetype); pipeline YAML is loaded five ways (`sw run` ignores project overrides); "shipped file,
   project file first" exists four times with different rules. Where:
-  `assurance/validation/pipeline_loader.py`, `core/flow/handlers/archetype_pipelines.py`,
+  `assurance/validation/pipeline_loader.py`, `assurance/validation/orchestration/archetype_pipelines.py`,
   `core/flow/engine/parser.py`.
 - **WV-1** — Validation pipeline chosen three ways; the API never applies the archetype; a missing
   profile errors in CLI but falls back in flow. Where: `pipeline_loader.py:125`,

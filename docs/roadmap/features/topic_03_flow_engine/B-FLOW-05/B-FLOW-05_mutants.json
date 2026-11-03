@@ -500,12 +500,12 @@
         {
           "id": "drift-stop-is-a-failure",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/drift.py",
-          "symbol": "DriftCheckHandler._analyze_drift",
-          "old": "        except SpendLimitReachedError:  # expected: the brake stopped the run, which reports it\n            return None\n        except Exception as exc:\n",
-          "new": "        except Exception as exc:\n",
+          "file": "src/specweaver/assurance/validation/orchestration/drift_analysis.py",
+          "symbol": "explain_drift",
+          "old": "    except SpendLimitReachedError:  # expected: the brake stopped the run, which reports it\n        return None\n    except Exception as exc:\n",
+          "new": "    except Exception as exc:\n",
           "breaks": "a brake stop is shown as a failed analysis with a traceback",
-          "symbol_sha": "sha256:b68fe819bb96ef07570c84f08d742b753b072d6ddb335bdec16e070654f2e002"
+          "symbol_sha": "sha256:278ce6653626e6e4339ccaa887f66820fd974475638f2ad8c8089774f8f2b7a4"
         },
         {
           "id": "worktree-step-skips-park",

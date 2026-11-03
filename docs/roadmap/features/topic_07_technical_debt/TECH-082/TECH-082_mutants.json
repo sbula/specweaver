@@ -23,6 +23,26 @@
       ]
     },
     {
+      "requirement": "FR-2",
+      "title": "The drift root cause is asked by validation orchestration, not by the flow handler",
+      "scope": [
+        "tests/unit/assurance/validation/orchestration/test_drift_analysis.py",
+        "tests/unit/core/flow/handlers/test_drift.py"
+      ],
+      "mutants": [
+        {
+          "id": "findings-left-out-of-the-prompt",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/orchestration/drift_analysis.py",
+          "symbol": "explain_drift",
+          "old": "    for f in findings:\n        prompt += f\"- {f.severity.name}: {' '.join(str(f.description).split())}\\n\"\n",
+          "new": "    for f in findings:\n        pass\n",
+          "breaks": "the model is asked about drift without being told what drifted",
+          "symbol_sha": "sha256:278ce6653626e6e4339ccaa887f66820fd974475638f2ad8c8089774f8f2b7a4"
+        }
+      ]
+    },
+    {
       "requirement": "FR-15",
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [

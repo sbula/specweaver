@@ -238,7 +238,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | `pipeline_engine_guide.md` | the one step table and the `dual_pipeline` target | ⬜ |
 | `layer_isolation_and_di.md` | handler shells call workflows with plain values | ⬜ |
 | `docs/user_guides/2_drafting_effective_specs.md` | `sw check` summary lines and exit codes, `NOTHING CHECKED` | ⬜ |
-| `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | ⬜ |
+| `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | 🟡 orchestration done (SF-01); arbitration in SF-03 |
 | `docs/architecture/03_system_topology/context_yaml_spec.md` | the stricter-going-down rule and `widens` | ⬜ |
 | `docs/user_guides/` (the `context.yaml` and `sw check` pages) | `widens`, the C05 message, the unmapped count, the extras | ⬜ |
 
@@ -328,7 +328,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Implementation home | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -381,6 +381,9 @@ and the extra-tool list. Design APPROVED by the user 2026-11-02, with FR-11, FR-
 AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
 **SF-08 done 2026-11-03** (accepted by the user): resolver, spec, our 18 manifests, guard
 (`TECH-082_sf08_walkthrough.md`).
-**Next step**: dev for SF-01 (`TECH-082_sf01_implementation_plan.md`, APPROVED 2026-11-03).
+**SF-01 done 2026-11-03** (accepted by the user): validation policy and the drift model call live in
+`assurance/validation/orchestration` (`TECH-082_sf01_walkthrough.md`).
+**Next step**: implementation plan for SF-02 (critical path SF-02 → SF-03 → SF-05 → SF-06); SF-04,
+SF-07 and SF-09 may follow in any order.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

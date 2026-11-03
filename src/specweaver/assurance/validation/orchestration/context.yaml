@@ -19,11 +19,15 @@ consumes:
   - specweaver/assurance/validation
   - specweaver/assurance/validation/io
   - specweaver/core/config
+  - specweaver/infrastructure/llm
   - specweaver/sandbox
 widens:
+  specweaver/infrastructure/llm: "asks the model for the drift root cause"
   specweaver/sandbox: "runs the QA, structure and protocol atoms and the project boundary"
 
 exposes:
+  - drift_analysis
+  - drift_analysis.explain_drift
   - archetype_pipelines
   - archetype_pipelines.add_payload
   - archetype_pipelines.code_pipeline

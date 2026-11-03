@@ -34,7 +34,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.orchestration"
-depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.sandbox",]
+depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.sandbox",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
@@ -239,7 +239,7 @@ expose = [ "executor", "models", "models.Status", "pipeline", "registry", "inher
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.orchestration",]
-expose = [ "archetype_pipelines", "archetype_pipelines.add_payload", "archetype_pipelines.code_pipeline", "archetype_pipelines.language_of", "archetype_pipelines.LANGUAGE_SUFFIXES", "archetype_pipelines.own_pipeline", "archetype_pipelines.relative_to_root", "archetype_pipelines.spec_pipeline", "project_paths", "project_paths.ProjectPathError", "project_paths.project_file", "validation_hydrator", "validation_hydrator.execute_validation_flow", "validation_hydrator.hydrate_code_validation_context",]
+expose = [ "archetype_pipelines", "archetype_pipelines.add_payload", "archetype_pipelines.code_pipeline", "archetype_pipelines.language_of", "archetype_pipelines.LANGUAGE_SUFFIXES", "archetype_pipelines.own_pipeline", "archetype_pipelines.relative_to_root", "archetype_pipelines.spec_pipeline", "project_paths", "project_paths.ProjectPathError", "project_paths.project_file", "validation_hydrator", "validation_hydrator.execute_validation_flow", "validation_hydrator.hydrate_code_validation_context", "drift_analysis", "drift_analysis.explain_drift",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.io",]
