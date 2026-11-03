@@ -335,7 +335,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-08 | One boundary rule | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-08 | One boundary rule | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-09 | The rule in every language | SF-08, SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -379,6 +379,7 @@ all A). Measured and rejected: rule L "each manifest stands alone" (one file sil
 **Current status**: amendment approved by the user 2026-11-03, with AD-9..AD-12, the sibling rule (R7)
 and the extra-tool list. Design APPROVED by the user 2026-11-02, with FR-11, FR-13 (R4), AD-4, AD-5,
 AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
-**Next step**: implementation plan for SF-08 (runs first), then SF-01.
+**Next step**: dev for SF-08 (`TECH-082_sf08_implementation_plan.md`, APPROVED 2026-11-03), then
+update the SF-01 plan (its F-1 is settled by the amendment) and ask its Phase 4/5.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
