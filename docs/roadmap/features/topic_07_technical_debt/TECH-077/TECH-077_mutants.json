@@ -46,7 +46,7 @@
       "requirement": "FR-6",
       "title": "A file's archetype is its nearest context.yaml everywhere",
       "scope": [
-        "tests/integration/core/flow/handlers/test_one_archetype.py"
+        "tests/integration/assurance/validation/orchestration/test_one_archetype.py"
       ],
       "mutants": [
         {
@@ -92,7 +92,7 @@
         {
           "id": "root-not-handed-to-rules",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
           "symbol": "execute_validation_flow",
           "old": "    if project_root is not None:\n        merged_context[\"project_root\"] = project_root\n",
           "new": "    if False:\n        merged_context[\"project_root\"] = project_root\n",
@@ -138,7 +138,7 @@
           "old": "    resolved = _check_pipeline(body, project_root, await _domain_profile(db, project_root))\n",
           "new": "    resolved = _check_pipeline(body, project_root, None)\n",
           "breaks": "/check ignores the project's domain profile",
-          "symbol_sha": "sha256:bf5045da0f7a6caf61ced80af69094417d14f7937a666612b530d15ec512093b"
+          "symbol_sha": "sha256:7483e231f75daf3496474c41201e0f4629f26fe5296c5fc406779447928145f7"
         }
       ]
     },

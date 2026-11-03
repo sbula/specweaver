@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+from specweaver.assurance.graph.topology import load_nodes
 from tests.fixtures.arch_scanners import import_offenders
 
 #: `src/specweaver/`. Derived here rather than imported from the architecture test module: this
@@ -50,11 +51,14 @@ def _token(n: int) -> str:
 #: The prefix neither layer may import. A tuple because the scanner takes one.
 SANDBOX_PREFIXES = ("specweaver.sandbox",)
 
-#: The one sandbox import the validation layer may hold: `sw drift check-rot --staged` reads the git
-#: index through `SubprocessExecutor`, because the repo bans raw `subprocess` outside the executor.
-#: The command is presentation; no rule executes anything. Agreed by the user 2026-10-30. Any other
-#: sandbox import, or this one in another file, still fails.
-_VALIDATION_MAY_IMPORT = ["cli_drift.py: specweaver.sandbox.execution.executor"]
+#: The sub-modules of the validation tree that declare a sandbox use in their manifest's `widens`
+#: `[agreed 2026-11-03]`: the CLI (`sw drift check-rot --staged` reads the git index through
+#: `SubprocessExecutor`, agreed 2026-10-30) and the orchestration module that runs the QA atoms
+#: around the pure rules. A new widening shows up here as a change, never silently.
+_VALIDATION_WIDENS_SANDBOX = {
+    "specweaver/assurance/validation/interfaces",
+    "specweaver/assurance/validation/orchestration",
+}
 
 #: The two roots this module asserts about, relative to `src/specweaver/`.
 VALIDATION_ROOT = SRC_ROOT / "assurance" / "validation"
@@ -97,10 +101,36 @@ def test_a_nonexistent_root_reports_clean_which_is_why_that_guard_exists() -> No
 # ---------------------------------------------------------------------------
 
 
+def _sandbox_imports(root: Path) -> list[tuple[str, str]]:
+    """Each sandbox import under `root` as (folder relative to `src/`, module), at any depth."""
+    found = []
+    for folder in sorted({p.parent for p in root.rglob("*.py")}):
+        for hit in import_offenders(folder, SANDBOX_PREFIXES, recursive=False):
+            found.append((folder.relative_to(SRC_ROOT.parent).as_posix(), hit.split(": ", 1)[1]))
+    return found
+
+
+def _declared(nodes: dict, folder: str, module: str) -> bool:
+    """Whether the folder's nearest manifest declares this import in `widens`, with a reason."""
+    owner = max(
+        (n for n in nodes.values() if folder.startswith(_folder(n) + "/") or folder == _folder(n)),
+        key=lambda n: len(_folder(n)),
+    )
+    target = module.replace(".", "/")
+    return any(
+        reason.strip() and (target == key or target.startswith(key + "/"))
+        for key, reason in owner.widens.items()
+    )
+
+
+def _folder(node: object) -> str:
+    return node.yaml_path.parent.relative_to(SRC_ROOT.parent).as_posix()  # type: ignore[attr-defined]
+
+
 def test_validation_layer_does_not_import_the_sandbox() -> None:
-    """No module under `assurance/validation/` imports the sandbox, at any depth, but the one
-    executor import named in `_VALIDATION_MAY_IMPORT`. Equality, not a subset: an exception that is no
-    longer used fails too, so it cannot outlive its reason.
+    """No module under `assurance/validation/` imports the sandbox, at any depth, unless its own
+    manifest declares that use in `widens`. Equality on the folders that do: a widening nobody
+    uses any more, or a new one, fails here too, so it cannot outlive or skip its reason.
 
     `tach` also enforces this: the layer declares a dependency list that omits the sandbox, and a
     planted import makes `tach check` fail. This test is not redundant with that. It is the
@@ -111,9 +141,13 @@ def test_validation_layer_does_not_import_the_sandbox() -> None:
     Do not delete this as a duplicate of the tach run without first reading the sibling invariant
     below, which has no second enforcement at all.
     """
-    assert import_offenders(VALIDATION_ROOT, SANDBOX_PREFIXES, recursive=True) == (
-        _VALIDATION_MAY_IMPORT
-    )
+    nodes, _ = load_nodes(SRC_ROOT.parent)
+    imports = _sandbox_imports(VALIDATION_ROOT)
+
+    undeclared = [(f, m) for f, m in imports if not _declared(nodes, f, m)]
+
+    assert undeclared == []
+    assert {f for f, _ in imports} == _VALIDATION_WIDENS_SANDBOX
 
 
 def test_interfaces_layer_does_not_import_the_sandbox() -> None:

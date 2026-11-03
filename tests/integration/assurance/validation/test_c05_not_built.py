@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.orchestration.validation_hydrator import _hydrate_architecture
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
-from specweaver.core.flow.handlers.validation_hydrator import _hydrate_architecture
 from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:

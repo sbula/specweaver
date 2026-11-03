@@ -1,0 +1,45 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: validation-orchestration
+level: module
+purpose: >
+  Runs a validation: picks the file's pipeline, hydrates the rules' context through the sandbox
+  atoms, and asks the model for the drift root cause.
+
+description: |
+  The validation rules are pure; this module does the work around them. It chooses the pipeline by
+  archetype and language, runs the QA, structure and protocol atoms, resolves paths inside the
+  project, and calls the rule executor. The validation CLI, `POST /check` and the flow handlers all
+  enter here, so each judges a file by the same rules.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/assurance/validation
+  - specweaver/assurance/validation/io
+  - specweaver/core/config
+  - specweaver/sandbox
+widens:
+  specweaver/sandbox: "runs the QA, structure and protocol atoms and the project boundary"
+
+exposes:
+  - archetype_pipelines
+  - archetype_pipelines.add_payload
+  - archetype_pipelines.code_pipeline
+  - archetype_pipelines.language_of
+  - archetype_pipelines.LANGUAGE_SUFFIXES
+  - archetype_pipelines.own_pipeline
+  - archetype_pipelines.relative_to_root
+  - archetype_pipelines.spec_pipeline
+  - project_paths
+  - project_paths.ProjectPathError
+  - project_paths.project_file
+  - validation_hydrator
+  - validation_hydrator.execute_validation_flow
+  - validation_hydrator.hydrate_code_validation_context
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

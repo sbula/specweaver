@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.flow.handlers.archetype_pipelines import (
+from specweaver.assurance.validation.orchestration.archetype_pipelines import (
     LANGUAGE_SUFFIXES,
     covers,
     languages_of,

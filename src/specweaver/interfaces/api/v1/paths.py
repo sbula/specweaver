@@ -10,8 +10,11 @@ import logging
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
+from specweaver.assurance.validation.orchestration.project_paths import (
+    ProjectPathError,
+    project_file,
+)
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime
-from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
 if TYPE_CHECKING:

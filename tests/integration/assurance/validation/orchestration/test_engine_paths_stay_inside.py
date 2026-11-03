@@ -24,7 +24,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.handlers.archetype_pipelines import add_payload, relative_to_root
+from specweaver.assurance.validation.orchestration.archetype_pipelines import (
+    add_payload,
+    relative_to_root,
+)
 from specweaver.core.flow.handlers.qa_targets import generated_code
 from specweaver.core.flow.handlers.review import _resolve_mentions
 from specweaver.core.flow.run_state.run_context import RunContext

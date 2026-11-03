@@ -132,8 +132,10 @@ def test_lint_fix_asks_the_rule(
 
 
 def test_c03_and_c04_get_the_settings(tmp_path: Path) -> None:
+    from specweaver.assurance.validation.orchestration.validation_hydrator import (
+        hydrate_code_validation_context,
+    )
     from specweaver.core.config.settings import SandboxSettings
-    from specweaver.core.flow.handlers.validation_hydrator import hydrate_code_validation_context
 
     pipeline = MagicMock()
     pipeline.steps = [MagicMock(rule="C03")]

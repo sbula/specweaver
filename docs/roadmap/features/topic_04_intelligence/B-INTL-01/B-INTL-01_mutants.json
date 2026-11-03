@@ -12,7 +12,7 @@
         {
           "id": "absolute-path",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "add_payload",
           "old": "    relative = relative_to_root(path, cwd)\n",
           "new": "    relative = str(path)\n",
@@ -55,14 +55,14 @@
       "requirement": "FR-5",
       "title": "An archetype's code rules judge only its schema's languages",
       "scope": [
-        "tests/unit/core/flow/handlers/test_archetype_languages.py",
+        "tests/unit/assurance/validation/orchestration/test_archetype_languages.py",
         "tests/integration/core/flow/handlers/test_archetype_code_pipeline.py"
       ],
       "mutants": [
         {
           "id": "covers-every-file",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "covers",
           "old": "    return not languages or any(suffix in LANGUAGE_SUFFIXES[name] for name in languages)\n",
           "new": "    return True\n",
@@ -72,7 +72,7 @@
         {
           "id": "unknown-language-kept",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "languages_of",
           "old": "    if unknown:\n",
           "new": "    if False:\n",
@@ -96,7 +96,7 @@
           "old": "    if pipeline is None and level != \"feature\":\n",
           "new": "    if False:\n",
           "breaks": "sw check judges a Spring file by the default rules",
-          "symbol_sha": "sha256:4b4ea2beae6f8135d78116422f4a6acf89675689135b943e5ceef39f7bbb512d"
+          "symbol_sha": "sha256:1a7b3fe2c5a94e71ac9257e1b19c0ceaa4bd71e5892127a4f7cb60ca6e276740"
         },
         {
           "id": "pipeline-flag-ignored",
@@ -106,7 +106,7 @@
           "old": "    if pipeline is None and level != \"feature\":\n",
           "new": "    if level != \"feature\":\n",
           "breaks": "--pipeline is overruled by the archetype",
-          "symbol_sha": "sha256:4b4ea2beae6f8135d78116422f4a6acf89675689135b943e5ceef39f7bbb512d"
+          "symbol_sha": "sha256:1a7b3fe2c5a94e71ac9257e1b19c0ceaa4bd71e5892127a4f7cb60ca6e276740"
         }
       ]
     }

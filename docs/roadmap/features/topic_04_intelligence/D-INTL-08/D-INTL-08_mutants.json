@@ -485,7 +485,7 @@
           "old": "if archetype is None and language_of(code_path) != \"python\":",
           "new": "if False:",
           "breaks": "C01/C02 fail every Java file",
-          "symbol_sha": "sha256:5d034366558d9bc8cd4ae1e563ea05d5adb23c82935c3bc0e2841abdece1de31"
+          "symbol_sha": "sha256:66bc06481331e98887c660737af01c32dc97b889403c63b9f4aec443c2ed0f55"
         },
         {
           "id": "note-not-shown",
@@ -515,7 +515,7 @@
           "old": "    return any(suffix in endings for endings in LANGUAGE_SUFFIXES.values())\n",
           "new": "    return suffix == \".py\"\n",
           "breaks": "a Java test file that ran no test passes",
-          "symbol_sha": "sha256:2546b13b1520bc5d9fee493d518b47bf318eb763fcada7ce8331a6025fc0fb55"
+          "symbol_sha": "sha256:31f610df7ecde727201825b1a40c8c40f75e0b0133c17b946301079cafba496d"
         }
       ]
     },

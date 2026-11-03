@@ -186,7 +186,10 @@ def _load(name: str, project_path: Path | None) -> ValidationPipeline:
 
 def relative_to_root(path: Path, root: Path) -> str | None:
     """`path` relative to `root`, as the sandboxed atoms take it; None when it lands outside."""
-    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
+    from specweaver.assurance.validation.orchestration.project_paths import (
+        ProjectPathError,
+        project_file,
+    )
 
     try:
         # `absolute()`, not `resolve()`: a relative path is read from the working folder, and the

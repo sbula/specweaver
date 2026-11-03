@@ -379,7 +379,10 @@ def _resolve_mentions(
     Only files within the project are included.
     Spec files (kind="spec") are prioritized over other kinds.
     """
-    from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
+    from specweaver.assurance.validation.orchestration.project_paths import (
+        ProjectPathError,
+        project_file,
+    )
     from specweaver.infrastructure.llm.mention_scanner.models import ResolvedMention
 
     resolved: list[ResolvedMention] = []

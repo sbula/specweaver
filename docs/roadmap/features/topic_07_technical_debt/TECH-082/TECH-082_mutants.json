@@ -3,6 +3,26 @@
   "feature": "TECH-082",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "Validation and its API take validation policy from its own home, never from the flow handlers",
+      "scope": [
+        "tests/unit/assurance/validation/orchestration/test_validation_has_its_own_home.py",
+        "tests/unit/test_architecture.py"
+      ],
+      "mutants": [
+        {
+          "id": "cli-reaches-into-handlers",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "check",
+          "old": "        from specweaver.assurance.validation.orchestration.validation_hydrator import (",
+          "new": "        from specweaver.core.flow.handlers.registry import StepHandlerRegistry  # noqa: F401\n        from specweaver.assurance.validation.orchestration.validation_hydrator import (",
+          "breaks": "the validation CLI depends on the flow engine's handlers again",
+          "symbol_sha": "sha256:1a7b3fe2c5a94e71ac9257e1b19c0ceaa4bd71e5892127a4f7cb60ca6e276740"
+        }
+      ]
+    },
+    {
       "requirement": "FR-15",
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [

@@ -16,8 +16,8 @@ The hydrated context is merged into each rule's `self.context` dict by the
 executor, so rules never import from sandbox directly.
 
 Architectural notes:
-- This module lives in core.flow which is authorized to import both
-  sandbox and assurance.validation (see core/flow/context.yaml).
+- This module lives in assurance/validation/orchestration, which declares its use of the
+  sandbox in `widens` (its parent, the pure rules, may not use it).
 - Rules must NOT import this module — it flows in one direction only.
 """
 

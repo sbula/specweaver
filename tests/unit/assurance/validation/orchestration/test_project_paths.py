@@ -19,7 +19,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.engine.project_paths import ProjectPathError, project_file
+from specweaver.assurance.validation.orchestration.project_paths import (
+    ProjectPathError,
+    project_file,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path

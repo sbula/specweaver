@@ -13,6 +13,7 @@ consumes:
   - specweaver/core/config
   - specweaver/assurance/validation
   - specweaver/assurance/validation/io
+  - specweaver/assurance/validation/orchestration
   - specweaver/workflows/review
   - specweaver/workflows/implementation
   - specweaver/core/flow

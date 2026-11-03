@@ -18,12 +18,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
-from specweaver.assurance.validation.pipeline import ValidationPipeline, ValidationStep
-from specweaver.core.flow.handlers.validation_hydrator import (
+from specweaver.assurance.validation.orchestration.validation_hydrator import (
     _serialize_atom_result,
     execute_validation_flow,
     hydrate_code_validation_context,
 )
+from specweaver.assurance.validation.pipeline import ValidationPipeline, ValidationStep
 from specweaver.sandbox.base import AtomResult, AtomStatus
 
 if TYPE_CHECKING:

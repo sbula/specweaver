@@ -201,7 +201,10 @@ class ValidateSpecHandler:
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
-        from specweaver.core.flow.handlers.archetype_pipelines import add_payload, spec_pipeline
+        from specweaver.assurance.validation.orchestration.archetype_pipelines import (
+            add_payload,
+            spec_pipeline,
+        )
 
         pipeline, archetype = spec_pipeline(
             spec_path, project_path, feature=kind_str == "feature", profile=profile
@@ -302,12 +305,14 @@ class ValidateCodeHandler:
         from specweaver.assurance.validation.models import (
             RuleResult,  # noqa: F401 — for type narrowing
         )
-        from specweaver.core.flow.handlers.archetype_pipelines import (
+        from specweaver.assurance.validation.orchestration.archetype_pipelines import (
             add_payload,
             code_pipeline,
             language_of,
         )
-        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
+        from specweaver.assurance.validation.orchestration.validation_hydrator import (
+            execute_validation_flow,
+        )
 
         pipeline, archetype = code_pipeline(code_path, project_path)
         if archetype is None and language_of(code_path) != "python":
@@ -352,7 +357,7 @@ def _test_rules_only(pipeline: Any, language: str) -> Any:
 
 def _no_code_rules(code_path: Path, started: str) -> StepResult:
     """A passing step that says no rule judged the file — never a pass that looks judged."""
-    from specweaver.core.flow.handlers.archetype_pipelines import language_of
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import language_of
 
     note = f"no code rules for {language_of(code_path)}"
     logger.info("ValidateCodeHandler: %s (code=%s)", note, code_path.name)

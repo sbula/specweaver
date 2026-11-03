@@ -369,7 +369,7 @@
         {
           "id": "c03-c04-on-host",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
           "symbol": "hydrate_code_validation_context",
           "old": "    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
           "new": "    atom = qa_atom(cwd=project_root, language=language)\n",

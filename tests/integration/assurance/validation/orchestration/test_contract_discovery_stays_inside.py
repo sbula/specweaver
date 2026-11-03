@@ -25,7 +25,9 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.flow.handlers.validation_hydrator import discover_protocol_endpoints
+from specweaver.assurance.validation.orchestration.validation_hydrator import (
+    discover_protocol_endpoints,
+)
 
 _CONTRACT = "openapi: 3.0.3\npaths:\n  /{name}:\n    get:\n      operationId: {name}\n"
 

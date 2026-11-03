@@ -67,7 +67,7 @@ def _did_not_run(lint_result: Any) -> str | None:
 
 def _lint_target(step: PipelineStep, context: RunContext) -> str:
     """The step's `target`, else the task's code file relative to the project."""
-    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import relative_to_root
     from specweaver.core.flow.handlers.qa_targets import task_code_file
 
     if step.params.get("target"):

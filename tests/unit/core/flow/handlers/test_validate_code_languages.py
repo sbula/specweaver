@@ -38,7 +38,7 @@ async def _rules_run(root: Path, code: str) -> set[str]:
     spec.write_text("# Orders\n")
     context = RunContext(project_path=root, spec_path=spec)
     with patch(
-        "specweaver.core.flow.handlers.validation_hydrator.hydrate_code_validation_context",
+        "specweaver.assurance.validation.orchestration.validation_hydrator.hydrate_code_validation_context",
         return_value={},
     ):
         result = await ValidateCodeHandler().execute(
@@ -75,7 +75,7 @@ async def test_the_rules_judge_the_code_file_not_the_spec(tmp_path: Path) -> Non
     (tmp_path / "orders_spec.md").write_text("# Orders\n")
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "orders_spec.md")
     with patch(
-        "specweaver.core.flow.handlers.validation_hydrator.hydrate_code_validation_context",
+        "specweaver.assurance.validation.orchestration.validation_hydrator.hydrate_code_validation_context",
         return_value={},
     ):
         result = await ValidateCodeHandler().execute(

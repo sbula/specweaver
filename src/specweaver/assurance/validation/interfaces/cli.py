@@ -136,7 +136,10 @@ def _archetype_pipeline(
     level: str, target_path: Path, project_root: Path, fallback: ValidationPipeline
 ) -> tuple[ValidationPipeline, str]:
     """The pipeline the target's archetype brings, with its payload; `fallback` without one."""
-    from specweaver.core.flow.handlers.archetype_pipelines import add_payload, own_pipeline
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import (
+        add_payload,
+        own_pipeline,
+    )
 
     code = level == "code"
     picked, archetype = own_pipeline("code" if code else "spec", target_path, project_root)
@@ -287,7 +290,9 @@ def check(
     effective_strict = strict or (dal_level.is_strict if dal_level else False)
 
     if level == "code":
-        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
+        from specweaver.assurance.validation.orchestration.validation_hydrator import (
+            execute_validation_flow,
+        )
 
         results = execute_validation_flow(
             resolved,

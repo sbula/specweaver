@@ -30,13 +30,17 @@ _ENDINGS = [(lang, e) for lang, suffixes in LANGUAGE_SUFFIXES.items() for e in s
 
 @pytest.mark.parametrize(("language", "ending"), _ENDINGS)
 def test_the_archetype_rules_know_every_ending(language: str, ending: str) -> None:
-    from specweaver.core.flow.handlers.archetype_pipelines import LANGUAGE_SUFFIXES as ARCHETYPE
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import (
+        LANGUAGE_SUFFIXES as ARCHETYPE,
+    )
 
     assert ending in ARCHETYPE[language]
 
 
 def test_an_unknown_ending_matches_no_archetype_language() -> None:
-    from specweaver.core.flow.handlers.archetype_pipelines import LANGUAGE_SUFFIXES as ARCHETYPE
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import (
+        LANGUAGE_SUFFIXES as ARCHETYPE,
+    )
 
     assert not any(".sql" in suffixes for suffixes in ARCHETYPE.values())
 

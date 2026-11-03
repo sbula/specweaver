@@ -23,8 +23,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.orchestration.validation_hydrator import (
+    execute_validation_flow,
+)
 from specweaver.assurance.validation.pipeline import ValidationPipeline, ValidationStep
-from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
 if TYPE_CHECKING:
     from pathlib import Path

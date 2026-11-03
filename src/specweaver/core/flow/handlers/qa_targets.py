@@ -24,7 +24,7 @@ WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 def names_one_file(target: str) -> bool:
     """Whether a test target is one source file, in any language."""
-    from specweaver.core.flow.handlers.archetype_pipelines import LANGUAGE_SUFFIXES
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import LANGUAGE_SUFFIXES
 
     suffix = Path(target).suffix.lower()
     return any(suffix in endings for endings in LANGUAGE_SUFFIXES.values())
@@ -134,7 +134,7 @@ def file_inside(project: Path, target: str) -> Path:
 
 def generated_code(context: RunContext) -> str:
     """The run's generated module, relative to where its tests run; "" when there is none."""
-    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import relative_to_root
 
     code = task_code_file(context)
     root = context.isolation.execution_root or context.project_path

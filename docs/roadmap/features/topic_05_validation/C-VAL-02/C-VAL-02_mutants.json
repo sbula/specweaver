@@ -32,7 +32,7 @@
         {
           "id": "profile-ignored",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "spec_pipeline",
           "old": "    return pipeline or _profile_pipeline(profile, project_path), archetype\n",
           "new": "    return pipeline or _load(SPEC_DEFAULT, project_path), archetype\n",

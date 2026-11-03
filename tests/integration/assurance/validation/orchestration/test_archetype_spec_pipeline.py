@@ -78,7 +78,7 @@ def test_a_list_of_headers_fails_instead_of_crashing() -> None:
 
 
 def test_the_structure_reader_gets_a_project_relative_path(tmp_path: Path) -> None:
-    from specweaver.core.flow.handlers.archetype_pipelines import relative_to_root
+    from specweaver.assurance.validation.orchestration.archetype_pipelines import relative_to_root
 
     assert relative_to_root(tmp_path / "specs" / "a.md", tmp_path) == "specs/a.md"
     assert relative_to_root(tmp_path.parent / "elsewhere.md", tmp_path) is None

@@ -33,8 +33,12 @@ path = "specweaver.assurance.validation.io"
 depends_on = [ "specweaver.assurance.validation", "specweaver.core.config",]
 
 [[modules]]
+path = "specweaver.assurance.validation.orchestration"
+depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.sandbox",]
+
+[[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.sandbox", "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.graph.lineage", "specweaver.workspace.project", "specweaver.interfaces.run_doors",]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.sandbox", "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.assurance.validation.orchestration", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.graph.lineage", "specweaver.workspace.project", "specweaver.interfaces.run_doors",]
 
 [[modules]]
 path = "specweaver.core.config"
@@ -62,7 +66,7 @@ depends_on = [ "specweaver.core.flow.run_state", "specweaver.core.config", "spec
 
 [[modules]]
 path = "specweaver.core.flow.handlers"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
@@ -94,7 +98,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
@@ -232,6 +236,10 @@ expose = [ "dispatcher", "security", "base", "git.core", "git.interfaces", "file
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]
 expose = [ "executor", "models", "models.Status", "pipeline", "registry", "inheritance.resolve_pipeline", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "executor.execute_validation_pipeline", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule",]
+
+[[interfaces]]
+from = [ "specweaver.assurance.validation.orchestration",]
+expose = [ "archetype_pipelines", "archetype_pipelines.add_payload", "archetype_pipelines.code_pipeline", "archetype_pipelines.language_of", "archetype_pipelines.LANGUAGE_SUFFIXES", "archetype_pipelines.own_pipeline", "archetype_pipelines.relative_to_root", "archetype_pipelines.spec_pipeline", "project_paths", "project_paths.ProjectPathError", "project_paths.project_file", "validation_hydrator", "validation_hydrator.execute_validation_flow", "validation_hydrator.hydrate_code_validation_context",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.io",]

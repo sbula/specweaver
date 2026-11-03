@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.orchestration.validation_hydrator import _hydrate_tests
 from specweaver.assurance.validation.rules.code.c02_tests_exist import TestsExistRule
 from specweaver.assurance.validation.rules.code.c03_tests_pass import TestsPassRule
-from specweaver.core.flow.handlers.validation_hydrator import _hydrate_tests
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -57,7 +57,7 @@
       "scope": [
         "tests/unit/sandbox/protocol/core/protocol/test_protocol_atom.py",
         "tests/integration/sandbox/test_protocol_tool_stays_inside.py",
-        "tests/integration/core/flow/handlers/test_contract_discovery_stays_inside.py"
+        "tests/integration/assurance/validation/orchestration/test_contract_discovery_stays_inside.py"
       ],
       "mutants": [
         {
@@ -83,7 +83,7 @@
         {
           "id": "sniff-before-check",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/validation_hydrator.py",
+          "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
           "symbol": "discover_protocol_endpoints",
           "old": "        if not boundary.contains(path):\n            logger.warning(\"Contract candidate %s points outside the project; skipped\", relative)\n            continue\n",
           "new": "        pass\n",
@@ -167,7 +167,7 @@
       "title": "API file fields are judged by where the path lands",
       "scope": [
         "tests/integration/interfaces/api/test_api_file_fields_stay_inside.py",
-        "tests/unit/core/flow/engine/test_project_paths.py"
+        "tests/unit/assurance/validation/orchestration/test_project_paths.py"
       ],
       "mutants": [
         {
@@ -183,7 +183,7 @@
         {
           "id": "blank-path-is-root",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/project_paths.py",
+          "file": "src/specweaver/assurance/validation/orchestration/project_paths.py",
           "symbol": "project_file",
           "old": "    if not relative.strip() or not boundary.contains(Path(relative)):\n",
           "new": "    if not boundary.contains(Path(relative)):\n",
@@ -307,7 +307,7 @@
           "old": "            resolved_path = project_file(project_path, candidate)\n",
           "new": "            resolved_path = (project_path / candidate).resolve()\n",
           "breaks": "an escaping link or an outside path puts outside text in the prompt",
-          "symbol_sha": "sha256:cc25463d5df7af2c6e40c0bc15dc04330d067930b0bc7b8872940c9b945ef285"
+          "symbol_sha": "sha256:2e389a80638aa331d7696c5685376d8a7b4a0a89074fdce84fb62f3c649df1a4"
         }
       ]
     },
@@ -315,34 +315,34 @@
       "requirement": "FR-8",
       "title": "An engine path handed to an atom lies inside its root",
       "scope": [
-        "tests/integration/core/flow/handlers/test_engine_paths_stay_inside.py",
-        "tests/integration/core/flow/handlers/test_archetype_spec_pipeline.py"
+        "tests/integration/assurance/validation/orchestration/test_engine_paths_stay_inside.py",
+        "tests/integration/assurance/validation/orchestration/test_archetype_spec_pipeline.py"
       ],
       "mutants": [
         {
           "id": "outside-path-handed-on",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "relative_to_root",
           "old": "    except ProjectPathError:  # expected: outside the root; the caller warns and skips\n        return None\n",
           "new": "    except ProjectPathError:  # expected: outside the root; the caller warns and skips\n        return str(path)\n",
           "breaks": "an outside path reaches a sandboxed atom",
-          "symbol_sha": "sha256:827e61fdd4f37093ac5204a0397f9267d977a7b6df77190caf6c5f247b90f4e3"
+          "symbol_sha": "sha256:20453fd0f5aa6f3f8c52fe69585c8933a220c635f934d5af0e25d31090a88a05"
         },
         {
           "id": "relative-path-joined-to-root",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "relative_to_root",
           "old": "        inside = project_file(root, str(path.absolute()))\n",
           "new": "        inside = project_file(root, str(path))\n",
           "breaks": "a path relative to the working folder names another file",
-          "symbol_sha": "sha256:827e61fdd4f37093ac5204a0397f9267d977a7b6df77190caf6c5f247b90f4e3"
+          "symbol_sha": "sha256:20453fd0f5aa6f3f8c52fe69585c8933a220c635f934d5af0e25d31090a88a05"
         },
         {
           "id": "payload-reads-outside",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/archetype_pipelines.py",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "add_payload",
           "old": "    if relative is None:\n        logger.warning",
           "new": "    if False:\n        logger.warning",
@@ -357,7 +357,7 @@
           "old": "    if relative is None:\n",
           "new": "    if False:\n",
           "breaks": "an outside folder goes on the tests' import path",
-          "symbol_sha": "sha256:0efcb8153f3e4cf5842550a6a876b02e8fe8551b76b3ba2f7e59bb7cbecbbe5f"
+          "symbol_sha": "sha256:b99ea2a23977cf0c337b597b0688a5f14c6bb337843bec8ee34c404dd39b52e2"
         }
       ]
     },

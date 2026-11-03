@@ -103,8 +103,10 @@ async def run_check(
 
     resolved = _check_pipeline(body, project_root, await _domain_profile(db, project_root))
     if body.level == "code":
+        from specweaver.assurance.validation.orchestration.validation_hydrator import (
+            execute_validation_flow,
+        )
         from specweaver.core.config.dal_resolver import DALResolver
-        from specweaver.core.flow.handlers.validation_hydrator import execute_validation_flow
 
         dal_resolver = DALResolver(project_root)
         dal_level = dal_resolver.resolve(abs_path)

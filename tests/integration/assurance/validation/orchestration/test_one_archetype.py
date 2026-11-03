@@ -24,8 +24,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.assurance.validation.orchestration.archetype_pipelines import archetype_of
 from specweaver.core.flow.handlers import context_assembler
-from specweaver.core.flow.handlers.archetype_pipelines import archetype_of
 from specweaver.core.flow.run_state.run_context import RunContext
 
 if TYPE_CHECKING:
