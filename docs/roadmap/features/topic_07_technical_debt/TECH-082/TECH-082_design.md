@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-082
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-02)
+- **Status**: APPROVED (the user, 2026-11-02; amendment FR-15..FR-21, SF-08, SF-09 approved 2026-11-03)
 - **Kind**: `refactor`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -24,6 +24,12 @@ calls `TECH-085`).
 
 The scope is all 9 findings: the moves first, then the engine's own parts `[agreed 2026-11-02]`.
 
+It also makes one boundary rule true for the whole project and every language `[agreed 2026-11-03]`:
+going down the folder tree, a module gets stricter; a child is wider than its parent only where its
+own `context.yaml` declares it in `widens`, with a reason. SpecWeaver checks this rule the same way in
+all 9 code languages, on user projects and on its own tree. It found the question in SF-01's plan:
+the new orchestration module sits under a pure-logic parent and must use the sandbox and the LLM.
+
 ## The Defect (re-measured 2026-11-02)
 
 | Finding | Re-measured |
@@ -37,6 +43,7 @@ The scope is all 9 findings: the moves first, then the engine's own parts `[agre
 | FL-10 | `context.feedback` (`run_context.py:174`) is `dict[str, Any]` with six key kinds; two pop functions with reversed argument order (`generation.py:50`, `draft.py:29`); `arbiter.py:236,425` hard-codes the YAML step names `generate_code` and `generate_scenarios`, also listed in `dual_pipeline.py:55-56`; `scenario.py:222` writes `scenario_test_path`, which nothing reads |
 | FL-21 | `handlers/mcp_assembler.py` and `handlers/context_assembler.py` are both titled "Context Assembler"; the private `handlers/_llm.py` is imported from `interfaces/run_setup/builder.py:79,156`; `generation.py:106,317` `FILENAME_PREFIX` has no reader |
 | Carry-in | `_print_summary` (`assurance/validation/interfaces/cli.py:71-95`) counts only FAIL and WARN, so a run where every rule is SKIP prints `ALL PASSED` and exits 0; `/check` (`interfaces/api/v1/validation.py:123-136`) returns `overall: "PASS"` for the same run |
+| Boundary rule | `context_yaml_spec.md:230-231` says a child only narrows `consumes` and `forbids` add up going down; nothing enforces it. The product checkers read only the nearest `context.yaml` (`python/forbids_checker.py:27`, `java/runner.py:37`, `typescript/runner.py:289`), so one child manifest drops the parent's `forbids` without a word. Kotlin and Rust report "not implemented"; Go, C, C++ and JavaScript have no check. In our tree 15 of 50 nested manifests are wider than their parent (10 are `interfaces`), and 2 use what their parent forbids (`validation/interfaces` → `sandbox/execution`, `graph/interfaces` → `core/config`) |
 
 ## Path List (`ADR-005`)
 
@@ -50,6 +57,10 @@ The scope is all 9 findings: the moves first, then the engine's own parts `[agre
 | P-6 | `drift_check` step and `sw drift` → `DriftCheckHandler` → drift analysis → model | flow handler, validation orchestration, LLM | TECH-082 (FR-2) | ⬜ |
 | P-7 | `sw run scenario_integration` → `orchestrate`+`dual_pipeline` → two sides → `arbitrate`+`verdict` → arbitration workflow → model | YAML loader, registry, dual handler, workflows/arbitration | TECH-082 (FR-5, FR-9, FR-10) | ⬜ |
 | P-8 | a run builder asks which roles a pipeline needs (`roles_of`) | `interfaces/run_setup`, step table | TECH-082 (FR-8, FR-12) | ⬜ |
+| P-9 | `sw check <code file>` in any of the 9 languages → C05 → shared boundary check → parser imports → effective rules from the folder tree | validation, sandbox language, workspace parsers, topology rules | TECH-082 (FR-15, FR-16, FR-17, FR-19) | ⬜ |
+| P-10 | `sw scan` → topology → `tach.toml` with the declared widenings | workspace project, topology rules | TECH-082 (FR-20) | ⬜ |
+| P-11 | a project that configures a stricter tool (tach, dependency-cruiser, go-arch-lint) → C05 runs it as an extra | sandbox language, the tool | TECH-082 (FR-20) | ⬜ |
+| P-12 | SpecWeaver's own tree → the guard test → the same rule resolver | tests, topology rules | TECH-082 (FR-21) | ⬜ |
 
 ## Research Findings
 
@@ -118,6 +129,13 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | FR-12 | Each `context.feedback` key SHALL be declared once with its value type, read through one pop function; the arbiter SHALL take the side step names from the dual pipeline's side table, not literals; the unread `scenario_test_path` write and `FILENAME_PREFIX` SHALL be removed; `mcp_assembler` and `context_assembler` SHALL carry distinct names; `roles_of` SHALL be imported from a public module | the handlers, `interfaces/run_setup` | — | no grab-bag keys, no private import from outside `core/flow` |
 | FR-13 | `sw check`'s summary SHALL count SKIP rows: each summary line SHALL add `N skipped` when N > 0, and when no rule judged (every result SKIP, or no result) it SHALL print `NOTHING CHECKED: N skipped` and exit 1 `[agreed 2026-11-02]` | `sw check` | check a file | e.g. `ALL PASSED (3 skipped)`; all-skip exits 1 |
 | FR-14 | `POST /api/v1/check` SHALL return a `skipped` count, and `overall: "NOTHING_CHECKED"` when no rule judged `[agreed 2026-11-02]` | the API | check a file | the response says nothing was checked |
+| FR-15 | Going down the folder tree a module SHALL get stricter: its effective `forbids` SHALL be its own plus its parent's effective `forbids`, and each of its `consumes` SHALL lie inside its parent's effective `consumes`. A child SHALL be wider only through its own `widens` map, `path: reason` `[agreed 2026-11-03]`, covering both halves `[agreed 2026-11-03]`; an entry with an empty reason, or one that widens nothing, SHALL be refused. A `consumes` entry inside the parent's own folder (a sibling) is not a widening `[agreed 2026-11-03]`. A folder with no `context.yaml` SHALL get its nearest ancestor's effective rules. `context_yaml_spec.md` SHALL say this | the rule resolver | read a folder tree | one effective rule per folder |
+| FR-16 | One shared boundary check SHALL judge a code file in each of the 9 languages (`commons.languages.LANGUAGE_SUFFIXES`) by FR-15's effective rules, from the imports its language parser lists; each language SHALL contribute only how an import names a project folder. The Python forbids checker, Java's generated program and the TypeScript ESLint rule SHALL be removed `[agreed 2026-11-03]` (seam: validation → sandbox → parsers) | C05 | check a code file | the same verdict for the same tree in every language |
+| FR-17 | An import that names no project folder SHALL not be judged; the result SHALL count such imports `[agreed 2026-11-03]` | the shared check | check a file with third-party imports | "N imports not mapped to a project folder" |
+| FR-18 | A JavaScript code parser SHALL list the imports of `.js`, `.jsx`, `.mjs`, `.cjs` files `[agreed 2026-11-03]` | the parser factory | parse a JavaScript file | its imports |
+| FR-19 | A file whose imports go beyond its folder's effective rules SHALL fail C05; the message SHALL name the file, the import, the folder whose rule it breaks and the `widens` field that would allow it `[agreed 2026-11-03]` | C05 on a user project | check an undeclared widening | a failure that names the fix |
+| FR-20 | Where a project configures a stricter boundary tool for its language, the check SHALL run it in addition and report each extra and whether it ran; a tool that is configured but not installed SHALL be reported as not run, never as clean `[agreed 2026-11-03]`: tach (Python, `tach.toml`), dependency-cruiser (TypeScript and JavaScript, `.dependency-cruiser.*`), go-arch-lint (Go, `.go-arch-lint.yml`); `sw scan` SHALL write declared widenings into `tach.toml` | C05, `sw scan` | check a project with a tool configured | the shared verdict plus each extra |
+| FR-21 | SpecWeaver's own manifests SHALL follow FR-15: every wider child declares `widens` with a reason, and a guard test SHALL check the whole tree with the same resolver the product uses `[agreed 2026-11-03]` | the guard test | — | our tree obeys the rule it ships |
 
 ## Requirement–Surface Bindings
 
@@ -132,32 +150,45 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | FR-11 | where a param is refused | `_validate_params` (only `bash` requires `script` today) | read `models.py:385,410` |
 | FR-13 | rule results | `RuleResult.status` (`Status.SKIP`) | read `cli.py:71-95`, `models.py` |
 | FR-14 | the response model | `CheckResponse` (`overall`, `total`, `passed`, `failed`, `warned`) | read `interfaces/api/v1/schemas.py:89-97`, `validation.py:123-136` |
+| FR-15, FR-21 | every manifest's `consumes`, `forbids` | `TopologyNode` (`consumes`, `forbids`) loaded by `assurance/graph/topology.py:226-228` | read `topology.py:51-66,226-231` |
+| FR-16 | a file's imports | `CodeStructureInterface.extract_imports(code) -> list[str]`, 8 parsers today | read `workspace/ast/parsers/interfaces.py:254`, `factory.py:28-47` (no JavaScript entry) |
+| FR-16 | where C05 gets its result | `_hydrate_architecture` → atom intent `run_architecture` → each runner's `run_architecture_check` | read `validation_hydrator.py:291`, `kotlin/runner.py`, `rust/runner.py` ("not implemented") |
+| FR-18 | the JavaScript grammar | `tree-sitter-javascript>=0.25.0` | read `pyproject.toml:26` (already a dependency) |
+| FR-20 | `tach.toml` writing | `sync_tach_toml(graph, target_path)` | read `workspace/project/tach_sync.py:71` |
 
 ## Non-Functional Requirements
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13, FR-14 | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets **[proof: meta — rule about the diff]** |
+| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13..FR-20 | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets **[proof: meta — rule about the diff]** |
 | NFR-2 | The boundaries hold | `tach check` passes with `exact = true`, no cycle, no `deprecated` edge; manifests match tach; the new modules declare `exposes` equal to tach's interfaces **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | No compatibility shims | Importing each old module path (`specweaver.core.flow.engine.task_files`, `...frameworks`, `...handlers.contract_renderers`, `...handlers.validation_hydrator`, `...handlers.archetype_pipelines`) raises `ModuleNotFoundError` |
 | NFR-4 | Mutants still find their code | Every mutant anchored in a moved symbol is re-pointed and its `symbol_sha` refreshed; `stale_mutants.py` reports none stale and each re-pointed campaign kills as before **[proof: meta — rule about tests]** |
+| NFR-5 | One rule, every language | One fixture tree, written once in each of the 9 languages, gives the same violations and the same unmapped count in each **[proof: integration, parametrized over the 9 languages]** |
 
 ## External Dependencies
 
-None.
+| Tool | Status | Used for |
+|---|---|---|
+| `tree-sitter-javascript` | already pinned, `>=0.25.0` (`pyproject.toml:26`), no parser uses it yet | FR-18 |
+| tach, dependency-cruiser, go-arch-lint | the project's own tools; SpecWeaver never installs them; run only when the project configures them | FR-20 |
 
 ## Architectural Decisions
 
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
-| AD-1 | New sub-module `assurance/validation/orchestration`, archetype `orchestrator`, own `context.yaml` and tach module; it may consume `sandbox`, `infrastructure/llm` and `assurance/validation/io` | `assurance/validation` stays pure-logic; the validation CLI and API depend on their own family | Yes — approved by the user on 2026-11-02 |
+| AD-1 | New sub-module `assurance/validation/orchestration`, archetype `orchestrator`, own `context.yaml` and tach module; it may consume `sandbox`, `infrastructure/llm` and `assurance/validation/io`, declared in its `widens` with reasons, since its parent forbids the first two (FR-15) | `assurance/validation` stays pure-logic; the validation CLI and API depend on their own family | Yes — approved by the user on 2026-11-02 |
 | AD-2 | New module `workflows/arbitration` (orchestrator, consumes `infrastructure/llm`) | The arbiter is a workflow of its own, beside `workflows/review` | Yes — approved by the user on 2026-11-02 |
 | AD-3 | Moved functions take plain values (adapter, config, text, paths); the handler keeps `RunContext` | Moved code never imports `core/flow` (would be a wrong-way edge and a cycle) | No |
-| AD-4 | `core/flow/engine/project_paths.py` moves with `archetype_pipelines` into `assurance/validation/orchestration` `[agreed 2026-11-02]` | Its only users are `archetype_pipelines` (`:189`) and `interfaces/api/v1/paths.py:14`; the engine never imports it. `sandbox/security` was rejected: `interfaces/api` forbids `sandbox/*`. The API already needs an edge to the orchestration module for FR-1 | No — inside AD-1's module |
+| AD-4 | `core/flow/engine/project_paths.py` moves with `archetype_pipelines` into `assurance/validation/orchestration` `[agreed 2026-11-02]` | Its users are `archetype_pipelines` (`:189`), `interfaces/api/v1/paths.py:14` and `core/flow/handlers/review.py:382` (found in SF-01's plan; the handlers get the edge to the new module anyway); the engine never imports it. `sandbox/security` was rejected: `interfaces/api` forbids `sandbox/*`. The API already needs an edge to the orchestration module for FR-1 | No — inside AD-1's module |
 | AD-5 | The language detection call stays with the callers (flow handler, CLI, API); `task_files_for` gets the language `[agreed 2026-11-02]` | Domain modules do not import `sandbox/*` (anti-patterns); `TECH-079` then unifies detection in one place | No |
 | AD-6 | No shims at old paths; tests move with the code `[agreed 2026-11-02]` | A shim needs its own tach edge under `exact = true` and keeps the wrong-way import alive | No |
 | AD-7 | The step table is one list of rows in `core/flow/engine`; the registry keeps the handler classes, keyed by the same rows | The engine knows no handler (`layer_isolation_and_di.md`) | No |
 | AD-8 | `params.mode` on `orchestrate` is refused, not translated | A translation is a second way to say one thing `[agreed 2026-11-02]` | No |
+| AD-9 | The rule resolver (effective rules per folder, `widens`) is pure and lives beside the topology model in `assurance/graph`; the product checker, `sw scan` and our guard test all use it `[agreed 2026-11-03]` | One rule, one implementation; `topology.py` already loads `consumes` and `forbids` | No |
+| AD-10 | The shared check needs no language runner: it parses and judges. A language runner's `run_architecture_check` runs only the extras of FR-20 `[agreed 2026-11-03]` | Go, C, C++ and JavaScript have no runner; the rule must not wait for one | No |
+| AD-11 | The list of extra tools in FR-20 covers tools with a CLI and a project config file. ArchUnit (Java) and Konsist (Kotlin) run inside the project's own tests, which C03 already runs; Rust, C and C++ have no common tool `[agreed 2026-11-03]` | Only tools a project already chose are run | No |
+| AD-12 | `widens` keys use the same path form as `consumes` (`specweaver/sandbox` or `specweaver/sandbox/*`) `[agreed 2026-11-03]` | One path language in the manifest | No |
 
 ## ROI Analysis
 
@@ -196,7 +227,9 @@ None.
 - The findings owned by `TECH-075`..`TECH-091` and `TECH-070` `[agreed 2026-10-22]`.
 - Merging the language tables (`TECH-079`) or the model-call shapes (`TECH-085`).
 - Persisting `context.feedback` across a resume.
-- New behaviour beyond FR-10, FR-11, FR-13 and FR-14.
+- New behaviour beyond FR-10, FR-11 and FR-13..FR-21.
+- Installing or configuring any extra tool of FR-20 in a user project.
+- tach's further checks (interfaces, cycles) for other languages.
 
 ## Developer Guides Required
 
@@ -206,6 +239,8 @@ None.
 | `layer_isolation_and_di.md` | handler shells call workflows with plain values | ⬜ |
 | `docs/user_guides/2_drafting_effective_specs.md` | `sw check` summary lines and exit codes, `NOTHING CHECKED` | ⬜ |
 | `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | ⬜ |
+| `docs/architecture/03_system_topology/context_yaml_spec.md` | the stricter-going-down rule and `widens` | ⬜ |
+| `docs/user_guides/` (the `context.yaml` and `sw check` pages) | `widens`, the C05 message, the unmapped count, the extras | ⬜ |
 
 ## Sub-Feature Breakdown
 
@@ -214,7 +249,7 @@ None.
 - **FRs**: [FR-1, FR-2]
 - **Inputs**: `validation_hydrator.py`, `archetype_pipelines.py`, `project_paths.py`, `drift.py`.
 - **Outputs**: the new module; the CLI, API and handlers import from it.
-- **Depends on**: none
+- **Depends on**: SF-08 (its new manifest declares `widens`)
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_sf01_implementation_plan.md
 
 ### SF-02: Implementation home
@@ -265,24 +300,43 @@ None.
 - **Depends on**: SF-01 (`execute_validation_flow` moves there)
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_sf07_implementation_plan.md
 
+### SF-08: One boundary rule
+- **Scope**: the rule of FR-15 exists once (the resolver), the spec says it, and SpecWeaver's own tree obeys it.
+- **FRs**: [FR-15, FR-21]
+- **Inputs**: `context_yaml_spec.md`, `assurance/graph/topology.py`, the 74 manifests, `test_manifests_match_tach.py`.
+- **Outputs**: the resolver; `widens` on the wider manifests; the guard test.
+- **Depends on**: none (runs first `[agreed 2026-11-03]`)
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_sf08_implementation_plan.md
+
+### SF-09: The rule in every language
+- **Scope**: one shared check judges all 9 languages; JavaScript gets a parser; user projects fail on undeclared widening; stricter tools run as extras.
+- **FRs**: [FR-16, FR-17, FR-18, FR-19, FR-20]
+- **Inputs**: the resolver (SF-08), the 8 parsers, the 5 language runners, `validation_hydrator.py` (after SF-01), `tach_sync.py`.
+- **Outputs**: the shared check; the JavaScript parser; the old checkers removed.
+- **Depends on**: SF-08, SF-01 (C05's hydration moves there)
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_sf09_implementation_plan.md
+
 ## Execution Order
 
-1. SF-01 and SF-04 (no deps; SF-04 may run in parallel)
-2. SF-02, then SF-07 (both after SF-01)
-3. SF-03 (after SF-02)
-4. SF-05 (after SF-03), then SF-06
+1. SF-08 (first `[agreed 2026-11-03]`)
+2. SF-01 and SF-04 (SF-04 may run in parallel)
+3. SF-02, SF-07 and SF-09 (all after SF-01)
+4. SF-03 (after SF-02)
+5. SF-05 (after SF-03), then SF-06
 
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Validation orchestration home | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Validation orchestration home | SF-08 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Implementation home | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-08 | One boundary rule | — | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-09 | The rule in every language | SF-08, SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -304,8 +358,27 @@ None.
   on `assurance`. Challenged AD-2 (fold the arbiter into `workflows/review`?) — no, the user chose a
   module of its own. No new finding above LOW.
 
-**Current status**: Design APPROVED by the user 2026-11-02, with FR-11, FR-13 (R4), AD-4, AD-5,
+**Amendment 2026-11-03**: SF-01's plan found that the spec's inheritance rule (`context_yaml_spec.md:230-231`)
+blocks AD-1 and that nothing enforces it. The user chose "stricter going down, wider only when
+declared", for the whole project and all 9 languages, inside this ticket (Q1-Q8 and the Q6 addition,
+all A). Measured and rejected: rule L "each manifest stands alone" (one file silently drops a parent's
+`forbids`) and rule S "only stricter" (forces 10 `interfaces` folders out of their domains).
+
+### Red/Blue on the amendment, 2 cycles
+- R7 (HIGH) FR-15 as first written made every top-level module "wider" than the root manifest, since
+  siblings are not in a parent's `consumes`. Fixed: a sibling inside the parent's folder is not a widening.
+- R8 (MEDIUM) FR-20 did not say what a configured but missing tool reports. Fixed: "not run", never clean.
+- R9 (MEDIUM) FR-16's import → folder mapping differs per language (Java packages under source roots,
+  C includes, Rust `crate::`). Accepted: each language's mapping is its one contribution; NFR-5's
+  shared fixture proves the verdicts agree.
+- R10 (LOW) Python users whose `tach.toml` allowed an undeclared widening now fail C05. Intended
+  (Q3 A); the message names `widens`.
+- Cycle 2: challenged R7 (does a sibling rule let a child reach a forbidden sibling?) — no, inherited
+  `forbids` still apply to siblings. No new finding above LOW.
+
+**Current status**: amendment approved by the user 2026-11-03, with AD-9..AD-12, the sibling rule (R7)
+and the extra-tool list. Design APPROVED by the user 2026-11-02, with FR-11, FR-13 (R4), AD-4, AD-5,
 AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
-**Next step**: implementation plan for SF-01.
+**Next step**: implementation plan for SF-08 (runs first), then SF-01.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
