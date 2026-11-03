@@ -13,6 +13,7 @@ Call sequence through the atom:
 
 from __future__ import annotations
 
+import inspect
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -550,3 +551,10 @@ class TestLintThatDidNotRun:
 
         assert result.status == StepStatus.FAILED
         assert "Missing 'target'" in result.error_message
+
+
+def test_the_handler_never_calls_the_model_itself() -> None:
+    """TECH-082 FR-4: the lint repair asks the model through `workflows/implementation`."""
+    from specweaver.core.flow.handlers import lint_fix
+
+    assert ".generate(" not in inspect.getsource(lint_fix)

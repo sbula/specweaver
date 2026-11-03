@@ -64,6 +64,37 @@
       ]
     },
     {
+      "requirement": "FR-4",
+      "title": "The lint repair asks the model through workflows/implementation; the handler keeps the loop and the write",
+      "scope": [
+        "tests/unit/workflows/implementation/test_lint_repair.py",
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py",
+        "tests/integration/sandbox/test_lint_fix.py"
+      ],
+      "mutants": [
+        {
+          "id": "lint-errors-left-out-of-the-prompt",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/lint_repair.py",
+          "symbol": "repair_lint",
+          "old": "        f\"## Lint Errors\\n{errors}\\n\\n\"\n",
+          "new": "        \"## Lint Errors\\n\\n\"\n",
+          "breaks": "the model is asked to fix lint errors it is never shown",
+          "symbol_sha": "sha256:215dd9d3a91996352e27a0733fe4f259352ee739a322c94bdc5d9efdc8cd4885"
+        },
+        {
+          "id": "handler-writes-the-old-text",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
+          "symbol": "LintFixHandler._llm_fix",
+          "old": "        code_path.write_text(fixed, encoding=\"utf-8\")",
+          "new": "        code_path.write_text(code, encoding=\"utf-8\")",
+          "breaks": "the model's fix is thrown away and the same errors are linted again",
+          "symbol_sha": "sha256:2e03eaab195796c554f8fed1cbbbb21bb724b582c88c336c849e4d46241ad680"
+        }
+      ]
+    },
+    {
       "requirement": "FR-15",
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [

@@ -238,7 +238,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | `pipeline_engine_guide.md` | the one step table and the `dual_pipeline` target | ⬜ |
 | `layer_isolation_and_di.md` | handler shells call workflows with plain values | ⬜ |
 | `docs/user_guides/2_drafting_effective_specs.md` | `sw check` summary lines and exit codes, `NOTHING CHECKED` | ⬜ |
-| `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | 🟡 orchestration done (SF-01); arbitration in SF-03 |
+| `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | 🟡 orchestration (SF-01) and implementation (SF-02) done; arbitration in SF-03 |
 | `docs/architecture/03_system_topology/context_yaml_spec.md` | the stricter-going-down rule and `widens` | ⬜ |
 | `docs/user_guides/` (the `context.yaml` and `sw check` pages) | `widens`, the C05 message, the unmapped count, the extras | ⬜ |
 
@@ -329,7 +329,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Implementation home | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -383,9 +383,9 @@ AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
 (`TECH-082_sf08_walkthrough.md`).
 **SF-01 done 2026-11-03** (accepted by the user): validation policy and the drift model call live in
 `assurance/validation/orchestration` (`TECH-082_sf01_walkthrough.md`).
-**SF-02 plan APPROVED 2026-11-03**: D-6 `run_language` in the engine (the API forbids `sandbox/*`;
-AD-5 holds, callers ask the engine), D-7 `tag_content` to `commons`, D-8 tach checks the module's `exposes`.
-**Next step**: dev for SF-02 (`TECH-082_sf02_implementation_plan.md`); then SF-03 → SF-05 → SF-06;
-SF-04, SF-07 and SF-09 in any order.
+**SF-02 done 2026-11-03** (accepted by the user): task files, framework choice, contract rendering
+and the lint repair live in `workflows/implementation`; callers get the run language from
+`core/flow/engine/run_language.py` (`TECH-082_sf02_walkthrough.md`).
+**Next step**: implementation plan for SF-03; then SF-05 → SF-06; SF-04, SF-07 and SF-09 in any order.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

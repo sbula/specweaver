@@ -37,7 +37,6 @@ from specweaver.core.flow.handlers.artifact_lineage import (
     derive_artifact_uuid,
     ensure_file_tagged,
     log_artifact_lineage,
-    tag_content,
 )
 
 if TYPE_CHECKING:
@@ -89,29 +88,6 @@ def test_an_unreadable_file_does_not_take_the_step_down(tmp_path: Path) -> None:
     path.mkdir()
 
     assert len(derive_artifact_uuid(path)) == 36
-
-
-# --- tag_content ------------------------------------------------------------
-
-
-def test_the_tag_is_prepended_in_the_language_s_comment_syntax() -> None:
-    assert tag_content("key: value\n", _UUID, "yaml") == _TAGGED_YAML
-
-
-def test_a_language_with_no_comment_syntax_is_left_alone() -> None:
-    """`wrap_artifact_tag` returns None for json, and corrupting the file is worse than no tag."""
-    assert tag_content('{"a": 1}', _UUID, "json") == '{"a": 1}'
-
-
-def test_content_that_already_carries_the_tag_is_not_tagged_twice() -> None:
-    assert tag_content(_TAGGED_YAML, _UUID, "yaml") == _TAGGED_YAML
-
-
-def test_content_carrying_a_different_uuid_is_left_alone() -> None:
-    """Two tags in one file is a lineage fork. The one already on disk wins."""
-    other = f"# sw-artifact: {'a' * 8}-1111-2222-3333-{'b' * 12}\nkey: value\n"
-
-    assert tag_content(other, _UUID, "yaml") == other
 
 
 # --- ensure_file_tagged -----------------------------------------------------

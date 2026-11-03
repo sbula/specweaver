@@ -349,10 +349,8 @@ class PlanSpecHandler:
 
         from ruamel.yaml import YAML
 
-        from specweaver.core.flow.handlers.artifact_lineage import (
-            derive_artifact_uuid,
-            tag_content,
-        )
+        from specweaver.commons.lineage import tag_content
+        from specweaver.core.flow.handlers.artifact_lineage import derive_artifact_uuid
 
         plan_artifact = await planner.generate_plan(
             spec_content=spec_content,

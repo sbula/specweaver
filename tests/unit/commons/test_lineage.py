@@ -4,8 +4,12 @@
 
 from specweaver.commons.lineage import (
     extract_artifact_uuid,
+    tag_content,
     wrap_artifact_tag,
 )
+
+_UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+_TAGGED_YAML = f"# sw-artifact: {_UUID}\nkey: value\n"
 
 
 def test_extract_artifact_uuid_success_python_comment():
@@ -96,3 +100,26 @@ def test_wrap_artifact_tag_kotlin():
     """D-INTL-08 FR-4: a generated `.kt` file is tagged like Java."""
     assert wrap_artifact_tag("my-uuid-123", "kotlin") == "// sw-artifact: my-uuid-123"
     assert wrap_artifact_tag("my-uuid-123", "kt") == "// sw-artifact: my-uuid-123"
+
+
+# --- tag_content ------------------------------------------------------------
+
+
+def test_the_tag_is_prepended_in_the_language_s_comment_syntax() -> None:
+    assert tag_content("key: value\n", _UUID, "yaml") == _TAGGED_YAML
+
+
+def test_a_language_with_no_comment_syntax_is_left_alone() -> None:
+    """`wrap_artifact_tag` returns None for json, and corrupting the file is worse than no tag."""
+    assert tag_content('{"a": 1}', _UUID, "json") == '{"a": 1}'
+
+
+def test_content_that_already_carries_the_tag_is_not_tagged_twice() -> None:
+    assert tag_content(_TAGGED_YAML, _UUID, "yaml") == _TAGGED_YAML
+
+
+def test_content_carrying_a_different_uuid_is_left_alone() -> None:
+    """Two tags in one file is a lineage fork. The one already on disk wins."""
+    other = f"# sw-artifact: {'a' * 8}-1111-2222-3333-{'b' * 12}\nkey: value\n"
+
+    assert tag_content(other, _UUID, "yaml") == other

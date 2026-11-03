@@ -29,6 +29,8 @@ exposes:
   - frameworks
   - frameworks.FrameworkChoice
   - frameworks.project_framework
+  - lint_repair
+  - lint_repair.repair_lint
   - generator
   - generator.Generator
   - generator.generation_prompt

@@ -92,7 +92,8 @@ def persist_decomposition(dumped: dict[str, Any], context: RunContext) -> tuple[
 
     from ruamel.yaml import YAML
 
-    from specweaver.core.flow.handlers.artifact_lineage import derive_artifact_uuid, tag_content
+    from specweaver.commons.lineage import tag_content
+    from specweaver.core.flow.handlers.artifact_lineage import derive_artifact_uuid
 
     artifact_path = context.spec_path.with_name(context.spec_path.stem + "_decomposition.yaml")
 

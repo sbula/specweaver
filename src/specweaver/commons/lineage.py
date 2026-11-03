@@ -77,3 +77,17 @@ def wrap_artifact_tag(artifact_id: str, language: str) -> str | None:
     # Languages without standard comments or unrecognised languages
     # Return None so PromptBuilder skips tag injection rather than corrupting syntax
     return None
+
+
+def tag_content(content: str, artifact_uuid: str, language: str) -> str:
+    """Return `content` with its lineage tag on the first line.
+
+    A no-op when the content already carries a tag — including a *different* one, because two tags
+    in one file is a lineage fork and the identity already recorded wins — or when `language` has
+    no comment syntax (`wrap_artifact_tag` returns `None` for those, and corrupting the file is
+    worse than leaving it untagged).
+    """
+    if extract_artifact_uuid(content):
+        return content
+    tag = wrap_artifact_tag(artifact_uuid, language)
+    return f"{tag}\n{content}" if tag else content

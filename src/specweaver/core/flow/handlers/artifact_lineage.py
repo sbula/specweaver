@@ -14,8 +14,8 @@ has *already* written, `generation.py` and `decomposition_artifacts.py` tag cont
 disk, and `lint_fix.py` carries a **pre-existing** uuid through an LLM round-trip and must never
 mint one. Rendering a model, a dict, or an LLM's reply to bytes is genuinely different work.
 
-`commons/lineage` holds the string half (`extract_artifact_uuid`, `wrap_artifact_tag`)
-and is deliberately pure. Anything touching a `Path` or the database belongs here instead.
+`commons/lineage` holds the string half (`extract_artifact_uuid`, `wrap_artifact_tag`,
+`tag_content`) and is deliberately pure. Anything touching a `Path` or the database belongs here instead.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import logging
 import uuid as _uuid
 from typing import TYPE_CHECKING
 
-from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
+from specweaver.commons.lineage import extract_artifact_uuid, tag_content
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,20 +47,6 @@ def derive_artifact_uuid(path: Path) -> str:
         logger.debug("%s has no readable lineage tag: %s", path, exc)
         existing = None
     return existing or str(_uuid.uuid4())
-
-
-def tag_content(content: str, artifact_uuid: str, language: str) -> str:
-    """Return `content` with its lineage tag on the first line.
-
-    A no-op when the content already carries a tag — including a *different* one, because two tags
-    in one file is a lineage fork and the identity already recorded wins — or when `language` has
-    no comment syntax (`wrap_artifact_tag` returns `None` for those, and corrupting the file is
-    worse than leaving it untagged).
-    """
-    if extract_artifact_uuid(content):
-        return content
-    tag = wrap_artifact_tag(artifact_uuid, language)
-    return f"{tag}\n{content}" if tag else content
 
 
 def ensure_file_tagged(path: Path, language: str) -> str:

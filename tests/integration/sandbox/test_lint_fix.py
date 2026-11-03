@@ -12,6 +12,7 @@ Uses the shared ``sample_project`` fixture for project scaffolding.
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
@@ -143,3 +144,60 @@ class TestLintFixNoLLM:
         result = asyncio.run(handler.execute(step, ctx))
 
         assert result.output.get("lint_errors_remaining", 0) > 0
+
+
+class TestLintFixModelRepair:
+    """The real linter, the handler and the lint repair together; only the model is scripted.
+
+    Proves: TECH-082 FR-4. The handler hands the file's text and the real ruff errors to
+    `repair_lint`, writes back what it returns, and the re-lint judges that file.
+    """
+
+    _UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+
+    def _broken_file(self, project: Path) -> Path:
+        src = project / "src" / "repair_test"
+        src.mkdir(parents=True, exist_ok=True)
+        path = src / "ambiguous.py"
+        path.write_text(
+            f"# sw-artifact: {self._UUID}\ndef foo() -> None:\n    l = [1, 2, 3]\n    print(l)\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_the_model_fix_is_written_and_passes_the_relint(self, sample_project: Path) -> None:
+        path = self._broken_file(sample_project)
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = SimpleNamespace(
+            text="```python\ndef foo() -> None:\n    items = [1, 2, 3]\n    print(items)\n```"
+        )
+
+        result = asyncio.run(
+            LintFixHandler().execute(
+                _make_step(target=str(path)), _make_context(sample_project, llm=mock_llm)
+            )
+        )
+
+        assert result.status == StepStatus.PASSED
+        assert result.output["reflections_used"] == 1
+        prompt = mock_llm.generate.call_args.args[0][-1].content
+        assert "E741" in prompt
+        assert path.read_text(encoding="utf-8") == (
+            f"# sw-artifact: {self._UUID}\n"
+            "def foo() -> None:\n    items = [1, 2, 3]\n    print(items)\n"
+        )
+
+    def test_a_model_that_fixes_nothing_exhausts_the_loop(self, sample_project: Path) -> None:
+        path = self._broken_file(sample_project)
+        mock_llm = AsyncMock()
+        mock_llm.generate.return_value = SimpleNamespace(text=path.read_text(encoding="utf-8"))
+
+        result = asyncio.run(
+            LintFixHandler().execute(
+                _make_step(target=str(path)), _make_context(sample_project, llm=mock_llm)
+            )
+        )
+
+        assert result.status == StepStatus.FAILED
+        assert result.output["reflections_used"] == 2
+        assert path.read_text(encoding="utf-8").count("sw-artifact") == 1

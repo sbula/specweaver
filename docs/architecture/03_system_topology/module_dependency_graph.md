@@ -28,3 +28,9 @@ the model for the drift root cause. The validation CLI, the API and the flow han
 there; none of them reaches into another's code for it. The module sits under a pure parent and
 declares its use of the sandbox and the model in `widens`, as the boundary rule requires
 (`context_yaml_spec.md` §Context inheritance).
+
+**Implementation work (`TECH-082`):** what a task writes — its files, its framework, its contract
+and the model's lint repair — lives in `workflows/implementation`. That code takes the language as
+given and imports neither the flow engine nor the sandbox; callers get the run's language from
+`core/flow/engine/run_language.py`, the one place that falls back to detection. The flow handlers
+keep the run: they read and write the files, pick the model and log the lineage.

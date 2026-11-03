@@ -422,48 +422,49 @@
       "scope": [
         "tests/unit/core/flow/handlers/test_lint_and_rules_in_the_language.py",
         "tests/e2e/capabilities/workflows/test_implement_in_every_language_e2e.py",
-        "tests/unit/core/flow/handlers/test_lint_fix_handler.py"
+        "tests/unit/core/flow/handlers/test_lint_fix_handler.py",
+        "tests/unit/workflows/implementation/test_lint_repair.py"
       ],
       "mutants": [
         {
           "id": "lint-prompt-python",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
-          "symbol": "LintFixHandler._llm_fix",
+          "file": "src/specweaver/workflows/implementation/lint_repair.py",
+          "symbol": "repair_lint",
           "old": "f\"Fix the following lint errors in this {name} file.\\n\\n\"",
           "new": "f\"Fix the following lint errors in this Python file.\\n\\n\"",
           "breaks": "a Java file is fixed as Python",
-          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
+          "symbol_sha": "sha256:215dd9d3a91996352e27a0733fe4f259352ee739a322c94bdc5d9efdc8cd4885"
         },
         {
           "id": "lint-fence-python",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
-          "symbol": "LintFixHandler._llm_fix",
+          "file": "src/specweaver/workflows/implementation/lint_repair.py",
+          "symbol": "repair_lint",
           "old": "f\"## Current Code\\n```{language}\\n{code}\\n```\\n\\n\"",
           "new": "f\"## Current Code\\n```python\\n{code}\\n```\\n\\n\"",
           "breaks": "the code is shown to the model as Python",
-          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
+          "symbol_sha": "sha256:215dd9d3a91996352e27a0733fe4f259352ee739a322c94bdc5d9efdc8cd4885"
         },
         {
           "id": "lint-fallback-tag-python",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
-          "symbol": "LintFixHandler._llm_fix",
-          "old": "fixed_code = tag_content(fixed_code, artifact_uuid, language)",
-          "new": "fixed_code = tag_content(fixed_code, artifact_uuid, \"python\")",
+          "file": "src/specweaver/workflows/implementation/lint_repair.py",
+          "symbol": "repair_lint",
+          "old": "    return tag_content(fixed, artifact_uuid, language) if artifact_uuid else fixed\n",
+          "new": "    return tag_content(fixed, artifact_uuid, \"python\") if artifact_uuid else fixed\n",
           "breaks": "a lost tag comes back as `#` in Rust",
-          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
+          "symbol_sha": "sha256:215dd9d3a91996352e27a0733fe4f259352ee739a322c94bdc5d9efdc8cd4885"
         },
         {
           "id": "lint-fences-not-stripped",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/lint_fix.py",
-          "symbol": "LintFixHandler._llm_fix",
-          "old": "fixed_code = strip_fences(response.text)",
-          "new": "fixed_code = response.text.strip() + \"\\n\"",
+          "file": "src/specweaver/workflows/implementation/lint_repair.py",
+          "symbol": "repair_lint",
+          "old": "    fixed = strip_fences(response.text)\n",
+          "new": "    fixed = response.text.strip() + \"\\n\"\n",
           "breaks": "the model's fence is written into the file",
-          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
+          "symbol_sha": "sha256:215dd9d3a91996352e27a0733fe4f259352ee739a322c94bdc5d9efdc8cd4885"
         }
       ]
     },

@@ -1,10 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Task files, framework choice and contract rendering live in `workflows/implementation`, and the
+"""Task files, framework choice, contract rendering and the lint repair live in `workflows/implementation`, and the
 moved code neither detects the language itself nor reaches back into the flow engine.
 
-Proves: TECH-082 FR-3, TECH-082 NFR-3
+Proves: TECH-082 FR-3, TECH-082 FR-4, TECH-082 NFR-3
 
 The caller passes the language (`core.flow.engine.run_language`), so the moved code needs no
 `sandbox` import. The old module paths are gone, so a stale import or `mock.patch` string fails
@@ -29,7 +29,7 @@ import pytest
 _SRC = Path(__file__).resolve().parents[4] / "src" / "specweaver"
 _HOME = _SRC / "workflows" / "implementation"
 _BARRED = ("specweaver.sandbox", "specweaver.core.flow")
-_MOVED = ("task_files.py", "frameworks.py", "contract_renderers.py")
+_MOVED = ("task_files.py", "frameworks.py", "contract_renderers.py", "lint_repair.py")
 _OLD_PATHS = (
     "specweaver.core.flow.engine.task_files",
     "specweaver.core.flow.engine.frameworks",

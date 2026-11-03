@@ -300,56 +300,22 @@ class LintFixHandler:
         context: RunContext,
     ) -> None:
         """Ask the LLM to fix lint errors in the given file, in the run's language."""
+        from specweaver.commons.lineage import extract_artifact_uuid
         from specweaver.core.flow.engine.run_language import run_task_files
-        from specweaver.infrastructure.llm.models import Message, Role, TaskType
-        from specweaver.workflows.implementation.generator import strip_fences
-        from specweaver.workflows.implementation.languages import language_guide
+        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
+        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.workflows.implementation.lint_repair import repair_lint
 
         code = code_path.read_text(encoding="utf-8")
-        from specweaver.commons.lineage import extract_artifact_uuid, wrap_artifact_tag
-        from specweaver.core.flow.handlers.artifact_lineage import (
-            log_artifact_lineage,
-            tag_content,
-        )
-
-        # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
-        # and the LLM is being asked to preserve it. Minting one would fork the lineage.
-        artifact_uuid = extract_artifact_uuid(code)
         language = run_task_files(context).language
-        name = language_guide(language, context.project_path).name
-
-        error_summary = "\n".join(
-            f"- {e.get('file', '?')}:{e.get('line', '?')} [{e.get('code', '?')}] {e.get('message', '')}"
-            for e in lint_errors
-        )
-
-        prompt = (
-            f"Fix the following lint errors in this {name} file.\n\n"
-            f"## Lint Errors\n{error_summary}\n\n"
-            f"## Current Code\n```{language}\n{code}\n```\n\n"
-            f"Return ONLY the fixed {name} code, no explanations."
-        )
-
-        if artifact_uuid:
-            tag_str = wrap_artifact_tag(artifact_uuid, language)
-            if tag_str:
-                prompt += f"\n\nIMPORTANT: You MUST include the exact string '{tag_str}' physically at the very top of your output file."
-
-        messages = [Message(role=Role.USER, content=prompt)]
-
-        from specweaver.core.flow.handlers._llm import llm_for
-
         adapter, config = llm_for(context, TaskType.CHECK)
+        fixed = await repair_lint(
+            adapter, config, code, lint_errors, language, context.project_path
+        )
+        code_path.write_text(fixed, encoding="utf-8")
 
-        response = await adapter.generate(messages, config)
-
-        fixed_code = strip_fences(response.text)
-        # Safety fallback: the prompt asked the LLM to reproduce the tag, and it may not have.
-        if artifact_uuid:
-            fixed_code = tag_content(fixed_code, artifact_uuid, language)
-
-        code_path.write_text(fixed_code, encoding="utf-8")
-
+        artifact_uuid = extract_artifact_uuid(code)
         if artifact_uuid:
             await log_artifact_lineage(
                 context,
