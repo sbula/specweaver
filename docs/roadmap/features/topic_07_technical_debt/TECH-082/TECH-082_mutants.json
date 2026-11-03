@@ -1,0 +1,47 @@
+{
+  "schema": 2,
+  "feature": "TECH-082",
+  "campaigns": [
+    {
+      "requirement": "FR-15",
+      "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
+      "scope": [
+        "tests/unit/assurance/graph/test_boundary_rule.py",
+        "tests/unit/assurance/graph/test_topology_widens.py",
+        "tests/integration/assurance/graph/test_boundary_rule_from_manifests.py"
+      ],
+      "mutants": [
+        {
+          "id": "forbids-not-inherited",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/graph/boundary_rule.py",
+          "symbol": "_Tree.forbids",
+          "old": "        return own + (self.forbids(parent) if parent is not None else [])",
+          "new": "        return own",
+          "breaks": "a child manifest drops its ancestors' forbids without a word",
+          "symbol_sha": "sha256:a0cdf7a4622e8117be5907cb4a43b24046eb3d996b640568c70b20e62b69633a"
+        },
+        {
+          "id": "sibling-counts-as-wider",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/graph/boundary_rule.py",
+          "symbol": "_Tree._within_parent",
+          "old": "        return _inside(used, own) or any(",
+          "new": "        return any(",
+          "breaks": "every module using a sibling must declare a widening",
+          "symbol_sha": "sha256:284be452c5bdcf745158f710a12af2c02f20bfde8389a9bd3fdaca7c1d4ebe60"
+        },
+        {
+          "id": "stale-widens-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/graph/boundary_rule.py",
+          "symbol": "_Tree.judge",
+          "old": "            elif key not in needed:",
+          "new": "            elif False:",
+          "breaks": "a widens entry that widens nothing stays as a false justification",
+          "symbol_sha": "sha256:e2b03ca0818d2203d89c9d3c1dc9de307f629ecc43bf6a2332d8bd48064bcc9a"
+        }
+      ]
+    }
+  ]
+}

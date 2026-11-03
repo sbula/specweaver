@@ -64,6 +64,8 @@ class TopologyNode:
     consumes_resources: list[str] = field(default_factory=list)
     operational: OperationalMetadata | None = None
     yaml_path: Path | None = None
+    #: What this boundary may use beyond its parent's rule, each with the reason.
+    widens: dict[str, str] = field(default_factory=dict)
 
 
 def _hash_moved(
@@ -83,6 +85,78 @@ def _hash_moved(
     if dir_path not in cache or dir_path not in new_hashes:
         return True
     return bool(cache[dir_path].get("merkle_root") != new_hashes[dir_path].get("merkle_root"))
+
+
+def load_nodes(project_root: Path) -> tuple[dict[str, TopologyNode], list[str]]:
+    """Every `context.yaml` under `project_root`, by name, and the warnings; writes nothing."""
+    project_root = Path(project_root).resolve()
+    nodes: dict[str, TopologyNode] = {}
+    warnings: list[str] = []
+    yaml = YAML()
+    for ctx_file in sorted(project_root.rglob("context.yaml")):
+        try:
+            data = yaml.load(ctx_file)
+        except Exception as exc:
+            logger.warning("TopologyGraph: failed to parse '%s': %s", ctx_file, exc)
+            warnings.append(f"Failed to parse {ctx_file}: {exc}")
+            continue
+
+        if data is None:
+            logger.warning("TopologyGraph: empty context.yaml at '%s'", ctx_file)
+            warnings.append(f"Empty context.yaml at {ctx_file}")
+            continue
+
+        name = data.get("name", "")
+        if not name:
+            logger.warning("TopologyGraph: missing 'name' in '%s'", ctx_file)
+            warnings.append(f"Missing 'name' in {ctx_file}")
+            continue
+
+        nodes[name] = _node_from(name, data, ctx_file, warnings)
+    return nodes, warnings
+
+
+def _node_from(name: str, data: Any, ctx_file: Path, warnings: list[str]) -> TopologyNode:
+    op_data = data.get("operational")
+    operational = None
+    if isinstance(op_data, dict):
+        operational = OperationalMetadata(
+            multi_tenant_ready=op_data.get("multi_tenant_ready", False),
+            latency_critical=op_data.get("latency_critical", False),
+            max_latency_ms=op_data.get("max_latency_ms"),
+            data_freshness=op_data.get("data_freshness"),
+            reliability_target=op_data.get("reliability_target"),
+            async_ready=op_data.get("async_ready", False),
+            concurrency_model=op_data.get("concurrency_model"),
+        )
+
+    return TopologyNode(
+        name=name,
+        level=data.get("level", ""),
+        purpose=data.get("purpose", ""),
+        archetype=data.get("archetype", ""),
+        consumes=data.get("consumes", []) or [],
+        exposes=data.get("exposes", []) or [],
+        forbids=data.get("forbids", []) or [],
+        constraints=data.get("constraints", []) or [],
+        mcp_servers=data.get("mcp_servers", {}) or {},
+        consumes_resources=data.get("consumes_resources", []) or [],
+        operational=operational,
+        yaml_path=ctx_file,
+        widens=_widens_of(data.get("widens"), ctx_file, warnings),
+    )
+
+
+def _widens_of(raw: Any, ctx_file: Path, warnings: list[str]) -> dict[str, str]:
+    """`widens` as path -> reason. A list keeps its paths with no reason, so the rule refuses them."""
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return {str(k): "" if v is None else str(v) for k, v in raw.items()}
+    warnings.append(f"'widens' in {ctx_file} is not a map of path: reason")
+    if isinstance(raw, list):
+        return {str(item): "" for item in raw}
+    return {}
 
 
 class TopologyGraph:
@@ -184,55 +258,9 @@ class TopologyGraph:
             )
             cls._auto_infer_missing(project_root, nodes, warnings)
 
-        yaml = YAML()
-        for ctx_file in sorted(project_root.rglob("context.yaml")):
-            try:
-                data = yaml.load(ctx_file)
-            except Exception as exc:
-                logger.warning("TopologyGraph: failed to parse '%s': %s", ctx_file, exc)
-                warnings.append(f"Failed to parse {ctx_file}: {exc}")
-                continue
-
-            if data is None:
-                logger.warning("TopologyGraph: empty context.yaml at '%s'", ctx_file)
-                warnings.append(f"Empty context.yaml at {ctx_file}")
-                continue
-
-            name = data.get("name", "")
-            if not name:
-                logger.warning("TopologyGraph: missing 'name' in '%s'", ctx_file)
-                warnings.append(f"Missing 'name' in {ctx_file}")
-                continue
-
-            # Parse operational metadata
-            op_data = data.get("operational")
-            operational = None
-            if isinstance(op_data, dict):
-                operational = OperationalMetadata(
-                    multi_tenant_ready=op_data.get("multi_tenant_ready", False),
-                    latency_critical=op_data.get("latency_critical", False),
-                    max_latency_ms=op_data.get("max_latency_ms"),
-                    data_freshness=op_data.get("data_freshness"),
-                    reliability_target=op_data.get("reliability_target"),
-                    async_ready=op_data.get("async_ready", False),
-                    concurrency_model=op_data.get("concurrency_model"),
-                )
-
-            node = TopologyNode(
-                name=name,
-                level=data.get("level", ""),
-                purpose=data.get("purpose", ""),
-                archetype=data.get("archetype", ""),
-                consumes=data.get("consumes", []) or [],
-                exposes=data.get("exposes", []) or [],
-                forbids=data.get("forbids", []) or [],
-                constraints=data.get("constraints", []) or [],
-                mcp_servers=data.get("mcp_servers", {}) or {},
-                consumes_resources=data.get("consumes_resources", []) or [],
-                operational=operational,
-                yaml_path=ctx_file,
-            )
-            nodes[name] = node
+        loaded, load_warnings = load_nodes(project_root)
+        nodes.update(loaded)
+        warnings.extend(load_warnings)
 
         if auto_infer:
             cls._auto_infer_missing(project_root, nodes, warnings)

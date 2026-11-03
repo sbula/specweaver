@@ -66,7 +66,9 @@ the parent folder. It also answers `allows(folder, target) -> bool`, which SF-09
   by the resolver for that module's folder.
 
 > [!CAUTION]
-> The guard loads `src/specweaver` with `TopologyGraph.from_project(..., auto_infer=False)`.
+> **As built (CB-1)**: the guard uses `topology.load_nodes`, split out of `from_project`, because
+> `from_project` also hashes every source (`_calculate_stale_seeds`).
+> The guard must never call `TopologyGraph.from_project` with the default.
 > The default `auto_infer=True` WRITES a `context.yaml` into every folder without one
 > (`topology.py:244-276`). Before the first run, read `_calculate_stale_seeds` and confirm it only
 > reads its cache.

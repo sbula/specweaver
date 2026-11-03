@@ -27,6 +27,8 @@ forbids:
 exposes:
   - TopologyGraph
   - ContextSelector
+  - boundary_rule
+  - topology.load_nodes
 
 # -- Operational Metadata --------------------------------------------------
 operational:

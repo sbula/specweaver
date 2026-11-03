@@ -120,6 +120,9 @@ forbids:                              # OPTIONAL — explicit deny list
   - infra/*                           #   Hard deny even if parent consumes it
   - "*.orm"                           #   Pattern-based: no ORM imports
 
+widens:                               # OPTIONAL — what this boundary may use beyond its parent
+  shared/audit: writes the VAT audit trail   #   path: reason; the reason is required
+
 exposes:                              # OPTIONAL — public surface
   - TaxCalculator
   - TaxResult
@@ -170,7 +173,8 @@ consumes_resources:                   # OPTIONAL — Pre-fetch URIs before gener
 | `related-modules` | `list[{name, path}]` | Cross-references. Maps to CCS `related-modules` |
 | `architecture` | `object` | Structural docs. Maps to CCS `architecture` |
 | `consumes` | `list[string]` | Whitelist of paths this boundary may import from. Supports `*` wildcards |
-| `forbids` | `list[string]` | Explicit deny list. Overrides `consumes` and parent-level permissions |
+| `forbids` | `list[string]` | Explicit deny list. Overrides `consumes`; inherited by every boundary below |
+| `widens` | `map[string, string]` | What this boundary may use beyond its parent's rule: `path: reason`. Each key must also be in `consumes`; an empty reason, or an entry that widens nothing, is refused |
 | `exposes` | `list[string]` | Public symbols (classes, functions, constants) |
 | `owner` | `string` | Team or person responsible for this boundary |
 | `constraints` | `list[string]` | Free-form rules that the Veto Agent checks against |
@@ -225,10 +229,21 @@ The `level` field is always explicit. SpecWeaver does not infer it from nesting 
 
 ### Context inheritance
 
-Each boundary inherits its parent's context:
+Going down the folder tree a boundary gets stricter. It is wider than its parent only where its
+own `widens` says so, with a reason. The parent is the nearest folder above that has a
+`context.yaml`; a folder without one takes its parent's rule.
 
-- **`consumes`** — a child can narrow but not widen its parent's whitelist. If the parent allows `shared/*`, a child can restrict to `shared/currency` but cannot add `infra/*`.
-- **`forbids`** — a child can add to the deny list but not remove from it. Forbidden items are cumulative going down the tree.
+- **`consumes`** — each entry must lie inside the parent's `consumes` (or the parent's `widens`), or
+  inside the parent's own folder (a sibling), or be a key of the boundary's own `widens`. If the
+  parent allows `shared/*`, a child can restrict to `shared/currency`; adding `infra/*` needs a
+  `widens` entry.
+- **`forbids`** — cumulative going down the tree: a boundary's effective deny list is its own plus
+  all its ancestors'. A `consumes` entry that overlaps a denied path, inside it or containing it,
+  breaks the rule unless `widens` covers it.
+- **`widens`** — `path: reason`. Each key must also appear in `consumes`. An entry with an empty
+  reason, or one that widens nothing, is refused.
+- An entry names a folder: another boundary's `name`, or a path relative to the root (`/` or `.`
+  separated); a trailing `/*` means the folder itself.
 - **`archetype`** — not inherited. Each boundary declares its own.
 - **`constraints`** — cumulative. A child inherits parent constraints and can add new ones.
 - **`operational`** — per-field rules (see Operational Metadata above).
