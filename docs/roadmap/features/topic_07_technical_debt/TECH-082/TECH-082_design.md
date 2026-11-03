@@ -329,7 +329,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Implementation home | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Implementation home | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -383,7 +383,9 @@ AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
 (`TECH-082_sf08_walkthrough.md`).
 **SF-01 done 2026-11-03** (accepted by the user): validation policy and the drift model call live in
 `assurance/validation/orchestration` (`TECH-082_sf01_walkthrough.md`).
-**Next step**: implementation plan for SF-02 (critical path SF-02 → SF-03 → SF-05 → SF-06); SF-04,
-SF-07 and SF-09 may follow in any order.
+**SF-02 plan APPROVED 2026-11-03**: D-6 `run_language` in the engine (the API forbids `sandbox/*`;
+AD-5 holds, callers ask the engine), D-7 `tag_content` to `commons`, D-8 tach checks the module's `exposes`.
+**Next step**: dev for SF-02 (`TECH-082_sf02_implementation_plan.md`); then SF-03 → SF-05 → SF-06;
+SF-04, SF-07 and SF-09 in any order.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
