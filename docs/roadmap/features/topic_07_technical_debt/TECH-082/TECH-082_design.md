@@ -328,7 +328,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | Validation orchestration home | SF-08 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | Implementation home | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -381,7 +381,6 @@ and the extra-tool list. Design APPROVED by the user 2026-11-02, with FR-11, FR-
 AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
 **SF-08 done 2026-11-03** (accepted by the user): resolver, spec, our 18 manifests, guard
 (`TECH-082_sf08_walkthrough.md`).
-**Next step**: update the SF-01 plan (its F-1 is settled by the amendment; its new manifest declares
-`widens`) and ask its Phase 4/5.
+**Next step**: dev for SF-01 (`TECH-082_sf01_implementation_plan.md`, APPROVED 2026-11-03).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
