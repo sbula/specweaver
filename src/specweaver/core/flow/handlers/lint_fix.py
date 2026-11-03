@@ -300,7 +300,7 @@ class LintFixHandler:
         context: RunContext,
     ) -> None:
         """Ask the LLM to fix lint errors in the given file, in the run's language."""
-        from specweaver.core.flow.engine.task_files import task_files_for
+        from specweaver.core.flow.engine.run_language import run_task_files
         from specweaver.infrastructure.llm.models import Message, Role, TaskType
         from specweaver.workflows.implementation.generator import strip_fences
         from specweaver.workflows.implementation.languages import language_guide
@@ -315,9 +315,7 @@ class LintFixHandler:
         # Never `derive_artifact_uuid` here: this file's identity was minted when it was generated,
         # and the LLM is being asked to preserve it. Minting one would fork the lineage.
         artifact_uuid = extract_artifact_uuid(code)
-        language = task_files_for(
-            context.project_path, context.spec_path, context.isolation.language
-        ).language
+        language = run_task_files(context).language
         name = language_guide(language, context.project_path).name
 
         error_summary = "\n".join(

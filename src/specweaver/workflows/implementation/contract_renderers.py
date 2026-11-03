@@ -1,10 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Language-specific API contract renderers (Feature 3.28 SF-B2).
-
-Extracted from ``_generation.py`` to keep that module within the 450-line limit
-and to enable polyglot contract rendering without language branching in the handler.
+"""Language-specific API contract renderers.
 
 Each ``render_*`` function converts extracted spec Contract signatures into the
 idiomatic contract abstraction for its target language:

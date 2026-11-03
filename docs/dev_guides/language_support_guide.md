@@ -93,8 +93,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 6. **Generator text**: `workflows/languages/<lang>.md` (front-matter `name:`; sections `# Code`,
    `# Tests`, `# Code role`, `# Tests role`, `# Coder role`) and the name in `_LANGUAGES`
    (`workflows/implementation/languages.py`). This is what the model is told to write.
-7. **Task files**: `task_files_for` (`core/flow/engine/task_files.py`) says where the task's code and
-   test files go; every step after generation finds the file there (`qa_targets.step_file`).
+7. **Task files**: `task_files_for` (`workflows/implementation/task_files.py`) says where the
+   task's code and test files go; every step after generation finds the file there
+   (`qa_targets.step_file`). Callers pass the language from `core/flow/engine/run_language.py`.
 8. **Detection and scenarios**: the manifest in `detect_language`, the name in `SUPPORTED_LANGUAGES`
    and its scenario file ending in `_SCENARIO_EXTENSIONS` (`sandbox/language/core/detect.py`).
 9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py`, registered in

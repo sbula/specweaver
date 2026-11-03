@@ -39,7 +39,7 @@ def _scenario_tools(context: RunContext, adapter: Any) -> Any:
 
 def _contract_methods(spec_text: str) -> tuple[list[str], dict[str, list[str] | None]]:
     """The spec's contract methods, as scenarios name them, and each class's constructor."""
-    from specweaver.core.flow.handlers.contract_renderers import (
+    from specweaver.workflows.implementation.contract_renderers import (
         contract_names,
         extract_constructors,
         extract_contract,

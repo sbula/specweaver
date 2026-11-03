@@ -394,7 +394,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
+          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
         },
         {
           "id": "draft-worktree-traceback",

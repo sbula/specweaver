@@ -17,7 +17,29 @@ consumes:
 forbids: []
 
 exposes:
-  - Generator
+  - contract_renderers
+  - contract_renderers.contract_extension
+  - contract_renderers.contract_names
+  - contract_renderers.extract_constructors
+  - contract_renderers.extract_contract
+  - contract_renderers.extract_docstrings
+  - contract_renderers.extract_methods
+  - contract_renderers.extract_signatures
+  - contract_renderers.render_contract_file
+  - frameworks
+  - frameworks.FrameworkChoice
+  - frameworks.project_framework
+  - generator
+  - generator.Generator
+  - generator.generation_prompt
+  - generator.strip_fences
+  - languages
+  - languages.LanguageGuide
+  - languages.language_guide
+  - task_files
+  - task_files.TaskFiles
+  - task_files.task_brief
+  - task_files.task_files_for
 
 # -- Operational Metadata --------------------------------------------------
 operational:

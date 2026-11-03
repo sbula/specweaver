@@ -59,7 +59,10 @@ def spec_map(context: RunContext) -> str:
 
 
 def _methods_in(text: str, *, code: bool) -> dict[str, str]:
-    from specweaver.core.flow.handlers.contract_renderers import extract_contract, extract_methods
+    from specweaver.workflows.implementation.contract_renderers import (
+        extract_contract,
+        extract_methods,
+    )
 
     section = f"```python\n{text}\n```" if code else extract_contract(text) or ""
     methods: dict[str, str] = {}

@@ -26,13 +26,13 @@ from specweaver.core.flow.run_state.failures import log_step_failure
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.flow.engine.frameworks import FrameworkChoice
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.engine.task_files import TaskFiles
     from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
+    from specweaver.workflows.implementation.frameworks import FrameworkChoice
     from specweaver.workflows.implementation.languages import LanguageGuide
+    from specweaver.workflows.implementation.task_files import TaskFiles
 
 logger = logging.getLogger(__name__)
 
@@ -130,9 +130,9 @@ class _GenerationHandler:
         raise NotImplementedError
 
     def _files(self, context: RunContext) -> TaskFiles:
-        from specweaver.core.flow.engine.task_files import task_files_for
+        from specweaver.core.flow.engine.run_language import run_task_files
 
-        return task_files_for(context.project_path, context.spec_path, context.isolation.language)
+        return run_task_files(context)
 
     def _output_path(self, context: RunContext) -> Path:
         """Where this step writes: the task's file. Python code alone keeps a run's `output_dir`;
@@ -157,10 +157,10 @@ class _GenerationHandler:
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
-            from specweaver.core.flow.engine.frameworks import project_framework
-            from specweaver.core.flow.engine.task_files import task_brief
+            from specweaver.workflows.implementation.frameworks import project_framework
             from specweaver.workflows.implementation.generator import Generator
             from specweaver.workflows.implementation.languages import language_guide
+            from specweaver.workflows.implementation.task_files import task_brief
 
             files = self._files(context)
             guide = language_guide(files.language, context.project_path)
@@ -395,15 +395,13 @@ class PlanSpecHandler:
             )
 
         try:
-            from specweaver.core.flow.engine.task_files import task_files_for
+            from specweaver.core.flow.engine.run_language import run_task_files
             from specweaver.workflows.implementation.languages import language_guide
             from specweaver.workflows.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
             adapter, config = self._resolve_routing(context)
-            language = task_files_for(
-                context.project_path, context.spec_path, context.isolation.language
-            ).language
+            language = run_task_files(context).language
             planner = Planner(
                 llm=adapter,
                 config=config,
@@ -482,7 +480,7 @@ class GenerateContractHandler:
 
         started = _now_iso()
         try:
-            from specweaver.core.flow.handlers.contract_renderers import (
+            from specweaver.workflows.implementation.contract_renderers import (
                 contract_extension,
                 contract_names,
                 extract_contract,
@@ -507,11 +505,9 @@ class GenerateContractHandler:
             stem = module_stem(context.spec_path)
             class_name = stem.replace("_", " ").title().replace(" ", "")
 
-            from specweaver.core.flow.engine.task_files import task_files_for
+            from specweaver.core.flow.engine.run_language import run_task_files
 
-            language = task_files_for(
-                context.project_path, context.spec_path, context.isolation.language
-            ).language
+            language = run_task_files(context).language
 
             contract_content = render_contract_file(language, class_name, methods)
             ext = contract_extension(language)
@@ -547,18 +543,18 @@ class GenerateContractHandler:
 
     @staticmethod
     def _extract_contract(text: str) -> str | None:
-        from specweaver.core.flow.handlers.contract_renderers import extract_contract
+        from specweaver.workflows.implementation.contract_renderers import extract_contract
 
         return extract_contract(text)
 
     @staticmethod
     def _extract_signatures(contract_text: str) -> list[str]:
-        from specweaver.core.flow.handlers.contract_renderers import extract_signatures
+        from specweaver.workflows.implementation.contract_renderers import extract_signatures
 
         return extract_signatures(contract_text)
 
     @staticmethod
     def _extract_docstrings(contract_text: str) -> dict[str, str]:
-        from specweaver.core.flow.handlers.contract_renderers import extract_docstrings
+        from specweaver.workflows.implementation.contract_renderers import extract_docstrings
 
         return extract_docstrings(contract_text)

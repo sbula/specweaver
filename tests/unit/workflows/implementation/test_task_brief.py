@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.engine.task_files import TaskFiles, task_brief
+from specweaver.workflows.implementation.task_files import TaskFiles, task_brief
 
 if TYPE_CHECKING:
     from pathlib import Path

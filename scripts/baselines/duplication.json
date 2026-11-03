@@ -54,9 +54,9 @@
     "first": "src/specweaver/assurance/validation/rules/spec/s03_stranger.py:183",
     "second": "src/specweaver/assurance/validation/rules/spec/s04_dependency_dir.py:156"
   },
-  "src/specweaver/assurance/validation/rules/spec/s07_test_first.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @4717db3c6e5f": {
+  "src/specweaver/assurance/validation/rules/spec/s07_test_first.py <-> src/specweaver/workflows/implementation/contract_renderers.py @4717db3c6e5f": {
     "lines": 11,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:371",
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:368",
     "second": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py:254"
   },
   "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
@@ -69,20 +69,10 @@
     "first": "src/specweaver/core/flow/engine/store.py:148",
     "second": "src/specweaver/graph/core/store/repository.py:69"
   },
-  "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @63c490b34a7f": {
-    "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:309",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
-  },
-  "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @9ced5a28b740": {
-    "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:191",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
-  },
-  "src/specweaver/core/flow/handlers/contract_renderers.py <-> src/specweaver/core/flow/handlers/contract_renderers.py @e48a817fa7b3": {
-    "lines": 7,
-    "first": "src/specweaver/core/flow/handlers/contract_renderers.py:251",
-    "second": "src/specweaver/core/flow/handlers/contract_renderers.py:130"
+  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @c4c9be26ac4f": {
+    "lines": 8,
+    "first": "src/specweaver/core/flow/handlers/generation.py:24",
+    "second": "src/specweaver/core/flow/handlers/review.py:16"
   },
   "src/specweaver/core/flow/store.py <-> src/specweaver/core/flow/store.py @d4eb33b97a5c": {
     "lines": 19,
@@ -283,6 +273,21 @@
     "lines": 16,
     "first": "src/specweaver/sandbox/web/interfaces/facades.py:55",
     "second": "src/specweaver/sandbox/web/interfaces/facades.py:34"
+  },
+  "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @63c490b34a7f": {
+    "lines": 7,
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:306",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
+  },
+  "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @9ced5a28b740": {
+    "lines": 7,
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:188",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
+  },
+  "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @e48a817fa7b3": {
+    "lines": 7,
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:248",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
     "lines": 22,

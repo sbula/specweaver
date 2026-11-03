@@ -198,10 +198,10 @@ class TestBatch2LoggingRollout:
     def test_workflow_modules_have_loggers(self):
         """workflows/ drafting, review, implementation should declare loggers."""
         from specweaver.workflows.drafting import drafter, feature_drafter
-        from specweaver.workflows.implementation import generator
+        from specweaver.workflows.implementation import contract_renderers, generator
         from specweaver.workflows.review import reviewer
 
-        for mod in (drafter, feature_drafter, generator, reviewer):
+        for mod in (drafter, feature_drafter, generator, contract_renderers, reviewer):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__
@@ -330,7 +330,6 @@ class TestBatch3LoggingRollout:
             arbiter,
             base,
             context_assembler,
-            contract_renderers,
             decompose,
             draft,
             drift,
@@ -361,7 +360,6 @@ class TestBatch3LoggingRollout:
             arbiter,
             base,
             context_assembler,
-            contract_renderers,
             decompose,
             draft,
             drift,

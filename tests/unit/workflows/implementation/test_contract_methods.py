@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.core.flow.handlers.contract_renderers import (
+from specweaver.workflows.implementation.contract_renderers import (
     contract_names,
     extract_docstrings,
     extract_methods,

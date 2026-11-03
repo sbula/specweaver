@@ -85,12 +85,12 @@
         {
           "id": "task-files-own-python-name",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "file": "src/specweaver/workflows/implementation/task_files.py",
           "symbol": "task_files_for",
           "old": "_tests(f\"{stem}.py\", \"python\")",
           "new": "f\"tests/{stem}_test.py\"",
           "breaks": "a Python task's tests are written where the rules never look",
-          "symbol_sha": "sha256:5053a91732a2a55928c45f6b62b1bb23569d2ef48c16e0dff2cc109e3f52c9ab"
+          "symbol_sha": "sha256:0551eff0723f57a477de351d242cc709621c7647059d799fb1f5c337cba6abe3"
         }
       ]
     },
@@ -384,10 +384,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/qa_targets.py",
           "symbol": "default_test_target",
-          "old": "    return task_files_for(context.project_path, context.spec_path, context.isolation.language).tests\n",
-          "new": "    return task_files_for(\n        context.project_path, context.spec_path, context.isolation.language\n    ).tests.replace(\"tests/\", \"src/\", 1)\n",
+          "old": "    return run_task_files(context).tests\n",
+          "new": "    return run_task_files(context).tests.replace(\"tests/\", \"src/\", 1)\n",
           "breaks": "a Python run_tests with no target runs src/test_<stem>.py, which generation never writes",
-          "symbol_sha": "sha256:603473c163017d68d481ebe3caa51e5a4b0bfec18743dbd90981a8e83448dcea"
+          "symbol_sha": "sha256:9a4f7a1ef295d0318dbdcc2216f78a7613fc0ecffe8adfe2fedb994d98f1c59a"
         },
         {
           "id": "lint-default-is-all-of-src",
@@ -580,7 +580,7 @@
           "old": "                language=language_guide(language, context.project_path).name,\n",
           "new": "                language=\"Python\",\n",
           "breaks": "the plan step tells the planner Python whatever the project",
-          "symbol_sha": "sha256:9b7d57964ada124da4e650e99101789ff36ae94ce96ce67d243c08b070f76062"
+          "symbol_sha": "sha256:e9c75e5814718dcf5c35e4638ebd80bc9723a6917d9fe14903bcfb7e99786315"
         }
       ]
     },
@@ -632,7 +632,7 @@
           "old": "    pipeline = load_bundled_pipeline(\"implement_spec\")\n",
           "new": "    pipeline = load_bundled_pipeline(\"implement_spec\").model_copy(\n        update={\"steps\": load_bundled_pipeline(\"implement_spec\").steps[:2]}\n    )\n",
           "breaks": "sw implement generates and stops",
-          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
+          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
         },
         {
           "id": "api-error-leaks-traceback",

@@ -476,12 +476,12 @@
         {
           "id": "flow-uses-a-private-detector",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/task_files.py",
-          "symbol": "task_files_for",
+          "file": "src/specweaver/core/flow/engine/run_language.py",
+          "symbol": "run_language",
           "old": "    from specweaver.sandbox.language.core.detect import detect_language\n",
           "new": "    from specweaver.sandbox.language.core.detect import _is_kotlin, detect_language  # noqa: F401\n",
           "breaks": "the flow engine reaches past the language interface into a private helper",
-          "symbol_sha": "sha256:5053a91732a2a55928c45f6b62b1bb23569d2ef48c16e0dff2cc109e3f52c9ab"
+          "symbol_sha": "sha256:28d7ee9f56ff06f9089b34046af127da311d5031447f946d9ab84ad4dd69c42e"
         }
       ]
     }

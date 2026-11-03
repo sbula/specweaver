@@ -93,7 +93,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"language\": None})\n",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
+          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
         },
         {
           "id": "api-names-no-language",
@@ -121,7 +121,7 @@
       "requirement": "FR-3",
       "title": "One derivation of a task's files",
       "scope": [
-        "tests/unit/core/flow/engine/test_task_files.py",
+        "tests/unit/workflows/implementation/test_task_files.py",
         "tests/integration/core/flow/engine/test_task_files_agree.py",
         "tests/integration/core/flow/handlers/test_agentic_generate_step.py"
       ],
@@ -129,7 +129,7 @@
         {
           "id": "header-package-ignored",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "file": "src/specweaver/workflows/implementation/task_files.py",
           "symbol": "_jvm",
           "old": "        _spec_package(spec_path) or _source_package(project_root, language) or _group(project_root)\n",
           "new": "        _source_package(project_root, language) or _group(project_root)\n",
@@ -139,7 +139,7 @@
         {
           "id": "hostile-package-accepted",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "file": "src/specweaver/workflows/implementation/task_files.py",
           "symbol": "_spec_package",
           "old": "            if not _PACKAGE.fullmatch(package):\n",
           "new": "            if False:\n",
@@ -149,7 +149,7 @@
         {
           "id": "first-package-wins",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/task_files.py",
+          "file": "src/specweaver/workflows/implementation/task_files.py",
           "symbol": "_source_package",
           "old": "        if len(set(parts)) != 1:\n",
           "new": "        if False:\n",
@@ -161,10 +161,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/isolation.py",
           "symbol": "derive_allowed_paths",
-          "old": "    return task_files_for(project_root, spec_path, language).all\n",
+          "old": "    return task_files_for(project_root, spec_path, run_language(project_root, language)).all\n",
           "new": "    return task_files_for(project_root, spec_path, \"python\").all\n",
           "breaks": "a Java project's merge strips the Java files it generated",
-          "symbol_sha": "sha256:c6b07d9c8bdb6dcd6b2c3da808d6c2c4f0d87e7264a2df99535a0d0e481e9312"
+          "symbol_sha": "sha256:f4e746dd855fe0941917e569d67ba672eff3d5fd3b01560d60873676f4fea8f1"
         },
         {
           "id": "tests-into-output-dir",
@@ -314,14 +314,14 @@
       "scope": [
         "tests/integration/core/flow/handlers/test_generation_speaks_the_language.py",
         "tests/integration/core/flow/handlers/test_agentic_generate_step.py",
-        "tests/unit/core/flow/engine/test_task_files.py",
-        "tests/unit/core/flow/engine/test_task_brief.py",
+        "tests/unit/workflows/implementation/test_task_files.py",
+        "tests/unit/workflows/implementation/test_task_brief.py",
         "tests/unit/commons/test_lineage.py",
         "tests/unit/core/flow/handlers/test_contract_handler.py",
         "tests/unit/workflows/implementation/test_languages.py",
         "tests/unit/workflows/implementation/test_strip_fences.py",
         "tests/unit/workflows/implementation/test_generator_tagging.py",
-        "tests/unit/core/flow/engine/test_frameworks.py"
+        "tests/unit/workflows/implementation/test_frameworks.py"
       ],
       "mutants": [
         {
@@ -332,7 +332,7 @@
           "old": "guide = language_guide(files.language, context.project_path)",
           "new": "guide = language_guide(\"python\", context.project_path)",
           "breaks": "a Java project is prompted for Python",
-          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
+          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
         },
         {
           "id": "tag-always-python",
@@ -382,17 +382,17 @@
           "old": "                declare_rust_module(context.project_path, files)\n",
           "new": "                pass\n",
           "breaks": "tests/<stem>.rs cannot reach the module",
-          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
+          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
         },
         {
           "id": "contract-detects-again",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "GenerateContractHandler.execute",
-          "old": "            from specweaver.core.flow.engine.task_files import task_files_for\n\n            language = task_files_for(\n                context.project_path, context.spec_path, context.isolation.language",
-          "new": "            from specweaver.core.flow.engine.task_files import task_files_for\n\n            language = task_files_for(\n                context.project_path, context.spec_path, None",
+          "old": "            from specweaver.core.flow.engine.run_language import run_task_files\n\n            language = run_task_files(context).language\n",
+          "new": "            from specweaver.core.flow.engine.run_language import run_language\n\n            language = run_language(context.project_path, None)\n",
           "breaks": "[implement] language is ignored by the contract step",
-          "symbol_sha": "sha256:a4b1a0fe753ac91f32910af6eee3ab8e870bfbbc21985965466dd68dddff01c3"
+          "symbol_sha": "sha256:ecbf788f71d3a1381539e7ad840d48d28a962a65fa0bee19ca8a2dad5da8ecfb"
         },
         {
           "id": "project-file-ignored",
@@ -433,7 +433,7 @@
           "old": "f\"Fix the following lint errors in this {name} file.\\n\\n\"",
           "new": "f\"Fix the following lint errors in this Python file.\\n\\n\"",
           "breaks": "a Java file is fixed as Python",
-          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
         },
         {
           "id": "lint-fence-python",
@@ -443,7 +443,7 @@
           "old": "f\"## Current Code\\n```{language}\\n{code}\\n```\\n\\n\"",
           "new": "f\"## Current Code\\n```python\\n{code}\\n```\\n\\n\"",
           "breaks": "the code is shown to the model as Python",
-          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
         },
         {
           "id": "lint-fallback-tag-python",
@@ -453,7 +453,7 @@
           "old": "fixed_code = tag_content(fixed_code, artifact_uuid, language)",
           "new": "fixed_code = tag_content(fixed_code, artifact_uuid, \"python\")",
           "breaks": "a lost tag comes back as `#` in Rust",
-          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
         },
         {
           "id": "lint-fences-not-stripped",
@@ -463,7 +463,7 @@
           "old": "fixed_code = strip_fences(response.text)",
           "new": "fixed_code = response.text.strip() + \"\\n\"",
           "breaks": "the model's fence is written into the file",
-          "symbol_sha": "sha256:246b36e6616ef36dbe653779c94cfde70a523559c386029df6eb93b43001046b"
+          "symbol_sha": "sha256:6fadaef8f89c1ab3fcb9b9e701906191f23982cb12d67e7c6a176c42e41d11c9"
         }
       ]
     },
@@ -523,7 +523,7 @@
       "requirement": "FR-8",
       "title": "Framework-aware generation",
       "scope": [
-        "tests/unit/core/flow/engine/test_frameworks.py",
+        "tests/unit/workflows/implementation/test_frameworks.py",
         "tests/integration/core/flow/handlers/test_generation_follows_the_framework.py",
         "tests/e2e/capabilities/workflows/test_implement_follows_the_framework_e2e.py"
       ],
@@ -541,7 +541,7 @@
         {
           "id": "archetype-ignored",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "file": "src/specweaver/workflows/implementation/frameworks.py",
           "symbol": "project_framework",
           "old": "    if archetype:\n",
           "new": "    if False:\n",
@@ -551,7 +551,7 @@
         {
           "id": "detection-none",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "file": "src/specweaver/workflows/implementation/frameworks.py",
           "symbol": "_detected",
           "old": "    return detect(project_root) if detect else None\n",
           "new": "    return None\n",
@@ -561,7 +561,7 @@
         {
           "id": "spring-before-boot",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "file": "src/specweaver/workflows/implementation/frameworks.py",
           "symbol": "_jvm",
           "old": "(key for key, mark in _JVM_RULES if mark in text)",
           "new": "(key for key, mark in reversed(_JVM_RULES) if mark in text)",
@@ -571,7 +571,7 @@
         {
           "id": "language-check-dropped",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/engine/frameworks.py",
+          "file": "src/specweaver/workflows/implementation/frameworks.py",
           "symbol": "project_framework",
           "old": "if guide is not None and language in guide.languages:",
           "new": "if guide is not None:",
@@ -586,7 +586,7 @@
           "old": "    if framework is not None:\n",
           "new": "    if False:\n",
           "breaks": "sw implement does not say which framework it used",
-          "symbol_sha": "sha256:b63c197f96dc5d8e82ce03abf420fb7786da99b413050d3d228d98501d6fb950"
+          "symbol_sha": "sha256:c76faef51863ee2819fc6aed14cf7ccf79dc565b8e26b09a144f02c9a308c8cc"
         }
       ]
     },

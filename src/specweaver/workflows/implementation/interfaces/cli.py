@@ -104,7 +104,7 @@ _STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
 
 def _print_framework(project_path: Path, code_path: Path, language: str) -> None:
     """The framework the prompts follow, and where it was found; nothing when there is none."""
-    from specweaver.core.flow.engine.frameworks import project_framework
+    from specweaver.workflows.implementation.frameworks import project_framework
 
     try:
         framework = project_framework(project_path, code_path, language)
@@ -170,10 +170,11 @@ def implement(
 
     # Derive output paths from spec name
     # e.g., "greet_service_spec.md" -> "greet_service.py"
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.core.flow.engine.run_language import run_language
+    from specweaver.workflows.implementation.task_files import task_files_for
 
     try:
-        task = task_files_for(project_path, spec_path, language)
+        task = task_files_for(project_path, spec_path, run_language(project_path, language))
     except ValueError as exc:
         _core.print_error(exc)
         raise typer.Exit(code=1) from exc

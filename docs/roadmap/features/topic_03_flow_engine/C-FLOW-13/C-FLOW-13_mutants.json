@@ -798,7 +798,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=None\n    )\n",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
+          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
         },
         {
           "id": "run-drops-run-model",

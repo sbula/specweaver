@@ -51,11 +51,12 @@ def derive_allowed_paths(
     Paths are repo-relative with forward slashes (git ``--name-only`` form on every
     platform, including Windows) — never ``os.sep``.
     """
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.core.flow.engine.run_language import run_language
+    from specweaver.workflows.implementation.task_files import task_files_for
 
     if project_root is None:
         return task_files_for(spec_path.parent, spec_path, "python").all
-    return task_files_for(project_root, spec_path, language).all
+    return task_files_for(project_root, spec_path, run_language(project_root, language)).all
 
 
 def task_files(context: RunContext) -> list[str]:

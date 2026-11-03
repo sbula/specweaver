@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.engine.task_files import TaskFiles, task_files_for
+from specweaver.workflows.implementation.task_files import TaskFiles, task_files_for
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -146,9 +146,3 @@ def test_rust_names_the_file_that_declares_the_module(
 @pytest.mark.parametrize("language", ["python", "java", "kotlin", "typescript", "rust"])
 def test_the_files_name_their_language(tmp_path: Path, language: str) -> None:
     assert task_files_for(tmp_path, _spec(tmp_path), language).language == language
-
-
-def test_the_detected_language_is_named(tmp_path: Path) -> None:
-    (tmp_path / "Cargo.toml").write_text('[package]\nname = "greet"\n', encoding="utf-8")
-
-    assert task_files_for(tmp_path, _spec(tmp_path), None).language == "rust"

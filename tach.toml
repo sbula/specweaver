@@ -98,7 +98,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.workspace.analyzers", "specweaver.interfaces.run_setup", "specweaver.workflows.review", "specweaver.workflows.implementation", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.assurance.validation", "specweaver.infrastructure.llm", "specweaver.assurance.standards", "specweaver.workspace", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"
@@ -114,11 +114,11 @@ depends_on = [ "specweaver.interfaces.run_doors", "specweaver.interfaces.cli_kit
 
 [[modules]]
 path = "specweaver.workflows.implementation"
-depends_on = [ "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
-depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.infrastructure.llm.interfaces", "specweaver.interfaces.run_doors",]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.workflows.implementation", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.infrastructure.llm.interfaces", "specweaver.interfaces.run_doors",]
 
 [[modules]]
 path = "specweaver.workflows.pipelines"
@@ -268,6 +268,10 @@ expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_l
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]
 expose = [ "cli", "cli.graph_app", "cli.lineage_app",]
+
+[[interfaces]]
+from = [ "specweaver.workflows.implementation",]
+expose = [ "contract_renderers", "contract_renderers.contract_extension", "contract_renderers.contract_names", "contract_renderers.extract_constructors", "contract_renderers.extract_contract", "contract_renderers.extract_docstrings", "contract_renderers.extract_methods", "contract_renderers.extract_signatures", "contract_renderers.render_contract_file", "frameworks", "frameworks.FrameworkChoice", "frameworks.project_framework", "generator", "generator.Generator", "generator.generation_prompt", "generator.strip_fences", "languages", "languages.LanguageGuide", "languages.language_guide", "task_files", "task_files.TaskFiles", "task_files.task_brief", "task_files.task_files_for",]
 
 [[interfaces]]
 from = [ "specweaver.workflows.implementation.interfaces",]

@@ -47,7 +47,7 @@ def test_an_unknown_ending_matches_no_archetype_language() -> None:
 
 @pytest.mark.parametrize("language", ["python", "java", "kotlin", "typescript", "rust"])
 def test_the_tasks_test_file_follows_the_convention(language: str, tmp_path: Path) -> None:
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.workflows.implementation.task_files import task_files_for
 
     spec = tmp_path / "specs" / "orders_spec.md"
     spec.parent.mkdir()

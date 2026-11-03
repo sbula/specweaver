@@ -52,25 +52,22 @@ class TaskFiles:
         return [self.code, self.tests, *self.extra]
 
 
-def task_files_for(project_root: Path, spec_path: Path, language: str | None) -> TaskFiles:
-    """The task's files for `language`; None detects it from the project's manifests.
+def task_files_for(project_root: Path, spec_path: Path, language: str) -> TaskFiles:
+    """The task's files for `language` (the caller resolves it: `core.flow.engine.run_language`).
 
     Raises `ValueError` naming the spec line when its `Package` line is not a dotted identifier.
     """
-    from specweaver.sandbox.language.core.detect import detect_language
-
     stem = module_stem(spec_path)
-    chosen = language or detect_language(project_root)
-    if chosen in {"java", "kotlin"}:
-        return _jvm(project_root, spec_path, stem, chosen)
-    if chosen == "typescript":
-        return TaskFiles(f"src/{stem}.ts", _tests(f"{stem}.ts", chosen), language=chosen)
-    if chosen == "rust":
+    if language in {"java", "kotlin"}:
+        return _jvm(project_root, spec_path, stem, language)
+    if language == "typescript":
+        return TaskFiles(f"src/{stem}.ts", _tests(f"{stem}.ts", language), language=language)
+    if language == "rust":
         # Always the library root: tests in `tests/` reach only a library crate, so a binary-only
         # crate gets a `lib.rs` beside its `main.rs`.
         module = stem.replace("-", "_")
         code = f"src/{module}.rs"
-        return TaskFiles(code, _tests(code, chosen), (RUST_ROOT,), language=chosen)
+        return TaskFiles(code, _tests(code, language), (RUST_ROOT,), language=language)
     return TaskFiles(f"src/{stem}.py", _tests(f"{stem}.py", "python"), language="python")
 
 

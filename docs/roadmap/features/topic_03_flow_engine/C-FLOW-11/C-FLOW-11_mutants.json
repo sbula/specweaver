@@ -82,7 +82,7 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
+          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
         },
         {
           "id": "coder-without-its-step",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:e4abbcf4863c5bdfccbf8131b53a854fe73782d8849875aa246ced63d2a505fd"
+          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
         }
       ]
     },
@@ -174,7 +174,7 @@
           "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
           "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:ba423b8dab1baa0f9a05e3ad891cf6aabd1f9d61e437a6a9eaddd94fe44a9746"
+          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
         },
         {
           "id": "api-reads-another-file",

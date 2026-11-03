@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.flow.engine.state import PipelineRun
-    from specweaver.core.flow.engine.task_files import TaskFiles
+    from specweaver.workflows.implementation.task_files import TaskFiles
 
 logger = logging.getLogger(__name__)
 
@@ -75,9 +75,10 @@ def _task_files(project_root: Path, spec_path: Path) -> TaskFiles:
     from specweaver.core.config.bootstrap.project_settings import load_section
     from specweaver.core.config.implement_policy import parse_implement
     from specweaver.core.config.settings_file import SettingsFileError
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.core.flow.engine.run_language import run_language
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.interfaces.api.v1.run_doors import settings_error_code
+    from specweaver.workflows.implementation.task_files import task_files_for
 
     try:
         language = load_section(project_root, parse_implement).language
@@ -86,7 +87,7 @@ def _task_files(project_root: Path, spec_path: Path) -> TaskFiles:
             detail=str(exc), error_code=settings_error_code(exc), status_code=500
         ) from exc
     try:
-        return task_files_for(project_root, spec_path, language)
+        return task_files_for(project_root, spec_path, run_language(project_root, language))
     except ValueError as exc:
         raise SpecWeaverAPIError(detail=str(exc), error_code="SPEC_INVALID") from exc
 

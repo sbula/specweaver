@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.engine.frameworks import project_framework
+from specweaver.workflows.implementation.frameworks import project_framework
 from specweaver.workflows.implementation.languages import framework_guide
 
 if TYPE_CHECKING:

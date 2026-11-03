@@ -76,17 +76,17 @@ def default_test_target(context: RunContext, kind: str) -> str:
                 stem, scenarios_root(context).parent
             )
         )
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.core.flow.engine.run_language import run_task_files
 
     # Relative: the QA atom reads it from where the step runs, the run's worktree included.
-    return task_files_for(context.project_path, context.spec_path, context.isolation.language).tests
+    return run_task_files(context).tests
 
 
 def task_file(context: RunContext, which: str) -> Path | None:
     """The task's code or tests file outside Python; None for Python, whose `output_dir` stays."""
-    from specweaver.core.flow.engine.task_files import task_files_for
+    from specweaver.core.flow.engine.run_language import run_task_files
 
-    files = task_files_for(context.project_path, context.spec_path, context.isolation.language)
+    files = run_task_files(context)
     relative = files.code if which == "code" else files.tests
     return None if relative.endswith(".py") else context.project_path / relative
 

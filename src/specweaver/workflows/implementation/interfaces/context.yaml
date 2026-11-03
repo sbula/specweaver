@@ -6,10 +6,11 @@ purpose: CLI entrypoints for implementation workflows
 consumes:
   - specweaver/interfaces/cli_kit
   - specweaver/interfaces/run_doors
+  - specweaver/workflows/implementation
   - specweaver/core/flow
   - specweaver/infrastructure/llm
 widens:
   specweaver/interfaces/cli_kit: "`sw implement` prints and prompts through it"
   specweaver/interfaces/run_doors: "`sw implement` starts its run through it"
-  specweaver/core/flow: "`sw implement` loads the pipeline and the task files"
+  specweaver/core/flow: "`sw implement` loads the pipeline and the run's language"
 forbids: []

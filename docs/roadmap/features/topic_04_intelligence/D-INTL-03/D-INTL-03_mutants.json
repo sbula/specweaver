@@ -38,7 +38,7 @@
           "old": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"planner\", adapter=adapter),\n",
           "new": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"implementer\", adapter=adapter),\n",
           "breaks": "the plan step's model can add, replace and delete code",
-          "symbol_sha": "sha256:9b7d57964ada124da4e650e99101789ff36ae94ce96ce67d243c08b070f76062"
+          "symbol_sha": "sha256:e9c75e5814718dcf5c35e4638ebd80bc9723a6917d9fe14903bcfb7e99786315"
         }
       ]
     },

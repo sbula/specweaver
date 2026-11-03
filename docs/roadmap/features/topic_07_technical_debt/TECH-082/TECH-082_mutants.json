@@ -43,6 +43,27 @@
       ]
     },
     {
+      "requirement": "FR-3",
+      "title": "Task files, framework and contract live in workflows/implementation; every caller resolves the run's language first",
+      "scope": [
+        "tests/integration/core/flow/engine/test_task_files_agree.py",
+        "tests/integration/core/flow/handlers/test_step_files_java.py",
+        "tests/unit/core/flow/engine/test_run_language.py"
+      ],
+      "mutants": [
+        {
+          "id": "generation-skips-the-run-language",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler._files",
+          "old": "        from specweaver.core.flow.engine.run_language import run_task_files\n\n        return run_task_files(context)\n",
+          "new": "        from specweaver.workflows.implementation.task_files import task_files_for\n\n        return task_files_for(context.project_path, context.spec_path, context.isolation.language)\n",
+          "breaks": "a project with no [implement] language gets Python files whatever its manifests say",
+          "symbol_sha": "sha256:5d132f23f940914e064fff5e049bc532016c34a368fe660d725b54c790a04f25"
+        }
+      ]
+    },
+    {
       "requirement": "FR-15",
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [

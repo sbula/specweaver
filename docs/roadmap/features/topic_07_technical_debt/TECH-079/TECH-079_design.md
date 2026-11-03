@@ -20,6 +20,10 @@ they are owned here.
 
 Filing-day evidence from the audit. Line numbers drift; re-measure each one before planning.
 
+Since `TECH-082` SF-02, the task files, framework and contract code live in `workflows/implementation`
+and take the language as given; the flow handlers, the API and `sw implement` resolve it through one
+function, `core/flow/engine/run_language.py`. Unified detection changes that one place.
+
 - **Fix first #6** — Two language detectors check manifests in opposite order; about 12
   suffix-to-language tables disagree (`.kts`, `.tsx`, `.js`). Where:
   `sandbox/language/core/_detect.py` vs `commons/prepare_plan.py:114`; tables in 12 files.

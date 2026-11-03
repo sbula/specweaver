@@ -146,7 +146,7 @@
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:603473c163017d68d481ebe3caa51e5a4b0bfec18743dbd90981a8e83448dcea"
+          "symbol_sha": "sha256:9a4f7a1ef295d0318dbdcc2216f78a7613fc0ecffe8adfe2fedb994d98f1c59a"
         }
       ]
     },
@@ -462,14 +462,14 @@
       "requirement": "FR-2",
       "title": "A contract keeps each method's class",
       "scope": [
-        "tests/unit/core/flow/handlers/test_contract_methods.py",
+        "tests/unit/workflows/implementation/test_contract_methods.py",
         "tests/integration/core/flow/handlers/test_class_contract_runs.py"
       ],
       "mutants": [
         {
           "id": "contract-drops-class",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/contract_renderers.py",
+          "file": "src/specweaver/workflows/implementation/contract_renderers.py",
           "symbol": "_method_at",
           "old": "        owner if isinstance(owner, str) else None,\n",
           "new": "        None,\n",

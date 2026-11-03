@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.engine.task_files import TaskFiles
     from specweaver.core.flow.run_state.run_context import RunContext
+    from specweaver.workflows.implementation.task_files import TaskFiles
 
 
 async def run_coder(
