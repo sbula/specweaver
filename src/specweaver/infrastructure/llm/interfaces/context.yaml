@@ -15,3 +15,5 @@ consumes:
   - specweaver/core/config
   - specweaver/core/config/bootstrap
   - specweaver/infrastructure/llm
+widens:
+  specweaver/interfaces/cli_kit: "`sw llm` prints and prompts through it"

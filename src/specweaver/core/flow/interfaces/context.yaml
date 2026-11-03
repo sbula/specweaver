@@ -14,4 +14,8 @@ consumes:
   - specweaver/core/config
   - specweaver/infrastructure/llm/interfaces
   - specweaver/workspace/analyzers
+widens:
+  specweaver/interfaces/cli_kit: "`sw run` prints and prompts through it"
+  specweaver/interfaces/run_doors: "`sw run` starts runs through it"
+  specweaver/workspace/analyzers: "`sw run` picks the project's analyzer"
 forbids: []

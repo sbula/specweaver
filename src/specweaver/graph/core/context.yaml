@@ -7,6 +7,10 @@ description: "Core logic for Knowledge Graph construction and traversal"
 
 archetype: orchestrator
 
+consumes:
+  - specweaver/commons
+  - specweaver/workspace/ast/adapters
+
 exposes:
   - builder
   - engine

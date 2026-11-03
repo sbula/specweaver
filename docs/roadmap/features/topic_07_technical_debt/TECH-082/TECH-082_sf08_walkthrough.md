@@ -46,3 +46,43 @@ new edge. The I/O in `topology.py` is the existing ledger row, now naming `load_
   per import and must build the tree once (a note for SF-09's plan).
 - R3 (LOW) recursion in `forbids` follows strictly shorter folders, so it ends.
 - No decision needed from the user.
+
+## CB-2: our tree obeys the rule (FR-21)
+
+**What changed**
+- `tests/unit/test_boundary_rule_holds.py` (new): no breach in `src/specweaver`; every `tach.toml`
+  edge allowed; every manifest loaded; the check finds the manifests. Red first: 62 breaches,
+  3 refused tach edges.
+- 18 manifests fixed by D-1: `widens` with a reason on the 10 `interfaces` folders,
+  `core/config/bootstrap` and `workspace/project`; `core/flow` and `graph/core` list what their
+  children share; the 3 `core/flow` children narrowed `sandbox` and `workspace` to the parts they
+  import.
+- `boundary_rule._overlap`: a `consumes` entry "contains" a forbidden path only when it is literally
+  above it. `core/flow`'s `sandbox/dispatcher` (a file) was refused against `sandbox/*/interfaces`,
+  though only a glob could reach it. Test first (`test_an_entry_a_forbid_glob_only_might_reach…`).
+
+**Choices made without a stop (for the user's review)**
+1. 5 `consumes` entries were used by no import and no tach edge, so they were **removed**, not
+   widened: `drafting/interfaces` → `interfaces/cli`; `implementation/interfaces` and
+   `review/interfaces` → `workspace/project`; `workspace/project` → `graph`;
+   `workspace/project/interfaces` → `workspace/store`. Removing only narrows; a `widens` reason for
+   an unused allowance would be false.
+2. `workspace/project/interfaces` now widens `graph` (`cli.py:295` imports the graph engine); it was
+   covered by its parent's unused entry before.
+3. The overlap refinement above, within D-2.
+4. The guard treats a tach edge to a whole module (`sandbox`) as allowed when the part the manifest
+   consumes (`sandbox/execution`) is allowed: tach modules are coarser than manifest entries.
+
+**Tests**: full suite 12049 passed, 9 skipped; `cb` 17/17; `doc` 14/14; all 7 boundary guards pass
+(`tach check` inside `test_architecture.py`). `stale_mutants.py`: 0 stale in 53 corpora.
+
+**Mutant** (FR-21): comment out `sandbox/execution` in `validation/interfaces`' `widens` → 2 guard
+tests object. Recorded in `TECH-082_mutants.json` (no `symbol_sha`: YAML, as TECH-081's).
+
+**Red/blue (7.5)**
+- R1 (MEDIUM, accepted) a reason is prose; nothing proves it true. The rule requires one; review
+  judges it.
+- R2 (LOW, accepted) the coarse tach-edge match could excuse a forbidden use of another part of the
+  same tach module; SF-09's per-import check judges real imports.
+- R3 (LOW, fixed) the guard's owner lookup raised `StopIteration` for a one-file tach module; it now
+  returns "not allowed".

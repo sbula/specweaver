@@ -14,7 +14,7 @@ consumes:
   - specweaver/core/config
   - specweaver/infrastructure/llm
   - specweaver/assurance/validation
-  - specweaver/workspace
+  - specweaver/workspace/store
   - specweaver/workspace/ast/parsers
 
 forbids:

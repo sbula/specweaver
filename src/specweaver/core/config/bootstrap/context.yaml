@@ -17,6 +17,11 @@ consumes:
   - specweaver/workspace
   - specweaver/workspace/memory
   - specweaver/core/config
+widens:
+  specweaver/core/flow/store: "bootstrap creates the run-state tables"
+  specweaver/infrastructure/llm: "bootstrap creates the model tables and seeds the catalogue and prices"
+  specweaver/workspace: "bootstrap creates the workspace tables"
+  specweaver/workspace/memory: "bootstrap creates the memory tables"
 forbids:
   - specweaver/sandbox/*  # Same boundary rule as core.config itself — no raw process execution.
 

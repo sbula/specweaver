@@ -20,3 +20,10 @@ consumes:
   - specweaver/graph/lineage
   - specweaver/sandbox/execution
   - specweaver/workspace/project
+widens:
+  specweaver/interfaces/cli_kit: "`sw check` and `sw drift` print through it"
+  specweaver/interfaces/run_doors: "`sw drift` starts its run through it"
+  specweaver/core/flow: "`sw drift` builds the drift step and reads its result"
+  specweaver/graph/lineage: "`sw check --lineage` reads the lineage scanner"
+  specweaver/workspace/project: "`sw check` finds the active project"
+  specweaver/sandbox/execution: "`sw drift` runs git through SubprocessExecutor (cli_drift.py)"

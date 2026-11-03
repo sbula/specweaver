@@ -18,3 +18,7 @@ consumes:
   - specweaver/core/flow
   - specweaver/workspace/analyzers
   - specweaver/workspace/project
+widens:
+  specweaver/interfaces/cli_kit: "`sw standards` prints and prompts through it"
+  specweaver/interfaces/run_doors: "`sw standards` starts its scan run through it"
+  specweaver/core/flow: "`sw standards` reads step results and the spend brake"

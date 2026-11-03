@@ -9,6 +9,9 @@ consumes:
   - specweaver/interfaces/cli_kit
   - specweaver/interfaces/run_doors
   - specweaver/core/flow
-  - specweaver/interfaces/cli
+widens:
+  specweaver/interfaces/cli_kit: "`sw draft` prints and prompts through it"
+  specweaver/interfaces/run_doors: "`sw draft` starts its run through it"
+  specweaver/core/flow: "`sw draft` reads step models and results"
 forbids:
   - specweaver/sandbox/*

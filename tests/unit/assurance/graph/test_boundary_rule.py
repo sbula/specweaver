@@ -305,3 +305,14 @@ def test_a_root_manifests_own_folder_does_not_lift_its_forbids(tmp_path: Path) -
 
     assert allows(nodes, tmp_path, "", "app/new")
     assert not allows(nodes, tmp_path, "", "app/legacy/old")
+
+
+def test_an_entry_a_forbid_glob_only_might_reach_is_not_containing(tmp_path: Path) -> None:
+    nodes = _tree(
+        tmp_path,
+        a={"consumes": ["box/dispatch", "box"], "forbids": ["box/*/api"]},
+    )
+
+    found = breaches(nodes, tmp_path)
+
+    assert [b.entry for b in found] == ["box"]

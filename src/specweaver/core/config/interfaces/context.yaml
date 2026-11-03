@@ -16,3 +16,7 @@ consumes:
   - specweaver/core/config
   - specweaver/core/config/bootstrap
   - specweaver/telemetry_logger
+widens:
+  specweaver/interfaces/cli_kit: "`sw config` prints and prompts through it"
+  specweaver/assurance/validation/io: "`sw config` lists and checks validation pipelines"
+  specweaver/telemetry_logger: "`sw config` shows the log path"

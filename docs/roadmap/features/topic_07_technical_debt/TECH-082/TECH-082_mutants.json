@@ -42,6 +42,24 @@
           "symbol_sha": "sha256:e2b03ca0818d2203d89c9d3c1dc9de307f629ecc43bf6a2332d8bd48064bcc9a"
         }
       ]
+    },
+    {
+      "requirement": "FR-21",
+      "title": "SpecWeaver's own manifests obey the boundary rule it ships",
+      "scope": [
+        "tests/unit/test_boundary_rule_holds.py"
+      ],
+      "mutants": [
+        {
+          "id": "undeclared-sandbox-widening",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/context.yaml",
+          "symbol": "widens",
+          "old": "  specweaver/sandbox/execution: \"`sw drift` runs git through SubprocessExecutor (cli_drift.py)\"",
+          "new": "  # specweaver/sandbox/execution: MUTANT",
+          "breaks": "the validation CLI uses the sandbox its pure parent forbids, with no reason on record"
+        }
+      ]
     }
   ]
 }

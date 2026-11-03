@@ -13,9 +13,14 @@ consumes:
   - specweaver/core/config
   - specweaver/core/flow/run_state
   - specweaver/infrastructure/llm
-  - specweaver/sandbox
+  - specweaver/sandbox/base
+  - specweaver/sandbox/git/core
+  - specweaver/sandbox/security
+  - specweaver/sandbox/language/core
+  - specweaver/sandbox/filesystem/core
+  - specweaver/sandbox/execution/core
   - specweaver/workflows/implementation
-  - specweaver/workspace
+  - specweaver/workspace/store
   - specweaver/workspace/memory
 
 forbids:

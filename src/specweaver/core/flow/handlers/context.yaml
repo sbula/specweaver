@@ -21,12 +21,21 @@ consumes:
   - specweaver/assurance/standards
   - specweaver/assurance/graph
   - specweaver/graph
-  - specweaver/sandbox
+  - specweaver/sandbox/base
+  - specweaver/sandbox/qa_runner/core
+  - specweaver/sandbox/security
+  - specweaver/sandbox/dispatcher
+  - specweaver/sandbox/language/core
+  - specweaver/sandbox/code_structure/core
+  - specweaver/sandbox/execution/core
+  - specweaver/sandbox/evaluator_schemas
+  - specweaver/sandbox/protocol/core
+  - specweaver/sandbox/mcp/core
   - specweaver/workflows/implementation
   - specweaver/workflows/review
   - specweaver/workflows/planning
   - specweaver/workflows/scenarios
-  - specweaver/workspace
-  - specweaver/workspace/ast
+  - specweaver/workspace/store
+  - specweaver/workspace/ast/parsers
   - specweaver/workspace/memory
 

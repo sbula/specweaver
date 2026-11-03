@@ -8,5 +8,8 @@ consumes:
   - specweaver/interfaces/run_doors
   - specweaver/core/flow
   - specweaver/infrastructure/llm
-  - specweaver/workspace/project
+widens:
+  specweaver/interfaces/cli_kit: "`sw implement` prints and prompts through it"
+  specweaver/interfaces/run_doors: "`sw implement` starts its run through it"
+  specweaver/core/flow: "`sw implement` loads the pipeline and the task files"
 forbids: []

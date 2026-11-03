@@ -6,8 +6,10 @@ purpose: CLI entrypoints for workspace project management
 consumes:
   - specweaver/interfaces/cli_kit
   - specweaver/workspace/project
-  - specweaver/workspace/store
   - specweaver/assurance/graph
   - specweaver/graph
   - specweaver/workspace/analyzers
+widens:
+  specweaver/interfaces/cli_kit: "`sw init` and `sw scan` print and prompt through it"
+  specweaver/graph: "`sw scan` builds the topology on the graph engine (cli.py)"
 forbids: []

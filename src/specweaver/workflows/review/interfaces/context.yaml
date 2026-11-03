@@ -8,6 +8,9 @@ consumes:
   - specweaver/interfaces/run_doors
   - specweaver/core/flow
   - specweaver/infrastructure/llm
-  - specweaver/workspace/project
   - specweaver/workflows/review
+widens:
+  specweaver/interfaces/cli_kit: "`sw review` prints and prompts through it"
+  specweaver/interfaces/run_doors: "`sw review` starts its run through it"
+  specweaver/core/flow: "`sw review` builds the review step and reads its result"
 forbids: []

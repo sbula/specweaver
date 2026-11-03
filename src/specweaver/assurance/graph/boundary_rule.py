@@ -58,7 +58,7 @@ def allows(nodes: Mapping[str, TopologyNode], root: Path, folder: str, target: s
     if wanted is None:
         return False
     own, node = tree.folders[owner]
-    used = _inside(wanted, own) or any(_overlap(c, wanted) for c in tree.parsed(node.consumes))
+    used = _inside(wanted, own) or any(_overlap(wanted, c) for c in tree.parsed(node.consumes))
     widened = any(_inside(wanted, w) for w in tree.parsed(node.widens))
     forbidden = any(_inside(wanted, f) for f in tree.forbids(owner))
     return used and (widened or not forbidden)
@@ -184,6 +184,11 @@ def _inside(path: _Parts, pattern: _Parts) -> bool:
     )
 
 
-def _overlap(a: _Parts, b: _Parts) -> bool:
-    """One of the two paths is the other or below it."""
-    return all(fnmatchcase(x, y) or fnmatchcase(y, x) for x, y in zip(a, b, strict=False))
+def _overlap(path: _Parts, pattern: _Parts) -> bool:
+    """`path` is inside `pattern`, or literally above it: then it holds what `pattern` names.
+
+    A path that only a glob in `pattern` might reach (`box/dispatch` against `box/*/api`) is not
+    above it: whether `box/dispatch/api` exists is a fact about files, and the import check judges
+    each real import anyway.
+    """
+    return _inside(path, pattern) or (len(path) < len(pattern) and path == pattern[: len(path)])
