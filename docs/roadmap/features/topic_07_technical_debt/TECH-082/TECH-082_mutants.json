@@ -95,6 +95,56 @@
       ]
     },
     {
+      "requirement": "FR-5",
+      "title": "The arbitration workflow reads the verdict; the handler routes it",
+      "scope": [
+        "tests/unit/workflows/arbitration/test_verdict.py",
+        "tests/integration/core/flow/handlers/test_arbiter_integration.py",
+        "tests/integration/core/flow/handlers/test_scenario_integration_dispatch.py"
+      ],
+      "mutants": [
+        {
+          "id": "verdict-in-prose-unread",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/arbitration/verdict.py",
+          "symbol": "arbitrate",
+          "old": "    match = re.search(r\"\\{.*\\}\", raw, re.DOTALL)\n",
+          "new": "    match = None\n",
+          "breaks": "a verdict the model wraps in a sentence fails the step",
+          "symbol_sha": "sha256:a503e639edb6091c60791a77fb604324eb90b5ec26fb207c8e1b83c1348a34e3"
+        },
+        {
+          "id": "scenario-error-not-routed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_route",
+          "old": "    if result.verdict == ArbitrateVerdict.SCENARIO_ERROR:\n",
+          "new": "    if False:\n",
+          "breaks": "a scenario_error verdict never reaches the scenario side",
+          "symbol_sha": "sha256:f867d242f2c32b501a99fd82ee323db7b5ae67649060ce83c87bd299ea850d4a"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "No flow handler calls a model itself",
+      "scope": [
+        "tests/unit/core/flow/handlers/test_no_handler_calls_a_model.py"
+      ],
+      "mutants": [
+        {
+          "id": "handler-calls-the-model",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "ArbitrateVerdictHandler._judge",
+          "old": "            result = await arbitrate(adapter, config, base_prompt.build())\n",
+          "new": "            result = await adapter.generate([], config)\n",
+          "breaks": "a handler talks to the model past the workflow",
+          "symbol_sha": "sha256:cb39864f0d5d56bc5acfde107f0c762a893fead910f15f199cef49b234063cf2"
+        }
+      ]
+    },
+    {
       "requirement": "FR-15",
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [

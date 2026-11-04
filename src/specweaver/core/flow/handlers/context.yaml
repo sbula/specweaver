@@ -32,6 +32,7 @@ consumes:
   - specweaver/sandbox/evaluator_schemas
   - specweaver/sandbox/protocol/core
   - specweaver/sandbox/mcp/core
+  - specweaver/workflows/arbitration
   - specweaver/workflows/implementation
   - specweaver/workflows/review
   - specweaver/workflows/planning

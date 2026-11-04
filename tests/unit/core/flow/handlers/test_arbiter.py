@@ -8,50 +8,9 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.arbiter import (
-    ArbitrateResult,
-    ArbitrateVerdict,
-    ArbitrateVerdictHandler,
-    _guard_coding_feedback,
-)
+from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunHandle
 from tests.scripted_llm import FixedRouter
-
-
-class TestArbitrateVerdict:
-    def test_all_verdict_values(self):
-        vals = [v.value for v in ArbitrateVerdict]
-        assert "code_bug" in vals
-        assert "scenario_error" in vals
-        assert "spec_ambiguity" in vals
-
-
-class TestArbitrateResult:
-    def test_model_validation(self):
-        data = {
-            "verdict": "code_bug",
-            "reasoning": "Reason",
-            "spec_clause": "FR-1",
-            "coding_feedback": "Code invalid",
-            "scenario_feedback": "Test invalid",
-        }
-        res = ArbitrateResult(**data)
-        assert res.verdict == ArbitrateVerdict.CODE_BUG
-        assert res.reasoning == "Reason"
-
-
-class TestVocabularyGuard:
-    def test_clean_feedback_unchanged(self):
-        val = "Function x does not return integer."
-        assert _guard_coding_feedback(val) == val
-
-    def test_leaked_scenario_term_triggers_fallback(self):
-        val = "The scenario test failed"
-        assert "behave according to the behavioral constraints" in _guard_coding_feedback(val)
-
-    def test_case_insensitive_detection(self):
-        val = "Pytest parametrized variables are missing"
-        assert "behave according to the behavioral constraints" in _guard_coding_feedback(val)
 
 
 def _evidence(**overrides):
@@ -332,3 +291,32 @@ class TestAdapterContract:
             run_context.feedback["generate_code"]["findings"]["results"][0]["message"]
             == "Check FR-1"
         )
+
+
+class TestVerdictsTheHandlerCannotRoute:
+    """TECH-082 FR-5: what the arbitration workflow returns or raises, the handler turns into ERROR
+    and keeps the evidence for a retry."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("reply", "error", "expected"),
+        [
+            ('{"verdict": "blame_the_moon"}', None, "verdict"),
+            ('{"verdict": "error"}', None, "Unknown verdict type"),
+            (None, RuntimeError("model down"), "model down"),
+        ],
+    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
+    async def test_the_step_errors_and_keeps_the_evidence(
+        self, mock_create_filter, run_context, reply, error, expected
+    ):
+        mock_create_filter.return_value.filter.return_value = "Filtered"
+        adapter = run_context.model.llm_router.adapter
+        adapter.generate.return_value = reply
+        adapter.generate.side_effect = error
+
+        result = await ArbitrateVerdictHandler().execute(_arb_step(), run_context)
+
+        assert result.status == StepStatus.ERROR
+        assert expected in result.error_message
+        assert "scenario_test_failures" in run_context.feedback

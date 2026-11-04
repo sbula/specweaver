@@ -1,0 +1,37 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: arbitration
+level: module
+purpose: >
+  Decides who is at fault when a dual run's scenario tests fail (code, scenarios or spec), and
+  guards what each side may read of the verdict.
+
+archetype: orchestrator
+
+consumes:
+  - specweaver/infrastructure/llm  # The verdict is the model's judgement.
+  - specweaver/workspace/ast/parsers  # The stack trace filter's type, for the coder's trace.
+
+forbids:
+  - specweaver/sandbox/*  # The flow handler builds the trace filter and runs the tests; this module only reads text.
+  - specweaver/core/flow/*  # The handler calls this module with plain values; never the other way.
+
+exposes:
+  - verdict
+  - verdict.ARBITRATE_INSTRUCTIONS
+  - verdict.ArbitrateResult
+  - verdict.ArbitrateVerdict
+  - verdict.SCENARIO_VOCABULARY
+  - verdict.UnreadableVerdictError
+  - verdict.arbitrate
+  - verdict.code_trace
+  - verdict.evidence_text
+  - verdict.guard_coding_feedback
+  - verdict.scenario_safe
+  - verdict.with_trace
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

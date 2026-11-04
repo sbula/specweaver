@@ -210,10 +210,8 @@ async def test_red_path_arbitrates_with_real_evidence_and_loops_back(tmp_path: P
 # ---------------------------------------------------------------------------
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget  # noqa: E402
-from specweaver.core.flow.handlers.arbiter import (  # noqa: E402
-    SCENARIO_VOCABULARY,
-    ArbitrateVerdictHandler,
-)
+from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler  # noqa: E402
+from specweaver.workflows.arbitration.verdict import SCENARIO_VOCABULARY  # noqa: E402
 
 
 def _evidence_with_failure() -> dict:

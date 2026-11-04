@@ -43,7 +43,7 @@ in `core/flow`), and the verdict routing into `context.feedback`.
 ### F-2 (MEDIUM) A reply that is not JSON
 
 Today the handler returns ERROR "Failed to parse LLM verdict: <raw>". The new `arbitrate` raises
-`UnreadableVerdict(raw)` (a `ValueError`); the handler turns it into the same message. A verdict the
+`UnreadableVerdictError(raw)` (a `ValueError`); the handler turns it into the same message. A verdict the
 model names wrongly still raises pydantic's `ValidationError`, caught by the handler's catch-all, as
 today. No user choice: same behaviour (NFR-1).
 
@@ -96,7 +96,7 @@ Nothing sets it. It moves as it is (NFR-1). No change here.
     errors-only line when none carries text.
   - `async arbitrate(adapter, config, prompt: str) -> ArbitrateResult`: one user message, the
     string-reply check (F-3), the `{...}` extract, `json.loads`, `ArbitrateResult(**data)` with
-    `raw_response` set. A reply with no JSON raises `UnreadableVerdict(raw)` (F-2). Adapter errors
+    `raw_response` set. A reply with no JSON raises `UnreadableVerdictError(raw)` (F-2). Adapter errors
     propagate.
   - The guards (D-6), moved as they are, two renamed public.
 - The handler's model step, in order: `evidence_text` → the filter (handler) →
@@ -173,7 +173,7 @@ Nothing sets it. It moves as it is (NFR-1). No change here.
    - boundary: JSON wrapped in prose is found; `evidence_text` with no failure text gives the
      errors-only line.
    - degradation: an adapter error propagates; a plain string reply is read (F-3).
-   - hostile: a reply with no JSON raises `UnreadableVerdict` naming the raw text; an unknown verdict
+   - hostile: a reply with no JSON raises `UnreadableVerdictError` naming the raw text; an unknown verdict
      raises `ValidationError`.
 3. `tests/unit/workflows/arbitration/test_arbitration_has_its_own_home.py`
    (`Proves: TECH-082 FR-5, TECH-082 NFR-2`): the moved names exist in the new module, and an AST

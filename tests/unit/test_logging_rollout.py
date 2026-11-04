@@ -196,12 +196,13 @@ class TestBatch2LoggingRollout:
             assert mod.logger.name == mod.__name__
 
     def test_workflow_modules_have_loggers(self):
-        """workflows/ drafting, review, implementation should declare loggers."""
+        """workflows/ drafting, review, implementation, arbitration should declare loggers."""
+        from specweaver.workflows.arbitration import verdict
         from specweaver.workflows.drafting import drafter, feature_drafter
         from specweaver.workflows.implementation import contract_renderers, generator
         from specweaver.workflows.review import reviewer
 
-        for mod in (drafter, feature_drafter, generator, contract_renderers, reviewer):
+        for mod in (drafter, feature_drafter, generator, contract_renderers, reviewer, verdict):
             assert hasattr(mod, "logger"), f"{mod.__name__} must have a logger"
             assert isinstance(mod.logger, logging.Logger)
             assert mod.logger.name == mod.__name__

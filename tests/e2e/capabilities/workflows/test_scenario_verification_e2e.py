@@ -500,7 +500,7 @@ def test_e2_code_bug_loop_buggy_then_fixed(tmp_path: Path) -> None:
     round2_feedback = implementer.received_feedback[1]
     assert round2_feedback is not None
     message = round2_feedback["findings"]["results"][0]["message"].lower()
-    from specweaver.core.flow.handlers.arbiter import SCENARIO_VOCABULARY
+    from specweaver.workflows.arbitration.verdict import SCENARIO_VOCABULARY
 
     for banned in SCENARIO_VOCABULARY:
         assert banned.lower() not in message

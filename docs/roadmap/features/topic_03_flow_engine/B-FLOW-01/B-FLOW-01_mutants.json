@@ -62,8 +62,8 @@
         {
           "id": "no-trace",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/arbiter.py",
-          "symbol": "_with_trace",
+          "file": "src/specweaver/workflows/arbitration/verdict.py",
+          "symbol": "with_trace",
           "old": "    return f\"{feedback}\\n\\nWhere your code failed:\\n{trace}\" if trace else feedback\n",
           "new": "    return feedback\n",
           "breaks": "the coder never sees where its code failed",
@@ -72,7 +72,7 @@
         {
           "id": "check-frames-kept",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "file": "src/specweaver/workflows/arbitration/verdict.py",
           "symbol": "code_trace",
           "old": "        if not trace_filter.is_scenario_frame(lines[owner]):\n",
           "new": "        if True:\n",
@@ -82,7 +82,7 @@
         {
           "id": "banned-words-pass",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "file": "src/specweaver/workflows/arbitration/verdict.py",
           "symbol": "code_trace",
           "old": "    if not text or any(word.lower() in text.lower() for word in SCENARIO_VOCABULARY):\n",
           "new": "    if not text:\n",
@@ -603,11 +603,11 @@
           "id": "scenario-report-unfiltered",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/arbiter.py",
-          "symbol": "ArbitrateVerdictHandler.execute",
-          "old": "                safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
-          "new": "                safe_scenario_feedback = result.scenario_feedback\n",
+          "symbol": "_scenario_error",
+          "old": "    safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
+          "new": "    safe_scenario_feedback = result.scenario_feedback\n",
           "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
-          "symbol_sha": "sha256:4793235ed24339374aa6970bc49eb0b7fac401aecfa970fb620d1b783c592c0e"
+          "symbol_sha": "sha256:f7a2fc29c7176e85301d5575561a14b76893c46d2ada54d33eefa4848b62fec7"
         }
       ]
     },
@@ -844,11 +844,11 @@
           "id": "set-not-kept",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/arbiter.py",
-          "symbol": "ArbitrateVerdictHandler.execute",
-          "old": "            keep_set(context)\n",
-          "new": "            pass\n",
+          "symbol": "_no_failures",
+          "old": "    keep_set(context)\n",
+          "new": "    pass\n",
           "breaks": "a passing set is not kept, so every run makes it again",
-          "symbol_sha": "sha256:4793235ed24339374aa6970bc49eb0b7fac401aecfa970fb620d1b783c592c0e"
+          "symbol_sha": "sha256:4781b04a28f2f50e0d5666225eb3f232c0341368ca28e10645fc23dc53693100"
         },
         {
           "id": "kept-set-regenerated",

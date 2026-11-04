@@ -66,7 +66,7 @@ depends_on = [ "specweaver.core.flow.run_state", "specweaver.core.config", "spec
 
 [[modules]]
 path = "specweaver.core.flow.handlers"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.workspace.project", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.arbitration", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
@@ -127,6 +127,10 @@ depends_on = []
 [[modules]]
 path = "specweaver.workflows.planning"
 depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.context",]
+
+[[modules]]
+path = "specweaver.workflows.arbitration"
+depends_on = [ "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workflows.review"
@@ -268,6 +272,10 @@ expose = [ "db_bootstrap.get_db", "db_bootstrap.bootstrap_database", "settings_l
 [[interfaces]]
 from = [ "specweaver.graph.interfaces",]
 expose = [ "cli", "cli.graph_app", "cli.lineage_app",]
+
+[[interfaces]]
+from = [ "specweaver.workflows.arbitration",]
+expose = [ "verdict", "verdict.ARBITRATE_INSTRUCTIONS", "verdict.ArbitrateResult", "verdict.ArbitrateVerdict", "verdict.SCENARIO_VOCABULARY", "verdict.UnreadableVerdictError", "verdict.arbitrate", "verdict.code_trace", "verdict.evidence_text", "verdict.guard_coding_feedback", "verdict.scenario_safe", "verdict.with_trace",]
 
 [[interfaces]]
 from = [ "specweaver.workflows.implementation",]

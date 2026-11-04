@@ -107,6 +107,25 @@ class TestArbiterIntegrationFlow:
 
     @pytest.mark.asyncio
     @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
+    async def test_a_verdict_wrapped_in_prose_still_routes(self, mock_create_filter, run_context):
+        # TECH-082 FR-5: the handler and the arbitration workflow together read a verdict the
+        # model wrapped in a sentence, as real models do.
+        mock_create_filter.return_value.filter.return_value = "Cleaned assertion text"
+        run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))
+        run_context.model.llm_router.adapter.generate.return_value = 'Here is my verdict:\n{"verdict": "code_bug", "coding_feedback": "Off by one."}\nThanks.'
+        run_context.spec_path.exists.return_value = True
+        run_context.spec_path.read_text.return_value = "## Spec Content"
+        step = PipelineStep(name="test_arb", action=StepAction.ARBITRATE, target=StepTarget.VERDICT)
+
+        result = await ArbitrateVerdictHandler().execute(step, run_context)
+
+        assert result.status == StepStatus.FAILED
+        assert run_context.feedback["generate_code"]["findings"]["results"][0]["message"] == (
+            "Off by one."
+        )
+
+    @pytest.mark.asyncio
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
     async def test_nfr8_no_scenario_vocab_in_coding_feedback(self, mock_create_filter, run_context):
         mock_create_filter.return_value.filter.return_value = "Filtered trace"
         run_context.model = ModelAccess(llm_router=FixedRouter(AsyncMock()))

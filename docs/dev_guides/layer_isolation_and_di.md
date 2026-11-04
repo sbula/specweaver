@@ -55,6 +55,17 @@ The engine reaches a handler only through what its caller hands it:
 A new handler that needs a workflow gets it the same way: the builder injects it, the handler reads
 it from the context.
 
+## A handler is a shell
+
+A handler gathers inputs from the run, calls a workflow with plain values (the model adapter, its
+config, text, paths), and writes the result back. The workflow never sees `RunContext` and never
+imports `core/flow`. Examples: `repair_lint` (`workflows/implementation`), `arbitrate`
+(`workflows/arbitration`), `explain_drift` (`assurance/validation/orchestration`).
+
+No handler calls a model adapter's `generate` or `generate_with_tools` itself, and none hides its
+complexity behind a `noqa`; `tests/unit/core/flow/handlers/test_no_handler_calls_a_model.py`
+checks both.
+
 ## Where language code goes
 
 Execution and structural analysis live in separate layers. For a new language (e.g. Go, C++):

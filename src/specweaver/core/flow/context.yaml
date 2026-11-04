@@ -28,6 +28,7 @@ consumes:
   - specweaver/workspace/memory
   - specweaver/workspace/project
   - specweaver/infrastructure/llm
+  - specweaver/workflows/arbitration
   - specweaver/workflows/review
   - specweaver/workflows/implementation
   - specweaver/workflows/planning

@@ -34,3 +34,8 @@ and the model's lint repair — lives in `workflows/implementation`. That code t
 given and imports neither the flow engine nor the sandbox; callers get the run's language from
 `core/flow/engine/run_language.py`, the one place that falls back to detection. The flow handlers
 keep the run: they read and write the files, pick the model and log the lineage.
+
+**Arbitration (`TECH-082`):** when a dual run's scenario tests fail, `workflows/arbitration` asks the
+model who is at fault and guards what each side may read: no scenario word reaches the coder, no
+code reaches the scenario side. It reads text only; the flow handler builds the stack trace filter,
+checks the evidence and routes the verdict.
