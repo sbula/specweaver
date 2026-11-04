@@ -119,7 +119,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | FR-2 | The drift root-cause analysis (prompt, model call, `SpendLimitReachedError` → `None`) SHALL be a function in `assurance/validation/orchestration` that takes the model adapter, its config and plain values; `DriftCheckHandler` SHALL only gather inputs, call it and write the result `[agreed 2026-11-02]` | `DriftCheckHandler` | run a drift step | the same report |
 | FR-3 | `task_files.py`, `frameworks.py` and `contract_renderers.py` SHALL live in `workflows/implementation` `[agreed 2026-11-02]`, and no module named `task_files`, `frameworks` or `contract_renderers` SHALL remain under `core/flow`; the moved code SHALL NOT import `sandbox/*` (the caller passes the detected language) | generation, `sw implement`, `POST /implement` | derive a task's files, framework and contract | the same files, framework and contract text |
 | FR-4 | The lint repair (prompt, model call, fence strip, tag restore) SHALL be a function in `workflows/implementation` taking the adapter, config, code text and lint errors and returning the fixed text; `LintFixHandler` SHALL keep the loop, the file write and the lineage log `[agreed 2026-11-02]` | `LintFixHandler` | repair a lint failure | the same fixed file |
-| FR-5 | `ArbitrateVerdict`, `ArbitrateResult`, `ARBITRATE_INSTRUCTIONS` and the evidence-to-verdict call (prompt in, model call, parse) SHALL live in the new module `workflows/arbitration` `[agreed 2026-11-02]`; `ArbitrateVerdictHandler` SHALL keep guards, the trace filter and verdict routing, without `# noqa: C901` | `ArbitrateVerdictHandler` | arbitrate a dual run | the same verdict and routing |
+| FR-5 | `ArbitrateVerdict`, `ArbitrateResult`, `ARBITRATE_INSTRUCTIONS` and the evidence-to-verdict call (prompt in, model call, parse) SHALL live in the new module `workflows/arbitration` `[agreed 2026-11-02]`, and so SHALL the text rules that keep scenario words from the coder and code from the scenario side (`SCENARIO_VOCABULARY`, the coder guard, `scenario_safe`, `code_trace`) `[agreed 2026-11-03]`; `ArbitrateVerdictHandler` SHALL keep the evidence checks, building the trace filter and verdict routing, without `# noqa: C901` | `ArbitrateVerdictHandler` | arbitrate a dual run | the same verdict and routing |
 | FR-6 | No module under `core/flow/handlers` SHALL call a model adapter's `generate` or `generate_with_tools` itself (the engine's agentic `work_unit.py` loop is out of scope); `ValidateTestsHandler.execute` and `LintFixHandler` SHALL pass ruff's complexity limit (10) without a `noqa` | the flow handlers | — | only workflows talk to the model |
 | FR-7 | Every engine function that takes the runner SHALL type it with one protocol naming the members it uses; no engine module SHALL read or write another object's `_`-prefixed attribute; `PipelineRunner.__init__` SHALL set every attribute those functions read | `core/flow/engine` | run a pipeline | no `runner: Any`, no `getattr(runner, "_…", default)` |
 | FR-8 | Each handler output key the engine reads (`plan`, `plan_path`, `results`, `verdict`, `files_touched`) SHALL be named once, in one module both the engine and the writing handler import | the engine, the handlers | pass a step's output | one spelling per key |
@@ -330,7 +330,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -386,6 +386,9 @@ AD-6, the `INT-US-24` AD-1 reversal and the 7 SFs.
 **SF-02 done 2026-11-03** (accepted by the user): task files, framework choice, contract rendering
 and the lint repair live in `workflows/implementation`; callers get the run language from
 `core/flow/engine/run_language.py` (`TECH-082_sf02_walkthrough.md`).
-**Next step**: implementation plan for SF-03; then SF-05 → SF-06; SF-04, SF-07 and SF-09 in any order.
+**SF-03 plan APPROVED 2026-11-04**: the arbiter's model call and its text guards move to
+`workflows/arbitration` (FR-5 widened `[agreed 2026-11-03]`); one commit boundary with the FR-6 guard.
+**Next step**: dev for SF-03 (`TECH-082_sf03_implementation_plan.md`); then SF-05 → SF-06; SF-04,
+SF-07 and SF-09 in any order.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
