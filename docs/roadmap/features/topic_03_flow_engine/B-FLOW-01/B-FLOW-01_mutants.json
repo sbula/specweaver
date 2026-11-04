@@ -764,10 +764,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/_llm.py",
           "symbol": "roles_of",
-          "old": "        if step.params.get(\"mode\") == \"dual_pipeline\":\n",
+          "old": "        if (step.action, step.target) in SIDE_RUNNING_STEPS:\n",
           "new": "        if False:\n",
           "breaks": "a missing model for a side fails in the middle of the run",
-          "symbol_sha": "sha256:05d42e48d9e3fd253705b15f11889d17b16f44bbf484075f82f94581581c6232"
+          "symbol_sha": "sha256:7d6c7784a0161db2fd2fa2e50548bdb7919e3c08321db779e9fc63c0323d7406"
         },
         {
           "id": "one-model-not-shown",

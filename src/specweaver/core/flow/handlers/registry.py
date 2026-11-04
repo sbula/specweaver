@@ -107,6 +107,7 @@ _HANDLER_OF: dict[tuple[StepAction, StepTarget], type[StepHandler]] = {
     (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler,
     (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler,
     (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler,
+    (StepAction.ORCHESTRATE, StepTarget.DUAL_PIPELINE): ArbitrateDualPipelineHandler,
     (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler,
     (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler,
     (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler,

@@ -25,10 +25,12 @@ class TestScenarioIntegrationPipeline:
         # Should have 4 steps: generate_contract, run_dual_pipelines, run_scenario_tests, arbitrate_verdict
         assert len(data["steps"]) == 4
 
-    def test_dual_pipeline_mode_param(self):
+    def test_the_dual_run_is_its_own_step(self):
+        """TECH-082 FR-10: the dual run is `orchestrate`+`dual_pipeline`, with no `params.mode`."""
         data = get_yaml_data()
         dual_step = next(step for step in data["steps"] if step["name"] == "run_dual_pipelines")
-        assert dual_step["params"]["mode"] == "dual_pipeline"
+        assert (dual_step["action"], dual_step["target"]) == ("orchestrate", "dual_pipeline")
+        assert "mode" not in (dual_step.get("params") or {})
 
     def test_arbitrate_step_gate(self):
         data = get_yaml_data()

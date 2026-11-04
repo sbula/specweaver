@@ -61,3 +61,56 @@ Agreement: the guard keeps the handlers from holding a second copy of a role.
 - Cycle 2: challenged R1 (does any production caller pass a foreign pair?): every `PipelineStep`
   built in `src/` names its own handler's pair (`cli_drift.py`, standards CLI, review API, drafting
   CLI). No new finding above LOW.
+
+## CB-2: the dual run is a step; `params.mode` is refused (FR-10, FR-11)
+
+**What changed**
+- `StepTarget.DUAL_PIPELINE`; `StepKind` gains `runs_sides`; row `orchestrate`+`dual_pipeline`
+  (no role, `runs_sides=True`); `SIDE_RUNNING_STEPS` derives from it.
+- Registry: the row runs `ArbitrateDualPipelineHandler`.
+- `_validate_orchestrate`: an `orchestrate` step with `params.mode` gives "Step '<name>':
+  `params.mode` is no longer read on orchestrate steps; for a dual run use `target: dual_pipeline`"
+  at load (AD-8, never translated).
+- `OrchestrateComponentsHandler`: the mode branch and its warning are gone (`fan_out` untouched).
+- `roles_of` adds the sides' roles for a step in `SIDE_RUNNING_STEPS`, not for a param value.
+- `scenario_integration.yaml`: `target: dual_pipeline`, no `params`.
+- Docs: `pipeline_engine_guide.md` (the dual step and the refusal), `domain_flow_engine.md` (handler
+  table row); the design's guides row turns ✅.
+
+**Tests**
+- `test_dual_pipeline_step.py` (10), red first (no target): the dual step loads; `components` still
+  loads; `roles_of` brings the sides' roles; `params.mode` is refused for 3 values on both targets;
+  a `mode` on another action is not judged here.
+- `test_dual_step_reaches_its_handler.py` (integration, 1): `load_pipeline` on the bundled YAML, then
+  the real registry gives `ArbitrateDualPipelineHandler`. Red first: it gave
+  `OrchestrateComponentsHandler`.
+- `test_scenario_integration_yaml.py`: the step is `orchestrate`+`dual_pipeline` with no `mode`.
+- `test_one_step_table.py` (+1, gap analysis): only the dual step runs sides.
+- `test_decompose.py`: the two mode-dispatch tests are replaced by "a mode no longer reaches the dual
+  handler"; the no-runner test now drives the dual handler with its own step (FR-10, FR-11).
+- `test_engine_models.py`: target count 12, pair count 22.
+
+**Mutants**
+- B-FLOW-01 FR-17 `side-roles-unchecked` re-anchored on the `SIDE_RUNNING_STEPS` check: OBJECTED.
+- TECH-082 FR-10 `dual-row-runs-the-orchestrator` (17 tests, the e2e included),
+  `dual-row-runs-no-sides`; FR-11 `mode-loads-silently`. All OBJECTED. 0 stale.
+
+**Coverage matrix**
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| the dual row and `SIDE_RUNNING_STEPS` | ✅ | ✅ `test_dual_step_reaches_its_handler.py`, `test_two_models.py` | ✅ `test_scenario_verification_e2e.py` (real `sw run scenario_integration`) |
+| `_validate_orchestrate` | ✅ | ✅ through `load_pipeline` | — |
+| `roles_of` sides | ✅ | ✅ `test_two_models.py::test_a_dual_run_checks_every_role_its_sides_use` | ✅ |
+
+**Red/blue (7.5)**, 2 cycles
+- R1 (MEDIUM, accepted `[agreed 2026-11-02]`) A user's own pipeline with `mode: dual_pipeline` no
+  longer loads; the message names the fix (design Risk table).
+- R2 (LOW) A pipeline built in code skips `validate_flow`. No builder in `src/` sets `mode`; a step
+  that carries it runs plan orchestration and fails on the missing plan, and never starts a dual run
+  (pinned in `test_decompose.py`).
+- R3 (LOW) A parked run resumes by reloading its pipeline by name (`core/flow/interfaces/cli.py:468`).
+  The bundled YAML keeps the step name `run_dual_pipelines`, so a parked dual run resumes at the
+  same step.
+- Cycle 2: challenged R2 (is the refusal on the right action only?) — `bash` with a `mode` param is
+  not judged (test). No new finding above LOW.

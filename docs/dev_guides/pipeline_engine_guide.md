@@ -153,6 +153,12 @@ Since Feature 3.24 a step (e.g. a feature decomposer) can fan out into independe
 
 The SQLite records hold the full parent/child lineage.
 
+The dual run of `scenario_integration` is its own step, `action: orchestrate`,
+`target: dual_pipeline` (`ArbitrateDualPipelineHandler`); its row in `STEPS` says `runs_sides`, so a
+run resolves the two sides' roles before it starts. An `orchestrate` step with `params.mode` is
+refused when the pipeline loads, with a message naming `target: dual_pipeline` (`TECH-082` FR-10,
+FR-11).
+
 > [!WARNING]
 > **Orchestrating sub-components (Feature 3.24)**
 > `fan_out()` lives in `OrchestrateComponentsHandler`. Changing its loop limits, error handling or

@@ -70,7 +70,7 @@ class TestStepTarget:
         assert StepTarget.SCENARIO == "scenario"
 
     def test_target_count(self) -> None:
-        assert len(StepTarget) == 11
+        assert len(StepTarget) == 12
 
     def test_script_target_exists(self) -> None:
         assert StepTarget.SCRIPT == "script"
@@ -103,7 +103,7 @@ class TestValidStepCombinations:
     """Tests for valid action+target combinations."""
 
     def test_combination_count(self) -> None:
-        assert len(VALID_STEP_COMBINATIONS) == 21
+        assert len(VALID_STEP_COMBINATIONS) == 22
 
     @pytest.mark.parametrize(
         ("action", "target"),

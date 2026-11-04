@@ -84,6 +84,7 @@ steps:
 | `detect+drift` | `DriftCheckHandler` | `core/flow/handlers/drift.py` |
 | `decompose+feature` | `DecomposeFeatureHandler` | `core/flow/handlers/decompose.py` |
 | `orchestrate+components` | `OrchestrateComponentsHandler` | `core/flow/handlers/decompose.py` |
+| `orchestrate+dual_pipeline` | `ArbitrateDualPipelineHandler` | `core/flow/handlers/dual_pipeline.py` |
 | `arbitrate+verdict` | `ArbitrateVerdictHandler` | `core/flow/handlers/arbiter.py` |
 | `bash+script` | `BashActionHandler` | `core/flow/handlers/bash_action.py` |
 

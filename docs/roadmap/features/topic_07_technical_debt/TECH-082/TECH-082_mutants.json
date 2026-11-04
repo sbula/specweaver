@@ -250,6 +250,53 @@
           "breaks": "a declared step has no handler and the pipeline dies at that step"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The dual run is the step orchestrate + dual_pipeline",
+      "scope": [
+        "tests/unit/core/flow/engine/test_dual_pipeline_step.py",
+        "tests/integration/core/flow/engine/test_dual_step_reaches_its_handler.py"
+      ],
+      "mutants": [
+        {
+          "id": "dual-row-runs-the-orchestrator",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/registry.py",
+          "symbol": "_HANDLER_OF",
+          "old": "    (StepAction.ORCHESTRATE, StepTarget.DUAL_PIPELINE): ArbitrateDualPipelineHandler,\n",
+          "new": "    (StepAction.ORCHESTRATE, StepTarget.DUAL_PIPELINE): OrchestrateComponentsHandler,\n",
+          "breaks": "the dual step runs plan orchestration and never starts the two sides"
+        },
+        {
+          "id": "dual-row-runs-no-sides",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "STEPS",
+          "old": "    StepKind(_A.ORCHESTRATE, _T.DUAL_PIPELINE, None, runs_sides=True),\n",
+          "new": "    StepKind(_A.ORCHESTRATE, _T.DUAL_PIPELINE, None),\n",
+          "breaks": "a run does not resolve the sides' roles, so a missing model fails mid-run"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "params.mode on orchestrate is refused at load",
+      "scope": [
+        "tests/unit/core/flow/engine/test_dual_pipeline_step.py"
+      ],
+      "mutants": [
+        {
+          "id": "mode-loads-silently",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "_validate_orchestrate",
+          "old": "    if step.action is not StepAction.ORCHESTRATE or \"mode\" not in step.params:\n",
+          "new": "    if True:\n",
+          "breaks": "an old pipeline with params.mode loads and silently runs plan orchestration",
+          "symbol_sha": "sha256:73b78dc721ae902a64138443e5e02495e12aa9648cad5c13aa8822ae3ea35832"
+        }
+      ]
     }
   ]
 }

@@ -17,10 +17,8 @@ steps:
 
   - name: run_dual_pipelines
     action: orchestrate
-    target: components
+    target: dual_pipeline
     description: "Run coding and scenario pipelines in parallel"
-    params:
-      mode: dual_pipeline
     gate:
       type: join
       condition: completed

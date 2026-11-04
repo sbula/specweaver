@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.models import ROLE_OF_STEP
+from specweaver.core.flow.engine.models import ROLE_OF_STEP, SIDE_RUNNING_STEPS
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
@@ -59,7 +59,7 @@ def roles_of(pipeline: PipelineDefinition) -> list[TaskType]:
         role = ROLE_OF_STEP.get((step.action, step.target))
         if role is not None and role not in roles:
             roles.append(role)
-        if step.params.get("mode") == "dual_pipeline":
+        if (step.action, step.target) in SIDE_RUNNING_STEPS:
             # A dual run's two sides call models too; a missing one must stop the run now.
             from specweaver.core.flow.handlers.dual_pipeline import dual_side_pipelines
 

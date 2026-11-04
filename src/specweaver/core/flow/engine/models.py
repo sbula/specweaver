@@ -56,6 +56,7 @@ class StepTarget(enum.StrEnum):
     STANDARDS = "standards"
     DRIFT = "drift"
     COMPONENTS = "components"
+    DUAL_PIPELINE = "dual_pipeline"
     CONTRACT = "contract"
     SCENARIO = "scenario"
     VERDICT = "verdict"
@@ -108,13 +109,14 @@ class RuleOperator(enum.StrEnum):
 
 @dataclass(frozen=True)
 class StepKind:
-    """One kind of pipeline step: its pair, the model role it uses (None: no model), and whether an
-    agent may run it with write tools."""
+    """One kind of pipeline step: its pair, the model role it uses (None: no model), whether an
+    agent may run it with write tools, and whether it runs side pipelines whose roles a run needs."""
 
     action: StepAction
     target: StepTarget
     role: TaskType | None
     agentic: bool = False
+    runs_sides: bool = False
 
 
 _A, _T, _R = StepAction, StepTarget, TaskType
@@ -137,6 +139,7 @@ STEPS: tuple[StepKind, ...] = (
     StepKind(_A.ENRICH, _T.STANDARDS, _R.CHECK),
     StepKind(_A.DETECT, _T.DRIFT, _R.REVIEW),
     StepKind(_A.ORCHESTRATE, _T.COMPONENTS, None),
+    StepKind(_A.ORCHESTRATE, _T.DUAL_PIPELINE, None, runs_sides=True),
     StepKind(_A.GENERATE, _T.CONTRACT, None),
     StepKind(_A.GENERATE, _T.SCENARIO, _R.SCENARIO),
     StepKind(_A.CONVERT, _T.SCENARIO, None),
@@ -158,6 +161,12 @@ AGENTIC_STEPS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
 ROLE_OF_STEP: dict[tuple[StepAction, StepTarget], TaskType] = {
     (s.action, s.target): s.role for s in STEPS if s.role is not None
 }
+
+
+#: The steps that run side pipelines; a run resolves the sides' roles too.
+SIDE_RUNNING_STEPS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
+    (s.action, s.target) for s in STEPS if s.runs_sides
+)
 
 
 def role_of(action: StepAction, target: StepTarget) -> TaskType | None:
@@ -398,6 +407,7 @@ class PipelineDefinition(BaseModel):
             # Required params, at load rather than when the step finally runs
             errors.extend(_validate_params(step))
             errors.extend(_validate_mode(step))
+            errors.extend(_validate_orchestrate(step))
 
         return errors
 
@@ -411,6 +421,16 @@ class PipelineDefinition(BaseModel):
 _REQUIRED_PARAMS: dict[StepAction, tuple[str, ...]] = {
     StepAction.BASH: ("script",),
 }
+
+
+def _validate_orchestrate(step: PipelineStep) -> list[str]:
+    """`params.mode` on `orchestrate` once chose the dual run; it is refused, never translated."""
+    if step.action is not StepAction.ORCHESTRATE or "mode" not in step.params:
+        return []
+    return [
+        f"Step '{step.name}': `params.mode` is no longer read on orchestrate steps; "
+        "for a dual run use `target: dual_pipeline`"
+    ]
 
 
 def _validate_mode(step: PipelineStep) -> list[str]:

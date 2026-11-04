@@ -21,6 +21,7 @@ from specweaver.core.flow.engine import models
 from specweaver.core.flow.engine.models import (
     AGENTIC_STEPS,
     ROLE_OF_STEP,
+    SIDE_RUNNING_STEPS,
     STEPS,
     VALID_STEP_COMBINATIONS,
     StepAction,
@@ -85,3 +86,9 @@ def test_a_registry_without_a_rows_handler_raises(monkeypatch: pytest.MonkeyPatc
 
 def test_an_undeclared_pair_has_no_role() -> None:
     assert role_of(A.BASH, T.SPEC) is None
+
+
+def test_only_the_dual_step_runs_sides() -> None:
+    """TECH-082 FR-10: the dual run's sides are found through the table, not a param."""
+    assert {(s.action, s.target) for s in STEPS if s.runs_sides} == SIDE_RUNNING_STEPS
+    assert {(A.ORCHESTRATE, T.DUAL_PIPELINE)} == SIDE_RUNNING_STEPS
