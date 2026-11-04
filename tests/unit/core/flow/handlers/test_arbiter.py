@@ -320,3 +320,32 @@ class TestVerdictsTheHandlerCannotRoute:
         assert result.status == StepStatus.ERROR
         assert expected in result.error_message
         assert "scenario_test_failures" in run_context.feedback
+
+
+class TestTheVerdictNamesItsStep:
+    """The verdict says which step sent it: the arbiter's own name in the pipeline. TECH-082 FR-12"""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("reply", "side"),
+        [
+            ('{"verdict": "code_bug", "reasoning": "r", "coding_feedback": "f"}', "generate_code"),
+            (
+                '{"verdict": "scenario_error", "reasoning": "r", "scenario_feedback": "f"}',
+                "generate_scenarios",
+            ),
+        ],
+    )
+    @patch("specweaver.sandbox.language.core.stack_trace_filter_factory.create_stack_trace_filter")
+    async def test_from_step_is_the_arbiters_own_name(
+        self, mock_create_filter, run_context, reply, side
+    ):
+        mock_create_filter.return_value.filter.return_value = "Filtered trace"
+        run_context.model.llm_router.adapter.generate.return_value = reply
+        step = PipelineStep(
+            name="judge_round_two", action=StepAction.ARBITRATE, target=StepTarget.VERDICT
+        )
+
+        await ArbitrateVerdictHandler().execute(step, run_context)
+
+        assert run_context.feedback[side]["from_step"] == "judge_round_two"

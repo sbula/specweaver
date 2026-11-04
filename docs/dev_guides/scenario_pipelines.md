@@ -92,8 +92,8 @@ After the JOIN, the parent runs the tests, then the **Arbiter** (`ArbitrateVerdi
 
 Evidence contract:
 
-- `ValidateTestsHandler` publishes the raw QA export under
-  `context.feedback["scenario_test_failures"]`.
+- `ValidateTestsHandler` publishes the raw QA export under `context.feedback[SCENARIO_EVIDENCE]`
+  (`"scenario_test_failures"`, declared in `core/flow/run_state/feedback.py`).
 - Green (`total>0, failed==0, errors==0`) short-circuits with ZERO LLM cost.
 - `total==0` fails loud; absent/malformed evidence is a loud error.
 - `kind: scenario` is a flow-level category, NOT a pytest marker. A scenario run collecting 0 tests

@@ -60,6 +60,13 @@ _SIDES = {
     "coder": ("new_feature.yaml", "generate_code"),
     "scenario": ("scenario_validation.yaml", "generate_scenarios"),
 }
+
+
+def side_step(side: str) -> str:
+    """The step in `side`'s pipeline that the arbiter's feedback is for."""
+    return _SIDES[side][1]
+
+
 #: A side that was right last round: its output stays as it is.
 _KEPT = SimpleNamespace(status="completed", step_records=())
 

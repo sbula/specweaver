@@ -12,6 +12,7 @@ import pytest
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.draft import DraftSpecHandler
+from specweaver.core.flow.run_state.feedback import pop_findings
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
@@ -193,7 +194,7 @@ class TestDraftSpecHandlerFeedbackLoop:
 
 
 class TestPopFeedbackDirect:
-    """G2: _pop_feedback branch coverage, direct (each malformed variant -> None, popped)."""
+    """G2: the draft step's pop, direct (each malformed variant -> None, popped). TECH-082 FR-12."""
 
     def _step(self):
         return PipelineStep(name="draft", action=StepAction.DRAFT, target=StepTarget.SPEC)
@@ -205,19 +206,19 @@ class TestPopFeedbackDirect:
 
     def test_entry_without_findings_key_returns_none_and_pops(self, tmp_path) -> None:
         ctx = self._ctx(tmp_path, {"draft": {"from_step": "review_spec"}})
-        assert DraftSpecHandler._pop_feedback(self._step(), ctx) is None
+        assert pop_findings(ctx, self._step().name) is None
         assert "draft" not in ctx.feedback  # popped even though malformed
 
     def test_findings_non_dict_returns_none_and_pops(self, tmp_path) -> None:
         ctx = self._ctx(tmp_path, {"draft": {"findings": ["list", "not", "dict"]}})
-        assert DraftSpecHandler._pop_feedback(self._step(), ctx) is None
+        assert pop_findings(ctx, self._step().name) is None
         assert "draft" not in ctx.feedback
 
     def test_empty_feedback_dict_returns_none(self, tmp_path) -> None:
         ctx = self._ctx(tmp_path, {})
-        assert DraftSpecHandler._pop_feedback(self._step(), ctx) is None
+        assert pop_findings(ctx, self._step().name) is None
 
     def test_other_steps_feedback_untouched(self, tmp_path) -> None:
         ctx = self._ctx(tmp_path, {"generate_code": {"findings": {"x": 1}}})
-        assert DraftSpecHandler._pop_feedback(self._step(), ctx) is None
+        assert pop_findings(ctx, self._step().name) is None
         assert "generate_code" in ctx.feedback  # only THIS step's entry is consumed

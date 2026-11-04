@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
+from specweaver.core.flow.handlers.dual_pipeline import side_step
 from specweaver.core.flow.run_state.failures import log_step_failure
+from specweaver.core.flow.run_state.feedback import SCENARIO_EVIDENCE, send_findings
 from specweaver.workflows.arbitration.verdict import (
     ARBITRATE_INSTRUCTIONS,
     ArbitrateVerdict,
@@ -80,7 +82,7 @@ def _earlier_park(context: RunContext) -> dict[str, Any] | None:
 def _after_park(context: RunContext, started: str) -> StepResult | None:
     """Resumed from an unclear-clause park: park again if the spec is unchanged, else rerun."""
     park = _earlier_park(context)
-    if park is None or "scenario_test_failures" in context.feedback:
+    if park is None or SCENARIO_EVIDENCE in context.feedback:
         return None
     if park["output"]["spec_sha"] == _spec_sha(context):
         return StepResult(
@@ -98,16 +100,20 @@ def _after_park(context: RunContext, started: str) -> StepResult | None:
     )
 
 
-def _code_bug(context: RunContext, clause: str, feedback: str, started: str) -> StepResult:
+def _code_bug(
+    context: RunContext, from_step: str, clause: str, feedback: str, started: str
+) -> StepResult:
     """Send the coder back to work with its feedback; the evidence is used up."""
-    context.feedback.pop("scenario_test_failures", None)  # terminal verdict
-    context.feedback["generate_code"] = {
-        "from_step": "arbitrate_verdict",
-        "findings": {
+    context.feedback.pop(SCENARIO_EVIDENCE, None)  # terminal verdict
+    send_findings(
+        context,
+        side_step("coder"),
+        from_step,
+        {
             "verdict": "code_bug",
             "results": [{"status": "FAIL", "rule_id": clause, "message": feedback}],
         },
-    }
+    )
     return StepResult(
         status=StepStatus.FAILED,
         error_message=f"Arbiter assigned: {feedback}",
@@ -137,7 +143,7 @@ def _evidence_error(context: RunContext) -> str | None:
     fail LOUD, never green. The key is consumed ON VERDICT (popped only on terminal branches) so a
     `spec_ambiguity` park can resume and re-arbitrate, and an ERROR retry re-reads it.
     """
-    if "scenario_test_failures" not in context.feedback:
+    if SCENARIO_EVIDENCE not in context.feedback:
         return (
             "scenario evidence missing — feedback['scenario_test_failures'] was never "
             "published (wiring defect between run_scenario_tests and the arbiter), or the "
@@ -145,7 +151,7 @@ def _evidence_error(context: RunContext) -> str | None:
             "the pipeline)"
         )
 
-    evidence = context.feedback["scenario_test_failures"]
+    evidence = context.feedback[SCENARIO_EVIDENCE]
     counts_ok = isinstance(evidence, dict) and all(
         isinstance(evidence.get(k, 0), int) for k in ("total", "failed", "errors")
     )
@@ -184,7 +190,7 @@ def _no_failures(context: RunContext, evidence: dict[str, Any], started: str) ->
     logger.info(
         "ArbitrateVerdictHandler: %d/%d scenario tests green — no arbitration", total, total
     )
-    context.feedback.pop("scenario_test_failures", None)
+    context.feedback.pop(SCENARIO_EVIDENCE, None)
     from specweaver.core.flow.handlers.reviewed_spec import keep_set
 
     keep_set(context)
@@ -196,19 +202,23 @@ def _no_failures(context: RunContext, evidence: dict[str, Any], started: str) ->
     )
 
 
-def _scenario_error(context: RunContext, result: ArbitrateResult, started: str) -> StepResult:
+def _scenario_error(
+    context: RunContext, from_step: str, result: ArbitrateResult, started: str
+) -> StepResult:
     """Send the scenario side back with a words-only report; the evidence is used up."""
-    context.feedback.pop("scenario_test_failures", None)  # terminal verdict
+    context.feedback.pop(SCENARIO_EVIDENCE, None)  # terminal verdict
     safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)
-    context.feedback["generate_scenarios"] = {
-        "from_step": "arbitrate_verdict",
-        "findings": {
+    send_findings(
+        context,
+        side_step("scenario"),
+        from_step,
+        {
             "verdict": "scenario_error",
             "results": [
                 {"status": "FAIL", "rule_id": result.spec_clause, "message": safe_scenario_feedback}
             ],
         },
-    }
+    )
     return StepResult(
         status=StepStatus.FAILED,
         error_message=f"Arbiter assigned: {safe_scenario_feedback}",
@@ -219,6 +229,7 @@ def _scenario_error(context: RunContext, result: ArbitrateResult, started: str) 
 
 def _route(
     context: RunContext,
+    from_step: str,
     result: ArbitrateResult,
     failures: list[dict[str, Any]],
     trace_filter: StackTraceFilterInterface,
@@ -228,10 +239,10 @@ def _route(
     if result.verdict == ArbitrateVerdict.CODE_BUG:
         logger.info("Arbitrate Verdict: CODE_BUG (%s)", result.spec_clause)
         feedback = with_trace(guard_coding_feedback(result.coding_feedback), failures, trace_filter)
-        return _code_bug(context, result.spec_clause, feedback, started)
+        return _code_bug(context, from_step, result.spec_clause, feedback, started)
     if result.verdict == ArbitrateVerdict.SCENARIO_ERROR:
         logger.info("Arbitrate Verdict: SCENARIO_ERROR (%s)", result.spec_clause)
-        return _scenario_error(context, result, started)
+        return _scenario_error(context, from_step, result, started)
     if result.verdict == ArbitrateVerdict.SPEC_AMBIGUITY:
         logger.warning("Arbitrate Verdict: SPEC_AMBIGUITY! Pausing for HITL %s", result.spec_clause)
         return StepResult(
@@ -257,7 +268,7 @@ class ArbitrateVerdictHandler(StepHandler):
         if early is not None:
             return early
         # Shape already validated above, so these are plain reads rather than a second guard.
-        evidence = context.feedback["scenario_test_failures"]
+        evidence = context.feedback[SCENARIO_EVIDENCE]
         if evidence.get("total", 0) == 0:
             return _nothing_ran(started)
         if evidence.get("failed", 0) == 0 and evidence.get("errors", 0) == 0:
@@ -304,4 +315,4 @@ class ArbitrateVerdictHandler(StepHandler):
             result = await arbitrate(adapter, config, base_prompt.build())
         except UnreadableVerdictError as exc:  # expected: the step fails, quoting the raw verdict
             return _error_result(str(exc), started)
-        return _route(context, result, failures, filter_impl, started)
+        return _route(context, step.name, result, failures, filter_impl, started)

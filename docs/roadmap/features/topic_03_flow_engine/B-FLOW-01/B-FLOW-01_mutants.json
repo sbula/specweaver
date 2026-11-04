@@ -117,17 +117,17 @@
           "old": "    if park[\"output\"][\"spec_sha\"] == _spec_sha(context):\n",
           "new": "    if False:\n",
           "breaks": "resuming an unsettled clause pays for a whole round again",
-          "symbol_sha": "sha256:c2c0b09984598e8c2f11dd2011cd30c77eac111d3d3a6e590829fbbe96846149"
+          "symbol_sha": "sha256:4b824f08b44a9151bf7bb021307a382ce0a770d08d225aeec28c3df93a2328d3"
         },
         {
           "id": "park-forgotten",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/arbiter.py",
           "symbol": "_after_park",
-          "old": "    if park is None or \"scenario_test_failures\" in context.feedback:\n",
+          "old": "    if park is None or SCENARIO_EVIDENCE in context.feedback:\n",
           "new": "    if True:\n",
           "breaks": "a resumed park is treated as a wiring error and loops on the old spec",
-          "symbol_sha": "sha256:c2c0b09984598e8c2f11dd2011cd30c77eac111d3d3a6e590829fbbe96846149"
+          "symbol_sha": "sha256:4b824f08b44a9151bf7bb021307a382ce0a770d08d225aeec28c3df93a2328d3"
         }
       ]
     },
@@ -245,7 +245,7 @@
           "old": "            target = in_scenarios_mount(target, scenarios_root(context))\n",
           "new": "            pass\n",
           "breaks": "the container is handed a host path and collects nothing",
-          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
+          "symbol_sha": "sha256:b437db76454303cc3cfb946129f80b3e3100af52a58097c3586f1a62a883a64c"
         }
       ]
     },
@@ -444,7 +444,7 @@
           "old": "            output[\"requirement_coverage\"] = requirement_coverage_of(context)\n",
           "new": "            pass\n",
           "breaks": "the scenario step reports no coverage, so the person never sees it",
-          "symbol_sha": "sha256:d6713e4366b361a2fa36147c9c793488f9116629f8a0e86db073461139ad5426"
+          "symbol_sha": "sha256:b437db76454303cc3cfb946129f80b3e3100af52a58097c3586f1a62a883a64c"
         },
         {
           "id": "coverage-not-shown",
@@ -607,7 +607,7 @@
           "old": "    safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
           "new": "    safe_scenario_feedback = result.scenario_feedback\n",
           "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
-          "symbol_sha": "sha256:f7a2fc29c7176e85301d5575561a14b76893c46d2ada54d33eefa4848b62fec7"
+          "symbol_sha": "sha256:03558a0ba11c9bf60d7a212afbd27b92b2426eb01a382fc182468ed7e96c1d52"
         }
       ]
     },
@@ -848,7 +848,7 @@
           "old": "    keep_set(context)\n",
           "new": "    pass\n",
           "breaks": "a passing set is not kept, so every run makes it again",
-          "symbol_sha": "sha256:4781b04a28f2f50e0d5666225eb3f232c0341368ca28e10645fc23dc53693100"
+          "symbol_sha": "sha256:820c620cd40d748b61b384d4b330931c2d19a889d790b36673f0711f351ab09e"
         },
         {
           "id": "kept-set-regenerated",

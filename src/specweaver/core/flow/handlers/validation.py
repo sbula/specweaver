@@ -24,6 +24,7 @@ from specweaver.core.flow.handlers.qa_targets import (
     step_file,
 )
 from specweaver.core.flow.run_state.dal import target_dal
+from specweaver.core.flow.run_state.feedback import SCENARIO_EVIDENCE
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -431,7 +432,7 @@ class ValidateTestsHandler:
         # publication must be unconditional for this kind.
         output = dict(result.exports)
         if kind == "scenario":
-            context.feedback["scenario_test_failures"] = result.exports
+            context.feedback[SCENARIO_EVIDENCE] = result.exports
             output["requirement_coverage"] = requirement_coverage_of(context)
 
         # A verification that executed zero tests proves nothing — the atom's total==0 SUCCESS is

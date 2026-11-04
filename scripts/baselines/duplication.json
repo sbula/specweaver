@@ -69,10 +69,10 @@
     "first": "src/specweaver/core/flow/engine/store.py:148",
     "second": "src/specweaver/graph/core/store/repository.py:69"
   },
-  "src/specweaver/core/flow/handlers/generation.py <-> src/specweaver/core/flow/handlers/review.py @c4c9be26ac4f": {
-    "lines": 8,
-    "first": "src/specweaver/core/flow/handlers/generation.py:24",
-    "second": "src/specweaver/core/flow/handlers/review.py:16"
+  "src/specweaver/core/flow/handlers/draft.py <-> src/specweaver/core/flow/handlers/scenario.py @91793f4f91de": {
+    "lines": 9,
+    "first": "src/specweaver/core/flow/handlers/draft.py:6",
+    "second": "src/specweaver/core/flow/handlers/scenario.py:6"
   },
   "src/specweaver/core/flow/store.py <-> src/specweaver/core/flow/store.py @d4eb33b97a5c": {
     "lines": 19,

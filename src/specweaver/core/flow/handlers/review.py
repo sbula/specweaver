@@ -14,6 +14,7 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.flow.run_state.failures import log_step_failure
+from specweaver.core.flow.run_state.feedback import RESOLVED_MENTIONS
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -333,7 +334,7 @@ def _get_prior_mentions(context: RunContext) -> list[ResolvedMention] | None:
 
     Returns None if no prior step stored mentions.
     """
-    mentions = context.feedback.get("mention_scanner:resolved")
+    mentions = context.feedback.get(RESOLVED_MENTIONS)
     if mentions and isinstance(mentions, list):
         return mentions  # type: ignore[no-any-return]
     return None
@@ -360,7 +361,7 @@ def _scan_and_store_mentions(
     )
 
     if resolved:
-        context.feedback["mention_scanner:resolved"] = resolved
+        context.feedback[RESOLVED_MENTIONS] = resolved
         names = [m.resolved_path.name for m in resolved]
         logger.info(
             "Auto-detected %d file mentions: %s",

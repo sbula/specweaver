@@ -348,8 +348,8 @@ class TestConvertScenarioHandler:
         assert result.status == StepStatus.ERROR
         assert "Scenario YAML not found" in result.error_message
 
-    async def test_handler_sets_scenario_test_path_in_feedback(self, tmp_path: Path) -> None:
-        """ConvertScenarioHandler must write scenario_test_path into context.feedback."""
+    async def test_handler_writes_no_scenario_test_path(self, tmp_path: Path) -> None:
+        """ConvertScenarioHandler writes no scenario_test_path: nothing reads it (TECH-082 FR-12)."""
         from ruamel.yaml import YAML
 
         scenarios_dir = tmp_path / "scenarios" / "definitions"
@@ -363,10 +363,7 @@ class TestConvertScenarioHandler:
         result = await handler.execute(_make_step("convert", "scenario"), ctx)
 
         assert result.status == StepStatus.PASSED
-        assert "scenario_test_path" in ctx.feedback
-        # For Python project (default), path must be in scenarios/generated/
-        assert "scenarios" in ctx.feedback["scenario_test_path"]
-        assert "generated" in ctx.feedback["scenario_test_path"]
+        assert "scenario_test_path" not in ctx.feedback
 
     async def test_handler_uses_factory_output_path(self, tmp_path: Path) -> None:
         """ConvertScenarioHandler must use converter.output_path() — not a hardcoded path."""

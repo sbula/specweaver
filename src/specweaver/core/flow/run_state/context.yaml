@@ -5,7 +5,7 @@ name: flow-run-state
 level: module
 purpose: >
   The run's state that the engine and the step handlers share: the run context, the failure log
-  rule, and the target's DAL and scenario store read through the registered project.
+  rule, the keys one step hands another through `feedback`, and the target's DAL and scenario store read through the registered project.
 
 archetype: mixed
 
@@ -28,3 +28,8 @@ exposes:
   - target_dal
   - scenario_store
   - registered
+  - SCENARIO_EVIDENCE
+  - RESOLVED_MENTIONS
+  - StepFindings
+  - send_findings
+  - pop_findings

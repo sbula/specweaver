@@ -22,6 +22,7 @@ from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.flow.handlers.review import _build_tool_dispatcher
 from specweaver.core.flow.run_state.failures import log_step_failure
+from specweaver.core.flow.run_state.feedback import pop_findings
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -46,21 +47,6 @@ def _resolve_generation_routing(
     return llm_for_step(context, step)
 
 
-def _pop_findings(context: RunContext, step: PipelineStep) -> dict[str, Any] | None:
-    """This step's loop-back findings, consumed exactly once. None when there are none.
-
-    Popping is the point: feedback that is not cleared sticks across retries, so the next attempt
-    re-applies a previous round's overrides.
-    """
-    if not (hasattr(context, "feedback") and context.feedback):
-        return None
-    step_feedback = context.feedback.pop(step.name, None)
-    if not step_feedback or "findings" not in step_feedback:
-        return None
-    findings: dict[str, Any] = step_feedback["findings"]
-    return findings
-
-
 def _extract_prompt_feedback(
     context: RunContext, step: PipelineStep
 ) -> tuple[list[str] | None, str | None]:
@@ -69,7 +55,7 @@ def _extract_prompt_feedback(
     The pop is a guard clause rather than a fourth level of nesting, so each half of the return
     reads on its own.
     """
-    findings = _pop_findings(context, step)
+    findings = pop_findings(context, step.name)
     if findings is None:
         return None, None
 

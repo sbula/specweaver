@@ -19,10 +19,9 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.draft import (
     DraftFeatureHandler,
-    DraftSpecHandler,
-    _pop_step_feedback,
 )
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
+from specweaver.core.flow.run_state.feedback import pop_findings
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
 from tests.scripted_llm import FixedRouter
@@ -399,41 +398,35 @@ class TestDraftFeatureFeedbackParity:
 # ---------------------------------------------------------------------------
 
 
-class TestPopStepFeedbackHelper:
+class TestPopFindings:
     def test_another_steps_feedback_is_left_untouched(self) -> None:
         """Only the executing step's own entry is consumed — siblings must survive."""
         ctx = MagicMock()
         ctx.feedback = {"some_other_step": {"from_step": "review", "findings": {"a": 1}}}
 
-        assert _pop_step_feedback(_step(), ctx) is None
+        assert pop_findings(ctx, _step().name) is None
         assert ctx.feedback == {"some_other_step": {"from_step": "review", "findings": {"a": 1}}}
 
     def test_absent_feedback_returns_none(self) -> None:
         ctx = MagicMock()
         ctx.feedback = {}
-        assert _pop_step_feedback(_step(), ctx) is None
+        assert pop_findings(ctx, _step().name) is None
 
     def test_malformed_entry_is_popped_and_treated_as_absent(self) -> None:
         ctx = MagicMock()
         ctx.feedback = {"draft_feature": "not-a-dict"}
-        assert _pop_step_feedback(_step(), ctx) is None
+        assert pop_findings(ctx, _step().name) is None
         assert "draft_feature" not in ctx.feedback
 
     def test_findings_not_a_dict_returns_none(self) -> None:
         ctx = MagicMock()
         ctx.feedback = {"draft_feature": {"findings": ["not", "a", "dict"]}}
-        assert _pop_step_feedback(_step(), ctx) is None
+        assert pop_findings(ctx, _step().name) is None
 
     def test_well_formed_findings_are_returned(self) -> None:
         ctx = MagicMock()
         ctx.feedback = {"draft_feature": {"from_step": "review", "findings": {"a": 1}}}
-        assert _pop_step_feedback(_step(), ctx) == {"a": 1}
-
-    def test_draft_spec_handler_delegate_still_works(self) -> None:
-        """The four shipped tests call DraftSpecHandler._pop_feedback directly — keep it alive."""
-        ctx = MagicMock()
-        ctx.feedback = {"draft_feature": {"from_step": "review", "findings": {"a": 1}}}
-        assert DraftSpecHandler._pop_feedback(_step(), ctx) == {"a": 1}
+        assert pop_findings(ctx, _step().name) == {"a": 1}
 
 
 # ---------------------------------------------------------------------------

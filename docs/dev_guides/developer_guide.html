@@ -468,7 +468,7 @@ sequenceDiagram
     Runner->>Context: feedback["generate_code"] = {<br/>  from_step: "review_code",<br/>  findings: {verdict, issues...}<br/>}
     Runner->>Runner: current_step = generate_code index
     Runner->>Handler: execute(step, context)
-    Note over Handler: Can read context.feedback<br/>to improve output
+    Note over Handler: pop_findings(context, step.name)<br/>takes the findings out once
   </pre>
 </div>
 

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.models import GateCondition, GateType, OnFailAction
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.run_state.feedback import send_findings
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import GateDefinition, PipelineDefinition, PipelineStep
@@ -152,10 +153,7 @@ class GateEvaluator:
         """Inject step result as feedback into RunContext."""
         if not hasattr(context, "feedback"):
             context.feedback = {}
-        context.feedback[to_step] = {
-            "from_step": from_step,
-            "findings": result.output,
-        }
+        send_findings(context, to_step, from_step, result.output)
 
     # ------------------------------------------------------------------
     # Private helpers

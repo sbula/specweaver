@@ -278,3 +278,37 @@ class TestDualPipelineWiring:
                 assert step_def.get("name") != "scenario_test_failures", (
                     f"{item.name} defines a step named after the reserved evidence key"
                 )
+
+
+class TestSideStep:
+    """Each side's step name comes from the side table and names that side's generate step.
+
+    Proves: TECH-082 FR-12
+    """
+
+    @pytest.mark.parametrize(
+        ("side", "pipeline", "target"),
+        [
+            ("coder", "new_feature.yaml", "code"),
+            ("scenario", "scenario_validation.yaml", "scenario"),
+        ],
+    )
+    def test_the_side_step_is_the_sides_generate_step(self, side, pipeline, target):
+        import importlib.resources
+
+        import yaml
+
+        from specweaver.core.flow.handlers.dual_pipeline import side_step
+
+        pkg = importlib.resources.files("specweaver.workflows.pipelines")
+        steps = yaml.safe_load(pkg.joinpath(pipeline).read_text(encoding="utf-8"))["steps"]
+        named = [s for s in steps if s["name"] == side_step(side)]
+
+        assert len(named) == 1
+        assert (named[0]["action"], named[0]["target"]) == ("generate", target)
+
+    def test_an_unknown_side_is_refused(self):
+        from specweaver.core.flow.handlers.dual_pipeline import side_step
+
+        with pytest.raises(KeyError):
+            side_step("reviewer")

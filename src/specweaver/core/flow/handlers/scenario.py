@@ -217,9 +217,6 @@ class ConvertScenarioHandler:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(test_content, encoding="utf-8")
 
-            # Store path in feedback so SF-C arbiter can locate the test file
-            context.feedback["scenario_test_path"] = str(output_path)
-
             logger.info(
                 "ConvertScenarioHandler: test file written to '%s'",
                 output_path,

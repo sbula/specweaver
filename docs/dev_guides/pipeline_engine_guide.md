@@ -71,6 +71,11 @@ config itself loses them. `llm_for` with an explicit role is only for a call mad
 A new step is one row in `STEPS` (pair, role, `agentic`) and one entry in the registry's
 `_HANDLER_OF`.
 
+A handler reads the findings a gate or the arbiter sent it with `pop_findings(context, step.name)`
+from `core/flow/run_state/feedback.py`: it takes them out, so a retry does not apply them twice.
+A new `feedback` key is declared there with its value type;
+`tests/unit/core/flow/test_feedback_keys_declared_once.py` refuses a key written by hand elsewhere.
+
 - **Location**: `src/specweaver/flow/_<domain>.py`
 
 ```python

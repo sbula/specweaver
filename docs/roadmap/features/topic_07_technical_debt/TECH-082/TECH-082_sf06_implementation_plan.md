@@ -123,6 +123,7 @@ guard refuses). CB-2: `FILENAME_PREFIX`, names, `roles_of` (closes SF-06).
 | `validation.py:434` | `context.feedback[SCENARIO_EVIDENCE] = ...` |
 | `review.py:336,363` | `RESOLVED_MENTIONS` |
 | `draft.py:29`, `generation.py:50` | removed; callers use `pop_findings(context, step.name)` |
+| `DraftSpecHandler._pop_feedback` (`draft.py:131`, a third pop, found in dev) | removed with its delegate test; `test_draft_handler.py:195-222` call `pop_findings` (F-1) |
 | `scenario.py:221` | removed (no reader; FR-12) |
 | `dual_pipeline.py:91,284` | unchanged (they read the side keys through `_SIDES`, which is the table) |
 

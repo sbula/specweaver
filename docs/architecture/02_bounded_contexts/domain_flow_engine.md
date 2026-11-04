@@ -59,6 +59,12 @@ steps:
                  step    earlier step
 ```
 
+A `loop_back` hands the failed result to its target through `context.feedback`, keyed by the
+target step's name. Every `feedback` key and its value type is declared once in
+`core/flow/run_state/feedback.py` (`send_findings`, `pop_findings`, `SCENARIO_EVIDENCE`,
+`RESOLVED_MENTIONS`); a step takes its findings out once with `pop_findings(context, step.name)`
+(`TECH-082` FR-12).
+
 ## Handler registry
 
 `StepHandlerRegistry` maps `(action, target)` pairs to handler classes:

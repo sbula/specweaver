@@ -121,7 +121,7 @@
           "old": "    if result.verdict == ArbitrateVerdict.SCENARIO_ERROR:\n",
           "new": "    if False:\n",
           "breaks": "a scenario_error verdict never reaches the scenario side",
-          "symbol_sha": "sha256:f867d242f2c32b501a99fd82ee323db7b5ae67649060ce83c87bd299ea850d4a"
+          "symbol_sha": "sha256:369d827223bf5c4b752095922c88f8cdc384a4e2356cafe58e8683c9ec774869"
         }
       ]
     },
@@ -140,7 +140,7 @@
           "old": "            result = await arbitrate(adapter, config, base_prompt.build())\n",
           "new": "            result = await adapter.generate([], config)\n",
           "breaks": "a handler talks to the model past the workflow",
-          "symbol_sha": "sha256:87eee2a5165336d96b2060b5d6e37dc01b8b02d1deb08ab89c146d0100fb7220"
+          "symbol_sha": "sha256:ac9537d724e73ac297e6f7628adb6c36111c404e8c51fb84be9be9b86cb009e8"
         }
       ]
     },
@@ -295,6 +295,90 @@
           "new": "    if True:\n",
           "breaks": "an old pipeline with params.mode loads and silently runs plan orchestration",
           "symbol_sha": "sha256:73b78dc721ae902a64138443e5e02495e12aa9648cad5c13aa8822ae3ea35832"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "Each feedback key is declared once and read through one pop function; the arbiter takes the side step names from the side table",
+      "scope": [
+        "tests/unit/core/flow/run_state/test_feedback.py",
+        "tests/unit/core/flow/test_feedback_keys_declared_once.py",
+        "tests/unit/core/flow/handlers/test_dual_pipeline.py",
+        "tests/unit/core/flow/handlers/test_scenario_handlers.py",
+        "tests/unit/core/flow/handlers/test_arbiter.py",
+        "tests/integration/core/flow/handlers/test_scenario_integration_dispatch.py"
+      ],
+      "mutants": [
+        {
+          "id": "findings-not-taken-out",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/run_state/feedback.py",
+          "symbol": "pop_findings",
+          "old": "    entry = context.feedback.pop(step_name, None)",
+          "new": "    entry = context.feedback.get(step_name)",
+          "breaks": "a step's findings stay after it reads them, so a retry applies them again",
+          "symbol_sha": "sha256:65a819330ea70d4773c33f2178eb4ec19e7f5fcfe11a8ca45e3ebf811537ace6"
+        },
+        {
+          "id": "dropped-entry-unlogged",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/run_state/feedback.py",
+          "symbol": "pop_findings",
+          "old": "        logger.warning(\"feedback for step '%s' is malformed; it is dropped\", step_name)",
+          "new": "        pass",
+          "breaks": "a malformed entry is dropped without a word",
+          "symbol_sha": "sha256:65a819330ea70d4773c33f2178eb4ec19e7f5fcfe11a8ca45e3ebf811537ace6"
+        },
+        {
+          "id": "code-bug-to-the-scenario-side",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_code_bug",
+          "old": "        side_step(\"coder\"),",
+          "new": "        side_step(\"scenario\"),",
+          "breaks": "the coder's verdict goes to the scenario side",
+          "symbol_sha": "sha256:ee9448b4612f07b6e475ff8cb16dc1a0a77b4013c6ec1f13778eab783ca2c539"
+        },
+        {
+          "id": "side-step-is-the-pipeline-file",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "side_step",
+          "old": "    return _SIDES[side][1]",
+          "new": "    return _SIDES[side][0]",
+          "breaks": "the arbiter writes its verdict under a name no step reads",
+          "symbol_sha": "sha256:abfa0525c687fb8a02d0ae4be54e74f81fc23fff14ba1a0461188c60fef690cf"
+        },
+        {
+          "id": "evidence-key-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateTestsHandler.execute",
+          "old": "            context.feedback[SCENARIO_EVIDENCE] = result.exports",
+          "new": "            context.feedback[\"scenario_test_failures\"] = result.exports",
+          "breaks": "a second place spells the evidence key",
+          "symbol_sha": "sha256:b437db76454303cc3cfb946129f80b3e3100af52a58097c3586f1a62a883a64c"
+        },
+        {
+          "id": "unread-path-written",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/scenario.py",
+          "symbol": "ConvertScenarioHandler.execute",
+          "old": "            output_path.write_text(test_content, encoding=\"utf-8\")\n",
+          "new": "            output_path.write_text(test_content, encoding=\"utf-8\")\n            context.feedback[\"scenario_test_path\"] = str(output_path)\n",
+          "breaks": "a feedback key nobody reads comes back",
+          "symbol_sha": "sha256:55f19325f96e7ae7107e1015568070ed2af6cebb2faf6f7bc6ecd46a027a1a14"
+        },
+        {
+          "id": "verdict-from-a-fixed-name",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "_scenario_error",
+          "old": "        from_step,\n        {\n            \"verdict\": \"scenario_error\",",
+          "new": "        \"arbitrate_verdict\",\n        {\n            \"verdict\": \"scenario_error\",",
+          "breaks": "the verdict names a fixed step, not the arbiter's own name in the pipeline",
+          "symbol_sha": "sha256:03558a0ba11c9bf60d7a212afbd27b92b2426eb01a382fc182468ed7e96c1d52"
         }
       ]
     }

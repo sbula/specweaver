@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
+from specweaver.core.flow.run_state.feedback import pop_findings
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,23 +25,6 @@ logger = logging.getLogger(__name__)
 #: output path as ``<output_dir>/<name>_feature_spec.md``, so this is the only shape that can
 #: round-trip back to ``context.spec_path``.
 FEATURE_SPEC_SUFFIX = "_feature_spec.md"
-
-
-def _pop_step_feedback(step: PipelineStep, context: RunContext) -> dict[str, Any] | None:
-    """Pop this step's loop_back feedback (reviewer findings) — consumed exactly once.
-
-    Returns the findings dict, or None when feedback is absent or malformed (a
-    malformed entry is still popped, then treated as absent — never crashes).
-
-    Shared by both draft handlers so the pop-once contract has one implementation.
-    """
-    if hasattr(context, "feedback") and context.feedback:
-        fb = context.feedback.pop(step.name, None)
-        if isinstance(fb, dict):
-            findings = fb.get("findings")
-            if isinstance(findings, dict):
-                return findings
-    return None
 
 
 def _can_draft(context: RunContext) -> bool:
@@ -63,7 +47,7 @@ class DraftSpecHandler:
         # re-entry and the review rejection loop is dead (validate→review→fail→skip→…). Mirrors
         # generation.py's _extract_prompt_feedback: popped exactly once so it never sticks across
         # attempts.
-        findings = self._pop_feedback(step, context)
+        findings = pop_findings(context, step.name)
         if findings is not None:
             if _can_draft(context):
                 logger.info(
@@ -126,11 +110,6 @@ class DraftSpecHandler:
             started_at=started,
             completed_at=_now_iso(),
         )
-
-    @staticmethod
-    def _pop_feedback(step: PipelineStep, context: RunContext) -> dict[str, Any] | None:
-        """Delegate to the shared helper (kept for callers that reference it directly)."""
-        return _pop_step_feedback(step, context)
 
     async def _execute_drafting(
         self,
@@ -225,7 +204,7 @@ class DraftFeatureHandler:
 
         # Consume loop_back reviewer feedback FIRST — before the exists-skip below, or the
         # review rejection loop is dead (same contract as DraftSpecHandler).
-        findings = _pop_step_feedback(step, context)
+        findings = pop_findings(context, step.name)
 
         # An unusable spec path is fatal regardless of feedback, and must cost zero LLM calls.
         name = self._derive_feature_name(context.spec_path)
