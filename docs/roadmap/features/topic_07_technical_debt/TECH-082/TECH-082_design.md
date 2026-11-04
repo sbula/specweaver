@@ -123,7 +123,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | FR-6 | No module under `core/flow/handlers` SHALL call a model adapter's `generate` or `generate_with_tools` itself (the engine's agentic `work_unit.py` loop is out of scope); `ValidateTestsHandler.execute` and `LintFixHandler` SHALL pass ruff's complexity limit (10) without a `noqa` | the flow handlers | — | only workflows talk to the model |
 | FR-7 | Every engine function that takes the runner SHALL type it with one protocol naming the members it uses; no engine module SHALL read or write another object's `_`-prefixed attribute; `PipelineRunner.__init__` SHALL set every attribute those functions read | `core/flow/engine` | run a pipeline | no `runner: Any`, no `getattr(runner, "_…", default)` |
 | FR-8 | Each handler output key the engine reads (`plan`, `plan_path`, `results`, `verdict`, `files_touched`) SHALL be named once, in one module both the engine and the writing handler import | the engine, the handlers | pass a step's output | one spelling per key |
-| FR-9 | Every `(action, target)` step SHALL be declared once, with its handler, its model role (or none) and whether it is agentic; `VALID_STEP_COMBINATIONS`, the registry rows, `ROLE_OF_STEP` and `AGENTIC_STEPS` SHALL derive from that declaration, and no handler SHALL hard-code its own step's role (a call made for another task, such as `generation.py:343`'s plan call, keeps its explicit role) | the engine, the registry, the run builder | load and run a pipeline | one table; `test_handler_reachability.py` also checks roles |
+| FR-9 | Every `(action, target)` step SHALL be declared once, with its handler, its model role (or none) and whether it is agentic; `VALID_STEP_COMBINATIONS`, the registry rows, `ROLE_OF_STEP` and `AGENTIC_STEPS` SHALL derive from that declaration, and no handler SHALL hard-code its own step's role (a call made for another task, such as `dual_pipeline.py:70`'s check of the two sides' models, keeps its explicit role; corrected 2026-11-04, SF-05 plan F-2) | the engine, the registry, the run builder | load and run a pipeline | one table; `test_handler_reachability.py` also checks roles |
 | FR-10 | A step `action: orchestrate`, `target: dual_pipeline` SHALL run `ArbitrateDualPipelineHandler`, and `roles_of` SHALL include its two sides' roles through the table; `scenario_integration.yaml` SHALL use it `[agreed 2026-11-02]` | the YAML loader, the registry, `roles_of` | run `scenario_integration` | the same dual run |
 | FR-11 | An `orchestrate` step that carries `params.mode` SHALL be refused when the pipeline loads, with a message that names `target: dual_pipeline` `[agreed 2026-11-02]` | the YAML loader | load an old pipeline | a load error, never a silent fallback |
 | FR-12 | Each `context.feedback` key SHALL be declared once with its value type, read through one pop function; the arbiter SHALL take the side step names from the dual pipeline's side table, not literals; the unread `scenario_test_path` write and `FILENAME_PREFIX` SHALL be removed; `mcp_assembler` and `context_assembler` SHALL carry distinct names; `roles_of` SHALL be imported from a public module | the handlers, `interfaces/run_setup` | — | no grab-bag keys, no private import from outside `core/flow` |
@@ -160,7 +160,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13..FR-20 | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets **[proof: meta — rule about the diff]** |
+| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13..FR-20 | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets; one exception: FR-9 changes the routing helpers' arguments and replaces the hand list of model-free steps (`test_llm_for.py:81`) `[agreed 2026-11-04]` **[proof: meta — rule about the diff]** |
 | NFR-2 | The boundaries hold | `tach check` passes with `exact = true`, no cycle, no `deprecated` edge; manifests match tach; the new modules declare `exposes` equal to tach's interfaces **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | No compatibility shims | Importing each old module path (`specweaver.core.flow.engine.task_files`, `...frameworks`, `...handlers.contract_renderers`, `...handlers.validation_hydrator`, `...handlers.archetype_pipelines`) raises `ModuleNotFoundError` |
 | NFR-4 | Mutants still find their code | Every mutant anchored in a moved symbol is re-pointed and its `symbol_sha` refreshed; `stale_mutants.py` reports none stale and each re-pointed campaign kills as before **[proof: meta — rule about tests]** |
@@ -332,7 +332,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-05 | One step table | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | One step table | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-08 | One boundary rule | — | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -389,7 +389,9 @@ and the lint repair live in `workflows/implementation`; callers get the run lang
 **SF-03 done 2026-11-04** (accepted by the user): the arbiter's verdict, prompt, model call and text
 guards live in `workflows/arbitration`; no flow handler calls a model (FR-6 guard)
 (`TECH-082_sf03_walkthrough.md`).
-**Next step**: plan SF-05 (depends on SF-03), then SF-06; SF-04, SF-07 and SF-09 in any order
-(SF-09's design column is still ⬜).
+**SF-05 plan APPROVED 2026-11-04**: one step table in `engine/models.py`; handlers get their role
+from the step (F-1 A); `orchestrate`+`dual_pipeline`; two commit boundaries.
+**Next step**: dev for SF-05 (`TECH-082_sf05_implementation_plan.md`); then SF-06; SF-04, SF-07 and
+SF-09 in any order (SF-09's design column is still ⬜).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
