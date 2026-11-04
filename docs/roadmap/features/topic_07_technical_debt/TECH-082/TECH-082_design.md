@@ -332,7 +332,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| SF-05 | One step table | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | One step table | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-08 | One boundary rule | — | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -389,9 +389,10 @@ and the lint repair live in `workflows/implementation`; callers get the run lang
 **SF-03 done 2026-11-04** (accepted by the user): the arbiter's verdict, prompt, model call and text
 guards live in `workflows/arbitration`; no flow handler calls a model (FR-6 guard)
 (`TECH-082_sf03_walkthrough.md`).
-**SF-05 plan APPROVED 2026-11-04**: one step table in `engine/models.py`; handlers get their role
-from the step (F-1 A); `orchestrate`+`dual_pipeline`; two commit boundaries.
-**Next step**: dev for SF-05 (`TECH-082_sf05_implementation_plan.md`); then SF-06; SF-04, SF-07 and
-SF-09 in any order (SF-09's design column is still ⬜).
+**SF-05 done 2026-11-04** (accepted by the user): a step is one row in `STEPS`; handlers get their
+role from the step; the dual run is `orchestrate`+`dual_pipeline` and `params.mode` is refused at
+load (`TECH-082_sf05_walkthrough.md`).
+**Next step**: plan SF-06 (depends on SF-05); SF-04, SF-07 and SF-09 in any order (SF-09's design
+column is still ⬜).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
