@@ -81,6 +81,7 @@ class _Loop:
     """What every round of one lint-fix run shares."""
 
     context: RunContext
+    step: PipelineStep
     target: str
     started: str
 
@@ -147,7 +148,10 @@ class LintFixHandler:
         # Phase 2: LLM reflection loop for remaining errors
         for _ in range(max_reflections):
             failed = await self._model_fix(
-                _Loop(context, target, started), lint_result, reflections_used, last_error_count
+                _Loop(context, step, target, started),
+                lint_result,
+                reflections_used,
+                last_error_count,
             )
             if failed:
                 return failed
@@ -216,6 +220,7 @@ class LintFixHandler:
                 code_file,
                 lint_result.exports.get("errors", []) if lint_result.exports else [],
                 context=loop.context,
+                step=loop.step,
             )
         except Exception as exc:
             log_step_failure(
@@ -298,18 +303,18 @@ class LintFixHandler:
         lint_errors: list[dict[str, object]],
         *,
         context: RunContext,
+        step: PipelineStep,
     ) -> None:
         """Ask the LLM to fix lint errors in the given file, in the run's language."""
         from specweaver.commons.lineage import extract_artifact_uuid
         from specweaver.core.flow.engine.run_language import run_task_files
-        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.core.flow.handlers._llm import llm_for_step
         from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
-        from specweaver.infrastructure.llm.models import TaskType
         from specweaver.workflows.implementation.lint_repair import repair_lint
 
         code = code_path.read_text(encoding="utf-8")
         language = run_task_files(context).language
-        adapter, config = llm_for(context, TaskType.CHECK)
+        adapter, config = llm_for_step(context, step)
         fixed = await repair_lint(
             adapter, config, code, lint_errors, language, context.project_path
         )

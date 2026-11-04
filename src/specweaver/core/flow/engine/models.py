@@ -15,10 +15,12 @@ optional gates that control flow (proceed, retry, loop back, abort).
 from __future__ import annotations
 
 import enum
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from specweaver.infrastructure.llm.models import TaskType
 from specweaver.sandbox.execution.core.atom import bash_param_errors
 
 # ---------------------------------------------------------------------------
@@ -100,43 +102,67 @@ class RuleOperator(enum.StrEnum):
 
 
 # ---------------------------------------------------------------------------
-# Valid combinations
+# The step table
 # ---------------------------------------------------------------------------
 
-VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
-    {
-        (StepAction.DRAFT, StepTarget.SPEC),
-        (StepAction.VALIDATE, StepTarget.SPEC),
-        (StepAction.VALIDATE, StepTarget.CODE),
-        (StepAction.VALIDATE, StepTarget.TESTS),
-        (StepAction.REVIEW, StepTarget.SPEC),
-        (StepAction.REVIEW, StepTarget.CODE),
-        (StepAction.GENERATE, StepTarget.CODE),
-        (StepAction.GENERATE, StepTarget.TESTS),
-        (StepAction.LINT_FIX, StepTarget.CODE),
-        # Feature decomposition pipeline combos
-        (StepAction.DRAFT, StepTarget.FEATURE),
-        (StepAction.VALIDATE, StepTarget.FEATURE),
-        (StepAction.DECOMPOSE, StepTarget.FEATURE),
-        # Planning pipeline combos
-        (StepAction.PLAN, StepTarget.SPEC),
-        # Standards pipeline combos
-        (StepAction.ENRICH, StepTarget.STANDARDS),
-        # Validation drift combos
-        (StepAction.DETECT, StepTarget.DRIFT),
-        # Component orchestration combos
-        (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
-        # Contract generation combos (Feature 3.28 SF-A)
-        (StepAction.GENERATE, StepTarget.CONTRACT),
-        # Scenario pipeline combos (Feature 3.28 SF-B)
-        (StepAction.GENERATE, StepTarget.SCENARIO),
-        (StepAction.CONVERT, StepTarget.SCENARIO),
-        # Arbiter pipeline combos (Feature 3.28 SF-C)
-        (StepAction.ARBITRATE, StepTarget.VERDICT),
-        # Native CLI Action Node combos
-        (StepAction.BASH, StepTarget.SCRIPT),
-    }
+
+@dataclass(frozen=True)
+class StepKind:
+    """One kind of pipeline step: its pair, the model role it uses (None: no model), and whether an
+    agent may run it with write tools."""
+
+    action: StepAction
+    target: StepTarget
+    role: TaskType | None
+    agentic: bool = False
+
+
+_A, _T, _R = StepAction, StepTarget, TaskType
+
+#: Every step a pipeline may declare, once. The registry gives each row its handler.
+STEPS: tuple[StepKind, ...] = (
+    StepKind(_A.DRAFT, _T.SPEC, _R.DRAFT),
+    StepKind(_A.VALIDATE, _T.SPEC, None),
+    StepKind(_A.VALIDATE, _T.CODE, None),
+    StepKind(_A.VALIDATE, _T.TESTS, None),
+    StepKind(_A.REVIEW, _T.SPEC, _R.REVIEW),
+    StepKind(_A.REVIEW, _T.CODE, _R.REVIEW),
+    StepKind(_A.GENERATE, _T.CODE, _R.IMPLEMENT, agentic=True),
+    StepKind(_A.GENERATE, _T.TESTS, _R.IMPLEMENT, agentic=True),
+    StepKind(_A.LINT_FIX, _T.CODE, _R.CHECK),
+    StepKind(_A.DRAFT, _T.FEATURE, _R.DRAFT),
+    StepKind(_A.VALIDATE, _T.FEATURE, None),
+    StepKind(_A.DECOMPOSE, _T.FEATURE, _R.PLAN),
+    StepKind(_A.PLAN, _T.SPEC, _R.PLAN),
+    StepKind(_A.ENRICH, _T.STANDARDS, _R.CHECK),
+    StepKind(_A.DETECT, _T.DRIFT, _R.REVIEW),
+    StepKind(_A.ORCHESTRATE, _T.COMPONENTS, None),
+    StepKind(_A.GENERATE, _T.CONTRACT, None),
+    StepKind(_A.GENERATE, _T.SCENARIO, _R.SCENARIO),
+    StepKind(_A.CONVERT, _T.SCENARIO, None),
+    StepKind(_A.ARBITRATE, _T.VERDICT, _R.REVIEW),
+    StepKind(_A.BASH, _T.SCRIPT, None),
 )
+
+VALID_STEP_COMBINATIONS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
+    (s.action, s.target) for s in STEPS
+)
+
+#: The steps an agent may run with write tools: code and tests generation only.
+AGENTIC_STEPS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
+    (s.action, s.target) for s in STEPS if s.agentic
+)
+
+#: The role each model-calling step uses. A run resolves every role its steps need before the first
+#: call, so an unset role refuses at the start, not halfway through a paid run.
+ROLE_OF_STEP: dict[tuple[StepAction, StepTarget], TaskType] = {
+    (s.action, s.target): s.role for s in STEPS if s.role is not None
+}
+
+
+def role_of(action: StepAction, target: StepTarget) -> TaskType | None:
+    """The model role of a step; None when it calls no model or is not declared."""
+    return ROLE_OF_STEP.get((action, target))
 
 
 # ---------------------------------------------------------------------------
@@ -385,12 +411,6 @@ class PipelineDefinition(BaseModel):
 _REQUIRED_PARAMS: dict[StepAction, tuple[str, ...]] = {
     StepAction.BASH: ("script",),
 }
-
-
-#: The steps an agent may run with write tools: code and tests generation only.
-AGENTIC_STEPS: frozenset[tuple[StepAction, StepTarget]] = frozenset(
-    {(StepAction.GENERATE, StepTarget.CODE), (StepAction.GENERATE, StepTarget.TESTS)}
-)
 
 
 def _validate_mode(step: PipelineStep) -> list[str]:

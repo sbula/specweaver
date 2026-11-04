@@ -577,7 +577,7 @@
           "old": "                llm=adapter, config=config, tool_dispatcher=_scenario_tools(context, adapter)\n",
           "new": "                llm=adapter, config=config, tool_dispatcher=None\n",
           "breaks": "the agent cannot read the contracts it tests against",
-          "symbol_sha": "sha256:915be41dfa53e1f951f72028685d3ad2bc4dc9cd36856bfb415997eab57929f5"
+          "symbol_sha": "sha256:85829b3c64af3cb3e5b3517864632b21a1d5069eaf457193da1a2018e2313516"
         },
         {
           "id": "problems-not-shown",
@@ -627,7 +627,7 @@
           "old": "                record_review(context)\n",
           "new": "                pass\n",
           "breaks": "an accepted review leaves no record, so no dual run can start",
-          "symbol_sha": "sha256:c281ae5c4f167a40248c56db54cd601ba2ea4b4bf3e45482e705711a82f4f7ec"
+          "symbol_sha": "sha256:135c9629f2c92e8a2aab590835bf8361893d60d1d12991c9e7b7c7857b028271"
         },
         {
           "id": "unreviewed-spec-runs",
@@ -747,7 +747,7 @@
           "old": "    if len(router.named_models()) >= 2:\n",
           "new": "    if False:\n",
           "breaks": "both sides run on one model although the settings name others",
-          "symbol_sha": "sha256:dbe9e6136d9eb62b5d76f8db2300614f87bd96fd228f51a81aa65cf4cd86e6e2"
+          "symbol_sha": "sha256:1bf1d3ca74469074ffa8b4f892535dfd88ee1dbd1246bd1559e506297e5160fe"
         },
         {
           "id": "model-flag-sets-both",
@@ -797,7 +797,7 @@
           "old": "            base_prompt.add_context(spec_map(context), \"other_specs\")\n",
           "new": "            pass\n",
           "breaks": "the reviewer never learns which other specs exist",
-          "symbol_sha": "sha256:c281ae5c4f167a40248c56db54cd601ba2ea4b4bf3e45482e705711a82f4f7ec"
+          "symbol_sha": "sha256:135c9629f2c92e8a2aab590835bf8361893d60d1d12991c9e7b7c7857b028271"
         },
         {
           "id": "signature-conflict-missed",

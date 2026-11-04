@@ -101,9 +101,11 @@ async def test_no_model_for_the_analysis_is_reported_not_raised(
     def no_model(*_a, **_k):
         raise RuntimeError("no model configured for review")
 
-    monkeypatch.setattr(drift, "llm_for", no_model)
+    monkeypatch.setattr(drift, "llm_for_step", no_model)
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "plan.yaml", db=MagicMock())
 
-    text = await DriftCheckHandler()._analyze_drift(context, MagicMock(findings=[]), "a.py")
+    text = await DriftCheckHandler()._analyze_drift(
+        context, MagicMock(), MagicMock(findings=[]), "a.py"
+    )
 
     assert text == "LLM analysis failed: no model configured for review"

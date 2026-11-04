@@ -141,11 +141,10 @@ class DraftSpecHandler:
         findings: dict[str, Any] | None = None,
     ) -> StepResult:
         """Execute the actual interactive Drafter."""
-        from specweaver.core.flow.handlers._llm import llm_for
+        from specweaver.core.flow.handlers._llm import llm_for_step
         from specweaver.core.flow.handlers.base import _build_base_prompt
-        from specweaver.infrastructure.llm.models import TaskType
 
-        adapter, gen_config = llm_for(context, TaskType.DRAFT)
+        adapter, gen_config = llm_for_step(context, step)
 
         from specweaver.core.flow.handlers._profiles import INTERACTIVE, resolve_profile
 
@@ -338,10 +337,9 @@ class DraftFeatureHandler:
         except ValueError as e:
             return _error_result(str(e), started)
 
-        from specweaver.core.flow.handlers._llm import llm_for
-        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.core.flow.handlers._llm import llm_for_step
 
-        adapter, gen_config = llm_for(context, TaskType.DRAFT)
+        adapter, gen_config = llm_for_step(context, step)
 
         base_prompt = await _build_base_prompt(
             context=context,

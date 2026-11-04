@@ -276,7 +276,7 @@
           "old": "        assert context.model.drafters is not None\n        drafter = context.model.drafters.spec(\n",
           "new": "        from specweaver.workflows.drafting.drafter import Drafter  # noqa: F401\n\n        assert context.model.drafters is not None\n        drafter = context.model.drafters.spec(\n",
           "breaks": "the flow imports the drafting workflow again",
-          "symbol_sha": "sha256:4dd707d65a07f42c4c8548ff3d14ee46297f73bbc6376156a514ad8c02c81406"
+          "symbol_sha": "sha256:5b9cc5a88ffe9a43b745bb278547c3fbb14d7ed57d5b1b8883edc43ee2f6c6e4"
         },
         {
           "id": "builder-forgets-drafters",

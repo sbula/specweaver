@@ -12,9 +12,8 @@ from typing import TYPE_CHECKING, Any
 from specweaver.assurance.validation.orchestration.drift_analysis import explain_drift
 from specweaver.commons import json
 from specweaver.core.flow.engine.state import StepResult, StepStatus
-from specweaver.core.flow.handlers._llm import llm_for
+from specweaver.core.flow.handlers._llm import llm_for_step
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
-from specweaver.infrastructure.llm.models import TaskType
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
@@ -129,7 +128,7 @@ class DriftCheckHandler:
         llm_analysis = None
 
         if analyze and report.is_drifted and context.model.llm_router is not None:
-            llm_analysis = await self._analyze_drift(context, report, target_path_str)
+            llm_analysis = await self._analyze_drift(context, step, report, target_path_str)
 
         output = {
             "is_drifted": report.is_drifted,
@@ -149,10 +148,12 @@ class DriftCheckHandler:
             error_message="Drift detected" if report.is_drifted else "",
         )
 
-    async def _analyze_drift(self, context: RunContext, report: Any, file_path: str) -> str | None:
+    async def _analyze_drift(
+        self, context: RunContext, step: PipelineStep, report: Any, file_path: str
+    ) -> str | None:
         """The model's root cause, asked by validation orchestration; None when the brake stopped it."""
         try:
-            adapter, config = llm_for(context, TaskType.REVIEW)
+            adapter, config = llm_for_step(context, step)
         except Exception as exc:
             logger.exception("DriftCheckHandler: no model for the root-cause analysis.")
             return f"LLM analysis failed: {exc}"

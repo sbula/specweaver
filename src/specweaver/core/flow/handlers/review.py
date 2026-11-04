@@ -27,12 +27,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _resolve_review_routing(context: RunContext) -> tuple[Any, GenerationConfig]:
+def _resolve_review_routing(
+    context: RunContext, step: PipelineStep
+) -> tuple[Any, GenerationConfig]:
     """The adapter and settings for review."""
-    from specweaver.core.flow.handlers._llm import llm_for
-    from specweaver.infrastructure.llm.models import TaskType
+    from specweaver.core.flow.handlers._llm import llm_for_step
 
-    return llm_for(context, TaskType.REVIEW)
+    return llm_for_step(context, step)
 
 
 def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> ToolDispatcher | None:
@@ -202,7 +203,7 @@ class ReviewSpecHandler:
         try:
             from specweaver.workflows.review.reviewer import Reviewer
 
-            adapter, config = _resolve_review_routing(context)
+            adapter, config = _resolve_review_routing(context, step)
             reviewer = Reviewer(
                 llm=adapter,
                 config=config,
@@ -276,7 +277,7 @@ class ReviewCodeHandler:
             if code_path is None:
                 return _error_result("No code file found for review", started)
 
-            adapter, config = _resolve_review_routing(context)
+            adapter, config = _resolve_review_routing(context, step)
             reviewer = Reviewer(
                 llm=adapter,
                 config=config,

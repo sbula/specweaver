@@ -87,11 +87,14 @@ steps:
 | `arbitrate+verdict` | `ArbitrateVerdictHandler` | `core/flow/handlers/arbiter.py` |
 | `bash+script` | `BashActionHandler` | `core/flow/handlers/bash_action.py` |
 
-Source of truth: `StepHandlerRegistry.__init__` in `core/flow/handlers/registry.py`.
+Source of truth: `STEPS` in `core/flow/engine/models.py` declares each step once, with its model
+role (or none) and whether an agent may run it; `VALID_STEP_COMBINATIONS`, `AGENTIC_STEPS` and
+`ROLE_OF_STEP` derive from it (`TECH-082` FR-9). `_HANDLER_OF` in `core/flow/handlers/registry.py`
+gives each row its handler class.
 
-**Rule:** every pair in `VALID_STEP_COMBINATIONS` (`engine/models.py`) needs a handler here. A
-missing one makes the pipeline unrunnable: the runner errors with "No handler registered for
-`<action>`+`<target>`" at that step (the `feature_decomposition` gap INT-US-21 FR-1 closed).
+**Rule:** every row in `STEPS` needs a handler there. `StepHandlerRegistry()` raises `LookupError`
+for a row without one, so a missing handler fails at construction, not at the step (the
+`feature_decomposition` gap INT-US-21 FR-1 closed).
 
 ## Runner
 

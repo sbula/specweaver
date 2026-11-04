@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter
 
@@ -23,6 +24,16 @@ def _make_context(*, with_config: bool = True) -> RunContext:
     )
 
 
+def _step(action: StepAction, target: StepTarget) -> PipelineStep:
+    """The step a helper reads its role from (TECH-082 FR-9)."""
+    return PipelineStep(name="s", action=action, target=target)
+
+
+_REVIEW = _step(StepAction.REVIEW, StepTarget.SPEC)
+_CODE = _step(StepAction.GENERATE, StepTarget.CODE)
+_PLAN = _step(StepAction.PLAN, StepTarget.SPEC)
+
+
 class TestReviewConfigTaskType:
     """_resolve_review_routing sets task_type=REVIEW (story 6)."""
 
@@ -30,7 +41,7 @@ class TestReviewConfigTaskType:
         from specweaver.core.flow.handlers.review import _resolve_review_routing
 
         context = _make_context()
-        _adapter, config = _resolve_review_routing(context)
+        _adapter, config = _resolve_review_routing(context, _REVIEW)
         assert config.task_type == "review"
 
     def test_review_config_fallback_also_sets_review(self):
@@ -38,7 +49,7 @@ class TestReviewConfigTaskType:
         from specweaver.core.flow.handlers.review import _resolve_review_routing
 
         context = _make_context(with_config=False)
-        _adapter, config = _resolve_review_routing(context)
+        _adapter, config = _resolve_review_routing(context, _REVIEW)
         assert config.task_type == "review"
 
 
@@ -50,18 +61,30 @@ class TestGenConfigTaskType:
         from specweaver.core.flow.handlers.generation import _resolve_generation_routing
 
         context = _make_context()
-        adapter, config = _resolve_generation_routing(context)
+        adapter, config = _resolve_generation_routing(context, _CODE)
         assert config.task_type == "implement"
         assert adapter is context.model.llm_router.adapter
 
-    def test_explicit_task_type_override(self):
-        """Explicit task_type is used instead of default (story 8)."""
+    def test_a_scenario_step_gets_the_scenario_role(self):
+        """The role follows the step, not the helper (TECH-082 FR-9)."""
         from specweaver.core.flow.handlers.generation import _resolve_generation_routing
-        from specweaver.infrastructure.llm.models import TaskType
 
         context = _make_context()
-        _adapter, config = _resolve_generation_routing(context, task_type=TaskType.VALIDATE)
-        assert config.task_type == "validate"
+        _adapter, config = _resolve_generation_routing(
+            context, _step(StepAction.GENERATE, StepTarget.SCENARIO)
+        )
+        assert config.task_type == "scenario"
+
+    def test_a_step_with_no_role_raises(self):
+        """A step the table gives no role never gets a model (TECH-082 FR-9)."""
+        import pytest
+
+        from specweaver.core.flow.handlers.generation import _resolve_generation_routing
+
+        with pytest.raises(ValueError, match=r"generate\+contract"):
+            _resolve_generation_routing(
+                _make_context(), _step(StepAction.GENERATE, StepTarget.CONTRACT)
+            )
 
     def test_without_a_router_the_step_refuses(self):
         """No resolved LLM settings → no model is guessed: the step refuses."""
@@ -73,7 +96,7 @@ class TestGenConfigTaskType:
         context = _make_context()
         context.model = context.model.model_copy(update={"llm_router": None})
         with pytest.raises(LlmNotConfiguredError):
-            _resolve_generation_routing(context)
+            _resolve_generation_routing(context, _CODE)
 
 
 class TestPlanSpecConfigTaskType:
@@ -84,7 +107,7 @@ class TestPlanSpecConfigTaskType:
 
         handler = PlanSpecHandler()
         context = _make_context()
-        _adapter, config = handler._resolve_routing(context)
+        _adapter, config = handler._resolve_routing(context, _PLAN)
         assert config.task_type == "plan"
 
     def test_plan_config_fallback_sets_plan(self):
@@ -93,5 +116,5 @@ class TestPlanSpecConfigTaskType:
 
         handler = PlanSpecHandler()
         context = _make_context(with_config=False)
-        _adapter, config = handler._resolve_routing(context)
+        _adapter, config = handler._resolve_routing(context, _PLAN)
         assert config.task_type == "plan"

@@ -3,7 +3,7 @@
 
 """Every pipeline step reaches its model through the run's router, and nothing else.
 
-Proves: C-FLOW-13 FR-10, FR-11
+Proves: C-FLOW-13 FR-10, FR-11, TECH-082 FR-9
 
 | Bucket | Case |
 |---|---|
@@ -59,6 +59,32 @@ def test_a_run_without_llm_settings_refuses_the_step() -> None:
         llm_for(_context(None), TaskType.DRAFT)
 
 
+def test_a_step_asks_for_the_role_the_step_table_gives_it() -> None:
+    """TECH-082 FR-9: the role comes from the step, not from the handler."""
+    from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.handlers._llm import llm_for_step
+
+    router = _Router()
+    step = PipelineStep(name="fix", action="lint_fix", target="code")
+
+    _adapter, config = llm_for_step(_context(router), step)
+
+    assert router.asked == [TaskType.CHECK]
+    assert config.task_type == TaskType.CHECK
+
+
+def test_a_step_with_no_role_is_refused_by_name() -> None:
+    from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.handlers._llm import llm_for_step
+
+    router = _Router()
+    step = PipelineStep(name="check_it", action="validate", target="code")
+
+    with pytest.raises(ValueError, match="check_it"):
+        llm_for_step(_context(router), step)
+    assert router.asked == []
+
+
 def test_a_pipeline_names_the_roles_its_steps_use() -> None:
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.handlers._llm import roles_of
@@ -76,24 +102,3 @@ def test_a_pipeline_names_the_roles_its_steps_use() -> None:
     )
 
     assert roles_of(pipeline) == [TaskType.DRAFT, TaskType.REVIEW, TaskType.CHECK]
-
-
-def test_every_step_that_calls_a_model_has_a_role() -> None:
-    """A step type added later without a role would start its run unchecked."""
-    from specweaver.core.flow.engine.models import StepAction, StepTarget
-    from specweaver.core.flow.handlers._llm import ROLE_OF_STEP
-    from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-
-    model_free = {
-        (StepAction.VALIDATE, StepTarget.SPEC),
-        (StepAction.VALIDATE, StepTarget.FEATURE),
-        (StepAction.VALIDATE, StepTarget.CODE),
-        (StepAction.VALIDATE, StepTarget.TESTS),
-        (StepAction.ORCHESTRATE, StepTarget.COMPONENTS),
-        (StepAction.CONVERT, StepTarget.SCENARIO),
-        (StepAction.BASH, StepTarget.SCRIPT),
-        (StepAction.GENERATE, StepTarget.CONTRACT),
-    }
-    registered = set(StepHandlerRegistry()._handlers)
-
-    assert registered - model_free == set(ROLE_OF_STEP)

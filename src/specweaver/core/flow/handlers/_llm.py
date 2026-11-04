@@ -12,31 +12,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.models import StepAction, StepTarget
-from specweaver.infrastructure.llm.models import TaskType
+from specweaver.core.flow.engine.models import ROLE_OF_STEP
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.engine.models import PipelineDefinition
+    from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
     from specweaver.core.flow.run_state.run_context import RunContext
-    from specweaver.infrastructure.llm.models import GenerationConfig
-
-#: The role each model-calling step uses. A run resolves every role its steps need before the first
-#: call, so an unset role refuses at the start, not halfway through a paid run.
-ROLE_OF_STEP: dict[tuple[StepAction, StepTarget], TaskType] = {
-    (StepAction.DRAFT, StepTarget.SPEC): TaskType.DRAFT,
-    (StepAction.DRAFT, StepTarget.FEATURE): TaskType.DRAFT,
-    (StepAction.REVIEW, StepTarget.SPEC): TaskType.REVIEW,
-    (StepAction.REVIEW, StepTarget.CODE): TaskType.REVIEW,
-    (StepAction.ARBITRATE, StepTarget.VERDICT): TaskType.REVIEW,
-    (StepAction.DETECT, StepTarget.DRIFT): TaskType.REVIEW,
-    (StepAction.GENERATE, StepTarget.CODE): TaskType.IMPLEMENT,
-    (StepAction.GENERATE, StepTarget.TESTS): TaskType.IMPLEMENT,
-    (StepAction.GENERATE, StepTarget.SCENARIO): TaskType.SCENARIO,
-    (StepAction.PLAN, StepTarget.SPEC): TaskType.PLAN,
-    (StepAction.DECOMPOSE, StepTarget.FEATURE): TaskType.PLAN,
-    (StepAction.LINT_FIX, StepTarget.CODE): TaskType.CHECK,
-    (StepAction.ENRICH, StepTarget.STANDARDS): TaskType.CHECK,
-}
+    from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
 
 
 class LlmNotConfiguredError(RuntimeError):
@@ -60,6 +41,15 @@ def llm_for(context: RunContext, task_type: TaskType) -> tuple[Any, GenerationCo
         }
     )
     return routed.adapter, config
+
+
+def llm_for_step(context: RunContext, step: PipelineStep) -> tuple[Any, GenerationConfig]:
+    """The adapter and settings for the role the step table gives this step."""
+    role = ROLE_OF_STEP.get((step.action, step.target))
+    if role is None:
+        msg = f"step '{step.name}' ({step.action}+{step.target}) calls no model in the step table"
+        raise ValueError(msg)
+    return llm_for(context, role)
 
 
 def roles_of(pipeline: PipelineDefinition) -> list[TaskType]:

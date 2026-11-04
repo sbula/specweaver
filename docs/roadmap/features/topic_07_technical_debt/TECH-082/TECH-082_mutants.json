@@ -90,7 +90,7 @@
           "old": "        code_path.write_text(fixed, encoding=\"utf-8\")",
           "new": "        code_path.write_text(code, encoding=\"utf-8\")",
           "breaks": "the model's fix is thrown away and the same errors are linted again",
-          "symbol_sha": "sha256:2e03eaab195796c554f8fed1cbbbb21bb724b582c88c336c849e4d46241ad680"
+          "symbol_sha": "sha256:58d605bef9f7768281e9ef3dce6c1c487613f80680a4b213b77bcc281d7903e1"
         }
       ]
     },
@@ -140,7 +140,7 @@
           "old": "            result = await arbitrate(adapter, config, base_prompt.build())\n",
           "new": "            result = await adapter.generate([], config)\n",
           "breaks": "a handler talks to the model past the workflow",
-          "symbol_sha": "sha256:cb39864f0d5d56bc5acfde107f0c762a893fead910f15f199cef49b234063cf2"
+          "symbol_sha": "sha256:87eee2a5165336d96b2060b5d6e37dc01b8b02d1deb08ab89c146d0100fb7220"
         }
       ]
     },
@@ -200,6 +200,54 @@
           "old": "  specweaver/sandbox/execution: \"`sw drift` runs git through SubprocessExecutor (cli_drift.py)\"",
           "new": "  # specweaver/sandbox/execution: MUTANT",
           "breaks": "the validation CLI uses the sandbox its pure parent forbids, with no reason on record"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A pipeline step is declared once, in the step table",
+      "scope": [
+        "tests/unit/core/flow/engine/test_one_step_table.py",
+        "tests/unit/core/flow/handlers/test_no_handler_names_its_role.py",
+        "tests/unit/core/flow/engine/test_handler_reachability.py"
+      ],
+      "mutants": [
+        {
+          "id": "step-gets-the-wrong-role",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "STEPS",
+          "old": "    StepKind(_A.REVIEW, _T.CODE, _R.REVIEW),\n",
+          "new": "    StepKind(_A.REVIEW, _T.CODE, _R.CHECK),\n",
+          "breaks": "a code review asks the check model, and the run resolves the wrong role"
+        },
+        {
+          "id": "code-step-not-agentic",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/models.py",
+          "symbol": "STEPS",
+          "old": "    StepKind(_A.GENERATE, _T.CODE, _R.IMPLEMENT, agentic=True),\n",
+          "new": "    StepKind(_A.GENERATE, _T.CODE, _R.IMPLEMENT),\n",
+          "breaks": "code generation can no longer run agentic"
+        },
+        {
+          "id": "handler-names-its-role",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/review.py",
+          "symbol": "_resolve_review_routing",
+          "old": "    return llm_for_step(context, step)\n",
+          "new": "    from specweaver.infrastructure.llm.models import TaskType\n\n    return llm_for_step(context, step) if TaskType.REVIEW else None\n",
+          "breaks": "a handler names its own role again, a second source beside the table",
+          "symbol_sha": "sha256:27a7dff36bdbdbf07ed2c9b4798581060085d60c3311f47680af8e6b70ad81bb"
+        },
+        {
+          "id": "row-without-handler",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/registry.py",
+          "symbol": "_HANDLER_OF",
+          "old": "    (StepAction.BASH, StepTarget.SCRIPT): BashActionHandler,\n",
+          "new": "    # MUTANT: bash+script has no handler\n",
+          "breaks": "a declared step has no handler and the pipeline dies at that step"
         }
       ]
     }

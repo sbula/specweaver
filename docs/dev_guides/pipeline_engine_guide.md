@@ -61,9 +61,15 @@ the step after it returns, whatever the handler did with the error (`_parked_by_
 `step_execution.py`). A handler that catches broad exceptions logs them with `log_step_failure`
 (`handlers/results.py`): a crash keeps its traceback, a brake stop is one quiet line.
 
-A handler gets its model through `llm_for(context, task_type)`. It stamps the call with the run, the
+A handler gets its model through `llm_for_step(context, step)`: the role comes from the step's row
+in `STEPS` (`core/flow/engine/models.py`), never from the handler, and
+`tests/unit/core/flow/handlers/test_no_handler_names_its_role.py` refuses a handler that names one
+(`TECH-082` FR-9). It calls `llm_for(context, task_type)`, which stamps the call with the run, the
 step and the run's DAL, which the cost history and the step limits need; a handler that builds a
-config itself loses them.
+config itself loses them. `llm_for` with an explicit role is only for a call made for another task.
+
+A new step is one row in `STEPS` (pair, role, `agentic`) and one entry in the registry's
+`_HANDLER_OF`.
 
 - **Location**: `src/specweaver/flow/_<domain>.py`
 

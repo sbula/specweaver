@@ -332,7 +332,7 @@
           "old": "guide = language_guide(files.language, context.project_path)",
           "new": "guide = language_guide(\"python\", context.project_path)",
           "breaks": "a Java project is prompted for Python",
-          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
+          "symbol_sha": "sha256:6e7cde244ff7dce77a5d729ca26a2d1006a460530d36a7a8a8ff369e10d3a4ed"
         },
         {
           "id": "tag-always-python",
@@ -382,7 +382,7 @@
           "old": "                declare_rust_module(context.project_path, files)\n",
           "new": "                pass\n",
           "breaks": "tests/<stem>.rs cannot reach the module",
-          "symbol_sha": "sha256:e233c106566545ec738e4a6a83a0b13f35995676a50f18018061a46aaa84d44b"
+          "symbol_sha": "sha256:6e7cde244ff7dce77a5d729ca26a2d1006a460530d36a7a8a8ff369e10d3a4ed"
         },
         {
           "id": "contract-detects-again",

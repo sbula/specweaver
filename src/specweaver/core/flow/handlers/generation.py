@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.run_state.run_context import RunContext
-    from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
+    from specweaver.infrastructure.llm.models import GenerationConfig
     from specweaver.infrastructure.llm.prompt_builder import PromptBuilder
     from specweaver.workflows.implementation.frameworks import FrameworkChoice
     from specweaver.workflows.implementation.languages import LanguageGuide
@@ -38,13 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_generation_routing(
-    context: RunContext, *, task_type: TaskType | None = None
+    context: RunContext, step: PipelineStep
 ) -> tuple[Any, GenerationConfig]:
-    """The adapter and settings for code generation (`implement` unless told otherwise)."""
-    from specweaver.core.flow.handlers._llm import llm_for
-    from specweaver.infrastructure.llm.models import TaskType as _TaskType
+    """The adapter and settings for a generation step, in the role the step table gives it."""
+    from specweaver.core.flow.handlers._llm import llm_for_step
 
-    return llm_for(context, task_type if task_type is not None else _TaskType.IMPLEMENT)
+    return llm_for_step(context, step)
 
 
 def _pop_findings(context: RunContext, step: PipelineStep) -> dict[str, Any] | None:
@@ -167,7 +166,7 @@ class _GenerationHandler:
             framework = project_framework(
                 context.project_path, context.project_path / files.code, files.language
             )
-            adapter, config = _resolve_generation_routing(context)
+            adapter, config = _resolve_generation_routing(context, step)
             generator = Generator(llm=adapter, config=config, guide=guide)
 
             output_path = self._output_path(context)
@@ -335,12 +334,13 @@ class PlanSpecHandler:
             failure (default: 3).
     """
 
-    def _resolve_routing(self, context: RunContext) -> tuple[Any, GenerationConfig]:
+    def _resolve_routing(
+        self, context: RunContext, step: PipelineStep
+    ) -> tuple[Any, GenerationConfig]:
         """The adapter and settings for planning."""
-        from specweaver.core.flow.handlers._llm import llm_for
-        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.core.flow.handlers._llm import llm_for_step
 
-        return llm_for(context, TaskType.PLAN)
+        return llm_for_step(context, step)
 
     async def _generate_plan_artifact(
         self, planner: Any, context: RunContext, spec_content: str, base_prompt: PromptBuilder
@@ -398,7 +398,7 @@ class PlanSpecHandler:
             from specweaver.workflows.planning.planner import Planner
 
             max_retries: int = step.params.get("max_retries", 3)
-            adapter, config = self._resolve_routing(context)
+            adapter, config = self._resolve_routing(context, step)
             language = run_task_files(context).language
             planner = Planner(
                 llm=adapter,

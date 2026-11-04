@@ -14,7 +14,12 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from specweaver.commons.spec_names import module_stem
-from specweaver.core.flow.engine.models import PipelineDefinition
+from specweaver.core.flow.engine.models import (
+    ROLE_OF_STEP,
+    PipelineDefinition,
+    StepAction,
+    StepTarget,
+)
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.reviewed_spec import review_refusal
@@ -62,12 +67,11 @@ _KEPT = SimpleNamespace(status="completed", step_records=())
 def _model_check(context: RunContext) -> tuple[dict[str, str], str | None]:
     """What the run summary says about the two sides' models, and a refusal when they share one
     that the settings could have kept apart."""
-    from specweaver.infrastructure.llm.models import TaskType
-
     router = context.model.llm_router
     if not (hasattr(router, "model_of") and hasattr(router, "named_models")):
         return {"models": "unknown"}, None
-    coder, scenario = router.model_of(TaskType.IMPLEMENT), router.model_of(TaskType.SCENARIO)
+    coder = router.model_of(ROLE_OF_STEP[(StepAction.GENERATE, StepTarget.CODE)])
+    scenario = router.model_of(ROLE_OF_STEP[(StepAction.GENERATE, StepTarget.SCENARIO)])
     if coder != scenario:
         return {}, None
     if len(router.named_models()) >= 2:

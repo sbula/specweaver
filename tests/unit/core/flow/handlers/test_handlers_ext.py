@@ -67,7 +67,7 @@ class TestRunIdPropagation:
         # Actually, let's just patch _resolve_review_routing and assert? No, we should test the actual injection.
         from specweaver.core.flow.handlers.review import _resolve_review_routing
 
-        _, config = _resolve_review_routing(ctx)
+        _, config = _resolve_review_routing(ctx, step)
         assert config.run_id == "mock-run-id-1234"
 
 

@@ -18,7 +18,7 @@ backward compatibility. All existing imports continue to work.
 # Re-export base types and helpers
 import logging
 
-from specweaver.core.flow.engine.models import StepAction, StepTarget
+from specweaver.core.flow.engine.models import STEPS, StepAction, StepTarget
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.base import (  # noqa: F401
     StepHandler,
@@ -87,38 +87,48 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+#: The handler class of each row in the step table (`engine.models.STEPS`).
+_HANDLER_OF: dict[tuple[StepAction, StepTarget], type[StepHandler]] = {
+    (StepAction.DRAFT, StepTarget.SPEC): DraftSpecHandler,
+    (StepAction.DRAFT, StepTarget.FEATURE): DraftFeatureHandler,
+    (StepAction.VALIDATE, StepTarget.SPEC): ValidateSpecHandler,
+    # ValidateSpecHandler routes kind=feature to the validation_spec_feature battery, so
+    # the bundled feature_decomposition pipeline needs only this registry row.
+    (StepAction.VALIDATE, StepTarget.FEATURE): ValidateSpecHandler,
+    (StepAction.VALIDATE, StepTarget.CODE): ValidateCodeHandler,
+    (StepAction.VALIDATE, StepTarget.TESTS): ValidateTestsHandler,
+    (StepAction.REVIEW, StepTarget.SPEC): ReviewSpecHandler,
+    (StepAction.REVIEW, StepTarget.CODE): ReviewCodeHandler,
+    (StepAction.GENERATE, StepTarget.CODE): GenerateCodeHandler,
+    (StepAction.GENERATE, StepTarget.TESTS): GenerateTestsHandler,
+    (StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler,
+    (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler,
+    (StepAction.ENRICH, StepTarget.STANDARDS): EnrichStandardsHandler,
+    (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler,
+    (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler,
+    (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler,
+    (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler,
+    (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler,
+    (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler,
+    (StepAction.ARBITRATE, StepTarget.VERDICT): ArbitrateVerdictHandler,
+    (StepAction.BASH, StepTarget.SCRIPT): BashActionHandler,
+}
+
+
 class StepHandlerRegistry:
     """Maps (action, target) pairs to handler instances.
 
-    Pre-populates with all valid step combinations.
+    One row per step in the step table; a table row with no handler class raises here.
     """
 
     def __init__(self) -> None:
-        self._handlers: dict[tuple[StepAction, StepTarget], StepHandler] = {
-            (StepAction.DRAFT, StepTarget.SPEC): DraftSpecHandler(),
-            (StepAction.DRAFT, StepTarget.FEATURE): DraftFeatureHandler(),
-            (StepAction.VALIDATE, StepTarget.SPEC): ValidateSpecHandler(),
-            # ValidateSpecHandler routes kind=feature to the validation_spec_feature battery, so
-            # the bundled feature_decomposition pipeline needs only this registry row.
-            (StepAction.VALIDATE, StepTarget.FEATURE): ValidateSpecHandler(),
-            (StepAction.VALIDATE, StepTarget.CODE): ValidateCodeHandler(),
-            (StepAction.VALIDATE, StepTarget.TESTS): ValidateTestsHandler(),
-            (StepAction.REVIEW, StepTarget.SPEC): ReviewSpecHandler(),
-            (StepAction.REVIEW, StepTarget.CODE): ReviewCodeHandler(),
-            (StepAction.GENERATE, StepTarget.CODE): GenerateCodeHandler(),
-            (StepAction.GENERATE, StepTarget.TESTS): GenerateTestsHandler(),
-            (StepAction.LINT_FIX, StepTarget.CODE): LintFixHandler(),
-            (StepAction.PLAN, StepTarget.SPEC): PlanSpecHandler(),
-            (StepAction.ENRICH, StepTarget.STANDARDS): EnrichStandardsHandler(),
-            (StepAction.DETECT, StepTarget.DRIFT): DriftCheckHandler(),
-            (StepAction.DECOMPOSE, StepTarget.FEATURE): DecomposeFeatureHandler(),
-            (StepAction.ORCHESTRATE, StepTarget.COMPONENTS): OrchestrateComponentsHandler(),
-            (StepAction.GENERATE, StepTarget.CONTRACT): GenerateContractHandler(),
-            (StepAction.GENERATE, StepTarget.SCENARIO): GenerateScenarioHandler(),
-            (StepAction.CONVERT, StepTarget.SCENARIO): ConvertScenarioHandler(),
-            (StepAction.ARBITRATE, StepTarget.VERDICT): ArbitrateVerdictHandler(),
-            (StepAction.BASH, StepTarget.SCRIPT): BashActionHandler(),
-        }
+        self._handlers: dict[tuple[StepAction, StepTarget], StepHandler] = {}
+        for step in STEPS:
+            key = (step.action, step.target)
+            if key not in _HANDLER_OF:
+                msg = f"step {step.action}+{step.target} is in the step table but has no handler"
+                raise LookupError(msg)
+            self._handlers[key] = _HANDLER_OF[key]()
 
     def get(
         self,

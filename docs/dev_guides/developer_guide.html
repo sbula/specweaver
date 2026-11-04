@@ -1146,7 +1146,7 @@ uv run ruff check src/ tests/         # Lint</code></pre>
 
 <table>
   <tr><th>Change Type</th><th>What to Verify</th></tr>
-  <tr><td>New handler</td><td>Registered in <code>StepHandlerRegistry</code>? Added to <code>VALID_STEP_COMBINATIONS</code>? Tests cover pass/fail?</td></tr>
+  <tr><td>New handler</td><td>One row in <code>STEPS</code> (<code>core/flow/engine/models.py</code>) with its role? Its class in the registry's <code>_HANDLER_OF</code>? Gets its model through <code>llm_for_step</code>? Tests cover pass/fail?</td></tr>
   <tr><td>New atom</td><td>Extends <code>Atom</code> ABC? Returns <code>AtomResult</code>? Intent-based dispatch? Uses commons for shared code?</td></tr>
   <tr><td>New tool</td><td>Role gating correct? No direct atom imports? Uses commons?</td></tr>
   <tr><td>Pipeline YAML</td><td>Valid action+target combo? Gate conditions make sense? <code>loop_target</code> step exists?</td></tr>

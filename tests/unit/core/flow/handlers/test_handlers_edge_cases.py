@@ -36,6 +36,11 @@ def pipeline_step() -> PipelineStep:
     return PipelineStep(name="test_step", action=StepAction.VALIDATE, target=StepTarget.FEATURE)
 
 
+def _own_step(action: StepAction, target: StepTarget) -> PipelineStep:
+    """A step of the handler's own pair: a handler reads its model role from it (TECH-082 FR-9)."""
+    return PipelineStep(name="test_step", action=action, target=target)
+
+
 @pytest.mark.asyncio
 async def test_validate_code_handler_empty_dir(
     run_context: RunContext, pipeline_step: PipelineStep
@@ -99,7 +104,9 @@ async def test_generate_handlers_exception_wrapper(
         "specweaver.workflows.implementation.generator.Generator.generate_code",
         side_effect=ValueError("LLM Crash"),
     ):
-        result = await code_handler.execute(pipeline_step, run_context)
+        result = await code_handler.execute(
+            _own_step(StepAction.GENERATE, StepTarget.CODE), run_context
+        )
         assert result.status == StepStatus.ERROR
         assert "LLM Crash" in (result.error_message or "")
 
@@ -107,7 +114,9 @@ async def test_generate_handlers_exception_wrapper(
         "specweaver.workflows.implementation.generator.Generator.generate_tests",
         side_effect=ValueError("LLM Crash Tests"),
     ):
-        result2 = await test_handler.execute(pipeline_step, run_context)
+        result2 = await test_handler.execute(
+            _own_step(StepAction.GENERATE, StepTarget.TESTS), run_context
+        )
         assert result2.status == StepStatus.ERROR
         assert "LLM Crash Tests" in (result2.error_message or "")
 
@@ -164,7 +173,12 @@ async def test_lint_fix_handler_ast_fences(tmp_path: Path, run_context: RunConte
     code_path.touch()
 
     run_context.model = run_context.model.model_copy(update={"llm_router": FixedRouter(llm)})
-    await handler._llm_fix(code_path, [{"line": 1}], context=run_context)
+    await handler._llm_fix(
+        code_path,
+        [{"line": 1}],
+        context=run_context,
+        step=_own_step(StepAction.LINT_FIX, StepTarget.CODE),
+    )
 
     fixed = code_path.read_text(encoding="utf-8")
     assert "print('fixed')" in fixed
@@ -193,11 +207,15 @@ async def test_review_handlers_execution(
     with patch(
         "specweaver.workflows.review.reviewer.Reviewer.review_spec", return_value=mock_review_result
     ):
-        res1 = await spec_handler.execute(pipeline_step, run_context)
+        res1 = await spec_handler.execute(
+            _own_step(StepAction.REVIEW, StepTarget.SPEC), run_context
+        )
         assert res1.status == StepStatus.PASSED
 
     with patch(
         "specweaver.workflows.review.reviewer.Reviewer.review_code", return_value=mock_review_result
     ):
-        res2 = await code_handler.execute(pipeline_step, run_context)
+        res2 = await code_handler.execute(
+            _own_step(StepAction.REVIEW, StepTarget.CODE), run_context
+        )
         assert res2.status == StepStatus.PASSED

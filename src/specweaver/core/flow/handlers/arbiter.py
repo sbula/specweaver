@@ -297,10 +297,9 @@ class ArbitrateVerdictHandler(StepHandler):
         base_prompt = await _build_base_prompt(context, ARBITRATE_INSTRUCTIONS, profile=profile)
         base_prompt.add_context(filtered_trace, label="Failures")
 
-        from specweaver.core.flow.handlers._llm import llm_for
-        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.core.flow.handlers._llm import llm_for_step
 
-        adapter, config = llm_for(context, TaskType.REVIEW)
+        adapter, config = llm_for_step(context, step)
         try:
             result = await arbitrate(adapter, config, base_prompt.build())
         except UnreadableVerdictError as exc:  # expected: the step fails, quoting the raw verdict

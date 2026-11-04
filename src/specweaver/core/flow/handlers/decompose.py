@@ -45,10 +45,9 @@ class DecomposeFeatureHandler(StepHandler):
             )
 
             # Use the LLM and the Decomposer
-            from specweaver.core.flow.handlers._llm import llm_for
-            from specweaver.infrastructure.llm.models import TaskType
+            from specweaver.core.flow.handlers._llm import llm_for_step
 
-            adapter, config = llm_for(context, TaskType.PLAN)
+            adapter, config = llm_for_step(context, step)
             decomposer = FeatureDecomposer(
                 llm=adapter, context_provider=context.context_provider, config=config
             )

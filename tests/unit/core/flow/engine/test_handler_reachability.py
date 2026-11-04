@@ -35,6 +35,7 @@ from typing import Any
 from ruamel.yaml import YAML
 
 from specweaver.core.flow.engine.models import (
+    STEPS,
     VALID_STEP_COMBINATIONS,
     StepAction,
     StepTarget,
@@ -162,6 +163,14 @@ class TestDeclaredCombinationsAreRegistered:
             "VALID_STEP_COMBINATIONS, so PipelineDefinition.validate_flow() rejects any pipeline "
             "that uses them:\n  " + "\n  ".join(f"{a}+{t}" for a, t in sorted(orphans))
         )
+
+    def test_every_step_with_a_role_has_a_handler(self) -> None:
+        """A role is resolved before a run starts (`roles_of`); a step with a role and no handler
+        would make the run ask for a model it can never use (TECH-082 FR-9)."""
+        roled = {(s.action, s.target) for s in STEPS if s.role is not None}
+
+        assert len(roled) >= 13
+        assert roled <= registered_combinations(StepHandlerRegistry())
 
     def test_declared_set_is_not_empty(self) -> None:
         """Guards the two assertions above against a vacuous empty-set pass."""

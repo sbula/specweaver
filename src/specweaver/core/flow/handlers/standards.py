@@ -102,10 +102,9 @@ class EnrichStandardsHandler:
                 completed_at=_now_iso(),
             )
 
-        from specweaver.core.flow.handlers._llm import llm_for
-        from specweaver.infrastructure.llm.models import TaskType
+        from specweaver.core.flow.handlers._llm import llm_for_step
 
-        adapter, gen_config = llm_for(context, TaskType.CHECK)
+        adapter, gen_config = llm_for_step(context, step)
         enricher = StandardsEnricher(adapter, config=gen_config)
 
         try:
