@@ -129,7 +129,8 @@ class CResolver(Resolver):
 
     # --- includes ----------------------------------------------------------------------------
 
-    def _include(self, path: str, written: str) -> str | None:
+    def include(self, path: str, written: str) -> str | None:
+        """The project file `#include "written"` in `path` names, or None."""
         beside = posixpath.normpath(posixpath.join(posixpath.dirname(path), written))
         if beside in self.code:
             return beside
@@ -142,8 +143,9 @@ class CResolver(Resolver):
             seen: set[str] = set()
             todo = [path]
             while todo:
-                for written in self.facts(todo.pop()).imports:
-                    found = self._include(path, written)
+                includer = todo.pop()
+                for written in self.facts(includer).imports:
+                    found = self.include(includer, written)
                     if found and found not in seen:
                         seen.add(found)
                         todo.append(found)

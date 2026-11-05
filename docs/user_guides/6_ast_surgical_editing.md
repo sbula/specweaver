@@ -12,8 +12,9 @@ SpecWeaver edits code through its AST (Abstract Syntax Tree) instead of as text.
 
 ## The CodeStructureTool
 
-Tree-sitter parsers cover Python, Java, Kotlin, TypeScript (`.ts`, `.tsx`), Rust, C/C++, Go, SQL,
-and Markdown. Plain JavaScript (`.js`) has no parser yet.
+Tree-sitter parsers cover Python, Java, Kotlin, TypeScript (`.ts`, `.tsx`), JavaScript (`.js`,
+`.jsx`, `.mjs`, `.cjs`), Rust, C/C++, Go, SQL, and Markdown. JavaScript reads and edits symbols but
+has no rename, remove or move: no resolver renames JavaScript yet.
 
 ### 1. Minimal reads — `read_file_structure`
 

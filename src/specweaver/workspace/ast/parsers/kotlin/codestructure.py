@@ -68,14 +68,14 @@ class KotlinCodeStructure(Renames, ClassBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_declaration (function_body (block) @block))
         (anonymous_initializer (block) @block)
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         #: The grammar emits `(import)`; `(import_header)` is Kotlin's own spec vocabulary and not a
         #: node type here, so querying it raised rather than matching nothing.
         return """
@@ -83,7 +83,7 @@ class KotlinCodeStructure(Renames, ClassBasedParser):
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (function_declaration (identifier) @name)
         (class_declaration (identifier) @name)
@@ -91,7 +91,7 @@ class KotlinCodeStructure(Renames, ClassBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (line_comment) @comment
         (block_comment) @comment

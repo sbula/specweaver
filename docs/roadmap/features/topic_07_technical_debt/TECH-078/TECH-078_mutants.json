@@ -30,7 +30,7 @@
           "old": "        LANGUAGE_SUFFIXES[name]: parser for name, parser in by_language.items()\n",
           "new": "        LANGUAGE_SUFFIXES[name][:1]: parser for name, parser in by_language.items()\n",
           "breaks": "a .pyi, .kts or .tsx file has no parser",
-          "symbol_sha": "sha256:b53f14c8600176fcb0c8a9dfeb66053e4c0511e8011674359f8f012e2f7003a4"
+          "symbol_sha": "sha256:2127008b97809e195ffd9c5bc3773a7b12dc81accb08af9e034ebedb790b58fa"
         },
         {
           "id": "fence-skips-the-table",

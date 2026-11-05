@@ -21,6 +21,7 @@ forbids:
 
 exposes:
   - files
+  - imports
   - move
   - rename
 

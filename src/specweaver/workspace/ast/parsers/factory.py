@@ -15,6 +15,7 @@ from specweaver.workspace.ast.parsers.cpp.codestructure import CppCodeStructure
 from specweaver.workspace.ast.parsers.go.codestructure import GoCodeStructure
 from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
+from specweaver.workspace.ast.parsers.javascript.codestructure import JavaScriptCodeStructure
 from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 from specweaver.workspace.ast.parsers.markdown.codestructure import MarkdownCodeStructure
 from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
@@ -34,6 +35,7 @@ def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
         "python": PythonCodeStructure(),
         "java": JavaCodeStructure(),
         "typescript": TypeScriptCodeStructure(),
+        "javascript": JavaScriptCodeStructure(),
         "rust": RustCodeStructure(),
         "kotlin": KotlinCodeStructure(),
         "go": GoCodeStructure(),

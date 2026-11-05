@@ -66,7 +66,7 @@ class TypeScriptCodeStructure(_ref_tools.Renames, ClassBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_declaration body: (statement_block) @block)
         (method_definition body: (statement_block) @block)
@@ -74,14 +74,14 @@ class TypeScriptCodeStructure(_ref_tools.Renames, ClassBasedParser):
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return """
         (import_statement) @imp
         (import_require_clause) @imp
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (function_declaration name: (identifier) @name)
         (method_definition name: (property_identifier) @name)
@@ -95,7 +95,7 @@ class TypeScriptCodeStructure(_ref_tools.Renames, ClassBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (comment) @comment
         """

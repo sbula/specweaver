@@ -51,17 +51,17 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
 
     @property
     @abstractmethod
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         """Tree-sitter query for skeletons."""
 
     @property
     @abstractmethod
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         """Tree-sitter query for extracting symbols."""
 
     @property
     @abstractmethod
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         """Tree-sitter query for extracting comments/trace tags."""
 
     # The grammar's own tags query, when it ships one. A module constant, so reading it is an
@@ -268,3 +268,15 @@ class BaseTreeSitterParser(SymbolReadingMixin, SymbolEditingMixin, CodeStructure
     def _text_of(node: typing.Any) -> str:
         """A node's source text, decoded."""
         return typing.cast("bytes", node.text).decode("utf-8")
+
+    def _import_nodes(self, code: str, query_text: str) -> list[typing.Any]:
+        """Every node the import query captures as `imp`; none for empty code."""
+        if not code.strip():
+            return []
+        tree = self.parser.parse(code.encode("utf-8"))
+        query = Query(self.language, query_text)
+        return [
+            node
+            for _, match_dict in QueryCursor(query).matches(tree.root_node)
+            for node in match_dict.get("imp", [])
+        ]

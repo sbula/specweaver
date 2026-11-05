@@ -51,6 +51,11 @@ DOCUMENTED: dict[str, tuple[str, str, str]] = {
         "B.place",
         "Places an order.",
     ),
+    "javascript": (
+        "export class B {\n  /** Places an order. */\n  place(){return 1}\n}\n",
+        "B.place",
+        "Places an order.",
+    ),
     "rust": (
         "pub struct B;\nimpl B {\n  /// Places an order.\n  pub fn place(&self)->i32{1}\n}\n",
         "B.place",
@@ -283,6 +288,7 @@ DOCUMENTED_TYPES: dict[str, tuple[str, str, str]] = {
     ),
     "kotlin": ("/** An order. */\nclass B {\n  fun p()=1\n}\n", "B", "An order."),
     "typescript": ("/** An order. */\nexport class B {\n  p(){return 1}\n}\n", "B", "An order."),
+    "javascript": ("/** An order. */\nexport class B {\n  p(){return 1}\n}\n", "B", "An order."),
     "rust": ("/// An order.\npub struct B;\n", "B", "An order."),
     "go": ("package m\n// An order.\ntype B struct{}\n", "B", "An order."),
     "python": (

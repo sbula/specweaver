@@ -22,7 +22,7 @@ class SqlCodeStructure(DeclarativeParser):
     grammar = staticmethod(tree_sitter_sql.language)
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (create_table (column_definitions) @block)
         (create_view (create_query) @block)
@@ -30,7 +30,7 @@ class SqlCodeStructure(DeclarativeParser):
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         # Captured on `object_reference`, not on the `identifier` inside it. A reference holds one
         # identifier per name part, so capturing the identifier reported `public.orders` as TWO
         # symbols -- `public` and `orders` -- and put a chunk named after a schema into the index.
@@ -42,7 +42,7 @@ class SqlCodeStructure(DeclarativeParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return ""
 
     def _find_symbol_node(self, tree: typing.Any, symbol_name: str) -> typing.Any | None:

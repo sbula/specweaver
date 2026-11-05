@@ -591,6 +591,55 @@
           "symbol_sha": "sha256:23f02bdaa45df659fde813e40a99ac4c1537186d61f813e9d7cde847f3655afc"
         }
       ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "A JavaScript parser lists the imports of .js, .jsx, .mjs and .cjs files",
+      "scope": [
+        "tests/unit/workspace/ast/parsers/javascript/test_javascript_imports.py"
+      ],
+      "mutants": [
+        {
+          "id": "js-require-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/javascript/codestructure.py",
+          "symbol": "JavaScriptCodeStructure",
+          "old": "          (#eq? @fn \"require\"))",
+          "new": "          (#eq? @fn \"requireX\"))",
+          "breaks": "a CommonJS require is no longer listed as an import",
+          "symbol_sha": "sha256:864b7819719786d892770e29f369a223187b9f0e1016402a3954c6f277cbb01c"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-16",
+      "title": "Each language names the project file or folder an import reaches",
+      "scope": [
+        "tests/unit/workspace/ast/refactor/test_import_target.py",
+        "tests/unit/workspace/ast/parsers/java/test_java_wildcard_imports.py"
+      ],
+      "mutants": [
+        {
+          "id": "package-file-not-folder",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/imports.py",
+          "symbol": "_python",
+          "old": "    return _named(found[1]) if found[0] == \"module\" else None",
+          "new": "    return found[1] if found[0] == \"module\" else None",
+          "breaks": "a Python package import names its __init__.py, not its folder",
+          "symbol_sha": "sha256:b36a537ad216e049f13d776a5210af5f54b4de10e37722f85b7edcad0f76b7d9"
+        },
+        {
+          "id": "java-wildcard-split",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/java/codestructure.py",
+          "symbol": "JavaCodeStructure.extract_imports",
+          "old": "                \"\".join(",
+          "new": "                \" \".join(",
+          "breaks": "a Java wildcard import is no longer one name",
+          "symbol_sha": "sha256:b5354123008da4755c577b7e8110f71b8e47dcbeb39538efd071738b85601bcd"
+        }
+      ]
     }
   ]
 }

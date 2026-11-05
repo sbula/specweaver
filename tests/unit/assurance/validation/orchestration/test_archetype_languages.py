@@ -54,16 +54,13 @@ def test_an_unknown_language_is_refused(tmp_path: Path) -> None:
 
 
 def test_every_language_has_a_parser() -> None:
-    """The endings agree with the parsers', so a covered file can be read.
-
-    JavaScript is the one exception: `nestjs` names it, and no JavaScript parser exists yet.
-    """
+    """The endings agree with the parsers', so a covered file can be read (JavaScript: TECH-082 FR-18)."""
     from specweaver.workspace.ast.parsers.factory import get_default_parsers
 
     parsed = {suffix for suffixes in get_default_parsers() for suffix in suffixes}
     named = {s for name, suffixes in LANGUAGE_SUFFIXES.items() for s in suffixes}
 
-    assert named - parsed == set(LANGUAGE_SUFFIXES["javascript"])
+    assert named - parsed == set()
 
 
 def test_every_shipped_archetype_names_known_languages() -> None:

@@ -90,6 +90,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    `get_default_directory_ignores()` (language-specific topological exclusions). Traceability needs
    `extract_test_mapped_requirements()` on the language analyzer. Find a grammar in the
    [official Tree-Sitter List of Parsers](https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers).
+   `extract_imports` lists each import as one name, as written. Then say which project file or
+   folder an import names: one entry in `_PICK` (`workspace/ast/refactor/imports.py`). That is the
+   language's only part in the boundary check; `test_parsed_imports_reach_files.py` checks the pair.
 6. **Generator text**: `workflows/languages/<lang>.md` (front-matter `name:`; sections `# Code`,
    `# Tests`, `# Code role`, `# Tests role`, `# Coder role`) and the name in `_LANGUAGES`
    (`workflows/implementation/languages.py`). This is what the model is told to write.
@@ -144,6 +147,7 @@ Keep mocks out of live test files.
 - [ ] `task_files_for` places its code and test files.
 - [ ] `SUPPORTED_LANGUAGES` and `_SCENARIO_EXTENSIONS` in `_detect.py`.
 - [ ] Rename/move resolver in `workspace/ast/refactor/`.
+- [ ] Import → project path in `workspace/ast/refactor/imports.py` (`_PICK`).
 - [ ] Standards analyzer in `assurance/standards/languages/`.
 - [ ] Default YAML schema for macro/annotation unrolling in
   `workflows/evaluators/frameworks/<archetype>.yaml` with `"supported_languages": ["<lang>"]`.

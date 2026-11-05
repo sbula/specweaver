@@ -106,19 +106,19 @@ class RustCodeStructure(Renames, FunctionBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_item body: (block) @block)
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return """
         (use_declaration) @imp
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         # A trait is a declared type, so it is a symbol. Without this line it was invisible to
         # everything downstream -- no symbol, no child at the seam, no node in the graph -- and
         # since Rust has no struct inheritance, EVERY hierarchy edge the language can produce
@@ -138,7 +138,7 @@ class RustCodeStructure(Renames, FunctionBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (line_comment) @comment
         (block_comment) @comment

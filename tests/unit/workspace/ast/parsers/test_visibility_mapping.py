@@ -83,6 +83,16 @@ EXPECTED: dict[str, dict[str, str]] = {
         "free": "public",
         "notExported": "internal",
     },
+    "javascript": {
+        "Circle": "public",
+        "Circle.area": "public",  # a member of an exported class
+        "Circle.#helper": "private",  # `#` is JavaScript's only access marker
+        "Hidden": "internal",  # not exported
+        "Hidden.run": "internal",
+        "free": "public",
+        "notExported": "internal",
+        "arrow": "public",  # `export const arrow = () => ...`
+    },
     "rust": {
         "Shape": "public",
         # Both trait members, both public: a member carries no modifier of its own and takes

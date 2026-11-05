@@ -550,7 +550,7 @@
           "old": "        return (\"unknown\",) if facts.wildcards else (\"missing\",)\n",
           "new": "        return (\"missing\",)\n",
           "breaks": "a name through a glob use is skipped",
-          "symbol_sha": "sha256:4b11350dc081d22584fbbb08e17b32e7109b84376a442eeab3655a7c2e774cb4"
+          "symbol_sha": "sha256:774b0169d835a262b76d37c30889a2737701c9c632040f82352390994e78e0d1"
         },
         {
           "id": "rust-macro-trusted",

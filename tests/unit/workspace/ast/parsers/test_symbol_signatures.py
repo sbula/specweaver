@@ -48,6 +48,11 @@ DOCUMENTED: dict[str, tuple[str, str, str]] = {
         "B.place",
         "Places an order.\nplace(a: number): number",
     ),
+    "javascript": (
+        "export class B {\n  /** Places an order. */\n  place(a) { return a }\n}\n",
+        "B.place",
+        "Places an order.\nplace(a)",
+    ),
     "rust": (
         "pub struct B;\nimpl B {\n  /// Places an order.\n  pub fn place(&self, a: i32) -> i32 { a }\n}\n",
         "B.place",

@@ -22,7 +22,7 @@ class MarkdownCodeStructure(DeclarativeParser):
     grammar = staticmethod(tree_sitter_markdown.language)
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (paragraph) @block
         (list) @block
@@ -33,15 +33,15 @@ class MarkdownCodeStructure(DeclarativeParser):
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return ""
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return "(section (atx_heading heading_content: (inline) @name)) @block"
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return "(html_block) @comment"
 
     def supported_intents(self) -> list[str]:

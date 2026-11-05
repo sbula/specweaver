@@ -70,28 +70,28 @@ class PythonCodeStructure(Renames, ClassBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_definition
           body: (block) @block)
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return """
         (import_statement) @imp
         (import_from_statement) @imp
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (function_definition name: (identifier) @name)
         (class_definition name: (identifier) @name)
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (comment) @comment
         """

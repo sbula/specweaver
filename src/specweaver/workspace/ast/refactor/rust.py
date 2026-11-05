@@ -120,7 +120,7 @@ class RustResolver(Resolver):
             parts = parts[:-1]
         return ("module", crate, "::".join(parts))
 
-    def _module_file(self, crate: str, segments: str) -> str | None:
+    def module_file(self, crate: str, segments: str) -> str | None:
         src = f"{crate}/src" if crate else "src"
         if not segments:
             return next((f for f in (f"{src}/lib.rs", f"{src}/main.rs") if f in self.code), None)
@@ -130,7 +130,7 @@ class RustResolver(Resolver):
     def _member(self, module: Resolved, name: str, seen: frozenset[str]) -> Resolved:
         """What `name` is inside `module`."""
         crate, segments = module[1], module[2]
-        file = self._module_file(crate, segments)
+        file = self.module_file(crate, segments)
         if file is None:
             return ("unknown",)
         facts = self.facts(file)

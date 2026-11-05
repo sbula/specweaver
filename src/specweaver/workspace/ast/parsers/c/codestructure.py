@@ -72,13 +72,13 @@ class CCodeStructure(Renames, FunctionBasedParser):
         return _c_family
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_definition body: (compound_statement) @block)
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (function_definition
           declarator: (function_declarator
@@ -95,7 +95,7 @@ class CCodeStructure(Renames, FunctionBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (comment) @comment
         """

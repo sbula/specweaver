@@ -34,6 +34,7 @@ _BY_CLASS = {
     "PythonCodeStructure": "python",
     "JavaCodeStructure": "java",
     "TypeScriptCodeStructure": "typescript",
+    "JavaScriptCodeStructure": "javascript",
     "RustCodeStructure": "rust",
     "KotlinCodeStructure": "kotlin",
     "MarkdownCodeStructure": "markdown",
@@ -110,6 +111,15 @@ export class Circle {
 class Hidden { run(): void {} }
 export function free(): number { return 3 }
 function notExported(): number { return 4 }
+""",
+    "javascript": """export class Circle {
+    area() { return 1 }
+    #helper() { return 2 }
+}
+class Hidden { run() {} }
+export function free() { return 3 }
+function notExported() { return 4 }
+export const arrow = () => 5;
 """,
     "rust": """pub trait Shape {
     fn area(&self) -> f64;
@@ -213,6 +223,17 @@ _TS_ALL = [
     "free",
     "notExported",
 ]
+#: JavaScript has no access keywords: `#name` is private to its class, `export` makes the rest public.
+_JS_ALL = [
+    "Circle",
+    "Circle.area",
+    "Circle.#helper",
+    "Hidden",
+    "Hidden.run",
+    "free",
+    "notExported",
+    "arrow",
+]
 #: `Shape.area` JOINED and the bare `name` became `Shape.name` on 2026-08-26
 #: `[agreed 2026-08-26]`. A required trait method is a `function_signature_item`, which was in
 #: no query at all, and the scope walk knew `impl_item` and not `trait_item`.
@@ -254,6 +275,7 @@ UNFILTERED: dict[str, list[str]] = {
     "rust": _RS_ALL,
     # `Shape` and its `area` JOINED with D-SENS-06 FR-9 `[agreed 2026-10-14]`.
     "typescript": _TS_ALL,
+    "javascript": _JS_ALL,
     "go": _GO_ALL,
     "c": _C_ALL,
     "cpp": _CPP_ALL,
@@ -275,6 +297,8 @@ PUBLIC_ONLY: dict[str, list[str]] = {
     # `Circle.log` (protected) and `Circle.helper` (private) LEFT. TypeScript now reads a member's
     # accessibility instead of only asking whether an ancestor is exported (`FR-3`).
     "typescript": ["Shape", "Shape.area", "Circle", "Circle.area", "free"],
+    # `Circle.#helper` (private) and the unexported `Hidden`, `notExported` LEFT (TECH-082 FR-18).
+    "javascript": ["Circle", "Circle.area", "free", "arrow"],
     # `name` — the trait's defaulted method — JOINED `[agreed 2026-08-26]`, same rule as Java's.
     # `Circle.crate_only` LEFT: `pub(crate)` is `internal`, so a request for `public` excludes it.
     # That one follows from `FR-1`'s vocabulary rather than being a separate decision.

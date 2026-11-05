@@ -26,6 +26,7 @@ _SOURCE = {
     ".java": "class Impl extends Base {}",
     ".kt": "class Impl : Base() {}",
     ".ts": "class Impl extends Base {}",
+    ".js": "class Impl extends Base {}",
     ".rs": "struct Impl;\ntrait Base {}\nimpl Base for Impl {}\n",
     ".go": "package m\ntype Impl struct {\n\tBase\n}\n",
     ".c": "int main(void) { return 0; }",
@@ -38,7 +39,7 @@ _SOURCE = {
 # as a pass. That is how Go and Rust reported no supertypes at all while this file "covered" them:
 # both returned `{}`, both satisfied every assertion, and the gap was invisible until somebody went
 # looking. Naming the languages turns silence into a failure.
-_MUST_REPORT_A_TYPE = {".py", ".java", ".kt", ".ts", ".cpp", ".go", ".rs"}
+_MUST_REPORT_A_TYPE = {".py", ".java", ".kt", ".ts", ".js", ".cpp", ".go", ".rs"}
 
 # Silence here is the correct answer, and the reason is recorded so nobody "fixes" it later.
 _NO_TYPE_CONCEPT = {

@@ -116,20 +116,20 @@ class GoCodeStructure(Renames, FunctionBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (function_declaration body: (block) @block)
         (method_declaration body: (block) @block)
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return """
         (import_declaration) @imp
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (function_declaration name: (identifier) @name)
         (method_declaration name: (field_identifier) @name)
@@ -137,7 +137,7 @@ class GoCodeStructure(Renames, FunctionBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (comment) @comment
         """

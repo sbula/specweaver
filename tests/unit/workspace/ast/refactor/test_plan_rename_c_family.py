@@ -163,3 +163,17 @@ def test_a_keyword_new_name_refuses(new: str) -> None:
 def test_two_external_definitions_refuse() -> None:
     files = {**_CPROJ, "src/again.c": "int total(int a) { return a + 1; }\n"}
     assert "several" in _refusal(files, "src/util.c", "total", "sum").reason
+
+
+def test_a_nested_include_is_found_beside_the_header_that_includes_it() -> None:
+    """`x/b.h` includes `"c.h"`: the compiler looks beside `x/b.h` first, not beside `main.c`."""
+    from specweaver.workspace.ast.refactor.c_family import CResolver
+
+    files = {
+        "main.c": '#include "x/b.h"\n',
+        "x/b.h": '#include "c.h"\n',
+        "x/c.h": "int deep(void);\n",
+        "c.h": "int top(void);\n",
+    }
+
+    assert CResolver(files, _C).included("main.c") == {"x/b.h", "x/c.h"}

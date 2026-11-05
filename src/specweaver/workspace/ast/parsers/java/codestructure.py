@@ -69,20 +69,20 @@ class JavaCodeStructure(Renames, ClassBasedParser):
     )
 
     @property
-    def SCM_SKELETON_QUERY(self) -> str:  # noqa: N802
+    def SCM_SKELETON_QUERY(self) -> str:
         return """
         (method_declaration body: (block) @block)
         (constructor_declaration body: (constructor_body) @block)
         """
 
     @property
-    def SCM_IMPORT_QUERY(self) -> str:  # noqa: N802
+    def SCM_IMPORT_QUERY(self) -> str:
         return """
         (import_declaration) @imp
         """
 
     @property
-    def SCM_SYMBOL_QUERY(self) -> str:  # noqa: N802
+    def SCM_SYMBOL_QUERY(self) -> str:
         return """
         (method_declaration name: (identifier) @name)
         (class_declaration name: (identifier) @name)
@@ -91,7 +91,7 @@ class JavaCodeStructure(Renames, ClassBasedParser):
         """
 
     @property
-    def SCM_COMMENT_QUERY(self) -> str:  # noqa: N802
+    def SCM_COMMENT_QUERY(self) -> str:
         return """
         (line_comment) @comment
         (block_comment) @comment
@@ -143,14 +143,17 @@ class JavaCodeStructure(Renames, ClassBasedParser):
 
         tree = self.parser.parse(code.encode("utf-8"))
         query = Query(self.language, self.SCM_IMPORT_QUERY)
-        # Everything in the statement except its syntax IS the imported name.
+        # Everything in the statement except its syntax IS the imported name; a wildcard's `.` and
+        # `*` are children of their own, so the name is joined back from all of them.
         return sorted(
             {
-                self._extract_marker_text(child)
+                "".join(
+                    self._extract_marker_text(child)
+                    for child in node.children
+                    if child.type not in ("import", "static", ";")
+                )
                 for _, match_dict in QueryCursor(query).matches(tree.root_node)
                 for node in match_dict.get("imp", [])
-                for child in node.children
-                if child.type not in ("import", "static", ";")
             }
         )
 
