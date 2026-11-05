@@ -49,6 +49,9 @@ The engine reaches a handler only through what its caller hands it:
 
 - `PipelineRunner(..., registry=StepHandlerRegistry())`: every caller passes the registry. The
   engine types it as `HandlerLookup` (`engine/handler_port.py`), a port it owns.
+- The runner's own helpers (`step_execution`, `session`, `approval`, `sandboxed_execution`) take
+  the runner as a `RunnerPort` (`engine/runner_port.py`), which names every member they use. No
+  engine module reads another object's `_` field (`tests/unit/core/flow/engine/test_runner_seams.py`).
 - The draft steps get their drafters from the run: `build_run` sets `context.model.drafters` to
   `WorkflowDrafters` (`interfaces/run_setup/drafters.py`). The handlers import no drafting code.
 

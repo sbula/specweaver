@@ -252,10 +252,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner.__init__",
-          "old": "        self._registry = registry\n",
-          "new": "        from specweaver.core.flow.handlers.registry import StepHandlerRegistry as _Built\n\n        self._registry = _Built()\n",
+          "old": "        self.registry = registry\n",
+          "new": "        from specweaver.core.flow.handlers.registry import StepHandlerRegistry as _Built\n\n        self.registry = _Built()\n",
           "breaks": "the engine builds its own registry and ignores the caller's",
-          "symbol_sha": "sha256:00263c90c2b6c67b8a34c09222942b69cd901a258f499dcd519260f7d2fff79e"
+          "symbol_sha": "sha256:9d1e5bb18a893046f4332875fbaf8aa085f1788426a54a8be734efa9e45fd803"
         }
       ]
     },

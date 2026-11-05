@@ -10,7 +10,7 @@ and worktree creation serialised behind paused background GC. Neither mechanism 
 source. Both rows were deleted from that design so the descope is visible, and the question left was
 whether the hazards themselves are real.
 
-**Measured 2026-08-19, and they are not — here.** `run_fan_out` is genuinely concurrent
+**Measured 2026-08-19, and they are not — here.** Fan-out is genuinely concurrent
 (`asyncio.gather` over one sub-runner each) and each sub-run can reach `worktree_add`. Driving 32 of
 those concurrently against a real repository on **git 2.53.0** produced 32 worktrees and zero
 failures. Git takes its own lock around the worktree administrative area; the serialisation FR-4

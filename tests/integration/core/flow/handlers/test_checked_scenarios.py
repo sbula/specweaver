@@ -210,7 +210,7 @@ async def test_both_sides_read_the_parents_contract(tmp_path: Path) -> None:
     seen: list[list[str] | None] = []
 
     async def _record(self: PipelineRunner, parent_run_id: str | None = None) -> Any:
-        seen.append(self._context.graph.api_contract_paths)
+        seen.append(self.context.graph.api_contract_paths)
 
         class _Run:
             status = RunStatus.COMPLETED

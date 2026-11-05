@@ -11,11 +11,12 @@ this deliberately suppresses while a session is active.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, NoReturn, cast
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 
 if TYPE_CHECKING:
+    from specweaver.core.flow.engine.runner_port import RunnerPort
     from specweaver.core.flow.engine.state import PipelineRun
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,8 @@ class SessionWorktreeError(RuntimeError):
 
 
 async def execute_run(
-    runner: Any,
-    run: Any,
+    runner: RunnerPort,
+    run: PipelineRun,
     logger: logging.Logger,
     *,
     approve_parked: bool = False,
@@ -43,9 +44,9 @@ async def execute_run(
     worktree when it has a store to resume from; the resume continues in it. Fail-closed: a
     non-git project, or a resume whose worktree is gone, raises.
     """
-    context = runner._context
+    context = runner.context
     if not context.isolation.session_isolation:
-        return cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
+        return await runner.execute_loop(run, approve_parked=approve_parked)
 
     import copy
 
@@ -90,18 +91,18 @@ async def execute_run(
     isolated.isolation = isolated.isolation.model_copy(
         update={"execution_root": isolated.project_path, "enforce_isolation": False}
     )
-    runner._context = isolated
-    runner._session_active = True
-    runner._session_kept = False
+    runner.context = isolated
+    runner.session_active = True
+    runner.session_kept = False
     try:
-        result = cast("PipelineRun", await runner._execute_loop(run, approve_parked=approve_parked))
+        result = await runner.execute_loop(run, approve_parked=approve_parked)
         # SF-02: reconcile ONLY on successful completion — never write back the generated
         # code of a failed/parked run. Commit the worktree, then a single authorized
         # strip-merge lands only allowed_paths in the real repo. Failures are surfaced.
         if run.status == RunStatus.COMPLETED:
             commit_res = atom.run({"intent": "worktree_commit", "path": wt_path})
             if commit_res.status != AtomStatus.SUCCESS:
-                runner._session_kept = True
+                runner.session_kept = True
                 _reconcile_failed(
                     runner,
                     run,
@@ -121,7 +122,7 @@ async def execute_run(
                 }
             )
             if merge_res.status != AtomStatus.SUCCESS:
-                runner._session_kept = True
+                runner.session_kept = True
                 _reconcile_failed(
                     runner,
                     run,
@@ -132,23 +133,23 @@ async def execute_run(
                 )
         return result
     finally:
-        runner._session_active = False
-        runner._context = original
+        runner.session_active = False
+        runner.context = original
         _teardown_unless_kept(runner, run, atom, wt_path, branch)
 
 
 def _teardown_unless_kept(
-    runner: Any, run: PipelineRun, atom: Any, wt_path: str, branch: str
+    runner: RunnerPort, run: PipelineRun, atom: Any, wt_path: str, branch: str
 ) -> None:
     """Tear the session worktree down, unless a parked run can resume in it or it holds kept work."""
     from specweaver.core.flow.engine.state import RunStatus
 
-    resumable = run.status == RunStatus.PARKED and runner._store is not None
-    if not (resumable or runner._session_kept):
+    resumable = run.status == RunStatus.PARKED and runner.store is not None
+    if not (resumable or runner.session_kept):
         atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
 
 
-def _worktree_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:
+def _worktree_failed(runner: RunnerPort, run: PipelineRun, message: str) -> NoReturn:
     """No worktree, so no step ran: the run is failed in the store, its step naming why."""
     from specweaver.commons.timestamps import now_iso
     from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
@@ -158,16 +159,16 @@ def _worktree_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:
     run.step_records[run.current_step].result = StepResult(
         status=StepStatus.ERROR, error_message=message, started_at=stamp, completed_at=stamp
     )
-    runner._persist(run)
-    runner._emit("run_failed", run=run)
+    runner.persist(run)
+    runner.emit("run_failed", run=run)
     raise SessionWorktreeError(message)
 
 
-def _reconcile_failed(runner: Any, run: PipelineRun, message: str) -> NoReturn:
+def _reconcile_failed(runner: RunnerPort, run: PipelineRun, message: str) -> NoReturn:
     """The run's work did not land: it is a failed run, in the store too, not a completed one."""
     from specweaver.core.flow.engine.state import RunStatus
 
     run.status = RunStatus.FAILED
-    runner._persist(run)
-    runner._emit("run_failed", run=run)
+    runner.persist(run)
+    runner.emit("run_failed", run=run)
     raise RuntimeError(message)

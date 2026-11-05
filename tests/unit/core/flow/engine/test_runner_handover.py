@@ -65,13 +65,13 @@ def runner():
 
     r = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     r._run = run
-    r._store = MagicMock()
-    r._store.load_run.return_value = run
+    r.store = MagicMock()
+    r.store.load_run.return_value = run
     # Mock internal methods that are not relevant to handover
-    r._execute_loop = AsyncMock()
+    r.execute_loop = AsyncMock()
     r._flush_telemetry = AsyncMock()
     r._save_handover = AsyncMock()
-    r._persist = MagicMock()
+    r.persist = MagicMock()
     return r
 
 
@@ -112,7 +112,7 @@ async def test_handover_exception_does_not_crash_runner(mock_save, runner):
 
 @pytest.mark.asyncio
 async def test_handover_called_on_empty_pipeline(runner):
-    runner._pipeline.steps = []
+    runner.pipeline.steps = []
     runner._run.status = RunStatus.COMPLETED
     await runner.run()
     runner._save_handover.assert_called_once_with(ANY)
@@ -121,7 +121,7 @@ async def test_handover_called_on_empty_pipeline(runner):
 @pytest.mark.asyncio
 async def test_runner_run_calls_save_handover_on_interrupt(runner):
     """Happy Path: Runner run() calls save_handover on KeyboardInterrupt."""
-    runner._execute_loop.side_effect = KeyboardInterrupt()
+    runner.execute_loop.side_effect = KeyboardInterrupt()
     runner._run.status = RunStatus.RUNNING
 
     with pytest.raises(KeyboardInterrupt):

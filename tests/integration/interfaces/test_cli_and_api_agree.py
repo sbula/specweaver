@@ -89,7 +89,7 @@ def test_sw_run_and_the_api_build_the_same_run(
     contexts: list[Any] = []
 
     async def _capture(self: PipelineRunner, *_a: object, **_k: object) -> Any:
-        contexts.append(self._context)
+        contexts.append(self.context)
         return type("Run", (), {"status": RunStatus.COMPLETED, "step_records": []})()
 
     monkeypatch.setattr(PipelineRunner, "run", _capture)

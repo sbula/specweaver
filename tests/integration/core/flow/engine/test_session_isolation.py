@@ -313,5 +313,5 @@ def test_context_restored_after_a_parked_session(tmp_path: Path) -> None:
     ):
         asyncio.run(runner.run())
 
-    assert runner._context is ctx
-    assert runner._context.project_path == tmp_path
+    assert runner.context is ctx
+    assert runner.context.project_path == tmp_path

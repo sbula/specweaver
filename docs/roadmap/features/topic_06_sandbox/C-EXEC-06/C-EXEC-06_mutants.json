@@ -15,10 +15,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_reconcile_failed",
-          "old": "    run.status = RunStatus.FAILED\n    runner._persist(run)\n",
-          "new": "    runner._persist(run)\n",
+          "old": "    run.status = RunStatus.FAILED\n    runner.persist(run)\n",
+          "new": "    runner.persist(run)\n",
           "breaks": "a run whose work never landed is stored as COMPLETED",
-          "symbol_sha": "sha256:4f111e3533ab68e3743d2aba00945b1d3526e7a78e86caedcbaa3d515a44d17b"
+          "symbol_sha": "sha256:840cb116c46de259c28b14afb270e4d8d5f895b74c6866f05330459d96755ab9"
         },
         {
           "id": "strip-nothing",
@@ -75,10 +75,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_teardown_unless_kept",
-          "old": "    if not (resumable or runner._session_kept):\n",
+          "old": "    if not (resumable or runner.session_kept):\n",
           "new": "    if False:\n",
           "breaks": "every run leaves its worktree and branch behind",
-          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
+          "symbol_sha": "sha256:a72bd7038c052e89748aaf76532b2283a3ff3a2258c08e429d899eff86859de0"
         }
       ]
     },
@@ -95,10 +95,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "execute_run",
-          "old": "    runner._context = isolated\n",
-          "new": "    runner._context = original\n",
+          "old": "    runner.context = isolated\n",
+          "new": "    runner.context = original\n",
           "breaks": "steps write the real repo directly",
-          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
+          "symbol_sha": "sha256:4624a63c7b382344d9539d6ba1b4486de0534a1d25893dd73f3b6adc3d6655c0"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "old": "        if add_res.status != AtomStatus.SUCCESS:\n",
           "new": "        if False:\n",
           "breaks": "a run without a worktree goes on, at the real root",
-          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
+          "symbol_sha": "sha256:4624a63c7b382344d9539d6ba1b4486de0534a1d25893dd73f3b6adc3d6655c0"
         }
       ]
     }

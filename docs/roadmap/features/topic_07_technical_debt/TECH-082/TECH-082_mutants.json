@@ -412,6 +412,45 @@
           "symbol_sha": "sha256:ff1535351ee904e96921306acbdcbbbb54d41b73660305e64b66a9ed17813116"
         }
       ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The runner's helpers reach it through one typed protocol, never its private fields; the runner sets every member they read",
+      "scope": [
+        "tests/unit/core/flow/engine/test_runner_seams.py"
+      ],
+      "mutants": [
+        {
+          "id": "session-flag-unset",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/runner.py",
+          "symbol": "PipelineRunner.__init__",
+          "old": "        self.session_active = False",
+          "new": "        pass",
+          "breaks": "a fresh runner lacks a member its helpers read, so they fall back to getattr defaults again",
+          "symbol_sha": "sha256:9d1e5bb18a893046f4332875fbaf8aa085f1788426a54a8be734efa9e45fd803"
+        },
+        {
+          "id": "private-read-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/approval.py",
+          "symbol": "try_approve_parked_step",
+          "old": "    hydrate_plan_context(step_def, record.result, runner.context)",
+          "new": "    hydrate_plan_context(step_def, record.result, getattr(runner, \"_context\", runner.context))",
+          "breaks": "a helper reaches into the runner's private field again",
+          "symbol_sha": "sha256:c44049110ab87cdb99416bbd7bb02f8e90957752291be15eaba82362c43d2622"
+        },
+        {
+          "id": "helper-takes-any",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/approval.py",
+          "symbol": "try_approve_parked_step",
+          "old": "    runner: RunnerPort,",
+          "new": "    runner: Any,",
+          "breaks": "a helper takes an untyped runner, so mypy no longer checks what it uses",
+          "symbol_sha": "sha256:c44049110ab87cdb99416bbd7bb02f8e90957752291be15eaba82362c43d2622"
+        }
+      ]
     }
   ]
 }

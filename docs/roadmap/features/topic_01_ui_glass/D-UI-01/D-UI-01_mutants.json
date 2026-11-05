@@ -91,10 +91,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner.run",
-          "old": "            project_name=registered_name(self._context),\n",
-          "new": "            project_name=self._context.project_path.name,\n",
+          "old": "            project_name=registered_name(self.context),\n",
+          "new": "            project_name=self.context.project_path.name,\n",
           "breaks": "a run parked over REST cannot be resumed when the project is named unlike its folder",
-          "symbol_sha": "sha256:40be02c55a74d850eaa2b9d3e891f4337e732c2ed656946245bad72132bee0ce"
+          "symbol_sha": "sha256:01c689a87a34122f2899c9349edbb12510c5449ff51e4b45bd32f2b8c0472729"
         }
       ]
     },

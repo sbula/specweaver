@@ -14,10 +14,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner._open_task",
-          "old": "        task_id = await open_task(self._context, run)\n",
+          "old": "        task_id = await open_task(self.context, run)\n",
           "new": "        task_id = None\n",
           "breaks": "runs leave no task, so the handover is lost and agents get no memory",
-          "symbol_sha": "sha256:8c8669db0c8a006c9631b5b980faf4edbcedd6af1543b846fcc84046e7bd4103"
+          "symbol_sha": "sha256:a99101ecda8eaca0368007224695c718d3ba7e406c0b611aacba5c9b86a557ea"
         },
         {
           "id": "no-end-state",
@@ -47,7 +47,7 @@
           "old": "        if not self._memory_task:\n",
           "new": "        if False:\n",
           "breaks": "a review marks a spec DONE over a failed implementation",
-          "symbol_sha": "sha256:8c8669db0c8a006c9631b5b980faf4edbcedd6af1543b846fcc84046e7bd4103"
+          "symbol_sha": "sha256:a99101ecda8eaca0368007224695c718d3ba7e406c0b611aacba5c9b86a557ea"
         }
       ]
     },

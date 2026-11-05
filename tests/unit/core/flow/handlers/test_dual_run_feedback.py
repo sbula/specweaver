@@ -68,11 +68,11 @@ def test_a_spawn_with_feedback_gets_its_own_dict(tmp_path: Path) -> None:
     )
 
     child = parent.spawn(_pipeline(), feedback={"generate_code": "x"})
-    sub_run = isolate_sub_run_context(child._context, parent_run_id="parent")
+    sub_run = isolate_sub_run_context(child.context, parent_run_id="parent")
     sub_run.feedback["scenario_test_path"] = "/somewhere"
 
-    assert child._context.feedback == {"generate_code": "x", "scenario_test_path": "/somewhere"}
-    assert parent._context.feedback == _VERDICTS
+    assert child.context.feedback == {"generate_code": "x", "scenario_test_path": "/somewhere"}
+    assert parent.context.feedback == _VERDICTS
 
 
 def test_a_spawn_without_feedback_still_shares(tmp_path: Path) -> None:
@@ -80,7 +80,7 @@ def test_a_spawn_without_feedback_still_shares(tmp_path: Path) -> None:
 
     child = parent.spawn(_pipeline())
 
-    assert child._context.feedback is parent._context.feedback
+    assert child.context.feedback is parent.context.feedback
 
 
 # --- the dual handler ------------------------------------------------------------------------

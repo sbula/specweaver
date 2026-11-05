@@ -51,10 +51,10 @@ def run_context():
     ctx.feedback = {}
     # Need to mock the pipeline_runner and its components
     ctx.run = RunHandle(run_id="test_run_123", pipeline_runner=MagicMock())
-    ctx.run.pipeline_runner._context = ctx
-    ctx.run.pipeline_runner._registry = MagicMock()
-    ctx.run.pipeline_runner._store = MagicMock()
-    ctx.run.pipeline_runner._on_event = MagicMock()
+    ctx.run.pipeline_runner.context = ctx
+    ctx.run.pipeline_runner.registry = MagicMock()
+    ctx.run.pipeline_runner.store = MagicMock()
+    ctx.run.pipeline_runner.on_event = MagicMock()
 
     # TECH-024: the handler no longer imports PipelineRunner — it asks the parent runner it
     # already holds to `spawn` a sibling, which is what broke the five-module cycle. Resolving the

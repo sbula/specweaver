@@ -510,7 +510,7 @@ class TestGateDecision:
         seen: list = []
 
         async def resume(self, _run_id):
-            seen.append(self._context)
+            seen.append(self.context)
 
         with (
             patch.object(Path, "home", return_value=tmp_path),

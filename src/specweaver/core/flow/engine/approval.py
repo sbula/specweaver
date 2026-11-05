@@ -27,7 +27,7 @@ never be skipped.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.core.flow.engine.hydration import hydrate_plan_context
 from specweaver.core.flow.engine.models import GateType
@@ -35,6 +35,7 @@ from specweaver.core.flow.engine.state import StepStatus
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.engine.runner_port import RunnerPort
     from specweaver.core.flow.engine.state import PipelineRun, StepRecord
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ def is_approvable_gate_park(record: StepRecord | None, step_def: PipelineStep) -
 
 
 def try_approve_parked_step(
-    runner: Any,
+    runner: RunnerPort,
     run: PipelineRun,
     step_def: PipelineStep,
     step_idx: int,
@@ -92,13 +93,13 @@ def try_approve_parked_step(
         run.run_id,
         step_def.name,
     )
-    hydrate_plan_context(step_def, record.result, runner._context)
+    hydrate_plan_context(step_def, record.result, runner.context)
     run.complete_current_step(record.result)
-    runner._persist(run)
-    runner._log(run, "gate_approved_on_resume", step_def.name)
+    runner.persist(run)
+    runner.log_event(run, "gate_approved_on_resume", step_def.name)
     # NFR-7: a step completed with no handler execution is otherwise invisible in the CLI
     # display and unassertable in e2e, so mark it explicitly.
-    runner._emit(
+    runner.emit(
         "step_completed",
         step_idx=step_idx,
         step_name=step_def.name,

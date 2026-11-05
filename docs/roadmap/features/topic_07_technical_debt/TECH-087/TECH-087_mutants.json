@@ -211,17 +211,17 @@
           "old": "        if not kept:\n",
           "new": "        if True:\n",
           "breaks": "a sandboxed step whose commit or merge failed deletes the worktree with the step's work",
-          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
+          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
         },
         {
           "id": "snapshot-failure-tears-down",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_teardown_unless_kept",
-          "old": "if not (resumable or runner._session_kept):",
+          "old": "if not (resumable or runner.session_kept):",
           "new": "if not resumable:",
           "breaks": "a session whose snapshot, commit or merge failed deletes the worktree with the run's work",
-          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
+          "symbol_sha": "sha256:a72bd7038c052e89748aaf76532b2283a3ff3a2258c08e429d899eff86859de0"
         },
         {
           "id": "failed-merge-tears-down",
@@ -231,7 +231,7 @@
           "old": "            kept = True\n            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
           "new": "            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
           "breaks": "a failed strip-merge deletes the worktree and branch, and the committed work with them",
-          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
+          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
         },
         {
           "id": "rerun-removes-kept",

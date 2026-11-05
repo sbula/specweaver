@@ -198,7 +198,7 @@ class TestFeedbackReplayAcrossResume:
         **The interruption point is constructed, not simulated by crashing.** In one process a
         loop-back is immediately followed by re-execution, so the paused-at-target state only
         exists on disk if the process dies in between — after `inject_feedback` and its
-        `runner._persist(run)` (`step_execution.py:305-308`), before the loop iterates. The record
+        `runner.persist(run)` (`step_execution.py:305-308`), before the loop iterates. The record
         shape below is exactly what `gates.py:222-233` leaves behind at that instant: the failing
         step keeps its status, result and spent attempt (`TECH-021`, `TECH-033`), and the target is
         reset to PENDING with `result=None`.

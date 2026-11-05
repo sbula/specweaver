@@ -28,7 +28,6 @@ from specweaver.core.flow.engine.hydration import rehydrate_from_records
 from specweaver.core.flow.engine.isolation import resolve_should_isolate, seed_dal_level
 from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.run_task import close_task, open_task
-from specweaver.core.flow.engine.sandboxed_execution import setup_sandbox_caches
 from specweaver.core.flow.engine.security import (
     verify_agentic_ceiling,
     verify_doc_blocks,
@@ -84,26 +83,29 @@ class PipelineRunner:
         on_event: RunnerEventCallback | None = None,
         memory_task: bool = False,
     ) -> None:
-        self._pipeline = pipeline
+        self.pipeline = pipeline
         # `sw run`, `sw resume` and `sw implement` work the spec's memory task; a review does not,
         # or it would mark the spec DONE over a failed implementation [agreed 2026-10-13].
         self._memory_task = memory_task
         self._task_id: str | None = None
-        self._context = context
-        self._registry = registry
-        self._store = store
-        self._on_event = on_event
-        self._gate_evaluator = GateEvaluator(pipeline, context)
+        self.context = context
+        self.registry = registry
+        self.store = store
+        self.on_event = on_event
+        self.gate_evaluator = GateEvaluator(pipeline, context)
 
         # See `current_run_id`.
         self._current_run_id: str | None = None
 
         from specweaver.core.flow.engine.routers import RouterEvaluator
 
-        self._router_evaluator = RouterEvaluator()
+        self.router_evaluator = RouterEvaluator()
+        # Set by `session.execute_run` while the loop runs inside one session worktree.
+        self.session_active = False
+        self.session_kept = False
 
         # SF-2 (FR-3): Intrinsically load the DALLevel of the execution target
-        seed_dal_level(self._context)
+        seed_dal_level(self.context)
 
     def spawn(
         self,
@@ -115,7 +117,7 @@ class PipelineRunner:
 
         Four sites — both fan-out paths in `handlers/decompose`, `handlers/dual_pipeline`, and
         `engine/fan_out` — otherwise import `PipelineRunner` purely to re-construct one from this
-        runner's `_context` / `_registry` / `_store` / `_on_event`. Those imports are the back-edges
+        runner's `context` / `registry` / `store` / `on_event`. Those imports are the back-edges
         of a five-module cycle, and deferring them inside functions
         to hide it, which is the workaround `check_coupling` names rather than a fix.
 
@@ -131,18 +133,15 @@ class PipelineRunner:
         if feedback is not None:
             update["feedback"] = dict(feedback)
         if side is not None:
-            update["run"] = self._context.run.model_copy(update={"dual_side": side})
-        context = self._context.model_copy(update=update) if update else self._context
+            update["run"] = self.context.run.model_copy(update={"dual_side": side})
+        context = self.context.model_copy(update=update) if update else self.context
         return PipelineRunner(
             pipeline,
             context,
-            registry=self._registry,
-            store=self._store,
-            on_event=self._on_event,
+            registry=self.registry,
+            store=self.store,
+            on_event=self.on_event,
         )
-
-    def _setup_sandbox_caches(self, wt_dir: str) -> None:
-        setup_sandbox_caches(self._context, wt_dir, logger)
 
     @property
     def current_run_id(self) -> str | None:
@@ -164,31 +163,31 @@ class PipelineRunner:
         Returns:
             The final PipelineRun state (COMPLETED, FAILED, or PARKED).
         """
-        self._context = isolate_sub_run_context(self._context, parent_run_id)
-        verify_vault_security(self._context)
-        verify_doc_blocks(self._pipeline, self._context)
-        verify_agentic_ceiling(self._pipeline, self._context)
+        self.context = isolate_sub_run_context(self.context, parent_run_id)
+        verify_vault_security(self.context)
+        verify_doc_blocks(self.pipeline, self.context)
+        verify_agentic_ceiling(self.pipeline, self.context)
         now = _now_iso()
 
         run = PipelineRun(
             run_id=run_id or str(uuid.uuid4()),
             parent_run_id=parent_run_id,
-            pipeline_name=self._pipeline.name,
-            project_name=registered_name(self._context),
-            spec_path=str(self._context.spec_path),
+            pipeline_name=self.pipeline.name,
+            project_name=registered_name(self.context),
+            spec_path=str(self.context.spec_path),
             status=RunStatus.NOT_STARTED,
             current_step=0,
-            step_records=[StepRecord(step_name=step.name) for step in self._pipeline.steps],
+            step_records=[StepRecord(step_name=step.name) for step in self.pipeline.steps],
             started_at=now,
             updated_at=now,
         )
         logger.info(
             "Starting pipeline '%s' run_id=%s (%d steps, project=%s, spec=%s)",
-            self._pipeline.name,
+            self.pipeline.name,
             run.run_id,
             len(run.step_records),
-            self._context.project_path.name,
-            self._context.spec_path.name,
+            self.context.project_path.name,
+            self.context.spec_path.name,
         )
         self._current_run_id = run.run_id
         await self._open_task(run)
@@ -215,17 +214,17 @@ class PipelineRunner:
         Raises:
             ValueError: If the run is not found in the store.
         """
-        if self._store is None:
+        if self.store is None:
             msg = "Cannot resume: no store configured"
             logger.error(msg)
             raise ValueError(msg)
 
         self._current_run_id = run_id
-        verify_vault_security(self._context)
-        verify_doc_blocks(self._pipeline, self._context)
-        verify_agentic_ceiling(self._pipeline, self._context)
+        verify_vault_security(self.context)
+        verify_doc_blocks(self.pipeline, self.context)
+        verify_agentic_ceiling(self.pipeline, self.context)
 
-        run = self._store.load_run(run_id)
+        run = self.store.load_run(run_id)
         if run is None:
             msg = f"Run '{run_id}' not found"
             logger.error(msg)
@@ -247,7 +246,7 @@ class PipelineRunner:
         # The plan context lives in memory and dies with the session. Rebuild it from persisted
         # step records BEFORE the loop starts, so the first resumed handler sees the same context a
         # same-session handler would have.
-        rehydrate_from_records(self._pipeline, run, self._context)
+        rehydrate_from_records(self.pipeline, run, self.context)
         await self._open_task(run)
 
         from specweaver.core.config.database import cqrs_context
@@ -264,7 +263,7 @@ class PipelineRunner:
     # Core execution loop
     # ------------------------------------------------------------------
 
-    async def _execute_loop(
+    async def execute_loop(
         self,
         run: PipelineRun,
         *,
@@ -281,21 +280,21 @@ class PipelineRunner:
                 run.run_id,
             )
             run.status = RunStatus.COMPLETED
-            self._persist(run)
-            self._log(run, "run_completed")
-            self._emit("run_completed", run=run)
+            self.persist(run)
+            self.log_event(run, "run_completed")
+            self.emit("run_completed", run=run)
             return run
 
         run.status = RunStatus.RUNNING
-        self._persist(run)
-        self._log(run, "run_started")
-        self._emit("run_started", run=run, total_steps=total)
+        self.persist(run)
+        self.log_event(run, "run_started")
+        self.emit("run_started", run=run, total_steps=total)
 
         state = LoopState.for_run(run, approve_parked=approve_parked)
 
         while run.current_step < len(run.step_records):
             step_idx = run.current_step
-            step_def = self._pipeline.steps[step_idx]
+            step_def = self.pipeline.steps[step_idx]
             state.attempts.setdefault(step_idx, 0)
 
             if await run_one_step(self, run, state, step_def, step_idx, total) is LoopAction.RETURN:
@@ -308,40 +307,40 @@ class PipelineRunner:
             run.run_id,
             total,
         )
-        self._log(run, "run_completed")
-        self._emit("run_completed", run=run)
+        self.log_event(run, "run_completed")
+        self.emit("run_completed", run=run)
         return run
 
     # ------------------------------------------------------------------
     # Persistence helpers
     # ------------------------------------------------------------------
 
-    def _persist(self, run: PipelineRun) -> None:
-        if self._store is not None:
+    def persist(self, run: PipelineRun) -> None:
+        if self.store is not None:
             run.updated_at = _now_iso()
             budget = self._spend_budget()
             if budget is not None:
                 run.spend_state = budget.snapshot()
-            self._store.save_run(run)
+            self.store.save_run(run)
 
     def _spend_budget(self) -> SpendBudget | None:
         """The run's spend brake, if it calls models through a router that has one."""
-        router = getattr(getattr(self._context, "model", None), "llm_router", None)
+        router = getattr(getattr(self.context, "model", None), "llm_router", None)
         budget = getattr(router, "budget", None)
         return budget if isinstance(budget, SpendBudget) else None
 
-    def _log(self, run: PipelineRun, event: str, step_name: str | None = None) -> None:
-        if self._store is not None:
-            self._store.log_event(run.run_id, event, step_name=step_name)
+    def log_event(self, run: PipelineRun, event: str, step_name: str | None = None) -> None:
+        if self.store is not None:
+            self.store.log_event(run.run_id, event, step_name=step_name)
 
-    def _emit(self, event: str, **kwargs: Any) -> None:
-        if self._on_event is not None:
-            self._on_event(event, **kwargs)
+    def emit(self, event: str, **kwargs: Any) -> None:
+        if self.on_event is not None:
+            self.on_event(event, **kwargs)
 
     def _flush_telemetry(self, run: PipelineRun) -> None:
         from specweaver.core.flow.engine.telemetry import flush_telemetry
 
-        flush_telemetry(self._context, logger, run)
+        flush_telemetry(self.context, logger, run)
 
     async def _finalize(self, run: PipelineRun) -> None:
         """End-of-run bookkeeping, run from the `finally` of BOTH `run()` and `resume()`.
@@ -352,24 +351,24 @@ class PipelineRunner:
         """
         if run.status == RunStatus.RUNNING:  # an interrupt or a crash ended it
             run.status = RunStatus.ABORTED
-            self._persist(run)
+            self.persist(run)
         await self._save_handover(run)
-        await close_task(self._context, run, self._task_id)
+        await close_task(self.context, run, self._task_id)
         self._flush_telemetry(run)
 
     async def _open_task(self, run: PipelineRun) -> None:
         """Put the spec's memory task on the run, so the handover and the end state land on it."""
         if not self._memory_task:
             return
-        task_id = await open_task(self._context, run)
+        task_id = await open_task(self.context, run)
         self._task_id = task_id
         if task_id is not None:
-            self._context.run = self._context.run.model_copy(update={"task_id": task_id})
+            self.context.run = self.context.run.model_copy(update={"task_id": task_id})
 
     async def _save_handover(self, run: PipelineRun) -> None:
         try:
             from specweaver.core.flow.engine.handover import save_handover_context
 
-            await save_handover_context(self._context, run)
+            await save_handover_context(self.context, run)
         except Exception as exc:
             logger.warning("Failed to save handover context from runner: %s", exc)

@@ -42,7 +42,7 @@ def test_the_runner_uses_the_registry_it_was_given(tmp_path: Path) -> None:
 
     runner = PipelineRunner(_pipeline(), _context(tmp_path), registry=registry)
 
-    assert runner._registry is registry
+    assert runner.registry is registry
 
 
 def test_registry_has_no_default() -> None:

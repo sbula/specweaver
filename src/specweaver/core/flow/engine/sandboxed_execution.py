@@ -15,7 +15,9 @@ from typing import TYPE_CHECKING, Any, cast
 from specweaver.infrastructure.llm.budget import step_refusal
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.engine.state import StepResult
+    from specweaver.core.flow.engine.models import PipelineStep
+    from specweaver.core.flow.engine.runner_port import RunnerPort
+    from specweaver.core.flow.engine.state import PipelineRun, StepResult
     from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -55,7 +57,11 @@ def setup_sandbox_caches(context: RunContext, wt_dir: str, logger: logging.Logge
 
 
 async def execute_in_sandbox(
-    runner: Any, handler: Any, step_def: Any, run: Any, logger: logging.Logger
+    runner: RunnerPort,
+    handler: Any,
+    step_def: PipelineStep,
+    run: PipelineRun,
+    logger: logging.Logger,
 ) -> StepResult:
     """Execute a handler step inside an isolated Git worktree."""
     import copy
@@ -65,7 +71,7 @@ async def execute_in_sandbox(
     from specweaver.sandbox.base import AtomStatus
     from specweaver.sandbox.git.core.atom import GitAtom
 
-    context = runner._context
+    context = runner.context
 
     atom = GitAtom(cwd=context.project_path)
     clean_pipeline = (run.pipeline_name or "default_pipe").replace(" ", "_")

@@ -135,7 +135,7 @@ Rules:
 - **`step_name` must match** the pipeline step at that index, so a YAML edited between sessions
   cannot let one step's result approve another.
 - **One-shot signal.** An explicit `approve_parked` keyword is threaded `resume() → execute_run →
-_execute_loop` and consumed on the first iteration whether or not it approves. `run()` never
+execute_loop` and consumed on the first iteration whether or not it approves. `run()` never
   sets it: a fresh run cannot auto-approve, and one resume approves at most one gate.
 
 > [!CAUTION]

@@ -78,7 +78,7 @@ class TestDagOrchestratorIntegration:
 
         async def mocked_run(self_runner, parent_run_id=None):
             # If this is service_a, fail it!
-            if self_runner._pipeline.name == "auto_service_a":
+            if self_runner.pipeline.name == "auto_service_a":
                 return MagicMock(status=StepStatus.FAILED)
             return MagicMock(status=StepStatus.PASSED)
 
@@ -142,11 +142,11 @@ class TestDagOrchestratorIntegration:
 
         async def mocked_run(self_runner, parent_run_id=None):
             nonlocal max_concurrent
-            running_tasks.add(self_runner._pipeline.name)
+            running_tasks.add(self_runner.pipeline.name)
             max_concurrent = max(max_concurrent, len(running_tasks))
             # Sleep briefly to ensure overlap if the engine didn't lock it
             await asyncio.sleep(0.1)
-            running_tasks.remove(self_runner._pipeline.name)
+            running_tasks.remove(self_runner.pipeline.name)
             return MagicMock(status=StepStatus.PASSED, run_id="child_run_id")
 
         with patch("specweaver.core.flow.engine.runner.PipelineRunner.run", new=mocked_run):

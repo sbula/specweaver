@@ -117,7 +117,7 @@ def resolve_route_target(
     Returns ``(target_idx, error_message, route_jumps)``. When ``error_message`` is not None
     the caller must fail the run; ``target_idx`` is then meaningless.
 
-    Extracted from ``PipelineRunner._execute_loop`` so router resolution lives in the router
+    Extracted from ``PipelineRunner.execute_loop`` so router resolution lives in the router
     module rather than the loop, and so the loop stays within the file-size budget.
     """
     target_step_name = evaluator.evaluate(router, result_output)

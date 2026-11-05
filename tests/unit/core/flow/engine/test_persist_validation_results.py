@@ -61,7 +61,7 @@ def _result(output: object) -> StepResult:
 
 
 def _runner(store: object) -> SimpleNamespace:
-    return SimpleNamespace(_store=store)
+    return SimpleNamespace(store=store)
 
 
 class TestPersistValidationResults:

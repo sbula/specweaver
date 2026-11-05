@@ -120,12 +120,12 @@ def world(
     async def _capture(self: PipelineRunner, *_args: object, **_kwargs: object) -> Any:
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus
 
-        contexts.append(self._context)
+        contexts.append(self.context)
         return PipelineRun(
             run_id="captured",
-            pipeline_name=self._pipeline.name,
+            pipeline_name=self.pipeline.name,
             project_name="rest",
-            spec_path=str(self._context.spec_path),
+            spec_path=str(self.context.spec_path),
             status=RunStatus.COMPLETED,
             step_records=[],
             started_at="",

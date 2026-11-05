@@ -551,10 +551,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_worktree_failed",
-          "old": "    runner._persist(run)\n    runner._emit(\"run_failed\", run=run)\n    raise SessionWorktreeError(message)\n",
+          "old": "    runner.persist(run)\n    runner.emit(\"run_failed\", run=run)\n    raise SessionWorktreeError(message)\n",
           "new": "    raise SessionWorktreeError(message)\n",
           "breaks": "a run whose worktree cannot start leaves no trace in the store",
-          "symbol_sha": "sha256:3dcb9fe6f59bb87ae6588a03a0a16cbd5feb80d6ba0d309eb79dc407cfd4595d"
+          "symbol_sha": "sha256:a1759ddcd4ed2f7502489225df42bc88b9a29646b5cae5b00e6e3bcc25682967"
         },
         {
           "id": "implement-worktree-500",

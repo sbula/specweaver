@@ -66,10 +66,10 @@ def run_context():
     }
 
     ctx.run = RunHandle(pipeline_runner=MagicMock())
-    ctx.run.pipeline_runner._context = ctx
-    ctx.run.pipeline_runner._registry = MagicMock()
-    ctx.run.pipeline_runner._store = MagicMock()
-    ctx.run.pipeline_runner._on_event = MagicMock()
+    ctx.run.pipeline_runner.context = ctx
+    ctx.run.pipeline_runner.registry = MagicMock()
+    ctx.run.pipeline_runner.store = MagicMock()
+    ctx.run.pipeline_runner.on_event = MagicMock()
     return ctx
 
 

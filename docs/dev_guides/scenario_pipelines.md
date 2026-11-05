@@ -83,7 +83,7 @@ statements.
 
 `new_feature.yaml` (coding tree) and `scenario_validation.yaml` (scenario tree) run in parallel;
 `GateType.JOIN` coordinates file locks on shared outputs. The parent step maps sub-components and
-calls `run_fan_out()`. The JOIN holds both branches before phase 4 (test execution) until scenario and
+starts one sub-runner each with `context.run.pipeline_runner.spawn(...)`. The JOIN holds both branches before phase 4 (test execution) until scenario and
 implementation files are persisted; the OS write-lock wait-queue does the rest.
 
 ## Evidence and the Arbiter

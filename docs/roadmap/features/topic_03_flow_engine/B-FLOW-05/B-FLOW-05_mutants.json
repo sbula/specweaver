@@ -264,7 +264,7 @@
           "old": "    track_step_refusals()\n    try:\n",
           "new": "    try:\n",
           "breaks": "a stopped step is not parked, and a sibling's stop leaks into the next step",
-          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
+          "symbol_sha": "sha256:d276b8a2516885dbaaee8d44a58b12d6d4e703ae66086da772d9f32734b1555f"
         },
         {
           "id": "refusal-not-recorded",
@@ -325,7 +325,7 @@
           "old": "    return _parked_by_brake(result) or result\n",
           "new": "    return result\n",
           "breaks": "a step that caught the stop reports success, and a retry gate retries into the spent limit",
-          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
+          "symbol_sha": "sha256:d276b8a2516885dbaaee8d44a58b12d6d4e703ae66086da772d9f32734b1555f"
         },
         {
           "id": "stop-not-remembered",
@@ -422,11 +422,11 @@
           "id": "totals-not-saved",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
-          "symbol": "PipelineRunner._persist",
+          "symbol": "PipelineRunner.persist",
           "old": "                run.spend_state = budget.snapshot()\n",
           "new": "                pass\n",
           "breaks": "a parked run keeps nothing, and its resume spends from zero",
-          "symbol_sha": "sha256:8ce29f60e978ef29d62ad264d2d0142279fa14670ceb2e764f5b797b035d84b8"
+          "symbol_sha": "sha256:c98315e918bcf97a420527bd5b84ac7e8027a622e238cb5aff4efec60e3a421c"
         },
         {
           "id": "totals-not-restored",
@@ -436,7 +436,7 @@
           "old": "            budget.restore(run.spend_state)\n",
           "new": "            pass\n",
           "breaks": "a resumed run buys a fresh budget",
-          "symbol_sha": "sha256:d667526a14add060da65f964a8cfecd5c96c52718ce4e9928b9ad40e551b9c8c"
+          "symbol_sha": "sha256:2581b7d1102b1259ffe0930caf1540b96e51908e3511fa3f159ff163b5035ab5"
         },
         {
           "id": "store-drops-totals",
@@ -515,7 +515,7 @@
           "old": "            result = await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "new": "            return await execute_in_sandbox(runner, handler, step_def, run, logger)\n",
           "breaks": "a step in its own worktree that catches the stop completes the run instead of parking it",
-          "symbol_sha": "sha256:89d9913aca171639b9e17ed797737eb8ca7b8d545f8f1ab57688b0c499e55a38"
+          "symbol_sha": "sha256:d276b8a2516885dbaaee8d44a58b12d6d4e703ae66086da772d9f32734b1555f"
         },
         {
           "id": "worktree-merges-stopped-work",
@@ -525,7 +525,7 @@
           "old": "        if step_refusal() is not None or result.status != StepStatus.PASSED:\n",
           "new": "        if result.status != StepStatus.PASSED:\n",
           "breaks": "half-done work of a stopped step is merged into the project",
-          "symbol_sha": "sha256:75bca1499130e065f6785f3b2a88a77f5c95c103a7638fd58b647e7e8303d8bc"
+          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
         }
       ]
     },
@@ -541,20 +541,20 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_teardown_unless_kept",
-          "old": "resumable = run.status == RunStatus.PARKED and runner._store is not None",
+          "old": "resumable = run.status == RunStatus.PARKED and runner.store is not None",
           "new": "resumable = False",
           "breaks": "a parked run loses the paid work of its earlier steps",
-          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
+          "symbol_sha": "sha256:a72bd7038c052e89748aaf76532b2283a3ff3a2258c08e429d899eff86859de0"
         },
         {
           "id": "unresumable-park-leaks-worktree",
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/session.py",
           "symbol": "_teardown_unless_kept",
-          "old": "resumable = run.status == RunStatus.PARKED and runner._store is not None",
+          "old": "resumable = run.status == RunStatus.PARKED and runner.store is not None",
           "new": "resumable = run.status == RunStatus.PARKED",
           "breaks": "sw implement leaves a worktree behind that nothing can resume",
-          "symbol_sha": "sha256:a4c13cffda069e963a6ae43bda322a246d15d6c0fbf343cd239ed0016860bfad"
+          "symbol_sha": "sha256:a72bd7038c052e89748aaf76532b2283a3ff3a2258c08e429d899eff86859de0"
         },
         {
           "id": "resume-starts-fresh-worktree",
@@ -564,7 +564,7 @@
           "old": "    if approve_parked and run.current_step > 0:\n",
           "new": "    if False:\n",
           "breaks": "a resume runs the later steps without the files the earlier steps wrote",
-          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
+          "symbol_sha": "sha256:4624a63c7b382344d9539d6ba1b4486de0534a1d25893dd73f3b6adc3d6655c0"
         },
         {
           "id": "resume-without-worktree-runs",
@@ -574,7 +574,7 @@
           "old": "        if not worktree.is_dir():\n",
           "new": "        if False:\n",
           "breaks": "a resume whose worktree is gone runs on and gives a wrong result",
-          "symbol_sha": "sha256:4507a2550c7e1625e1340d29e6cc4c2995730ed17911283d16f226cee84a6bd1"
+          "symbol_sha": "sha256:4624a63c7b382344d9539d6ba1b4486de0534a1d25893dd73f3b6adc3d6655c0"
         }
       ]
     },
@@ -671,10 +671,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/runner.py",
           "symbol": "PipelineRunner._finalize",
-          "old": "            run.status = RunStatus.ABORTED\n            self._persist(run)\n",
+          "old": "            run.status = RunStatus.ABORTED\n            self.persist(run)\n",
           "new": "            pass\n",
           "breaks": "Ctrl-C leaves the run RUNNING and its resume pays from zero",
-          "symbol_sha": "sha256:283d19d6a63f1471c1cc05b2e7d5a2b72e5045311ea5d8d51848a15ab140882b"
+          "symbol_sha": "sha256:bd73958bd8235ea174c110205e36b5bbdae46fdc0dfc6d4434b9f631e29b4d07"
         },
         {
           "id": "aborted-not-found",

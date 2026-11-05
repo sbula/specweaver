@@ -367,7 +367,7 @@ async def test_worktree_add_failure_raises_actionable_error(tmp_path: Path):
     from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
-    runner = SimpleNamespace(_context=context)
+    runner = SimpleNamespace(context=context)
 
     def fake_run(self, ctx_dict):
         if ctx_dict.get("intent") == "worktree_add":
@@ -399,7 +399,7 @@ async def test_worktree_add_failure_does_not_assume_non_git_cause(tmp_path: Path
     from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
-    runner = SimpleNamespace(_context=context)
+    runner = SimpleNamespace(context=context)
 
     def fake_run(self, ctx_dict):
         if ctx_dict.get("intent") == "worktree_add":

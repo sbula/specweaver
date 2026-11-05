@@ -61,6 +61,11 @@ the step after it returns, whatever the handler did with the error (`_parked_by_
 `step_execution.py`). A handler that catches broad exceptions logs them with `log_step_failure`
 (`handlers/results.py`): a crash keeps its traceback, a brake stop is one quiet line.
 
+The runner's per-step helpers take it as a `RunnerPort` (`engine/runner_port.py`): `context`,
+`pipeline`, `registry`, `store`, `gate_evaluator`, `router_evaluator`, the session flags, and
+`persist`, `log_event`, `emit`, `execute_loop`. A helper that needs another member adds it to the
+protocol; mypy then checks `PipelineRunner` still satisfies it.
+
 A handler gets its model through `llm_for_step(context, step)`: the role comes from the step's row
 in `STEPS` (`core/flow/engine/models.py`), never from the handler, and
 `tests/unit/core/flow/handlers/test_no_handler_names_its_role.py` refuses a handler that names one

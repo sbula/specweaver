@@ -7,7 +7,7 @@
 Proves: C-FLOW-02 FR-5
 
 Cited from `INT-US-06-MIG`. FR-5 has two halves and only one was covered: the emitted `step_routed`
-event was asserted via `events_caught`, while the StateStore row — `runner._log(run, "step_routed",
+event was asserted via `events_caught`, while the StateStore row — `runner.log_event(run, "step_routed",
 ...)` — could be deleted with the entire suite staying green. An emitted event dies with the process;
 the audit row is what survives it.
 
@@ -252,7 +252,7 @@ async def test_a_route_is_written_to_the_audit_log(mock_context, tmp_path) -> No
     """A jump leaves a `step_routed` row in the StateStore, not only an emitted event.
 
     `C-FLOW-02` FR-5 has two halves and only one was covered. The event stream half is asserted
-    above via `events_caught`; the STORE half — `runner._log(run, "step_routed", ...)` — could be
+    above via `events_caught`; the STORE half — `runner.log_event(run, "step_routed", ...)` — could be
     deleted and the entire suite stayed green. An emitted event dies with the process; the audit row
     is what a later reader has.
 

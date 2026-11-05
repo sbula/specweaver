@@ -5,9 +5,9 @@
 """Concurrent sub-runs must not observe each other's run identity (`TECH-014`).
 
 `OrchestrateComponentsHandler` builds one `PipelineRunner` per DAG component and hands each of
-them **the same `RunContext` object** (`handlers/decompose.py`, `context.run.pipeline_runner._context`),
-then dispatches them as concurrent `asyncio` tasks. `PipelineRunner._execute_loop` rebinds
-`self._context.run` on **every step** with that run's `run_id`, `pipeline_runner` and
+them **the same `RunContext` object** (`handlers/decompose.py`, `context.run.pipeline_runner.context`),
+then dispatches them as concurrent `asyncio` tasks. `PipelineRunner.execute_loop` rebinds
+`self.context.run` on **every step** with that run's `run_id`, `pipeline_runner` and
 `step_records`. Shared object plus per-step rebind plus real concurrency means a sub-run can read
 another sub-run's identity, so lineage and telemetry events are attributed to the wrong sub-run.
 
@@ -195,7 +195,7 @@ async def test_a_top_level_run_still_writes_to_the_caller_s_own_context(tmp_path
 
     result = await runner.run()
 
-    assert runner._context is context, (
+    assert runner.context is context, (
         "a top-level run was given a copy — the caller's own context no longer sees the run"
     )
     assert context.run.run_id == result.run_id
@@ -209,10 +209,10 @@ async def test_a_top_level_run_still_writes_to_the_caller_s_own_context(tmp_path
 def test_the_gate_evaluator_keeps_the_context_it_was_built_with(tmp_path: Path) -> None:
     """`GateEvaluator` holds the context from `__init__`, and that is correct — do not "fix" it.
 
-    It looks like a stale-reference bug: the runner may replace `self._context` — with a sub-run
+    It looks like a stale-reference bug: the runner may replace `self.context` — with a sub-run
     copy under `TECH-014`, or with the ephemeral-worktree context under `C-EXEC-06` — while the
     evaluator keeps pointing at the original. The obvious tidy-up is to re-point it at
-    `runner._context`.
+    `runner.context`.
 
     **That tidy-up would silently break the RESERVE gate**, which is a *cross-pipeline mutex*
     keyed `pipeline:<name>`. It resolves its lock database as
@@ -232,13 +232,13 @@ def test_the_gate_evaluator_keeps_the_context_it_was_built_with(tmp_path: Path) 
     # Exactly what `runner_utils` does for a C-EXEC-06 session: point the run at a worktree.
     worktree_context = context.model_copy()
     worktree_context.project_path = tmp_path / ".worktrees" / "wt-1"
-    runner._context = worktree_context
+    runner.context = worktree_context
 
-    assert runner._gate_evaluator._context is context, (
+    assert runner.gate_evaluator._context is context, (
         "the gate evaluator followed the runner's swapped context — RESERVE would resolve its "
         "lock database inside the per-run worktree and stop being a mutex"
     )
-    assert runner._gate_evaluator._context.project_path == tmp_path
+    assert runner.gate_evaluator._context.project_path == tmp_path
 
 
 def test_a_per_run_lock_database_would_destroy_the_reserve_mutex(tmp_path: Path) -> None:

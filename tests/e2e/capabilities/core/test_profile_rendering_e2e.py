@@ -163,7 +163,7 @@ def test_pipeline_rendering_drops_memory_when_arbiter_profile(
 
     runner_instance = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
     # Inject our mock handler
-    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
+    runner_instance.registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
     asyncio.run(runner_instance.run())
 
@@ -273,7 +273,7 @@ def test_pipeline_rendering_truncates_context_budget_full_profile(
     )
 
     runner_instance = PipelineRunner(pipeline, context, registry=StepHandlerRegistry())
-    runner_instance._registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
+    runner_instance.registry.register(StepAction.DRAFT, StepTarget.SPEC, MockHandler())  # type: ignore
 
     asyncio.run(runner_instance.run())
 
