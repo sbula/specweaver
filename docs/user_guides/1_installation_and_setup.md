@@ -175,10 +175,11 @@ sw init my-app --path ./my-project --mcp postgres
 
 The two `context.yaml` files keep the project's core isolated from unauthorized engine access.
 
-Run `sw scan` once after `sw init`, and again when a `context.yaml` changes: it writes the
-`tach.toml` that the import-direction check (C05) needs. `sw check src/x.py --level code` then
-runs the code rules C01–C08, including the file's own test from `tests/test_x.py`, which may
-import `x` by name.
+The import-direction check (C05) reads the `context.yaml` files themselves, in every language:
+`tests/context.yaml` consumes `src`, so a test may import your code. `sw scan` writes a `tach.toml`
+from them; when it exists, tach runs too, and C05 warns if tach is configured but not installed.
+`sw check src/x.py --level code` runs the code rules C01–C08, including the file's own test from
+`tests/test_x.py`, which may import `x` by name.
 
 Name what kind of project it is, and its specs get that kind's limits: `sw config profiles` lists
 `web-app`, `data-pipeline`, `library`, `microservice` and `ml-model`; `sw config show-profile

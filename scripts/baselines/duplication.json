@@ -182,7 +182,7 @@
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @83b463251c29": {
     "lines": 14,
     "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
-    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:80"
+    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:88"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
@@ -209,10 +209,10 @@
     "first": "src/specweaver/sandbox/git/interfaces/facades.py:204",
     "second": "src/specweaver/sandbox/git/interfaces/facades.py:52"
   },
-  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @f5b97d87b950": {
-    "lines": 7,
-    "first": "src/specweaver/sandbox/language/core/java/runner.py:18",
-    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:17"
+  "src/specweaver/sandbox/language/core/java/runner.py <-> src/specweaver/sandbox/language/core/kotlin/runner.py @d37ac3badd82": {
+    "lines": 6,
+    "first": "src/specweaver/sandbox/language/core/java/runner.py:17",
+    "second": "src/specweaver/sandbox/language/core/kotlin/runner.py:16"
   },
   "src/specweaver/sandbox/language/core/java/scenario_converter.py <-> src/specweaver/sandbox/language/core/kotlin/scenario_converter.py @b8427833d65a": {
     "lines": 10,
@@ -227,7 +227,7 @@
   "src/specweaver/sandbox/language/core/jvm/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @676517d7708b": {
     "lines": 12,
     "first": "src/specweaver/sandbox/language/core/jvm/runner.py:82",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:68"
   },
   "src/specweaver/sandbox/language/core/kotlin/scenario_converter.py <-> src/specweaver/sandbox/language/core/typescript/scenario_converter.py @e10a41fe01ba": {
     "lines": 17,
@@ -236,18 +236,18 @@
   },
   "src/specweaver/sandbox/language/core/python/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @2f393c255cf8": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/python/runner.py:110",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
+    "first": "src/specweaver/sandbox/language/core/python/runner.py:105",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:68"
   },
   "src/specweaver/sandbox/language/core/rust/runner.py <-> src/specweaver/sandbox/language/core/typescript/runner.py @4264be866118": {
     "lines": 12,
-    "first": "src/specweaver/sandbox/language/core/rust/runner.py:62",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
+    "first": "src/specweaver/sandbox/language/core/rust/runner.py:60",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:68"
   },
   "src/specweaver/sandbox/language/core/typescript/runner.py <-> src/specweaver/sandbox/qa_runner/core/interface.py @8cf753d0a6a4": {
     "lines": 26,
-    "first": "src/specweaver/sandbox/qa_runner/core/interface.py:80",
-    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:102"
+    "first": "src/specweaver/sandbox/qa_runner/core/interface.py:76",
+    "second": "src/specweaver/sandbox/language/core/typescript/runner.py:68"
   },
   "src/specweaver/sandbox/qa_runner/interfaces/facades.py <-> src/specweaver/sandbox/qa_runner/interfaces/facades.py @57b45a6ebd49": {
     "lines": 24,

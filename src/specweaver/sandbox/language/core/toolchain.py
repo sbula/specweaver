@@ -24,8 +24,6 @@ if TYPE_CHECKING:
     from specweaver.sandbox.execution.models import SubprocessResult
 
 from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
-    ArchitectureViolation,
     CompileError,
     CompileRunResult,
     ComplexityRunResult,
@@ -180,15 +178,6 @@ def failed_complexity(reason: str, max_complexity: int) -> ComplexityRunResult:
             ComplexityViolation(
                 file="<toolchain>", line=0, function="<toolchain>", complexity=0, message=reason
             )
-        ],
-    )
-
-
-def failed_architecture(reason: str) -> ArchitectureRunResult:
-    return ArchitectureRunResult(
-        violation_count=1,
-        violations=[
-            ArchitectureViolation(file="<toolchain>", code="ToolchainUnavailable", message=reason)
         ],
     )
 

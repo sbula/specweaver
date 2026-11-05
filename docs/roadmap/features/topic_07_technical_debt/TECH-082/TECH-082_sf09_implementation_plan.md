@@ -45,8 +45,8 @@ Today (measured 2026-11-05):
 
 ## Findings reviewed by the user (Phase 4)
 
-The user chose A for Q1..Q6 `[agreed 2026-11-05]`. Each decision is also written into the design's
-FR-16, FR-20, AD-10 and NFR-1 rows.
+The user chose A for Q1..Q8 `[agreed 2026-11-05]`; Q7 and Q8 came up during CB-2. Each decision is
+also written into the design's FR-16, FR-17, FR-20, AD-10 and NFR-1 rows.
 
 | # | Question | Decision `[agreed 2026-11-05]` |
 |---|---|---|
@@ -56,6 +56,8 @@ FR-16, FR-20, AD-10 and NFR-1 rows.
 | Q4 | A file no `context.yaml` covers | C05 SKIP, "no context.yaml covers this file; no boundary rule was examined" |
 | Q5 | A Python project with no `tach.toml` | tach is not configured: no extra, no failure. Retires `D-VAL-05` FR-5's "run `sw scan`" failure |
 | Q6 | A configured extra that cannot run (missing, timeout, crash) | C05 WARN naming the tool; the shared verdict stands; `--strict` fails |
+| Q7 | A fresh project's tests import `src` | `sw init` writes `tests/context.yaml` with `consumes: [src]` |
+| Q8 | A `forbids` entry that names a library (`*.orm`, the scaffold's `specweaver/sandbox/*`) | It still judges an import that reaches no project folder, by the import's written name; `consumes` never applies to a library; FR-17 amended |
 
 ### F-1 (HIGH) The mapping reuses the refactor resolvers
 
@@ -105,6 +107,10 @@ A resolver is built from every file with its language's suffixes. `check_boundar
 those files, skips folders `.specweaverignore` and the parser's `get_default_directory_ignores()`
 list, and builds one resolver per call. Measured in dev on SpecWeaver's own tree (about 450 Python
 files); a check slower than 2 s is reported before CB-2 commits.
+
+Measured 2026-11-05 on SpecWeaver's own `src/specweaver` (451 Python files): one file 0.24 s, all
+451 files in one call 1.35 s, because the tree and the resolver are read once per call. Ignored
+folders (`node_modules/`, `.git/`) are not entered; before that fix one file took 0.67 s.
 
 ### F-4 (MEDIUM) Proof tiers
 
@@ -251,6 +257,9 @@ so the message and `allows` agree.
 
 ### CB-3 (closes SF-09, HITL): the extras — FR-20, Q5, Q6
 
+During CB-2 the tach extra moved into CB-2: the runners' tach code was removed there, so the extras
+table had to exist in the same commit. CB-3 adds dependency-cruiser and go-arch-lint.
+
 1. Red: `test_boundary_extras.py` (unit, executor doubled), `test_boundary_extras_run.py`
    (integration: real tach on a real project; a missing go-arch-lint and dependency-cruiser through a
    PATH without them → "not run" → C05 WARN), `test_scan_writes_widenings.py` (real `sw scan` on a
@@ -294,7 +303,7 @@ so the message and `allows` agree.
   resolver), AD-10 amended (Q3), AD-11 (the extras table lists only CLI tools with a config file),
   AD-12 (entries keep the `consumes` path form). Risk rows: R10 of the design (Python users whose
   `tach.toml` allowed an undeclared widening now fail C05) is intended; the message names `widens`.
-- **Open questions**: none. All decisions are resolved and written inline, Q1..Q6 `[agreed 2026-11-05]`.
+- **Open questions**: none. All decisions are resolved and written inline, Q1..Q8 `[agreed 2026-11-05]`.
 - **Architecture**: one new edge, `sandbox → assurance.graph`; no cycle (F-2). The shared check reads
   files, so it sits in `sandbox` (adapters), not in pure `assurance/graph`, which keeps the rule.
 - **Principles**: one rule (AD-9) and one mapping per language (the refactor resolvers, DRY); the

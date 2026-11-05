@@ -78,3 +78,105 @@ OBJECTED. 0 stale.
 - Cycle 2: challenged R2 (can "nearest" pick a wrong folder?): only folders whose files declare that
   package are candidates, so the choice is between real homes of the package. No new finding above
   LOW.
+
+## CB-2: one boundary check behind C05 (FR-16, FR-17, FR-19, FR-20 tach, NFR-5, Q1–Q8)
+
+**What changed**
+- New `sandbox/language/core/boundary_check.py`. `check_architecture(root, target, executor)` judges
+  a file, or every code file under a folder, by the effective rule of its folder (SF-08's
+  `BoundaryRule`), from the imports its parser lists and the project file each reaches (CB-1's
+  `imports.py`). An import that reaches no project file is counted; only an inherited `forbids`
+  entry that names it by its written name judges it (Q8). The fix in each message says
+  `consumes`, or `consumes` and `widens` where `consumes` alone cannot allow it.
+- New `sandbox/language/core/boundary_extras.py`: the extras table. Only tach for now
+  (`tach.toml`); CB-3 adds dependency-cruiser and go-arch-lint. A configured tool that did not run
+  is `ran: false` with the reason.
+- `BoundaryRule.forbids_library(folder, written)` (Q8) and `_Tree.lineage`.
+- The QA atom gets the check injected (`architecture=`), because `sandbox/qa_runner` may not import
+  `sandbox/language` (TECH-087 FR-12). `qa_atom` passes `check_architecture` with the executor. The
+  atom exports `note`, `unmapped` and `extras` too.
+- C05: a configured extra that did not run is WARN; a clean pass says how many imports were not
+  mapped; a note is SKIP.
+- Removed: `run_architecture_check` from the runner interface and the 5 runners,
+  `python/forbids_checker.py`, Java's generated ArchUnit program, TypeScript's ESLint rule,
+  `toolchain.failed_architecture`, Python's own tach call.
+- `sw init` writes `tests/context.yaml` with `consumes: [src]` (Q7).
+- `sandbox` consumes `specweaver/assurance/graph` (manifest and tach). `language-atom`'s purpose
+  names the boundary check.
+- Docs: `language_support_guide.md`, `adding_validation_rules.md` (the exports),
+  `special_patterns_and_adaptations.md` §5, `1_installation_and_setup.md` (C05 needs no
+  `tach.toml`), `context_yaml_spec.md` (a library meets only `forbids`).
+- Plan change: the tach extra moved from CB-3 into CB-2, because the runners' tach code was removed
+  here.
+
+**Decisions taken with the user in this boundary**
+- Q7 (A, 2026-11-05): `sw init` writes `tests/context.yaml` with `consumes: [src]`. Found because a
+  fresh project's test imports `src`.
+- Q8 (A, 2026-11-05): `forbids` still judges a library import by its written name. Found because
+  the scaffold forbids `specweaver/sandbox/*` and the spec's example forbids `*.orm`; FR-17 read
+  literally made both do nothing. FR-17 amended in the design.
+
+**Tests** (full suite 12,375 passed, 9 skipped; unit 9,922, integration 2,036, e2e 426 collected)
+- New: `test_boundary_check.py` (17), `test_boundary_extras.py` (13),
+  `test_boundary_rule_every_language.py` (NFR-5, the same verdict in 9 languages),
+  `test_c05_judges_by_the_boundary_rule.py` (5, the real atom and hydrator),
+  `test_boundary_rule_any_language_e2e.py` (Go, a widening, a fresh project's tests importing
+  `src`), `test_boundary_rule.py::test_a_library_is_forbidden_by_its_written_name`.
+- Rewritten: `test_architecture_check_honesty.py`, `test_qa_runner_atom.py` (the architecture class),
+  `test_runner_architecture.py` (C-VAL-03 FR-5, the merge), `test_boundary_linter_merge.py` (real
+  tach), `test_c05_not_built.py` (Kotlin and Rust are judged now), `test_c05_architecture_integration.py`,
+  `test_tach_sync_e2e.py`, `test_code_rules_on_a_fresh_project_e2e.py`.
+- Deleted with their code: 12 tach tests in `test_python_runner.py`, 2 Java architecture tests, the
+  TypeScript ESLint timeout tests, the lost-results case for the import report.
+
+**Mutants**: new TECH-082 FR-16 `no-manifest-passes`, FR-17 `unmapped-not-counted`,
+`library-forbids-ignored`, FR-19 `widening-fix-says-consumes`, FR-20 `missing-extra-clean`,
+`missing-tool-ran`: all OBJECTED. `missing-extra-clean` was SILENT at first: no test proved C05's
+WARN; `test_a_configured_tool_that_did_not_run_is_warn_never_pass` was added. Retired:
+`D-VAL-05 FR-5` (Q5: no `tach.toml`, no failure) and `TECH-087 ts-arch-timeout-says-jest` (the
+ESLint check is gone). Five stale records re-run (all OBJECTED) and refreshed; 0 stale. No mutant
+for Q2 (`TYPE_CHECKING` imports count): the parsers have no code that skips them, so there is no
+line to neutralise; `test_an_import_for_type_checking_counts` holds it.
+
+**Gates**: `quality.py cb` 17/17, `quality.py doc` 14/14, `tach check`, `mypy` (450 files), ruff.
+Duplication re-frozen at 93: removing Kotlin's import lines re-keyed an old Java/Kotlin import
+clone. Suppression baseline 144 → 140. F-3: one file 0.24 s, 451 files 1.35 s.
+
+**Combined analysis (Phases 1–2)**
+
+Architecture: no violation. Placement is Q3's (`sandbox/language/core`, an adapter that reads files
+and runs tools). No cycle: `sandbox` → `assurance/graph` (pure logic), which forbids
+`specweaver/sandbox/*`. One fix: the `language-atom` purpose did not name the check.
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `check_architecture`, `_Judge.code_files`, `_walk` | ✅ | ✅ `test_c05_judges_by_the_boundary_rule.py` | ✅ |
+| `_Judge.judge`, `_fix`, `_violation`, `_library_violation` | ✅ | ✅ 9 languages | ✅ |
+| `BoundaryRule.forbids_library`, `lineage` | ✅ | ✅ | ✅ fresh project `imports` |
+| `run_extras`, `_run`, `_tach_violations` | ✅ | ✅ real tach | — |
+| `QARunnerAtom._intent_run_architecture` | ✅ | ✅ | ✅ |
+| `ImportDirectionRule._clean` | ✅ | ✅ (added) | ✅ |
+| `scaffold` tests manifest | ✅ | — | ✅ |
+
+Gaps found and closed: C05 WARN for a configured tool that did not run (integration, added); a
+folder target skips `.specweaverignore` and `node_modules/` (unit, added); tach output `[1]`
+crashed instead of "not run" (fixed, unit case added). Sequence: hydrator → atom → check → C05 is
+driven by `test_c05_judges_by_the_boundary_rule.py`. Agreement: tach and the shared rule both judge
+Python; `test_boundary_linter_merge.py` runs both on one tree.
+
+**Red/Blue (7.5)**, 2 cycles
+- R1 (MEDIUM, fixed) The walk entered `node_modules/` and filtered afterwards; a JavaScript project
+  can hold 100,000 files there. Ignored folders are now pruned; `test_an_ignored_folder_is_never_entered`
+  kills the mutant that stops pruning.
+- R2 (MEDIUM, fixed) A forbidden name that reaches no file was called "a library", also when it is a
+  missing project folder. The message now says it reaches no project file and names the entry.
+- R3 (MEDIUM, fixed) tach output that is a list of non-objects crashed the check.
+- R4 (LOW, accepted) The host check looks for `tach` on the PATH, and the run is `python -m tach`. Both
+  come from the same install in every setup we support; a mismatch reads as "did not run", never
+  clean.
+- R5 (LOW, accepted) A syntax error still lists the imports tree-sitter can read; the verdict covers
+  those. A file that cannot be decoded fails the atom ("Cannot read"), never PASS.
+- R6 (LOW, accepted) A folder `os.walk` cannot read is skipped; imports into it count as not mapped.
+- Path traversal: `run_architecture` is in the atom's path guard (`test_qa_runner_atom.py`, `../outside.py`).
+- Cycle 2: challenged R1 (does pruning follow symlinks or loop?): `os.walk` does not follow links. No
+  new finding above LOW.

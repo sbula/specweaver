@@ -154,6 +154,18 @@ class ArchitectureViolation:
 
 
 @dataclass(frozen=True)
+class ExtraRun:
+    """One configured stricter boundary tool's run: whether it reached a verdict, what it found."""
+
+    tool: str
+    ran: bool
+    reason: str = ""
+    violations: list[ArchitectureViolation] = field(default_factory=list)
+
+    __test__ = False
+
+
+@dataclass(frozen=True)
 class ArchitectureRunResult:
     """Structured result from running an architectural linters."""
 
@@ -167,5 +179,12 @@ class ArchitectureRunResult:
     #: as `TestRunResult.toolchain_note`: the result discloses what it could not do rather than
     #: leaving the caller to infer it from a zero.
     note: str = ""
+
+    #: Imports that reach nothing in the project (a library, a missing file): counted, never judged.
+    unmapped: int = 0
+
+    #: The stricter tools the project configured, each with its own run; their violations are in
+    #: `violations` too.
+    extras: list[ExtraRun] = field(default_factory=list)
 
     __test__ = False

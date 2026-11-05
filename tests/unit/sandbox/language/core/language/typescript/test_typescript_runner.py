@@ -84,29 +84,6 @@ class TestTypeScriptRunner:
         assert result.errors[0].code == "ToolchainUnavailable"
         assert result.errors[0].message == "tsc timed out after 120 s"
 
-    @pytest.mark.parametrize(
-        "stdout",
-        [
-            "",
-            '[{"filePath": "src/a.ts", "messages": [{"ruleId": "no-restricted-imports",'
-            ' "message": "x", "line": 1}]}]',
-        ],
-    )
-    def test_an_eslint_architecture_timeout_says_eslint_timed_out(
-        self, tmp_path: Path, stdout: str
-    ) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=-1, stdout=stdout, timed_out=True, duration_seconds=60.0
-        )
-        runner = TypeScriptRunner(cwd=tmp_path, executor=mock_executor)
-
-        result = runner.run_architecture_check(target="src")
-
-        assert result.violation_count == 1
-        assert result.violations[0].code == "ToolchainUnavailable"
-        assert result.violations[0].message == "ESLint timed out after 60 s"
-
     def test_run_debugger_parsing(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
         with patch("shutil.which") as mock_which:

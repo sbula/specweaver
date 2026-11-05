@@ -73,7 +73,7 @@
           "old": "        runner = resolve_runner(cwd, executor=executor, language=language)\n",
           "new": "        runner = resolve_runner(cwd, executor=executor)\n",
           "breaks": "QA steps ignore the run's language",
-          "symbol_sha": "sha256:4d70c2771478ab9bda17981b483e404de9258f105a69bc3a3772f7a94011205c"
+          "symbol_sha": "sha256:ca00ed9fd5d9f2daeeaf84aeb2a1e08a5b83e7a263396e4d340d5a8b5e380a5e"
         },
         {
           "id": "sw-run-names-no-language",

@@ -316,3 +316,32 @@ def test_an_entry_a_forbid_glob_only_might_reach_is_not_containing(tmp_path: Pat
     found = breaches(nodes, tmp_path)
 
     assert [b.entry for b in found] == ["box"]
+
+
+def test_needs_widens_only_where_consumes_is_not_enough(tmp_path: Path) -> None:
+    from specweaver.assurance.graph.boundary_rule import BoundaryRule
+
+    nodes = _tree(tmp_path, a={"consumes": ["lib"], "forbids": ["lib/net"]}, a__c={})
+    rule = BoundaryRule(nodes, tmp_path)
+
+    assert rule.needs_widens("a", "lib/net")  # forbidden
+    assert rule.needs_widens("a/c", "other")  # wider than the parent `a`
+    assert not rule.needs_widens("a", "other")  # `a` has no parent: consumes is enough
+    assert not rule.needs_widens("tools", "lib/net")  # no manifest rules `tools`
+
+
+def test_a_library_is_forbidden_by_its_written_name(tmp_path: Path) -> None:
+    """An import that reaches no project folder still meets `forbids` `[agreed 2026-11-05]`."""
+    from specweaver.assurance.graph.boundary_rule import BoundaryRule
+
+    nodes = _tree(tmp_path, a={"forbids": ["*.orm", "acme/net/*"]}, a__c={})
+    rule = BoundaryRule(nodes, tmp_path)
+
+    assert rule.forbids_library("a/c", "sqlalchemy.orm")  # an ancestor's glob, dotted name
+    assert rule.forbids_library("a", "sqlalchemy.orm.session")  # below the forbidden name
+    assert rule.forbids_library("a", "acme::net::tcp")  # Rust's `::`
+    assert rule.forbids_library("a", "acme/net")  # a `/` name
+    assert not rule.forbids_library("a", "requests")
+    assert not rule.forbids_library("tools", "sqlalchemy.orm")  # no manifest rules `tools`
+    assert not rule.forbids_library("a", ".orm")  # a relative name is no library
+    assert not rule.forbids_library("a", "")

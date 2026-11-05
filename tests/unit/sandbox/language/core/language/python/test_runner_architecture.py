@@ -1,278 +1,92 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Freedom-from-interference checks: `context.yaml` forbids plus the boundary linter, merged.
+"""Freedom from interference: the boundary rule's findings and the boundary linter's, merged.
 
 Proves: C-VAL-03 FR-5
 
-Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: the tach half dropped from the
-merged violation list, leaving only per-file `forbids` — 15 fail.
+FR-5 outsources cross-boundary isolation to native linters rather than reimplementing them, merged
+with the per-file rule. Since TECH-082 the per-file half is the shared boundary check (every
+language, every inherited `forbids`; `test_boundary_check.py`) and tach is a configured extra.
+`check_architecture` merges them; a count right about one source and blind to the other reads
+exactly like a clean result, so the merge is what this pins. The real-tach version is
+`tests/integration/sandbox/language/test_boundary_linter_merge.py`.
 
-FR-5 outsources cross-boundary isolation to native linters through the QA runner rather than
-reimplementing it. The mutant keeps the check alive and halves what it sees, which is why the merge is
-the thing worth pinning: a violation count that is right about one source and blind to the other reads
-exactly like a clean result.
-
-Previously documented here:
-
-Tests for PythonQARunner DAL-aware architecture checking.
-
-Tests the two-phase architecture check:
-  Phase 1: context.yaml forbids (AST import scanning)
-  Phase 2: tach boundary check (existing behavior)
+| Bucket | Case |
+|---|---|
+| Happy | a rule violation and a tach violation both arrive, counted once each |
+| Boundary | a clean file with tach configured: tach ran, nothing found |
+| Degradation | tach configured and missing: the rule's verdict stands, tach is reported not run |
+| Hostile | — (the inputs are a fixed project) |
 """
 
 from __future__ import annotations
 
-import textwrap
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 
-from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.language.core.python.runner import PythonQARunner
-from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
-    ArchitectureViolation,
-)
+from specweaver.sandbox.language.core import boundary_extras
+from specweaver.sandbox.language.core.boundary_check import check_architecture
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-
-@pytest.fixture()
-def runner(tmp_path: Path) -> PythonQARunner:
-    """Create a PythonQARunner rooted at tmp_path."""
-    return PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-
-
-def _write_py(tmp_path: Path, rel_path: str, content: str) -> Path:
-    """Write a Python file at rel_path inside tmp_path."""
-    p = tmp_path / rel_path
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(textwrap.dedent(content), encoding="utf-8")
-    return p
+TACH_FINDING = (
+    '[{"Located": {"file_path": "low/leak.py", "details": {"Code": {"UndeclaredDependency": '
+    '{"dependency": "high.thing", "usage_module": "low", "definition_module": "high"}}}}}]'
+)
 
 
-def _write_context_yaml(tmp_path: Path, rel_dir: str, forbids: list[str]) -> Path:
-    """Write a context.yaml with the given forbids list."""
-    import yaml
+class _Executor:
+    def __init__(self, stdout: str) -> None:
+        self._stdout = stdout
 
-    ctx_path = tmp_path / rel_dir / "context.yaml"
-    ctx_path.parent.mkdir(parents=True, exist_ok=True)
-    ctx_path.write_text(
-        yaml.dump({"archetype": "pure-logic", "forbids": forbids}),
-        encoding="utf-8",
-    )
-    return ctx_path
+    def execute(self, cmd: list[str], *, timeout_seconds: int | None = None) -> SimpleNamespace:
+        return SimpleNamespace(exit_code=1, stdout=self._stdout, stderr="", timed_out=False)
 
 
-_EMPTY_TACH = ArchitectureRunResult(violation_count=0, violations=[])
+@pytest.fixture
+def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    files = {
+        "tach.toml": "exact = true\n",
+        "high/context.yaml": "name: high\narchetype: pure-logic\nforbids: [low]\n",
+        "high/__init__.py": "",
+        "low/__init__.py": "",
+        "high/uses_low.py": "from low import leak\n",
+        "high/clean.py": "import os\n",
+    }
+    for relative, text in files.items():
+        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / relative).write_text(text, encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+    return tmp_path
 
 
-class TestForbidsChecking:
-    """Phase 1: context.yaml forbids AST import scanning."""
+def test_both_sources_arrive_from_one_call(project: Path) -> None:
+    result = check_architecture(project, "high/uses_low.py", _Executor(TACH_FINDING))
 
-    def test_forbids_violation_detected(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """A forbidden import produces a ForbiddenImport violation."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from specweaver.sandbox.base import Atom
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
+    assert sorted(v.code for v in result.violations) == [
+        "BoundaryRule",
+        "tach:UndeclaredDependency",
+    ]
+    assert result.violation_count == 2
 
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
 
-        assert result.violation_count >= 1
-        codes = [v.code for v in result.violations]
-        assert "ForbiddenImport" in codes
+def test_a_clean_file_with_tach_configured(project: Path) -> None:
+    result = check_architecture(project, "high/clean.py", _Executor("[]"))
 
-    def test_no_forbids_violation_when_clean(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Clean imports produce zero forbids violations."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            import os
-            from pathlib import Path
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
+    assert result.violation_count == 0
+    assert [(e.tool, e.ran) for e in result.extras] == [("tach", True)]
 
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
 
-        assert result.violation_count == 0
+def test_a_missing_tach_leaves_the_rules_verdict_standing(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: None)
 
-    def test_no_context_yaml_skips_forbids_check(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
-        """Without context.yaml, only tach results are returned."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from specweaver.sandbox.base import Atom
-            """,
-        )
-        # No context.yaml written
+    result = check_architecture(project, "high/uses_low.py", _Executor("[]"))
 
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
-
-        # No forbids violations — only tach would matter
-        assert result.violation_count == 0
-
-    def test_forbids_pattern_glob_matching(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Glob pattern 'specweaver/sandbox/*' matches deep imports but not others."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from specweaver.sandbox.anything.deep import Foo
-            from specweaver.core.config import Settings
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
-
-        # Only the sandbox import should be flagged, not core.config
-        assert result.violation_count == 1
-        assert "specweaver.sandbox.anything.deep" in result.violations[0].message
-
-    def test_forbids_exact_match(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Exact pattern 'specweaver/llm' matches specweaver.llm but not specweaver.llm_tools."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from specweaver.llm import Client
-            from specweaver.llm_tools import Helper
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/llm"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
-
-        # Only specweaver.llm should match, not specweaver.llm_tools
-        assert result.violation_count == 1
-        assert "specweaver.llm" in result.violations[0].message
-        assert "llm_tools" not in result.violations[0].message
-
-    def test_tach_and_forbids_merged(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Both forbids and tach violations are merged in the result."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from specweaver.sandbox.base import Atom
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        tach_violation = ArchitectureViolation(
-            file="src/other.py",
-            code="UndeclaredDependency",
-            message="tach violation",
-        )
-        tach_result = ArchitectureRunResult(violation_count=1, violations=[tach_violation])
-
-        with patch.object(runner, "_run_tach_check", return_value=tach_result):
-            result = runner.run_architecture_check(target="src/module.py")
-
-        # 1 forbids + 1 tach = 2
-        assert result.violation_count == 2
-        codes = [v.code for v in result.violations]
-        assert "ForbiddenImport" in codes
-        assert "UndeclaredDependency" in codes
-
-    def test_dal_level_logged(
-        self, runner: PythonQARunner, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """dal_level appears in debug log output."""
-        from specweaver.commons.enums.dal import DALLevel
-
-        _write_py(tmp_path, "src/module.py", "import os\n")
-
-        with (
-            caplog.at_level("DEBUG", logger="specweaver.sandbox.language.core.python.runner"),
-            patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH),
-        ):
-            runner.run_architecture_check(target="src/module.py", dal_level=DALLevel.DAL_A)
-
-        assert "DAL_A" in caplog.text
-
-    def test_non_python_file_skips_forbids(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Non-Python files skip the forbids phase."""
-        txt_file = tmp_path / "src" / "readme.txt"
-        txt_file.parent.mkdir(parents=True, exist_ok=True)
-        txt_file.write_text("hello", encoding="utf-8")
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/readme.txt")
-
-        # Only tach, no forbids
-        assert result.violation_count == 0
-
-    def test_directory_target_skips_forbids(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Directory targets skip the forbids phase."""
-        (tmp_path / "src").mkdir(parents=True, exist_ok=True)
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src")
-
-        assert result.violation_count == 0
-
-    def test_syntax_error_in_target_skips_forbids(
-        self, runner: PythonQARunner, tmp_path: Path
-    ) -> None:
-        """Python file with syntax errors skips forbids gracefully."""
-        _write_py(
-            tmp_path,
-            "src/broken.py",
-            """\
-            def foo(
-                # Missing closing paren
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            # Should not crash
-            result = runner.run_architecture_check(target="src/broken.py")
-
-        # Only tach, no crash
-        assert result.violation_count == 0
-
-    def test_type_checking_import_not_flagged(self, runner: PythonQARunner, tmp_path: Path) -> None:
-        """Imports inside if TYPE_CHECKING: blocks must NOT be flagged (RED-5)."""
-        _write_py(
-            tmp_path,
-            "src/module.py",
-            """\
-            from __future__ import annotations
-            from typing import TYPE_CHECKING
-
-            if TYPE_CHECKING:
-                from specweaver.sandbox.base import Atom
-
-            import os
-            """,
-        )
-        _write_context_yaml(tmp_path, "src", ["specweaver/sandbox/*"])
-
-        with patch.object(runner, "_run_tach_check", return_value=_EMPTY_TACH):
-            result = runner.run_architecture_check(target="src/module.py")
-
-        # TYPE_CHECKING imports must be excluded
-        assert result.violation_count == 0
+    assert [v.code for v in result.violations] == ["BoundaryRule"]
+    assert [(e.tool, e.ran) for e in result.extras] == [("tach", False)]

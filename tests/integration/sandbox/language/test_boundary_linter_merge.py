@@ -15,7 +15,9 @@ finding for this capability: *proven link by link, never as a chain*. Here the m
 linter itself.
 
 So this runs real `tach` over a real project with a real `tach.toml`, alongside a real
-`context.yaml` `forbids` entry, and asserts both kinds of finding come back from one call.
+`context.yaml` `forbids` entry, and asserts both kinds of finding come back from one call. Since
+TECH-082 the per-file half is the shared boundary check and tach runs as a configured extra;
+`check_architecture` is the one call that merges them.
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.language.core.boundary_check import check_architecture
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -66,8 +68,6 @@ def _project(tmp_path: Path) -> Path:
         "name: high\npurpose: Upper layer.\narchetype: pure-logic\nforbids:\n  - low/*\n",
         encoding="utf-8",
     )
-    # `from low.leak import ...`, not `from low import leak`: the checker converts the MODULE path
-    # to a glob target, so a bare `low` never matches a `low/*` pattern.
     (root / "high" / "uses_low.py").write_text("from low.leak import thing\n", encoding="utf-8")
     return root
 
@@ -76,36 +76,29 @@ def _project(tmp_path: Path) -> Path:
 def test_the_real_linter_is_actually_invoked(tmp_path: Path) -> None:
     """Nothing is patched: if tach were absent the runner reports that, and this would say so."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
+    result = check_architecture(root, "high/uses_low.py", SubprocessExecutor(cwd=root))
 
-    result = runner.run_architecture_check(target="high/uses_low.py")
-
-    messages = " ".join(v.message for v in result.violations)
-    assert "not installed" not in messages, messages
+    assert [(e.tool, e.ran) for e in result.extras] == [("tach", True)], result.extras
 
 
 @needs_tach
 def test_a_forbids_violation_is_reported(tmp_path: Path) -> None:
     """The half that needs no external tool, asserted separately so a failure says which broke."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
+    result = check_architecture(root, "high/uses_low.py", SubprocessExecutor(cwd=root))
 
-    result = runner.run_architecture_check(target="high/uses_low.py")
-
-    assert "ForbiddenImport" in [v.code for v in result.violations], result.violations
+    assert "BoundaryRule" in [v.code for v in result.violations], result.violations
 
 
 @needs_tach
 def test_both_sources_arrive_from_one_call(tmp_path: Path) -> None:
     """FR-5's actual claim: the linter's findings and the per-file ones are merged, not chosen."""
     root = _project(tmp_path)
-    runner = PythonQARunner(cwd=root, executor=SubprocessExecutor(cwd=root))
-
-    result = runner.run_architecture_check(target="high/uses_low.py")
+    result = check_architecture(root, "high/uses_low.py", SubprocessExecutor(cwd=root))
 
     codes = [v.code for v in result.violations]
-    assert "ForbiddenImport" in codes, codes
-    assert any(code != "ForbiddenImport" for code in codes), (
+    assert "BoundaryRule" in codes, codes
+    assert any(code != "BoundaryRule" for code in codes), (
         f"only forbids findings came back, so the linter contributed nothing: {result.violations}"
     )
     assert result.violation_count == len(result.violations)

@@ -239,7 +239,9 @@ own `widens` says so, with a reason. The parent is the nearest folder above that
   `widens` entry.
 - **`forbids`** — cumulative going down the tree: a boundary's effective deny list is its own plus
   all its ancestors'. A `consumes` entry that overlaps a denied path, inside it or containing it,
-  breaks the rule unless `widens` covers it.
+  breaks the rule unless `widens` covers it. An import that reaches no project folder (a library)
+  meets only `forbids`, by its written name, `.` and `::` parting it: `sqlalchemy.orm` meets
+  `*.orm`. Any other such import is counted, not judged.
 - **`widens`** — `path: reason`. Each key must also appear in `consumes`. An entry with an empty
   reason, or one that widens nothing, is refused.
 - An entry names a folder: another boundary's `name`, or a path relative to the root (`/` or `.`

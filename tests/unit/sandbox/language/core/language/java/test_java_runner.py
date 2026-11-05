@@ -243,47 +243,6 @@ class TestJavaRunner:
         assert result.exit_code == 0
         assert result.events[0].output == "DEBUG OK"
 
-    def test_run_architecture_check_timeout(self, tmp_path: Path) -> None:
-        """G-3: run_architecture_check with timed_out=True returns timeout violation."""
-        (tmp_path / "pom.xml").write_text("")
-        # Write a context.yaml with forbids so the method doesn't short-circuit
-        ctx_file = tmp_path / "context.yaml"
-        ctx_file.write_text("forbids:\n  - com.evil.*\n")
-
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(timed_out=True, duration_seconds=60.0)
-        runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
-
-        result = runner.run_architecture_check(target="src/")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 1
-        assert result.violations[0].code == "Timeout"
-        assert "timed out" in result.violations[0].message.lower()
-
-    def test_run_architecture_check_violations(self, tmp_path: Path) -> None:
-        """G-4: run_architecture_check with ARCH_VIOLATION stdout returns violations."""
-        (tmp_path / "pom.xml").write_text("")
-        ctx_file = tmp_path / "context.yaml"
-        ctx_file.write_text("forbids:\n  - com.evil.*\n")
-
-        arch_stdout = (
-            "ARCH_VIOLATION|src/main/java/App.java|com.evil.*\n"
-            "ARCH_VIOLATION|src/main/java/Svc.java|com.evil.*\n"
-        )
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(exit_code=0, stdout=arch_stdout)
-        runner = JavaRunner(cwd=tmp_path, executor=mock_executor)
-
-        result = runner.run_architecture_check(target="src/")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 2
-        assert result.violations[0].file == "src/main/java/App.java"
-        assert result.violations[0].code == "C05"
-        assert "com.evil.*" in result.violations[0].message
-        assert result.violations[1].file == "src/main/java/Svc.java"
-
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = JavaRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "java"

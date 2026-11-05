@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
 from specweaver.commons.qa import (
     ArchitectureRunResult,
@@ -30,9 +29,6 @@ from specweaver.commons.qa import (
     TestFailure,
     TestRunResult,
 )
-
-if TYPE_CHECKING:
-    from specweaver.commons.enums.dal import DALLevel
 
 logger = logging.getLogger(__name__)
 
@@ -164,20 +160,4 @@ class QARunnerInterface(ABC):
 
         Returns:
             DebugRunResult with exit records and DAP-mapped output events.
-        """
-
-    @abstractmethod
-    def run_architecture_check(
-        self,
-        target: str,
-        dal_level: DALLevel | None = None,
-    ) -> ArchitectureRunResult:
-        """Run architectural boundary checks and return structured results.
-
-        Args:
-            target: File or directory to compile (relative to cwd).
-            dal_level: Active target strictness boundary resolving dynamic config payloads.
-
-        Returns:
-            ArchitectureRunResult with error counts and details.
         """

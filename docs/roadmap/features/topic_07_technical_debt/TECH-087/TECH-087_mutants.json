@@ -147,7 +147,7 @@
           "old": "if not violation_count and exports.get(\"note\"):",
           "new": "if False:",
           "breaks": "sw check says all imports follow layering rules for Kotlin and Rust, where nothing was checked",
-          "symbol_sha": "sha256:395f544501f2348dec170a1bc58de7ba5931592b3cf1533b469223ea59772dc2"
+          "symbol_sha": "sha256:56b4d7bfda5493161600692f278d3c863f8554d7d675d263d5b23489dd76b9ae"
         }
       ]
     },
@@ -275,16 +275,6 @@
       ],
       "mutants": [
         {
-          "id": "ts-arch-timeout-says-jest",
-          "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
-          "symbol": "TypeScriptRunner.run_architecture_check",
-          "old": "reason = timed_out(result, \"ESLint\", _ESLINT_TIMEOUT_SECONDS) or did_not_run(",
-          "new": "reason = timed_out(result, \"Jest\") or did_not_run(",
-          "breaks": "an ESLint architecture timeout names the wrong tool and drops how long it waited",
-          "symbol_sha": "sha256:0839f4f79d939f2bdff7af5959a5dad19db0dc58e10205e616fa6c9f77c6bdb1"
-        },
-        {
           "id": "ts-timeout-after-did-not-run",
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
@@ -375,7 +365,7 @@
           "old": "        executor = SubprocessExecutor(cwd=cwd)\n",
           "new": "        executor = None  # type: ignore[assignment]\n",
           "breaks": "on the host the factory hands the runner no executor, leaving the choice to the runner",
-          "symbol_sha": "sha256:4d70c2771478ab9bda17981b483e404de9258f105a69bc3a3772f7a94011205c"
+          "symbol_sha": "sha256:ca00ed9fd5d9f2daeeaf84aeb2a1e08a5b83e7a263396e4d340d5a8b5e380a5e"
         },
         {
           "id": "git-builds-host-executor",

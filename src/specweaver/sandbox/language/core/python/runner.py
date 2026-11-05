@@ -12,13 +12,11 @@ from __future__ import annotations
 import logging
 import re
 import shlex
-import shutil
 import sys
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from specweaver.commons import json
-from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.execution.container_executor import (
     ContainerEngineUnavailableError,
     ContainerSubprocessExecutor,
@@ -29,14 +27,11 @@ from specweaver.sandbox.language.core.python.toolchain_absence import (
 from specweaver.sandbox.language.core.python.toolchain_absence import why_it_did_not_run
 from specweaver.sandbox.language.core.run_targets import no_test_ran, parse_target
 from specweaver.sandbox.language.core.toolchain import (
-    failed_architecture,
     failed_complexity,
     failed_lint,
     timed_out,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
-    ArchitectureViolation,
     CompileRunResult,
     ComplexityRunResult,
     ComplexityViolation,
@@ -409,173 +404,4 @@ class PythonQARunner(QARunnerInterface):
             exit_code=result.exit_code,
             duration_seconds=result.duration_seconds,
             events=result.events,
-        )
-
-    def run_architecture_check(
-        self,
-        target: str,
-        dal_level: DALLevel | None = None,
-    ) -> ArchitectureRunResult:
-        """Run architectural boundary checks via tach + context.yaml forbids.
-
-        Combines two checks:
-        1. Global tach boundary check (existing behavior)
-        2. Per-file context.yaml forbids check (new — parity with TS/Java)
-
-        Args:
-            target: File or directory to check (relative to cwd).
-            dal_level: Active DAL for the target boundary.
-        """
-        logger.debug("PythonQARunner.run_architecture_check: target=%s, dal=%s", target, dal_level)
-
-        target_path = self._cwd / target
-
-        # --- Phase 1: context.yaml forbids check ---
-        from specweaver.sandbox.language.core.python.forbids_checker import (
-            check_file_forbids,
-        )
-
-        forbids_violations = check_file_forbids(target_path, self._cwd)
-
-        # --- Phase 2: tach boundary check (existing behavior) ---
-        tach_result = self._run_tach_check()
-
-        # --- Merge results ---
-        all_violations = forbids_violations + tach_result.violations
-        return ArchitectureRunResult(
-            violation_count=len(all_violations),
-            violations=all_violations,
-        )
-
-    def _run_tach_check(self) -> ArchitectureRunResult:
-        """Run global tach boundary check (extracted from original method)."""
-        # Checks the HOST PATH, so container mode skips it: tach runs inside the sandbox image there.
-        is_container = isinstance(self._executor, ContainerSubprocessExecutor)
-        if not is_container and not shutil.which("tach"):
-            logger.warning("PythonQARunner: tach not found")
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="FileNotFoundError",
-                        message="Tach architectural linter is not installed or not found in PATH.",
-                    )
-                ],
-            )
-
-        if not (self._cwd / "tach.toml").is_file():
-            return failed_architecture(
-                "No tach.toml: run `sw scan` to create it from the project's context.yaml files."
-            )
-
-        try:
-            result = self._executor.execute(
-                ["python", "-m", "tach", "check", "--output", "json"],
-                timeout_seconds=self._DEFAULT_TIMEOUT,
-            )
-        except ContainerEngineUnavailableError as exc:
-            logger.warning("PythonQARunner: container engine unavailable: %s", exc)
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="ContainerEngineUnavailableError",
-                        message=str(exc),
-                    )
-                ],
-            )
-
-        if result.stderr:
-            logger.debug("PythonQARunner: tach check stderr: %s", result.stderr)
-
-        if result.timed_out:
-            logger.warning("PythonQARunner: tach check timed out")
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="TimeoutExpired",
-                        message="Architecture check timed out while executing tach.",
-                    )
-                ],
-            )
-
-        # The `shutil.which` guard above asks about the *host* PATH, and container mode skips it
-        # because the host is irrelevant there — so the one configuration where the prepared
-        # environment can genuinely lack tach is the one with no guard of its own.
-        reason = why_it_did_not_run(result, "tach")
-        if reason:
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="ToolchainUnavailable",
-                        message=reason,
-                    )
-                ],
-            )
-
-        return self._build_architecture_result(result.stdout)
-
-    def _build_architecture_result(self, stdout: str) -> ArchitectureRunResult:
-        """Build ArchitectureRunResult from tach check JSON output."""
-        if not stdout.strip() or stdout.strip() == "[]":
-            return ArchitectureRunResult(violation_count=0, violations=[])
-
-        try:
-            data = json.loads(stdout)
-            if not isinstance(data, list):
-                # Valid tach error JSON is a list of violation objects
-                return ArchitectureRunResult(
-                    violation_count=1,
-                    violations=[
-                        ArchitectureViolation(
-                            file="<validation_engine>",
-                            code="InvalidOutput",
-                            message="Tach output is not a valid JSON list of violations.",
-                        )
-                    ],
-                )
-        except (json.JSONDecodeError, TypeError) as e:
-            return ArchitectureRunResult(
-                violation_count=1,
-                violations=[
-                    ArchitectureViolation(
-                        file="<validation_engine>",
-                        code="JSONDecodeError",
-                        message=f"Failed to decode tach JSON output: {e}",
-                    )
-                ],
-            )
-
-        violations: list[ArchitectureViolation] = []
-        for item in data:
-            located = item.get("Located", {})
-            file_path = located.get("file_path", "")
-            details = located.get("details", {})
-            code_block = details.get("Code", {})
-
-            # The structure for undeclared dependency is Code -> UndeclaredDependency -> ...
-            ud = code_block.get("UndeclaredDependency")
-            if ud:
-                dependency = ud.get("dependency", "")
-                usage_module = ud.get("usage_module", "")
-                definition_module = ud.get("definition_module", "")
-                msg = f"Module '{usage_module}' cannot import '{dependency}' from '{definition_module}'"
-
-                violations.append(
-                    ArchitectureViolation(
-                        file=str(file_path),
-                        code="UndeclaredDependency",
-                        message=msg,
-                    )
-                )
-
-        return ArchitectureRunResult(
-            violation_count=len(violations),
-            violations=violations,
         )

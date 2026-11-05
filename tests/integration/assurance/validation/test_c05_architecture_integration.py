@@ -22,9 +22,11 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.assurance.validation.models import Status
+from specweaver.assurance.validation.orchestration.validation_hydrator import _hydrate_architecture
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.sandbox.language.core.python.runner import PythonQARunner
+from specweaver.sandbox.language.core.boundary_check import check_architecture
+from specweaver.sandbox.language.core.runner_factory import qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -58,6 +60,10 @@ def tach_workspace(tmp_path: Path) -> Path:
     bad_core = core / "bad.py"
     bad_core.write_text("from my_project.ui.cli import display\n")
 
+    # The shared boundary check judges files a manifest covers; this one allows the whole package,
+    # so every finding below is tach's (TECH-082: tach runs as the configured extra).
+    (src / "context.yaml").write_text("name: my_project\narchetype: orchestrator\n")
+
     tach_toml = tmp_path / "tach.toml"
     tach_toml.write_text("""exact = true
 source_roots = ["src"]
@@ -78,19 +84,14 @@ depends_on = ["my_project.core"] # UI CAN depend on Core
     return tmp_path
 
 
+_BAD = "src/my_project/core/bad.py"
+
+
 def _run_architecture_and_build_context(workspace: Path) -> dict:
-    """Run native architecture check and return hydrated context dict."""
-    runner = PythonQARunner(cwd=workspace, executor=SubprocessExecutor(cwd=workspace))
-    result = runner.run_architecture_check(target=".")
+    """C05's context as the real hydrator builds it, from the real QA atom."""
+    atom = qa_atom(cwd=workspace, language="python")
     return {
-        "qa_architecture_result": {
-            "status": "SUCCESS",
-            "message": "Architecture check complete",
-            "exports": {
-                "violation_count": result.violation_count,
-                "violations": [{"code": v.code, "message": v.message} for v in result.violations],
-            },
-        }
+        "qa_architecture_result": _hydrate_architecture(atom, workspace / _BAD, workspace, None)
     }
 
 
@@ -99,9 +100,8 @@ class TestArchitectureIntegration:
 
     @pytest.mark.integration
     def test_tach_execution_produces_physical_payload(self, tach_workspace: Path) -> None:
-        """Story 4: execution of run_architecture_check shells out to tach natively."""
-        runner = PythonQARunner(cwd=tach_workspace, executor=SubprocessExecutor(cwd=tach_workspace))
-        result = runner.run_architecture_check(target=".")
+        """Story 4: the architecture check shells out to tach natively."""
+        result = check_architecture(tach_workspace, _BAD, SubprocessExecutor(cwd=tach_workspace))
 
         # It should run successfully, catching the violation in bad_core
         assert result.violation_count == 1
@@ -110,16 +110,11 @@ class TestArchitectureIntegration:
     @pytest.mark.integration
     def test_native_violation_mapping(self, tach_workspace: Path) -> None:
         """Story 5: Execution against real invalid python maps correctly."""
-        runner = PythonQARunner(cwd=tach_workspace, executor=SubprocessExecutor(cwd=tach_workspace))
-        result = runner.run_architecture_check(target=".")
-
-        print(f"DEBUG: result.violation_count = {result.violation_count}")
-        for v in result.violations:
-            print(f"DEBUG: violation = {v}")
+        result = check_architecture(tach_workspace, _BAD, SubprocessExecutor(cwd=tach_workspace))
 
         v = result.violations[0]
-        assert v.code == "UndeclaredDependency", (
-            f"Expected UndeclaredDependency, got {v.code}: {v.message}"
+        assert v.code == "tach:UndeclaredDependency", (
+            f"Expected tach:UndeclaredDependency, got {v.code}: {v.message}"
         )
         assert "my_project.core" in v.message
         assert "my_project.ui" in v.message

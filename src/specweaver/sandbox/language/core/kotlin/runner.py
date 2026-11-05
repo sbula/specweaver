@@ -12,13 +12,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, ClassVar
 
-from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.junit_reports import report_search_paths
 from specweaver.sandbox.language.core.jvm.runner import JvmRunner
 from specweaver.sandbox.language.core.run_targets import build_launcher, jvm_test_args, parse_target
 from specweaver.sandbox.language.core.sarif import parse_sarif_complexity
 from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
     DebugRunResult,
     OutputEvent,
 )
@@ -126,21 +124,4 @@ class KotlinRunner(JvmRunner):
                 OutputEvent(category="stdout", output=f"Starting Kotlin debugger on {entrypoint}"),
                 OutputEvent(category="stderr", output=result.stderr[:200]),
             ],
-        )
-
-    def run_architecture_check(
-        self,
-        target: str,
-        dal_level: DALLevel | None = None,
-    ) -> ArchitectureRunResult:
-        """Report that architectural checks are not implemented for this language.
-
-        It returns a result rather than raising because the QA atom treats an exception as a
-        failed step, and the check not existing is not the project's fault. The `note` is not
-        optional: without it, this is indistinguishable from a clean verdict.
-        """
-        return ArchitectureRunResult(
-            violation_count=0,
-            violations=[],
-            note="Kotlin architecture checks are not implemented; no boundary was examined.",
         )

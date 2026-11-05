@@ -16,7 +16,7 @@ a container concern, and `INT-US-09-SF01-MIG` holds it.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -91,118 +91,6 @@ class TestPythonQARunner:
         assert result.events[0].category == "stderr"
         assert result.events[0].output == "src/main.py timed out after 300 s"
 
-    def test_run_architecture_check_success(self, tmp_path: Path) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(stdout="[]")
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 0
-        assert len(result.violations) == 0
-
-    def test_run_architecture_check_violations(self, tmp_path: Path) -> None:
-        mock_stdout = """
-        [
-          {
-            "Located": {
-              "file_path": "src/bad.py",
-              "line_number": 10,
-              "details": {
-                "Code": {
-                  "UndeclaredDependency": {
-                    "dependency": "specweaver.interfaces.cli",
-                    "usage_module": "specweaver.assurance.validation",
-                    "definition_module": "specweaver.interfaces.cli"
-                  }
-                }
-              }
-            }
-          }
-        ]
-        """
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(exit_code=1, stdout=mock_stdout)
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 1
-        assert len(result.violations) == 1
-        v = result.violations[0]
-        assert v.file == "src/bad.py"
-        assert v.code == "UndeclaredDependency"
-        assert "specweaver.interfaces.cli" in v.message
-        assert "specweaver.assurance.validation" in v.message
-
-    def test_run_architecture_check_no_config(self, tmp_path: Path) -> None:
-        """No tach.toml: tach is not run, and the finding says how to make one (D-VAL-05 FR-5)."""
-        (tmp_path / "tach.toml").unlink()
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_not_called()
-        assert result.violation_count == 1
-        assert "sw scan" in result.violations[0].message
-
-    def test_run_architecture_check_timeout(self, tmp_path: Path) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(timed_out=True)
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 1
-        assert result.violations[0].code == "TimeoutExpired"
-
-    def test_run_architecture_check_file_not_found(self, tmp_path: Path) -> None:
-        """shutil.which returns None → tach not installed → FileNotFoundError result."""
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value=None):
-            result = runner.run_architecture_check(target=".")
-
-        # Executor should NOT be called when tool is not found
-        mock_executor.execute.assert_not_called()
-        assert result.violation_count == 1
-        assert result.violations[0].code == "FileNotFoundError"
-
-    def test_run_architecture_check_invalid_json(self, tmp_path: Path) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(
-            exit_code=1, stdout="TypeError: 'dict' object is not..."
-        )
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 1
-        assert result.violations[0].code == "JSONDecodeError"
-
-    def test_run_architecture_check_invalid_type(self, tmp_path: Path) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(exit_code=1, stdout='{"error": "fatal"}')
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value="/usr/bin/tach"):
-            result = runner.run_architecture_check(target=".")
-
-        mock_executor.execute.assert_called_once()
-        assert result.violation_count == 1
-        assert result.violations[0].code == "InvalidOutput"
-
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = PythonQARunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "python"
@@ -215,31 +103,6 @@ class TestPythonQARunner:
 
 class TestContainerModeIntegration:
     """Tach pre-check skip + ContainerEngineUnavailableError handling."""
-
-    def test_tach_precheck_skipped_in_container_mode(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
-
-        mock_executor = MagicMock(spec=ContainerSubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(stdout="[]")
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which") as mock_which:
-            result = runner.run_architecture_check(target=".")
-
-        mock_which.assert_not_called()
-        assert result.violation_count == 0
-
-    def test_tach_precheck_still_runs_in_host_mode(self, tmp_path: Path) -> None:
-        mock_executor = MagicMock(spec=SubprocessExecutor)
-        mock_executor.execute.return_value = _make_result(stdout="[]")
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        with patch("shutil.which", return_value=None) as mock_which:
-            result = runner.run_architecture_check(target=".")
-
-        mock_which.assert_called_once_with("tach")
-        assert result.violation_count == 1
-        assert result.violations[0].code == "FileNotFoundError"
 
     def test_run_tests_engine_unavailable_becomes_synthetic_failure(self, tmp_path: Path) -> None:
         from specweaver.sandbox.execution.container_executor import ContainerEngineUnavailableError
@@ -294,23 +157,6 @@ class TestContainerModeIntegration:
 
         assert result.exit_code == 124
         assert "no engine" in result.events[0].output
-
-    def test_run_architecture_check_engine_unavailable_becomes_synthetic_failure(
-        self, tmp_path: Path
-    ) -> None:
-        from specweaver.sandbox.execution.container_executor import (
-            ContainerEngineUnavailableError,
-            ContainerSubprocessExecutor,
-        )
-
-        mock_executor = MagicMock(spec=ContainerSubprocessExecutor)
-        mock_executor.execute.side_effect = ContainerEngineUnavailableError("no engine")
-        runner = PythonQARunner(cwd=tmp_path, executor=mock_executor)
-
-        result = runner.run_architecture_check(target=".")
-
-        assert result.violation_count == 1
-        assert result.violations[0].code == "ContainerEngineUnavailableError"
 
 
 class TestRunDebuggerInterpreterResolution:
@@ -524,38 +370,5 @@ class TestPythonQARunnerMissingToolchain:
         runner = PythonQARunner(cwd=tmp_path, executor=executor)
 
         result = runner.run_complexity(target=".")
-
-        assert result.violation_count == 0
-
-    def test_absent_tach_in_a_container_reports_an_error(self, tmp_path: Path) -> None:
-        """The architecture path guards on `shutil.which`, which is the wrong filesystem.
-
-        That check asks whether tach is on the *host* PATH, and `B-EXEC-01` skips it entirely in
-        container mode precisely because the host is irrelevant there. So the one configuration
-        where the prepared environment can actually lack tach is the one configuration with no
-        guard — and an empty stdout means clean to `_build_architecture_result`.
-        """
-        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
-
-        executor = MagicMock(spec=ContainerSubprocessExecutor)
-        executor.execute.return_value = _make_result(
-            exit_code=1, stdout="", stderr="/usr/bin/python3: No module named tach"
-        )
-        runner = PythonQARunner(cwd=tmp_path, executor=executor)
-
-        result = runner.run_architecture_check(target=".")
-
-        assert result.violation_count == 1, "an unusable checker is not a clean architecture"
-        assert "tach" in result.violations[0].message
-
-    def test_a_clean_tach_run_is_untouched(self, tmp_path: Path) -> None:
-        """The control: tach exits 0 with an empty violation list when the boundaries hold."""
-        from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
-
-        executor = MagicMock(spec=ContainerSubprocessExecutor)
-        executor.execute.return_value = _make_result(exit_code=0, stdout="[]")
-        runner = PythonQARunner(cwd=tmp_path, executor=executor)
-
-        result = runner.run_architecture_check(target=".")
 
         assert result.violation_count == 0

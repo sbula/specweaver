@@ -75,7 +75,7 @@ modules**. The `validation` layer has `archetype: pure-logic` and `forbids: spec
 |-----|-------------|-------------|-------|
 | `qa_tests_result` | `hydrate_code_validation_context()` | C03 `TestsPassRule` | `{"status": str, "message": str, "exports": {"passed": int, "failed": int, "errors": int}}` |
 | `qa_coverage_result` | `hydrate_code_validation_context()` | C04 `CoverageRule` | `{"status": str, "message": str, "exports": {"coverage_pct": float}}` |
-| `qa_architecture_result` | `hydrate_code_validation_context()` | C05 `ImportDirectionRule` | `{"status": str, "message": str, "exports": {"violation_count": int, "violations": list}}` |
+| `qa_architecture_result` | `hydrate_code_validation_context()` | C05 `ImportDirectionRule` | `{"status": str, "message": str, "exports": {"violation_count": int, "violations": list, "note": str, "unmapped": int, "extras": [{"tool", "ran", "reason", "violation_count"}]}}` |
 
 ```python
 class TestsPassRule(Rule):

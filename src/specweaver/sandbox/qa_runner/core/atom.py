@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from specweaver.sandbox.qa_runner.core.interface import QARunnerInterface
+    from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult, QARunnerInterface
 
 
 def container_available(project_root: Path) -> bool:
@@ -50,17 +50,25 @@ class QARunnerAtom(Atom):
 
     Args:
         cwd: Project root directory.
-        runner: The language runner every intent goes to.
+        runner: The language runner every intent but `run_architecture` goes to.
+        architecture: `run_architecture`'s check, `(project_root, target) -> ArchitectureRunResult`;
+            `qa_atom` gives the shared boundary check with the runner's executor.
         scenarios_mounted: The runner's executor mounts the scenario store at `/scenarios/`.
     """
 
     __test__ = False
 
     def __init__(
-        self, cwd: Path, runner: QARunnerInterface, *, scenarios_mounted: bool = False
+        self,
+        cwd: Path,
+        runner: QARunnerInterface,
+        *,
+        architecture: Callable[[Path, str], ArchitectureRunResult] | None = None,
+        scenarios_mounted: bool = False,
     ) -> None:
         self._runner = runner
         self._cwd = cwd
+        self._architecture = architecture
         self._scenarios_mounted = scenarios_mounted
 
     def run(self, context: dict[str, Any]) -> AtomResult:
@@ -421,11 +429,10 @@ class QARunnerAtom(Atom):
         )
 
     def _intent_run_architecture(self, context: dict[str, Any]) -> AtomResult:
-        """Run architectural checks.
+        """The shared boundary check on one file, plus the stricter tools the project configured.
 
         Context keys:
-            target: str — file or directory to check (required).
-            dal_level: DALLevel | None — active DAL for strictness decisions (optional).
+            target: str — the code file to check, relative to the project (required).
         """
         target = context.get("target")
         if not target:
@@ -433,35 +440,38 @@ class QARunnerAtom(Atom):
                 status=AtomStatus.FAILED,
                 message="Missing 'target' in context for run_architecture intent.",
             )
-
-        dal_level = context.get("dal_level")
-        result = self._runner.run_architecture_check(target=target, dal_level=dal_level)
-
+        if self._architecture is None:
+            return AtomResult(
+                status=AtomStatus.FAILED, message="No architecture check was given to this atom."
+            )
+        try:
+            verdict = self._architecture(self._cwd, target)
+        except (OSError, UnicodeDecodeError) as exc:
+            return AtomResult(status=AtomStatus.FAILED, message=f"Cannot read {target}: {exc}")
+        violations = verdict.violations
+        extras = verdict.extras
         exports: dict[str, Any] = {
-            "violation_count": result.violation_count,
-            "violations": [asdict(v) for v in result.violations],
-            "note": result.note,
+            "violation_count": len(violations),
+            "violations": [asdict(v) for v in violations],
+            "note": verdict.note,
+            "unmapped": verdict.unmapped,
+            "extras": [
+                {
+                    "tool": e.tool,
+                    "ran": e.ran,
+                    "reason": e.reason,
+                    "violation_count": len(e.violations),
+                }
+                for e in extras
+            ],
         }
-
-        if result.violation_count > 0:
-            return AtomResult(
-                status=AtomStatus.FAILED,
-                message=f"{result.violation_count} architectural violation(s) found.",
-                exports=exports,
-            )
-
-        # A runner that declined the check reports why. "No architectural violations" over a check
-        # that never ran cannot be told apart from a clean verdict, and the zero is what a reader
-        # acts on.
-        if result.note:
-            return AtomResult(
-                status=AtomStatus.SUCCESS,
-                message=f"Architecture check did not run: {result.note}",
-                exports=exports,
-            )
-
-        return AtomResult(
-            status=AtomStatus.SUCCESS,
-            message="No architectural violations.",
-            exports=exports,
+        if violations:
+            message = f"{len(violations)} architectural violation(s) found."
+            return AtomResult(status=AtomStatus.FAILED, message=message, exports=exports)
+        # A check that judged nothing says why: a zero over no verdict reads as a clean one.
+        message = (
+            f"Architecture check did not run: {verdict.note}"
+            if verdict.note
+            else "No architectural violations."
         )
+        return AtomResult(status=AtomStatus.SUCCESS, message=message, exports=exports)

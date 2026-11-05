@@ -10,12 +10,10 @@ import shlex
 import shutil
 from pathlib import Path
 
-from specweaver.commons.enums.dal import DALLevel
 from specweaver.sandbox.execution.executor import SubprocessExecutor
 from specweaver.sandbox.language.core.run_targets import no_test_ran, npm_test_args, parse_target
 from specweaver.sandbox.language.core.toolchain import (
     did_not_run,
-    failed_architecture,
     failed_compile,
     failed_complexity,
     failed_lint,
@@ -29,8 +27,6 @@ from specweaver.sandbox.language.core.typescript.npm_output import (
 )
 from specweaver.sandbox.language.core.typescript.tsc_output import extract_tsc_errors
 from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
-    ArchitectureViolation,
     CompileRunResult,
     ComplexityRunResult,
     DebugRunResult,
@@ -44,37 +40,7 @@ from specweaver.sandbox.qa_runner.core.interface import (
 logger = logging.getLogger(__name__)
 
 _TSC_TIMEOUT_SECONDS = 120
-_ESLINT_TIMEOUT_SECONDS = 60
 _DEBUG_TIMEOUT_SECONDS = 300
-
-
-def _restricted_import_violations(stdout: str) -> list[ArchitectureViolation]:
-    """Boundary violations in an ESLint JSON report.
-
-    Only `no-restricted-imports` counts: that is the rule the generated config uses to encode
-    `C05`'s layer boundaries, and every other finding belongs to `run_linter`.
-    """
-    import json
-
-    if not stdout.strip():
-        return []
-
-    try:
-        report = json.loads(stdout)
-    except json.JSONDecodeError as exc:
-        logger.warning("The import report is not valid JSON, so its violations are lost: %s", exc)
-        return []
-
-    return [
-        ArchitectureViolation(
-            file=entry.get("filePath", ""),
-            code="C05",
-            message=message.get("message", "Restricted import"),
-        )
-        for entry in report
-        for message in entry.get("messages", [])
-        if message.get("ruleId") == "no-restricted-imports"
-    ]
 
 
 _NO_TESTS = re.compile(r"No tests? (files )?found", re.IGNORECASE)
@@ -267,81 +233,4 @@ class TypeScriptRunner(QARunnerInterface):
             exit_code=result.exit_code,
             duration_seconds=result.duration_seconds,
             events=events,
-        )
-
-    def run_architecture_check(
-        self,
-        target: str,
-        dal_level: DALLevel | None = None,
-    ) -> ArchitectureRunResult:
-        """Run architectural checks dynamically using ESLint."""
-        import yaml
-
-        from specweaver.commons import json
-
-        logger.debug(
-            "TypeScriptRunner.run_architecture_check: target=%s, dal=%s", target, dal_level
-        )
-
-        target_path = self._cwd / target
-        ctx_dir = target_path.parent if target_path.is_file() else target_path
-
-        # Traverse up to find closest context.yaml
-        while (
-            ctx_dir != self._cwd
-            and ctx_dir.parent != ctx_dir
-            and not (ctx_dir / "context.yaml").exists()
-        ):
-            ctx_dir = ctx_dir.parent
-
-        ctx_file = ctx_dir / "context.yaml"
-        forbids = []
-        if ctx_file.exists():
-            try:
-                data = yaml.safe_load(ctx_file.read_text(encoding="utf-8")) or {}
-                forbids = data.get("forbids", [])
-            except Exception as e:
-                logger.warning("Failed to parse context.yaml at %s: %s", ctx_file, e)
-
-        # Temporary config dropping
-        tmp_dir = self._cwd / ".tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        config_path = tmp_dir / ".eslint-specweaver-arch.json"
-
-        eslint_config = {
-            "root": True,
-            "parser": "@typescript-eslint/parser",
-            "plugins": ["@typescript-eslint"],
-            "rules": {"no-restricted-imports": ["error", {"patterns": forbids}]},
-        }
-        config_path.write_text(json.dumps(eslint_config, indent=2), encoding="utf-8")
-
-        npx_bin = shutil.which("npx") or "npx"
-        cmd = [
-            npx_bin,
-            "eslint",
-            "--no-eslintrc",
-            "-c",
-            str(config_path),
-            "--format",
-            "json",
-            target,
-        ]
-
-        try:
-            result = self._executor.execute(cmd, timeout_seconds=_ESLINT_TIMEOUT_SECONDS)
-        finally:
-            config_path.unlink(missing_ok=True)
-
-        reason = timed_out(result, "ESLint", _ESLINT_TIMEOUT_SECONDS) or did_not_run(
-            result, "the TypeScript architecture checker"
-        )
-        if reason:
-            return failed_architecture(reason)
-
-        violations = _restricted_import_violations(result.stdout)
-
-        return ArchitectureRunResult(
-            violation_count=len(violations),
-            violations=violations,
         )

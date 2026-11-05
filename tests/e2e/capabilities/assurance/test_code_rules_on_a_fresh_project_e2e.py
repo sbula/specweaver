@@ -18,7 +18,7 @@ as SpecWeaver writes them. Real pytest, real coverage, real tach.
 | Bucket | Case |
 |---|---|
 | Happy | a correct, fully tested file passes C01 to C08 |
-| Boundary | before `sw scan` C05 fails and says to run it |
+| Boundary | before `sw scan` C05 judges by the boundary rule alone; no `tach.toml` is no failure (TECH-082 Q5) |
 | Degradation | a test that cannot import its module fails C03, never passes |
 | Hostile | one file per mistake: each fails or warns on its own rule |
 """
@@ -90,11 +90,15 @@ def _check(project: Path, name: str, monkeypatch: pytest.MonkeyPatch) -> dict:
     return seen
 
 
-def test_before_sw_scan_c05_says_to_run_it(project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_before_sw_scan_c05_judges_by_the_boundary_rule(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No `tach.toml` means tach is not configured, so there is no extra to run and nothing fails
+    for its absence `[agreed 2026-11-05]`; the manifests `sw init` wrote still judge the file."""
     c05 = _check(project, "good", monkeypatch)["C05"]
 
-    assert c05.status is Status.FAIL
-    assert any("sw scan" in f.message for f in c05.findings), [f.message for f in c05.findings]
+    assert c05.status is Status.PASS, c05.message
+    assert "boundary rule" in c05.message
 
 
 def test_a_correct_tested_file_passes_every_rule(

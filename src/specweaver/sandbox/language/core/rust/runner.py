@@ -9,7 +9,6 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from specweaver.commons.enums.dal import DALLevel  # noqa: TC001
 from specweaver.sandbox.language.core.run_targets import (
     TargetError,
     cargo_run_args,
@@ -28,7 +27,6 @@ from specweaver.sandbox.language.core.toolchain import (
     timed_out,
 )
 from specweaver.sandbox.qa_runner.core.interface import (
-    ArchitectureRunResult,
     QARunnerInterface,
 )
 
@@ -258,23 +256,6 @@ class RustRunner(QARunnerInterface):
                 duration_seconds=0.0,
                 events=[OutputEvent(category="stderr", output=f"cargo run could not run: {exc}")],
             )
-
-    def run_architecture_check(
-        self,
-        target: str,
-        dal_level: DALLevel | None = None,
-    ) -> ArchitectureRunResult:
-        """Report that architectural checks are not implemented for this language.
-
-        It returns a result rather than raising because the QA atom treats an exception as a
-        failed step, and the check not existing is not the project's fault. The `note` is not
-        optional: without it, this is indistinguishable from a clean verdict.
-        """
-        return ArchitectureRunResult(
-            violation_count=0,
-            violations=[],
-            note="Rust architecture checks are not implemented; no boundary was examined.",
-        )
 
 
 #: Clippy's own default for `cognitive-complexity-threshold`. It is configured in `clippy.toml`

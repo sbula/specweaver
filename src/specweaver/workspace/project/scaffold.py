@@ -74,7 +74,8 @@ name: tests
 level: domain
 purpose: Test runner domain mapping.
 archetype: adapter
-consumes: []
+consumes:
+  - src
 """
 
 

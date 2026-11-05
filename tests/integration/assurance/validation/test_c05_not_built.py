@@ -1,13 +1,21 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""C05 says SKIPPED, not "all imports follow layering rules", where no architecture check exists.
+"""C05 never says "all imports follow the rules" about a Kotlin or Rust file it did not judge.
 
 Proves: TECH-087 FR-5
+Proves: TECH-082 FR-16
 
-Path P-2 of the design: the real QA atom runs the real Kotlin or Rust runner, the flow hydrator
-serialises its result, and C05 reads it. Those runners return a `note` and no verdict; before
-TECH-087 C05 read only the zero violation count and passed.
+Before TECH-087 the Kotlin and Rust runners returned zero violations and C05 passed; TECH-087 made
+C05 say SKIP instead. Since TECH-082 both languages are judged by the shared boundary check. FR-5's
+promise still holds where nothing is judged: a file no `context.yaml` covers is SKIP, never PASS.
+
+| Bucket | Case |
+|---|---|
+| Happy | a Kotlin or Rust import the folder's rule forbids fails C05 |
+| Boundary | the same file with no manifest above it is SKIP, naming why |
+| Degradation | — (the real atom and hydrator run; no tool is needed) |
+| Hostile | — (fixed project files) |
 """
 
 from __future__ import annotations
@@ -24,27 +32,60 @@ from specweaver.sandbox.language.core.runner_factory import qa_atom
 if TYPE_CHECKING:
     from pathlib import Path
 
+pytestmark = pytest.mark.integration
 
-@pytest.mark.integration
-@pytest.mark.parametrize(
-    ("language", "code_file", "says"),
-    [
-        ("kotlin", "src/main/kotlin/App.kt", "Kotlin architecture checks are not implemented"),
-        ("rust", "src/main.rs", "Rust architecture checks are not implemented"),
-    ],
-)
-def test_c05_skips_a_language_with_no_architecture_check(
-    tmp_path: Path, language: str, code_file: str, says: str
-) -> None:
-    code = tmp_path / code_file
-    code.parent.mkdir(parents=True)
-    code.write_text("fun main() {}\n" if language == "kotlin" else "fn main() {}\n")
-    atom = qa_atom(cwd=tmp_path, language=language)
+#: language: (files, the file to check); `app/domain` forbids `app/infra` where a manifest exists.
+PROJECTS = {
+    "kotlin": (
+        {
+            "src/main/kotlin/app/infra/Db.kt": "package app.infra\nclass Db\n",
+            "src/main/kotlin/app/domain/Svc.kt": "package app.domain\nimport app.infra.Db\nclass Svc\n",
+        },
+        "src/main/kotlin/app/domain/Svc.kt",
+        "src/main/kotlin/app",
+    ),
+    "rust": (
+        {
+            "Cargo.toml": "[package]\nname = 'app'\n",
+            "src/main.rs": "mod domain;\nmod infra;\n",
+            "src/infra/mod.rs": "pub struct Db;\n",
+            "src/domain/mod.rs": "use crate::infra::Db;\n",
+        },
+        "src/domain/mod.rs",
+        "src",
+    ),
+}
 
+
+def _c05(root: Path, language: str, manifest: bool) -> object:
+    files, target, base = PROJECTS[language]
+    if manifest:
+        files = {
+            **files,
+            f"{base}/domain/context.yaml": f"name: domain\narchetype: pure-logic\nforbids: [{base}/infra]\n",
+        }
+    for relative, text in files.items():
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        (root / relative).write_text(text, encoding="utf-8")
+    code = root / target
     rule = ImportDirectionRule()
-    rule.context = {"qa_architecture_result": _hydrate_architecture(atom, code, tmp_path, None)}
-    result = rule.check(code.read_text(), spec_path=code)
+    rule.context = {
+        "qa_architecture_result": _hydrate_architecture(
+            qa_atom(cwd=root, language=language), code, root, None
+        )
+    }
+    return rule.check(code.read_text(encoding="utf-8"), spec_path=code)
+
+
+@pytest.mark.parametrize("language", sorted(PROJECTS))
+def test_a_forbidden_import_fails(tmp_path: Path, language: str) -> None:
+    assert _c05(tmp_path, language, manifest=True).status == Status.FAIL
+
+
+@pytest.mark.parametrize("language", sorted(PROJECTS))
+def test_a_file_no_manifest_covers_is_skip_never_pass(tmp_path: Path, language: str) -> None:
+    result = _c05(tmp_path, language, manifest=False)
 
     assert result.status == Status.SKIP
-    assert says in result.message
+    assert "no context.yaml covers this file" in result.message
     assert result.findings == []

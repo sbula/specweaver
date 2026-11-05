@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-from contextlib import suppress
-from typing import TYPE_CHECKING
-from unittest.mock import patch
+from contextlib import contextmanager, suppress
+from typing import TYPE_CHECKING, Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -26,6 +26,7 @@ from specweaver.sandbox.qa_runner.core.interface import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 
@@ -540,36 +541,50 @@ class TestAtomRunDebugger:
 
 
 class TestAtomRunArchitecture:
-    """Tests for the run_architecture intent."""
+    """The run_architecture intent runs the check `qa_atom` gave it (TECH-082: the shared check)."""
 
     def test_architecture_clean(self, tmp_path: Path) -> None:
-        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
 
-        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
-        with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
-            result = atom.run({"intent": "run_architecture", "target": "src/"})
+        atom = qa_atom(cwd=tmp_path)
+        clean = ArchitectureRunResult(violation_count=0, violations=[], unmapped=2)
+        with patch.object(atom, "_architecture", return_value=clean) as check:
+            result = atom.run({"intent": "run_architecture", "target": "src/a.py"})
 
         assert result.status == AtomStatus.SUCCESS
-        assert result.exports["violation_count"] == 0
+        assert (result.exports["violation_count"], result.exports["unmapped"]) == (0, 2)
+        check.assert_called_once_with(tmp_path, "src/a.py")
 
     def test_architecture_violations(self, tmp_path: Path) -> None:
-        atom = qa_atom(cwd=tmp_path)
         from specweaver.sandbox.qa_runner.core.interface import (
             ArchitectureRunResult,
             ArchitectureViolation,
         )
 
-        mock_result = ArchitectureRunResult(
+        atom = qa_atom(cwd=tmp_path)
+        found = ArchitectureRunResult(
             violation_count=1,
             violations=[ArchitectureViolation("src/foo.py", "E01", "bad import", "uri")],
         )
-        with patch.object(atom._runner, "run_architecture_check", return_value=mock_result):
-            result = atom.run({"intent": "run_architecture", "target": "src/"})
+        with patch.object(atom, "_architecture", return_value=found):
+            result = atom.run({"intent": "run_architecture", "target": "src/foo.py"})
 
         assert result.status == AtomStatus.FAILED
         assert result.exports["violation_count"] == 1
         assert len(result.exports["violations"]) == 1
+
+    def test_each_extra_is_exported(self, tmp_path: Path) -> None:
+        from specweaver.commons.qa import ExtraRun
+        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
+
+        atom = qa_atom(cwd=tmp_path)
+        verdict = ArchitectureRunResult(0, [], extras=[ExtraRun("tach", ran=False, reason="gone")])
+        with patch.object(atom, "_architecture", return_value=verdict):
+            result = atom.run({"intent": "run_architecture", "target": "src/a.py"})
+
+        assert result.exports["extras"] == [
+            {"tool": "tach", "ran": False, "reason": "gone", "violation_count": 0}
+        ]
 
     def test_architecture_missing_target(self, tmp_path: Path) -> None:
         atom = qa_atom(cwd=tmp_path)
@@ -577,32 +592,23 @@ class TestAtomRunArchitecture:
         assert result.status == AtomStatus.FAILED
         assert "target" in result.message.lower()
 
-    def test_architecture_forwards_dal_level(self, tmp_path: Path) -> None:
-        """dal_level from context must be forwarded to run_architecture_check."""
-        from specweaver.commons.enums.dal import DALLevel
-        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
+    def test_an_atom_given_no_check_fails(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
+        atom = QARunnerAtom(tmp_path, runner=object())  # type: ignore[arg-type]
+        result = atom.run({"intent": "run_architecture", "target": "a.py"})
+
+        assert result.status == AtomStatus.FAILED
+
+    def test_an_unreadable_target_fails(self, tmp_path: Path) -> None:
         atom = qa_atom(cwd=tmp_path)
-        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
         with patch.object(
-            atom._runner, "run_architecture_check", return_value=mock_result
-        ) as mock_check:
-            atom.run({"intent": "run_architecture", "target": "src/", "dal_level": DALLevel.DAL_B})
+            atom, "_architecture", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "x")
+        ):
+            result = atom.run({"intent": "run_architecture", "target": "a.py"})
 
-        mock_check.assert_called_once_with(target="src/", dal_level=DALLevel.DAL_B)
-
-    def test_architecture_forwards_none_dal_level(self, tmp_path: Path) -> None:
-        """When dal_level is absent from context, None must be forwarded."""
-        from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult
-
-        atom = qa_atom(cwd=tmp_path)
-        mock_result = ArchitectureRunResult(violation_count=0, violations=[])
-        with patch.object(
-            atom._runner, "run_architecture_check", return_value=mock_result
-        ) as mock_check:
-            atom.run({"intent": "run_architecture", "target": "src/"})
-
-        mock_check.assert_called_once_with(target="src/", dal_level=None)
+        assert result.status == AtomStatus.FAILED
+        assert "Cannot read a.py" in result.message
 
 
 def test_resolve_runner_languages(tmp_path: Path) -> None:
@@ -700,6 +706,16 @@ _INTENTS = [
 ]
 
 
+@contextmanager
+def _tools(atom: Any) -> Iterator[MagicMock]:
+    """The language runner and the architecture check, as one mock: no call means no tool ran."""
+    with patch.object(atom, "_runner") as runner, patch.object(atom, "_architecture") as check:
+        tools = MagicMock()
+        tools.attach_mock(runner, "runner")
+        tools.attach_mock(check, "architecture")
+        yield tools
+
+
 def _context(intent: str, target: object, entrypoint: object = "main.py") -> dict[str, object]:
     context: dict[str, object] = {"intent": intent, "target": target}
     if intent == "run_debugger":
@@ -727,7 +743,7 @@ class TestEveryIntentStaysInside:
     ) -> None:
         """[Hostile] climbing out, an absolute path, a null byte — for every intent."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run(_context(intent, target))
         assert result.status == AtomStatus.FAILED
         assert "outside" in result.message
@@ -739,7 +755,7 @@ class TestEveryIntentStaysInside:
         project = self._project(tmp_path)
         (project / "escape").symlink_to(tmp_path, target_is_directory=True)
         atom = qa_atom(cwd=project)
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run(_context(intent, "escape/x.py"))
         assert result.status == AtomStatus.FAILED
         assert runner.method_calls == []
@@ -750,7 +766,7 @@ class TestEveryIntentStaysInside:
     ) -> None:
         """[Hostile] a list is only as safe as its worst entry."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run({"intent": intent, "targets": ["tests/a.py", "../b.py"]})
         assert result.status == AtomStatus.FAILED
         assert runner.method_calls == []
@@ -758,7 +774,7 @@ class TestEveryIntentStaysInside:
     def test_an_entrypoint_outside_is_refused(self, tmp_path: Path) -> None:
         """[Hostile] the debugger runs `python <entrypoint>` (agreed 2026-10-22)."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run(_context("run_debugger", "src/", entrypoint="../evil.py"))
         assert result.status == AtomStatus.FAILED
         assert "../evil.py" in result.message
@@ -767,9 +783,9 @@ class TestEveryIntentStaysInside:
     def test_a_class_name_entrypoint_passes(self, tmp_path: Path) -> None:
         """[Boundary] Java and Kotlin pass a main class, which lies inside as a name."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner, suppress(TypeError):
+        with _tools(atom) as runner, suppress(TypeError):
             atom.run(_context("run_debugger", ".", entrypoint="com.example.Main"))
-        assert runner.run_debugger.called
+        assert runner.runner.run_debugger.called
 
     @pytest.mark.parametrize("target", [123, ["src/"], None.__class__])
     def test_a_target_that_is_not_a_path_string_is_refused(
@@ -777,7 +793,7 @@ class TestEveryIntentStaysInside:
     ) -> None:
         """[Hostile] a wrong type never reaches a tool."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run(_context("run_linter", target))
         assert result.status == AtomStatus.FAILED
         assert runner.method_calls == []
@@ -791,7 +807,7 @@ class TestEveryIntentStaysInside:
         project = self._project(tmp_path)
         target = str(project / "src") if target == "PROJECT_ABSOLUTE" else target
         atom = qa_atom(cwd=project)
-        with patch.object(atom, "_runner") as runner, suppress(TypeError):
+        with _tools(atom) as runner, suppress(TypeError):
             atom.run(_context(intent, target))  # the mock's result is not a real one
         assert runner.method_calls != []
 
@@ -824,7 +840,7 @@ class TestEveryIntentStaysInside:
     def test_targets_given_as_one_string_is_still_checked(self, tmp_path: Path) -> None:
         """[Hostile] a wrongly shaped `targets` is checked as one path, not skipped."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run({"intent": "run_linter", "targets": "../b.py"})
         assert result.status == AtomStatus.FAILED
         assert runner.method_calls == []
@@ -832,7 +848,7 @@ class TestEveryIntentStaysInside:
     def test_a_whitespace_target_is_refused(self, tmp_path: Path) -> None:
         """[Boundary] blank is not the project root."""
         atom = qa_atom(cwd=self._project(tmp_path))
-        with patch.object(atom, "_runner") as runner:
+        with _tools(atom) as runner:
             result = atom.run({"intent": "run_linter", "target": "   "})
         assert result.status == AtomStatus.FAILED
         assert runner.method_calls == []

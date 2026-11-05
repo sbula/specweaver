@@ -151,10 +151,3 @@ def test_a_ruff_report_that_is_not_json_warns(
         is None
     )
     assert _warned(caplog, "ruff", "not valid JSON")
-
-
-def test_an_import_report_that_is_not_json_warns(caplog: pytest.LogCaptureFixture) -> None:
-    from specweaver.sandbox.language.core.typescript.runner import _restricted_import_violations
-
-    assert _restricted_import_violations("not json") == []
-    assert _warned(caplog, "import report", "lost")

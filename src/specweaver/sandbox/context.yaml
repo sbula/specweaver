@@ -9,6 +9,7 @@ purpose: >
 archetype: orchestrator
 
 consumes:
+  - specweaver/assurance/graph
   - specweaver/commons
   - specweaver/core/config
   - specweaver/infrastructure/llm

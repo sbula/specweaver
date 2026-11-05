@@ -26,6 +26,12 @@ def test_e2e_tach_sync_generates_valid_boundaries(tmp_path: Path):
     (core_dir / "__init__.py").write_text("")
     (core_dir / "logic.py").write_text("def hello(): pass\n")
 
+    # Tests import the code they test: `sw init` declares `tests` consumes `src` (TECH-082 Q7),
+    # and tach under `exact = true` fails a declared edge nothing uses.
+    (project_dir / "src" / "util.py").write_text("def helper(): pass\n")
+    (project_dir / "tests").mkdir()
+    (project_dir / "tests" / "test_util.py").write_text("import src.util\n")
+
     # Write a base constitution so init doesn't break
     (project_dir / "CONSTITUTION.md").write_text("# Project Constitution\n")
 

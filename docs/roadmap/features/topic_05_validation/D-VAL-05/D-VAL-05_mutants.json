@@ -99,7 +99,11 @@
           "breaks": "a missing tach.toml reads as tach's own 'run tach init'",
           "symbol_sha": "sha256:ac7babb8f412c028be65903f65129829a2e7a8a4b8aa1f8f03a27ee69b9ca307"
         }
-      ]
+      ],
+      "retired": {
+        "reason": "TECH-082 Q5 [agreed 2026-11-05]: without tach.toml tach is not configured, so no failure and no sw scan hint; the Python tach check moved to the shared extras table",
+        "date": "2026-11-05"
+      }
     }
   ]
 }

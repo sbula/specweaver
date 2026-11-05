@@ -95,6 +95,8 @@ class TestScaffoldProject:
         data = yaml.load(context_path)
         assert data["level"] == "domain"
         assert data["archetype"] == "adapter"
+        # Tests import the code they test; the boundary check judges that edge (TECH-082 FR-16).
+        assert list(data["consumes"]) == ["src"]
 
     def test_returns_created_paths(self, tmp_path: Path) -> None:
         """scaffold_project returns a summary of what was created."""

@@ -60,8 +60,14 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    - `run_linter()`
    - `run_complexity()`
    - `run_debugger()`
-   - `run_architecture_check(target: str) -> ArchitectureRunResult` (Feature 3.20a: maps native
-     boundary violations into SpecWeaver)
+
+   A runner has no boundary check of its own. The shared check
+   (`sandbox/language/core/boundary_check.py`) judges every language by the `context.yaml` tree; a
+   new language adds only its parser's `extract_imports` and its pick in
+   `workspace/ast/refactor/imports.py`, which names the project file an import reaches. A stricter
+   boundary tool for the language is one row in `boundary_extras.py`'s table (`TECH-082`). Where
+   no `context.yaml` covers the file, the check returns a `note` and no violations: C05 skips,
+   naming the note.
 
    Each QA method ends in one of three ways, and never a bare zero, which every reader takes as a
    clean result (`TECH-087`):
@@ -70,10 +76,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    - **It did not run:** the tool is missing, timed out, found no container engine, or wrote no
      report or one that cannot be read. Return the shared result from
      `sandbox/language/core/toolchain.py` (`failed_tests`, `failed_lint`, `failed_complexity`,
-     `failed_compile`, `failed_architecture`); the step fails and says why. Check `timed_out`
+     `failed_compile`); the step fails and says why. Check `timed_out`
      before reading output, and remove an earlier run's report before the run.
-   - **It is not built for this language:** say so. `run_architecture_check` returns a `note` and
-     no violations (C05 skips, naming the note). Any other method returns its `failed_*` result
+   - **It is not built for this language:** say so. The method returns its `failed_*` result
      with "<Language> <check> checks are not implemented", as `run_complexity` does for TypeScript.
      An open tool (like `gocyclo`) is better than either.
 2. **Output parser**: pure-logic functions like `extract_go_test_results(stdout: str) -> TestRunResult`,

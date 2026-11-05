@@ -11,7 +11,6 @@ toolchain, and the timeout is cut to 1 s so the real executor kills it.
 | Bucket | Case |
 |---|---|
 | Happy | tsc prints a type error and exits: the error is counted |
-| Boundary | ESLint hangs with no output: "ESLint timed out after 1 s" |
 | Boundary | the debugged program hangs: "dist/main.js timed out after 1 s", exit 124 |
 | Degradation | tsc hangs after a partial line: "tsc timed out after 1 s", the line not counted |
 | Hostile | the partial line is a well-formed tsc error; it must not read as the verdict |
@@ -48,7 +47,6 @@ def _atom(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, npx_body: str) -> QAR
     node.chmod(0o755)
     monkeypatch.setenv("PATH", f"{bin_dir}:/usr/bin:/bin")
     monkeypatch.setattr(runner, "_TSC_TIMEOUT_SECONDS", 1)
-    monkeypatch.setattr(runner, "_ESLINT_TIMEOUT_SECONDS", 1)
     monkeypatch.setattr(runner, "_DEBUG_TIMEOUT_SECONDS", 1)
     project = tmp_path / "project"
     (project / "src").mkdir(parents=True)
@@ -75,19 +73,6 @@ def test_a_tsc_that_hangs_after_a_partial_line_timed_out(
     assert result.exports["error_count"] == 1
     error = result.exports["errors"][0]
     assert (error["code"], error["message"]) == ("ToolchainUnavailable", "tsc timed out after 1 s")
-
-
-def test_an_eslint_that_hangs_timed_out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    atom = _atom(tmp_path, monkeypatch, "exec sleep 30")
-
-    result = atom.run({"intent": "run_architecture", "target": "src"})
-
-    assert result.exports["violation_count"] == 1
-    violation = result.exports["violations"][0]
-    assert (violation["code"], violation["message"]) == (
-        "ToolchainUnavailable",
-        "ESLint timed out after 1 s",
-    )
 
 
 def test_a_debugged_program_that_hangs_timed_out(

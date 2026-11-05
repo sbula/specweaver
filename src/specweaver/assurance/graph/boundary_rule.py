@@ -50,18 +50,56 @@ def breaches(nodes: Mapping[str, TopologyNode], root: Path) -> list[Breach]:
 
 def allows(nodes: Mapping[str, TopologyNode], root: Path, folder: str, target: str) -> bool:
     """Whether code in `folder` may use `target` under the nearest manifest's effective rule."""
-    tree = _Tree(nodes, root)
-    owner = tree.owner_of(_split(folder))
-    wanted = tree.parts(target)
-    if owner is None:
-        return True
-    if wanted is None:
-        return False
-    own, node = tree.folders[owner]
-    used = _inside(wanted, own) or any(_overlap(wanted, c) for c in tree.parsed(node.consumes))
-    widened = any(_inside(wanted, w) for w in tree.parsed(node.widens))
-    forbidden = any(_inside(wanted, f) for f in tree.forbids(owner))
-    return used and (widened or not forbidden)
+    return BoundaryRule(nodes, root).allows(folder, target)
+
+
+class BoundaryRule:
+    """The tree's effective rules, read once, asked many times (one per import of a file)."""
+
+    def __init__(self, nodes: Mapping[str, TopologyNode], root: Path) -> None:
+        self._tree = _Tree(nodes, root)
+
+    def owner(self, folder: str) -> str | None:
+        """The nearest folder at or above `folder` whose manifest rules it, or None."""
+        return self._tree.owner_of(_split(folder))
+
+    def allows(self, folder: str, target: str) -> bool:
+        """Whether code in `folder` may use `target`; a folder no manifest rules allows anything."""
+        tree = self._tree
+        owner = self.owner(folder)
+        wanted = tree.parts(target)
+        if owner is None:
+            return True
+        if wanted is None:
+            return False
+        own, node = tree.folders[owner]
+        used = _inside(wanted, own) or any(_overlap(wanted, c) for c in tree.parsed(node.consumes))
+        widened = any(_inside(wanted, w) for w in tree.parsed(node.widens))
+        forbidden = any(_inside(wanted, f) for f in tree.forbids(owner))
+        return used and (widened or not forbidden)
+
+    def forbids_library(self, folder: str, written: str) -> tuple[str, str] | None:
+        """The manifest folder and its `forbids` entry that name an import reaching no project
+        folder, by its written name (`sqlalchemy.orm` meets `*.orm`), or None. `.` and `::` part
+        the name; `consumes` never applies to a library."""
+        owner = self.owner(folder)
+        text = written.strip().replace("::", "/")
+        if owner is None or not text or text.startswith((".", "/")):
+            return None
+        wanted = _split(text if "/" in text else text.replace(".", "/"))
+        tree = self._tree
+        entries = [(f, e) for f in tree.lineage(owner) for e in tree.folders[f][1].forbids]
+        return next(((f, e) for f, e in entries if _inside(wanted, tree.parts(e) or ("",))), None)
+
+    def needs_widens(self, folder: str, target: str) -> bool:
+        """Whether allowing `target` in `folder` takes a `widens` entry: it is forbidden there, or
+        wider than the parent's rule. Otherwise a `consumes` entry alone allows it."""
+        tree = self._tree
+        owner = self.owner(folder)
+        wanted = tree.parts(target)
+        if owner is None or wanted is None:
+            return False
+        return bool(tree.kinds(wanted, tree.parent_of(owner), tree.forbids(owner)))
 
 
 class _Tree:
@@ -101,6 +139,11 @@ class _Tree:
         own = self.folders[folder][0]
         return self.owner_of(own[:-1]) if own else None
 
+    def lineage(self, folder: str) -> list[str]:
+        """`folder` and every manifest folder above it, nearest first."""
+        parent = self.parent_of(folder)
+        return [folder, *(self.lineage(parent) if parent is not None else [])]
+
     def forbids(self, folder: str) -> list[_Parts]:
         own = self.parsed(self.folders[folder][1].forbids)
         parent = self.parent_of(folder)
@@ -136,7 +179,7 @@ class _Tree:
             used = self.parts(entry)
             if used is None:
                 continue
-            kinds = self._kinds(used, parent, forbidden)
+            kinds = self.kinds(used, parent, forbidden)
             covering = {k for k, w in widens.items() if _inside(used, w)}
             if kinds and covering:
                 needed |= covering
@@ -144,7 +187,7 @@ class _Tree:
                 found += [Breach(folder, entry, kind, parent) for kind in kinds]
         return needed, found
 
-    def _kinds(self, used: _Parts, parent: str | None, forbidden: list[_Parts]) -> list[str]:
+    def kinds(self, used: _Parts, parent: str | None, forbidden: list[_Parts]) -> list[str]:
         """How an entry breaks the rule before any `widens` is applied."""
         kinds = []
         if parent is not None and not self._within_parent(used, parent):

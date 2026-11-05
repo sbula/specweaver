@@ -9,6 +9,7 @@ takes the runner it is given and never imports a language.
 
 from __future__ import annotations
 
+import functools
 import logging
 import shutil
 import tempfile
@@ -112,7 +113,14 @@ def qa_atom(
         if scratch is not None:
             shutil.rmtree(scratch, ignore_errors=True)
         raise
-    atom = QARunnerAtom(cwd, runner, scenarios_mounted=scenarios_root is not None)
+    from specweaver.sandbox.language.core.boundary_check import check_architecture
+
+    atom = QARunnerAtom(
+        cwd,
+        runner,
+        architecture=functools.partial(check_architecture, executor=executor),
+        scenarios_mounted=scenarios_root is not None,
+    )
     if scratch is not None:
         weakref.finalize(atom, shutil.rmtree, scratch, True)
     return atom

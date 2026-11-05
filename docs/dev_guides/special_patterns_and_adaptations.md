@@ -74,13 +74,14 @@ Markdown design's constraints **before** tests run.
 
 `assurance/validation` is `archetype: pure-logic` and `forbids: specweaver/sandbox/*` (the executor
 layer, `Loom Commons`). The C05 rule
-(`c05_import_direction.py`) still needs the polyglot architecture check that `sandbox.qa_runner`
-provides. It gets it without importing it: the flow layer's validation hydrator
+(`c05_import_direction.py`) still needs the shared boundary check that the QA atom's
+`run_architecture` intent runs (`sandbox/language/core/boundary_check.py`, all 9 languages). It gets
+it without importing it: the flow layer's validation hydrator
 (`assurance/validation/orchestration/validation_hydrator.py`) runs the check and puts the result in
 `rule.context["qa_architecture_result"]`; C05 only reads it.
 
 Replaced: C05 used to call `PythonQARunner.run_architecture_check()` itself under a boundary
-relaxation (`forbids: "!sandbox.qa_runner"`). Hydration keeps one polyglot parser (Go, Python, TS)
+relaxation (`forbids: "!sandbox.qa_runner"`). Hydration keeps one shared check for every language
 without letting validation import the sandbox. See §12 for the hydration mechanism.
 
 ---
