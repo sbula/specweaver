@@ -55,8 +55,8 @@ critical for long-term project viability.
 
 * **`TECH-086` 🔴: Tool Roles and Scaffolding Are Copied per Area**
   > [Description](../features/topic_07_technical_debt/TECH-086/TECH-086_design.md) | _Status:
-  > all 9 sub-features committed 2026-11-05; waiting for sign-off. Origin: 2026-10-22,
-  > architecture audit (9 findings)._ |
+  > closed by the user 2026-11-05. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > Verifiable Proof: `tests/unit/sandbox/language/core/test_boundary_check.py` |
   > Role access is spelled in about ten tables (a permission surface); tool scaffolding is
   > copied per area; the dispatcher is also the composition root and the grant policy.
 
@@ -79,7 +79,7 @@ critical for long-term project viability.
   > STUB. Origin: 2026-10-22, architecture audit (5 findings)._ |
   > Spec file names, sections and artifact paths are derived several ways.
 
-* **`TECH-082` 🔴: Domain Logic Lives in the Flow Engine**
+* **`TECH-082` 🟢: Domain Logic Lives in the Flow Engine**
   > [Description](../features/topic_07_technical_debt/TECH-082/TECH-082_design.md) | _Status:
   > all 9 sub-features committed 2026-11-05; waiting for sign-off. Origin: 2026-10-22,
   > architecture audit (9 findings)._ |

@@ -630,7 +630,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-079:** [Language and Toolchain Are Decided in a Dozen Places That Disagree](features/topic_07_technical_debt/TECH-079/TECH-079_design.md)
     *   `🔴` **TECH-080:** [Module Manifests Are Read Five Ways](features/topic_07_technical_debt/TECH-080/TECH-080_design.md)
     *   `🟢` **TECH-081:** [The Layer Check Reports Clean While the Layers Are Broken](features/topic_07_technical_debt/TECH-081/TECH-081_design.md)
-    *   `🔴` **TECH-082:** [Domain Logic Lives in the Flow Engine](features/topic_07_technical_debt/TECH-082/TECH-082_design.md)
+    *   `🟢` **TECH-082:** [Domain Logic Lives in the Flow Engine](features/topic_07_technical_debt/TECH-082/TECH-082_design.md)
     *   `🔴` **TECH-083:** [Spec Names and Sections Are Parsed Several Ways](features/topic_07_technical_debt/TECH-083/TECH-083_design.md)
     *   `🔴` **TECH-084:** [A File's Pipeline Is Chosen Three Ways](features/topic_07_technical_debt/TECH-084/TECH-084_design.md)
     *   `🔴` **TECH-085:** [Every Workflow Calls the Model Its Own Way](features/topic_07_technical_debt/TECH-085/TECH-085_design.md)

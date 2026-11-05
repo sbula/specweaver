@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-082
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-02; amendment FR-15..FR-21, SF-08, SF-09 approved 2026-11-03)
+- **Status**: COMPLETE (signed off by the user 2026-11-05)
 - **Kind**: `refactor`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-082/TECH-082_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -427,6 +427,7 @@ check in `sandbox/language/core/boundary_check.py` judges C05 in all 9 languages
 `context.yaml` tree; a library meets only `forbids`, by its written name (Q8); tach,
 dependency-cruiser and go-arch-lint run as configured extras, and one that did not run is WARN
 (`TECH-082_sf09_walkthrough.md`).
-**Next step**: the closure gate (`check_fr_coverage.py TECH-082`, `tests.py feature TECH-082`).
+**Closed 2026-11-05**: closure gate passed (21 of 21 FRs proven); signed off by the user.
+**Next step**: none. TECH-079 is next in the backlog.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
