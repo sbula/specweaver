@@ -160,7 +160,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13..FR-20 | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets; one exception: FR-9 changes the routing helpers' arguments and replaces the hand list of model-free steps (`test_llm_for.py:81`) `[agreed 2026-11-04]`; FR-12 merges the two pop functions and removes the `scenario_test_path` write, so their tests (`test_draft_feature_handler.py:400-430`, `test_scenario_handlers.py:351-369`) move to what replaces them `[agreed 2026-11-04]`; the same holds for the third pop function, `DraftSpecHandler._pop_feedback`, and its tests (`test_draft_handler.py:195-222`) **[proof: meta — rule about the diff]** |
+| NFR-1 | Behaviour stays the same outside FR-10, FR-11, FR-13..FR-20 and FR-8's `files_touched` writers `[agreed 2026-11-05]` | The full suite passes; test edits outside those FRs change only import paths and `mock.patch` targets; one exception: FR-9 changes the routing helpers' arguments and replaces the hand list of model-free steps (`test_llm_for.py:81`) `[agreed 2026-11-04]`; FR-12 merges the two pop functions and removes the `scenario_test_path` write, so their tests (`test_draft_feature_handler.py:400-430`, `test_scenario_handlers.py:351-369`) move to what replaces them `[agreed 2026-11-04]`; the same holds for the third pop function, `DraftSpecHandler._pop_feedback`, and its tests (`test_draft_handler.py:195-222`); FR-7 makes the runner's members public, so test lines that read `runner._x` read `runner.x` `[agreed 2026-11-05]` **[proof: meta — rule about the diff]** |
 | NFR-2 | The boundaries hold | `tach check` passes with `exact = true`, no cycle, no `deprecated` edge; manifests match tach; the new modules declare `exposes` equal to tach's interfaces **[proof: arch — tach/lint gate, not pytest]** |
 | NFR-3 | No compatibility shims | Importing each old module path (`specweaver.core.flow.engine.task_files`, `...frameworks`, `...handlers.contract_renderers`, `...handlers.validation_hydrator`, `...handlers.archetype_pipelines`) raises `ModuleNotFoundError` |
 | NFR-4 | Mutants still find their code | Every mutant anchored in a moved symbol is re-pointed and its `symbol_sha` refreshed; `stale_mutants.py` reports none stale and each re-pointed campaign kills as before **[proof: meta — rule about tests]** |
@@ -331,7 +331,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Runner seams | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -396,6 +396,9 @@ load (`TECH-082_sf05_walkthrough.md`).
 `run_state/feedback.py` and read through one `pop_findings`; the arbiter takes the side steps from
 the side table; `FILENAME_PREFIX` is gone; `skeleton_assembler` and `mcp_assembler` have distinct
 titles; `roles_of` is public in `handlers/roles.py` (`TECH-082_sf06_walkthrough.md`).
-**Next step**: SF-04, SF-07 and SF-09 in any order (SF-09's design column is still ⬜).
+**SF-04 plan approved 2026-11-05** (the user): F-1 A (the runner's members become public), F-2 A
+(the file-writing handlers write `files_touched`); two commit boundaries.
+**Next step**: dev SF-04 (`TECH-082_sf04_implementation_plan.md`); then SF-07 and SF-09 (SF-09's
+design column is still ⬜).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
