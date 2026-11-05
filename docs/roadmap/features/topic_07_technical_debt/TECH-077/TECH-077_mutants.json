@@ -62,12 +62,12 @@
         {
           "id": "skeleton-ignores-file-archetype",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/context_assembler.py",
+          "file": "src/specweaver/core/flow/handlers/skeleton_assembler.py",
           "symbol": "evaluate_and_fetch_skeleton_context",
           "old": "        archetype = resolver.resolve(path) or \"generic\"\n",
           "new": "        archetype = resolver.resolve(context.project_path) or \"generic\"\n",
           "breaks": "every file is skeletonized under the root's archetype",
-          "symbol_sha": "sha256:958f1c729cc9bfdc6ba88d84eb87bd3ebe02659e3985f44527d5f0ec3e12c05e"
+          "symbol_sha": "sha256:ff1535351ee904e96921306acbdcbbbb54d41b73660305e64b66a9ed17813116"
         }
       ]
     },
@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
+          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
+          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
+          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
         },
         {
           "id": "optional-model-refuses",
@@ -188,7 +188,7 @@
           "old": "        if request.models != \"optional\":\n            raise\n",
           "new": "        if True:\n            raise\n",
           "breaks": "a command whose model is optional refuses without one",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         }
       ]
     },
@@ -424,7 +424,7 @@
           "old": "            request.on_model_skipped(err)\n",
           "new": "            pass\n",
           "breaks": "a scan with no model never says why",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         },
         {
           "id": "drift-check-wrong-folder",

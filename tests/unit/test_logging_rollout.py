@@ -330,7 +330,6 @@ class TestBatch3LoggingRollout:
         from specweaver.core.flow.handlers import (
             arbiter,
             base,
-            context_assembler,
             decompose,
             draft,
             drift,
@@ -341,6 +340,7 @@ class TestBatch3LoggingRollout:
             registry,
             review,
             scenario,
+            skeleton_assembler,
             standards,
             validation,
         )
@@ -360,7 +360,7 @@ class TestBatch3LoggingRollout:
             store,
             arbiter,
             base,
-            context_assembler,
+            skeleton_assembler,
             decompose,
             draft,
             drift,

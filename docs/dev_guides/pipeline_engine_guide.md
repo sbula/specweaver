@@ -71,6 +71,9 @@ config itself loses them. `llm_for` with an explicit role is only for a call mad
 A new step is one row in `STEPS` (pair, role, `agentic`) and one entry in the registry's
 `_HANDLER_OF`.
 
+A run builder asks which roles a pipeline needs with `roles_of(pipeline)` from the public
+`core/flow/handlers/roles.py`; `handlers/_llm.py` is private to the handlers.
+
 A handler reads the findings a gate or the arbiter sent it with `pop_findings(context, step.name)`
 from `core/flow/run_state/feedback.py`: it takes them out, so a retry does not apply them twice.
 A new `feedback` key is declared there with its value type;

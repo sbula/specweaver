@@ -87,8 +87,6 @@ class _GenerationHandler:
 
     #: Directory under the project root when the run does not supply one.
     OUTPUT_SUBDIR: ClassVar[str]
-    #: Prepended to the spec stem to form the filename (`test_` for tests).
-    FILENAME_PREFIX: ClassVar[str] = ""
     #: Lineage event recorded for the artefact this handler writes.
     EVENT_TYPE: ClassVar[str]
     #: What the log lines call the thing being produced.
@@ -266,7 +264,7 @@ async def _generation_prompt(context: RunContext, step: PipelineStep, *, instruc
     """
     from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
     from specweaver.core.flow.handlers.base import _build_base_prompt
-    from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+    from specweaver.core.flow.handlers.skeleton_assembler import evaluate_and_fetch_skeleton_context
 
     targets = list(context.graph.api_contract_paths or [])
     s_files = await asyncio.to_thread(evaluate_and_fetch_skeleton_context, context, targets)
@@ -299,7 +297,6 @@ class GenerateTestsHandler(_GenerationHandler):
     """Handler for generate+tests — LLM test generation."""
 
     OUTPUT_SUBDIR: ClassVar[str] = "tests"
-    FILENAME_PREFIX: ClassVar[str] = "test_"
     EVENT_TYPE: ClassVar[str] = "generated_tests"
     ARTEFACT: ClassVar[str] = "tests"
     SECTION: ClassVar[str] = "tests"

@@ -307,7 +307,8 @@
         "tests/unit/core/flow/handlers/test_dual_pipeline.py",
         "tests/unit/core/flow/handlers/test_scenario_handlers.py",
         "tests/unit/core/flow/handlers/test_arbiter.py",
-        "tests/integration/core/flow/handlers/test_scenario_integration_dispatch.py"
+        "tests/integration/core/flow/handlers/test_scenario_integration_dispatch.py",
+        "tests/unit/core/flow/test_flow_names.py"
       ],
       "mutants": [
         {
@@ -379,6 +380,36 @@
           "new": "        \"arbitrate_verdict\",\n        {\n            \"verdict\": \"scenario_error\",",
           "breaks": "the verdict names a fixed step, not the arbiter's own name in the pipeline",
           "symbol_sha": "sha256:03558a0ba11c9bf60d7a212afbd27b92b2426eb01a382fc182468ed7e96c1d52"
+        },
+        {
+          "id": "private-llm-imported-again",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_router",
+          "old": "    from specweaver.core.config.llm_settings import SettingNotSetError\n    from specweaver.core.flow.handlers.roles import roles_of\n",
+          "new": "    from specweaver.core.config.llm_settings import SettingNotSetError\n    from specweaver.core.flow.handlers._llm import llm_for  # noqa: F401\n    from specweaver.core.flow.handlers.roles import roles_of\n",
+          "breaks": "the run builder reaches into the handlers' private module again",
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
+        },
+        {
+          "id": "filename-prefix-back",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler",
+          "old": "    OUTPUT_SUBDIR: ClassVar[str]\n",
+          "new": "    OUTPUT_SUBDIR: ClassVar[str]\n    FILENAME_PREFIX: ClassVar[str] = \"\"\n",
+          "breaks": "a setting nothing reads comes back",
+          "symbol_sha": "sha256:cbc15c49dcdaaed23881ebfa35762306af25c788e4d83690f90eb4f16bdce466"
+        },
+        {
+          "id": "assemblers-share-a-title",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/skeleton_assembler.py",
+          "symbol": "evaluate_and_fetch_skeleton_context",
+          "old": "\"\"\"Skeleton assembler — fetches",
+          "new": "\"\"\"Context Assembler — fetches",
+          "breaks": "two assemblers carry one title again",
+          "symbol_sha": "sha256:ff1535351ee904e96921306acbdcbbbb54d41b73660305e64b66a9ed17813116"
         }
       ]
     }

@@ -73,3 +73,56 @@ the engine and the handlers already depend on `run_state`; `arbiter` → `dual_p
 - Cycle 2: challenged R3 (does any code outside `core/flow` read `context.feedback`?): none in
   `src/`. Challenged the guard's reach (only `core/flow`): it is the only package that touches
   `feedback`. No new finding above LOW.
+
+## CB-2: dead setting, distinct names, public `roles_of` (FR-12, NFR-1, NFR-2, NFR-4)
+
+**What changed**
+- `generation.py`: `FILENAME_PREFIX` is gone from `_GenerationHandler` and `GenerateTestsHandler`
+  (nothing read it).
+- `handlers/context_assembler.py` → `handlers/skeleton_assembler.py`, titled "Skeleton assembler";
+  its log lines say `SkeletonAssembler:`. `mcp_assembler.py` is titled "MCP resource assembler".
+  No shim at the old path (AD-6). Imports moved in `generation.py`, `review.py` and 7 test files
+  (imports and `mock.patch` targets only); `test_context_assembler.py` → `test_skeleton_assembler.py`.
+- `roles_of` moves from the private `handlers/_llm.py` to the new public `handlers/roles.py`.
+  `interfaces/run_setup/builder.py` (2 sites) and 3 test files import it from there.
+- Docs: `pipeline_engine_guide.md` (`roles.py` is the public home), `code_structure_and_ast_editing.md`
+  and `mcp_architecture_design.md` (assembler names), `topic_02_sensors.md`. Plans, walkthroughs and
+  analyses that name the old module are history and stay as written.
+
+**Tests**
+- `test_flow_names.py` (8), red first: no `FILENAME_PREFIX` on either handler (their `OUTPUT_SUBDIR`
+  stays); the old assembler path raises `ModuleNotFoundError`; the two titles differ; `roles_of`
+  imports from `handlers.roles`; nothing in `src/` outside the handlers imports `_llm` (red on
+  `builder.py:79,156`); both import forms are found; an unparsable file is named.
+
+**Mutants**
+- 14 stale (B-FLOW-01 1, B-FLOW-07 1, C-FLOW-13 4, D-INTL-03 1, TECH-077 6, TECH-081 1) re-run before
+  the refresh: all OBJECTED. B-FLOW-01 FR-17 `side-roles-unchecked` re-pointed to `roles.py`; TECH-077
+  FR-6 to `skeleton_assembler.py`. 0 stale.
+- TECH-082 FR-12 gains `private-llm-imported-again`, `filename-prefix-back`,
+  `assemblers-share-a-title`. All OBJECTED.
+
+**Coverage matrix**
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `roles_of` (new home) | ✅ `test_llm_for.py`, `test_dual_pipeline_step.py` | ✅ `test_two_models.py`, `test_build_run.py` | ✅ |
+| `evaluate_and_fetch_skeleton_context` | ✅ `test_skeleton_assembler.py`, `test_skeleton_wiring.py` | ✅ `test_one_archetype.py` | — |
+| names (guard) | ✅ | — | — |
+
+Composition: the builder calls `roles_of` before the run; `test_build_run.py` drives that pair.
+Agreement: one `roles_of` is left.
+
+**Architecture**: `roles.py` imports `engine.models` and `handlers.dual_pipeline`, both already used
+by the handlers; `dual_pipeline` imports neither `roles` nor `_llm`, so no cycle. `interfaces/run_setup`
+already depends on `core.flow.handlers`. `tach check` passes.
+
+**Red/blue (7.5)**, 2 cycles
+- R1 (LOW) The skeleton assembler's log prefix changed to `SkeletonAssembler:`. No test, doc or
+  script reads it (grep).
+- R2 (LOW) `roles.py` imports `dual_pipeline` at load; `_llm.py` imported it inside the function.
+  The builder imports `roles` inside its functions, so a CLI start pays nothing new; no cycle.
+- R3 (LOW) NFR-3's list names no assembler path. `test_flow_names.py` checks the old path fails to
+  import, so a shim cannot come back unseen.
+- Cycle 2: challenged R2 (does any code still reach `roles_of` through `_llm`?): none in `src/` or
+  `tests/` (grep). No new finding above LOW.

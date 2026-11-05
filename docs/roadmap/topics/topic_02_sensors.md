@@ -52,7 +52,7 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
   > - **Precondition:** —
   > - **Reads:** source files in the supported languages
   > - **Produces:** memory → skeletons, symbol bodies, and applied AST mutations
-  > - **Enables:** `context_assembler` · every AST-editing tool · `B-SENS-02`
+  > - **Enables:** `skeleton_assembler` · every AST-editing tool · `B-SENS-02`
   > - **Done when:** read and write both work across five languages
 
 * **`D-SENS-03` ✅: Polyglot Expansion (C++, Go)** (Legacy: 3.32e)

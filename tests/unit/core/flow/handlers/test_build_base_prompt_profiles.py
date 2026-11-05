@@ -226,7 +226,7 @@ class TestHandlerProfileIntegration:
                 create=True,
             ),
             patch(
-                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                "specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context",
                 return_value=[],
             ),
             patch(
@@ -318,7 +318,7 @@ class TestHandlerProfileIntegration:
             ),
             patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True),
             patch(
-                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                "specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context",
                 return_value=[],
             ),
             patch(
@@ -402,7 +402,7 @@ class TestHandlerProfileIntegration:
             ),
             patch("specweaver.core.flow.handlers.review.Reviewer", new=MagicMock(), create=True),
             patch(
-                "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+                "specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context",
                 return_value=[],
             ),
             patch(

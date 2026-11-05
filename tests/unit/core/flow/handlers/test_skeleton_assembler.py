@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from specweaver.core.flow.handlers.context_assembler import evaluate_and_fetch_skeleton_context
+from specweaver.core.flow.handlers.skeleton_assembler import evaluate_and_fetch_skeleton_context
 from specweaver.core.flow.run_state.run_context import RunContext
 
 
@@ -36,7 +36,7 @@ def test_evaluate_and_fetch_skeleton_context_success(tmp_path: Path) -> None:
     target = tmp_path / "test.py"
 
     mock_atom_class = patch(
-        "specweaver.core.flow.handlers.context_assembler.CodeStructureAtom"
+        "specweaver.core.flow.handlers.skeleton_assembler.CodeStructureAtom"
     ).start()
     mock_atom_instance = mock_atom_class.return_value
     mock_atom_instance.run.return_value.status.value = "SUCCESS"
@@ -58,7 +58,7 @@ def test_evaluate_and_fetch_skeleton_context_swallows_exception(tmp_path: Path) 
     target = tmp_path / "test.py"
 
     mock_atom_class = patch(
-        "specweaver.core.flow.handlers.context_assembler.CodeStructureAtom"
+        "specweaver.core.flow.handlers.skeleton_assembler.CodeStructureAtom"
     ).start()
     mock_atom_instance = mock_atom_class.return_value
     mock_atom_instance.run.side_effect = Exception("Native C-Binding Crash!")
@@ -75,7 +75,7 @@ async def test_evaluate_and_fetch_skeleton_context_concurrency(tmp_path: Path) -
     targets = [tmp_path / f"test_{i}.py" for i in range(10)]
 
     mock_atom_class = patch(
-        "specweaver.core.flow.handlers.context_assembler.CodeStructureAtom"
+        "specweaver.core.flow.handlers.skeleton_assembler.CodeStructureAtom"
     ).start()
     mock_atom_instance = mock_atom_class.return_value
     mock_atom_instance.run.return_value.status.value = "SUCCESS"

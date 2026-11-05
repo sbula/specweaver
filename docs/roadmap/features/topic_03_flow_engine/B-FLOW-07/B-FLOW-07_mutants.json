@@ -387,7 +387,7 @@
           "old": "            ask=request.ask,\n            db=request.db,\n",
           "new": "            ask=request.ask,\n",
           "breaks": "sw run and sw implement never apply step limits",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         },
         {
           "id": "step-limit-on-worst-case",

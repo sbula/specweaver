@@ -87,7 +87,7 @@ def test_a_step_with_no_role_is_refused_by_name() -> None:
 
 def test_a_pipeline_names_the_roles_its_steps_use() -> None:
     from specweaver.core.flow.engine.models import PipelineDefinition
-    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.core.flow.handlers.roles import roles_of
 
     pipeline = PipelineDefinition.model_validate(
         {

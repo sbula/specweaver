@@ -6,7 +6,7 @@ hallucinated environments). Red-team approved.
 
 ```mermaid
 graph LR
-    CY["context.yaml<br/>consumes_resources + mcp_servers"] --> CA["ContextAssembler<br/>core/flow/handlers/mcp_assembler.py"]
+    CY["context.yaml<br/>consumes_resources + mcp_servers"] --> CA["MCP resource assembler<br/>core/flow/handlers/mcp_assembler.py"]
     CA --> AT["MCPAtom<br/>sandbox/mcp/core/atom.py"]
     AT -->|"docker/podman run -i --rm"| SRV["MCP server container"]
     SRV --> DB[("Target DB")]

@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.assurance.validation.orchestration.archetype_pipelines import archetype_of
-from specweaver.core.flow.handlers import context_assembler
+from specweaver.core.flow.handlers import skeleton_assembler
 from specweaver.core.flow.run_state.run_context import RunContext
 
 if TYPE_CHECKING:
@@ -57,8 +57,8 @@ def _skeleton_archetypes(
         def run(self, _request: dict) -> object:
             return SimpleNamespace(status=SimpleNamespace(value="FAILED"), exports={})
 
-    monkeypatch.setattr(context_assembler, "CodeStructureAtom", _Atom)
-    context_assembler.evaluate_and_fetch_skeleton_context(context, files)
+    monkeypatch.setattr(skeleton_assembler, "CodeStructureAtom", _Atom)
+    skeleton_assembler.evaluate_and_fetch_skeleton_context(context, files)
     return built
 
 

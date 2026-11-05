@@ -100,7 +100,7 @@ A new mutation intent must follow the same path. All tree-sitter querying stays 
 Prompt building must not parse files (latency bound NFR-1). Importing `CodeStructureAtom` or
 tree-sitter bindings in `PromptBuilder` is an architecture violation.
 
-Instead the **ContextAssembler** (`core/flow/handlers/context_assembler.py`) builds skeletons in the
+Instead the **skeleton assembler** (`core/flow/handlers/skeleton_assembler.py`) builds skeletons in the
 flow handlers layer: `evaluate_and_fetch_skeleton_context()` runs via `asyncio.to_thread` during the
 L3 bootstrap and returns a path → skeleton mapping, which is passed into the `PromptBuilder` kwargs.
 No C-binding blocking in the event loop, no cross-layer cycles.

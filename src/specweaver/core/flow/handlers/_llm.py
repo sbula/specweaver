@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.models import ROLE_OF_STEP, SIDE_RUNNING_STEPS
+from specweaver.core.flow.engine.models import ROLE_OF_STEP
 
 if TYPE_CHECKING:
-    from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
+    from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.infrastructure.llm.models import GenerationConfig, TaskType
 
@@ -50,19 +50,3 @@ def llm_for_step(context: RunContext, step: PipelineStep) -> tuple[Any, Generati
         msg = f"step '{step.name}' ({step.action}+{step.target}) calls no model in the step table"
         raise ValueError(msg)
     return llm_for(context, role)
-
-
-def roles_of(pipeline: PipelineDefinition) -> list[TaskType]:
-    """The roles a pipeline's steps use, in first-use order, each once."""
-    roles: list[TaskType] = []
-    for step in pipeline.steps:
-        role = ROLE_OF_STEP.get((step.action, step.target))
-        if role is not None and role not in roles:
-            roles.append(role)
-        if (step.action, step.target) in SIDE_RUNNING_STEPS:
-            # A dual run's two sides call models too; a missing one must stop the run now.
-            from specweaver.core.flow.handlers.dual_pipeline import dual_side_pipelines
-
-            for side in dual_side_pipelines():
-                roles.extend(r for r in roles_of(side) if r not in roles)
-    return roles

@@ -164,7 +164,7 @@
           "old": "            load_llm_settings(request.project_root),\n",
           "new": "            load_llm_settings(request.project_root.parent),\n",
           "breaks": "a private-only project's code goes to a hosted server while another project is active",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         },
         {
           "id": "target-name-is-active-project",
@@ -788,7 +788,7 @@
           "old": "            run_model=request.run_model,\n",
           "new": "            run_model=None,\n",
           "breaks": "every CLI command ignores --model",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         },
         {
           "id": "implement-drops-run-model",
@@ -838,7 +838,7 @@
           "old": "    needs_model = bool(roles_of(request.pipeline)) and request.models != \"none\"\n",
           "new": "    needs_model = (bool(roles_of(request.pipeline)) or request.run_model is not None) and request.models != \"none\"\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
-          "symbol_sha": "sha256:ea47e79dd27ba9b714593b09d96829bc1f2d721a21cac7f67ebdf10d3043c12e"
+          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
         }
       ]
     },
@@ -976,7 +976,7 @@
           "old": "    except SettingNotSetError as err:\n",
           "new": "    except ValueError as err:\n",
           "breaks": "a scan with a server typo says 'No model used' and goes on",
-          "symbol_sha": "sha256:01354e92e00a9592362ef539688e1fba11fc23ff3a672ffdef4d4d185129bbd3"
+          "symbol_sha": "sha256:dad3a43aa4159a61f9664333009e9c041dd07239857448f2a339964dc83a8fc9"
         },
         {
           "id": "unset-brake-is-an-error",

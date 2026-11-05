@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Context Assembler — fetches background dependency contexts and condenses them lazily.
+"""Skeleton assembler — fetches background dependency contexts and condenses them lazily.
 
 This utility runs transparently within `flow` handlers to bypass text reading
 of massive background files, explicitly routing `CodeStructureAtom.run(intent="skeletonize")`
@@ -60,7 +60,7 @@ def evaluate_and_fetch_skeleton_context(
         return atoms[archetype]
 
     logger.debug(
-        "ContextAssembler: Resolving %d background files for skeletonization...",
+        "SkeletonAssembler: Resolving %d background files for skeletonization...",
         len(target_files),
     )
 
@@ -79,13 +79,13 @@ def evaluate_and_fetch_skeleton_context(
                 skeleton_files[path_str] = res.exports["structure"]
             else:
                 logger.debug(
-                    "ContextAssembler: Could not skeletonize %s, skipping... reason: %s",
+                    "SkeletonAssembler: Could not skeletonize %s, skipping... reason: %s",
                     path_str,
                     res.message,
                 )
         except Exception as exc:
             logger.warning(
-                "ContextAssembler: Exception extracting skeleton for %s — %s", path_str, exc
+                "SkeletonAssembler: Exception extracting skeleton for %s — %s", path_str, exc
             )
 
     return skeleton_files

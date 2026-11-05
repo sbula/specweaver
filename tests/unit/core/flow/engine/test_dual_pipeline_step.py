@@ -38,7 +38,7 @@ def test_a_component_orchestration_still_loads() -> None:
 
 
 def test_the_dual_step_brings_its_sides_roles() -> None:
-    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.core.flow.handlers.roles import roles_of
 
     roles = roles_of(_pipeline({"action": "orchestrate", "target": "dual_pipeline"}))
 

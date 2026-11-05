@@ -263,7 +263,7 @@ async def test_fr6_leaky_verdict_reaches_code_generator_vocabulary_free(tmp_path
     with (
         patch("specweaver.workflows.implementation.generator.Generator") as mock_gen_cls,
         patch(
-            "specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context",
+            "specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context",
             return_value=[],
         ),
         patch(

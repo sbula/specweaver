@@ -76,7 +76,7 @@ class RunRequest:
 async def build_run(request: RunRequest) -> RunContext:
     """The run's context, every part from the request's one project. Raises; never exits."""
     from specweaver.assurance.standards.loader import load_standards_content_async
-    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.core.flow.handlers.roles import roles_of
     from specweaver.core.flow.run_state.run_context import (
         AnalysisContext,
         GraphContext,
@@ -153,7 +153,7 @@ async def _settings(request: RunRequest) -> SpecWeaverSettings | None:
 def _router(request: RunRequest) -> Any:
     from specweaver.core.config.bootstrap.llm_settings_loader import load_llm_settings
     from specweaver.core.config.llm_settings import SettingNotSetError
-    from specweaver.core.flow.handlers._llm import roles_of
+    from specweaver.core.flow.handlers.roles import roles_of
     from specweaver.infrastructure.llm.router import build_router
 
     try:

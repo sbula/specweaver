@@ -168,7 +168,7 @@ async def _build_review_prompt(
     """
     from specweaver.core.flow.handlers._profiles import FULL, resolve_profile
     from specweaver.core.flow.handlers.base import _build_base_prompt
-    from specweaver.core.flow.handlers.context_assembler import (
+    from specweaver.core.flow.handlers.skeleton_assembler import (
         evaluate_and_fetch_skeleton_context,
     )
 

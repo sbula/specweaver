@@ -16,7 +16,7 @@ from tests.scripted_llm import FixedRouter
 
 @patch("specweaver.workflows.implementation.generator.Generator")
 @patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
-@patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context")
+@patch("specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context")
 @patch("specweaver.core.flow.handlers.generation.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_generate_code_handler_skeleton_wiring(
@@ -54,7 +54,7 @@ async def test_generate_code_handler_skeleton_wiring(
 
 @patch("specweaver.workflows.review.reviewer.Reviewer")
 @patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
-@patch("specweaver.core.flow.handlers.context_assembler.evaluate_and_fetch_skeleton_context")
+@patch("specweaver.core.flow.handlers.skeleton_assembler.evaluate_and_fetch_skeleton_context")
 @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_review_code_handler_skeleton_wiring(
@@ -116,7 +116,7 @@ async def test_review_code_handler_skeleton_wiring(
 
 @patch("specweaver.workflows.review.reviewer.Reviewer")
 @patch("specweaver.core.flow.handlers.base._build_base_prompt", new_callable=AsyncMock)
-@patch("specweaver.core.flow.handlers.context_assembler.CodeStructureAtom")
+@patch("specweaver.core.flow.handlers.skeleton_assembler.CodeStructureAtom")
 @patch("specweaver.core.flow.handlers.review.evaluate_and_fetch_mcp_context")
 @pytest.mark.asyncio
 async def test_review_e2e_fallback_protection(

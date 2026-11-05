@@ -762,12 +762,12 @@
         {
           "id": "side-roles-unchecked",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/_llm.py",
+          "file": "src/specweaver/core/flow/handlers/roles.py",
           "symbol": "roles_of",
           "old": "        if (step.action, step.target) in SIDE_RUNNING_STEPS:\n",
           "new": "        if False:\n",
           "breaks": "a missing model for a side fails in the middle of the run",
-          "symbol_sha": "sha256:7d6c7784a0161db2fd2fa2e50548bdb7919e3c08321db779e9fc63c0323d7406"
+          "symbol_sha": "sha256:0c9bbec6d98ac588b4671c858f2683047ecf457b17c7197eeb0c7bac2250e888"
         },
         {
           "id": "one-model-not-shown",
