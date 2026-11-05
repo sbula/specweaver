@@ -333,7 +333,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Runner seams | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | One step table | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-08 | One boundary rule | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-09 | The rule in every language | SF-08, SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -392,9 +392,10 @@ guards live in `workflows/arbitration`; no flow handler calls a model (FR-6 guar
 **SF-05 done 2026-11-04** (accepted by the user): a step is one row in `STEPS`; handlers get their
 role from the step; the dual run is `orchestrate`+`dual_pipeline` and `params.mode` is refused at
 load (`TECH-082_sf05_walkthrough.md`).
-**SF-06 plan approved 2026-11-04** (the user): two commit boundaries; F-1 moves the tests of the
-merged pop function and the removed write (NFR-1 exception).
-**Next step**: dev SF-06 (`TECH-082_sf06_implementation_plan.md`); then SF-04, SF-07 and SF-09 in any order (SF-09's design
-column is still ⬜).
+**SF-06 done 2026-11-05** (accepted by the user): each `context.feedback` key is declared once in
+`run_state/feedback.py` and read through one `pop_findings`; the arbiter takes the side steps from
+the side table; `FILENAME_PREFIX` is gone; `skeleton_assembler` and `mcp_assembler` have distinct
+titles; `roles_of` is public in `handlers/roles.py` (`TECH-082_sf06_walkthrough.md`).
+**Next step**: SF-04, SF-07 and SF-09 in any order (SF-09's design column is still ⬜).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
