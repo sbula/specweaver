@@ -65,9 +65,10 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    (`sandbox/language/core/boundary_check.py`) judges every language by the `context.yaml` tree; a
    new language adds only its parser's `extract_imports` and its pick in
    `workspace/ast/refactor/imports.py`, which names the project file an import reaches. A stricter
-   boundary tool for the language is one row in `boundary_extras.py`'s table (`TECH-082`). Where
-   no `context.yaml` covers the file, the check returns a `note` and no violations: C05 skips,
-   naming the note.
+   boundary tool for the language is one row in `boundary_extras.py`'s table (`TECH-082`; today
+   tach, dependency-cruiser and go-arch-lint): its config file, command and output reader. Where no
+   `context.yaml` covers the file, the check returns a `note` and no violations: C05 skips, naming
+   the note.
 
    Each QA method ends in one of three ways, and never a bare zero, which every reader takes as a
    clean result (`TECH-087`):

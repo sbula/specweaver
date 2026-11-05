@@ -706,8 +706,10 @@
       "requirement": "FR-20",
       "title": "A configured stricter tool runs too; one that did not run is reported, never clean",
       "scope": [
-        "tests/unit/sandbox/language/core/test_boundary_extras.py",
-        "tests/integration/assurance/validation/test_c05_judges_by_the_boundary_rule.py"
+        "tests/e2e/capabilities/workspace/test_scan_writes_widenings_e2e.py",
+        "tests/integration/assurance/validation/test_c05_judges_by_the_boundary_rule.py",
+        "tests/integration/sandbox/language/test_boundary_extras_run.py",
+        "tests/unit/sandbox/language/core/test_boundary_extras.py"
       ],
       "mutants": [
         {
@@ -728,7 +730,57 @@
           "old": "    if not is_container and not shutil.which(extra.executable):",
           "new": "    if False:",
           "breaks": "a configured tool that is not installed is run anyway, and its failure is misreported",
-          "symbol_sha": "sha256:b75b585cbd2580e9419ce65247869611e21b7b10f3a5281d9f754ee37c130901"
+          "symbol_sha": "sha256:c4ee74dcaa89506e6d3f12f4e94780581caf76cdf2656fce7d1ba47bb35387d4"
+        },
+        {
+          "id": "depcruise-info-counts",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/boundary_extras.py",
+          "symbol": "_depcruise_violations",
+          "old": "in (\"error\", \"warn\")",
+          "new": "in (\"error\", \"warn\", \"info\")",
+          "breaks": "an info-level dependency-cruiser note fails C05",
+          "symbol_sha": "sha256:a83b5a5bfbb57c56fd714cc734a474a8cc1a8fe1130a3352d0a28d5bdd2c6b7c"
+        },
+        {
+          "id": "depcruise-config-not-passed",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/boundary_extras.py",
+          "symbol": "_run",
+          "old": "command = [part.replace(\"{config}\", config) for part in extra.command]",
+          "new": "command = list(extra.command)",
+          "breaks": "dependency-cruiser is run without the project's config file",
+          "symbol_sha": "sha256:c4ee74dcaa89506e6d3f12f4e94780581caf76cdf2656fce7d1ba47bb35387d4"
+        },
+        {
+          "id": "go-arch-lint-shape-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/boundary_extras.py",
+          "symbol": "_go_arch_lint_violations",
+          "old": " or \"ArchHasWarnings\" not in payload:",
+          "new": ":",
+          "breaks": "any JSON object reads as a clean go-arch-lint run",
+          "symbol_sha": "sha256:d0df9aacac71ca865f835386404f33eb35e360a7147697aeb2ee5b50ed2c6859"
+        },
+        {
+          "id": "extra-timeout-says-jest",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/boundary_extras.py",
+          "symbol": "_run",
+          "old": "reason = timed_out(result, extra.tool, _TIMEOUT_SECONDS)",
+          "new": "reason = timed_out(result, \"Jest\", _TIMEOUT_SECONDS)",
+          "breaks": "a boundary tool's timeout names the wrong tool and drops how long it waited",
+          "symbol_sha": "sha256:c4ee74dcaa89506e6d3f12f4e94780581caf76cdf2656fce7d1ba47bb35387d4"
+        },
+        {
+          "id": "scan-drops-widened-edge",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/tach_sync.py",
+          "symbol": "_build_modules_and_interfaces",
+          "old": "        for dep in sorted(node.consumes):",
+          "new": "        for dep in sorted(node.consumes)[:0]:",
+          "breaks": "sw scan leaves a declared widening out of tach.toml, so tach fails an import the rule allows",
+          "symbol_sha": "sha256:edf868dc276c76127bcc5a33df5f5a105c5bd71b4ae021315f843aa9a9091ada"
         }
       ]
     }

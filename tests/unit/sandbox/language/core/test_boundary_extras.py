@@ -10,8 +10,8 @@ A configured tool that cannot run is reported as not run, never as clean `[agree
 
 | Bucket | Case |
 |---|---|
-| Happy | tach configured and clean; tach's violations are reported with the tool's name |
-| Boundary | no config file → not listed; a Go file → tach is not asked |
+| Happy | tach, dependency-cruiser and go-arch-lint: clean, and violations carry the tool's name |
+| Boundary | no config file → not listed; a Go file → tach is not asked; depcruise `info` is no finding |
 | Degradation | not installed, timed out, unreadable output → not run, with the reason |
 | Hostile | output that is valid JSON but not a list → not run |
 """
@@ -94,7 +94,7 @@ def test_tach_not_installed_is_not_run(configured: Path, monkeypatch: pytest.Mon
 @pytest.mark.parametrize(
     ("executor", "says"),
     [
-        (_Executor("", timed_out=True), "timed out"),
+        (_Executor("", timed_out=True), "tach timed out after 120 s"),
         (_Executor("not json", exit_code=2), "could not read"),
         (_Executor('{"a": 1}', exit_code=1), "could not read"),
         (_Executor("[1]", exit_code=1), "could not read"),
@@ -160,3 +160,152 @@ def test_an_unavailable_container_engine_is_not_run(configured: Path) -> None:
     [run] = run_extras(configured, "python", executor)
 
     assert (run.ran, run.reason) == (False, "no podman")
+
+
+DEPCRUISE = (
+    '{"modules": [], "summary": {"violations": ['
+    '{"from": "src/domain/a.ts", "to": "src/infra/db.ts", '
+    '"rule": {"name": "no-domain-to-infra", "severity": "error"}},'
+    '{"from": "src/x.ts", "to": "src/y.ts", "rule": {"name": "just-saying", "severity": "info"}}'
+    '], "error": 1, "warn": 0, "info": 1, "totalCruised": 3}}'
+)
+GO_ARCH = (
+    '{"Type": "models.Check", "Payload": {"ArchHasWarnings": true, "ArchWarningsDeps": ['
+    '{"ComponentName": "domain", "FileRelativePath": "internal/domain/svc.go", '
+    '"FileAbsolutePath": "/p/internal/domain/svc.go", "ResolvedImportName": "app/internal/infra", '
+    '"Reference": {}}], "ArchWarningsNotMatched": [], "ArchWarningsDeepScan": []}}'
+)
+
+
+@pytest.mark.parametrize(
+    ("config", "language", "command"),
+    [
+        (
+            ".dependency-cruiser.cjs",
+            "typescript",
+            [
+                "npx",
+                "--no-install",
+                "depcruise",
+                "--output-type",
+                "json",
+                "--config",
+                ".dependency-cruiser.cjs",
+                ".",
+            ],
+        ),
+        (
+            ".dependency-cruiser.json",
+            "javascript",
+            [
+                "npx",
+                "--no-install",
+                "depcruise",
+                "--output-type",
+                "json",
+                "--config",
+                ".dependency-cruiser.json",
+                ".",
+            ],
+        ),
+        (
+            ".go-arch-lint.yml",
+            "go",
+            ["go-arch-lint", "check", "--json", "--project-path", "."],
+        ),
+    ],
+)
+def test_each_configured_tool_runs_its_own_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, config: str, language: str, command: list[str]
+) -> None:
+    (tmp_path / config).write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+    clean = (
+        '{"ArchHasWarnings": false, "ArchWarningsDeps": null}'
+        if language == "go"
+        else '{"summary": {"violations": []}}'
+    )
+    executor = _Executor(clean)
+
+    [run] = run_extras(tmp_path, language, executor)
+
+    assert (run.ran, run.violations) == (True, []), run.reason
+    assert executor.calls == [command]
+
+
+def test_dependency_cruisers_errors_are_violations_its_info_is_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".dependency-cruiser.js").write_text("module.exports = {};\n", encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+
+    [run] = run_extras(tmp_path, "typescript", _Executor(DEPCRUISE, exit_code=1))
+
+    assert [(v.file, v.code) for v in run.violations] == [
+        ("src/domain/a.ts", "dependency-cruiser:no-domain-to-infra")
+    ]
+    assert "'src/infra/db.ts'" in run.violations[0].message
+
+
+def test_go_arch_lints_dependency_warnings_are_violations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".go-arch-lint.yml").write_text("version: 3\n", encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+
+    [run] = run_extras(tmp_path, "go", _Executor(GO_ARCH, exit_code=1))
+
+    assert [(v.file, v.code) for v in run.violations] == [
+        ("internal/domain/svc.go", "go-arch-lint:dependency")
+    ]
+    assert "'app/internal/infra'" in run.violations[0].message
+
+
+@pytest.mark.parametrize(
+    ("config", "language", "stdout"),
+    [
+        (".dependency-cruiser.js", "typescript", "[]"),
+        (".dependency-cruiser.js", "typescript", '{"summary": {"violations": [1]}}'),
+        (".go-arch-lint.yml", "go", "[]"),
+        (".go-arch-lint.yml", "go", '{"ArchHasWarnings": true, "ArchWarningsDeps": [1]}'),
+        (".go-arch-lint.yml", "go", '{"a": 1}'),
+    ],
+)
+def test_output_of_the_wrong_shape_is_not_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, config: str, language: str, stdout: str
+) -> None:
+    (tmp_path / config).write_text("x\n", encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+
+    [run] = run_extras(tmp_path, language, _Executor(stdout, exit_code=1))
+
+    assert run.ran is False
+    assert "could not read" in run.reason
+
+
+def test_go_arch_lint_not_installed_is_not_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".go-arch-lint.yml").write_text("version: 3\n", encoding="utf-8")
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: None)
+
+    [run] = run_extras(tmp_path, "go", _Executor())
+
+    assert (run.tool, run.ran) == ("go-arch-lint", False)
+    assert "not installed" in run.reason
+
+
+def test_a_rule_without_severity_is_a_violation_and_a_folder_is_no_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """dependency-cruiser's default severity is `warn`; a folder named like a config is not one."""
+    (tmp_path / ".dependency-cruiser.d").mkdir()
+    monkeypatch.setattr(boundary_extras.shutil, "which", lambda name: f"/bin/{name}")
+    assert run_extras(tmp_path, "typescript", _Executor()) == []
+
+    (tmp_path / ".dependency-cruiser.json").write_text("{}\n", encoding="utf-8")
+    unnamed = '{"summary": {"violations": [{"from": "a.ts", "to": "b.ts", "rule": {}}]}}'
+
+    [run] = run_extras(tmp_path, "typescript", _Executor(unnamed, exit_code=1))
+
+    assert [v.code for v in run.violations] == ["dependency-cruiser:unnamed"]

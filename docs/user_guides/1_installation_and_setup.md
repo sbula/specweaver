@@ -177,7 +177,10 @@ The two `context.yaml` files keep the project's core isolated from unauthorized 
 
 The import-direction check (C05) reads the `context.yaml` files themselves, in every language:
 `tests/context.yaml` consumes `src`, so a test may import your code. `sw scan` writes a `tach.toml`
-from them; when it exists, tach runs too, and C05 warns if tach is configured but not installed.
+from them; when it exists, tach runs too. In the same way a `.dependency-cruiser.*` file runs
+dependency-cruiser for TypeScript and JavaScript, and a `.go-arch-lint.yml` runs go-arch-lint for
+Go. SpecWeaver never installs or configures these tools; C05 warns if one is configured but cannot
+run.
 `sw check src/x.py --level code` runs the code rules C01–C08, including the file's own test from
 `tests/test_x.py`, which may import `x` by name.
 

@@ -180,3 +180,75 @@ Python; `test_boundary_linter_merge.py` runs both on one tree.
 - Path traversal: `run_architecture` is in the atom's path guard (`test_qa_runner_atom.py`, `../outside.py`).
 - Cycle 2: challenged R1 (does pruning follow symlinks or loop?): `os.walk` does not follow links. No
   new finding above LOW.
+
+## CB-3: the other boundary tools (FR-20), closes SF-09
+
+**What changed**
+- `boundary_extras.py` gains two rows. dependency-cruiser runs for TypeScript and JavaScript when
+  the project root holds a `.dependency-cruiser.*` file:
+  `npx --no-install depcruise --output-type json --config <that file> .`. go-arch-lint runs for Go
+  when it holds `.go-arch-lint.yml`: `go-arch-lint check --json --project-path .`. A command names
+  the config file it found with `{config}`; a folder named like a config is not one.
+- Readers, checked against each tool's documentation and JSON schema (2026-11-05):
+  dependency-cruiser's `summary.violations` with `error` or `warn` severity (a rule without a
+  severity is `warn`, the tool's default) are violations, `info` and `ignore` are not;
+  go-arch-lint's `ArchWarningsDeps` entries are violations, the result may come inside `Payload`,
+  and output without `ArchHasWarnings` is unreadable, never clean.
+- Docs: `1_installation_and_setup.md` (the three tools, never installed by SpecWeaver),
+  `language_support_guide.md` (the table holds three tools). README counts updated.
+
+**Tests** (unit 9,935, integration 2,038, e2e 427 collected; README 12,463)
+- `test_boundary_extras.py` (25): each tool's command, each reader, wrong shapes, not installed,
+  a rule with no severity, a folder named like a config. Red first: 10 failed before the rows existed.
+- `test_boundary_extras_run.py` (integration, 2): a TypeScript and a Go project with the tool
+  configured and a PATH that holds no tool: the real atom, hydrator and C05 give WARN naming the tool.
+- `test_scan_writes_widenings_e2e.py` (e2e): real `sw init`, `sw scan` and tach. `src` forbids
+  `src.infra`; `src.api` widens to it. The edge is in `tach.toml` and `tach check` passes. It passed
+  on its first run, because a `widens` key must also be in `consumes`; the mutant
+  `scan-drops-widened-edge` proves it can fail.
+
+**Mutants**: TECH-082 FR-20 `depcruise-info-counts`, `depcruise-config-not-passed`,
+`go-arch-lint-shape-trusted`, `extra-timeout-says-jest` (the re-pointed TECH-087 mutant: it was SILENT
+until the timeout case asserted "tach timed out after 120 s"), `scan-drops-widened-edge`: all
+OBJECTED. Two more were OBJECTED by hand but are not in the corpus: removing go-arch-lint's language
+and TypeScript from dependency-cruiser's languages. Both lines sit in the module-level table, and the
+corpus pins mutants only inside a function or class. `missing-tool-ran` re-run (OBJECTED) and
+refreshed; 0 stale.
+
+**Gates**: `quality.py cb` 17/17, `quality.py sf` 18/18, `quality.py doc` 14/14, `tests.py cb` and
+`sf` for TECH-082, `tach check`, `mypy` (450 files). Full suite: 12,390 passed, 1 failed:
+`test_cqrs_e2e.py::test_story_9_sigint_survival`. It sends SIGINT after a fixed `sleep 0.5`; it passed
+3 times alone and twice in the e2e and sandbox tiers under `-n auto`. Recorded as a timing flake
+seen once; nothing in this boundary touches it. `commit_gated.py` runs the suite again at the commit.
+
+**Combined analysis (Phases 1–2)**
+
+Architecture: no new import, `tach check` passes; the rows live in the table CB-2 made for them.
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `_config_of`, `{config}` in `_run` | ✅ | ✅ | — |
+| `_depcruise_violations` | ✅ | — (tool not installed here) | — |
+| `_go_arch_lint_violations` | ✅ | — (tool not installed here) | — |
+| missing tool → C05 WARN | ✅ | ✅ `test_boundary_extras_run.py` | — |
+| `sync_tach_toml` with a widening | — | — | ✅ `test_scan_writes_widenings_e2e.py` |
+
+Gaps found and closed: a dependency-cruiser rule without a severity, and a folder named like a
+config (unit, added; both mutants OBJECTED). The readers' happy path uses doubled output, as the plan
+said: neither tool is installed here.
+
+**Red/Blue (7.5)**, 2 cycles
+- R1 (MEDIUM, accepted) go-arch-lint's deep-scan warnings (`ArchWarningsDeepScan`, its opt-in
+  dependency-injection check) are not read: the JSON names of their nested fields are not documented.
+  The dependency warnings, the main check, are read.
+- R2 (MEDIUM, accepted) dependency-cruiser cruises `.`; how far it follows is its own config's
+  choice. The 120 s timeout makes a slow run "did not run", never clean.
+- R3 (LOW, accepted) Only the project root is searched for a config file, as for `tach.toml`.
+- R4 (LOW, accepted) `npx --no-install` is the older spelling of `--no` in npm 7+; both npm lines
+  accept it and neither installs anything.
+- R5 (LOW, accepted) go-arch-lint's files that match no component (`ArchWarningsNotMatched`) are not
+  violations, as an unmapped import is not one in the shared check.
+- R6 (LOW, invalid) A config name cannot inject a flag: it always starts with `.dependency-cruiser.`
+  or is `.go-arch-lint.yml`, it follows `--config`, and no shell runs.
+- Cycle 2: challenged R1 (can a project rely on deep scan alone?): deep scan adds to the dependency
+  check, it does not replace it. No new finding above LOW.
