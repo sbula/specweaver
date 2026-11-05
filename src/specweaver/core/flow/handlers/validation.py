@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
 from specweaver.core.flow.handlers.qa_targets import (
@@ -126,7 +127,7 @@ def _validation_output(
     if strict:
         failed += sum(1 for r in results if r.status == RuleStatus.WARN)
     return {
-        "results": _rule_payload(results),
+        RESULTS: _rule_payload(results),
         "total": len(results),
         "passed": len(results) - failed,
         "failed": failed,
@@ -364,7 +365,7 @@ def _no_code_rules(code_path: Path, started: str) -> StepResult:
     logger.info("ValidateCodeHandler: %s (code=%s)", note, code_path.name)
     return StepResult(
         status=StepStatus.PASSED,
-        output={"note": note, "total": 0, "passed": 0, "failed": 0, "results": []},
+        output={"note": note, "total": 0, "passed": 0, "failed": 0, RESULTS: []},
         started_at=started,
         completed_at=_now_iso(),
     )

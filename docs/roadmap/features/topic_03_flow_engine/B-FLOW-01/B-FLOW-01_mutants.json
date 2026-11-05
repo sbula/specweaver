@@ -607,7 +607,7 @@
           "old": "    safe_scenario_feedback = scenario_safe(result.scenario_feedback, result.spec_clause)\n",
           "new": "    safe_scenario_feedback = result.scenario_feedback\n",
           "breaks": "code from the arbiter's view reaches the scenario agent's prompt",
-          "symbol_sha": "sha256:03558a0ba11c9bf60d7a212afbd27b92b2426eb01a382fc182468ed7e96c1d52"
+          "symbol_sha": "sha256:cde9f7534e34abe12726266ae6f4129fe0434a9895246f18a4f3a402b698c63d"
         }
       ]
     },
@@ -848,7 +848,7 @@
           "old": "    keep_set(context)\n",
           "new": "    pass\n",
           "breaks": "a passing set is not kept, so every run makes it again",
-          "symbol_sha": "sha256:820c620cd40d748b61b384d4b330931c2d19a889d790b36673f0711f351ab09e"
+          "symbol_sha": "sha256:6ee15b456786f45f7136fc9ab43e9662f83e3ec8704b48f977f066ce30e568c5"
         },
         {
           "id": "kept-set-regenerated",

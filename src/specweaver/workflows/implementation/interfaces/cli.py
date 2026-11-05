@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import typer
 
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
@@ -75,7 +76,7 @@ def _report_code_validation(mark: str, _name: str, out: dict[str, Any]) -> None:
     )
     failed_rules = [
         r.get("rule_id")
-        for r in out.get("results", [])
+        for r in out.get(RESULTS, [])
         if str(r.get("status", "")).lower().startswith("fail")
     ]
     if failed_rules:

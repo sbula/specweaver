@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.models import GateCondition, GateType, OnFailAction
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.engine.step_outputs import VERDICT
 from specweaver.core.flow.run_state.feedback import send_findings
 
 if TYPE_CHECKING:
@@ -122,7 +123,7 @@ class GateEvaluator:
         # Concurrency collision map
         logger.info("Gate on step '%s': RESERVE collision. Parking natively.", step_def.name)
         result.status = StepStatus.PENDING
-        result.output = {"verdict": "parked_for_resource"}
+        result.output = {VERDICT: "parked_for_resource"}
         run.park_current_step(result)
         return "park"
 
@@ -131,7 +132,7 @@ class GateEvaluator:
         if gate.condition == GateCondition.ALL_PASSED:
             return result.status == StepStatus.PASSED
         if gate.condition == GateCondition.ACCEPTED:
-            return result.output.get("verdict") == "accepted"
+            return result.output.get(VERDICT) == "accepted"
         if gate.condition == GateCondition.COMPLETED:
             return result.status not in (StepStatus.FAILED, StepStatus.ERROR)
         return True

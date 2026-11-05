@@ -6,6 +6,7 @@ import uuid
 
 from specweaver.core.flow.engine.naming import registered_name
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepStatus
+from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
@@ -54,7 +55,7 @@ def _files_touched(run: PipelineRun) -> list[str]:
     files: list[str] = []
     for step in run.step_records:
         if step.result and isinstance(step.result.output, dict):
-            touched = step.result.output.get("files_touched", [])
+            touched = step.result.output.get(FILES_TOUCHED, [])
             if isinstance(touched, list):
                 files.extend(str(f) for f in touched)
     return files

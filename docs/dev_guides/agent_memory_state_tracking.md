@@ -186,7 +186,8 @@ async def execute(self, step: PipelineStep, context: RunContext) -> StepResult:
 When a pipeline completes, fails, or is interrupted, `PipelineRunner` runs a fail-safe telemetry
 sweep:
 
-1. **Scrape step records**: `files_touched` from successful outputs, `error_message` strings from
+1. **Scrape step records**: `files_touched` from step outputs (written by `generate+code`,
+   `generate+tests` and `generate+contract`, relative to the project), `error_message` strings from
    failures.
 2. **Sanitize**: deduplicate errors; keep at most 10 errors (each truncated to 500 chars) and 30
    files, so the JSON fits the 8KB budget.

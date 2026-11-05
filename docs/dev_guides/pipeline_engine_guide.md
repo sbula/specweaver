@@ -422,14 +422,19 @@ Feature D-INTL-06 (Context Hydration & Handover Engine).
   `finally` blocks of `run()` and `resume()`, so it runs even on `KeyboardInterrupt`.
 - **Never raises**: the aggregation sits in a `try...except Exception`. A SQLite, Pydantic or
   filesystem error logs a `WARNING` and the pipeline ends normally.
-- **`files_touched`**: to feed the memory bank, return the key in `StepResult.output`:
+- **`files_touched`**: to feed the memory bank, return the key in `StepResult.output`, each path
+  relative to the step's `context.project_path`:
   ```python
+  from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED
+
   return StepResult(
       status=StepStatus.PASSED,
-      output={"files_touched": ["src/my_module/new_file.py", "docs/my_doc.md"]}
+      output={FILES_TOUCHED: ["src/my_module/new_file.py", "docs/my_doc.md"]}
   )
   ```
-  The engine deduplicates and truncates the list. Malformed values are ignored.
+  `generate+code`, `generate+tests` and `generate+contract` write it. The scenario steps do not:
+  task memory reaches the next coder prompt, and a scenario file's name would tell the coder that a
+  scenario side exists. The engine deduplicates and truncates the list. Malformed values are ignored.
 
 ---
 
@@ -485,6 +490,13 @@ On success or failure, `StepResult.output` is `BashActionAtom`'s `exports` dict,
 
 A nonzero `exit_code` is `StepStatus.FAILED`, not an exception. To branch on it instead of aborting,
 add `gate: {on_fail: continue}`. `exit_code` is top-level, so rules use `field: exit_code` directly.
+
+### Output keys the engine reads
+
+`plan`, `plan_path`, `results`, `verdict` and `files_touched` are named once, in
+`core/flow/engine/step_outputs.py` (`PLAN`, `PLAN_PATH`, `RESULTS`, `VERDICT`, `FILES_TOUCHED`).
+A handler that writes one, and any reader of a step's output, imports the name;
+`tests/unit/core/flow/engine/test_step_output_keys.py` refuses the key spelled by hand.
 
 ### `validate` output shape
 

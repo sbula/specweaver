@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.engine.step_outputs import VERDICT
 from specweaver.infrastructure.llm.store import record_step_outcomes
 
 if TYPE_CHECKING:
@@ -61,7 +62,7 @@ def step_outcomes(run: PipelineRun) -> dict[str, str]:
     for record in run.step_records:
         if record.status not in ended:
             continue
-        verdict = (record.result.output or {}).get("verdict") if record.result else None
+        verdict = (record.result.output or {}).get(VERDICT) if record.result else None
         reviewed = record.status is StepStatus.FAILED and verdict == "denied"
         outcomes[record.step_name] = "passed" if reviewed else ended[record.status]
     return outcomes

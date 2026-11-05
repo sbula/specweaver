@@ -11,6 +11,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import VERDICT
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_context
 from specweaver.core.flow.run_state.failures import log_step_failure
@@ -441,7 +442,7 @@ def _review_step_result(result: Any, started: str, rubric: Any) -> StepResult:
     return StepResult(
         status=status,
         output={
-            "verdict": verdict,
+            VERDICT: verdict,
             "summary": result.summary,
             "findings_count": len(result.findings),
             # The finding TEXTS, not just a count: the inline report and the loop_back

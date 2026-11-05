@@ -12,6 +12,7 @@ import typer
 from rich.table import Table
 
 from specweaver.commons import json
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
@@ -95,7 +96,7 @@ def _enrich_scope(
     )
     kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)
     if last_record and last_record.status in kept and last_record.result:
-        results: list[CategoryResult] = last_record.result.output.get("results", [])
+        results: list[CategoryResult] = last_record.result.output.get(RESULTS, [])
         return results, context
     return [], context
 

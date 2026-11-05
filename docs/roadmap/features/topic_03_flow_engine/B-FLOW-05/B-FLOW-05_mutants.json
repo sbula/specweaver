@@ -655,7 +655,7 @@
           "old": "    kept = (StepStatus.PASSED, StepStatus.WAITING_FOR_INPUT)",
           "new": "    kept = (StepStatus.PASSED,)",
           "breaks": "a scan at a limit throws away what it found",
-          "symbol_sha": "sha256:d05694a06615a0eb832e5a297587ce31c636d3106c8053dee7173a123d9e38d5"
+          "symbol_sha": "sha256:7678c0ab5eedabe68075d6c193a645fc7141eafe46b271165e2933eaac423ae3"
         }
       ]
     },

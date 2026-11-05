@@ -9,6 +9,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 
 if TYPE_CHECKING:
@@ -87,7 +88,7 @@ class EnrichStandardsHandler:
             logger.debug("EnrichStandardsHandler: no drift violations met confidence threshold")
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"results": []},
+                output={RESULTS: []},
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -97,7 +98,7 @@ class EnrichStandardsHandler:
             logger.info("EnrichStandardsHandler: no model for the check role; not enriching")
             return StepResult(
                 status=StepStatus.PASSED,
-                output={"results": results},
+                output={RESULTS: results},
                 started_at=started,
                 completed_at=_now_iso(),
             )
@@ -119,7 +120,7 @@ class EnrichStandardsHandler:
 
         return StepResult(
             status=StepStatus.PASSED,
-            output={"results": results},
+            output={RESULTS: results},
             started_at=started,
             completed_at=_now_iso(),
         )

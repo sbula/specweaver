@@ -66,3 +66,74 @@ import, no new tach edge, no cycle. `tach check` passes.
 - Cycle 2: challenged R1 (does any code outside the engine write `session_active`/`session_kept`?):
   none in `src/`. Challenged the removal of `run_fan_out` (a public name of a module with no tach
   interface): no importer in `src/`, `tests/` or `scripts/`. No new finding above LOW.
+
+## CB-2: output keys named once; the file-writing steps write `files_touched` (FR-8, NFR-1, NFR-2, NFR-4)
+
+**What changed**
+- New `core/flow/engine/step_outputs.py`: `PLAN`, `PLAN_PATH`, `RESULTS`, `VERDICT`, `FILES_TOUCHED`,
+  each with its value type. `hydration.DECOMPOSITION_PLAN_KEY` moved here as `PLAN` (no alias, AD-6).
+- Engine readers use the names: `hydration` (`PLAN`, `PLAN_PATH`), `step_execution` (`RESULTS`),
+  `gates` (`VERDICT`, also its own RESERVE park), `telemetry` (`VERDICT`), `handover`
+  (`FILES_TOUCHED`).
+- Writers: `decompose`, `generation`, `validation`, `standards`, `arbiter`, `review`. Outside
+  readers: `interfaces/api/v1/implement.py`, the implementation, drafting and standards CLIs, and
+  `generation._extract_prompt_feedback`.
+- F-2 A: `generate+code`, `generate+tests` (one code path) and `generate+contract` add
+  `files_touched: [<path relative to context.project_path>]`, through `generation._touched`. A
+  file outside the project is kept as given; a `..` path is resolved first. Corrected in dev: the
+  scenario steps write none (task memory reaches the coder; `B-FLOW-01`), and the path is the one the
+  step chose (`output_path`), not the generator's return value (a mocked generator returns a
+  coroutine).
+- Test edit (import only): `test_decomposition_artifacts_integration.py` imports `PLAN` from
+  `step_outputs`.
+- Docs: `pipeline_engine_guide.md` (the output keys; §11 names the writers and why the scenario steps
+  are not), `agent_memory_state_tracking.md` (who writes `files_touched`).
+
+**Tests**
+- `test_step_output_keys.py` (6), red first (no module; 28 literal uses): the names carry the stored
+  wire values; no key spelled by hand in `core/flow` or the four outside readers, four non-output uses
+  allowed by (file, function, key); a named key passes; an allowed use passes only in its own function;
+  every literal form is found; an unparsable file is named.
+- `test_files_touched.py` (6), red first (no `_touched`): the contract step names
+  `contracts/greeter_contract.py`; a failed one names nothing; a worktree file is relative to the
+  worktree; a file outside is kept as given; a climbing path is not `../…`; the scenario handlers
+  name no file.
+- `test_files_touched_reach_handover.py` (2, integration), red first (`[]`): a real runner, registry,
+  `GenerateCodeHandler` and memory database, only the model doubled; the written file is in the task's
+  handover, relative, and exists; a failed generation records none.
+
+**Mutants**
+- 18 stale (B-FLOW-01 2, B-FLOW-05 1, B-FLOW-07 2, C-FLOW-11 2, C-VAL-05 1, D-INTL-03 1, D-INTL-08 4,
+  TECH-077 1, TECH-078 1, TECH-082 3) re-run before the refresh: all OBJECTED. TECH-082 FR-12
+  `verdict-from-a-fixed-name` re-anchored on `VERDICT:`. 0 stale.
+- TECH-082 FR-8 campaign, 4 mutants, all OBJECTED: `plan-path-by-hand`, `results-key-renamed` (20
+  tests), `files-touched-dropped`, `touched-not-relative`.
+
+**Coverage matrix**
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `step_outputs` names | ✅ | ✅ `test_decomposition_artifacts_integration.py` (writer and hydration agree on `PLAN`) | — |
+| engine readers (`hydration`, `step_execution`, `gates`, `telemetry`, `handover`) | ✅ existing unit files | ✅ `test_seam_pins.py` (`PLAN_PATH`), `test_validation_results_persistence.py` (`RESULTS`), `test_files_touched_reach_handover.py` | ✅ `test_runs_keep_memory_e2e.py` |
+| `_touched` and the writers | ✅ | ✅ `test_files_touched_reach_handover.py` | — |
+| the guard | ✅ | — | — |
+
+Composition: `files_touched` is written by a handler and read by the handover; the integration test
+drives that pair with both real. Agreement: one key module; the decomposition test asserts writer and
+reader agree.
+
+**Architecture**: `step_outputs.py` imports nothing; every importer already depends on
+`core.flow.engine` in `tach.toml`. `tach check` passes.
+
+**Red/blue (7.5)**, 2 cycles
+- R1 (MEDIUM, fixed) The plan named the scenario steps as writers; their file names would reach the
+  coder through task memory. They write none, and a test pins it.
+- R2 (LOW, fixed) The decomposition test imported `PLAN` under the old name; it uses `PLAN`.
+- R3 (LOW) The agentic coder can write more files than its target; only the target is named. Under-
+  reporting is the safe side for a memory of facts.
+- R4 (LOW) The guard allows a non-output use by (file, function, key); another literal of that key in
+  the same function would pass. The four functions are small.
+- R5 (LOW) `gates.passes` still compares with the value `"accepted"` (plan F-8).
+- Cycle 2: challenged R3 (does a missing file mislead the next agent?): the handover says which files
+  the steps named, not all changes; the next step reads the tree. Challenged `_touched` on a symlinked
+  project: both sides are resolved, so they agree. No new finding above LOW.

@@ -339,7 +339,7 @@
           "old": "        side_step(\"coder\"),",
           "new": "        side_step(\"scenario\"),",
           "breaks": "the coder's verdict goes to the scenario side",
-          "symbol_sha": "sha256:ee9448b4612f07b6e475ff8cb16dc1a0a77b4013c6ec1f13778eab783ca2c539"
+          "symbol_sha": "sha256:63f2812007995f7dae532fea73f4f33e7b63d85b5ee0e5a032d3b7964cc76882"
         },
         {
           "id": "side-step-is-the-pipeline-file",
@@ -376,10 +376,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/arbiter.py",
           "symbol": "_scenario_error",
-          "old": "        from_step,\n        {\n            \"verdict\": \"scenario_error\",",
-          "new": "        \"arbitrate_verdict\",\n        {\n            \"verdict\": \"scenario_error\",",
+          "old": "        from_step,\n        {\n            VERDICT: \"scenario_error\",",
+          "new": "        \"arbitrate_verdict\",\n        {\n            VERDICT: \"scenario_error\",",
           "breaks": "the verdict names a fixed step, not the arbiter's own name in the pipeline",
-          "symbol_sha": "sha256:03558a0ba11c9bf60d7a212afbd27b92b2426eb01a382fc182468ed7e96c1d52"
+          "symbol_sha": "sha256:cde9f7534e34abe12726266ae6f4129fe0434a9895246f18a4f3a402b698c63d"
         },
         {
           "id": "private-llm-imported-again",
@@ -399,7 +399,7 @@
           "old": "    OUTPUT_SUBDIR: ClassVar[str]\n",
           "new": "    OUTPUT_SUBDIR: ClassVar[str]\n    FILENAME_PREFIX: ClassVar[str] = \"\"\n",
           "breaks": "a setting nothing reads comes back",
-          "symbol_sha": "sha256:cbc15c49dcdaaed23881ebfa35762306af25c788e4d83690f90eb4f16bdce466"
+          "symbol_sha": "sha256:46a6a3ae6b69363f767eb3c37ce17120468a505f78f17ebab781a12ccc0950c9"
         },
         {
           "id": "assemblers-share-a-title",
@@ -449,6 +449,72 @@
           "new": "    runner: Any,",
           "breaks": "a helper takes an untyped runner, so mypy no longer checks what it uses",
           "symbol_sha": "sha256:c44049110ab87cdb99416bbd7bb02f8e90957752291be15eaba82362c43d2622"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Each handler output key the engine reads is named once, in engine/step_outputs.py; the file-writing steps write files_touched",
+      "scope": [
+        "tests/unit/core/flow/engine/test_step_output_keys.py",
+        "tests/unit/core/flow/handlers/test_files_touched.py",
+        "tests/integration/core/flow/engine/test_files_touched_reach_handover.py",
+        "tests/unit/core/flow",
+        "tests/integration/core/flow/engine"
+      ],
+      "mutants": [
+        {
+          "id": "plan-path-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/hydration.py",
+          "symbol": "hydrate_plan_context",
+          "old": "        raw_path = (result.output or {}).get(PLAN_PATH)",
+          "new": "        raw_path = (result.output or {}).get(\"plan_path\")",
+          "breaks": "the engine spells an output key by hand again, so writer and reader can drift",
+          "tests": [
+            "tests/unit/core/flow/engine/test_step_output_keys.py"
+          ],
+          "symbol_sha": "sha256:447e28c2d5d255fdcbbd184530a08008d8ef6625f72f2a37c5413977499abf44"
+        },
+        {
+          "id": "results-key-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "_validation_output",
+          "old": "        RESULTS: _rule_payload(results),",
+          "new": "        \"rule_results\": _rule_payload(results),",
+          "breaks": "a writer spells the results key differently, so the engine persists nothing",
+          "tests": [
+            "tests/unit/core/flow",
+            "tests/integration/core/flow/engine"
+          ],
+          "symbol_sha": "sha256:224cbaeeb1b54fb3123a8adf59984cbe297eab55e12c93f6c06ef8c7dd929bc1"
+        },
+        {
+          "id": "files-touched-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "                FILES_TOUCHED: _touched(output_path, context.project_path),\n            }",
+          "new": "            }",
+          "breaks": "the code step names no file, so the saved handover lists none",
+          "tests": [
+            "tests/integration/core/flow/engine/test_files_touched_reach_handover.py"
+          ],
+          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+        },
+        {
+          "id": "touched-not-relative",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_touched",
+          "old": "    return [str(written.relative_to(root))] if written.is_relative_to(root) else [str(written)]",
+          "new": "    return [str(written)]",
+          "breaks": "files_touched holds absolute paths, which name a worktree that is gone",
+          "tests": [
+            "tests/unit/core/flow/handlers/test_files_touched.py"
+          ],
+          "symbol_sha": "sha256:938f32637d9d6f10f61fefd0c4f987bc68f8ec4e688a31777a0bfc4c8e0aedef"
         }
       ]
     }

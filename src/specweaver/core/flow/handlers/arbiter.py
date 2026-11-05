@@ -11,6 +11,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import RESULTS, VERDICT
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 from specweaver.core.flow.handlers.dual_pipeline import side_step
 from specweaver.core.flow.run_state.failures import log_step_failure
@@ -110,8 +111,8 @@ def _code_bug(
         side_step("coder"),
         from_step,
         {
-            "verdict": "code_bug",
-            "results": [{"status": "FAIL", "rule_id": clause, "message": feedback}],
+            VERDICT: "code_bug",
+            RESULTS: [{"status": "FAIL", "rule_id": clause, "message": feedback}],
         },
     )
     return StepResult(
@@ -196,7 +197,7 @@ def _no_failures(context: RunContext, evidence: dict[str, Any], started: str) ->
     keep_set(context)
     return StepResult(
         status=StepStatus.PASSED,
-        output={"verdict": "no_failures", "passed": evidence.get("passed", total), "total": total},
+        output={VERDICT: "no_failures", "passed": evidence.get("passed", total), "total": total},
         started_at=started,
         completed_at=_now_iso(),
     )
@@ -213,8 +214,8 @@ def _scenario_error(
         side_step("scenario"),
         from_step,
         {
-            "verdict": "scenario_error",
-            "results": [
+            VERDICT: "scenario_error",
+            RESULTS: [
                 {"status": "FAIL", "rule_id": result.spec_clause, "message": safe_scenario_feedback}
             ],
         },

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 import typer
 from rich.markup import escape
 
+from specweaver.core.flow.engine.step_outputs import RESULTS, VERDICT
 from specweaver.interfaces.cli_kit import _core
 
 if TYPE_CHECKING:
@@ -122,7 +123,7 @@ def _report_validation(validate_out: dict[str, Any]) -> None:
         f"Validation: {validate_out.get('passed', '?')}/{validate_out.get('total', '?')} "
         "rules passed"
     )
-    for rule in validate_out.get("results", []) or []:
+    for rule in validate_out.get(RESULTS, []) or []:
         # RuleStatus.value is lowercase ("fail") — compare case-insensitively.
         if isinstance(rule, dict) and str(rule.get("status", "")).upper() == "FAIL":
             # escape(): rule messages can embed spec content — stray [/tags] would
@@ -138,7 +139,7 @@ def _report_review(review_out: dict[str, Any]) -> None:
     if not review_out:
         return
 
-    verdict = str(review_out.get("verdict", "unknown"))
+    verdict = str(review_out.get(VERDICT, "unknown"))
     _core.console.print(f"Review: {verdict}")
     if verdict == "accepted":
         return

@@ -181,7 +181,7 @@
           "old": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\"}\n",
           "new": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"passed\", StepStatus.ERROR: \"failed\"}\n",
           "breaks": "cheap failed attempts lower the typical cost",
-          "symbol_sha": "sha256:982fb2f9a08509a0277b3158effecd112d1e44c8b7622818e4c9b15cc3943c05"
+          "symbol_sha": "sha256:87e2095921581125acc342ae099547f713188ce71ad2bac24b8135b47491b592"
         },
         {
           "id": "unfinished-counts-as-passed",
@@ -191,7 +191,7 @@
           "old": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\"}\n",
           "new": "    ended = {StepStatus.PASSED: \"passed\", StepStatus.FAILED: \"failed\", StepStatus.ERROR: \"failed\", StepStatus.WAITING_FOR_INPUT: \"passed\"}\n",
           "breaks": "a parked step's partial cost counts as finished work",
-          "symbol_sha": "sha256:982fb2f9a08509a0277b3158effecd112d1e44c8b7622818e4c9b15cc3943c05"
+          "symbol_sha": "sha256:87e2095921581125acc342ae099547f713188ce71ad2bac24b8135b47491b592"
         },
         {
           "id": "stale-outcome-kept",

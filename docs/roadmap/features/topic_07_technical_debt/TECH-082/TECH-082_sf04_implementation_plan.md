@@ -83,6 +83,12 @@ Chosen: **A**. Three small writes make a delivered promise true (`D-INTL-06` FR-
 NFR-5: "files touched"). The design's NFR-1 now lists FR-8's `files_touched` writers as a behaviour
 change.
 
+> [!NOTE]
+> Corrected in dev (2026-11-05): the scenario steps write no `files_touched`. Task memory reaches the
+> next coder prompt, and a scenario file's name would tell the coder that a scenario side exists
+> (`B-FLOW-01`). The writers are `generate+code`, `generate+tests` and `generate+contract`, which
+> use the path the step chose (`output_path`), not the generator's return value.
+
 ## Findings settled without a user choice
 
 ### F-3 (MEDIUM) Where the protocol lives

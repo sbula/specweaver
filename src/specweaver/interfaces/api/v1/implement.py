@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from fastapi import APIRouter, Depends
 
 from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
 from specweaver.interfaces.api.v1.schemas import (
@@ -138,7 +139,7 @@ def _validation(output: dict[str, Any] | None) -> ImplementValidation | None:
         return None
     failed = [
         str(r.get("rule_id"))
-        for r in output.get("results", [])
+        for r in output.get(RESULTS, [])
         if str(r.get("status", "")).lower().startswith("fail")
     ]
     return ImplementValidation(

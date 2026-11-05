@@ -417,15 +417,15 @@ class TestSeamKeyIsOneSymbol:
     """
 
     def test_writer_and_hydration_agree_through_a_shared_constant(self, tmp_path: Path) -> None:
-        from specweaver.core.flow.engine.hydration import DECOMPOSITION_PLAN_KEY
+        from specweaver.core.flow.engine.step_outputs import PLAN
 
         store = StateStore(tmp_path / "state.db")
         ctx = _ctx(tmp_path)
         run, _ = _run(_pipeline(), ctx, store, _plan())
 
         output = run.step_records[0].result.output
-        assert DECOMPOSITION_PLAN_KEY in output, "the writer does not use the shared seam constant"
-        assert json.loads(ctx.plan_context.decomposition) == output[DECOMPOSITION_PLAN_KEY], (
+        assert PLAN in output, "the writer does not use the shared seam constant"
+        assert json.loads(ctx.plan_context.decomposition) == output[PLAN], (
             "hydration did not read the key the writer wrote"
         )
 

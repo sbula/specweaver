@@ -580,7 +580,7 @@
           "old": "                language=language_guide(language, context.project_path).name,\n",
           "new": "                language=\"Python\",\n",
           "breaks": "the plan step tells the planner Python whatever the project",
-          "symbol_sha": "sha256:3e066e0dffd94c222ad4f2370418c504e3c36c4d305e2b29129cf1d93676bf70"
+          "symbol_sha": "sha256:9276284bc8bb4d6b4d69c4ec48da5f5f08b40041970ea09831d06b756023df6a"
         }
       ]
     },

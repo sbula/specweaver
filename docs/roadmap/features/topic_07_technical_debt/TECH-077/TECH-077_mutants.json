@@ -272,7 +272,7 @@
           "old": "        models=\"optional\",\n        read_only=True,\n",
           "new": "        models=\"optional\",\n        read_only=False,\n",
           "breaks": "sw standards scan opens a per-run worktree",
-          "symbol_sha": "sha256:d05694a06615a0eb832e5a297587ce31c636d3106c8053dee7173a123d9e38d5"
+          "symbol_sha": "sha256:7678c0ab5eedabe68075d6c193a645fc7141eafe46b271165e2933eaac423ae3"
         },
         {
           "id": "api-review-not-read-only",

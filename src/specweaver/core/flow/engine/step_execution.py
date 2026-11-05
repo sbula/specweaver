@@ -38,6 +38,7 @@ from specweaver.core.flow.engine.isolation import resolve_should_isolate
 from specweaver.core.flow.engine.models import StepAction, StepTarget
 from specweaver.core.flow.engine.routers import resolve_route_target
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.core.flow.run_state.failures import log_step_failure
 from specweaver.infrastructure.llm.budget import step_refusal, track_step_refusals
 
@@ -478,7 +479,7 @@ def persist_validation_results(
     if step_def.action != StepAction.VALIDATE or step_def.target not in _RULE_RESULT_TARGETS:
         return
 
-    results = (result.output or {}).get("results")
+    results = (result.output or {}).get(RESULTS)
     if not isinstance(results, list):
         return
 

@@ -8,8 +8,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.core.flow.engine.hydration import DECOMPOSITION_PLAN_KEY
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import PLAN
 from specweaver.core.flow.handlers.base import StepHandler, _error_result, _now_iso
 from specweaver.core.flow.handlers.decomposition_artifacts import (
     COMPONENT_NAME_PATTERN,
@@ -102,7 +102,7 @@ class DecomposeFeatureHandler(StepHandler):
                 logger.exception("Failed to persist the decomposition artifact")
                 return StepResult(
                     status=StepStatus.FAILED,
-                    output={DECOMPOSITION_PLAN_KEY: dumped},
+                    output={PLAN: dumped},
                     error_message=f"Failed to write the decomposition artifact: {exc}",
                     started_at=started_at,
                     completed_at=_now_iso(),
@@ -118,7 +118,7 @@ class DecomposeFeatureHandler(StepHandler):
             return StepResult(
                 status=StepStatus.PASSED,
                 output={
-                    DECOMPOSITION_PLAN_KEY: dumped,
+                    PLAN: dumped,
                     "decomposition_path": str(artifact_path),
                     "component_specs": component_specs,
                     "summary": summary,

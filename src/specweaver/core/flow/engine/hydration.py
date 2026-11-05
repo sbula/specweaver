@@ -22,6 +22,7 @@ from specweaver.commons import json
 from specweaver.core.flow.engine.gates import GateEvaluator
 from specweaver.core.flow.engine.models import OnFailAction, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
+from specweaver.core.flow.engine.step_outputs import PLAN, PLAN_PATH
 
 if TYPE_CHECKING:
     from specweaver.core.flow.engine.models import PipelineDefinition, PipelineStep
@@ -29,13 +30,6 @@ if TYPE_CHECKING:
     from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
-
-#: The key `decompose+feature` nests its DecompositionPlan under in ``StepResult.output``.
-#:
-#: A frozen seam between the writer (``handlers/decompose.py``) and the reader (this module). As a
-#: bare literal ``"plan"`` in both files it would be two strings that MUST agree with nothing
-#: forcing them to. Both sides import this name, and so should any future consumer.
-DECOMPOSITION_PLAN_KEY = "plan"
 
 
 def _clear_superseded_plan(
@@ -118,7 +112,7 @@ def hydrate_plan_context(
             # frozen as canonical DecompositionPlan JSON, and its consumers read it as such. The
             # `.get("plan", ...)` fallback keeps older flat-plan records rehydrating correctly.
             payload = result.output or {}
-            nested = payload.get(DECOMPOSITION_PLAN_KEY)
+            nested = payload.get(PLAN)
             # Local first: `model_copy` erases the narrowing the log call below needs.
             serialized = json.dumps(nested if isinstance(nested, dict) else payload, default=str)
             context.plan_context = context.plan_context.model_copy(
@@ -142,7 +136,7 @@ def hydrate_plan_context(
         return
 
     if combo == (StepAction.PLAN, StepTarget.SPEC):
-        raw_path = (result.output or {}).get("plan_path")
+        raw_path = (result.output or {}).get(PLAN_PATH)
         if not raw_path or not isinstance(raw_path, str):
             logger.warning(
                 "[run_id=%s] Step '%s' passed but carries no usable 'plan_path' output — "

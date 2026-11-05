@@ -13,6 +13,7 @@ from specweaver.commons.lineage import extract_artifact_uuid
 from specweaver.commons.spec_names import module_stem
 from specweaver.core.flow.engine.autonomy import ExecutionMode, resolve_execution_mode
 from specweaver.core.flow.engine.state import StepResult, StepStatus
+from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED, PLAN_PATH, RESULTS
 from specweaver.core.flow.handlers.agentic_coder import declare_rust_module, run_coder
 from specweaver.core.flow.handlers.artifact_lineage import (
     derive_artifact_uuid,
@@ -65,7 +66,7 @@ def _extract_prompt_feedback(
         else None
     )
 
-    fails = [r for r in findings.get("results", []) if r.get("status") == "FAIL"]
+    fails = [r for r in findings.get(RESULTS, []) if r.get("status") == "FAIL"]
     validation = (
         "\n".join(f"[{r.get('rule_id', 'UNKNOWN')}] {r.get('message', '')}" for r in fails)
         if fails
@@ -219,7 +220,10 @@ class _GenerationHandler:
                 model_id=config.model,
             )
 
-            output: dict[str, Any] = {"generated_path": str(generated)}
+            output: dict[str, Any] = {
+                "generated_path": str(generated),
+                FILES_TOUCHED: _touched(output_path, context.project_path),
+            }
             if decision.reason:
                 output["agentic_refused"] = decision.reason
             return StepResult(
@@ -239,6 +243,12 @@ class _GenerationHandler:
 
                 detail += "\n" + traceback.format_exc()
             return _error_result(detail, started)
+
+
+def _touched(path: Path, project: Path) -> list[str]:
+    """`files_touched` for one written file: relative to the step's project, else as given."""
+    written, root = path.resolve(), project.resolve()
+    return [str(written.relative_to(root))] if written.is_relative_to(root) else [str(written)]
 
 
 def _failed_result(message: str, started: str) -> StepResult:
@@ -437,7 +447,7 @@ class PlanSpecHandler:
             return StepResult(
                 status=StepStatus.PASSED,
                 output={
-                    "plan_path": str(plan_path),
+                    PLAN_PATH: str(plan_path),
                     "confidence": plan_artifact.confidence,
                     "file_count": len(plan_artifact.file_layout),
                 },
@@ -512,6 +522,7 @@ class GenerateContractHandler:
                 status=StepStatus.PASSED,
                 output={
                     "generated_path": str(output_path),
+                    FILES_TOUCHED: _touched(output_path, context.project_path),
                     "signature_count": len(methods),
                     "methods": contract_names(methods),
                 },

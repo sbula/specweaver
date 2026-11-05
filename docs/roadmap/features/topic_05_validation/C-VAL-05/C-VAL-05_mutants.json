@@ -90,7 +90,7 @@
           "old": "            \"rubric\": _rubric_record(rubric),\n",
           "new": "            \"rubric\": {},\n",
           "breaks": "a saved verdict cannot say which criteria judged it",
-          "symbol_sha": "sha256:bf0e0b6b700f2639d078a6d8c93ad5b40798fd9fc04e3910588ca2d5815fc974"
+          "symbol_sha": "sha256:4854275dba1578a7530cc3253fd82e37c321b85c7bb84e2624c3c4cbb3aa91c0"
         }
       ]
     },
