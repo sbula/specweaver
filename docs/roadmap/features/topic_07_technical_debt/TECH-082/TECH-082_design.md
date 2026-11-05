@@ -331,7 +331,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-01 | Validation orchestration home | SF-08 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Implementation home | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | Arbitration home and thin handlers | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Runner seams | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Runner seams | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | One step table | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -396,9 +396,10 @@ load (`TECH-082_sf05_walkthrough.md`).
 `run_state/feedback.py` and read through one `pop_findings`; the arbiter takes the side steps from
 the side table; `FILENAME_PREFIX` is gone; `skeleton_assembler` and `mcp_assembler` have distinct
 titles; `roles_of` is public in `handlers/roles.py` (`TECH-082_sf06_walkthrough.md`).
-**SF-04 plan approved 2026-11-05** (the user): F-1 A (the runner's members become public), F-2 A
-(the file-writing handlers write `files_touched`); two commit boundaries.
-**Next step**: dev SF-04 (`TECH-082_sf04_implementation_plan.md`); then SF-07 and SF-09 (SF-09's
-design column is still ⬜).
+**SF-04 done 2026-11-05** (accepted by the user): the runner's helpers take it as a `RunnerPort`
+and read only its public members; the step output keys are named once in `engine/step_outputs.py`;
+the code, test and contract steps write `files_touched`, the scenario steps do not
+(`TECH-082_sf04_walkthrough.md`).
+**Next step**: SF-07 and SF-09 (SF-09's design column is still ⬜).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
