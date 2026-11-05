@@ -334,7 +334,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-04 | Runner seams | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-05 | One step table | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-07 | Skipped rules are counted | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-07 | Skipped rules are counted | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-08 | One boundary rule | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-09 | The rule in every language | SF-08, SF-01 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -400,9 +400,9 @@ titles; `roles_of` is public in `handlers/roles.py` (`TECH-082_sf06_walkthrough.
 and read only its public members; the step output keys are named once in `engine/step_outputs.py`;
 the code, test and contract steps write `files_touched`, the scenario steps do not
 (`TECH-082_sf04_walkthrough.md`).
-**SF-07 plan approved 2026-11-05** (the user): one `summarize` for `sw check` and `POST /check`;
-one commit boundary.
-**Next step**: dev SF-07 (`TECH-082_sf07_implementation_plan.md`); then SF-09 (its design column is
-still ⬜).
+**SF-07 done 2026-11-05** (accepted by the user, `2367216c`): `sw check` and `POST /check` share one
+`summarize`; each line adds `(N skipped)`; no rule judged is `NOTHING CHECKED` and exits 1; the
+executor's run log counts a skip as skipped (`TECH-082_sf07_walkthrough.md`).
+**Next step**: SF-09 design (grill-me), its Design column is still ⬜; then the closure gate.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
