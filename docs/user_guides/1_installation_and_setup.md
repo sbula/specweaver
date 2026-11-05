@@ -334,7 +334,8 @@ Lint repair asks the model to fix "this Java file" (in the project's language). 
 rules (C01–C13) are Python's: for another language `sw implement` prints `no code rules for java`
 and goes on, unless the folder's archetype brings rules for that language (Spring Boot does).
 `sw check --level code` and the API show C01, C06 and C08 as SKIP for a file that is not Python,
-naming its language.
+naming its language. The summary counts the skipped rules; if no rule could judge the file, it
+prints `NOTHING CHECKED` and exits 1.
 
 **Frameworks.** The model also gets the framework's idioms and test style for Spring, Spring Boot,
 Quarkus, NestJS, Actix-web and FastAPI. The framework is the folder's `context.yaml` `archetype`

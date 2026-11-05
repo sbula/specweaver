@@ -138,7 +138,7 @@
           "old": "    resolved = _check_pipeline(body, project_root, await _domain_profile(db, project_root))\n",
           "new": "    resolved = _check_pipeline(body, project_root, None)\n",
           "breaks": "/check ignores the project's domain profile",
-          "symbol_sha": "sha256:7483e231f75daf3496474c41201e0f4629f26fe5296c5fc406779447928145f7"
+          "symbol_sha": "sha256:f57583fc19bedf750f4ec7630ae4ec075ff7ff1b186f72fb086a876ea630eb07"
         }
       ]
     },

@@ -263,3 +263,30 @@ class TestExecuteValidationPipeline:
         assert len(results) == 1
         assert results[0].status == Status.PASS
         assert "found it in context" in results[0].message
+
+
+class _AlwaysSkipRule(Rule):
+    @property
+    def rule_id(self) -> str:
+        return "T06"
+
+    @property
+    def name(self) -> str:
+        return "Always Skip"
+
+    def check(self, spec_text: str, spec_path: Path | None = None) -> RuleResult:
+        return self._skip("nothing to judge")
+
+
+def test_the_run_log_counts_a_skip_as_skipped(test_registry, caplog) -> None:
+    """A SKIP is not a pass in the run log either (TECH-082 FR-13)."""
+    test_registry.register("T06", _AlwaysSkipRule, "spec")
+    pipeline = ValidationPipeline(
+        name="test",
+        steps=[ValidationStep(name="t06", rule="T06"), ValidationStep(name="t01", rule="T01")],
+    )
+
+    with caplog.at_level("INFO", logger="specweaver.assurance.validation.executor"):
+        execute_validation_pipeline(pipeline, "hello", registry=test_registry)
+
+    assert "2 rules, 1 passed, 0 failed, 0 warned, 1 skipped" in caplog.text

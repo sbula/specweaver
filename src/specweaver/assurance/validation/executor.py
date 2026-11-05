@@ -16,6 +16,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import RuleResult, Status
+from specweaver.assurance.validation.summary import summarize
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -219,13 +220,15 @@ def execute_validation_pipeline(
 
         results.append(result)
 
-    failed = sum(1 for r in results if r.status == Status.FAIL)
+    summary = summarize(results)
     logger.info(
-        "execute_validation_pipeline: '%s' — %d rules, %d passed, %d failed",
+        "execute_validation_pipeline: '%s' — %d rules, %d passed, %d failed, %d warned, %d skipped",
         pipeline.name,
-        len(results),
-        len(results) - failed,
-        failed,
+        summary.total,
+        summary.passed,
+        summary.failed,
+        summary.warned,
+        summary.skipped,
     )
     return results
 

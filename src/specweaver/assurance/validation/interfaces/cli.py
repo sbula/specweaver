@@ -69,30 +69,30 @@ def _display_rule_findings(result: RuleResult) -> None:
 
 
 def _print_summary(results: list[RuleResult], *, strict: bool = False) -> None:
-    """Print pass/fail summary and raise Exit(1) on failures.
+    """Print the summary line and raise Exit(1) when the check must not read as passed.
 
     Args:
         results: Validation results to summarize.
         strict: If True, WARNs also cause exit code 1.
     """
-    from specweaver.assurance.validation.models import Status
+    from specweaver.assurance.validation.summary import Verdict, summarize
 
-    fail_count = sum(1 for r in results if r.status == Status.FAIL)
-    warn_count = sum(1 for r in results if r.status == Status.WARN)
-
-    if fail_count > 0:
-        _core.console.print(
-            f"\n[red]FAILED[/red]: {fail_count} rule(s) failed, {warn_count} warning(s)",
-        )
+    summary = summarize(results)
+    skipped = f" ({summary.skipped} skipped)" if summary.skipped else ""
+    lines = {
+        Verdict.FAILED: (
+            f"[red]FAILED[/red]: {summary.failed} rule(s) failed, "
+            f"{summary.warned} warning(s){skipped}"
+        ),
+        Verdict.PASSED_WITH_WARNINGS: (
+            f"[yellow]PASSED with warnings[/yellow]: {summary.warned} warning(s){skipped}"
+        ),
+        Verdict.ALL_PASSED: f"[green]ALL PASSED[/green]{skipped}",
+        Verdict.NOTHING_CHECKED: f"[red]NOTHING CHECKED[/red]: {summary.skipped} skipped",
+    }
+    _core.console.print(f"\n{lines[summary.verdict]}")
+    if summary.verdict.fails or (strict and summary.warned):
         raise typer.Exit(code=1)
-    if warn_count > 0:
-        _core.console.print(
-            f"\n[yellow]PASSED with warnings[/yellow]: {warn_count} warning(s)",
-        )
-        if strict:
-            raise typer.Exit(code=1)
-    else:
-        _core.console.print("\n[green]ALL PASSED[/green]")
 
 
 def _resolve_pipeline_name(

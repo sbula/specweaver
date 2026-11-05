@@ -237,7 +237,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 |-------------|-------------|--------|
 | `pipeline_engine_guide.md` | the one step table and the `dual_pipeline` target | ✅ (SF-05) |
 | `layer_isolation_and_di.md` | handler shells call workflows with plain values | ✅ (SF-03) |
-| `docs/user_guides/2_drafting_effective_specs.md` | `sw check` summary lines and exit codes, `NOTHING CHECKED` | ⬜ |
+| `docs/user_guides/2_drafting_effective_specs.md` | `sw check` summary lines and exit codes, `NOTHING CHECKED` | ✅ (SF-07) |
 | `docs/architecture/03_system_topology/module_dependency_graph.md` | the two new modules | ✅ orchestration (SF-01), implementation (SF-02), arbitration (SF-03) |
 | `docs/architecture/03_system_topology/context_yaml_spec.md` | the stricter-going-down rule and `widens` | ⬜ |
 | `docs/user_guides/` (the `context.yaml` and `sw check` pages) | `widens`, the C05 message, the unmapped count, the extras | ⬜ |

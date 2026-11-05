@@ -95,8 +95,10 @@ class TestPrintSummary:
             _print_summary(results)
         assert exc_info.value.exit_code == 1
 
-    def test_empty_results_no_exit(self) -> None:
-        """Empty results list → no exit raised."""
+    def test_empty_results_exit_1(self) -> None:
+        """Empty results list → nothing was checked → typer.Exit(code=1) (TECH-082 FR-13)."""
         from specweaver.assurance.validation.interfaces.cli import _print_summary
 
-        _print_summary([])  # should not raise
+        with pytest.raises(typer.Exit) as exc_info:
+            _print_summary([])
+        assert exc_info.value.exit_code == 1

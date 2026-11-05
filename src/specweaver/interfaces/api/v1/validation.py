@@ -120,22 +120,28 @@ async def run_check(
     else:
         results = execute_validation_pipeline(resolved, content, abs_path)
 
-    rule_results = [_rule_response(r) for r in results]
+    return _check_response(results, strict=body.strict)
 
-    passed = sum(1 for r in results if r.status.value == "pass")
-    failed = sum(1 for r in results if r.status.value == "fail")
-    warned = sum(1 for r in results if r.status.value == "warn")
-    overall = "FAIL" if failed > 0 else ("WARN" if warned > 0 else "PASS")
-    if body.strict and warned > 0:
-        overall = "FAIL"
 
+def _check_response(results: list[Any], *, strict: bool) -> CheckResponse:
+    """The `/check` envelope: one summary, so it says what `sw check` says."""
+    from specweaver.assurance.validation.summary import Verdict, summarize
+
+    summary = summarize(results, strict=strict)
+    overall = {
+        Verdict.FAILED: "FAIL",
+        Verdict.PASSED_WITH_WARNINGS: "WARN",
+        Verdict.ALL_PASSED: "PASS",
+        Verdict.NOTHING_CHECKED: "NOTHING_CHECKED",
+    }[summary.verdict]
     return CheckResponse(
-        results=rule_results,
+        results=[_rule_response(r) for r in results],
         overall=overall,
-        total=len(results),
-        passed=passed,
-        failed=failed,
-        warned=warned,
+        total=summary.total,
+        passed=summary.passed,
+        failed=summary.failed,
+        warned=summary.warned,
+        skipped=summary.skipped,
     )
 
 

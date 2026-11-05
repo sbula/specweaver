@@ -95,6 +95,7 @@ class CheckResponse(BaseModel):
     passed: int
     failed: int
     warned: int
+    skipped: int
 
 
 class RuleInfo(BaseModel):

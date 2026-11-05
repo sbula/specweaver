@@ -53,6 +53,10 @@ exposes:
   - rules
   - rules.code.c09_traceability.requirement_coverage
   - spec_kind
+  - summary
+  - summary.Summary
+  - summary.Verdict
+  - summary.summarize
 
 # -- Operational Metadata --------------------------------------------------
 operational:

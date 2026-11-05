@@ -239,7 +239,7 @@ expose = [ "dispatcher", "security", "base", "git.core", "git.interfaces", "file
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]
-expose = [ "executor", "models", "models.Status", "pipeline", "registry", "inheritance.resolve_pipeline", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "executor.execute_validation_pipeline", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule",]
+expose = [ "executor", "models", "models.Status", "pipeline", "registry", "inheritance.resolve_pipeline", "rules", "spec_kind", "drift_detector", "inheritance", "models.RuleResult", "executor.apply_settings_to_pipeline", "drift_detector.detect_drift", "executor.execute_validation_pipeline", "rules.code.c09_traceability.requirement_coverage", "project_root", "project_root.find_tests", "pipeline.ValidationPipeline", "models.Rule", "summary", "summary.Summary", "summary.Verdict", "summary.summarize",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation.orchestration",]

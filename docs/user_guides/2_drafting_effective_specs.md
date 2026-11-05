@@ -65,6 +65,19 @@ sw check specs/greet_service_spec.md --level component
 sw check specs/onboarding-feature.md --level feature
 ```
 
+**The summary line and the exit code.** A rule that cannot judge the file shows as SKIP; the summary
+counts those rows and never calls them a pass.
+
+| Results | Line | Exit |
+|---|---|---|
+| a FAIL | `FAILED: 2 rule(s) failed, 1 warning(s) (3 skipped)` | 1 |
+| a WARN, no FAIL | `PASSED with warnings: 1 warning(s) (3 skipped)` | 0 (1 with `--strict` or a strict DAL) |
+| only PASS and SKIP | `ALL PASSED (3 skipped)` | 0 |
+| no rule judged (all SKIP, or no rule ran) | `NOTHING CHECKED: 3 skipped` | 1 |
+
+With no SKIP row the `(N skipped)` part is left out. `POST /api/v1/check` reports the same: a
+`skipped` count, and `overall: "NOTHING_CHECKED"` when no rule judged.
+
 ## 4. Lineage Tracking via `%traces`
 
 When `sw implement` generates code, it tags the tests with the capability they trace to.

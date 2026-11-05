@@ -517,6 +517,80 @@
           "symbol_sha": "sha256:938f32637d9d6f10f61fefd0c4f987bc68f8ec4e688a31777a0bfc4c8e0aedef"
         }
       ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "sw check's summary counts SKIP rows; a run where no rule judged prints NOTHING CHECKED and exits 1",
+      "scope": [
+        "tests/unit/assurance/validation/test_summary.py",
+        "tests/unit/assurance/validation/interfaces/test_check_summary.py",
+        "tests/integration/interfaces/api/test_check_counts_skipped.py",
+        "tests/e2e/capabilities/assurance/test_nothing_checked_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "all-skip-passes",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/summary.py",
+          "symbol": "summarize",
+          "old": "    if passed + failed + warned == 0:",
+          "new": "    if False:",
+          "breaks": "a run where every rule skipped reads as ALL PASSED again",
+          "symbol_sha": "sha256:23f02bdaa45df659fde813e40a99ac4c1537186d61f813e9d7cde847f3655afc"
+        },
+        {
+          "id": "skip-not-counted",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_print_summary",
+          "old": "    skipped = f\" ({summary.skipped} skipped)\" if summary.skipped else \"\"",
+          "new": "    skipped = \"\"",
+          "breaks": "the summary line hides how many rules were skipped",
+          "symbol_sha": "sha256:c646ac3c1948ae3a59e4854cb74ad5746ab68f0a3b5596c864de9e6c665bf502"
+        },
+        {
+          "id": "nothing-checked-exits-zero",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/summary.py",
+          "symbol": "Verdict.fails",
+          "old": "        return self in (Verdict.FAILED, Verdict.NOTHING_CHECKED)",
+          "new": "        return self is Verdict.FAILED",
+          "breaks": "NOTHING CHECKED exits 0, so a script reads it as a pass",
+          "symbol_sha": "sha256:9321c4096ca49d4e3d3f973e8d43d580ace80a4f0bfa25b42151c36dba4c68c8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "POST /check returns a skipped count and overall NOTHING_CHECKED when no rule judged",
+      "scope": [
+        "tests/unit/assurance/validation/test_summary.py",
+        "tests/unit/assurance/validation/interfaces/test_check_summary.py",
+        "tests/integration/interfaces/api/test_check_counts_skipped.py",
+        "tests/e2e/capabilities/assurance/test_nothing_checked_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "api-skipped-zero",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/validation.py",
+          "symbol": "_check_response",
+          "old": "        skipped=summary.skipped,",
+          "new": "        skipped=0,",
+          "breaks": "the API reports no skipped rules",
+          "symbol_sha": "sha256:f8334a2418accd039eac69f90bb6d1c178a88b6f42b2e4eb53403a80ca695fd8"
+        },
+        {
+          "id": "strict-ignores-warnings",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/summary.py",
+          "symbol": "summarize",
+          "old": "    elif failed or (strict and warned):",
+          "new": "    elif failed:",
+          "breaks": "strict no longer turns a warning into a failure in the shared verdict",
+          "symbol_sha": "sha256:23f02bdaa45df659fde813e40a99ac4c1537186d61f813e9d7cde847f3655afc"
+        }
+      ]
     }
   ]
 }
