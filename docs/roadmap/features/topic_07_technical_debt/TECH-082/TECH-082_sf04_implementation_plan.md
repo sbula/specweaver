@@ -220,8 +220,6 @@ handover → the memory bank. It is proven at integration tier in CB-2.
 - `GateEvaluator.evaluate` mutates `attempts`; unchanged.
 - `MagicMock` runners in tests still satisfy any attribute read; the protocol is checked by mypy on
   `src/`, and at run time only by the `isinstance` test.
-</content>
-</invoke>
 
 ## Red/Blue (Phase 5), 2 cycles
 
