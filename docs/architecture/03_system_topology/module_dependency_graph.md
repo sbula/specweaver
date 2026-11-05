@@ -39,3 +39,10 @@ keep the run: they read and write the files, pick the model and log the lineage.
 model who is at fault and guards what each side may read: no scenario word reaches the coder, no
 code reaches the scenario side. It reads text only; the flow handler builds the stack trace filter,
 checks the evidence and routes the verdict.
+
+**The boundary rule (`TECH-082`):** `assurance/graph/boundary_rule.py` builds each folder's
+effective rule from every `context.yaml` up the tree. `sandbox/language/core/boundary_check.py`
+judges one code file with it, the same way in all 9 languages: the parser lists the imports, the
+language's resolver (`workspace/ast/refactor/imports.py`) names the project file each reaches. A
+library meets only `forbids`, by its written name. The stricter tools a project configures (tach,
+dependency-cruiser, go-arch-lint) run beside it from one table in `boundary_extras.py`.

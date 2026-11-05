@@ -324,6 +324,22 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 4. SF-03 (after SF-02)
 5. SF-05 (after SF-03), then SF-06
 
+## Live Demo
+
+Run 2026-11-05 on a fresh project (`sw init`, `SPECWEAVER_DATA_DIR` in a temp folder):
+
+```bash
+# src/domain/context.yaml: forbids: [src/infra, "*.orm"]
+# src/domain/svc.py:       from src.infra import db / from sqlalchemy.orm import Session
+sw check src/domain/svc.py --level code   # C05 FAIL: 2 violations (a project folder, a library by name)
+# .dependency-cruiser.cjs present, depcruise not installed
+sw check web/app/main.ts --level code     # C05 WARN: "dependency-cruiser is configured but did not run"
+```
+
+No model is called, so the nightly real-model run has nothing to add; the same journeys run in
+`tests/e2e/capabilities/workspace/test_scan_writes_widenings_e2e.py` and
+`tests/integration/sandbox/language/test_boundary_extras_run.py`.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
@@ -336,7 +352,7 @@ engine's existing `HandlerLookup` port is the same idea one level up.
 | SF-06 | Feedback keys and names | SF-05 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-07 | Skipped rules are counted | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-08 | One boundary rule | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-09 | The rule in every language | SF-08, SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-09 | The rule in every language | SF-08, SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -406,6 +422,11 @@ executor's run log counts a skip as skipped (`TECH-082_sf07_walkthrough.md`).
 **SF-09 plan approved 2026-11-05** (the user): Q1..Q6 all A (project-root paths, `TYPE_CHECKING`
 counts, shared check and extras in the sandbox, no-manifest SKIP, no `tach.toml` is no tach, a
 missing extra is WARN); three commit boundaries.
-**Next step**: dev SF-09 (`TECH-082_sf09_implementation_plan.md`); then the closure gate.
+**SF-09 done 2026-11-05** (accepted by the user, `2f07437e`, `0d6649bf`, `d576044b`): one shared
+check in `sandbox/language/core/boundary_check.py` judges C05 in all 9 languages from the
+`context.yaml` tree; a library meets only `forbids`, by its written name (Q8); tach,
+dependency-cruiser and go-arch-lint run as configured extras, and one that did not run is WARN
+(`TECH-082_sf09_walkthrough.md`).
+**Next step**: the closure gate (`check_fr_coverage.py TECH-082`, `tests.py feature TECH-082`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

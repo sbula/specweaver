@@ -55,13 +55,15 @@ critical for long-term project viability.
 
 * **`TECH-086` 🔴: Tool Roles and Scaffolding Are Copied per Area**
   > [Description](../features/topic_07_technical_debt/TECH-086/TECH-086_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > all 9 sub-features committed 2026-11-05; waiting for sign-off. Origin: 2026-10-22,
+  > architecture audit (9 findings)._ |
   > Role access is spelled in about ten tables (a permission surface); tool scaffolding is
   > copied per area; the dispatcher is also the composition root and the grant policy.
 
 * **`TECH-085` 🔴: Every Workflow Calls the Model Its Own Way**
   > [Description](../features/topic_07_technical_debt/TECH-085/TECH-085_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > all 9 sub-features committed 2026-11-05; waiting for sign-off. Origin: 2026-10-22,
+  > architecture audit (9 findings)._ |
   > Each workflow has its own prompt, call, parse and retry; six answer cleaners exist (one
   > breaks on a bare fence); one prompt is a raw string join; mentioned files are injected
   > escaped in one place and raw in another.
@@ -79,7 +81,8 @@ critical for long-term project viability.
 
 * **`TECH-082` 🔴: Domain Logic Lives in the Flow Engine**
   > [Description](../features/topic_07_technical_debt/TECH-082/TECH-082_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (9 findings)._ |
+  > all 9 sub-features committed 2026-11-05; waiting for sign-off. Origin: 2026-10-22,
+  > architecture audit (9 findings)._ |
   > Language layouts, framework detection, contract rendering and whole LLM workflows
   > (arbitration, lint repair, drift) sit in `core/flow`, and the runner's parts reach into each
   > other's privates.
