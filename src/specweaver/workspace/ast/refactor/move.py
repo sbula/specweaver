@@ -83,7 +83,7 @@ def plan_move(
     refusal = _target_refusal(files, path, new_path)
     if refusal:
         return refusal
-    kind = resolver_for(path)
+    kind = resolver_for(path, files)
     if kind is None:
         return RenameRefusal(f"moving is not supported for {path}")
     resolver = kind(files, parser)

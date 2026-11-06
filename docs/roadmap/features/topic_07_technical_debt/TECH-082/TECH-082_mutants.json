@@ -649,7 +649,7 @@
           "old": "        if owner is None:\n            return ArchitectureRunResult(",
           "new": "        if False:\n            return ArchitectureRunResult(",
           "breaks": "a file no context.yaml covers passes C05 instead of SKIP",
-          "symbol_sha": "sha256:a50361085ef2448722f2fb49097123cde3ba342961bb97eca38f269e11a7cca3"
+          "symbol_sha": "sha256:a77c8bd7e0f4a273120fd29a92fde137d03d9ba07779b7ea444ace0d9f76064e"
         }
       ]
     },
@@ -669,7 +669,7 @@
           "old": "                    unmapped += 1",
           "new": "                    unmapped += 0",
           "breaks": "C05 says 0 imports not mapped whatever the file imports",
-          "symbol_sha": "sha256:a50361085ef2448722f2fb49097123cde3ba342961bb97eca38f269e11a7cca3"
+          "symbol_sha": "sha256:a77c8bd7e0f4a273120fd29a92fde137d03d9ba07779b7ea444ace0d9f76064e"
         },
         {
           "id": "library-forbids-ignored",
@@ -679,7 +679,7 @@
           "old": "banned = self._rule.forbids_library(folder, written)",
           "new": "banned = None",
           "breaks": "a library a forbids entry names (*.orm) passes C05",
-          "symbol_sha": "sha256:a50361085ef2448722f2fb49097123cde3ba342961bb97eca38f269e11a7cca3"
+          "symbol_sha": "sha256:a77c8bd7e0f4a273120fd29a92fde137d03d9ba07779b7ea444ace0d9f76064e"
         }
       ]
     },

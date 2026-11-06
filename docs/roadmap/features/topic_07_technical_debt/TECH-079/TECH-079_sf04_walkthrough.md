@@ -88,5 +88,36 @@ the Python style analyzer reads `.pyi` with `ast`, which parses stubs; `CppResol
 **Gate.** Full suite 12,629 passed, 9 skipped; `cb` 17/17 (duplication fixed, not re-frozen);
 `doc` 14/14; tach OK; mypy clean.
 
-**Slip, recorded.** During this boundary I ran `git stash list` inside a longer command; the output
-was discarded and nothing changed, but the user had said never to run it.
+## CB-3: `.h` follows the project (FR-13)
+
+**What changed**
+- `commons/languages.py`: `language_of(path, *, cpp_sources=False)` says `cpp` for a `.h` when the
+  project has C++ sources; new `has_cpp_sources(paths)` (F7 `[agreed 2026-11-06]`).
+- The boundary check walks the project once for the flag and judges a header with it: the C++
+  resolver family and the C++ parser in a C++ project. `parser_for(path, parsers, *, cpp_sources)`
+  picks the registry entry by the language, so a C++ header gets the C++ grammar.
+- `rename.resolver_for(path, files=())` picks by `language_of` with the flag from the project's
+  files; rename, delete and move pass their files. The suffix → resolver table `_RESOLVERS` is
+  gone (unused).
+
+**What a user sees.** In a C++ project, `sw check` (C05) and rename now read `lib.h` the same way,
+as C++. In a C project both read it as C, as C05 did before.
+
+**Tests**
+- Red first: `tests/integration/workspace/ast/refactor/test_header_follows_the_project.py` (red:
+  no `has_cpp_sources`; then the boundary check asked the C family and `resolver_for` took no
+  files).
+- Changed: the CB-1 stand-in for `parser_for` accepts the new keyword.
+
+**Mutants.** TECH-079 FR-13: `header-always-c`, `boundary-ignores-project`,
+`rename-ignores-project`, `any-file-makes-cpp`, `parser-ignores-project`. Re-anchored: TECH-078
+`upper-case-ending-unknown`, TECH-079 `resolver-pick-case-sensitive` (the case now comes from
+`language_of`). Others re-pinned and re-run. `stale_mutants.py`: 0.
+
+**Red/blue (2 cycles).** No finding above threshold. Checked: the walk for the flag reuses the
+boundary check's ignore rules and runs once per check; the flag only changes `.h` (`.c` stays C,
+`.hpp` is always C++); an injected parser registry without the language's key still falls back to
+the ending search.
+
+**Gate.** Full suite 12,640 passed, 9 skipped; `cb` 17/17; `doc` 14/14; `sf` 18/18; tach OK; mypy
+clean.

@@ -13,7 +13,7 @@ from functools import cache
 from pathlib import PurePath
 from types import MappingProxyType
 
-from specweaver.commons.languages import LANGUAGE_SUFFIXES
+from specweaver.commons.languages import LANGUAGE_SUFFIXES, language_of
 from specweaver.workspace.ast.parsers.c.codestructure import CCodeStructure
 from specweaver.workspace.ast.parsers.cpp.codestructure import CppCodeStructure
 from specweaver.workspace.ast.parsers.go.codestructure import GoCodeStructure
@@ -62,12 +62,15 @@ def get_default_parsers() -> Registry:
 
 
 def parser_for(
-    path: str | PurePath, parsers: Registry | None = None
+    path: str | PurePath, parsers: Registry | None = None, *, cpp_sources: bool = False
 ) -> CodeStructureInterface | None:
     """The parser for the file at `path` by its ending, whatever its case; None when none reads it.
 
-    `parsers` is an injected registry; without one, the default.
+    `parsers` is an injected registry; without one, the default. `cpp_sources` reads a `.h` as C++.
     """
-    suffix = PurePath(path).suffix.lower()
     registry = get_default_parsers() if parsers is None else parsers
+    language = language_of(path, cpp_sources=cpp_sources)
+    if language is not None and LANGUAGE_SUFFIXES[language] in registry:
+        return registry[LANGUAGE_SUFFIXES[language]]
+    suffix = PurePath(path).suffix.lower()
     return next((parser for exts, parser in registry.items() if suffix in exts), None)

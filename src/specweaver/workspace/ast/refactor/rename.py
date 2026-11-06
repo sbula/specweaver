@@ -9,11 +9,10 @@ and names the spot. A name in a comment, a doc or a config file is reported, nev
 
 from __future__ import annotations
 
-import posixpath
 import re
 from typing import TYPE_CHECKING
 
-from specweaver.commons.languages import LANGUAGE_SUFFIXES
+from specweaver.commons.languages import LANGUAGE_SUFFIXES, has_cpp_sources, language_of
 from specweaver.workspace.ast.refactor._model import (
     MAX_SPOTS,
     RenamePlan,
@@ -41,7 +40,7 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
     from specweaver.workspace.ast.refactor._base import Resolver
@@ -57,20 +56,16 @@ _BY_LANGUAGE: dict[str, type[Resolver]] = {
     "cpp": CppResolver,
 }
 
-#: Which resolver renames a symbol defined in a file with this ending.
-_RESOLVERS: dict[str, type[Resolver]] = {
-    suffix: resolver
-    for language, resolver in _BY_LANGUAGE.items()
-    for suffix in LANGUAGE_SUFFIXES[language]
-}
-
 #: Endings of source code; every other file is text, where a name is only ever a mention.
 CODE_SUFFIXES = (*(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixes), ".sql")
 
 
-def resolver_for(path: str) -> type[Resolver] | None:
-    """The resolver for a file with this ending, or None when the language has none."""
-    return _RESOLVERS.get(posixpath.splitext(path)[1].lower())
+def resolver_for(path: str, files: Iterable[str] = ()) -> type[Resolver] | None:
+    """The resolver for a file with this ending, or None when the language has none.
+
+    `files` are the project's paths: with a C++ source among them, a `.h` is C++.
+    """
+    return _BY_LANGUAGE.get(language_of(path, cpp_sources=has_cpp_sources(files)) or "")
 
 
 def family_of(path: str) -> tuple[str, ...]:
@@ -87,7 +82,7 @@ def plan_rename(
     parser: CodeStructureInterface,
 ) -> RenamePlan | RenameRefusal:
     """Rename `symbol_name` in `path` to `new_name`, across `files` (path → content)."""
-    kind = resolver_for(path)
+    kind = resolver_for(path, files)
     if kind is None:
         return RenameRefusal(f"rename is not supported for {path}")
     if path not in files:

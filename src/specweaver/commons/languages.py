@@ -9,6 +9,10 @@ The one copy: prompts, parsers, rename, the archetype rules and the task's files
 from __future__ import annotations
 
 from pathlib import PurePath
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 #: Every ending of each programming language.
 LANGUAGE_SUFFIXES: dict[str, tuple[str, ...]] = {
@@ -36,9 +40,20 @@ _TESTS_ROOT = {
 }
 
 
-def language_of(path: str | PurePath) -> str | None:
-    """The language `path`'s ending names, or None."""
-    return _LANGUAGE_OF.get(PurePath(path).suffix.lower())
+def language_of(path: str | PurePath, *, cpp_sources: bool = False) -> str | None:
+    """The language `path`'s ending names, or None.
+
+    A `.h` header is C++ when the project has C++ sources (`cpp_sources`), else C.
+    """
+    suffix = PurePath(path).suffix.lower()
+    if suffix == ".h" and cpp_sources:
+        return "cpp"
+    return _LANGUAGE_OF.get(suffix)
+
+
+def has_cpp_sources(paths: Iterable[str | PurePath]) -> bool:
+    """Whether any of `paths` is a C++ file by its ending, so the project's headers are C++."""
+    return any(language_of(path) == "cpp" for path in paths)
 
 
 def main_suffix(language: str) -> str:

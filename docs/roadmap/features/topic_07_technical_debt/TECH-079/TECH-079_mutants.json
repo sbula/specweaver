@@ -784,7 +784,7 @@
           "old": "    suffix = PurePath(path).suffix.lower()\n",
           "new": "    suffix = PurePath(path).suffix\n",
           "breaks": "A.PY gets no parser",
-          "symbol_sha": "sha256:5413e6fe6a7a31d8b88d688837e1900ba95e29c063aeda09a8b42be361552e4a"
+          "symbol_sha": "sha256:a0cf588eff5e6f929b5b2559839b3ca8fa90fadfd724fc0fb6fc76580291edff"
         },
         {
           "id": "registry-rebuilt",
@@ -811,10 +811,10 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/ast/refactor/rename.py",
           "symbol": "resolver_for",
-          "old": "    return _RESOLVERS.get(posixpath.splitext(path)[1].lower())\n",
-          "new": "    return _RESOLVERS.get(posixpath.splitext(path)[1])\n",
+          "old": "    return _BY_LANGUAGE.get(language_of(path, cpp_sources=has_cpp_sources(files)) or \"\")\n",
+          "new": "    return _BY_LANGUAGE.get(language_of(path, cpp_sources=has_cpp_sources(files)) or \"\") if path == path.lower() else None\n",
           "breaks": "rename refuses A.PY",
-          "symbol_sha": "sha256:f0145567ac81830e2c8be98015434016c6403b47ec6058f192c06e73f0c69e26"
+          "symbol_sha": "sha256:7a6d260a3708093f1425dade808cff65139b38355bf7586c6e912aa16114eb91"
         },
         {
           "id": "graph-collects-by-old-rule",
@@ -884,6 +884,65 @@
           "new": "LANGUAGES: ClassVar[tuple[str, ...]] = ()\n    SUFFIXES: ClassVar[tuple[str, ...]] = (\".py\",)",
           "breaks": "rename from a .pyi stub fails",
           "symbol_sha": "sha256:078b812245316be11b50c73f60847ab19703dd43e3ba023370597b58e501cdce"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "A .h is C++ when the project has C++ sources, else C, in the boundary check and rename alike",
+      "scope": [
+        "tests/integration/workspace/ast/refactor/test_header_follows_the_project.py"
+      ],
+      "mutants": [
+        {
+          "id": "header-always-c",
+          "origin": "authored",
+          "file": "src/specweaver/commons/languages.py",
+          "symbol": "language_of",
+          "old": "    if suffix == \".h\" and cpp_sources:\n",
+          "new": "    if False:\n",
+          "breaks": "a C++ project's headers are read as C",
+          "symbol_sha": "sha256:2bb59291e8f9659b18b35b693e14c79d8058fd6bff136627de26d7aa52e71030"
+        },
+        {
+          "id": "boundary-ignores-project",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/boundary_check.py",
+          "symbol": "_Judge.judge",
+          "old": "        language = language_of(target, cpp_sources=self._cpp_sources())\n",
+          "new": "        language = language_of(target)\n",
+          "breaks": "C05 reads a C++ header as C while rename reads it as C++",
+          "symbol_sha": "sha256:a77c8bd7e0f4a273120fd29a92fde137d03d9ba07779b7ea444ace0d9f76064e"
+        },
+        {
+          "id": "rename-ignores-project",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rename.py",
+          "symbol": "resolver_for",
+          "old": "language_of(path, cpp_sources=has_cpp_sources(files))",
+          "new": "language_of(path)",
+          "breaks": "rename starting at a C++ header uses the C resolver",
+          "symbol_sha": "sha256:7a6d260a3708093f1425dade808cff65139b38355bf7586c6e912aa16114eb91"
+        },
+        {
+          "id": "any-file-makes-cpp",
+          "origin": "authored",
+          "file": "src/specweaver/commons/languages.py",
+          "symbol": "has_cpp_sources",
+          "old": "    return any(language_of(path) == \"cpp\" for path in paths)\n",
+          "new": "    return any(True for path in paths)\n",
+          "breaks": "a C project's headers are read as C++",
+          "symbol_sha": "sha256:61cb05958148a45a609eac6bb0dd409da76fb317383c560c3544209b1288394b"
+        },
+        {
+          "id": "parser-ignores-project",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/factory.py",
+          "symbol": "parser_for",
+          "old": "    language = language_of(path, cpp_sources=cpp_sources)\n",
+          "new": "    language = language_of(path)\n",
+          "breaks": "C05 parses a C++ header with the C grammar",
+          "symbol_sha": "sha256:a0cf588eff5e6f929b5b2559839b3ca8fa90fadfd724fc0fb6fc76580291edff"
         }
       ]
     }

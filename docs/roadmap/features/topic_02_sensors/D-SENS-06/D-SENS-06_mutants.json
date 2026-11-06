@@ -1065,7 +1065,7 @@
           "old": "    users = _importers(resolver, path) + _symbol_users(resolver, path)\n",
           "new": "    users = _symbol_users(resolver, path)\n",
           "breaks": "an imported file is deleted",
-          "symbol_sha": "sha256:a1c9a1c8dd0fb8bc7630fff412a71ee117b52075239597f710ed20edf7bff0a5"
+          "symbol_sha": "sha256:cb5a124888c4b9422b72a0d633f07bce821e25e57a9dfddd73ee5eee21ce0568"
         },
         {
           "id": "delete-users-ignored",
@@ -1075,7 +1075,7 @@
           "old": "    users = _importers(resolver, path) + _symbol_users(resolver, path)\n",
           "new": "    users = _importers(resolver, path)\n",
           "breaks": "a file whose functions are used is deleted",
-          "symbol_sha": "sha256:a1c9a1c8dd0fb8bc7630fff412a71ee117b52075239597f710ed20edf7bff0a5"
+          "symbol_sha": "sha256:cb5a124888c4b9422b72a0d633f07bce821e25e57a9dfddd73ee5eee21ce0568"
         },
         {
           "id": "delete-unknown-trusted",

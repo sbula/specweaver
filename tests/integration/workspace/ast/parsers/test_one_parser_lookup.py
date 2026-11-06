@@ -130,7 +130,7 @@ def test_the_boundary_check_notes_a_file_no_parser_reads(
 
     (tmp_path / "context.yaml").write_text("name: app\nlevel: module\n", encoding="utf-8")
     (tmp_path / "a.py").write_text("import os\n", encoding="utf-8")
-    monkeypatch.setattr(boundary_check, "parser_for", lambda _path, _parsers=None: None)
+    monkeypatch.setattr(boundary_check, "parser_for", lambda _path, _parsers=None, **_k: None)
 
     result = boundary_check.check_boundaries(tmp_path, "a.py")
 

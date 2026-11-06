@@ -61,7 +61,7 @@ def plan_delete(
     """Delete `path` when no other file uses it."""
     if path not in files:
         return RenameRefusal(f"{path} is not a file of the project")
-    kind = resolver_for(path)
+    kind = resolver_for(path, files)
     if kind is None:
         return RenameRefusal(
             f"deleting is not supported for {path}: no resolver can tell who uses it"

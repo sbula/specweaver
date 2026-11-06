@@ -23,7 +23,7 @@ import pathspec
 
 from specweaver.assurance.graph.boundary_rule import BoundaryRule
 from specweaver.assurance.graph.topology import load_nodes
-from specweaver.commons.languages import LANGUAGE_SUFFIXES, language_of
+from specweaver.commons.languages import LANGUAGE_SUFFIXES, has_cpp_sources, language_of
 from specweaver.commons.qa import ArchitectureRunResult, ArchitectureViolation
 from specweaver.sandbox.language.core.boundary_extras import run_extras
 from specweaver.workspace.ast.parsers.factory import get_default_parsers, parser_for
@@ -86,6 +86,13 @@ class _Judge:
         self._rule = BoundaryRule(nodes, project_root)
         self._ignored = _ignored(project_root)
         self._families: dict[str, tuple[dict[str, str], Any]] = {}
+        self._cpp: bool | None = None
+
+    def _cpp_sources(self) -> bool:
+        """Whether the project has C++ sources, so its headers are C++; walked once."""
+        if self._cpp is None:
+            self._cpp = has_cpp_sources(_walk(self._root, self._ignored))
+        return self._cpp
 
     def code_files(self, target: str) -> list[str]:
         """`target` itself, or every code file under it when it is a folder."""
@@ -94,7 +101,7 @@ class _Judge:
         return sorted(f for f in _walk(self._root, self._ignored, target) if language_of(f))
 
     def judge(self, target: str) -> ArchitectureRunResult:
-        language = language_of(target)
+        language = language_of(target, cpp_sources=self._cpp_sources())
         if language is None:
             return ArchitectureRunResult(
                 0, note=f"{target} is not a code file; no boundary was examined."
@@ -110,7 +117,7 @@ class _Judge:
         code = files.get(target)
         if code is None:
             code = (self._root / target).read_text(encoding="utf-8")
-        parser = parser_for(target)
+        parser = parser_for(target, cpp_sources=self._cpp_sources())
         if parser is None:
             return ArchitectureRunResult(
                 0, note=f"no parser reads {target}; no boundary was examined."
