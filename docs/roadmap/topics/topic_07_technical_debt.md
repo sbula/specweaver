@@ -422,6 +422,10 @@ critical for long-term project viability.
   > section EXISTS turns the safe failure — an agent finds nothing and asks — into the unsafe one. Check, baseline, 27 tests and 6 mutants deleted; the 13 triggers stay in §2.
   > Record: [design](../features/topic_07_technical_debt/TECH-069/TECH-069_design.md). ID is dead — do NOT reuse.)*
 
+* **`TECH-094` 🔴: No CI Runs the Tests**
+  > [Description](../features/topic_07_technical_debt/TECH-094/TECH-094_design.md) | _Status:
+  > stub, minted 2026-11-06. Origin: 2026-11-06, after `TECH-079`; only an image build runs on GitHub._ |
+
 ## Documentation & Knowledge Architecture
 * **`TECH-071` 🔴: Docs and Code Disagree in 60 Places**
   > [Description](../features/topic_07_technical_debt/TECH-071/TECH-071_design.md) | _Status: STUB. Origin: 2026-09-25, the docs rewrite checked doc claims against `src/`._ |
