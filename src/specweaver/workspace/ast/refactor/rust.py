@@ -90,7 +90,7 @@ _KEYWORDS = frozenset(
 class RustResolver(Resolver):
     """Resolves item, method and trait names across the Rust crates of one project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".rs",)
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("rust",)
 
     def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
         return moves_more.rust_edits(self, path, new_path)

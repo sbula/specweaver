@@ -15,6 +15,7 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.refactor import moves
 from specweaver.workspace.ast.refactor._base import Resolver, common, verdict
 from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal, Spot
@@ -30,7 +31,9 @@ if TYPE_CHECKING:
 Resolved = tuple[str, ...]
 
 _UNSURE = ("unknown",)
-_JS = (".js", ".jsx", ".mjs", ".cjs")
+_JS = LANGUAGE_SUFFIXES["javascript"]
+#: What an import without an ending resolves to: `.ts`, then `.tsx` (never `.cts`/`.mts`).
+_BARE = LANGUAGE_SUFFIXES["typescript"][:2]
 _RESERVED = frozenset(
     [
         "break",
@@ -87,7 +90,7 @@ _RESERVED = frozenset(
 class TypeScriptResolver(Resolver):
     """Resolves names across the TypeScript modules of one project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".ts", ".tsx")
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("typescript",)
 
     def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
         return moves.typescript_edits(self, path, new_path)
@@ -109,11 +112,9 @@ class TypeScriptResolver(Resolver):
         base = posixpath.normpath(posixpath.join(posixpath.dirname(from_file), spec))
         stem = re.sub(r"\.[mc]?jsx?$", "", base)
         for candidate in (
-            f"{stem}.ts",
-            f"{stem}.tsx",
+            *(f"{stem}{s}" for s in _BARE),
             f"{stem}.d.ts",
-            f"{stem}/index.ts",
-            f"{stem}/index.tsx",
+            *(f"{stem}/index{s}" for s in _BARE),
         ):
             if candidate in self.code:
                 return ("module", candidate)

@@ -480,7 +480,7 @@
           "old": "            return (\"unknown\",) if self._aliased else (\"external\",)\n",
           "new": "            return (\"external\",)\n",
           "breaks": "an import through a tsconfig path alias is skipped",
-          "symbol_sha": "sha256:73ff5f15ee81580600f5f2d974827dbb517ffd69716b6f1dea7c5fce9d4117f7"
+          "symbol_sha": "sha256:777446c1ada1a0f80b3e7d70f9e7861e410d8b1ad98aba43f4b6ebc81060063b"
         },
         {
           "id": "ts-export-star-trusted",

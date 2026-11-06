@@ -51,8 +51,11 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 0. **`commons/languages.py`**: one row in `LANGUAGE_SUFFIXES` with every file ending of the language,
    and, if the language has a test convention, its folder in `_TESTS_ROOT` and its file name in
    `name_tests_for`. The prompt fences, the parser registry, rename, the archetype rules, the skeleton
-   reader, the code-structure atom and `task_files_for` all read it; no other list of endings exists
-   (`TECH-078`). The test convention is what C02 and C03 judge a code file by
+   reader, the code-structure atom, `task_files_for`, both analyzer families, the standards scope and
+   recency scans and the `[implement]` setting all read it; a refactor resolver names its
+   `LANGUAGES` and gets their endings. No other list of endings exists, and
+   `tests/unit/commons/test_one_ending_table.py` fails on one (`TECH-078`, `TECH-079`).
+   `main_suffix(language)` is the ending a new file gets: the row's first. The test convention is what C02 and C03 judge a code file by
    (`assurance/validation/project_root.find_tests`): with one, `validate_code` runs those two rules on
    the language; without one, no rule judges it.
 1. **`runner.py`**: `GoQARunner`, implementing `QARunnerInterface`, bound to `go build`, `go test`,

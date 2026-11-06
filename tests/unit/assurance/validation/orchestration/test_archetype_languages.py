@@ -20,10 +20,10 @@ from pathlib import Path
 import pytest
 
 from specweaver.assurance.validation.orchestration.archetype_pipelines import (
-    LANGUAGE_SUFFIXES,
     covers,
     languages_of,
 )
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 
 
 def test_spring_boot_covers_java_and_kotlin_only() -> None:

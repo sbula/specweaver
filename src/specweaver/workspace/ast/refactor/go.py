@@ -75,7 +75,7 @@ _KEYWORDS = frozenset(
 class GoResolver(Resolver):
     """Resolves function, type and method names across the Go packages of one project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".go",)
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("go",)
 
     def move_edits(self, path: str, new_path: str) -> Edits | RenameRefusal:
         return moves.go_edits(self, path, new_path)

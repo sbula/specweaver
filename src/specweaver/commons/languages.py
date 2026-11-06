@@ -15,7 +15,7 @@ LANGUAGE_SUFFIXES: dict[str, tuple[str, ...]] = {
     "python": (".py", ".pyi"),
     "java": (".java",),
     "kotlin": (".kt", ".kts"),
-    "typescript": (".ts", ".tsx"),
+    "typescript": (".ts", ".tsx", ".cts", ".mts"),
     "javascript": (".js", ".jsx", ".mjs", ".cjs"),
     "rust": (".rs",),
     "go": (".go",),
@@ -39,6 +39,14 @@ _TESTS_ROOT = {
 def language_of(path: str | PurePath) -> str | None:
     """The language `path`'s ending names, or None."""
     return _LANGUAGE_OF.get(PurePath(path).suffix.lower())
+
+
+def main_suffix(language: str) -> str:
+    """The ending a language's new files get: its first. Raises `ValueError` for an unknown one."""
+    if language not in LANGUAGE_SUFFIXES:
+        msg = f"no file ending for language {language!r}"
+        raise ValueError(msg)
+    return LANGUAGE_SUFFIXES[language][0]
 
 
 def root_of_tests(language: str) -> str | None:

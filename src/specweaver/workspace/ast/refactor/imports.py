@@ -28,7 +28,10 @@ _PACKAGE_FILES = frozenset(
         "mod.rs",
         "lib.rs",
         "main.rs",
-        *(f"index{s}" for s in (".ts", ".tsx", ".js", ".jsx")),
+        *(
+            f"index{s}"
+            for s in (*LANGUAGE_SUFFIXES["typescript"], *LANGUAGE_SUFFIXES["javascript"])
+        ),
     }
 )
 _SCRIPT_SUFFIXES = (*LANGUAGE_SUFFIXES["typescript"], ".d.ts", *LANGUAGE_SUFFIXES["javascript"])

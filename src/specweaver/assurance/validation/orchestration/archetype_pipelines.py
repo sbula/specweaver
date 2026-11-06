@@ -15,7 +15,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.commons.languages import LANGUAGE_SUFFIXES as _LANGUAGE_SUFFIXES
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
+from specweaver.commons.languages import language_of as _language_of
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -27,9 +28,6 @@ logger = logging.getLogger(__name__)
 
 SPEC_DEFAULT = "validation_spec_default"
 CODE_DEFAULT = "validation_code_default"
-
-#: The file endings of each language an archetype may name: the one table.
-LANGUAGE_SUFFIXES = _LANGUAGE_SUFFIXES
 
 
 def archetype_of(path: Path, project_path: Path | None) -> str | None:
@@ -118,11 +116,7 @@ def _names(
 
 def language_of(path: Path) -> str:
     """The language a file's ending names; the bare ending when no language claims it."""
-    suffix = path.suffix.lower()
-    return next(
-        (name for name, endings in LANGUAGE_SUFFIXES.items() if suffix in endings),
-        suffix.lstrip(".") or path.name,
-    )
+    return _language_of(path) or path.suffix.lower().lstrip(".") or path.name
 
 
 def add_payload(

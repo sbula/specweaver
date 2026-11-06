@@ -20,32 +20,17 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Extensions considered as "source files" for project age estimation.
+# Endings considered as "source files" for project age estimation: every language in `commons`,
+# plus code SpecWeaver does not parse.
 _SOURCE_EXTENSIONS = frozenset(
-    {
-        ".py",
-        ".js",
-        ".ts",
-        ".jsx",
-        ".tsx",
-        ".kt",
-        ".kts",  # Kotlin
-        ".rs",  # Rust
-        ".go",  # Go
-        ".java",  # Java
-        ".rb",  # Ruby
-        ".cpp",
-        ".c",
-        ".h",
-        ".hpp",  # C/C++
-        ".cs",  # C#
-        ".swift",  # Swift
-    }
+    {*(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixes), ".rb", ".cs", ".swift"}
 )
 
 # Half-life bounds (days).

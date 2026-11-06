@@ -24,10 +24,9 @@ WHOLE_PROJECT = frozenset({".", "", "src", "src/", "tests", "tests/"})
 
 def names_one_file(target: str) -> bool:
     """Whether a test target is one source file, in any language."""
-    from specweaver.assurance.validation.orchestration.archetype_pipelines import LANGUAGE_SUFFIXES
+    from specweaver.commons.languages import language_of
 
-    suffix = Path(target).suffix.lower()
-    return any(suffix in endings for endings in LANGUAGE_SUFFIXES.values())
+    return language_of(target) is not None
 
 
 def scenarios_root(context: RunContext) -> Path:

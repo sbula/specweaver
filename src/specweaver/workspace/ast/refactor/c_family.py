@@ -115,7 +115,7 @@ _CPP_KEYWORDS = _C_KEYWORDS | frozenset(
 class CResolver(Resolver):
     """Resolves function, type and method names across the C and C++ files of one project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".c", ".h", ".cpp", ".hpp", ".cc", ".cxx")
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("c", "cpp")
     #: C++ files may include a C header, so a new name must be free in both languages.
     KEYWORDS: ClassVar[frozenset[str]] = _CPP_KEYWORDS
     LANGUAGE: ClassVar[str] = "C"

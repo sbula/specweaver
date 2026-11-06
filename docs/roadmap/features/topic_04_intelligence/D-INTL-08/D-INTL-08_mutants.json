@@ -233,10 +233,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/run_targets.py",
           "symbol": "jvm_test_class",
-          "old": "    if path.suffix != _EXTENSIONS.get(language) or \"main\" in path.parts[:-1]:\n",
+          "old": "    if language not in _JVM or path.suffix != main_suffix(language) or \"main\" in path.parts[:-1]:\n",
           "new": "    if \"main\" in path.parts[:-1]:\n",
           "breaks": "a folder target becomes a bogus class filter",
-          "symbol_sha": "sha256:df273cdfd07e33c7058bcc1bae610f47a49adaab1e63a15cdc753a4a5ea82bee"
+          "symbol_sha": "sha256:8212952654044a007208771ed0a997211b4608a89085abf0c00ac98efb3a222a"
         },
         {
           "id": "simple-name-instead-of-qualified",
@@ -246,7 +246,7 @@
           "old": "            return \".\".join((*parts[index + 3 : -1], path.stem))\n",
           "new": "            return path.stem\n",
           "breaks": "two classes with one name in different packages run together",
-          "symbol_sha": "sha256:df273cdfd07e33c7058bcc1bae610f47a49adaab1e63a15cdc753a4a5ea82bee"
+          "symbol_sha": "sha256:8212952654044a007208771ed0a997211b4608a89085abf0c00ac98efb3a222a"
         },
         {
           "id": "ts-summary-ignored",
@@ -514,10 +514,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/qa_targets.py",
           "symbol": "names_one_file",
-          "old": "    return any(suffix in endings for endings in LANGUAGE_SUFFIXES.values())\n",
-          "new": "    return suffix == \".py\"\n",
+          "old": "    return language_of(target) is not None\n",
+          "new": "    return target.endswith(\".py\")\n",
           "breaks": "a Java test file that ran no test passes",
-          "symbol_sha": "sha256:31f610df7ecde727201825b1a40c8c40f75e0b0133c17b946301079cafba496d"
+          "symbol_sha": "sha256:6cea021ddcc2c9bdb6ba374149f0d5bd653af77a5223448d5f044b677d79222e"
         }
       ]
     },

@@ -127,3 +127,11 @@ def test_cargo_names_no_test_file_for_the_crate_or_its_sources(tmp_path: Path, t
     RustRunner(cwd=tmp_path, executor=executor).run_tests(target=target)
 
     assert "--test" not in _command(executor)
+
+
+@pytest.mark.parametrize(
+    ("target", "language"), [("src/test/go/x.go", "go"), ("src/test/x.rs", "rust")]
+)
+def test_a_file_of_another_language_is_no_jvm_test_class(target: str, language: str) -> None:
+    """Proves: TECH-079 FR-12"""
+    assert jvm_test_class(target, language) is None

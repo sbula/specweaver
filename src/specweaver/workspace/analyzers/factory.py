@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
+from specweaver.commons.languages import language_of
 from specweaver.workspace.ast.parsers.java.codestructure import JavaCodeStructure
 from specweaver.workspace.ast.parsers.kotlin.codestructure import KotlinCodeStructure
 from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
@@ -161,18 +162,24 @@ _STDLIB_TOP_MODULES = frozenset(
 class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
     """Base class for language analyzers powered by Tree-Sitter parsers."""
 
-    def __init__(self, parser: CodeStructureInterface, ext: str) -> None:
+    def __init__(self, parser: CodeStructureInterface, language: str) -> None:
         self.parser = parser
-        self.ext = ext
+        self.language = language
+
+    def _files(self, directory: Path) -> list[Path]:
+        """The folder's own files in this language, by any of its endings in `commons`."""
+        return sorted(
+            p for p in directory.iterdir() if p.is_file() and language_of(p) == self.language
+        )
 
     def detect(self, directory: Path) -> bool:
-        """Check if directory contains any files of this extension."""
-        return any(directory.glob(f"*{self.ext}"))
+        """Check if directory contains any files of this language."""
+        return bool(self._files(directory))
 
     def extract_imports(self, directory: Path) -> list[str]:
         """Extract all imports, deduplicated, using the underlying tree-sitter parser."""
         imports: set[str] = set()
-        for file_path in directory.glob(f"*{self.ext}"):
+        for file_path in self._files(directory):
             try:
                 code_text = file_path.read_text(encoding="utf-8")
                 for imp in self.parser.extract_imports(code_text):
@@ -185,7 +192,7 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
     def extract_public_symbols(self, directory: Path) -> list[str]:
         """Extract public symbols using the underlying tree-sitter parser."""
         symbols: set[str] = set()
-        for file_path in directory.glob(f"*{self.ext}"):
+        for file_path in self._files(directory):
             try:
                 code_text = file_path.read_text(encoding="utf-8")
                 for sym in self.parser.list_symbols(code_text, visibility=["public"]):
@@ -255,7 +262,7 @@ class TreeSitterAnalyzerBase(LanguageAnalyzer, ABC):
 
 class PythonAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
-        super().__init__(PythonCodeStructure(), ".py")
+        super().__init__(PythonCodeStructure(), "python")
 
     def extract_purpose(self, directory: Path) -> str | None:
         init_file = directory / "__init__.py"
@@ -284,7 +291,7 @@ class PythonAnalyzer(TreeSitterAnalyzerBase):
 
 class JavaAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
-        super().__init__(JavaCodeStructure(), ".java")
+        super().__init__(JavaCodeStructure(), "java")
 
     def extract_purpose(self, directory: Path) -> str | None:
         return None
@@ -303,7 +310,7 @@ class JavaAnalyzer(TreeSitterAnalyzerBase):
 
 class KotlinAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
-        super().__init__(KotlinCodeStructure(), ".kt")
+        super().__init__(KotlinCodeStructure(), "kotlin")
 
     def extract_purpose(self, directory: Path) -> str | None:
         return None
@@ -325,7 +332,7 @@ class KotlinAnalyzer(TreeSitterAnalyzerBase):
 
 class RustAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
-        super().__init__(RustCodeStructure(), ".rs")
+        super().__init__(RustCodeStructure(), "rust")
 
     def extract_purpose(self, directory: Path) -> str | None:
         return None
@@ -342,7 +349,7 @@ class RustAnalyzer(TreeSitterAnalyzerBase):
 
 class TypeScriptAnalyzer(TreeSitterAnalyzerBase):
     def __init__(self) -> None:
-        super().__init__(TypeScriptCodeStructure(), ".ts")
+        super().__init__(TypeScriptCodeStructure(), "typescript")
 
     def extract_purpose(self, directory: Path) -> str | None:
         return None

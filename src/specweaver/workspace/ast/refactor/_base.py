@@ -13,6 +13,7 @@ import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.parsers.factory import get_default_parsers
 from specweaver.workspace.ast.refactor._family import ClassId, Parents, hierarchy, outside_bases
 from specweaver.workspace.ast.refactor._model import Edits, Found, RenameRefusal, Spot
@@ -43,7 +44,14 @@ def _parsers(
 class Resolver:
     """The files of one language family, and the verdicts on one name in them."""
 
+    #: The languages whose files this resolver reads; `SUFFIXES` are their endings in `commons`.
+    LANGUAGES: ClassVar[tuple[str, ...]] = ()
     SUFFIXES: ClassVar[tuple[str, ...]] = ()
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        if "LANGUAGES" in cls.__dict__:
+            cls.SUFFIXES = tuple(s for name in cls.LANGUAGES for s in LANGUAGE_SUFFIXES[name])
 
     def __init__(self, files: Mapping[str, str], parser: CodeStructureInterface) -> None:
         self._parsers = _parsers(parser, self.SUFFIXES)

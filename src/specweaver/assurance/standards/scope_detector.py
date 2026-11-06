@@ -22,6 +22,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -29,23 +31,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-#: Source file extensions recognized for scope detection.
+#: Source file endings recognized for scope detection: every language in `commons`, plus code
+#: SpecWeaver does not parse but that still marks a scope.
 _SOURCE_EXTENSIONS: frozenset[str] = frozenset(
     {
-        ".py",
-        ".js",
-        ".ts",
-        ".jsx",
-        ".tsx",
-        ".go",
-        ".rs",
-        ".java",
-        ".kt",
+        *(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixes),
         ".rb",
-        ".c",
-        ".cpp",
-        ".h",
-        ".hpp",
         ".cs",
         ".swift",
         ".scala",
@@ -130,7 +121,7 @@ def _has_source_files(directory: Path) -> bool:
     """
     try:
         for entry in directory.iterdir():
-            if entry.is_file() and entry.suffix in _SOURCE_EXTENSIONS:
+            if entry.is_file() and entry.suffix.lower() in _SOURCE_EXTENSIONS:
                 return True
     except PermissionError:
         logger.debug("Permission denied: %s", directory)

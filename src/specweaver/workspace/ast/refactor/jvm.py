@@ -102,7 +102,7 @@ Resolved = tuple[str, ...]
 class JvmResolver(Resolver):
     """Resolves type, method and function names across the Java and Kotlin files of a project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".java", ".kt", ".kts")
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("java", "kotlin")
 
     # --- types -------------------------------------------------------------------------------
 

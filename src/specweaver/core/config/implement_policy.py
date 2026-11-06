@@ -8,21 +8,34 @@ None means the project pins none; its root decides (`commons.project_profile`).
 
 from __future__ import annotations
 
-from typing import Literal
+from pydantic import BaseModel, ConfigDict, field_validator
 
-from pydantic import BaseModel, ConfigDict
-
+from specweaver.commons.project_profile import BUILD_TOOLS, GENERATED_LANGUAGES
 from specweaver.core.config.settings_file import parse_section
-
-Language = Literal["python", "java", "kotlin", "typescript", "rust"]
-BuildTool = Literal["uv", "maven", "gradle", "cargo", "npm"]
 
 
 class ImplementPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    language: Language | None = None
-    build_tool: BuildTool | None = None
+    language: str | None = None
+    build_tool: str | None = None
+
+    @field_validator("language")
+    @classmethod
+    def _a_generated_language(cls, value: str | None) -> str | None:
+        return _one_of(value, GENERATED_LANGUAGES)
+
+    @field_validator("build_tool")
+    @classmethod
+    def _a_build_tool(cls, value: str | None) -> str | None:
+        return _one_of(value, BUILD_TOOLS)
+
+
+def _one_of(value: str | None, allowed: tuple[str, ...]) -> str | None:
+    if value is not None and value not in allowed:
+        msg = f"must be one of {', '.join(allowed)}"
+        raise ValueError(msg)
+    return value
 
 
 def parse_implement(text: str, source: str) -> ImplementPolicy:

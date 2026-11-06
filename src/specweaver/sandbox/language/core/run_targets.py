@@ -14,10 +14,12 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Literal
 
+from specweaver.commons.languages import main_suffix
+
 if TYPE_CHECKING:
     from pathlib import Path
 
-_EXTENSIONS = {"java": ".java", "kotlin": ".kt"}
+_JVM = ("java", "kotlin")
 
 
 class TargetError(ValueError):
@@ -102,7 +104,7 @@ def jvm_test_class(target: str, language: str) -> str | None:
     """The class a JVM test file declares, fully qualified when it sits under `src/test/<lang>/`;
     None for a folder, the project, or a file outside the test sources."""
     path = PurePosixPath(target.replace("\\", "/"))
-    if path.suffix != _EXTENSIONS.get(language) or "main" in path.parts[:-1]:
+    if language not in _JVM or path.suffix != main_suffix(language) or "main" in path.parts[:-1]:
         return None
     parts = path.parts
     for index in range(len(parts) - 2):

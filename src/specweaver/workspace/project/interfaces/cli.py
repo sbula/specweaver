@@ -80,15 +80,7 @@ def init(
     _core.console.print(f"  [dim]Registered:[/dim] project [bold]{name}[/bold]")
     _core.console.print(f"  [dim]Active:[/dim] {name}")
 
-    # Hint: if existing source files detected, suggest standards scan
-    source_exts = {".py", ".js", ".jsx", ".ts", ".tsx"}
-    has_source = any(
-        f.suffix in source_exts
-        for f in project_path.rglob("*")
-        if f.is_file()
-        and not any(p.startswith(".") or p == "__pycache__" or p == "node_modules" for p in f.parts)
-    )
-    if has_source:
+    if has_standards_code(project_path):
         _core.console.print(
             "\n[dim]Existing code detected. Run [bold]sw standards scan[/bold] "
             "to discover coding conventions.[/dim]",
@@ -312,3 +304,19 @@ workspace_cli.add_typer(constitution_app, name="constitution")
 from specweaver.workspace.project.interfaces.cli_hooks import hooks_app  # noqa: E402
 
 workspace_cli.add_typer(hooks_app, name="hooks")
+
+
+#: The languages `sw standards scan` reads.
+_STANDARDS_LANGUAGES = ("python", "javascript", "typescript")
+
+
+def has_standards_code(project_path: Path) -> bool:
+    """Whether the project holds code `sw standards scan` reads, outside hidden and build folders."""
+    from specweaver.commons.languages import language_of
+
+    return any(
+        language_of(f) in _STANDARDS_LANGUAGES
+        for f in project_path.rglob("*")
+        if f.is_file()
+        and not any(p.startswith(".") or p == "__pycache__" or p == "node_modules" for p in f.parts)
+    )

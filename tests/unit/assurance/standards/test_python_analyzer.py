@@ -34,7 +34,10 @@ class TestAnalyzerInterface:
         assert analyzer.language_name() == "python"
 
     def test_file_extensions(self, analyzer: PythonStandardsAnalyzer) -> None:
-        assert analyzer.file_extensions() == {".py"}
+        assert analyzer.file_extensions() == {
+            ".py",
+            ".pyi",
+        }  # every Python ending in the commons table
 
     def test_supported_categories(
         self,

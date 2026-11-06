@@ -24,5 +24,5 @@ def test_get_default_parsers() -> None:
     assert (".sql",) in parsers
     assert isinstance(parsers[(".sql",)], SqlCodeStructure)
 
-    # Ensure tuples cover TS/TSX
-    assert (".ts", ".tsx") in parsers
+    # The TypeScript entry is the commons table's: .ts, .tsx, .cts, .mts
+    assert (".ts", ".tsx", ".cts", ".mts") in parsers

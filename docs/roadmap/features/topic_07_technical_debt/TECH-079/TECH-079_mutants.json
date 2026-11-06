@@ -307,10 +307,10 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/contract_renderers.py",
           "symbol": "contract_extension",
-          "old": "    if language not in _EXTENSIONS:",
+          "old": "    if language not in GENERATED_LANGUAGES:",
           "new": "    if False:",
           "breaks": "an unknown language's contract file ends in .py",
-          "symbol_sha": "sha256:f1517b4d5505ea07dbe1735e2dac15f9609c9efe3dcd062e60924e5013b9dbcd"
+          "symbol_sha": "sha256:de920dfe87502f7f2e77ed78b36f2a617fe79f3116e090205b3ee2894582217b"
         },
         {
           "id": "task-files-unknown-is-python",
@@ -751,10 +751,11 @@
           "id": "sw-init-writes-a-framework",
           "origin": "authored",
           "file": "src/specweaver/workspace/project/scaffold.py",
-          "symbol": "_DEFAULT_CONTEXT_YAML",
-          "old": "responsibility.\n\narchetype: orchestrator\n",
-          "new": "responsibility.\n\narchetype: spring-boot\n",
-          "breaks": "a new project's context.yaml names a framework as its archetype"
+          "symbol": "_scaffold_context_yaml",
+          "old": "_DEFAULT_CONTEXT_YAML.format(project_name=project_name)",
+          "new": "_DEFAULT_CONTEXT_YAML.replace(\"archetype: orchestrator\", \"archetype: spring-boot\").format(project_name=project_name)",
+          "breaks": "a new project's context.yaml names a framework as its archetype",
+          "symbol_sha": "sha256:cc2e0d5e20903b3404a9a740f7fabdafe74d9db4ee28ec0beca35cd41a6a2415"
         },
         {
           "id": "sw-check-crashes-on-bad-pin",
@@ -824,6 +825,65 @@
           "new": "    return str(path).endswith(\".py\")\n",
           "breaks": "A.PY is never collected into the graph",
           "symbol_sha": "sha256:2210a0476bec2111dabb50465b06d95347209781bf17b11595c1d2c171a0f922"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "Every file-language question reads the one ending table in commons",
+      "scope": [
+        "tests/unit/commons/test_one_ending_table.py",
+        "tests/integration/commons/test_each_part_reads_the_ending_table.py"
+      ],
+      "mutants": [
+        {
+          "id": "kotlin-analyzer-kt-only",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/analyzers/factory.py",
+          "symbol": "TreeSitterAnalyzerBase._files",
+          "old": "if p.is_file() and language_of(p) == self.language",
+          "new": "if p.is_file() and p.suffix == {\"python\": \".py\", \"java\": \".java\", \"kotlin\": \".kt\", \"rust\": \".rs\", \"typescript\": \".ts\"}[self.language]",
+          "breaks": "a folder of .kts or .tsx files gets no analyzer",
+          "symbol_sha": "sha256:4e6bc53203931b1cf1ec1e6fb8743904ab6a7c5d5b4cca08bd8463ebf96aed70"
+        },
+        {
+          "id": "style-scan-case-sensitive",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/scanner.py",
+          "symbol": "StandardsScanner.scan",
+          "old": "            ext = path.suffix.lower()\n",
+          "new": "            ext = path.suffix\n",
+          "breaks": "A.TS is never style-scanned",
+          "symbol_sha": "sha256:c33870e2866baf1e1e8f16f89d288289b6dcdf008d4f12f6744d684a2627f0ee"
+        },
+        {
+          "id": "scope-own-list",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/scope_detector.py",
+          "symbol": "_SOURCE_EXTENSIONS",
+          "old": "        *(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixes),\n        \".rb\",\n        \".cs\",\n        \".swift\",\n        \".scala\",",
+          "new": "        \".py\",\n        \".rb\",\n        \".cs\",\n        \".swift\",\n        \".scala\",",
+          "breaks": "a C++ folder of .cc files is no scope"
+        },
+        {
+          "id": "init-hint-own-list",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/interfaces/cli.py",
+          "symbol": "has_standards_code",
+          "old": "        language_of(f) in _STANDARDS_LANGUAGES\n",
+          "new": "        f.suffix in (\".py\", \".ts\")\n",
+          "breaks": "sw init stays silent on a JavaScript module project",
+          "symbol_sha": "sha256:a9842a5cbbb1ffac43946cfa8e3083602f8553d0107a2c6d3384f6d7db808690"
+        },
+        {
+          "id": "python-resolver-no-stub",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/python.py",
+          "symbol": "PythonResolver",
+          "old": "LANGUAGES: ClassVar[tuple[str, ...]] = (\"python\",)",
+          "new": "LANGUAGES: ClassVar[tuple[str, ...]] = ()\n    SUFFIXES: ClassVar[tuple[str, ...]] = (\".py\",)",
+          "breaks": "rename from a .pyi stub fails",
+          "symbol_sha": "sha256:078b812245316be11b50c73f60847ab19703dd43e3ba023370597b58e501cdce"
         }
       ]
     }

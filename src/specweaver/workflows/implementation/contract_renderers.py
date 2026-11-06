@@ -27,28 +27,18 @@ import logging
 import re
 from dataclasses import dataclass
 
-# ---------------------------------------------------------------------------
-# Extension helpers
-# ---------------------------------------------------------------------------
-
-_EXTENSIONS: dict[str, str] = {
-    "python": "py",
-    "java": "java",
-    "kotlin": "kt",
-    "typescript": "ts",
-    "rust": "rs",
-}
-
-
 logger = logging.getLogger(__name__)
 
 
 def contract_extension(language: str) -> str:
     """The file ending of a contract file; raises `ValueError` naming an unknown language."""
-    if language not in _EXTENSIONS:
+    from specweaver.commons.languages import main_suffix
+    from specweaver.commons.project_profile import GENERATED_LANGUAGES
+
+    if language not in GENERATED_LANGUAGES:
         msg = f"no contract file ending for language {language!r}"
         raise ValueError(msg)
-    return _EXTENSIONS[language]
+    return main_suffix(language).lstrip(".")
 
 
 # ---------------------------------------------------------------------------

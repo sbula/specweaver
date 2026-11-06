@@ -75,7 +75,7 @@ class StandardsScanner:
         # 2. Group files by mapped analyzer
         analyzer_to_files: dict[StandardsAnalyzer, list[Path]] = {}
         for path in files:
-            ext = path.suffix
+            ext = path.suffix.lower()
             matched = ext_to_analyzer.get(ext)
             if matched:
                 if matched not in analyzer_to_files:

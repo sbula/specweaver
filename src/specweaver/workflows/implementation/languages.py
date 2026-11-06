@@ -14,8 +14,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from specweaver.commons.project_profile import GENERATED_LANGUAGES
+
 _WORKFLOWS = Path(__file__).parent.parent
-_LANGUAGES = frozenset({"python", "java", "kotlin", "typescript", "rust"})
 _FRAMEWORK_NAME = re.compile(r"[a-z0-9][a-z0-9-]*")
 _FRAMEWORK_SECTIONS = {"Code": "code", "Tests": "tests"}
 _SECTIONS = {
@@ -47,8 +48,8 @@ def language_guide(language: str, project_dir: Path | None = None) -> LanguageGu
     Raises `ValueError` for a language outside the five, and for a file without its `name:` line or
     one of its sections, naming the file.
     """
-    if language not in _LANGUAGES:
-        msg = f"no generation guide for language {language!r}; known: {sorted(_LANGUAGES)}"
+    if language not in GENERATED_LANGUAGES:
+        msg = f"no generation guide for language {language!r}; known: {sorted(GENERATED_LANGUAGES)}"
         raise ValueError(msg)
     path = _content(project_dir, "languages", language)
     front, sections = _parse(path, _SECTIONS)

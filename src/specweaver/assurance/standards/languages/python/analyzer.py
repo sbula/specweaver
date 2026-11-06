@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from specweaver.assurance.standards.analyzer import CategoryResult, StandardsAnalyzer
 from specweaver.assurance.standards.recency import recency_weight
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -74,7 +75,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         return "python"
 
     def file_extensions(self) -> set[str]:
-        return {".py"}
+        return set(LANGUAGE_SUFFIXES["python"])
 
     def supported_categories(self) -> list[str]:
         return list(_CATEGORIES)

@@ -17,6 +17,7 @@ from specweaver.assurance.standards.languages.python.analyzer import (
     _classify_name,
 )
 from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
@@ -102,7 +103,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         return "javascript"
 
     def file_extensions(self) -> set[str]:
-        return {".js", ".jsx", ".cjs", ".mjs"}
+        return set(LANGUAGE_SUFFIXES["javascript"])
 
     def supported_categories(self) -> list[str]:
         return [

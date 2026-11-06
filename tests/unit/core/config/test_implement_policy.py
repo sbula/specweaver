@@ -16,12 +16,10 @@ Proves: TECH-079 FR-2
 
 from __future__ import annotations
 
-from typing import get_args
-
 import pytest
 
 from specweaver.commons.project_profile import BUILD_TOOLS, GENERATED_LANGUAGES
-from specweaver.core.config.implement_policy import BuildTool, Language, parse_implement
+from specweaver.core.config.implement_policy import parse_implement
 from specweaver.core.config.settings_file import SettingsFileError
 
 
@@ -46,8 +44,10 @@ def test_no_section_names_no_language() -> None:
 
 
 def test_the_allowed_values_are_the_ones_the_profile_decision_knows() -> None:
-    assert get_args(Language) == GENERATED_LANGUAGES
-    assert get_args(BuildTool) == BUILD_TOOLS
+    for language in GENERATED_LANGUAGES:
+        assert parse_implement(f'[implement]\nlanguage = "{language}"\n', "s").language == language
+    for tool in BUILD_TOOLS:
+        assert parse_implement(f'[implement]\nbuild_tool = "{tool}"\n', "s").build_tool == tool
 
 
 def test_not_toml_is_refused() -> None:

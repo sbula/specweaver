@@ -47,7 +47,7 @@ def _join(directory: str, rest: str) -> str:
 class PythonResolver(Resolver):
     """Resolves names across the Python files of one project."""
 
-    SUFFIXES: ClassVar[tuple[str, ...]] = (".py",)
+    LANGUAGES: ClassVar[tuple[str, ...]] = ("python",)
 
     # --- files and modules ------------------------------------------------------------------
 

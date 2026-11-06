@@ -18,6 +18,7 @@ from specweaver.assurance.standards.languages.javascript.analyzer import (
     JSStandardsAnalyzer,
     walk_tree,
 )
+from specweaver.commons.languages import LANGUAGE_SUFFIXES
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -37,7 +38,7 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
         return "typescript"
 
     def file_extensions(self) -> set[str]:
-        return {".ts", ".tsx", ".cts", ".mts"}
+        return set(LANGUAGE_SUFFIXES["typescript"])
 
     def supported_categories(self) -> list[str]:
         return [
