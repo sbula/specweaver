@@ -113,6 +113,7 @@ None.
 | FR-15 | One function in `workspace/ast/parsers` SHALL return the parser for a file path, matching its ending case-insensitively through `commons`, from a registry built once per process; the 9 lookups listed in The Defect SHALL use it | parsers' callers | find a parser | `A.PY` and `a.py` get the same parser; one registry |
 | FR-16 | The style analyzers' base class SHALL be renamed `TreeSitterStyleAnalyzer`; both analyzer families SHALL pick a file's language through `commons`, so a folder holding only `.kts` or `.tsx` files gets its analyzer `[agreed 2026-11-05]` | `sw scan`, `sw standards scan` | analyze a folder | no clashing names; every ending found |
 | FR-17 | The Python style analyzer SHALL parse with the shared tree-sitter Python parser and SHALL return the same category results as before on a fixture set pinned first `[agreed 2026-11-05]` | `sw standards scan` | scan Python code | the same results, one way to parse Python |
+| FR-18 | The code rules that parse Python (C01, C06, C08) SHALL read a file that starts with a UTF-8 byte order mark, as Python does; a mark later in the file stays a syntax error `[agreed 2026-11-06]` | `sw check`, the API check, the validate steps | check a Python file saved with a BOM | C01 passes, C06 and C08 judge it |
 
 ## Requirement–Surface Bindings
 
@@ -237,8 +238,8 @@ None new. tree-sitter and its grammars are already pinned.
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf04_implementation_plan.md
 
 ### SF-05: Analyzers on one base
-- **Scope**: the style base renamed, both families through `commons`, Python style on tree-sitter.
-- **FRs**: [FR-16, FR-17]
+- **Scope**: the style base renamed, both families through `commons`, Python style on tree-sitter, the code rules read a leading BOM.
+- **FRs**: [FR-16, FR-17, FR-18]
 - **Inputs**: SF-04's table and lookup.
 - **Outputs**: no clashing names; one way to parse Python.
 - **Depends on**: SF-04
@@ -257,7 +258,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 | SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One framework answer | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Analyzers on one base | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -289,6 +290,8 @@ the framework. Known limit: `POST /api/v1/check` uses no archetype or framework 
 registry built once; every ending table reads `commons` and a guard test fails on a new one; a `.h`
 is C++ in a project with C++ sources. Found at dev: the refactor resolvers name `LANGUAGES` and the
 base derives their endings (the duplication gate flagged repeated imports).
-**Next step**: the implementation plan for SF-05 (`specweaver-implementation-plan TECH-079 SF-05`).
+**SF-05 plan approved 2026-11-06** (the user): a Python file with a leading BOM is read by the style
+check and by C01, C06, C08 (FR-18, added); JavaScript and TypeScript keep reading trees with errors.
+**Next step**: dev SF-05 (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf05_implementation_plan.md`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
