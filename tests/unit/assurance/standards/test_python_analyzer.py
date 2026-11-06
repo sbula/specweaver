@@ -457,30 +457,37 @@ class TestTestPatternsExtraction:
 
 
 class TestHelperEdgeCases:
-    """Test private helper edge cases."""
+    """A file the parser cannot read, and bytes that are not UTF-8."""
 
-    def test_parse_file_with_syntax_error(
+    def test_a_file_with_a_syntax_error_is_skipped(
         self,
         analyzer: PythonStandardsAnalyzer,
         tmp_path: Path,
     ) -> None:
-        """Files with SyntaxError are skipped (return None)."""
         f = tmp_path / "broken.py"
-        f.write_text("def oops(\n")
-        result = analyzer._parse_file(f)
-        assert result is None
+        f.write_text("def Oops_Name(): pass\ndef oops(\n")
+        naming = analyzer.extract_all([f], 180)[0]
+        assert naming.sample_size == 0
 
-    def test_parse_file_with_encoding_errors(
+    def test_bytes_that_are_not_utf8_are_still_read(
         self,
         analyzer: PythonStandardsAnalyzer,
         tmp_path: Path,
     ) -> None:
-        """Files with encoding errors are handled via errors='replace'."""
         f = tmp_path / "binary_ish.py"
-        f.write_bytes(b"x = '\xff\xfe'\n")
-        # Should not raise — errors="replace" handles it
-        result = analyzer._parse_file(f)
-        assert result is not None
+        f.write_bytes(b"def read_me():\n    x = '\xff\xfe'\n")
+        naming = analyzer.extract_all([f], 180)[0]
+        assert naming.sample_size == 1
+
+    def test_it_parses_with_the_shared_tree_sitter_parser(
+        self,
+        analyzer: PythonStandardsAnalyzer,
+    ) -> None:
+        from specweaver.assurance.standards.tree_sitter_base import TreeSitterStyleAnalyzer
+        from specweaver.workspace.ast.parsers.python.codestructure import PythonCodeStructure
+
+        assert isinstance(analyzer, TreeSitterStyleAnalyzer)
+        assert isinstance(analyzer.get_code_structure(), PythonCodeStructure)
 
 
 # ---------------------------------------------------------------------------
@@ -786,3 +793,32 @@ class TestExtractWithBrokenFiles:
         assert result is not None, 'Category "naming" not found in results'
         assert result.sample_size == 1
         assert result.dominant.get("function_style") == "snake_case"
+
+
+class TestTestFrameworkImports:
+    """The import forms `ast` matched: an alias, and a relative module named after a framework."""
+
+    @pytest.mark.parametrize(
+        ("text", "framework"),
+        [
+            ("import pytest as pt\n", "pytest"),
+            ("import os, unittest\n", "unittest"),
+            ("from .pytest import fixture\n", "pytest"),
+            ("from unittest.mock import patch\n", "unittest"),
+        ],
+    )
+    def test_framework_named(
+        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path, text: str, framework: str
+    ) -> None:
+        f = tmp_path / "test_x.py"
+        f.write_text(text)
+        patterns = analyzer.extract_all([f], 180)[-1]
+        assert patterns.dominant == {"framework": framework}
+
+    @pytest.mark.parametrize("text", ["import unittest.mock\n", "from . import pytest\n"])
+    def test_no_framework_named(
+        self, analyzer: PythonStandardsAnalyzer, tmp_path: Path, text: str
+    ) -> None:
+        f = tmp_path / "test_x.py"
+        f.write_text(text)
+        assert analyzer.extract_all([f], 180)[-1].sample_size == 0

@@ -118,8 +118,8 @@ ordering. Custom D-prefix rules loaded from project dirs. `RuleAtom` adapter bri
 execution.
 
 **3.5 Standards auto-discovery** — `standards/analyzer.py` (`StandardsAnalyzer`),
-`standards/python_analyzer.py` (`PythonStandardsAnalyzer`): single-pass AST extraction for 6
-categories. In its own module `standards/` (orchestrator) because it's a self-contained capability
+`standards/languages/python/analyzer.py` (`PythonStandardsAnalyzer`): single-pass tree-sitter
+extraction for 6 categories, on the shared `TreeSitterStyleAnalyzer` base. In its own module `standards/` (orchestrator) because it's a self-contained capability
 that only needs `config/` for DB storage.
 
 **3.6 Plan phase** — `planning/planner.py` (`Planner`): generates structured Plan artifacts from

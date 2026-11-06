@@ -116,10 +116,13 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 8. **Detection and scenarios**: its build file in `commons/project_profile.py`, its name in
    `GENERATED_LANGUAGES` there, and its rows in `_RUNNERS`, `_CONVERTERS` and `_FILTERS`; the
    converter names its own scenario file (`output_path`).
-9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py`, registered in
-   `rename._RESOLVERS`; without it `rename_symbol` and `move_module` refuse the language.
+9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py` that names its `LANGUAGES`
+   (the base takes their endings from `commons`), registered in `rename._BY_LANGUAGE`; without it
+   `rename_symbol` and `move_module` refuse the language.
 10. **Standards**: an analyzer in `assurance/standards/languages/<lang>/`, registered in
-    `assurance/standards/scanner.py`, so `sw standards` reads the project's conventions.
+    `assurance/standards/scanner.py`, so `sw standards` reads the project's conventions. It extends
+    `TreeSitterStyleAnalyzer` (`assurance/standards/tree_sitter_base.py`), parses with the
+    language's parser from `workspace/ast/parsers`, and builds each result with `vote_result`.
 11. **Framework evaluator schemas**: flat YAML files (e.g. `gin.yaml` for Gin/Fiber) in
    `specweaver.workflows.evaluators.frameworks`. Bind each to the language with
    `metadata: supported_languages: ["go"]` so it cannot leak into another language. Users override

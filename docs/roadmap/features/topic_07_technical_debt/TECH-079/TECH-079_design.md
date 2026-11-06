@@ -43,13 +43,13 @@ JavaScript project gets `.ts` files.
 
 | # | Path | Span | Owner | Status |
 |---|---|---|---|---|
-| P-1 | `sw implement` → `[implement]` pins + root → profile → task files, framework, contract | CLI, workspace project, commons, workflows/implementation | TECH-079 (FR-1..FR-8) | ⬜ |
+| P-1 | `sw implement` → `[implement]` pins + root → profile → task files, framework, contract | CLI, workspace project, commons, workflows/implementation | TECH-079 (FR-1..FR-8) | ✅ (SF-02, SF-03) |
 | P-2 | `POST /api/v1/implement` → the same profile → task files, or an error naming the setting | API, workspace project, commons | TECH-079 (FR-8) | ✅ (SF-02) |
 | P-3 | `sw run` → run setup → profile in the run → QA runner, scenario converter, stack-trace filter, dual run, isolation | run setup, flow engine and handlers, sandbox language | TECH-079 (FR-7, FR-14) | ✅ (SF-02) |
 | P-4 | `sw sandbox preflight` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ✅ (SF-02) |
 | P-5 | `sw check <code file>` → validation pipeline chosen by the profile's framework | validation orchestration, workspace project | TECH-079 (FR-9) | ✅ (SF-03) |
-| P-6 | `sw scan`, topology, C09 → structure analyzers → folder language from `commons` | workspace analyzers, assurance graph | TECH-079 (FR-16) | ⬜ |
-| P-7 | `sw standards scan` → style analyzers → shared parsers | assurance standards, workspace parsers | TECH-079 (FR-16, FR-17) | ⬜ |
+| P-6 | `sw scan`, topology, C09 → structure analyzers → folder language from `commons` | workspace analyzers, assurance graph | TECH-079 (FR-16) | ✅ (SF-04) |
+| P-7 | `sw standards scan` → style analyzers → shared parsers | assurance standards, workspace parsers | TECH-079 (FR-16, FR-17) | ✅ (SF-04, SF-05) |
 | P-8 | rename, code-structure tools, C05 → one parser lookup, `.h` by project | workspace parsers and refactor, sandbox code structure | TECH-079 (FR-13, FR-15) | ✅ (SF-04) |
 
 ## Research Findings
@@ -258,7 +258,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 | SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One framework answer | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-05 | Analyzers on one base | SF-04 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-05 | Analyzers on one base | SF-04 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -292,6 +292,11 @@ is C++ in a project with C++ sources. Found at dev: the refactor resolvers name 
 base derives their endings (the duplication gate flagged repeated imports).
 **SF-05 plan approved 2026-11-06** (the user): a Python file with a leading BOM is read by the style
 check and by C01, C06, C08 (FR-18, added); JavaScript and TypeScript keep reading trees with errors.
-**Next step**: dev SF-05 (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf05_implementation_plan.md`).
+**SF-05 committed 2026-11-06**: the style base is `TreeSitterStyleAnalyzer` with the shared helpers;
+the Python style analyzer reads with tree-sitter and gives `ast`'s results (same on the repo's 1,776
+files); C01, C06 and C08 read a leading BOM. Found at dev: tree-sitter keeps escapes in the string
+content, so the docstring check decodes them.
+**Next step**: the closure gate (`specweaver-feature` Phase 4): FR ledger, feature tests, demo,
+README counts, the finished message.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

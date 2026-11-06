@@ -96,6 +96,10 @@ class TreeSitterStyleAnalyzer(StandardsAnalyzer):
         """
         ...
 
+    def _readable(self, tree: tree_sitter.Tree) -> bool:
+        """Whether a parsed file counts; every tree does unless a language says otherwise."""
+        return True
+
     def extract_all(
         self,
         files: list[Path],
@@ -109,6 +113,9 @@ class TreeSitterStyleAnalyzer(StandardsAnalyzer):
             try:
                 source = path.read_bytes()
                 tree = parser.parse(source)
+                if not self._readable(tree):
+                    logger.debug("Skipping %s: syntax error", path)
+                    continue
                 w = file_weight(path, half_life_days)
                 parsed_files.append((path, w, tree))
             except Exception as e:

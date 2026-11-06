@@ -53,3 +53,42 @@ re-pinned after C01 changed, re-run on its scope and objected. `stale_mutants.py
 **Red/blue (2 cycles).** No finding above threshold. Checked: only one leading mark is dropped, so
 line numbers stay right; a file of only a BOM parses as empty, as in Python; the rules never see
 bytes, so a BOM in another encoding is not this rule's case.
+
+## CB-3: Python style on tree-sitter (FR-17)
+
+**What changed**
+- `assurance/standards/languages/python/analyzer.py`: `PythonStandardsAnalyzer` extends
+  `TreeSitterStyleAnalyzer` and parses with `PythonCodeStructure().parser`. The six extractors walk
+  tree-sitter nodes and keep `ast`'s rules: only plain parameters count for type hints (after any
+  `/`, before any `*`); a docstring is a plain string (no f-, t- or bytes prefix) first in the body
+  that holds more than whitespace once its escapes are decoded; `from __future__` is absolute;
+  the test framework is the import nearest the top, found breadth first as `ast.walk` did. `ast` is
+  no longer imported.
+- `tree_sitter_base.py`: a `_readable(tree)` hook, True by default. The Python analyzer skips a tree
+  with `has_error` (Q2 `[agreed 2026-11-06]`); JavaScript and TypeScript count such trees, as before.
+
+**What a user sees.** The same `sw standards scan` results, and a Python file saved with a BOM now
+counts (Q1 `[agreed 2026-11-06]`); before, it was skipped.
+
+**Tests**
+- The CB-1 pin stays green unchanged, plus a BOM case (red first: the old parser skipped the file).
+  Found at dev: tree-sitter keeps escape sequences inside the string content, so the first version
+  counted `"\n"` as a docstring; two escape cases joined the pin and the escapes are now decoded.
+- Red first: the analyzer is a `TreeSitterStyleAnalyzer` on `PythonCodeStructure`. The two
+  `_parse_file` tests now go through `extract_all` (Q5). New: an aliased and a relative framework
+  import, and a JavaScript tree with errors still counts. Each new expected value was also checked
+  against the old `ast` analyzer.
+- Parity: the old and the new analyzer give the same six results on the repo's 1,776 Python files.
+
+**Mutants.** TECH-079 FR-17: `fstring-is-docstring`, `escapes-not-decoded`, `keyword-only-counts`,
+`relative-is-absolute`, `broken-file-counted`, `depth-first-framework`, each objected by the pin.
+`stale_mutants.py`: 0.
+
+**Red/blue (2 cycles).** Cycle 1: (MEDIUM, fixed) escape sequences, above; (MEDIUM, checked) a
+comment before the first statement is skipped, as `ast` ignores comments; (LOW, checked) a
+non-UTF-8 byte in a name decodes with `errors="replace"`, as `read_text` did. The complexity gate scored `_has_docstring`
+17; it is now `_leading_string` and `_plain_text`. Cycle 2: none above
+threshold.
+
+**Docs.** `language_support_guide.md` step 10 names the base and `vote_result`; step 9 no longer
+names the removed `rename._RESOLVERS`. `legacy_feature_map.md` §3.5 says tree-sitter.

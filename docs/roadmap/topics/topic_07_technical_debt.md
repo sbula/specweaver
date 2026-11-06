@@ -103,7 +103,7 @@ critical for long-term project viability.
 
 * **`TECH-079` 🔴: Language and Toolchain Are Decided in a Dozen Places That Disagree**
   > [Description](../features/topic_07_technical_debt/TECH-079/TECH-079_design.md) | _Status:
-  > design approved 2026-11-05; SF-01 to SF-04 committed 2026-11-06. Origin: 2026-10-22, architecture audit (10 findings)._ |
+  > design approved 2026-11-05; SF-01 to SF-05 committed 2026-11-06. Origin: 2026-10-22, architecture audit (10 findings)._ |
   > About 12 suffix tables and 5+ manifest readers decide a file's language and a project's
   > build tool, in conflicting order.
 

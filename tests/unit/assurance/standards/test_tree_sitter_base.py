@@ -96,6 +96,15 @@ class TestTreeSitterStyleAnalyzer:
         assert len(results) == 1
         assert results[0].sample_size == 0
 
+    def test_a_tree_with_errors_still_counts_by_default(
+        self, analyzer: DummyJSAnalyzer, tmp_path: Path
+    ) -> None:
+        """Only a language that says so skips a file it cannot fully parse; JavaScript does not."""
+        f = tmp_path / "half.js"
+        f.write_text("function ok() {}\nfunction (\n")
+
+        assert analyzer.extract_all([f], 180)[0].sample_size == 1
+
     def test_extractor_failure_is_caught_safely(self, tmp_path: Path) -> None:
         """If one extractor raises an exception, the pipeline should not completely crash."""
 

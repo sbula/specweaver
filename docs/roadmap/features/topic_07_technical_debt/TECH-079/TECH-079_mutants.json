@@ -964,6 +964,75 @@
           "symbol_sha": "sha256:091bace7e42d789bfce53775a1f6f78564a73bf7052b92b9415b6d5948bfa620"
         }
       ]
+    },
+    {
+      "requirement": "FR-17",
+      "title": "The Python style analyzer reads with tree-sitter and gives the results `ast` gave",
+      "scope": [
+        "tests/integration/assurance/standards/test_python_style_results_pinned.py"
+      ],
+      "mutants": [
+        {
+          "id": "fstring-is-docstring",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "_plain_text",
+          "old": "if any(flag in prefix for flag in \"fbt\"):",
+          "new": "if any(flag in prefix for flag in \"bt\"):",
+          "breaks": "an f-string first in a body counts as a docstring",
+          "symbol_sha": "sha256:f58693ea4ec625fbcb1570ff920aba1cf5f32287143f3a0a1764fb19d6775869"
+        },
+        {
+          "id": "escapes-not-decoded",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "_unescaped",
+          "old": "if escape.type == \"escape_sequence\":",
+          "new": "if False:",
+          "breaks": "a docstring of only an escaped newline counts as documented",
+          "symbol_sha": "sha256:97efb7f3a4c0aa038d9843c80cf87469950b9a4fc9902aab0cb8d35e143ae208"
+        },
+        {
+          "id": "keyword-only-counts",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "_plain_parameters",
+          "old": "            break",
+          "new": "            continue",
+          "breaks": "an annotated keyword-only or star parameter counts as a type hint",
+          "symbol_sha": "sha256:0cb725fdbd058df5358ba432f7af1e30a27efd1a6d19c933039f332c3be36511"
+        },
+        {
+          "id": "relative-is-absolute",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "PythonStandardsAnalyzer",
+          "old": "relative = module is not None and module.type == \"relative_import\"",
+          "new": "relative = False",
+          "breaks": "`from . import a` counts as an absolute import",
+          "symbol_sha": "sha256:e7f6e57a487b68696ea14fab2b4f1176b46cc6e8e5521c9dfde0090e874dbaf7"
+        },
+        {
+          "id": "broken-file-counted",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "PythonStandardsAnalyzer",
+          "old": "return not tree.root_node.has_error",
+          "new": "return True",
+          "breaks": "a file with a syntax error is counted",
+          "symbol_sha": "sha256:e7f6e57a487b68696ea14fab2b4f1176b46cc6e8e5521c9dfde0090e874dbaf7"
+        },
+        {
+          "id": "depth-first-framework",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/standards/languages/python/analyzer.py",
+          "symbol": "_nodes",
+          "old": "queue.extend(node.children)",
+          "new": "queue.extendleft(reversed(node.children))",
+          "breaks": "the test framework is the first import in the text, not the shallowest",
+          "symbol_sha": "sha256:16473eebf8e04450bd85d34ac0e10ad3efbd3b28b62e6f98286b42b853daf7ad"
+        }
+      ]
     }
   ]
 }

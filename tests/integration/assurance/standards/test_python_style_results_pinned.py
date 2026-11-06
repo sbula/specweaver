@@ -12,8 +12,8 @@ time, so every recency weight is 1.
 | Bucket | Case |
 |---|---|
 | Happy | naming over functions, methods, nested, async and decorated defs and classes; specific and bare excepts |
-| Boundary | only plain parameters count for type hints; an empty or blank docstring is none; `except*`; `from __future__` |
-| Degradation | a file with a syntax error is skipped; a file with bytes that are not UTF-8 is still read |
+| Boundary | only plain parameters count for type hints; an empty, blank or escaped-blank docstring is none; `except*`; `from __future__` |
+| Degradation | a file with a syntax error is skipped; a file with bytes that are not UTF-8 is still read; a file saved with a BOM is read |
 | Hostile | an f-string or a bytes string is no docstring; a test file importing two frameworks takes the shallower one |
 """
 
@@ -139,15 +139,20 @@ def test_docstrings(tmp_path: Path) -> None:
                 """   """
             async def d8():
                 """Async doc."""
+            def d9():
+                "\\n"
+            def d10():
+                "\\x41"
         ''',
     }
 
     dominant, confidence, sample = _category(tmp_path, files, "docstrings")
 
-    # documented: d1, d2 (one string once joined), d8 — 3 of 8 is "low"
+    # documented: d1, d2 (one string once joined), d8, d10 (an escaped "A"); d9 is an escaped
+    # newline only — 4 of 10 is "low"
     assert dominant == {"coverage": "low"}
-    assert confidence == pytest.approx(3 / 8)
-    assert sample == 8
+    assert confidence == pytest.approx(4 / 10)
+    assert sample == 10
 
 
 def test_import_patterns(tmp_path: Path) -> None:
@@ -191,6 +196,19 @@ def test_a_broken_file_is_skipped_and_bad_bytes_are_read(tmp_path: Path) -> None
         "good.py": "def good_name(): pass\n",
         "broken.py": "def Broken_Name():\n    pass\ndef (\n",
         "bytes.py": b"def bytes_name():\n    s = '\xff'\n",
+    }
+
+    dominant, confidence, sample = _category(tmp_path, files, "naming")
+
+    assert dominant == {"function_style": "snake_case"}
+    assert confidence == pytest.approx(1.0)
+    assert sample == 2
+
+
+def test_a_file_saved_with_a_bom_is_read(tmp_path: Path) -> None:
+    files = {
+        "good.py": "def good_name(): pass\n",
+        "bom.py": b"\xef\xbb\xbfdef bom_name(): pass\n",
     }
 
     dominant, confidence, sample = _category(tmp_path, files, "naming")
