@@ -1,5 +1,6 @@
 # SpecWeaver
 
+[![Tests](https://github.com/sbula/specweaver/actions/workflows/tests.yml/badge.svg)](https://github.com/sbula/specweaver/actions/workflows/tests.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 

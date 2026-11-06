@@ -44,6 +44,11 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from tests.baseline_snapshot import BASELINES, rewrites, snapshot
+from tests.ci_skips import (  # noqa: F401 -- hooks: on CI a tool skip fails the run
+    pytest_collectreport,
+    pytest_runtest_logreport,
+    pytest_sessionfinish,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

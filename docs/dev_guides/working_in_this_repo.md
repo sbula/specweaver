@@ -157,6 +157,26 @@ Full rules: `ADR-005`, and the `specweaver-design` skill's opening caution.
 
 ---
 
+## 11. No test reaches a server, and CI runs the same gate as your commit
+
+On 2026-09-27 a test sent a request to the real `api.openai.com` (openai 3.19 moved to `httpx2`,
+which `respx` cannot see). The fix guarded `httpx2` only; Gemini and Mistral send through `httpx`
+and stayed unguarded until `TECH-094` (2026-11-06).
+
+- **The guard is the socket.** `tests/conftest.py` refuses, for every test not marked `live`, any
+  connection or host-name lookup that leaves the machine, and loopback port 11434 (Ollama). Fake
+  the client (`fake_httpx2`, `respx`) or start your own server on loopback. The canary is
+  `tests/unit/test_no_test_reaches_a_server.py`.
+- **A real model only in a `live` test.** Real keys come only through `SPECWEAVER_LIVE_KEYS`, set by
+  `scripts/live.py`; a file that reads it must be marked `live`
+  (`tests/unit/test_live_keys_only_in_live_tests.py`).
+- **CI** (`.github/workflows/tests.yml`) runs the suite, `quality.py cb` and `doc` on Python 3.11 and
+  3.14, with no secrets. On CI a test that skips for anything but Windows fails the run
+  (`tests/ci_skips.py`): install the tool in the workflow, never let it skip.
+  `tests/unit/test_ci_workflow_keeps_its_promises.py` fails if the workflow stops keeping that.
+
+---
+
 ## The shortest version
 
 Measure, do not infer. Break your own guard and watch it fail. Read what you are about to overwrite.

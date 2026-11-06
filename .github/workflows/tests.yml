@@ -1,0 +1,53 @@
+# The same gate as a local commit (scripts/commit_gated.py): the suite, then quality.py cb and doc.
+# Never a real model: no secrets, no keys, and the default selection leaves out `live` and
+# `toolchain`. tests/unit/test_ci_workflow_keeps_its_promises.py fails if that changes (TECH-094).
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install the tools the suite looks for
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+
+      - name: Install the locked dependencies
+        run: uv sync --locked
+
+      - name: Suite (unit, integration, e2e)
+        run: uv run python -m pytest -n auto
+
+      - name: Commit gate
+        run: |
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          case "$base" in ""|0000000000000000000000000000000000000000) base="HEAD~1" ;; esac
+          uv run python scripts/quality.py cb --base "$base"
+
+      - name: Docs gate
+        run: uv run python scripts/quality.py doc

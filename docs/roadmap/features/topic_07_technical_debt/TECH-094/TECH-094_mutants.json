@@ -79,6 +79,74 @@
           "symbol_sha": "sha256:dde38cc3cd93ddb84c11cd85e12fdeeb4e2df745e9e461a1fddc4461dbd17e15"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "On CI a test that skips for anything but Windows fails the run",
+      "scope": [
+        "tests/unit/test_ci_fails_on_a_tool_skip.py"
+      ],
+      "mutants": [
+        {
+          "id": "ci-ignored",
+          "origin": "authored",
+          "file": "tests/ci_skips.py",
+          "symbol": "pytest_sessionfinish",
+          "old": "if hasattr(session.config, \"workerinput\") or not os.environ.get(\"CI\"):",
+          "new": "if hasattr(session.config, \"workerinput\"):",
+          "breaks": "a local run fails on a skip, or the rule cannot tell CI from local",
+          "symbol_sha": "sha256:5acb980b16f2029c9e45c7679d437c1dee05f73143dce73655ab5dd0968aec0e"
+        },
+        {
+          "id": "windows-not-allowed",
+          "origin": "authored",
+          "file": "tests/ci_skips.py",
+          "symbol": "pytest_sessionfinish",
+          "old": "if _ALLOWED not in reason",
+          "new": "if True",
+          "breaks": "a Windows-only skip fails CI on Linux",
+          "symbol_sha": "sha256:5acb980b16f2029c9e45c7679d437c1dee05f73143dce73655ab5dd0968aec0e"
+        },
+        {
+          "id": "xfail-counted",
+          "origin": "authored",
+          "file": "tests/ci_skips.py",
+          "symbol": "_record",
+          "old": "if report.skipped and not hasattr(report, \"wasxfail\"):",
+          "new": "if report.skipped:",
+          "breaks": "an expected failure fails CI as a skip",
+          "symbol_sha": "sha256:e9894edf6fcd1cd78a8e8ee6535910febc2593a9fe1414e6ff376e9e76acc262"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The workflow guard catches a model call, a secret or a wider token",
+      "scope": [
+        "tests/unit/test_ci_workflow_keeps_its_promises.py"
+      ],
+      "mutants": [
+        {
+          "id": "model-call-unseen",
+          "origin": "authored",
+          "file": "tests/unit/test_ci_workflow_keeps_its_promises.py",
+          "symbol": "broken_promises",
+          "old": "broken = [f\"names {p.pattern}\" for p in _FORBIDDEN if p.search(text)]",
+          "new": "broken: list[str] = []",
+          "breaks": "a planted `-m live`, secret or key passes the guard",
+          "symbol_sha": "sha256:5503dc5989de295e95f23193630c00a91f2bea9d28639cf50f1cc52ea1680cd8"
+        },
+        {
+          "id": "permissions-unseen",
+          "origin": "authored",
+          "file": "tests/unit/test_ci_workflow_keeps_its_promises.py",
+          "symbol": "_top_level",
+          "old": "if workflow.get(\"permissions\") != {\"contents\": \"read\"}:",
+          "new": "if False:",
+          "breaks": "a workflow with a write token passes the guard",
+          "symbol_sha": "sha256:0b8b5e323427d7fb38feedd6b5caf9641723207e75c77eb3e70eb4e4b0b9aecc"
+        }
+      ]
     }
   ]
 }

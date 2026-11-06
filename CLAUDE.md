@@ -12,7 +12,7 @@
 | [`.agents/STATE.md`](.agents/STATE.md) | Where the project is right now, and what is wrong with it |
 
 Then, before your first change:
-[`docs/dev_guides/working_in_this_repo.md`](docs/dev_guides/working_in_this_repo.md) — ten traps,
+[`docs/dev_guides/working_in_this_repo.md`](docs/dev_guides/working_in_this_repo.md) — eleven traps,
 each one an incident that cost a session.
 
 ## The four rules that matter most

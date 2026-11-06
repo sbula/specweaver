@@ -13,7 +13,7 @@ plain `pytest`, and on a machine with keys it would call a real model.
 |---|---|
 | Happy | every test file naming `SPECWEAVER_LIVE_KEYS` carries the `live` marker |
 | Boundary | a file whose module-level `pytestmark` is `live` counts as marked |
-| Degradation | a file that names the variable only in prose (a docstring or comment) is ignored |
+| Degradation | a file that only names the variable (prose, a message, a pattern) is ignored |
 | Hostile | a planted unmarked file that reads the variable is caught |
 """
 
@@ -28,19 +28,27 @@ _TESTS = Path(__file__).resolve().parents[1]
 _VARIABLE = "SPECWEAVER_LIVE_KEYS"
 
 
+def _names_it(node: ast.AST) -> bool:
+    return isinstance(node, ast.Constant) and node.value == _VARIABLE
+
+
 def _reads_live_keys(tree: ast.AST) -> bool:
-    """Whether the code (not its prose) names the variable as a string."""
-    docstrings = {
-        id(node.body[0].value)
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
-        and node.body
-        and isinstance(node.body[0], ast.Expr)
-    }
-    return any(
-        isinstance(node, ast.Constant) and node.value == _VARIABLE and id(node) not in docstrings
-        for node in ast.walk(tree)
-    )
+    """Whether the code reads the variable: `os.environ[...]`, `.get(...)` or `os.getenv(...)`.
+
+    Naming it elsewhere (prose, a message, a pattern a guard searches for) reads no key.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Subscript) and _names_it(node.slice):
+            return True
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in ("get", "getenv")
+            and node.args
+            and _names_it(node.args[0])
+        ):
+            return True
+    return False
 
 
 def _marked_live(tree: ast.AST) -> bool:
@@ -89,6 +97,9 @@ def test_the_live_tests_that_read_it_exist() -> None:
             False,
         ),
         ('"""Reads SPECWEAVER_LIVE_KEYS? No."""\n# SPECWEAVER_LIVE_KEYS\nX = 1\n', False),
+        ('import re\nPATTERN = re.compile("SPECWEAVER_LIVE_KEYS")\n', False),
+        ('import os\nK = os.getenv("SPECWEAVER_LIVE_KEYS")\n', True),
+        ('import os\nK = os.environ.get("SPECWEAVER_LIVE_KEYS")\n', True),
         (
             'import pytest\n@pytest.mark.live\ndef test_x():\n    return "SPECWEAVER_LIVE_KEYS"\n',
             False,
