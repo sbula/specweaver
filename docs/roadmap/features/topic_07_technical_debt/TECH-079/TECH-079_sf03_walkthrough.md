@@ -97,3 +97,60 @@ fixture in `tests/conftest.py` that restores the logger's level, handlers and pr
 
 **Gate.** `cb` 17/17; `doc` 14/14; `sf` 18/18; tach OK; mypy clean; the full suite runs in the
 gated commit.
+
+## CB-3: validation uses the framework answer (FR-9); docs
+
+**What changed**
+- `archetype_pipelines.own_pipeline` / `code_pipeline` / `spec_pipeline` try names in order: the
+  framework, then the folder's archetype. For code the framework is `framework_for`'s answer (with
+  the run's profile); for a spec it is the folder's `framework:` only, never the build file (F5).
+  The validate step passes `run_profile(context)`; `sw check` reads the profile with the
+  `[implement]` pins and, when the root decides none or a pin is bad, goes on with the folder alone
+  (F4). `_test_rules_only` keys on "no framework or archetype pipeline".
+- Not in the plan, kept for compatibility: the archetype stays a fallback name, so a project's own
+  `validation_code_<role>` pipeline (`test_code_validation_dal_strictness.py` uses one) still
+  applies. F5's "a framework archetype" is the narrow reading; this keeps every archetype pipeline
+  that worked before.
+- Found at dev: the agent tools (`sandbox/dispatcher.py`) and the skeleton step read only the
+  archetype to pick the evaluator schema, so a folder that followed our warning and moved
+  `spring-boot` to `framework:` lost macro unrolling and tool hiding. Both now read
+  `ArchetypeResolver.resolve_evaluator` (`framework:`, else archetype). The prompt's project
+  description keeps naming the archetype, which is the layer role.
+- `sw check`'s profile reader lives in `assurance/validation/interfaces/cli.py`: it needs
+  `core.config.bootstrap.load_section`, which orchestration may not import; new tach edge
+  `assurance.validation.interfaces → core.config.bootstrap`.
+- F7 guard test and F8 planner hint. Docs: `context_yaml_spec.md` (`framework` field and rule),
+  handbook 1 (code checks follow the framework), handbook 5 (`framework:` beside the role
+  archetype), `adding_framework_guide.md` (sections 1, 2 and 4).
+
+**What a user sees.** `sw check` on a Java file in a Spring Boot project with no archetype now runs
+the Spring Boot code checks (C12), as `sw implement` writes Spring Boot code. Same in `sw run`'s
+validate step.
+
+**Known limit (not changed).** `POST /api/v1/check` never used an archetype pipeline and does not
+use the framework either; it runs the named, profile or default pipeline as before. FR-9 names
+`sw check` and the validate steps.
+
+**Tests**
+- Red first: `tests/e2e/capabilities/assurance/test_check_follows_the_framework_e2e.py` (red: the
+  default pipeline ran, no C12), `tests/integration/assurance/validation/orchestration/test_pipeline_follows_the_framework.py`
+  (red: no C12 from the profile, no spec pipeline from `framework:`), two agent-tool and skeleton
+  tests in `test_one_framework_answer.py` (red: the archetype was read).
+- `tests/integration/workspace/project/test_writers_name_no_framework.py` (F7);
+  `test_renderer.py` asserts the hint (F8).
+- Changed (NFR-1): `test_handlers_di_payload.py`'s mocked resolver now also answers "no
+  `framework:`"; no assertion changed.
+
+**Mutants.** TECH-079 FR-9: `validate-step-ignores-profile`, `framework-not-first`,
+`role-archetype-pipeline-lost`, `sw-check-ignores-profile`, `sw-check-pins-ignored`,
+`sw-check-refuses-undecided`, `sw-check-crashes-on-bad-pin`, `sw-init-writes-a-framework`; FR-10:
+`agent-tools-ignore-framework-key`, `skeleton-ignores-framework-key`. Re-anchored: C-VAL-02
+`profile-ignored`, D-INTL-08 `python-rules-on-java`, TECH-077 `skeleton-ignores-file-archetype`;
+others re-pinned and re-run. `stale_mutants.py`: 0.
+
+**Red/blue (2 cycles).** No finding above threshold. Accepted: a spec `framework:` with no
+pipeline falls through to the archetype; a framework with no code pipeline (FastAPI) falls through
+to the archetype, then the default; the API check limit above.
+
+**Gate.** Full suite 12,573 passed, 9 skipped; `cb` 17/17; `doc` 14/14; `sf` 18/18; tach OK; mypy
+clean.

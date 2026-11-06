@@ -190,3 +190,40 @@ def test_a_schema_whose_metadata_is_not_a_table_covers_any_file(tmp_path: Path) 
     _schema(tmp_path, "loose", "metadata: just text\n")
 
     assert _key(tmp_path, _folder(tmp_path, "framework: loose\n")) == "loose"
+
+
+# --- the agent tools and the skeleton read `framework:` too -------------------------------------
+
+
+def test_the_agent_tools_follow_the_framework_key(tmp_path: Path) -> None:
+    from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
+    from specweaver.sandbox.dispatcher import ToolDispatcher
+    from specweaver.sandbox.security import WorkspaceBoundary
+
+    _schema(tmp_path, "inhouse", "intents:\n  hide: [list_symbols]\n")
+    (tmp_path / "context.yaml").write_text("archetype: adapter\nframework: inhouse\n", "utf-8")
+
+    dispatcher = ToolDispatcher.create_standard_set(
+        WorkspaceBoundary(roots=[tmp_path]), role="implementer", allowed_tools=["ast"]
+    )
+
+    tool = next(t for t in dispatcher._interfaces if isinstance(t, CodeStructureTool))
+    assert tool._hidden_intents == ["list_symbols"]
+
+
+def test_the_skeleton_follows_the_framework_key(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from specweaver.core.flow.handlers.skeleton_assembler import (
+        evaluate_and_fetch_skeleton_context,
+    )
+    from specweaver.core.flow.run_state.run_context import RunContext
+
+    code = _folder(tmp_path, "archetype: adapter\nframework: quarkus\n")
+    code.write_text("class Greeter {}\n", encoding="utf-8")
+    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "greeter_spec.md")
+
+    with patch("specweaver.core.flow.handlers.skeleton_assembler.CodeStructureAtom") as atom:
+        evaluate_and_fetch_skeleton_context(context, [code])
+
+    assert atom.call_args.kwargs["active_archetype"] == "quarkus"

@@ -318,8 +318,9 @@ class ValidateCodeHandler:
             execute_validation_flow,
         )
 
-        pipeline, archetype = code_pipeline(code_path, project_path)
-        if archetype is None and language_of(code_path) != "python":
+        # `chosen`: the framework or archetype whose pipeline judges the file; None for the default.
+        pipeline, chosen = code_pipeline(code_path, project_path, profile)
+        if chosen is None and language_of(code_path) != "python":
             narrowed = _test_rules_only(pipeline, language_of(code_path))
             if narrowed is None:
                 return None
@@ -328,7 +329,7 @@ class ValidateCodeHandler:
             pipeline = apply_settings_to_pipeline(
                 pipeline, getattr(settings, "validation", settings)
             )
-        add_payload(pipeline, code_path, project_path, archetype, parsers=parsers, markers=True)
+        add_payload(pipeline, code_path, project_path, chosen, parsers=parsers, markers=True)
 
         content = code_path.read_text(encoding="utf-8")
         # The rules judge the code file: C02 and C03 find its tests, C04 measures it, C05 reads it.

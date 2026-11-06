@@ -409,7 +409,7 @@
           "old": "\"\"\"Skeleton assembler — fetches",
           "new": "\"\"\"Context Assembler — fetches",
           "breaks": "two assemblers carry one title again",
-          "symbol_sha": "sha256:ff1535351ee904e96921306acbdcbbbb54d41b73660305e64b66a9ed17813116"
+          "symbol_sha": "sha256:03c762e7c9524eb0e1a4b47d51e1ba677269d80e5a9612a9b5e02c8c8f75d5c8"
         }
       ]
     },

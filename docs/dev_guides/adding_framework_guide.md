@@ -9,17 +9,20 @@ through **Dependency Injected Payloads**, never by parsing itself.
 
 ## 1. Declare the archetype
 
-An archetype is a structural footprint (e.g. `spring-boot`, `fastapi`, `react-router`). Users set it
-in `context.yaml`:
+A framework (e.g. `spring-boot`, `fastapi`, `react-router`) is a name with an evaluator schema
+(section 2). Users set it in `context.yaml` under `framework:`; the `archetype` stays the layer role:
 
 ```yaml
 version: "1.0"
-archetype: "spring-boot"
+archetype: "adapter"
+framework: "spring-boot"
 consumes: ["database/"]
 ```
 
-The Orchestrator (`flow/`) resolves it via `ArchetypeResolver` and runs the matching validation
-pipeline extension (e.g. `validation_code_spring-boot.yaml`).
+`workspace/project/frameworks.framework_for` gives a file one answer: the nearest `framework:`,
+then an `archetype:` that names a framework (it warns to move it), then the framework the build
+file declares for the project's language; the first whose schema languages cover the file.
+Generation follows its guide; validation runs its pipeline (e.g. `validation_code_spring-boot.yaml`).
 
 ## 2. Add a schema evaluator (macro unrolling)
 
@@ -41,8 +44,9 @@ decorators:
   GetMapping: "@RequestMapping(method = RequestMethod.GET)"
 ```
 
-A language name must be one of `LANGUAGE_SUFFIXES` in `assurance/validation/orchestration/archetype_pipelines.py`;
-an unknown one is refused.
+A language name must be one of `LANGUAGE_SUFFIXES` in `commons/languages.py`; an unknown one is
+refused. The schema is the only place a framework's languages are declared; the generation guide
+(`workflows/frameworks/<name>.md`) has a `name:` line and its `Code` and `Tests` sections only.
 
 Evaluation is recursive with depth protection (Max Depth 5). Agents calling
 `CodeStructureTool.read_unrolled_symbol` get the runtime behavior deterministically in about 5
@@ -77,9 +81,10 @@ orchestrator's Python classes.
 **Do not** parse the framework AST inside the rule. The validate steps and `sw check` both call
 `assurance/validation/orchestration/archetype_pipelines.py`, which:
 
-1. finds the `archetype` in the nearest `context.yaml` (`spring-boot`);
-2. takes `validation_code_<archetype>` when the file is in one of the schema's
-   `supported_languages` (none named: any), else `validation_code_default`;
+1. takes the file's framework (`framework_for`, above), then its folder's `archetype`;
+2. takes the first `validation_code_<name>` that exists and whose schema's `supported_languages`
+   cover the file (none named: any), else `validation_code_default`. A project's own
+   `validation_code_<role>` still applies through the archetype;
 3. has **CodeStructureAtom** read the file's structure and framework markers, and puts them in each
    step's `params["ast_payload"]`.
 

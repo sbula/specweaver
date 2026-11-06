@@ -111,6 +111,7 @@ architecture:                         # OPTIONAL — structural docs
 
 # ── Enforcement ───────────────────────────────────────────
 archetype: pure-logic                 # REQUIRED — see Archetype Enum
+framework: spring-boot                # OPTIONAL — the framework the code here is written for
 
 consumes:                             # OPTIONAL — whitelist of allowed dependencies
   - shared/currency                   #   Paths relative to project root
@@ -172,6 +173,7 @@ consumes_resources:                   # OPTIONAL — Pre-fetch URIs before gener
 | `description` | `string` | Extended prose. Maps to CCS `index.md` body |
 | `related-modules` | `list[{name, path}]` | Cross-references. Maps to CCS `related-modules` |
 | `architecture` | `object` | Structural docs. Maps to CCS `architecture` |
+| `framework` | `string` | The framework this folder's code is written for (`spring-boot`, `quarkus`, `fastapi`, ...); a name with an evaluator schema. Generation follows its guide and validation its pipeline. Without it, an `archetype` naming a framework still counts (with a warning), then the build file |
 | `consumes` | `list[string]` | Whitelist of paths this boundary may import from. Supports `*` wildcards |
 | `forbids` | `list[string]` | Explicit deny list. Overrides `consumes`; inherited by every boundary below |
 | `widens` | `map[string, string]` | What this boundary may use beyond its parent's rule: `path: reason`. Each key must also be in `consumes`; an empty reason, or an entry that widens nothing, is refused |
@@ -247,6 +249,8 @@ own `widens` says so, with a reason. The parent is the nearest folder above that
 - An entry names a folder: another boundary's `name`, or a path relative to the root (`/` or `.`
   separated); a trailing `/*` means the folder itself.
 - **`archetype`** — not inherited. Each boundary declares its own.
+- **`framework`** — the nearest one at or above a file applies. A name with no evaluator schema is
+  not a framework: it warns and is not used.
 - **`constraints`** — cumulative. A child inherits parent constraints and can add new ones.
 - **`operational`** — per-field rules (see Operational Metadata above).
 

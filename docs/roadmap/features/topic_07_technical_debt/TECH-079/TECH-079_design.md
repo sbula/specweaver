@@ -47,7 +47,7 @@ JavaScript project gets `.ts` files.
 | P-2 | `POST /api/v1/implement` → the same profile → task files, or an error naming the setting | API, workspace project, commons | TECH-079 (FR-8) | ✅ (SF-02) |
 | P-3 | `sw run` → run setup → profile in the run → QA runner, scenario converter, stack-trace filter, dual run, isolation | run setup, flow engine and handlers, sandbox language | TECH-079 (FR-7, FR-14) | ✅ (SF-02) |
 | P-4 | `sw sandbox preflight` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ✅ (SF-02) |
-| P-5 | `sw check <code file>` → validation pipeline chosen by the profile's framework | validation orchestration, workspace project | TECH-079 (FR-9) | ⬜ |
+| P-5 | `sw check <code file>` → validation pipeline chosen by the profile's framework | validation orchestration, workspace project | TECH-079 (FR-9) | ✅ (SF-03) |
 | P-6 | `sw scan`, topology, C09 → structure analyzers → folder language from `commons` | workspace analyzers, assurance graph | TECH-079 (FR-16) | ⬜ |
 | P-7 | `sw standards scan` → style analyzers → shared parsers | assurance standards, workspace parsers | TECH-079 (FR-16, FR-17) | ⬜ |
 | P-8 | rename, code-structure tools, C05 → one parser lookup, `.h` by project | workspace parsers and refactor, sandbox code structure | TECH-079 (FR-13, FR-15) | ⬜ |
@@ -199,8 +199,8 @@ None new. tree-sitter and its grammars are already pinned.
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
 | `language_support_guide.md` | how a language is detected, where its endings live, the refusal | ⬜ To be updated during Pre-commit |
-| `1_installation_and_setup.md` §6c | the pins, `build_tool`, the refusals | ⬜ To be updated during Pre-commit |
-| `context_yaml_spec.md` | the `framework:` key | ⬜ To be updated during Pre-commit |
+| `1_installation_and_setup.md` §6c | the pins, `build_tool`, the refusals | ✅ SF-02 (§6c), SF-03 (Frameworks) |
+| `context_yaml_spec.md` | the `framework:` key | ✅ SF-03 |
 
 ## Sub-Feature Breakdown
 
@@ -255,7 +255,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | One framework answer | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | One framework answer | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -277,6 +277,12 @@ factory takes the language from one table; the sandbox takes the build tool; `de
 `detect_toolchain` are gone. Found at dev: a fresh `sw init` project has no build file and is
 refused until it has one or `[implement] language`; Go keeps C05 through `architecture_atom`.
 **SF-03 plan approved 2026-11-06** (the user): the evaluator-schema loader moves to `workspace/project`, which also answers each file's framework; a framework is a name with an evaluator schema.
-**Next step**: dev SF-03 (`specweaver-dev` on `TECH-079_sf03_implementation_plan.md`).
+**SF-03 committed 2026-11-06**: `workspace/project/frameworks.framework_for` gives each file one
+framework (`framework:`, a framework archetype with a warning, the build file); generation,
+`sw check`, the validate steps, the agent tools and the skeleton follow it; a framework is a name
+with an evaluator schema. Kept at dev: a project's own role-archetype pipeline still applies after
+the framework. Known limit: `POST /api/v1/check` uses no archetype or framework pipeline
+(unchanged).
+**Next step**: the implementation plan for SF-04 (`specweaver-implementation-plan TECH-079 SF-04`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

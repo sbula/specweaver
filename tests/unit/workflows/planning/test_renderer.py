@@ -160,6 +160,7 @@ class TestRenderArchitecture:
         md = render_plan_markdown(plan)
         assert "⚠️" in md
         assert "unknown archetype" in md
+        assert "a framework goes under `framework:`" in md  # TECH-079 FR-10
 
     def test_no_architecture_section_when_none(self, minimal_plan: PlanArtifact) -> None:
         md = render_plan_markdown(minimal_plan)

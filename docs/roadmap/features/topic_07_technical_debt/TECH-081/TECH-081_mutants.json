@@ -207,7 +207,7 @@
           "old": "        from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas",
           "new": "        from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas\n        from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator  # noqa: F401",
           "breaks": "the sandbox imports a workflow again",
-          "symbol_sha": "sha256:6ad68b5aeb598bdcdddd9455c4f27974a5a32552b0052bd31e97fe0fea7d060d"
+          "symbol_sha": "sha256:2e447fec0438e7a7208043b36e7c619938712f512910709c3dc005aab52a1334"
         },
         {
           "id": "security-imports-runcontext",

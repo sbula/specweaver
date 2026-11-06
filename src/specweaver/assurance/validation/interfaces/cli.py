@@ -18,6 +18,7 @@ from specweaver.workspace.project.discovery import resolve_project_path
 if TYPE_CHECKING:
     from specweaver.assurance.validation.models import RuleResult
     from specweaver.assurance.validation.pipeline import ValidationPipeline
+    from specweaver.commons.project_profile import ProjectProfile
 
 logger = logging.getLogger(__name__)
 
@@ -135,18 +136,39 @@ def _profile_owner(project_dir: Path | None) -> str | None:
 def _archetype_pipeline(
     level: str, target_path: Path, project_root: Path, fallback: ValidationPipeline
 ) -> tuple[ValidationPipeline, str]:
-    """The pipeline the target's archetype brings, with its payload; `fallback` without one."""
+    """The pipeline the target's framework or archetype brings, with its payload; `fallback`
+    without one."""
     from specweaver.assurance.validation.orchestration.archetype_pipelines import (
         add_payload,
         own_pipeline,
     )
 
     code = level == "code"
-    picked, archetype = own_pipeline("code" if code else "spec", target_path, project_root)
+    profile = _decided_profile(project_root) if code else None
+    picked, archetype = own_pipeline("code" if code else "spec", target_path, project_root, profile)
     if picked is None:
         return fallback, fallback.name
     add_payload(picked, target_path, project_root, archetype, markers=code)
     return picked, picked.name
+
+
+def _decided_profile(root: Path) -> ProjectProfile | None:
+    """The project's profile with its `[implement]` pins; None when the root decides none.
+
+    `sw check` judges one file and never refuses: without a profile the build file
+    names no framework and the folder alone decides.
+    """
+    from specweaver.commons.project_profile import ProjectUndecidedError
+    from specweaver.core.config.bootstrap.project_settings import load_section
+    from specweaver.core.config.implement_policy import parse_implement
+    from specweaver.workspace.project.project_profile import read_project_profile
+
+    try:
+        pins = load_section(root, parse_implement)
+        return read_project_profile(root, language=pins.language, build_tool=pins.build_tool)
+    except (ProjectUndecidedError, OSError, ValueError) as exc:  # expected: no framework from it
+        logger.info("No project profile at %s, so the build file names no framework: %s", root, exc)
+        return None
 
 
 def _build_result_label(level: str, pipeline: str | None, pipeline_name: str) -> str:

@@ -57,6 +57,7 @@ async def test_validate_code_handler_injects_ast_payload(tmp_path: Path) -> None
         # Setup ArchetypeResolver
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         # Setup CodeStructureAtom
@@ -136,6 +137,7 @@ async def test_validate_spec_handler_loads_archetype(tmp_path: Path) -> None:
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_pipeline = MagicMock()
@@ -185,6 +187,7 @@ async def test_validate_code_handler_falls_back_when_no_archetype(tmp_path: Path
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = None  # Force None
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
@@ -251,6 +254,7 @@ async def test_validate_spec_handler_falls_back_when_no_archetype(tmp_path: Path
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = None  # Force None
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_pipeline = MagicMock()
@@ -293,6 +297,7 @@ async def test_validate_spec_handler_atom_fails_fallback(tmp_path: Path) -> None
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
@@ -347,6 +352,7 @@ async def test_validate_code_handler_atom_fails_fallback(tmp_path: Path) -> None
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
@@ -398,6 +404,7 @@ async def test_validate_spec_handler_load_pipeline_fails_fallback(tmp_path: Path
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "unrecognized_archetype"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         def mock_load_side_effect(name, **kwargs):
@@ -446,6 +453,7 @@ async def test_validate_code_handler_load_pipeline_fails_fallback(tmp_path: Path
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "unrecognized_archetype"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         # CodeStructureAtom
@@ -514,6 +522,7 @@ async def test_validate_spec_handler_e2e_integration(tmp_path: Path) -> None:
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()
@@ -597,6 +606,7 @@ async def test_validate_spec_handler_e2e_integration_failed_bounds(tmp_path: Pat
     ):
         mock_resolver = MagicMock()
         mock_resolver.resolve.return_value = "spring-boot"
+        mock_resolver.resolve_framework.return_value = None
         mock_resolver_cls.return_value = mock_resolver
 
         mock_atom = MagicMock()

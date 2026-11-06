@@ -74,6 +74,11 @@ class ArchetypeResolver:
             self._framework_cache[path] = framework
         return framework
 
+    def resolve_evaluator(self, target_path: Path) -> str | None:
+        """The name whose evaluator schema applies at `target_path`: its `framework:`, else its
+        archetype."""
+        return self.resolve_framework(target_path) or self.resolve(target_path)
+
     def _parse_framework(self, context_file: Path) -> str | None:
         """The `framework:` string of a context.yaml file; None when absent or unreadable."""
         try:

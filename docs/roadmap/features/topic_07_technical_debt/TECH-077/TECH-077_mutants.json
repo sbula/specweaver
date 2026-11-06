@@ -64,10 +64,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/skeleton_assembler.py",
           "symbol": "evaluate_and_fetch_skeleton_context",
-          "old": "        archetype = resolver.resolve(path) or \"generic\"\n",
+          "old": "        archetype = resolver.resolve_evaluator(path) or \"generic\"\n",
           "new": "        archetype = resolver.resolve(context.project_path) or \"generic\"\n",
           "breaks": "every file is skeletonized under the root's archetype",
-          "symbol_sha": "sha256:ff1535351ee904e96921306acbdcbbbb54d41b73660305e64b66a9ed17813116"
+          "symbol_sha": "sha256:03c762e7c9524eb0e1a4b47d51e1ba677269d80e5a9612a9b5e02c8c8f75d5c8"
         }
       ]
     },

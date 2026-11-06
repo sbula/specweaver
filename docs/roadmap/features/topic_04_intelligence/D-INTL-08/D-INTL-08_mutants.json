@@ -484,10 +484,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/validation.py",
           "symbol": "ValidateCodeHandler._run_validation",
-          "old": "if archetype is None and language_of(code_path) != \"python\":",
+          "old": "if chosen is None and language_of(code_path) != \"python\":",
           "new": "if False:",
           "breaks": "C01/C02 fail every Java file",
-          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
+          "symbol_sha": "sha256:416c8fec9ce540572107041ff631d55c3ce4514e99d694011225ad181103b216"
         },
         {
           "id": "note-not-shown",

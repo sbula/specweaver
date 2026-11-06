@@ -50,7 +50,7 @@ def _render_architecture(plan: PlanArtifact) -> list[str]:
     ]
     archetype_warning = ""
     if arch.archetype not in KNOWN_ARCHETYPES:
-        archetype_warning = " ⚠️ (unknown archetype)"
+        archetype_warning = " ⚠️ (unknown archetype; a framework goes under `framework:`)"
     parts.append(f"- **Archetype**: `{arch.archetype}`{archetype_warning}")
     if arch.patterns:
         parts.append(f"- **Patterns**: {', '.join(arch.patterns)}")

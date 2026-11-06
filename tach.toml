@@ -38,7 +38,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validati
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
-depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.sandbox", "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.assurance.validation.orchestration", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.graph.lineage", "specweaver.workspace.project", "specweaver.interfaces.run_doors",]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.sandbox", "specweaver.assurance.validation.io", "specweaver.assurance.validation", "specweaver.assurance.validation.orchestration", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow.engine", "specweaver.graph.lineage", "specweaver.workspace.project", "specweaver.interfaces.run_doors",]
 
 [[modules]]
 path = "specweaver.core.config"

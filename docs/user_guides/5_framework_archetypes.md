@@ -3,23 +3,28 @@
 Use when: your code uses a framework (Spring Boot, FastAPI, Rust macros ...) whose generated
 behavior the agent cannot see in the source.
 
-An **archetype** plus **plugins** tell SpecWeaver which framework rules apply to a module. Without
+A **framework** plus **plugins** tell SpecWeaver which framework rules apply to a module. Without
 them, agents see only raw source and guess at what the framework generates.
 
 ## 1. Declare them in `context.yaml`
 
-Each module has a `context.yaml` at its folder boundary. Declare the archetype and plugins there:
+Each module has a `context.yaml` at its folder boundary. Declare the framework and plugins there;
+`archetype` stays the layer role (`adapter`, `pure-logic`, ...):
 
 ```yaml
 context:
   name: "My Backend Domain"
-  archetype: spring-security
+  archetype: adapter
+  framework: spring-boot
   plugins:
-    - spring-boot
+    - spring-security
     - jpa-hibernate
 ```
 
-The nearest `archetype` and `plugins` at or above a file apply to it.
+The nearest `framework`, `archetype` and `plugins` at or above a file apply to it. An `archetype`
+that names a framework still works and logs a warning to move it to `framework:`. Without either,
+the framework the build file declares applies (for code generation and checks). A framework is a
+name with an evaluator schema; see handbook 1, **Frameworks**.
 
 ## 2. Expand annotations and macros (Macro Evaluator)
 

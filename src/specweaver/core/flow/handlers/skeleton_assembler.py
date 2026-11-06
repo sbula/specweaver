@@ -44,13 +44,13 @@ def evaluate_and_fetch_skeleton_context(
 
     from specweaver.core.config.archetype_resolver import ArchetypeResolver
 
-    # Each file is skeletonized under its own nearest `context.yaml`'s archetype; one atom per
-    # archetype, with the run's parser mappings.
+    # Each file is skeletonized under its own nearest `context.yaml`'s framework, else archetype;
+    # one atom per name, with the run's parser mappings.
     resolver = ArchetypeResolver(context.project_path)
     atoms: dict[str, CodeStructureAtom] = {}
 
     def atom_for(path: Path) -> CodeStructureAtom:
-        archetype = resolver.resolve(path) or "generic"
+        archetype = resolver.resolve_evaluator(path) or "generic"
         if archetype not in atoms:
             atoms[archetype] = CodeStructureAtom(
                 cwd=context.project_path,

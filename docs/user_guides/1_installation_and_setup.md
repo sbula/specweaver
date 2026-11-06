@@ -359,7 +359,8 @@ Kotlin tests `kotlin.test`. To change what the model is told, copy a file from
 
 Lint repair asks the model to fix "this Java file" (in the project's language). Code validation's
 rules (C01–C13) are Python's: for another language `sw implement` prints `no code rules for java`
-and goes on, unless the folder's archetype brings rules for that language (Spring Boot does).
+and goes on, unless the file's framework brings rules for that language (Spring Boot does; see
+**Frameworks** below). `sw check` and the validate steps use the same framework as generation.
 `sw check --level code` and the API show C01, C06 and C08 as SKIP for a file that is not Python,
 naming its language. The summary counts the skipped rules; if no rule could judge the file, it
 prints `NOTHING CHECKED` and exits 1.

@@ -1,12 +1,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Which validation pipeline a file gets: its folder's archetype and, for code, its language.
+"""Which validation pipeline a file gets: its framework, else its folder's archetype.
 
-Shared by the validate steps and `sw check`, so both judge a file by the same rules. An
-archetype's languages are the `supported_languages` of its evaluator schema
-(`workflows/evaluators/frameworks/<archetype>.yaml`, or the project's `.specweaver/evaluators/`);
-a schema naming none judges any language.
+Shared by the validate steps and `sw check`, so both judge a file by the same rules. A code file's
+framework is `workspace.project.framework_for`'s answer, the one generation uses; a spec's is its
+folder's `framework:` (the build file never picks a spec pipeline). An archetype's languages are
+the `supported_languages` of its evaluator schema (`workflows/evaluators/frameworks/<name>.yaml`,
+or the project's `.specweaver/evaluators/`); a schema naming none judges any language.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.assurance.validation.pipeline import ValidationPipeline
+    from specweaver.commons.project_profile import ProjectProfile
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +46,15 @@ def spec_pipeline(
     feature: bool = False,
     profile: str | None = None,
 ) -> tuple[ValidationPipeline, str | None]:
-    """The archetype's spec pipeline, else the profile's, else the default; and the archetype.
+    """The framework's or archetype's spec pipeline, else the profile's, else the default; and
+    the name it came from.
 
     A feature spec always gets the feature pipeline: an archetype bounds a component.
     """
-    archetype = archetype_of(spec_path, project_path)
+    pipeline, key = own_pipeline("spec", spec_path, project_path)
     if feature:
-        return _load("validation_spec_feature", project_path), archetype
-    pipeline = _archetype_pipeline("spec", archetype, project_path, None)
-    return pipeline or _profile_pipeline(profile, project_path), archetype
+        return _load("validation_spec_feature", project_path), key
+    return pipeline or _profile_pipeline(profile, project_path), key
 
 
 def _profile_pipeline(profile: str | None, project_path: Path | None) -> ValidationPipeline:
@@ -68,27 +70,50 @@ def _profile_pipeline(profile: str | None, project_path: Path | None) -> Validat
 
 
 def code_pipeline(
-    code_path: Path, project_path: Path | None
+    code_path: Path, project_path: Path | None, profile: ProjectProfile | None = None
 ) -> tuple[ValidationPipeline, str | None]:
-    """The archetype's code pipeline when it covers the file's language, else the default."""
-    archetype = archetype_of(code_path, project_path)
-    pipeline = _archetype_pipeline("code", archetype, project_path, code_path)
+    """The framework's or archetype's code pipeline when it covers the file, else the default."""
+    pipeline, key = own_pipeline("code", code_path, project_path, profile)
     if pipeline is None:
         return _load(CODE_DEFAULT, project_path), None
-    return pipeline, archetype
+    return pipeline, key
 
 
 def own_pipeline(
-    level: str, path: Path, project_path: Path | None
+    level: str, path: Path, project_path: Path | None, profile: ProjectProfile | None = None
 ) -> tuple[ValidationPipeline | None, str | None]:
-    """The pipeline the file's archetype brings itself (`spec` or `code`), or None; and the archetype.
+    """The pipeline the file's framework or archetype brings (`spec` or `code`), or None; and the
+    name it came from.
 
-    None when there is no archetype, it ships no pipeline for `level`, or the code file is not in
-    its languages — the caller then keeps its own choice.
+    The framework comes first, then the archetype, so a project's own `validation_code_<role>`
+    still applies. None when neither ships a pipeline for `level`, or the code file is not in its
+    languages; the caller then keeps its own choice.
     """
-    archetype = archetype_of(path, project_path)
+    keys = _names(level, path, project_path, profile)
     code_path = path if level == "code" else None
-    return _archetype_pipeline(level, archetype, project_path, code_path), archetype
+    for key in keys:
+        pipeline = _archetype_pipeline(level, key, project_path, code_path)
+        if pipeline is not None:
+            return pipeline, key
+    return None, keys[0] if keys else None
+
+
+def _names(
+    level: str, path: Path, project_path: Path | None, profile: ProjectProfile | None
+) -> list[str]:
+    """The framework, then the archetype: the names whose pipelines may judge `path`."""
+    if project_path is None:
+        return []
+    from specweaver.core.config.archetype_resolver import ArchetypeResolver
+    from specweaver.workspace.project.frameworks import framework_for
+
+    if level == "code":
+        answer = framework_for(project_path, path, profile)
+        framework = answer.key if answer else None
+    else:
+        framework = ArchetypeResolver(project_path).resolve_framework(path)
+    names = (framework, archetype_of(path, project_path))
+    return [name for name in dict.fromkeys(names) if name]
 
 
 def language_of(path: Path) -> str:

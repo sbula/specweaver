@@ -480,7 +480,7 @@
           "old": "            code_path,\n            project_root=project_path,\n",
           "new": "            spec_path,\n            project_root=project_path,\n",
           "breaks": "C02 looks for the spec's tests, never the code file's",
-          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
+          "symbol_sha": "sha256:416c8fec9ce540572107041ff631d55c3ce4514e99d694011225ad181103b216"
         },
         {
           "id": "other-languages-unjudged",
@@ -490,7 +490,7 @@
           "old": "            narrowed = _test_rules_only(pipeline, language_of(code_path))\n            if narrowed is None:\n                return None\n            pipeline = narrowed\n",
           "new": "            return None\n",
           "breaks": "a Kotlin file is judged by no rule",
-          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
+          "symbol_sha": "sha256:416c8fec9ce540572107041ff631d55c3ce4514e99d694011225ad181103b216"
         },
         {
           "id": "python-rules-judge-kotlin",

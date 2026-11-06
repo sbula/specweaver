@@ -34,10 +34,10 @@
           "origin": "authored",
           "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
           "symbol": "spec_pipeline",
-          "old": "    return pipeline or _profile_pipeline(profile, project_path), archetype\n",
-          "new": "    return pipeline or _load(SPEC_DEFAULT, project_path), archetype\n",
+          "old": "    return pipeline or _profile_pipeline(profile, project_path), key\n",
+          "new": "    return pipeline or _load(SPEC_DEFAULT, project_path), key\n",
           "breaks": "a profile changes nothing in a run",
-          "symbol_sha": "sha256:4b30f2f076a5841d5cb093d3e6792c3beed2323ea968343c489e6a6ec4077c48"
+          "symbol_sha": "sha256:ff80c208f51d3c6c17d6d9f859117bcfaa895e0133118ce75a5dfae11898ef76"
         }
       ]
     }

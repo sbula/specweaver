@@ -630,6 +630,26 @@
           "new": "            pass\n",
           "breaks": "a project guide without a schema is dropped without a word",
           "symbol_sha": "sha256:a5b9296451119a67af67c12a9d5090ec55d9c0137729814718c4328f10599567"
+        },
+        {
+          "id": "agent-tools-ignore-framework-key",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/dispatcher.py",
+          "symbol": "ToolDispatcher._build_ast_kwargs",
+          "old": "resolver.resolve_evaluator(project_dir / \"stub\")",
+          "new": "resolver.resolve(project_dir / \"stub\")",
+          "breaks": "a project that moved spring-boot to framework: loses the agent's macro unrolling and tool hiding",
+          "symbol_sha": "sha256:2e447fec0438e7a7208043b36e7c619938712f512910709c3dc005aab52a1334"
+        },
+        {
+          "id": "skeleton-ignores-framework-key",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/skeleton_assembler.py",
+          "symbol": "evaluate_and_fetch_skeleton_context",
+          "old": "resolver.resolve_evaluator(path) or",
+          "new": "resolver.resolve(path) or",
+          "breaks": "background skeletons stop unrolling a framework named under framework:",
+          "symbol_sha": "sha256:03c762e7c9524eb0e1a4b47d51e1ba677269d80e5a9612a9b5e02c8c8f75d5c8"
         }
       ]
     },
@@ -652,6 +672,99 @@
           "new": "    languages = ()\n",
           "breaks": "a Spring Boot folder judges a Python file; nestjs loses javascript",
           "symbol_sha": "sha256:ae90f31f32b4bd31d4facb40c3681572d96d8b4fb2f9c55552ba93d4a4f42075"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "The validation pipeline of a file is chosen by its framework answer, the one generation uses",
+      "scope": [
+        "tests/e2e/capabilities/assurance/test_check_follows_the_framework_e2e.py",
+        "tests/integration/assurance/validation/orchestration/test_pipeline_follows_the_framework.py",
+        "tests/e2e/capabilities/assurance/test_check_uses_archetype_e2e.py",
+        "tests/integration/core/flow/handlers/test_archetype_code_pipeline.py",
+        "tests/integration/core/flow/handlers/test_code_validation_dal_strictness.py",
+        "tests/integration/workspace/project/test_writers_name_no_framework.py"
+      ],
+      "mutants": [
+        {
+          "id": "validate-step-ignores-profile",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/validation.py",
+          "symbol": "ValidateCodeHandler._run_validation",
+          "old": "code_pipeline(code_path, project_path, profile)",
+          "new": "code_pipeline(code_path, project_path)",
+          "breaks": "a Spring Boot run checks a Java file with no archetype by the default rules",
+          "symbol_sha": "sha256:416c8fec9ce540572107041ff631d55c3ce4514e99d694011225ad181103b216"
+        },
+        {
+          "id": "framework-not-first",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
+          "symbol": "_names",
+          "old": "    names = (framework, archetype_of(path, project_path))\n",
+          "new": "    names = (archetype_of(path, project_path),)\n",
+          "breaks": "framework: is never read by validation; only the archetype counts",
+          "symbol_sha": "sha256:8903c44a53b9ffc4e0d64f8c556fe22bc5bf77725603d7d1b12b2afbe5331ba1"
+        },
+        {
+          "id": "role-archetype-pipeline-lost",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/orchestration/archetype_pipelines.py",
+          "symbol": "_names",
+          "old": "    names = (framework, archetype_of(path, project_path))\n",
+          "new": "    names = (framework,)\n",
+          "breaks": "a project's validation_code_<role> pipeline stops applying",
+          "symbol_sha": "sha256:8903c44a53b9ffc4e0d64f8c556fe22bc5bf77725603d7d1b12b2afbe5331ba1"
+        },
+        {
+          "id": "sw-check-ignores-profile",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_archetype_pipeline",
+          "old": "    profile = _decided_profile(project_root) if code else None\n",
+          "new": "    profile = None\n",
+          "breaks": "sw check on a Spring Boot root with no archetype runs the default rules",
+          "symbol_sha": "sha256:db96391b93ed7e9d9a5852a42a3c016f25299a415fcc1845bb64920fc2749fc5"
+        },
+        {
+          "id": "sw-check-pins-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_decided_profile",
+          "old": "read_project_profile(root, language=pins.language, build_tool=pins.build_tool)",
+          "new": "read_project_profile(root)",
+          "breaks": "a mixed root pinned to Java gets no Spring Boot checks",
+          "symbol_sha": "sha256:92af60ae9dc1c761243d13b29da9656d9705ad39efed21fa4811bfd0819d0a0c"
+        },
+        {
+          "id": "sw-check-refuses-undecided",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_decided_profile",
+          "old": "    except (ProjectUndecidedError, OSError, ValueError) as exc:",
+          "new": "    except (OSError, ValueError) as exc:",
+          "breaks": "sw check on a mixed root crashes instead of checking by the folder",
+          "symbol_sha": "sha256:92af60ae9dc1c761243d13b29da9656d9705ad39efed21fa4811bfd0819d0a0c"
+        },
+        {
+          "id": "sw-init-writes-a-framework",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/scaffold.py",
+          "symbol": "_DEFAULT_CONTEXT_YAML",
+          "old": "responsibility.\n\narchetype: orchestrator\n",
+          "new": "responsibility.\n\narchetype: spring-boot\n",
+          "breaks": "a new project's context.yaml names a framework as its archetype"
+        },
+        {
+          "id": "sw-check-crashes-on-bad-pin",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli.py",
+          "symbol": "_decided_profile",
+          "old": "    except (ProjectUndecidedError, OSError, ValueError) as exc:",
+          "new": "    except (ProjectUndecidedError, OSError) as exc:",
+          "breaks": "sw check crashes on a bad [implement] pin instead of checking by the folder",
+          "symbol_sha": "sha256:92af60ae9dc1c761243d13b29da9656d9705ad39efed21fa4811bfd0819d0a0c"
         }
       ]
     }
