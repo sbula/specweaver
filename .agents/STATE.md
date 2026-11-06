@@ -156,6 +156,7 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
   `TECH-087` (a QA tool that did not run is never clean; every command runs through the caller's executor) closed 2026-10-31.
   `TECH-093` (C01, C06 and C08 judge Python only; another language is a named SKIP) closed 2026-10-31.
   `TECH-082` (domain logic left the flow engine; one boundary check judges C05 in all 9 languages) closed 2026-11-05.
+  `TECH-079` (one decision for a project's language, build tool and framework; it refuses, never guesses) closed 2026-11-06.
 - **The spend brake stops tool loops early** (found 2026-10-24, `TECH-078` closure): each finished
   tool round keeps its worst-case reservation until the whole loop ends, so a plan or review that
   reads a few files is refused at a small limit while it has spent USD 0.00. The nightly live run

@@ -4,7 +4,7 @@
 """The reader lists a real project root once and hands the decision only what the root holds.
 
 Proves: TECH-079 FR-1, TECH-079 FR-2, TECH-079 FR-3, TECH-079 FR-4
-Proves: TECH-079 FR-10
+Proves: TECH-079 FR-10, TECH-079 NFR-4
 
 Real files in `tmp_path`; the reader and the pure decision run unchanged.
 

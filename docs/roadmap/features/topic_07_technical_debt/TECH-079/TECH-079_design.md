@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-079
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-05)
+- **Status**: COMPLETE (signed off by the user 2026-11-06)
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`. The user grouped its
@@ -317,6 +317,6 @@ the Python style analyzer reads with tree-sitter and gives `ast`'s results (same
 files); C01, C06 and C08 read a leading BOM. Found at dev: tree-sitter keeps escapes in the string
 content, so the docstring check decodes them.
 **Closure gate 2026-11-06**: FR ledger 18 of 18, feature tests green, demo above, README recounted.
-**Next step**: the user's sign-off; then `Status: COMPLETE` and `.agents/STATE.md`.
+**Signed off 2026-11-06** (the user). TECH-079 is complete.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
