@@ -1,13 +1,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Which language and build tool a project is, decided once from its root, or a refusal.
+"""A project's language, build tool and framework, decided once from its root, or a refusal.
 
 Pure: the caller lists the root and hands over a reader. Only the root's own files count.
 """
 
 from __future__ import annotations
 
+import json
+import re
+import tomllib
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING
@@ -39,11 +42,24 @@ _BUILDS = {
 }
 
 
+#: In order: the first JVM build-file pattern found names the framework, so Spring Boot is tried
+#: before plain Spring.
+_JVM_FRAMEWORKS = (
+    ("quarkus", "io.quarkus"),
+    ("spring-boot", "spring-boot"),
+    ("spring-boot", "org.springframework.boot"),
+    ("spring", "org.springframework"),
+)
+_FASTAPI = re.compile(r"\bfastapi\b", re.IGNORECASE)
+
+
 @dataclass(frozen=True)
 class ProjectProfile:
     language: str
     #: `""` when the root has no build file of the language.
     build_tool: str
+    #: The framework the root's build files declare for the language; `""` for none.
+    framework: str = ""
 
 
 class ProjectUndecidedError(Exception):
@@ -74,13 +90,13 @@ def decide_profile(
     elif language not in GENERATED_LANGUAGES:
         raise ProjectUndecidedError(_cannot_generate(f"{language} ([implement] language)"))
     if build_tool is None:
-        return ProjectProfile(language, _build_tool(language, root_files))
-    if not _builds(build_tool, language):
+        build_tool = _build_tool(language, root_files)
+    elif not _builds(build_tool, language):
         raise ProjectUndecidedError(
             f'[implement] build_tool = "{build_tool}" does not build {language}; '
             f"{_SETTING.format('language')}, or change build_tool"
         )
-    return ProjectProfile(language, build_tool)
+    return ProjectProfile(language, build_tool, _framework(language, root_files, read))
 
 
 def _builds(build_tool: str, language: str) -> bool:
@@ -184,3 +200,63 @@ def _build_tool(language: str, root_files: frozenset[str]) -> str:
     if "pom.xml" in root_files:
         return "maven"
     return "gradle" if gradle else ""
+
+
+def _framework(language: str, root_files: frozenset[str], read: Callable[[str], str | None]) -> str:
+    named = _FRAMEWORK_OF.get(language)
+    return named(root_files, read) if named else ""
+
+
+def _jvm_framework(root_files: frozenset[str], read: Callable[[str], str | None]) -> str:
+    text = " ".join(read(name) or "" for name in sorted(root_files) if name in _JVM_BUILDS)
+    return next((key for key, mark in _JVM_FRAMEWORKS if mark in text), "")
+
+
+def _nest(root_files: frozenset[str], read: Callable[[str], str | None]) -> str:
+    found = "package.json" in root_files and "@nestjs/core" in _package_dependencies(read)
+    return "nestjs" if found else ""
+
+
+def _actix(root_files: frozenset[str], read: Callable[[str], str | None]) -> str:
+    found = "Cargo.toml" in root_files and "actix-web" in _cargo_dependencies(read)
+    return "actix-web" if found else ""
+
+
+def _fastapi(root_files: frozenset[str], read: Callable[[str], str | None]) -> str:
+    sources = [name for name in sorted(root_files) if fnmatchcase(name, "requirements*.txt")]
+    texts = (read(name) or "" for name in ["pyproject.toml", *sources] if name in root_files)
+    return "fastapi" if any(_FASTAPI.search(text) for text in texts) else ""
+
+
+def _package_dependencies(read: Callable[[str], str | None]) -> set[str]:
+    try:
+        manifest = json.loads(read("package.json") or "{}")
+    except ValueError:  # expected: an unreadable manifest names no framework
+        return set()
+    if not isinstance(manifest, dict):
+        return set()
+    return {
+        name
+        for key in ("dependencies", "devDependencies")
+        if isinstance(manifest.get(key), dict)
+        for name in manifest[key]
+    }
+
+
+def _cargo_dependencies(read: Callable[[str], str | None]) -> set[str]:
+    try:
+        manifest = tomllib.loads(read("Cargo.toml") or "")
+    except tomllib.TOMLDecodeError:  # expected: an unreadable manifest names no framework
+        return set()
+    dependencies = manifest.get("dependencies")
+    return set(dependencies) if isinstance(dependencies, dict) else set()
+
+
+#: Which build-file framework each language can have.
+_FRAMEWORK_OF = {
+    "java": _jvm_framework,
+    "kotlin": _jvm_framework,
+    "typescript": _nest,
+    "rust": _actix,
+    "python": _fastapi,
+}

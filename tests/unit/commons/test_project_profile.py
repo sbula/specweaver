@@ -159,7 +159,7 @@ def test_a_root_with_no_build_file_and_no_code_file_is_refused(names: tuple[str,
     assert "no build file and no code file" in _refusal(*names)
 
 
-def test_only_the_jvm_build_files_are_read() -> None:
+def test_only_build_files_are_read() -> None:
     asked: list[str] = []
 
     def read(name: str) -> str | None:
@@ -169,7 +169,7 @@ def test_only_the_jvm_build_files_are_read() -> None:
     decide_profile(frozenset({"pyproject.toml", "main.py"}), read, kotlin_sources=False)
     decide_profile(frozenset({"pom.xml", "README.md"}), read, kotlin_sources=False)
 
-    assert asked == ["pom.xml"]
+    assert set(asked) == {"pyproject.toml", "pom.xml"}
 
 
 def test_cmake_with_a_root_cpp_file_is_cpp_and_refused() -> None:

@@ -140,6 +140,7 @@ class _GenerationHandler:
             return _error_result("LLM adapter required for generate steps", started)
 
         try:
+            from specweaver.core.flow.engine.run_profile import run_profile
             from specweaver.workflows.implementation.frameworks import project_framework
             from specweaver.workflows.implementation.generator import Generator
             from specweaver.workflows.implementation.languages import language_guide
@@ -148,7 +149,10 @@ class _GenerationHandler:
             files = self._files(context)
             guide = language_guide(files.language, context.project_path)
             framework = project_framework(
-                context.project_path, context.project_path / files.code, files.language
+                context.project_path,
+                context.project_path / files.code,
+                files.language,
+                run_profile(context).framework,
             )
             adapter, config = _resolve_generation_routing(context, step)
             generator = Generator(llm=adapter, config=config, guide=guide)

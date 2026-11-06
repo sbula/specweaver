@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from typing import TYPE_CHECKING
 
 from specweaver.commons.project_profile import ProjectProfile, decide_profile
@@ -16,14 +17,15 @@ if TYPE_CHECKING:
 def read_project_profile(
     root: Path, *, language: str | None = None, build_tool: str | None = None
 ) -> ProjectProfile:
-    """The language and build tool of the project at `root`, with the `[implement]` pins.
+    """The language, build tool and framework of the project at `root`, with the pins.
 
-    Lists the root once; only its regular files count. A file whose real path leaves the root
-    reads as nothing. Raises `ProjectUndecidedError` when the root does not decide.
+    Lists the root once and reads each named file at most once; only its regular files count. A
+    file whose real path leaves the root reads as nothing. Raises `ProjectUndecidedError` when the root does not decide.
     """
     real_root = root.resolve()
     names = frozenset(entry.name for entry in root.iterdir() if entry.is_file())
 
+    @cache
     def read(name: str) -> str | None:
         path = (root / name).resolve()
         if not path.is_relative_to(real_root):

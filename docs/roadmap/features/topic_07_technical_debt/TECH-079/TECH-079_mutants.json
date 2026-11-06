@@ -17,7 +17,7 @@
           "old": "for entry in root.iterdir() if entry.is_file()",
           "new": "for entry in root.rglob(\"*\") if entry.is_file()",
           "breaks": "a build file in a subfolder decides the language",
-          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+          "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
         },
         {
           "id": "link-outside-root-read",
@@ -27,7 +27,7 @@
           "old": "        if not path.is_relative_to(real_root):",
           "new": "        if False:",
           "breaks": "a root file linked elsewhere makes SpecWeaver read outside the project",
-          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+          "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
         },
         {
           "id": "kotlin-sources-ignored",
@@ -37,7 +37,7 @@
           "old": "kotlin_sources=(root / \"src\" / \"main\" / \"kotlin\").is_dir(),",
           "new": "kotlin_sources=False,",
           "breaks": "a Kotlin project without the plugin in its build file becomes Java",
-          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+          "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
         },
         {
           "id": "root-not-resolved",
@@ -47,7 +47,7 @@
           "old": "    real_root = root.resolve()",
           "new": "    real_root = root",
           "breaks": "a project reached through a link reads none of its own build files",
-          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+          "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
         }
       ]
     },
@@ -66,7 +66,7 @@
           "old": "    if language is None:\n        language = _language(",
           "new": "    if True:\n        language = _language(",
           "breaks": "the root decides although the user pinned the language",
-          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+          "symbol_sha": "sha256:a7710c873130a559e4ca7aaa1a41cba8b7c5a70447e3bc241361b678df5edfc5"
         },
         {
           "id": "contradicting-pins-trusted",
@@ -76,17 +76,17 @@
           "old": "    if language is not None and build_tool is not None and not _builds(build_tool, language):",
           "new": "    if False:",
           "breaks": "python with maven is accepted",
-          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+          "symbol_sha": "sha256:a7710c873130a559e4ca7aaa1a41cba8b7c5a70447e3bc241361b678df5edfc5"
         },
         {
           "id": "build-tool-pin-mismatch-trusted",
           "origin": "authored",
           "file": "src/specweaver/commons/project_profile.py",
           "symbol": "decide_profile",
-          "old": "    if not _builds(build_tool, language):\n        raise",
-          "new": "    if False:\n        raise",
+          "old": "    elif not _builds(build_tool, language):\n        raise",
+          "new": "    elif False:\n        raise",
           "breaks": "a build tool that cannot build the root's language is accepted",
-          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+          "symbol_sha": "sha256:a7710c873130a559e4ca7aaa1a41cba8b7c5a70447e3bc241361b678df5edfc5"
         }
       ]
     },
@@ -517,6 +517,67 @@
           "new": "        return \"ro\"",
           "breaks": "Maven cannot write target/ and the JVM run fails",
           "symbol_sha": "sha256:ff0375849f5f6ceb7d63bc3752001b9cef650f0f738787f2b301b8a048eee08d"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "The profile names the build file's framework, and generation takes it from the run",
+      "scope": [
+        "tests/unit/commons/test_profile_names_the_framework.py",
+        "tests/integration/workspace/project/test_read_project_profile.py",
+        "tests/integration/core/flow/handlers/test_generation_follows_the_framework.py",
+        "tests/e2e/capabilities/workflows/test_implement_follows_the_framework_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "requirements-not-read",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_fastapi",
+          "old": "for name in [\"pyproject.toml\", *sources]",
+          "new": "for name in [\"pyproject.toml\"]",
+          "breaks": "a FastAPI project declared in requirements.txt gets no framework",
+          "symbol_sha": "sha256:ed1146d256b2c4b6d90a9540719159ab8062c627e9db815ed1ccbcc95567218b"
+        },
+        {
+          "id": "pinned-language-takes-any",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_framework",
+          "old": "    named = _FRAMEWORK_OF.get(language)\n",
+          "new": "    named = _FRAMEWORK_OF.get(\"typescript\" if \"package.json\" in root_files else language)\n",
+          "breaks": "a Python-pinned root with a NestJS package.json is told NestJS",
+          "symbol_sha": "sha256:f752d7fbd4265ad34f7fc11c5dd35a5f31f2fb68511953d4ba32b63c14447119"
+        },
+        {
+          "id": "generation-ignores-profile-framework",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "symbol": "_GenerationHandler.execute",
+          "old": "                run_profile(context).framework,\n",
+          "new": "                \"\",\n",
+          "breaks": "a FastAPI project's tests prompt loses the FastAPI test style",
+          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
+        }
+      ]
+    },
+    {
+      "requirement": "NFR-4",
+      "title": "The reader reads each root file at most once per decision",
+      "scope": [
+        "tests/integration/workspace/project/test_read_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "reader-not-cached",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/project_profile.py",
+          "symbol": "read_project_profile",
+          "old": "    @cache\n",
+          "new": "    @(lambda f: f)\n",
+          "breaks": "a Kotlin Spring Boot build file is read twice",
+          "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
         }
       ]
     }

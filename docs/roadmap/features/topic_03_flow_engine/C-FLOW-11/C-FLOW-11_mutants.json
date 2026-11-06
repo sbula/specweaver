@@ -82,7 +82,7 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
+          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
         },
         {
           "id": "coder-without-its-step",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
+          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
         }
       ]
     },
@@ -174,7 +174,7 @@
           "old": "        needs_profile=True,\n    )\n    # The task's files",
           "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n    # The task's files",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
+          "symbol_sha": "sha256:96b7d62e4177a94d980cce096b0cef1013ceacdda7df50e80f3e5a92ffb6315e"
         },
         {
           "id": "api-reads-another-file",

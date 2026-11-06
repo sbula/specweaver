@@ -798,7 +798,7 @@
           "old": "        run_model=run_model,\n        needs_profile=True,\n    )\n    # The task",
           "new": "        run_model=None,\n        needs_profile=True,\n    )\n    # The task",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
+          "symbol_sha": "sha256:96b7d62e4177a94d980cce096b0cef1013ceacdda7df50e80f3e5a92ffb6315e"
         },
         {
           "id": "run-drops-run-model",

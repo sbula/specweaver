@@ -399,7 +399,7 @@
           "old": "    OUTPUT_SUBDIR: ClassVar[str]\n",
           "new": "    OUTPUT_SUBDIR: ClassVar[str]\n    FILENAME_PREFIX: ClassVar[str] = \"\"\n",
           "breaks": "a setting nothing reads comes back",
-          "symbol_sha": "sha256:9c1f72e1250706fbcca0129814899ecb77e34661ce150ef854f79cc98b7d1201"
+          "symbol_sha": "sha256:0d3b8cf59a28b5871a8e03422eac909a8e4900baef064986c96c3cd3a4c4f95a"
         },
         {
           "id": "assemblers-share-a-title",
@@ -501,7 +501,7 @@
           "tests": [
             "tests/integration/core/flow/engine/test_files_touched_reach_handover.py"
           ],
-          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
+          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
         },
         {
           "id": "touched-not-relative",

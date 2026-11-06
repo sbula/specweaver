@@ -5,6 +5,7 @@
 
 Proves: D-INTL-08 FR-8
 Proves: D-INTL-08 NFR-1
+Proves: TECH-079 FR-10
 
 The real runner, handlers, archetype resolver and prompt builder; only the model is doubled.
 
@@ -58,16 +59,18 @@ class _Model:
         return LLMResponse(text="class Greeter {}", model="test-model")
 
 
-def _run(root: Path, model: _Model, language: str, target: StepTarget) -> Any:
+def _run(root: Path, model: _Model, language: str | None, target: StepTarget) -> Any:
+    """`language` None: the run decides its profile from the root, as a real run does."""
     context = RunContext(
         project_path=root,
         spec_path=root / "specs" / "greeter_spec.md",
         model=ModelAccess(config=MagicMock(), llm_router=FixedRouter(model)),
     )
-    build_tool = {"python": "uv", "java": "maven"}[language]
-    context.isolation = context.isolation.model_copy(
-        update={"profile": ProjectProfile(language, build_tool)}
-    )
+    if language is not None:
+        build_tool = {"python": "uv", "java": "maven"}[language]
+        context.isolation = context.isolation.model_copy(
+            update={"profile": ProjectProfile(language, build_tool)}
+        )
     step = PipelineStep(name="write", action=StepAction.GENERATE, target=target)
     pipeline = PipelineDefinition(name="p", steps=[step])
     return asyncio.run(PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run())
@@ -100,7 +103,7 @@ def test_a_fastapi_project_keeps_python_and_adds_fastapi(tmp_path: Path) -> None
     )
     model = _Model()
 
-    _run(root, model, "python", StepTarget.TESTS)
+    _run(root, model, None, StepTarget.TESTS)
 
     assert "1. Write tests using pytest." in model.prompts[0]
     assert "TestClient" in model.prompts[0]

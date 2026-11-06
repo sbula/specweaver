@@ -4,6 +4,7 @@
 """The reader lists a real project root once and hands the decision only what the root holds.
 
 Proves: TECH-079 FR-1, TECH-079 FR-2, TECH-079 FR-3, TECH-079 FR-4
+Proves: TECH-079 FR-10
 
 Real files in `tmp_path`; the reader and the pure decision run unchanged.
 
@@ -123,3 +124,34 @@ def test_a_root_reached_through_a_link_reads_its_own_files(tmp_path: Path) -> No
 def test_a_missing_root_is_an_os_error_not_a_refusal(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         read_project_profile(tmp_path / "missing")
+
+
+def test_a_spring_boot_root_names_its_framework(tmp_path: Path) -> None:
+    _write(
+        tmp_path, {"build.gradle.kts": 'plugins { kotlin("jvm"); id("org.springframework.boot") }'}
+    )
+
+    assert read_project_profile(tmp_path) == ProjectProfile("kotlin", "gradle", "spring-boot")
+
+
+def test_each_root_file_is_read_at_most_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Proves: TECH-079 NFR-4"""
+    from pathlib import Path as RealPath
+
+    _write(
+        tmp_path, {"build.gradle.kts": 'plugins { kotlin("jvm"); id("org.springframework.boot") }'}
+    )
+    reads: list[str] = []
+    real_read = RealPath.read_text
+
+    def counting(self: RealPath, *args: object, **kwargs: object) -> str:
+        reads.append(self.name)
+        return real_read(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(RealPath, "read_text", counting)
+
+    read_project_profile(tmp_path)
+
+    assert reads == ["build.gradle.kts"]

@@ -103,12 +103,12 @@ _STEP_REPORTERS: dict[str, Callable[[str, str, dict[str, Any]], None]] = {
 }
 
 
-def _print_framework(project_path: Path, code_path: Path, language: str) -> None:
+def _print_framework(project_path: Path, code_path: Path, language: str, build: str) -> None:
     """The framework the prompts follow, and where it was found; nothing when there is none."""
     from specweaver.workflows.implementation.frameworks import project_framework
 
     try:
-        framework = project_framework(project_path, code_path, language)
+        framework = project_framework(project_path, code_path, language, build)
     except ValueError as exc:
         _core.print_error(exc)
         raise typer.Exit(code=1) from exc
@@ -160,7 +160,7 @@ def implement(
     project_path = _core.project_path_or_exit(project)
 
     from specweaver.core.flow.engine.parser import load_bundled_pipeline
-    from specweaver.core.flow.engine.run_profile import run_task_files
+    from specweaver.core.flow.engine.run_profile import run_profile, run_task_files
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
@@ -191,7 +191,7 @@ def implement(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",
     )
     _core.console.print(f"  [dim]Code:[/dim]  {code_path}\n  [dim]Tests:[/dim] {test_path}")
-    _print_framework(project_path, code_path, task.language)
+    _print_framework(project_path, code_path, task.language, run_profile(context).framework)
 
     _core.console.print("[dim]Executing implementation pipeline...[/dim]")
     runner = PipelineRunner(pipeline, context, registry=StepHandlerRegistry(), memory_task=True)
