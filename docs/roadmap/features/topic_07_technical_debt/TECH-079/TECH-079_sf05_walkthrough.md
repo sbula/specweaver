@@ -31,3 +31,25 @@ confidence from its first counter, or 0 when empty, as `vote_result` does; the o
 
 **Gate.** The duplication check found the old repeated vote blocks once the helpers moved; they are
 now one helper, and the baseline is re-frozen at 89 clones, none new.
+
+## CB-2: the code rules read a leading BOM (FR-18)
+
+**What changed**
+- `assurance/validation/rules/code/_python_only.py`: new `parse_python(text)` drops one byte order
+  mark at the very start, as Python does for a file on disk, then calls `ast.parse`. C01 and
+  `python_tree` (C06, C08) use it. One place covers every door (`sw check`, `POST /api/v1/check`,
+  the validate steps), because each hands the rules the text it read (Q6 `[agreed 2026-11-06]`).
+
+**What a user sees.** `sw check --level code` on a Python file saved with a BOM: C01 passes, and C06
+and C08 judge the file. Before, C01 failed with "invalid non-printable character U+FEFF" and C06
+and C08 skipped it.
+
+**Tests.** Red first: `tests/integration/assurance/validation/test_check_reads_a_bom.py` through the
+real CLI (red: 3 of 4; the BOM-in-the-middle case was already right and stays a failure on line 2).
+
+**Mutants.** TECH-079 FR-18 `bom-kept` (objected by 3 tests). TECH-093 FR-1 `c01-skips-the-check`
+re-pinned after C01 changed, re-run on its scope and objected. `stale_mutants.py`: 0.
+
+**Red/blue (2 cycles).** No finding above threshold. Checked: only one leading mark is dropped, so
+line numbers stay right; a file of only a BOM parses as empty, as in Python; the rules never see
+bytes, so a BOM in another encoding is not this rule's case.

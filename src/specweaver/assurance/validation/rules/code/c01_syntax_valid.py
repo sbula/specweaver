@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
-import ast
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.validation.models import Finding, Rule, RuleResult, Severity
-from specweaver.assurance.validation.rules.code._python_only import python_only
+from specweaver.assurance.validation.rules.code._python_only import parse_python, python_only
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,7 +35,7 @@ class SyntaxValidRule(Rule):
         if reason is not None:
             return self._skip(reason)
         try:
-            ast.parse(spec_text)
+            parse_python(spec_text)
         except SyntaxError as exc:
             return self._fail(
                 f"Syntax error at line {exc.lineno}: {exc.msg}",

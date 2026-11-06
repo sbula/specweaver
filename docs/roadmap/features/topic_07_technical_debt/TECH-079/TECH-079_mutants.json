@@ -945,6 +945,25 @@
           "symbol_sha": "sha256:a0cf588eff5e6f929b5b2559839b3ca8fa90fadfd724fc0fb6fc76580291edff"
         }
       ]
+    },
+    {
+      "requirement": "FR-18",
+      "title": "The code rules read a Python file that starts with a byte order mark",
+      "scope": [
+        "tests/integration/assurance/validation/test_check_reads_a_bom.py"
+      ],
+      "mutants": [
+        {
+          "id": "bom-kept",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/rules/code/_python_only.py",
+          "symbol": "parse_python",
+          "old": "return ast.parse(text.removeprefix(\"\\ufeff\"))",
+          "new": "return ast.parse(text)",
+          "breaks": "C01 fails a valid Python file saved with a BOM, and C06 and C08 skip it",
+          "symbol_sha": "sha256:091bace7e42d789bfce53775a1f6f78564a73bf7052b92b9415b6d5948bfa620"
+        }
+      ]
     }
   ]
 }

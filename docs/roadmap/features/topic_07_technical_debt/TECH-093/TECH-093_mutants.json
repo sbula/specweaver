@@ -29,7 +29,7 @@
           "old": "reason = python_only(self.rule_id, spec_path)",
           "new": "reason = None",
           "breaks": "C01 fails a valid Kotlin file",
-          "symbol_sha": "sha256:2686ee1afb3b4d0a78871cb33c45dba32cfd476f70bd89689bf90f3812881215"
+          "symbol_sha": "sha256:0566bc2697839d34dfc0ec568f4cdf8668654ce5d5a0b06777b4dfa38a659656"
         },
         {
           "id": "c06-skips-the-check",
