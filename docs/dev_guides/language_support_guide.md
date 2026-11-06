@@ -24,18 +24,22 @@ Why `QARunner`, not `TestRunner`: the old name `TestRunnerTool` collided with Py
 
 ## Selection
 
-`resolve_runner(cwd, executor, language)` in `src/specweaver/sandbox/language/core/runner_factory.py`
-picks the runner: the run's `language` when given, else `detect_language` from
-`sandbox/language/core/detect.py` (`SUPPORTED_LANGUAGES`), which reads the manifest files:
-`package.json` (TypeScript), `Cargo.toml` (Rust), `build.gradle` / `build.gradle.kts` (Kotlin),
-`pom.xml` (Java), default Python. `create_scenario_converter` and `create_stack_trace_filter` use the
-same detector.
+A project's language is decided once, by `commons/project_profile.py` (`decide_profile`, fed by
+`workspace/project/project_profile.py`): the root's build files, else its code files, with the
+`[implement]` pins winning; a mixed root or a language SpecWeaver does not generate is refused. The run
+carries the answer (`core/flow/engine/run_profile.py`), and every factory is handed it:
+`resolve_runner(cwd, executor, language)` in `src/specweaver/sandbox/language/core/runner_factory.py`,
+`create_scenario_converter(language)` and `create_stack_trace_filter(language)`. Each chooses from one
+table (`_RUNNERS`, `_CONVERTERS`, `_FILTERS`, looked up by `language_table.language_class`) and raises
+`ValueError` naming a language it has no row for; nothing detects and nothing falls back to Python.
+`sw check` on one file takes the file's language from its ending; a language with no runner gets only
+the shared boundary check (`architecture_atom`), so C05 still judges a Go file.
 
 `qa_atom(cwd, language, sandbox_settings, scenarios_root)` beside it builds the QA atom: it picks the
 executor (host or container), resolves the runner and hands it to `QARunnerAtom`. `sandbox/qa_runner`
 never imports `sandbox/language` (`TECH-087` FR-12; `test_qa_runner_imports_no_language.py` holds it).
 
-A new language registers its manifest trigger in `detect.py` and its runner class in the factory.
+A new language registers its build file in `commons/project_profile.py` and a row in each factory table.
 Its constructor is `__init__(self, cwd, executor)` with no default for `executor`: host or container
 is the caller's choice, and `qa_atom` makes it (`TECH-087` FR-9;
 `test_no_host_executor_fallback.py` fails a runner that builds its own).
@@ -105,8 +109,9 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
 7. **Task files**: `task_files_for` (`workflows/implementation/task_files.py`) says where the
    task's code and test files go; every step after generation finds the file there
    (`qa_targets.step_file`). Callers pass the language from `core/flow/engine/run_profile.py` (the run's one profile).
-8. **Detection and scenarios**: the manifest in `detect_language`, the name in `SUPPORTED_LANGUAGES`
-   and its scenario file ending in `_SCENARIO_EXTENSIONS` (`sandbox/language/core/detect.py`).
+8. **Detection and scenarios**: its build file in `commons/project_profile.py`, its name in
+   `GENERATED_LANGUAGES` there, and its rows in `_RUNNERS`, `_CONVERTERS` and `_FILTERS`; the
+   converter names its own scenario file (`output_path`).
 9. **Rename and move**: a resolver in `workspace/ast/refactor/<lang>.py`, registered in
    `rename._RESOLVERS`; without it `rename_symbol` and `move_module` refuse the language.
 10. **Standards**: an analyzer in `assurance/standards/languages/<lang>/`, registered in
@@ -146,12 +151,12 @@ Keep mocks out of live test files.
 - [ ] Submodule at `sandbox/language/core/<lang>/` with `runner.py`, output parser,
   `scenario_converter.py`, `stack_trace_filter.py`.
 - [ ] No Regex where JSON/SARIF is supported.
-- [ ] Manifest trigger in `detect.py`; runner class in `runner_factory.py`; both other factories.
+- [ ] Build file in `commons/project_profile.py`; a row in `_RUNNERS`, `_CONVERTERS`, `_FILTERS`.
 - [ ] Tree-Sitter parser registered in `get_default_parsers()` (used by `CodeStructureAtom`).
 - [ ] Row in `commons/languages.py`, with its test convention if it has one.
 - [ ] Generator text in `workflows/languages/<lang>.md` and `_LANGUAGES`.
 - [ ] `task_files_for` places its code and test files.
-- [ ] `SUPPORTED_LANGUAGES` and `_SCENARIO_EXTENSIONS` in `_detect.py`.
+- [ ] The name in `GENERATED_LANGUAGES` (`commons/project_profile.py`) and `[implement] language`.
 - [ ] Rename/move resolver in `workspace/ast/refactor/`.
 - [ ] Import → project path in `workspace/ast/refactor/imports.py` (`_PICK`).
 - [ ] Standards analyzer in `assurance/standards/languages/`.

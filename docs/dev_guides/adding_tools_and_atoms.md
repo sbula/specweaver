@@ -57,7 +57,7 @@ Example: `SearchWeb`.
    - One operation: read the expected keys straight off `context` (see `BashActionAtom`).
    - Several related operations: read an `intent`/`action` key and dispatch internally (see
      `QARunnerAtom`'s `run_tests`/`run_linter`/`run_complexity`/`run_compiler`/`run_debugger`/`run_architecture`,
-     or `LanguageAtom`'s `detect_language`/`convert_scenario`).
+     or `LanguageAtom`'s `convert_scenario`).
    - Do not copy the shape of another Atom without checking how many operations your domain has.
 7. **Wire up**: the Tool facade inherits `BaseTool` (`specweaver.sandbox.base`) and implements the
    `role` property and `definitions()`.

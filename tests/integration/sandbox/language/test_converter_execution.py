@@ -89,7 +89,7 @@ def _project_with(tmp_path: Path, impl: str, stem: str = "greet") -> Path:
 
 def _run(project: Path, stem: str = "greet") -> dict:
     target = f"scenarios/generated/test_{stem}_scenarios.py".replace("-", "_")
-    result = qa_atom(cwd=project).run(
+    result = qa_atom(cwd=project, language="python").run(
         {
             "intent": "run_tests",
             "target": target,

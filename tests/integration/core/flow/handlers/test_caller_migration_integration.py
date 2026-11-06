@@ -9,11 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers._profiles import ARBITER, MINIMAL
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
-from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext, RunHandle
 from tests.scripted_llm import FixedRouter
 
 
@@ -23,6 +24,7 @@ def mock_run_context(tmp_path: Path) -> RunContext:
     workspace.mkdir()
 
     context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
         run=RunHandle(run_id="test_run"),
         project_path=workspace,
         spec_path=workspace / "docs" / "specs" / "test_spec.md",

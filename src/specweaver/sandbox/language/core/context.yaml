@@ -1,5 +1,5 @@
 name: language-atom
 purpose: >
-  Detects a project's language and runs its toolchain: tests, reports, scenario conversion, and the boundary check every language shares.
+  Runs the toolchain of the run's language (one table per part): tests, reports, scenario conversion, and the boundary check every language shares.
 
 archetype: adapter

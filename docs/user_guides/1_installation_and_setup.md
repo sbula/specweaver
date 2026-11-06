@@ -323,8 +323,10 @@ a language it cannot generate (Go, C, C++, JavaScript), both Maven and Gradle, o
 do not agree. `sw run` and `sw implement` print the refusal and exit 1 before any step runs;
 `POST /implement`, `POST /pipelines/{name}/run` and a resume answer 400 `PROJECT_UNDECIDED`. A run
 with session isolation on refuses too, from any command, rather than run without it. Other commands
-(`sw draft`, `sw review`, `sw check`) work as before; a step in them that needs the language fails
-with the same message.
+(`sw draft`, `sw review`) work as before; a step in them that needs the language fails with the same
+message. `sw check` on one code file takes that file's language from its ending: a `.kt` file runs
+the Kotlin tools, and a file in a language SpecWeaver does not generate (a `.go` file) gets the
+boundary check (C05) but no test run.
 
 A spec `greet_service_spec.md` is the module `greet_service`; its files are:
 

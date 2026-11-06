@@ -290,12 +290,7 @@ class ArbitrateVerdictHandler(StepHandler):
         failures = evidence.get("failures", [])
         raw_tracing = evidence_text(failures, evidence.get("errors", 0), evidence.get("total", 0))
 
-        # Dynamically filter framework trace lines using the unified Filter Interface
-        from specweaver.sandbox.language.core.stack_trace_filter_factory import (
-            create_stack_trace_filter,
-        )
-
-        filter_impl = create_stack_trace_filter(context.project_path)
+        filter_impl = trace_filter(context)
         filtered_trace = filter_impl.filter(raw_tracing)
 
         from specweaver.core.flow.handlers._profiles import ARBITER, resolve_profile
@@ -317,3 +312,13 @@ class ArbitrateVerdictHandler(StepHandler):
         except UnreadableVerdictError as exc:  # expected: the step fails, quoting the raw verdict
             return _error_result(str(exc), started)
         return _route(context, step.name, result, failures, filter_impl, started)
+
+
+def trace_filter(context: RunContext) -> StackTraceFilterInterface:
+    """The stack trace filter of the run's language, which drops its framework's frames."""
+    from specweaver.core.flow.engine.run_profile import run_profile
+    from specweaver.sandbox.language.core.stack_trace_filter_factory import (
+        create_stack_trace_filter,
+    )
+
+    return create_stack_trace_filter(run_profile(context).language)

@@ -479,7 +479,7 @@
           "file": "src/specweaver/core/flow/engine/run_profile.py",
           "symbol": "run_profile",
           "old": "    from specweaver.workspace.project.project_profile import read_project_profile\n",
-          "new": "    from specweaver.commons.project_profile import _listed  # noqa: F401\n    from specweaver.workspace.project.project_profile import read_project_profile\n",
+          "new": "    from specweaver.workspace.project.prepare_plan import _BUILD_DIR  # noqa: F401\n    from specweaver.workspace.project.project_profile import read_project_profile\n",
           "breaks": "the flow engine reaches past the language interface into a private helper",
           "symbol_sha": "sha256:9dfe1682420225372d6631a61d5656ff13b803225901bcdcbcbd1ce3f07424d0"
         }

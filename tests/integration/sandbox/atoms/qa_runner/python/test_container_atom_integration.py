@@ -70,7 +70,7 @@ def test_full_chain_runs_real_script_inside_container(tmp_path: Path) -> None:
         cwd=project_root, mounts=mounts, image=_TEST_IMAGE, run_id="chain-test"
     )
 
-    runner = resolve_runner(project_root, executor=executor)
+    runner = resolve_runner(project_root, executor=executor, language="python")
 
     result = runner.run_debugger(target=".", entrypoint="hello.py")
 

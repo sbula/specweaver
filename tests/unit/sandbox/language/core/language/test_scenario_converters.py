@@ -2,11 +2,16 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for all 5 language-specific ScenarioConverter implementations."""
+"""Unit tests for all 5 language-specific ScenarioConverter implementations.
+
+Proves: TECH-079 FR-14
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
+import pytest
 
 from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
 
@@ -296,57 +301,38 @@ class TestRustScenarioConverter:
 
 
 class TestScenarioConverterFactory:
-    def test_factory_returns_python_by_default(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.python.scenario_converter import (
-            PythonScenarioConverter,
-        )
+    """TECH-079 FR-14: the run's language picks the converter from one table; nothing detects."""
+
+    @pytest.mark.parametrize(
+        ("language", "module", "name"),
+        [
+            ("python", "python", "PythonScenarioConverter"),
+            ("java", "java", "JavaScenarioConverter"),
+            ("kotlin", "kotlin", "KotlinScenarioConverter"),
+            ("typescript", "typescript", "TypeScriptScenarioConverter"),
+            ("rust", "rust", "RustScenarioConverter"),
+        ],
+    )
+    def test_each_language_gets_its_converter(self, language: str, module: str, name: str) -> None:
+        import importlib
+
         from specweaver.sandbox.language.core.scenario_converter_factory import (
             create_scenario_converter,
         )
 
-        converter = create_scenario_converter(tmp_path)
-        assert isinstance(converter, PythonScenarioConverter)
-
-    def test_factory_returns_java_for_pom_xml(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.java.scenario_converter import (
-            JavaScenarioConverter,
+        expected = getattr(
+            importlib.import_module(
+                f"specweaver.sandbox.language.core.{module}.scenario_converter"
+            ),
+            name,
         )
+        assert type(create_scenario_converter(language)) is expected
+
+    @pytest.mark.parametrize("language", ["go", "Python", "", "javascript"])
+    def test_an_unknown_language_is_refused_naming_it(self, language: str) -> None:
         from specweaver.sandbox.language.core.scenario_converter_factory import (
             create_scenario_converter,
         )
 
-        (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
-        assert isinstance(create_scenario_converter(tmp_path), JavaScenarioConverter)
-
-    def test_factory_returns_kotlin_for_build_gradle(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.kotlin.scenario_converter import (
-            KotlinScenarioConverter,
-        )
-        from specweaver.sandbox.language.core.scenario_converter_factory import (
-            create_scenario_converter,
-        )
-
-        (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
-        assert isinstance(create_scenario_converter(tmp_path), KotlinScenarioConverter)
-
-    def test_factory_returns_typescript_for_package_json(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.scenario_converter_factory import (
-            create_scenario_converter,
-        )
-        from specweaver.sandbox.language.core.typescript.scenario_converter import (
-            TypeScriptScenarioConverter,
-        )
-
-        (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-        assert isinstance(create_scenario_converter(tmp_path), TypeScriptScenarioConverter)
-
-    def test_factory_returns_rust_for_cargo_toml(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.rust.scenario_converter import (
-            RustScenarioConverter,
-        )
-        from specweaver.sandbox.language.core.scenario_converter_factory import (
-            create_scenario_converter,
-        )
-
-        (tmp_path / "Cargo.toml").write_text("[package]", encoding="utf-8")
-        assert isinstance(create_scenario_converter(tmp_path), RustScenarioConverter)
+        with pytest.raises(ValueError, match=f"no scenario converter for language '{language}'"):
+            create_scenario_converter(language)

@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.assurance.validation.models import RuleResult
+    from specweaver.commons.project_profile import ProjectProfile
     from specweaver.core.flow.engine.models import PipelineStep
     from specweaver.core.flow.run_state.run_context import RunContext
     from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
@@ -262,7 +263,7 @@ class ValidateCodeHandler:
                 parsers=context.analysis.parsers,
                 dal_level=dal_level,
                 sandbox_settings=coder_sandbox(context),
-                language=run_profile(context).language,
+                profile=run_profile(context),
             )
             if results is None:
                 return _no_code_rules(code_path, started)
@@ -296,7 +297,7 @@ class ValidateCodeHandler:
         parsers: Any | None = None,
         dal_level: Any | None = None,
         sandbox_settings: Any | None = None,
-        language: str | None = None,
+        profile: ProjectProfile | None = None,
     ) -> list[RuleResult] | None:
         """Run code validation via sub-pipeline (called in thread); None when no rule judges
         the file's language."""
@@ -339,7 +340,7 @@ class ValidateCodeHandler:
             dal_level=dal_level,
             context={"analyzer_factory": analyzer_factory} if analyzer_factory else None,
             sandbox_settings=sandbox_settings,
-            language=language,
+            profile=profile,
         )
 
 

@@ -30,7 +30,7 @@ def test_e2e_python_qarunner_tooling(tmp_path: Path) -> None:
 
     from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
-    atom = qa_atom(cwd=project_dir)
+    atom = qa_atom(cwd=project_dir, language="python")
     tool = QARunnerTool(atom=atom, role="implementer")
 
     # E2E proxy of run_compiler

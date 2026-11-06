@@ -2,14 +2,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Unit tests for all 5 language-specific StackTraceFilter implementations."""
+"""Unit tests for all 5 language-specific StackTraceFilter implementations.
+
+Proves: TECH-079 FR-14
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
+import pytest
 
 # ---------------------------------------------------------------------------
 # Python
@@ -219,52 +219,38 @@ class TestRustStackTraceFilter:
 
 
 class TestStackTraceFilterFactory:
-    def test_factory_returns_python_by_default(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.python.stack_trace_filter import (
-            PythonStackTraceFilter,
-        )
+    """TECH-079 FR-14: the run's language picks the filter from one table; nothing detects."""
+
+    @pytest.mark.parametrize(
+        ("language", "module", "name"),
+        [
+            ("python", "python", "PythonStackTraceFilter"),
+            ("java", "jvm", "JvmStackTraceFilter"),
+            ("kotlin", "jvm", "JvmStackTraceFilter"),
+            ("typescript", "typescript", "TypeScriptStackTraceFilter"),
+            ("rust", "rust", "RustStackTraceFilter"),
+        ],
+    )
+    def test_each_language_gets_its_filter(self, language: str, module: str, name: str) -> None:
+        import importlib
+
         from specweaver.sandbox.language.core.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
 
-        assert isinstance(create_stack_trace_filter(tmp_path), PythonStackTraceFilter)
+        expected = getattr(
+            importlib.import_module(
+                f"specweaver.sandbox.language.core.{module}.stack_trace_filter"
+            ),
+            name,
+        )
+        assert type(create_stack_trace_filter(language)) is expected
 
-    def test_factory_returns_java(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
+    @pytest.mark.parametrize("language", ["go", "Python", "", "javascript"])
+    def test_an_unknown_language_is_refused_naming_it(self, language: str) -> None:
         from specweaver.sandbox.language.core.stack_trace_filter_factory import (
             create_stack_trace_filter,
         )
 
-        (tmp_path / "pom.xml").write_text("<project/>", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), JvmStackTraceFilter)
-
-    def test_factory_returns_kotlin(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
-        from specweaver.sandbox.language.core.stack_trace_filter_factory import (
-            create_stack_trace_filter,
-        )
-
-        (tmp_path / "build.gradle").write_text("plugins { kotlin('jvm') }", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), JvmStackTraceFilter)
-
-    def test_factory_returns_typescript(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.stack_trace_filter_factory import (
-            create_stack_trace_filter,
-        )
-        from specweaver.sandbox.language.core.typescript.stack_trace_filter import (
-            TypeScriptStackTraceFilter,
-        )
-
-        (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), TypeScriptStackTraceFilter)
-
-    def test_factory_returns_rust(self, tmp_path: Path) -> None:
-        from specweaver.sandbox.language.core.rust.stack_trace_filter import (
-            RustStackTraceFilter,
-        )
-        from specweaver.sandbox.language.core.stack_trace_filter_factory import (
-            create_stack_trace_filter,
-        )
-
-        (tmp_path / "Cargo.toml").write_text("[package]", encoding="utf-8")
-        assert isinstance(create_stack_trace_filter(tmp_path), RustStackTraceFilter)
+        with pytest.raises(ValueError, match=f"no stack trace filter for language '{language}'"):
+            create_stack_trace_filter(language)

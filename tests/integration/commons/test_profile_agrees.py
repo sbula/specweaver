@@ -2,16 +2,16 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 """The profile decision agrees with the one language table and, where today is not a guess, with
-today's detectors.
+today's build-tool detector.
 
 Proves: TECH-079 FR-3, TECH-079 FR-5, TECH-079 FR-6
 
-Real project folders in `tmp_path`; `detect_language` and `detect_toolchain` run unchanged. SF-02
-removes both, and the second half of this file with them.
+Real project folders in `tmp_path`; `detect_toolchain` runs unchanged. SF-02 CB-3 removes it, and
+the second half of this file with it.
 
 | Bucket | Case |
 |---|---|
-| Happy | each one-language root: the same language and build tool as today (npm aside: today names none) |
+| Happy | each one-language root: the same build tool as today (npm aside: today names none) |
 | Boundary | every ending the table holds: a generatable language is named, any other refused by name |
 | Degradation | — (pure decision over fixed folders) |
 | Hostile | — (fixed folders; the hostile roots are in the unit tests) |
@@ -29,7 +29,6 @@ from specweaver.commons.project_profile import (
     ProjectUndecidedError,
     decide_profile,
 )
-from specweaver.sandbox.language.core.detect import detect_language
 from specweaver.workspace.project.prepare_plan import detect_toolchain
 
 if TYPE_CHECKING:
@@ -71,7 +70,6 @@ def test_a_one_language_root_gets_todays_answer(tmp_path: Path, name: str) -> No
 
     profile = _decide(tmp_path)
 
-    assert profile.language == detect_language(tmp_path)
     expected_tool = "npm" if profile.language == "typescript" else detect_toolchain(tmp_path)
     assert profile.build_tool == expected_tool
 

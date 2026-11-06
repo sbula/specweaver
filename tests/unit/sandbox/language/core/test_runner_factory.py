@@ -8,6 +8,7 @@ Proves: B-EXEC-01 NFR-7
 Proves: D-INTL-08 NFR-2
 Proves: TECH-087 FR-12
 Proves: TECH-087 FR-9
+Proves: TECH-079 FR-14
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-03-SF01-MIG`. Mutant: `run_compiler` renamed on the
 abstract base, so compilation leaves the interface's bounds — **228 fail and 11 collection errors**,
@@ -48,71 +49,59 @@ from specweaver.sandbox.language.core.rust.runner import RustRunner
 from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
 
 
-class TestLanguageAutoDiscovery:
-    def test_defaults_to_python_with_no_manifest(self, tmp_path: Path) -> None:
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-        assert isinstance(runner, PythonQARunner)
-
-    def test_selects_typescript_with_package_json(self, tmp_path: Path) -> None:
-        (tmp_path / "package.json").write_text("{}")
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-        assert isinstance(runner, TypeScriptRunner)
-
-    def test_selects_rust_with_cargo_toml(self, tmp_path: Path) -> None:
-        (tmp_path / "Cargo.toml").write_text("")
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-        assert isinstance(runner, RustRunner)
-
-    def test_selects_kotlin_with_kotlin_sources(self, tmp_path: Path) -> None:
-        (tmp_path / "build.gradle").write_text("")
-        (tmp_path / "src" / "main" / "kotlin").mkdir(parents=True)
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-        assert isinstance(runner, KotlinRunner)
-
-    def test_selects_java_with_a_bare_gradle_build(self, tmp_path: Path) -> None:
-        """D-INTL-08 FR-2: the factory asks `detect_language`, so the two cannot disagree."""
-        (tmp_path / "build.gradle").write_text("")
-        assert isinstance(
-            resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path)), JavaRunner
-        )
+class TestOneTable:
+    """TECH-079 FR-14: the run's language picks the runner from one table; nothing detects."""
 
     @pytest.mark.parametrize(
         ("language", "runner_type"),
-        [("rust", RustRunner), ("java", JavaRunner), ("typescript", TypeScriptRunner)],
+        [
+            ("python", PythonQARunner),
+            ("java", JavaRunner),
+            ("kotlin", KotlinRunner),
+            ("typescript", TypeScriptRunner),
+            ("rust", RustRunner),
+        ],
     )
-    def test_an_explicit_language_wins_over_the_manifests(
+    def test_each_language_gets_its_runner(
         self, tmp_path: Path, language: str, runner_type: type
     ) -> None:
-        (tmp_path / "pyproject.toml").write_text("")
-        assert isinstance(
-            resolve_runner(tmp_path, language=language, executor=SubprocessExecutor(cwd=tmp_path)),
-            runner_type,
-        )
+        runner = resolve_runner(tmp_path, SubprocessExecutor(cwd=tmp_path), language)
 
-    def test_selects_java_with_pom_xml(self, tmp_path: Path) -> None:
-        (tmp_path / "pom.xml").write_text("")
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
-        assert isinstance(runner, JavaRunner)
+        assert isinstance(runner, runner_type)
+
+    def test_the_language_wins_over_the_build_files(self, tmp_path: Path) -> None:
+        (tmp_path / "package.json").write_text("{}")
+        (tmp_path / "tsconfig.json").write_text("{}")
+
+        runner = resolve_runner(tmp_path, SubprocessExecutor(cwd=tmp_path), "rust")
+
+        assert isinstance(runner, RustRunner)
+
+    @pytest.mark.parametrize("language", ["go", "Python", "", "javascript"])
+    def test_an_unknown_language_is_refused_naming_it(self, tmp_path: Path, language: str) -> None:
+        with pytest.raises(ValueError, match=f"no QA runner for language '{language}'"):
+            resolve_runner(tmp_path, SubprocessExecutor(cwd=tmp_path), language)
 
 
 class TestExecutorPassthrough:
     def test_executor_threaded_to_python_runner(self, tmp_path: Path) -> None:
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        runner = resolve_runner(tmp_path, executor=mock_executor)
+        runner = resolve_runner(tmp_path, executor=mock_executor, language="python")
         assert isinstance(runner, PythonQARunner)
         assert runner._executor is mock_executor
 
     def test_executor_threaded_to_non_python_runner(self, tmp_path: Path) -> None:
-        (tmp_path / "package.json").write_text("{}")
         mock_executor = MagicMock(spec=SubprocessExecutor)
-        runner = resolve_runner(tmp_path, executor=mock_executor)
+        runner = resolve_runner(tmp_path, executor=mock_executor, language="typescript")
         assert isinstance(runner, TypeScriptRunner)
         assert runner._executor is mock_executor
 
     def test_no_executor_defaults_to_none_passthrough(self, tmp_path: Path) -> None:
         # No explicit executor → runner builds its own default SubprocessExecutor,
         # matching pre-SF-01 behavior exactly (NFR-7).
-        runner = resolve_runner(tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
+        runner = resolve_runner(
+            tmp_path, executor=SubprocessExecutor(cwd=tmp_path), language="python"
+        )
         assert isinstance(runner._executor, SubprocessExecutor)
         assert not isinstance(runner._executor, ContainerSubprocessExecutor)
 
@@ -121,11 +110,10 @@ class TestNonPythonContainerWarning:
     def test_warns_on_non_python_runner_with_container_executor(
         self, tmp_path: Path, caplog
     ) -> None:
-        (tmp_path / "package.json").write_text("{}")
         container_executor = MagicMock(spec=ContainerSubprocessExecutor)
 
         with caplog.at_level("WARNING"):
-            runner = resolve_runner(tmp_path, executor=container_executor)
+            runner = resolve_runner(tmp_path, executor=container_executor, language="typescript")
 
         assert isinstance(runner, TypeScriptRunner)
         assert runner._executor is container_executor
@@ -137,7 +125,7 @@ class TestNonPythonContainerWarning:
         container_executor = MagicMock(spec=ContainerSubprocessExecutor)
 
         with caplog.at_level("WARNING"):
-            runner = resolve_runner(tmp_path, executor=container_executor)
+            runner = resolve_runner(tmp_path, executor=container_executor, language="python")
 
         assert isinstance(runner, PythonQARunner)
         assert not any("may not have its toolchain" in rec.message for rec in caplog.records)
@@ -149,7 +137,7 @@ class TestNonPythonContainerWarning:
         plain_executor = MagicMock(spec=SubprocessExecutor)
 
         with caplog.at_level("WARNING"):
-            resolve_runner(tmp_path, executor=plain_executor)
+            resolve_runner(tmp_path, executor=plain_executor, language="rust")
 
         assert not any("may not have its toolchain" in rec.message for rec in caplog.records)
 
@@ -193,6 +181,7 @@ class TestQaAtom:
 
         atom = qa_atom(
             tmp_path,
+            "python",
             sandbox_settings=SandboxSettings(execution_mode="host"),
             scenarios_root=tmp_path / "scenarios",
         )
@@ -203,7 +192,7 @@ class TestQaAtom:
     def test_the_scenario_scratch_goes_with_the_atom(self, tmp_path: Path) -> None:
         from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-        atom = qa_atom(tmp_path, scenarios_root=tmp_path / "scenarios")
+        atom = qa_atom(tmp_path, "python", scenarios_root=tmp_path / "scenarios")
         scratch = atom._runner._executor._mounts.scratch_root
         assert scratch.is_dir()
         assert not scratch.is_relative_to(tmp_path)
@@ -231,7 +220,38 @@ class TestQaAtom:
         monkeypatch.setattr(runner_factory, "resolve_runner", no_runner)
 
         with pytest.raises(RuntimeError, match="no runner"):
-            runner_factory.qa_atom(tmp_path, scenarios_root=tmp_path / "scenarios")
+            runner_factory.qa_atom(tmp_path, "python", scenarios_root=tmp_path / "scenarios")
 
         assert made
         assert not made[0].exists()
+
+
+class TestArchitectureAtom:
+    """TECH-079 FR-14: a language with no runner still gets the shared boundary check (C05)."""
+
+    def test_it_runs_the_boundary_check_on_the_host(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.language.core import runner_factory
+
+        given: list[object] = []
+
+        def check(root: Path, target: str, *, executor: object) -> object:
+            given.append(executor)
+            return MagicMock(violations=[], exit_code=0, tool="tach")
+
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setattr(
+                "specweaver.sandbox.language.core.boundary_check.check_architecture", check
+            )
+            atom = runner_factory.architecture_atom(tmp_path)
+            atom.run({"intent": "run_architecture", "target": "main.go"})
+
+        assert type(given[0]) is SubprocessExecutor
+
+    def test_every_runner_intent_is_refused(self, tmp_path: Path) -> None:
+        from specweaver.sandbox.base import AtomStatus
+        from specweaver.sandbox.language.core.runner_factory import architecture_atom
+
+        result = architecture_atom(tmp_path).run({"intent": "run_tests", "target": "main.go"})
+
+        assert result.status == AtomStatus.FAILED
+        assert "no QA runner" in result.message

@@ -327,3 +327,63 @@ def test_a_relative_code_path_reaches_the_atom_as_a_project_path(
 
     assert ctx["qa_architecture_result"]["status"] == "SUCCESS"
     assert mock_atom_cls.return_value.run.call_args.args[0]["target"] == "src/module.py"
+
+
+class TestTheQaLanguage:
+    """TECH-079 FR-8, FR-14: a run's QA takes the run's language; `sw check` takes the file's."""
+
+    def _code(self, root: Path, name: str) -> Path:
+        code = root / "src" / name
+        code.parent.mkdir(parents=True, exist_ok=True)
+        code.write_text("x\n", encoding="utf-8")
+        return code
+
+    def test_without_a_run_the_file_ending_names_the_language(self, tmp_path: Path) -> None:
+        code = self._code(tmp_path, "App.kt")
+
+        with patch(_PATCH_ATOM) as qa_atom:
+            qa_atom.return_value.run.return_value = _make_atom_result()
+            hydrate_code_validation_context(_make_pipeline(["C03"]), code, tmp_path)
+
+        assert qa_atom.call_args.kwargs["language"] == "kotlin"
+        assert qa_atom.call_args.kwargs["sandbox_settings"] is None
+
+    def test_a_run_profile_wins_over_the_file_ending(self, tmp_path: Path) -> None:
+        from specweaver.commons.project_profile import ProjectProfile
+
+        code = self._code(tmp_path, "App.kt")
+
+        with patch(_PATCH_ATOM) as qa_atom:
+            qa_atom.return_value.run.return_value = _make_atom_result()
+            hydrate_code_validation_context(
+                _make_pipeline(["C03"]), code, tmp_path, profile=ProjectProfile("python", "uv")
+            )
+
+        assert qa_atom.call_args.kwargs["language"] == "python"
+
+    def test_a_language_specweaver_does_not_generate_gets_no_qa_atom(self, tmp_path: Path) -> None:
+        code = self._code(tmp_path, "main.go")
+
+        with patch(_PATCH_ATOM) as qa_atom:
+            context = hydrate_code_validation_context(
+                _make_pipeline(["C03", "C04"]), code, tmp_path
+            )
+
+        assert not qa_atom.called
+        assert "qa_tests_result" not in context
+
+    def test_a_language_with_no_runner_still_gets_the_boundary_check(self, tmp_path: Path) -> None:
+        code = self._code(tmp_path, "main.go")
+
+        with (
+            patch(_PATCH_ATOM) as qa_atom,
+            patch("specweaver.sandbox.language.core.runner_factory.architecture_atom") as arch,
+        ):
+            arch.return_value.run.return_value = _make_atom_result(exports={"violations": []})
+            context = hydrate_code_validation_context(
+                _make_pipeline(["C03", "C05"]), code, tmp_path
+            )
+
+        assert not qa_atom.called
+        assert arch.call_args.args == (tmp_path.resolve(),)
+        assert context["qa_architecture_result"]["status"] == "SUCCESS"

@@ -27,43 +27,44 @@
       "requirement": "FR-2",
       "title": "The project's language",
       "scope": [
-        "tests/unit/sandbox/language/core/language/test_detect.py",
         "tests/unit/sandbox/language/core/test_runner_factory.py",
         "tests/unit/core/config/test_implement_policy.py",
         "tests/integration/interfaces/cli/test_runs_read_the_doc_policy.py",
         "tests/integration/interfaces/api/test_api_runs_read_the_doc_policy.py",
-        "tests/integration/core/flow/handlers/test_qa_follows_the_run_language.py"
+        "tests/integration/core/flow/handlers/test_qa_follows_the_run_language.py",
+        "tests/integration/core/flow/handlers/test_every_part_takes_the_run_language.py",
+        "tests/unit/commons/test_project_profile.py"
       ],
       "mutants": [
         {
           "id": "gradle-java-is-kotlin",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/detect.py",
-          "symbol": "detect_language",
-          "old": "        return \"kotlin\" if _is_kotlin(cwd, builds) else \"java\"\n",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_language",
+          "old": "        return \"kotlin\" if kotlin_sources or _names_kotlin(jvm, read) else \"java\"\n",
           "new": "        return \"kotlin\"\n",
           "breaks": "a Gradle Java project is built and tested as Kotlin",
-          "symbol_sha": "sha256:f712700ba22d67131ad28e1c17c3aea8aeea281c2307491ec8d03024abe6e396"
+          "symbol_sha": "sha256:55ac102948b6eebfa6b6302e4fef74a682811c9c9b49e1dad80e9f410a9d98c9"
         },
         {
           "id": "kotlin-sources-ignored",
           "origin": "authored",
-          "file": "src/specweaver/sandbox/language/core/detect.py",
-          "symbol": "_is_kotlin",
-          "old": "    if (cwd / \"src\" / \"main\" / \"kotlin\").is_dir():\n        return True\n",
-          "new": "    if False:\n        return True\n",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_language",
+          "old": "        return \"kotlin\" if kotlin_sources or _names_kotlin(jvm, read) else \"java\"\n",
+          "new": "        return \"kotlin\" if _names_kotlin(jvm, read) else \"java\"\n",
           "breaks": "a Kotlin project without the plugin text is treated as Java",
-          "symbol_sha": "sha256:6a070ca00e293e2775e0862609f7a1573e437381b25dd50b164e3086ef50dd74"
+          "symbol_sha": "sha256:55ac102948b6eebfa6b6302e4fef74a682811c9c9b49e1dad80e9f410a9d98c9"
         },
         {
           "id": "named-language-ignored",
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/runner_factory.py",
           "symbol": "resolve_runner",
-          "old": "    chosen = language or detect_language(cwd)\n",
-          "new": "    chosen = detect_language(cwd)\n",
+          "old": "    runner_class = language_class(_RUNNERS, language, \"QA runner\")\n",
+          "new": "    runner_class = language_class(_RUNNERS, \"python\", \"QA runner\")\n",
           "breaks": "[implement] language never reaches the QA tools",
-          "symbol_sha": "sha256:084b16dbc33975bcb954971bf6b8b2e43e6ca7d6c499639a277a9acdc63ec1ad"
+          "symbol_sha": "sha256:fe2feacd8ddd2abbac8cad425c10a14d085d7cdaa8039d185ce63c622c704d30"
         },
         {
           "id": "atom-drops-the-language",
@@ -486,7 +487,7 @@
           "old": "if archetype is None and language_of(code_path) != \"python\":",
           "new": "if False:",
           "breaks": "C01/C02 fail every Java file",
-          "symbol_sha": "sha256:66bc06481331e98887c660737af01c32dc97b889403c63b9f4aec443c2ed0f55"
+          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
         },
         {
           "id": "note-not-shown",
@@ -686,7 +687,8 @@
       "requirement": "NFR-2",
       "title": "Host mode only",
       "scope": [
-        "tests/unit/sandbox/language/core/test_runner_factory.py"
+        "tests/unit/sandbox/language/core/test_runner_factory.py",
+        "tests/unit/commons/test_project_profile.py"
       ],
       "mutants": [
         {
@@ -694,10 +696,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/runner_factory.py",
           "symbol": "resolve_runner",
-          "old": "    if chosen != \"python\":\n        _warn_if_container_non_python(executor, chosen)\n",
+          "old": "    if language != \"python\":\n        _warn_if_container_non_python(executor, language)\n",
           "new": "    pass\n",
           "breaks": "a non-Python runner in the container gives no warning",
-          "symbol_sha": "sha256:084b16dbc33975bcb954971bf6b8b2e43e6ca7d6c499639a277a9acdc63ec1ad"
+          "symbol_sha": "sha256:fe2feacd8ddd2abbac8cad425c10a14d085d7cdaa8039d185ce63c622c704d30"
         }
       ]
     }

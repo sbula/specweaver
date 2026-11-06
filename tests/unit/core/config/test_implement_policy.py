@@ -3,7 +3,8 @@
 
 """A project's `[implement] language` and `build_tool` are read strictly; a wrong one stops the command, naming its line.
 
-Proves: D-INTL-08 FR-2, TECH-079 FR-2
+Proves: D-INTL-08 FR-2
+Proves: TECH-079 FR-2
 
 | Bucket | Case |
 |---|---|

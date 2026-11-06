@@ -26,7 +26,8 @@ import pytest
 from specweaver.assurance.validation.models import Status
 from specweaver.assurance.validation.orchestration.validation_hydrator import _hydrate_architecture
 from specweaver.assurance.validation.rules.code.c05_import_direction import ImportDirectionRule
-from specweaver.sandbox.language.core.runner_factory import qa_atom
+from specweaver.commons.project_profile import GENERATED_LANGUAGES
+from specweaver.sandbox.language.core.runner_factory import architecture_atom, qa_atom
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -72,7 +73,13 @@ def test_a_configured_tool_missing_from_the_path_is_warn(
     rule = ImportDirectionRule()
     rule.context = {
         "qa_architecture_result": _hydrate_architecture(
-            qa_atom(cwd=project, language=language), code, project, None
+            # Go has no QA runner, only the boundary check every language shares (TECH-079 FR-14).
+            qa_atom(cwd=project, language=language)
+            if language in GENERATED_LANGUAGES
+            else architecture_atom(project),
+            code,
+            project,
+            None,
         )
     }
 

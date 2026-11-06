@@ -27,6 +27,9 @@ import logging
 from pathlib import Path  # noqa: TC003 — used at runtime in function bodies
 from typing import Any
 
+from specweaver.commons.languages import language_of
+from specweaver.commons.project_profile import GENERATED_LANGUAGES, ProjectProfile
+
 logger = logging.getLogger(__name__)
 
 # Context keys used to pass QA results to rules
@@ -77,7 +80,7 @@ def hydrate_code_validation_context(
     *,
     dal_level: Any | None = None,
     sandbox_settings: Any | None = None,
-    language: str | None = None,
+    profile: ProjectProfile | None = None,
 ) -> dict[str, Any]:
     """Pre-execute QA atoms and return a context dict for code validation rules.
 
@@ -88,6 +91,8 @@ def hydrate_code_validation_context(
         code_path: Path to the code file being validated.
         project_root: Project root directory (for QARunnerAtom cwd).
         dal_level: Optional DALLevel for architecture checks.
+        profile: The run's profile; None (`sw check`) takes the language from the file's ending.
+            A language SpecWeaver does not generate gets no QA atom, so its QA rules skip.
 
     Returns:
         Dict mapping context keys to serialized AtomResult dicts.
@@ -123,7 +128,16 @@ def hydrate_code_validation_context(
     )
 
     # Lazy import — only when we actually need to run atoms
-    from specweaver.sandbox.language.core.runner_factory import qa_atom
+    from specweaver.sandbox.language.core.runner_factory import architecture_atom, qa_atom
+
+    language = profile.language if profile else language_of(code_path)
+    if language is None or language not in GENERATED_LANGUAGES:
+        # No runner for this language: its tests and coverage are not run, the boundary check is.
+        if "C05" in qa_rules_active:
+            context[_KEY_ARCHITECTURE] = _hydrate_architecture(
+                architecture_atom(project_root), code_path, project_root, dal_level
+            )
+        return context
 
     atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)
 
@@ -327,7 +341,7 @@ def execute_validation_flow(
     dal_level: Any | None = None,
     context: dict[str, Any] | None = None,
     sandbox_settings: Any | None = None,
-    language: str | None = None,
+    profile: ProjectProfile | None = None,
 ) -> list[Any]:
     """Single entry point for code validation with hydration.
 
@@ -360,7 +374,7 @@ def execute_validation_flow(
             project_root,
             dal_level=dal_level,
             sandbox_settings=sandbox_settings,
-            language=language,
+            profile=profile,
         )
         merged_context.update(qa_context)
 

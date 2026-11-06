@@ -1,56 +1,30 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Factory that creates the correct ``StackTraceFilterInterface`` for a project."""
+"""Which ``StackTraceFilterInterface`` a run's language gets."""
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
-from specweaver.sandbox.language.core.detect import detect_language
-
-logger = logging.getLogger(__name__)
+from specweaver.sandbox.language.core.language_table import language_class
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.workspace.ast.parsers.interfaces import StackTraceFilterInterface
 
+#: Each language's filter, as `module:class` under `sandbox.language.core`; imported on use.
+_FILTERS = {
+    "python": "python.stack_trace_filter:PythonStackTraceFilter",
+    "java": "jvm.stack_trace_filter:JvmStackTraceFilter",
+    "kotlin": "jvm.stack_trace_filter:JvmStackTraceFilter",
+    "typescript": "typescript.stack_trace_filter:TypeScriptStackTraceFilter",
+    "rust": "rust.stack_trace_filter:RustStackTraceFilter",
+}
 
-def create_stack_trace_filter(cwd: Path) -> StackTraceFilterInterface:
-    """Create the appropriate ``StackTraceFilterInterface`` for the detected language.
 
-    Args:
-        cwd: Project root directory to inspect for language manifest files.
-
-    Returns:
-        A concrete ``StackTraceFilterInterface`` for the detected language.
-    """
-    language = detect_language(cwd)
-
-    if language in ("java", "kotlin"):
-        from specweaver.sandbox.language.core.jvm.stack_trace_filter import JvmStackTraceFilter
-
-        return JvmStackTraceFilter()
-
-    if language == "typescript":
-        from specweaver.sandbox.language.core.typescript.stack_trace_filter import (
-            TypeScriptStackTraceFilter,
-        )
-
-        return TypeScriptStackTraceFilter()
-
-    if language == "rust":
-        from specweaver.sandbox.language.core.rust.stack_trace_filter import (
-            RustStackTraceFilter,
-        )
-
-        return RustStackTraceFilter()
-
-    # Default: Python
-    from specweaver.sandbox.language.core.python.stack_trace_filter import (
-        PythonStackTraceFilter,
-    )
-
-    return PythonStackTraceFilter()
+def create_stack_trace_filter(language: str) -> StackTraceFilterInterface:
+    """The filter for the run's language; raises `ValueError` naming an unknown one."""
+    trace_filter: StackTraceFilterInterface = language_class(
+        _FILTERS, language, "stack trace filter"
+    )()
+    return trace_filter

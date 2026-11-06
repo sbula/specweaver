@@ -1,77 +1,32 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Factory that creates the correct ``ScenarioConverterInterface`` for a project.
-
-Language is auto-detected by sniffing manifest files in the project root.
-Re-exports ``detect_scenario_extension`` for SF-C's ``ValidateTestsHandler``
-template substitution.
-"""
+"""Which ``ScenarioConverterInterface`` a run's language gets."""
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
-from specweaver.sandbox.language.core.detect import (
-    detect_language,
-    detect_scenario_extension,
-)
+from specweaver.sandbox.language.core.language_table import language_class
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from specweaver.workspace.ast.parsers.interfaces import ScenarioConverterInterface
 
-# Re-export so SF-C can import from a single location
-__all__ = ["create_scenario_converter", "detect_scenario_extension"]
+__all__ = ["create_scenario_converter"]
+
+#: Each language's converter, as `module:class` under `sandbox.language.core`; imported on use.
+_CONVERTERS = {
+    "python": "python.scenario_converter:PythonScenarioConverter",
+    "java": "java.scenario_converter:JavaScenarioConverter",
+    "kotlin": "kotlin.scenario_converter:KotlinScenarioConverter",
+    "typescript": "typescript.scenario_converter:TypeScriptScenarioConverter",
+    "rust": "rust.scenario_converter:RustScenarioConverter",
+}
 
 
-logger = logging.getLogger(__name__)
-
-
-def create_scenario_converter(cwd: Path) -> ScenarioConverterInterface:
-    """Create the appropriate ``ScenarioConverterInterface`` for the detected language.
-
-    Args:
-        cwd: Project root directory to inspect for language manifest files.
-
-    Returns:
-        A concrete ``ScenarioConverterInterface`` for the detected language.
-    """
-    language = detect_language(cwd)
-
-    if language == "java":
-        from specweaver.sandbox.language.core.java.scenario_converter import (
-            JavaScenarioConverter,
-        )
-
-        return JavaScenarioConverter()
-
-    if language == "kotlin":
-        from specweaver.sandbox.language.core.kotlin.scenario_converter import (
-            KotlinScenarioConverter,
-        )
-
-        return KotlinScenarioConverter()
-
-    if language == "typescript":
-        from specweaver.sandbox.language.core.typescript.scenario_converter import (
-            TypeScriptScenarioConverter,
-        )
-
-        return TypeScriptScenarioConverter()
-
-    if language == "rust":
-        from specweaver.sandbox.language.core.rust.scenario_converter import (
-            RustScenarioConverter,
-        )
-
-        return RustScenarioConverter()
-
-    # Default: Python
-    from specweaver.sandbox.language.core.python.scenario_converter import (
-        PythonScenarioConverter,
-    )
-
-    return PythonScenarioConverter()
+def create_scenario_converter(language: str) -> ScenarioConverterInterface:
+    """The converter for the run's language; raises `ValueError` naming an unknown one."""
+    converter: ScenarioConverterInterface = language_class(
+        _CONVERTERS, language, "scenario converter"
+    )()
+    return converter

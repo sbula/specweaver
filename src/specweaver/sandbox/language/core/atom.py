@@ -1,10 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""LanguageAtom — engine-level language detection and conversion.
+"""LanguageAtom — engine-level scenario conversion in the run's language.
 
-The Engine uses LanguageAtom for language detection and scenario formatting
-as part of pipeline steps to maintain the Atom Proxy architectural pattern.
+The Engine uses LanguageAtom for scenario formatting as part of pipeline steps to maintain the Atom
+Proxy architectural pattern. The run decides its language once; the atom never detects.
 """
 
 from __future__ import annotations
@@ -25,14 +25,15 @@ class LanguageAtom(Atom):
 
     __test__ = False
 
-    def __init__(self, cwd: Path) -> None:
+    def __init__(self, cwd: Path, language: str) -> None:
         self._cwd = cwd
+        self._language = language
 
     def run(self, context: dict[str, Any]) -> AtomResult:
         """Dispatch to the appropriate intent based on context.
 
         Context must contain:
-            intent: str — "detect_language" or "convert_scenario".
+            intent: str — "convert_scenario".
         """
         intent = context.get("intent")
         if intent is None:
@@ -41,17 +42,7 @@ class LanguageAtom(Atom):
                 message="Missing 'intent' in context.",
             )
 
-        if intent == "detect_language":
-            from specweaver.sandbox.language.core.detect import detect_language
-
-            lang = detect_language(self._cwd)
-            return AtomResult(
-                status=AtomStatus.SUCCESS,
-                message=f"Detected language: {lang}",
-                exports={"language": lang},
-            )
-
-        elif intent == "convert_scenario":
+        if intent == "convert_scenario":
             stem = context.get("stem")
             scenario_set = context.get("scenario_set")
             if not stem or not scenario_set:
@@ -63,7 +54,7 @@ class LanguageAtom(Atom):
                 create_scenario_converter,
             )
 
-            converter = create_scenario_converter(self._cwd)
+            converter = create_scenario_converter(self._language)
             # The handler-known stem anchors the emitted target-loader — never the
             # LLM-authored scenario_set.spec_path.
             content = converter.convert(scenario_set, stem=stem)

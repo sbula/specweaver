@@ -191,9 +191,10 @@ class ConvertScenarioHandler:
             scenario_set = ScenarioSet.model_validate(data)
 
             # Language-agnostic: Atom proxy picks the right converter
+            from specweaver.core.flow.engine.run_profile import run_profile
             from specweaver.sandbox.language.core.atom import LanguageAtom
 
-            atom = LanguageAtom(cwd=context.project_path)
+            atom = LanguageAtom(cwd=context.project_path, language=run_profile(context).language)
             res = atom.run(
                 {
                     "intent": "convert_scenario",

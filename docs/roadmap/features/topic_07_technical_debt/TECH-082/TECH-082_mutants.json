@@ -140,7 +140,7 @@
           "old": "            result = await arbitrate(adapter, config, base_prompt.build())\n",
           "new": "            result = await adapter.generate([], config)\n",
           "breaks": "a handler talks to the model past the workflow",
-          "symbol_sha": "sha256:ac9537d724e73ac297e6f7628adb6c36111c404e8c51fb84be9be9b86cb009e8"
+          "symbol_sha": "sha256:6be4bb9b463fb8f377b38bec2083db5f81dd03241f2c4851cc8fa49cfc915633"
         }
       ]
     },
@@ -369,7 +369,7 @@
           "old": "            output_path.write_text(test_content, encoding=\"utf-8\")\n",
           "new": "            output_path.write_text(test_content, encoding=\"utf-8\")\n            context.feedback[\"scenario_test_path\"] = str(output_path)\n",
           "breaks": "a feedback key nobody reads comes back",
-          "symbol_sha": "sha256:55f19325f96e7ae7107e1015568070ed2af6cebb2faf6f7bc6ecd46a027a1a14"
+          "symbol_sha": "sha256:69589bbf48e89a21e0eef71f94a4f94ac2ed5f29f7aa8e0241479201e461500b"
         },
         {
           "id": "verdict-from-a-fixed-name",

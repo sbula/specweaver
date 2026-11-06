@@ -50,7 +50,8 @@ class QARunnerAtom(Atom):
 
     Args:
         cwd: Project root directory.
-        runner: The language runner every intent but `run_architecture` goes to.
+        runner: The language runner every intent but `run_architecture` goes to; None for a
+            language with no runner, which then refuses every other intent.
         architecture: `run_architecture`'s check, `(project_root, target) -> ArchitectureRunResult`;
             `qa_atom` gives the shared boundary check with the runner's executor.
         scenarios_mounted: The runner's executor mounts the scenario store at `/scenarios/`.
@@ -61,7 +62,7 @@ class QARunnerAtom(Atom):
     def __init__(
         self,
         cwd: Path,
-        runner: QARunnerInterface,
+        runner: QARunnerInterface | None,
         *,
         architecture: Callable[[Path, str], ArchitectureRunResult] | None = None,
         scenarios_mounted: bool = False,
@@ -98,10 +99,23 @@ class QARunnerAtom(Atom):
                 message=f"Unknown intent: {intent!r}. Known: {sorted(self._known_intents())}",
             )
 
+        if self._runner is None and intent != "run_architecture":
+            return AtomResult(
+                status=AtomStatus.FAILED,
+                message=f"no QA runner for this file's language; {intent!r} cannot run",
+            )
         refused = self._refused_path(context)
         if refused is not None:
             return refused
         return handler(context)
+
+    @property
+    def _language_runner(self) -> QARunnerInterface:
+        """The runner; `run` has refused every intent that needs one when there is none."""
+        if self._runner is None:
+            msg = "QARunnerAtom has no language runner"
+            raise RuntimeError(msg)
+        return self._runner
 
     #: Every context key an intent reads as a path. Empty values are left to the intent, which
     #: names what is missing.
@@ -208,7 +222,7 @@ class QARunnerAtom(Atom):
 
         for t in targets:
             try:
-                result = self._runner.run_tests(
+                result = self._language_runner.run_tests(
                     target=t,
                     kind=context.get("kind", "unit"),
                     scope=context.get("scope", ""),
@@ -290,7 +304,7 @@ class QARunnerAtom(Atom):
         agg_failures = []
 
         for t in targets:
-            result = self._runner.run_linter(
+            result = self._language_runner.run_linter(
                 target=t,
                 fix=context.get("fix", False),
             )
@@ -333,7 +347,7 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_complexity intent.",
             )
 
-        result = self._runner.run_complexity(
+        result = self._language_runner.run_complexity(
             target=target,
             max_complexity=context.get("max_complexity", 10),
         )
@@ -371,7 +385,7 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' in context for run_compiler intent.",
             )
 
-        result = self._runner.run_compiler(target=target)
+        result = self._language_runner.run_compiler(target=target)
 
         exports: dict[str, Any] = {
             "error_count": result.error_count,
@@ -407,7 +421,7 @@ class QARunnerAtom(Atom):
                 message="Missing 'target' or 'entrypoint' in context for run_debugger intent.",
             )
 
-        result = self._runner.run_debugger(target=target, entrypoint=entrypoint)
+        result = self._language_runner.run_debugger(target=target, entrypoint=entrypoint)
 
         exports: dict[str, Any] = {
             "exit_code": result.exit_code,

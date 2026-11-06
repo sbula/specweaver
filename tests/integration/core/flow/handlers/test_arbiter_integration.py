@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
@@ -12,6 +13,7 @@ from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
+    IsolationPolicy,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -22,6 +24,7 @@ from tests.scripted_llm import FixedRouter
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
+    ctx.isolation = IsolationPolicy(profile=ProjectProfile("python", "uv"))
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
     # a handler reads has to be a real instance here, not a mock attribute.
     ctx.analysis = AnalysisContext()

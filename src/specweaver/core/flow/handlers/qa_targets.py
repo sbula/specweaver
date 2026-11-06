@@ -67,12 +67,13 @@ def default_test_target(context: RunContext, kind: str) -> str:
     """
     stem = module_stem(context.spec_path)
     if kind == "scenario":
+        from specweaver.core.flow.engine.run_profile import run_profile
         from specweaver.sandbox.language.core.scenario_converter_factory import (
             create_scenario_converter,
         )
 
         return str(
-            create_scenario_converter(context.project_path).output_path(
+            create_scenario_converter(run_profile(context).language).output_path(
                 stem, scenarios_root(context).parent
             )
         )

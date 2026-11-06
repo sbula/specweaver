@@ -1,15 +1,15 @@
 # mypy: ignore-errors
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunHandle
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, ModelAccess, RunHandle
 from tests.scripted_llm import FixedRouter
 
 
@@ -40,6 +40,7 @@ def run_context():
     ctx.spec_path.exists.return_value = True
     ctx.spec_path.read_text.return_value = "Spec data"
     ctx.project_path = "/mock/path"
+    ctx.isolation = IsolationPolicy(profile=ProjectProfile("python", "uv"))
     return ctx
 
 

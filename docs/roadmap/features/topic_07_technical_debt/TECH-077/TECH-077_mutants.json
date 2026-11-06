@@ -97,7 +97,7 @@
           "old": "    if project_root is not None:\n        merged_context[\"project_root\"] = project_root\n",
           "new": "    if False:\n        merged_context[\"project_root\"] = project_root\n",
           "breaks": "rules never learn the run's project root",
-          "symbol_sha": "sha256:679cb71ac84a171b7c42edc728ccafc89767d5faedf4ebfb4fb0990362d8a795"
+          "symbol_sha": "sha256:8577a86441d1f5cadae1b289033581e0fcb24e657fbd7aa18fedb5ba75e69ec6"
         },
         {
           "id": "traceability-ignores-the-run-root",

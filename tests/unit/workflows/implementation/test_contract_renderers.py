@@ -1,9 +1,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for language-specific contract renderers in _contract_renderers.py."""
+"""Tests for language-specific contract renderers in _contract_renderers.py.
+
+Proves: TECH-079 FR-14
+"""
 
 from __future__ import annotations
+
+import pytest
 
 
 class TestPythonContractRenderer:
@@ -163,14 +168,22 @@ class TestRenderContractDispatch:
         result = render_contract("rust", "Foo", ["def bar(self) -> None"], {})
         assert "trait FooContract" in result
 
-    def test_unknown_defaults_to_python(self) -> None:
+    @pytest.mark.parametrize("language", ["go", "Python", "", "unknown_lang"])
+    def test_an_unknown_language_is_refused_naming_it(self, language: str) -> None:
+        """TECH-079 FR-14: no language falls back to Python."""
         from specweaver.workflows.implementation.contract_renderers import render_contract
 
-        result = render_contract("unknown_lang", "Foo", ["def bar(self) -> None"], {})
-        assert "class FooProtocol(Protocol)" in result
+        with pytest.raises(ValueError, match=f"no contract renderer for language '{language}'"):
+            render_contract(language, "Foo", ["def bar(self) -> None"], {})
 
-    def test_contract_extension_python_default(self) -> None:
+    def test_contract_extension_python(self) -> None:
         from specweaver.workflows.implementation.contract_renderers import contract_extension
 
         assert contract_extension("python") == "py"
-        assert contract_extension("unknown") == "py"
+
+    @pytest.mark.parametrize("language", ["go", "unknown"])
+    def test_an_unknown_contract_extension_is_refused(self, language: str) -> None:
+        from specweaver.workflows.implementation.contract_renderers import contract_extension
+
+        with pytest.raises(ValueError, match=f"no contract file ending for language '{language}'"):
+            contract_extension(language)

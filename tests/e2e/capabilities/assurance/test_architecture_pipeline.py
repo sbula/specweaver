@@ -90,7 +90,9 @@ class TestArchitectureE2E:
         from specweaver.sandbox.qa_runner.interfaces.facades import create_qa_runner_interface
 
         # Instantiate the Implementer role tool
-        tool_interface = create_qa_runner_interface("implementer", qa_atom(architecture_workspace))
+        tool_interface = create_qa_runner_interface(
+            "implementer", qa_atom(architecture_workspace, "python")
+        )
 
         # Run the architecture tool manually as an agent would
         result = tool_interface.run_architecture(target=".")

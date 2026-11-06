@@ -202,10 +202,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/run_setup/builder.py",
           "symbol": "_profile",
-          "old": "        if request.needs_profile:",
-          "new": "        if False:",
+          "old": "        if request.needs_profile:\n            raise\n",
+          "new": "        if False:\n            raise\n",
           "breaks": "sw run and the API run start on an undecided project",
-          "symbol_sha": "sha256:34b233d3eac28302c4743c3be5cff37ff77078465da663725ac7b677ce78924c"
+          "symbol_sha": "sha256:5144847c7e36d41498f4f7c0337c11467165ee1f312999d8e5121cbb34f81f02"
         },
         {
           "id": "session-policy-swallows-undecided",
@@ -265,6 +265,118 @@
           "new": "    return task_files_for(project_root, spec_path, \"python\").all",
           "breaks": "a TypeScript run's merge allows only Python files",
           "symbol_sha": "sha256:5d89e6071aaf17c7e84906ed68fe25fb56ae2da9cf733d82495bb09067a4eedb"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "each factory takes the language, chooses from one table and refuses an unknown one",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_runner_factory.py",
+        "tests/unit/sandbox/language/core/language/test_scenario_converters.py",
+        "tests/unit/sandbox/language/core/language/test_stack_trace_filters.py",
+        "tests/unit/sandbox/language/core/language/test_language_atom.py",
+        "tests/unit/workflows/implementation/test_contract_renderers.py",
+        "tests/unit/workflows/implementation/test_task_files.py",
+        "tests/integration/core/flow/handlers/test_every_part_takes_the_run_language.py",
+        "tests/unit/assurance/validation/orchestration/test_validation_hydrator.py"
+      ],
+      "mutants": [
+        {
+          "id": "unknown-language-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/language_table.py",
+          "symbol": "language_class",
+          "old": "    row = table.get(language)",
+          "new": "    row = table.get(language, table[\"python\"])",
+          "breaks": "an unknown language gets the Python runner, converter or filter",
+          "symbol_sha": "sha256:741b3a3bc62a9a2f921e19f14e8b759606c7a6e952040939913fdb303257cb4d"
+        },
+        {
+          "id": "contract-unknown-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/contract_renderers.py",
+          "symbol": "render_contract",
+          "old": "    renderer = _RENDERERS.get(language)",
+          "new": "    renderer = _RENDERERS.get(language, render_python_protocol)",
+          "breaks": "an unknown language gets a Python contract",
+          "symbol_sha": "sha256:bb78b9e4a9e5aa93679a82274af7b200faabde821d6a0d4dcda4b00b527f2016"
+        },
+        {
+          "id": "contract-extension-unknown-is-py",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/contract_renderers.py",
+          "symbol": "contract_extension",
+          "old": "    if language not in _EXTENSIONS:",
+          "new": "    if False:",
+          "breaks": "an unknown language's contract file ends in .py",
+          "symbol_sha": "sha256:f1517b4d5505ea07dbe1735e2dac15f9609c9efe3dcd062e60924e5013b9dbcd"
+        },
+        {
+          "id": "task-files-unknown-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/task_files.py",
+          "symbol": "task_files_for",
+          "old": "    if language == \"python\":\n        return TaskFiles",
+          "new": "    if True:\n        return TaskFiles",
+          "breaks": "an unknown language gets Python task files",
+          "symbol_sha": "sha256:6244d7a4cc99ff4f7dad22cbe1bd1423acc8981e14aa8186498eb9954613e446"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "every part of a run, and sw check, takes one language",
+      "scope": [
+        "tests/unit/sandbox/language/core/test_runner_factory.py",
+        "tests/unit/sandbox/language/core/language/test_scenario_converters.py",
+        "tests/unit/sandbox/language/core/language/test_stack_trace_filters.py",
+        "tests/unit/sandbox/language/core/language/test_language_atom.py",
+        "tests/unit/workflows/implementation/test_contract_renderers.py",
+        "tests/unit/workflows/implementation/test_task_files.py",
+        "tests/integration/core/flow/handlers/test_every_part_takes_the_run_language.py",
+        "tests/unit/assurance/validation/orchestration/test_validation_hydrator.py"
+      ],
+      "mutants": [
+        {
+          "id": "check-ignores-the-file-ending",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
+          "symbol": "hydrate_code_validation_context",
+          "old": "    language = profile.language if profile else language_of(code_path)",
+          "new": "    language = profile.language if profile else \"python\"",
+          "breaks": "sw check runs pytest on a Kotlin or Go file",
+          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
+        },
+        {
+          "id": "go-loses-the-boundary-check",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
+          "symbol": "hydrate_code_validation_context",
+          "old": "        if \"C05\" in qa_rules_active:\n            context[_KEY_ARCHITECTURE] = _hydrate_architecture(\n                architecture_atom(project_root)",
+          "new": "        if False:\n            context[_KEY_ARCHITECTURE] = _hydrate_architecture(\n                architecture_atom(project_root)",
+          "breaks": "a Go file loses C05, the boundary check every language shares",
+          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
+        },
+        {
+          "id": "scenario-file-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/qa_targets.py",
+          "symbol": "default_test_target",
+          "old": "            create_scenario_converter(run_profile(context).language).output_path(",
+          "new": "            create_scenario_converter(\"python\").output_path(",
+          "breaks": "a TypeScript run's scenario step runs a Python file",
+          "symbol_sha": "sha256:c318a2510eba325a9caa6173420c98fad70046aae7fc25a4ee837111e80370c9"
+        },
+        {
+          "id": "trace-filter-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/arbiter.py",
+          "symbol": "trace_filter",
+          "old": "    return create_stack_trace_filter(run_profile(context).language)",
+          "new": "    return create_stack_trace_filter(\"python\")",
+          "breaks": "a TypeScript run's arbiter filters frames as Python",
+          "symbol_sha": "sha256:e7ea00fd9901e8518d87a66adab19f128f35a7727bd1a262a7b9ab7703129d64"
         }
       ]
     }

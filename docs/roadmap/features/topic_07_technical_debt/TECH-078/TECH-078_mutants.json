@@ -87,10 +87,10 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/task_files.py",
           "symbol": "task_files_for",
-          "old": "_tests(f\"{stem}.py\", \"python\")",
+          "old": "_tests(f\"{stem}.py\", language)",
           "new": "f\"tests/{stem}_test.py\"",
           "breaks": "a Python task's tests are written where the rules never look",
-          "symbol_sha": "sha256:0551eff0723f57a477de351d242cc709621c7647059d799fb1f5c337cba6abe3"
+          "symbol_sha": "sha256:6244d7a4cc99ff4f7dad22cbe1bd1423acc8981e14aa8186498eb9954613e446"
         }
       ]
     },
@@ -387,7 +387,7 @@
           "old": "    return run_task_files(context).tests\n",
           "new": "    return run_task_files(context).tests.replace(\"tests/\", \"src/\", 1)\n",
           "breaks": "a Python run_tests with no target runs src/test_<stem>.py, which generation never writes",
-          "symbol_sha": "sha256:73ccb903c6cfd430193092885607bc67d6b7d2aee80fd359d37cbcfc6e6e6161"
+          "symbol_sha": "sha256:c318a2510eba325a9caa6173420c98fad70046aae7fc25a4ee837111e80370c9"
         },
         {
           "id": "lint-default-is-all-of-src",
@@ -480,7 +480,7 @@
           "old": "            code_path,\n            project_root=project_path,\n",
           "new": "            spec_path,\n            project_root=project_path,\n",
           "breaks": "C02 looks for the spec's tests, never the code file's",
-          "symbol_sha": "sha256:66bc06481331e98887c660737af01c32dc97b889403c63b9f4aec443c2ed0f55"
+          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
         },
         {
           "id": "other-languages-unjudged",
@@ -490,7 +490,7 @@
           "old": "            narrowed = _test_rules_only(pipeline, language_of(code_path))\n            if narrowed is None:\n                return None\n            pipeline = narrowed\n",
           "new": "            return None\n",
           "breaks": "a Kotlin file is judged by no rule",
-          "symbol_sha": "sha256:66bc06481331e98887c660737af01c32dc97b889403c63b9f4aec443c2ed0f55"
+          "symbol_sha": "sha256:885ce622a52a441085140d5358e0671dbe47a93cb2e206ae0173184c2785320d"
         },
         {
           "id": "python-rules-judge-kotlin",

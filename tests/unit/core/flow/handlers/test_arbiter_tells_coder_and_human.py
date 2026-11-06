@@ -20,10 +20,16 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import (
+    IsolationPolicy,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.sandbox.language.core.python.stack_trace_filter import PythonStackTraceFilter
 from specweaver.workflows.arbitration.verdict import code_trace
 from tests.scripted_llm import FixedRouter
@@ -66,7 +72,11 @@ def _context(tmp_path: Path, verdict: dict[str, object], *, trace: str = _RAISED
     spec.write_text("# Greet\n\n## FR-2\n\nAn empty name is handled.\n", encoding="utf-8")
     llm = AsyncMock()
     llm.generate.return_value = json.dumps(verdict)
-    context = RunContext(project_path=tmp_path, spec_path=spec)
+    context = RunContext(
+        project_path=tmp_path,
+        spec_path=spec,
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+    )
     context.run = RunHandle(run_id="r1", step_name="arbitrate_verdict")
     context.model = ModelAccess(llm_router=FixedRouter(llm))
     context.feedback = {

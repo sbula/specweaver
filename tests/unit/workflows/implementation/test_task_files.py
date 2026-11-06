@@ -4,13 +4,14 @@
 """A task's code and test files, worked out once, per language.
 
 Proves: D-INTL-08 FR-3
+Proves: TECH-079 FR-14
 
 | Bucket | Case |
 |---|---|
 | Happy | the layout for each of the five languages |
 | Boundary | the Java package from the spec header, from the sources' shared prefix, from the build's group, none; sources sharing nothing; `greet-service` as `GreetService`; Rust with `lib.rs`, `main.rs`, neither — always `lib.rs`, the only crate root tests reach |
 | Degradation | an unreadable build file falls through to the default package |
-| Hostile | a header package that is not a dotted identifier (`../x`, `com/evil`) is refused, naming the line |
+| Hostile | a header package that is not a dotted identifier (`../x`, `com/evil`) is refused, naming the line; an unknown language is refused, naming it |
 """
 
 from __future__ import annotations
@@ -146,3 +147,10 @@ def test_rust_names_the_file_that_declares_the_module(
 @pytest.mark.parametrize("language", ["python", "java", "kotlin", "typescript", "rust"])
 def test_the_files_name_their_language(tmp_path: Path, language: str) -> None:
     assert task_files_for(tmp_path, _spec(tmp_path), language).language == language
+
+
+@pytest.mark.parametrize("language", ["go", "Python", "", "javascript"])
+def test_an_unknown_language_is_refused_naming_it(tmp_path: Path, language: str) -> None:
+    """TECH-079 FR-14: no language falls back to Python files."""
+    with pytest.raises(ValueError, match=f"no task-file layout for language '{language}'"):
+        task_files_for(tmp_path, _spec(tmp_path), language)

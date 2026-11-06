@@ -44,8 +44,11 @@ logger = logging.getLogger(__name__)
 
 
 def contract_extension(language: str) -> str:
-    """Return the file extension for a generated contract file."""
-    return _EXTENSIONS.get(language, "py")
+    """The file ending of a contract file; raises `ValueError` naming an unknown language."""
+    if language not in _EXTENSIONS:
+        msg = f"no contract file ending for language {language!r}"
+        raise ValueError(msg)
+    return _EXTENSIONS[language]
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +332,16 @@ def render_rust_trait(
 # ---------------------------------------------------------------------------
 
 
+#: Each language's contract renderer: (class name, signatures, docstrings) -> file text.
+_RENDERERS = {
+    "python": render_python_protocol,
+    "java": render_java_interface,
+    "kotlin": render_kotlin_interface,
+    "typescript": render_typescript_interface,
+    "rust": render_rust_trait,
+}
+
+
 def render_contract(
     language: str,
     class_name: str,
@@ -345,18 +358,15 @@ def render_contract(
 
     Returns:
         Complete contract file content as a string.
+
+    Raises:
+        ValueError: naming a language with no renderer; none falls back to Python.
     """
-    docstrings = docstrings or {}
-    if language == "java":
-        return render_java_interface(class_name, signatures, docstrings)
-    if language == "kotlin":
-        return render_kotlin_interface(class_name, signatures, docstrings)
-    if language == "typescript":
-        return render_typescript_interface(class_name, signatures, docstrings)
-    if language == "rust":
-        return render_rust_trait(class_name, signatures, docstrings)
-    # Default — Python and any unknown
-    return render_python_protocol(class_name, signatures, docstrings)
+    renderer = _RENDERERS.get(language)
+    if renderer is None:
+        msg = f"no contract renderer for language {language!r}"
+        raise ValueError(msg)
+    return renderer(class_name, signatures, docstrings or {})
 
 
 def extract_contract(text: str) -> str | None:

@@ -109,7 +109,7 @@
           "old": "        refused = self._refused_path(context)\n",
           "new": "        refused = None if intent == \"run_linter\" else self._refused_path(context)\n",
           "breaks": "the linter runs on a path outside the project",
-          "symbol_sha": "sha256:43578c80969d7e58b12b495f70e9285156c788c8c99831e74bac4018c258e5a2"
+          "symbol_sha": "sha256:a51b1a2924cd186bf5a40b0df62dca762fcbac219deac952121c2edb46093072"
         },
         {
           "id": "entrypoint-unchecked",

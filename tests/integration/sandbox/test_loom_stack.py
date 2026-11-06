@@ -186,7 +186,7 @@ class TestAtomToolStack:
             encoding="utf-8",
         )
 
-        atom = qa_atom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project, language="python")
         result = atom.run(
             {
                 "intent": "run_linter",
@@ -201,7 +201,7 @@ class TestAtomToolStack:
         """QARunnerAtom handles run_complexity intent — clean code."""
         clean_dir = sample_project / "src" / "greeter"
 
-        atom = qa_atom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project, language="python")
         result = atom.run(
             {
                 "intent": "run_complexity",
@@ -218,7 +218,7 @@ class TestAtomToolStack:
             QARunnerToolError,
         )
 
-        atom = qa_atom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project, language="python")
         tool = QARunnerTool(atom, role="reviewer")
         with pytest.raises(QARunnerToolError, match="not allowed"):
             tool.run_linter(target=".", fix=True)
@@ -235,7 +235,7 @@ class TestAtomToolStack:
 
         from specweaver.sandbox.qa_runner.interfaces.tool import QARunnerTool
 
-        atom = qa_atom(cwd=sample_project)
+        atom = qa_atom(cwd=sample_project, language="python")
         tool = QARunnerTool(atom, role="implementer")
         tool.run_linter(target=str(fix_dir), fix=True)
 

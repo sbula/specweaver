@@ -1,7 +1,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for LanguageAtom — engine-level language capability provider."""
+"""Tests for LanguageAtom — engine-level language capability provider.
+
+Proves: TECH-079 FR-14
+"""
 
 from __future__ import annotations
 
@@ -22,7 +25,7 @@ class TestLanguageAtom:
 
     def test_handles_missing_intent(self, tmp_path: Path) -> None:
         """Should fail if no intent is provided."""
-        atom = LanguageAtom(cwd=tmp_path)
+        atom = LanguageAtom(cwd=tmp_path, language="rust")
         result = atom.run({})
 
         assert result.status == AtomStatus.FAILED
@@ -30,39 +33,28 @@ class TestLanguageAtom:
 
     def test_handles_unknown_intent(self, tmp_path: Path) -> None:
         """Should fail if an unknown intent is provided."""
-        atom = LanguageAtom(cwd=tmp_path)
+        atom = LanguageAtom(cwd=tmp_path, language="rust")
         result = atom.run({"intent": "some_unknown_intent"})
 
         assert result.status == AtomStatus.FAILED
         assert "some_unknown_intent" in result.message
 
-    @patch("specweaver.sandbox.language.core.detect.detect_language")
-    def test_detects_valid_language(self, mock_detect: MagicMock, tmp_path: Path) -> None:
-        """Should successfully detect the language and return it in exports."""
-        mock_detect.return_value = "rust"
-        atom = LanguageAtom(cwd=tmp_path)
+    def test_detecting_is_not_an_intent_any_more(self, tmp_path: Path) -> None:
+        """TECH-079 FR-14: the run's language is decided once; the atom never detects."""
+        result = LanguageAtom(cwd=tmp_path, language="rust").run({"intent": "detect_language"})
 
-        result = atom.run({"intent": "detect_language"})
+        assert result.status == AtomStatus.FAILED
+        assert "detect_language" in result.message
 
-        assert result.status == AtomStatus.SUCCESS
-        assert "rust" in result.message
-        assert result.exports["language"] == "rust"
-        mock_detect.assert_called_once_with(tmp_path)
+    def test_an_unknown_language_is_refused_when_converting(self, tmp_path: Path) -> None:
+        atom = LanguageAtom(cwd=tmp_path, language="go")
 
-    @patch("specweaver.sandbox.language.core.detect.detect_language")
-    def test_raises_for_unsupported_language_if_detect_fails(
-        self, mock_detect: MagicMock, tmp_path: Path
-    ) -> None:
-        """Edge Case: Should propagate LanguageNotFoundError or ValueError if detect_language fails."""
-        mock_detect.side_effect = ValueError("Unsupported language 'ruby'")
-        atom = LanguageAtom(cwd=tmp_path)
-
-        with pytest.raises(ValueError, match="Unsupported language 'ruby'"):
-            atom.run({"intent": "detect_language"})
+        with pytest.raises(ValueError, match="no scenario converter for language 'go'"):
+            atom.run({"intent": "convert_scenario", "stem": "c01", "scenario_set": MagicMock()})
 
     def test_convert_scenario_missing_arguments(self, tmp_path: Path) -> None:
         """Should fail if stem or scenario_set is missing for convert_scenario."""
-        atom = LanguageAtom(cwd=tmp_path)
+        atom = LanguageAtom(cwd=tmp_path, language="rust")
 
         # Missing both
         result1 = atom.run({"intent": "convert_scenario"})
@@ -90,7 +82,7 @@ class TestLanguageAtom:
         # Mock ScenarioSet
         mock_scenario_set = MagicMock()
 
-        atom = LanguageAtom(cwd=tmp_path)
+        atom = LanguageAtom(cwd=tmp_path, language="rust")
         result = atom.run(
             {
                 "intent": "convert_scenario",
@@ -103,7 +95,7 @@ class TestLanguageAtom:
         assert result.exports["content"] == "fn test_c01() {}"
         assert str(result.exports["output_path"]).endswith("test_c01.rs")
 
-        mock_create.assert_called_once_with(tmp_path)
+        mock_create.assert_called_once_with("rust")
         # INT-US-24 SF-03 (R/B RED-2): the handler-known stem anchors the emitted
         # target-loader — pinned as part of the call contract.
         mock_converter.convert.assert_called_once_with(mock_scenario_set, stem="c01")

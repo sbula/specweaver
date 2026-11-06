@@ -143,10 +143,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/qa_targets.py",
           "symbol": "default_test_target",
-          "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
-          "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
+          "old": "    if kind == \"scenario\":\n        from specweaver.core.flow.engine.run_profile import run_profile\n",
+          "new": "    if True:\n        from specweaver.core.flow.engine.run_profile import run_profile\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:73ccb903c6cfd430193092885607bc67d6b7d2aee80fd359d37cbcfc6e6e6161"
+          "symbol_sha": "sha256:c318a2510eba325a9caa6173420c98fad70046aae7fc25a4ee837111e80370c9"
         }
       ]
     },
@@ -374,7 +374,7 @@
           "old": "    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
           "new": "    atom = qa_atom(cwd=project_root, language=language)\n",
           "breaks": "C03 and C04 run the coder's tests on the host",
-          "symbol_sha": "sha256:a7c0782ff65ee70baef22388155556bb94739b9ec2b1324b05224a780c7119a4"
+          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
         },
         {
           "id": "lint-on-host",

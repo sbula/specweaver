@@ -15,9 +15,10 @@ import shutil
 import tempfile
 import weakref
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
+from specweaver.sandbox.language.core.language_table import language_class
 from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 if TYPE_CHECKING:
@@ -41,50 +42,34 @@ def _warn_if_container_non_python(executor: SubprocessExecutor | None, language_
         )
 
 
-def resolve_runner(
-    cwd: Path, executor: SubprocessExecutor, language: str | None = None
-) -> QARunnerInterface:
-    """The QA runner for the project's language: `language` when given, else detected.
+#: Each language's runner, as `module:class` under `sandbox.language.core`; imported on use.
+_RUNNERS = {
+    "python": "python.runner:PythonQARunner",
+    "java": "java.runner:JavaRunner",
+    "kotlin": "kotlin.runner:KotlinRunner",
+    "typescript": "typescript.runner:TypeScriptRunner",
+    "rust": "rust.runner:RustRunner",
+}
+
+
+def resolve_runner(cwd: Path, executor: SubprocessExecutor, language: str) -> QARunnerInterface:
+    """The QA runner for the run's language; raises `ValueError` naming an unknown one.
 
     Args:
         cwd: The project root.
         executor: Where the runner's tools run: a host `SubprocessExecutor` or a container one.
-        language: The run's language; None asks `detect_language`, the one detector.
+        language: The run's language (`core.flow.engine.run_profile`).
     """
-    from specweaver.sandbox.language.core.detect import detect_language
-
-    chosen = language or detect_language(cwd)
-    if chosen != "python":
-        _warn_if_container_non_python(executor, chosen)
-    runner: QARunnerInterface = _runner_class(chosen)(cwd=cwd, executor=executor)
+    runner_class = language_class(_RUNNERS, language, "QA runner")
+    if language != "python":
+        _warn_if_container_non_python(executor, language)
+    runner: QARunnerInterface = runner_class(cwd=cwd, executor=executor)
     return runner
-
-
-def _runner_class(language: str) -> Any:
-    if language == "typescript":
-        from specweaver.sandbox.language.core.typescript.runner import TypeScriptRunner
-
-        return TypeScriptRunner
-    if language == "rust":
-        from specweaver.sandbox.language.core.rust.runner import RustRunner
-
-        return RustRunner
-    if language == "kotlin":
-        from specweaver.sandbox.language.core.kotlin.runner import KotlinRunner
-
-        return KotlinRunner
-    if language == "java":
-        from specweaver.sandbox.language.core.java.runner import JavaRunner
-
-        return JavaRunner
-    from specweaver.sandbox.language.core.python.runner import PythonQARunner
-
-    return PythonQARunner
 
 
 def qa_atom(
     cwd: Path,
-    language: str | None = None,
+    language: str,
     sandbox_settings: SandboxSettings | None = None,
     scenarios_root: Path | None = None,
 ) -> QARunnerAtom:
@@ -92,7 +77,7 @@ def qa_atom(
 
     Args:
         cwd: The project root.
-        language: The run's language; None detects it from the project's manifests.
+        language: The run's language.
         sandbox_settings: `execution_mode="container"` routes execution through a container;
             None or `"host"` runs on the host.
         scenarios_root: A scenario store to mount read-only; implies a container.
@@ -124,6 +109,16 @@ def qa_atom(
     if scratch is not None:
         weakref.finalize(atom, shutil.rmtree, scratch, True)
     return atom
+
+
+def architecture_atom(cwd: Path) -> QARunnerAtom:
+    """The atom for a language with no QA runner: only the shared boundary check, on the host."""
+    from specweaver.sandbox.language.core.boundary_check import check_architecture
+
+    executor = SubprocessExecutor(cwd=cwd)
+    return QARunnerAtom(
+        cwd, None, architecture=functools.partial(check_architecture, executor=executor)
+    )
 
 
 def _build_container_executor(

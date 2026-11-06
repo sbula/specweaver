@@ -71,3 +71,57 @@ CB-2, when every part takes the run's language.
   not reach the original. Only test-built contexts take it.
 - Accepted: a context nobody decided for whose folder does not exist raises the OS error; the
   builder, the only `RunContext` in `src`, never leaves one undecided.
+
+## CB-2: the factories take the language (FR-14, FR-7 language part)
+
+**What changed**
+- `resolve_runner(cwd, executor, language)`, `create_scenario_converter(language)`,
+  `create_stack_trace_filter(language)`: the language is required; each chooses from one table
+  (`_RUNNERS`, `_CONVERTERS`, `_FILTERS`) through one lookup, `language_table.language_class`, which
+  raises `ValueError` naming a language with no row. `_runner_class` and both ladders are gone.
+- `render_contract`, `contract_extension` and `task_files_for` refuse an unknown language the same
+  way; none falls back to Python.
+- `LanguageAtom(cwd, language)`; its `detect_language` intent is gone (no caller, plan F10).
+- `sandbox/language/core/detect.py` is deleted (NFR-3): `detect_language`,
+  `detect_scenario_extension`, `SUPPORTED_LANGUAGES` and `_SCENARIO_EXTENSIONS` with it.
+- Handlers pass `run_profile(context)`: the scenario file (`qa_targets`), the scenario converter
+  (`scenario.py`), the stack trace filter (new `arbiter.trace_filter`), code validation (`profile`).
+- `sw check` and `POST /api/v1/check` (no run): the QA language is the file's ending (plan F4).
+- Found at dev, not in the plan: a Go file lost C05. The boundary check is the one QA part every
+  language shares, and it rode on the QA atom, which now has no runner for Go. `QARunnerAtom` takes
+  `runner=None` and then refuses every intent but `run_architecture`; `architecture_atom(cwd)` builds
+  that atom on the host. A language SpecWeaver does not generate keeps C05 and runs no tests.
+
+**Tests**
+- Red first: the factory tests (one table, unknown refused), `test_every_part_takes_the_run_language.py`
+  (a mixed root pinned to Python gets Python's runners, scenario file and filter; pinned to
+  TypeScript, TypeScript's; undecided, every part refuses), the hydrator's language tests,
+  `test_the_detector_is_gone.py` (NFR-3).
+- Old tests that pinned detection now name the language; contexts the handlers read carry a profile.
+- Mutants, each OBJECTED: `unknown-language-is-python`, `contract-unknown-is-python`,
+  `contract-extension-unknown-is-py`, `task-files-unknown-is-python`, `check-ignores-the-file-ending`,
+  `go-loses-the-boundary-check`, `scenario-file-is-python`, `trace-filter-is-python`.
+- NFR-5: 16 mutants pointed at changed functions; 7 re-anchored (`D-INTL-08`'s two Kotlin mutants now
+  live in `commons.project_profile`, scope + `test_project_profile.py`), all re-pinned. The 20
+  re-anchored in CB-1 were re-run against their scopes: 19 objected; `TECH-081` FR-14 was SILENT
+  (a private import from `commons`, a utility module, is allowed) and now imports a private name
+  from `workspace.project`, which objects.
+
+**Gap analysis (Phase 2)**
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `language_class` and the three factory tables | ✅ | ✅ | — |
+| contract renderer, extension, task files | ✅ | — | — |
+| `QARunnerAtom(runner=None)`, `architecture_atom` | ✅ | — | ✅ (Go boundary e2e) |
+| hydrator: run profile, file ending, Go | ✅ | ✅ (boundary extras) | ✅ |
+| handlers: scenario file, converter, filter | ✅ | ✅ (seam) | — |
+
+Composition: the seam test drives profile → handlers → factories. Agreement: lint, unit, scenario
+runners, the scenario file and the filter name one language in one test.
+
+**Red/blue**
+- Accepted: `task_files_for` raises `ValueError` for an unknown language, which `POST /implement`
+  would map to `SPEC_INVALID`; the language there comes from the profile, which only yields the five.
+- Accepted: `architecture_atom` runs on the host only; it is reached only without a run (`sw check`),
+  which never asks for a container.

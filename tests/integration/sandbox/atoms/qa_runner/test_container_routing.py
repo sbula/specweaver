@@ -40,20 +40,26 @@ def _executor(atom: QARunnerAtom) -> object | None:
 
 
 def test_container_mode_routes_through_the_container_executor(tmp_path: Path) -> None:
-    atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="container"))
+    atom = qa_atom(
+        cwd=tmp_path,
+        language="python",
+        sandbox_settings=SandboxSettings(execution_mode="container"),
+    )
 
     assert isinstance(_executor(atom), ContainerSubprocessExecutor)
 
 
 def test_host_mode_does_not(tmp_path: Path) -> None:
     """The control. A router that always containerised would pass the test above."""
-    atom = qa_atom(cwd=tmp_path, sandbox_settings=SandboxSettings(execution_mode="host"))
+    atom = qa_atom(
+        cwd=tmp_path, language="python", sandbox_settings=SandboxSettings(execution_mode="host")
+    )
 
     assert not isinstance(_executor(atom), ContainerSubprocessExecutor)
 
 
 def test_no_settings_at_all_stays_on_the_host(tmp_path: Path) -> None:
     """`None` is the common case — a caller that never mentions sandboxing must not get one."""
-    atom = qa_atom(cwd=tmp_path)
+    atom = qa_atom(cwd=tmp_path, language="python")
 
     assert not isinstance(_executor(atom), ContainerSubprocessExecutor)

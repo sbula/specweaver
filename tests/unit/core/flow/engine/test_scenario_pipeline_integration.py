@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from ruamel.yaml import YAML
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
@@ -111,6 +112,7 @@ async def test_scenario_pipeline_end_to_end_integration(
     ctx.isolation = IsolationPolicy(dal_level=None)
     ctx.spec_path = project_workspace / "specs" / "auth_spec.md"
     ctx.project_path = project_workspace
+    ctx.isolation = IsolationPolicy(profile=ProjectProfile("python", "uv"))
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm_router=FixedRouter(mock_llm), config=None)

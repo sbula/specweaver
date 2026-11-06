@@ -3,7 +3,8 @@
 
 """A run's profile: the one the run builder decided, or its refusal; decided once.
 
-Proves: TECH-079 FR-7, TECH-082 FR-3
+Proves: TECH-079 FR-7
+Proves: TECH-082 FR-3
 
 Every caller asks `run_profile`, so the task files, the QA runner and the sandbox get one answer.
 A context nobody decided for (one a test built) decides from its project root, with no pins, and

@@ -3,7 +3,8 @@
 
 """The task's files and the QA runner name the same language: the run's one profile.
 
-Proves: TECH-082 FR-3, TECH-079 FR-7
+Proves: TECH-082 FR-3
+Proves: TECH-079 FR-7
 
 `run_task_files` (the files generation writes) and the QA runner (the tools `lint_fix` runs) both
 take the run's profile; this test says they agree, so a project never gets Rust files linted by

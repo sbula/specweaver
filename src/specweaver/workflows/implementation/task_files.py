@@ -55,7 +55,8 @@ class TaskFiles:
 def task_files_for(project_root: Path, spec_path: Path, language: str) -> TaskFiles:
     """The task's files for `language` (the caller resolves it: `core.flow.engine.run_profile`).
 
-    Raises `ValueError` naming the spec line when its `Package` line is not a dotted identifier.
+    Raises `ValueError` naming the spec line when its `Package` line is not a dotted identifier,
+    and naming the language when it has no layout.
     """
     stem = module_stem(spec_path)
     if language in {"java", "kotlin"}:
@@ -68,7 +69,10 @@ def task_files_for(project_root: Path, spec_path: Path, language: str) -> TaskFi
         module = stem.replace("-", "_")
         code = f"src/{module}.rs"
         return TaskFiles(code, _tests(code, language), (RUST_ROOT,), language=language)
-    return TaskFiles(f"src/{stem}.py", _tests(f"{stem}.py", "python"), language="python")
+    if language == "python":
+        return TaskFiles(f"src/{stem}.py", _tests(f"{stem}.py", language), language=language)
+    msg = f"no task-file layout for language {language!r}"
+    raise ValueError(msg)
 
 
 def _tests(code: str, language: str, package_folder: str = "") -> str:
