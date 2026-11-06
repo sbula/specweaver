@@ -1,38 +1,18 @@
 {
   "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/javascript/analyzer.py @e6c63eca8855": {
     "lines": 10,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:285",
-    "second": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:199"
+    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:250",
+    "second": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:182"
   },
   "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/javascript/analyzer.py @fc1417bd0947": {
     "lines": 10,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:251",
-    "second": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:199"
-  },
-  "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/python/analyzer.py @01be8633b73e": {
-    "lines": 14,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:163",
-    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:140"
-  },
-  "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/python/analyzer.py @60126887f56e": {
-    "lines": 9,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:130",
-    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:311"
-  },
-  "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/python/analyzer.py @c234f484a922": {
-    "lines": 15,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:271",
-    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:236"
-  },
-  "src/specweaver/assurance/standards/languages/javascript/analyzer.py <-> src/specweaver/assurance/standards/languages/python/analyzer.py @ee9154819e56": {
-    "lines": 15,
-    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:210",
-    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:166"
+    "first": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:225",
+    "second": "src/specweaver/assurance/standards/languages/javascript/analyzer.py:182"
   },
   "src/specweaver/assurance/standards/languages/python/analyzer.py <-> src/specweaver/assurance/standards/languages/python/analyzer.py @f061a92d1979": {
     "lines": 10,
-    "first": "src/specweaver/assurance/standards/languages/python/analyzer.py:220",
-    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:153"
+    "first": "src/specweaver/assurance/standards/languages/python/analyzer.py:181",
+    "second": "src/specweaver/assurance/standards/languages/python/analyzer.py:132"
   },
   "src/specweaver/assurance/standards/loader.py <-> src/specweaver/assurance/standards/loader.py @2c65206cd419": {
     "lines": 7,
@@ -156,18 +136,18 @@
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
     "lines": 15,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:241",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:186"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:252",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:197"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @605f0236a621": {
     "lines": 16,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:217",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:185"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:228",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:196"
   },
   "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @c138b76e8941": {
     "lines": 22,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:281",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:186"
+    "first": "src/specweaver/interfaces/api/v1/pipelines.py:292",
+    "second": "src/specweaver/interfaces/api/v1/pipelines.py:197"
   },
   "src/specweaver/interfaces/api/v1/projects.py <-> src/specweaver/interfaces/api/v1/projects.py @f89fbec0af3a": {
     "lines": 12,
@@ -176,13 +156,13 @@
   },
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
-    "first": "src/specweaver/sandbox/execution/container_executor.py:534",
+    "first": "src/specweaver/sandbox/execution/container_executor.py:538",
     "second": "src/specweaver/sandbox/execution/executor.py:71"
   },
   "src/specweaver/sandbox/filesystem/core/atom.py <-> src/specweaver/sandbox/qa_runner/core/atom.py @83b463251c29": {
     "lines": 14,
     "first": "src/specweaver/sandbox/filesystem/core/atom.py:65",
-    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:88"
+    "second": "src/specweaver/sandbox/qa_runner/core/atom.py:89"
   },
   "src/specweaver/sandbox/git/interfaces/definitions.py <-> src/specweaver/sandbox/qa_runner/interfaces/definitions.py @2db6ef5a0874": {
     "lines": 17,
@@ -271,18 +251,18 @@
   },
   "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @63c490b34a7f": {
     "lines": 7,
-    "first": "src/specweaver/workflows/implementation/contract_renderers.py:306",
-    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:299",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:120"
   },
   "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @9ced5a28b740": {
     "lines": 7,
-    "first": "src/specweaver/workflows/implementation/contract_renderers.py:188",
-    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:181",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:120"
   },
   "src/specweaver/workflows/implementation/contract_renderers.py <-> src/specweaver/workflows/implementation/contract_renderers.py @e48a817fa7b3": {
     "lines": 7,
-    "first": "src/specweaver/workflows/implementation/contract_renderers.py:248",
-    "second": "src/specweaver/workflows/implementation/contract_renderers.py:127"
+    "first": "src/specweaver/workflows/implementation/contract_renderers.py:241",
+    "second": "src/specweaver/workflows/implementation/contract_renderers.py:120"
   },
   "src/specweaver/workflows/review/reviewer.py <-> src/specweaver/workflows/review/reviewer.py @0cf9f31157f4": {
     "lines": 22,
@@ -291,8 +271,8 @@
   },
   "src/specweaver/workspace/analyzers/factory.py <-> src/specweaver/workspace/analyzers/factory.py @b5b1be179b0c": {
     "lines": 11,
-    "first": "src/specweaver/workspace/analyzers/factory.py:306",
-    "second": "src/specweaver/workspace/analyzers/factory.py:287"
+    "first": "src/specweaver/workspace/analyzers/factory.py:313",
+    "second": "src/specweaver/workspace/analyzers/factory.py:294"
   },
   "src/specweaver/workspace/ast/parsers/_c_family.py <-> src/specweaver/workspace/ast/parsers/rust/_references.py @103f521e8f08": {
     "lines": 8,

@@ -2,7 +2,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for TreeSitterAnalyzer base class."""
+"""Tests for the TreeSitterStyleAnalyzer base class and the helpers every style analyzer shares."""
 
 from __future__ import annotations
 
@@ -11,7 +11,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.assurance.standards.analyzer import CategoryResult
-from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
+from specweaver.assurance.standards.tree_sitter_base import (
+    TreeSitterStyleAnalyzer,
+    classify_name,
+    compute_confidence,
+    file_weight,
+    vote_result,
+)
 from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
 if TYPE_CHECKING:
@@ -23,7 +29,7 @@ if TYPE_CHECKING:
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
 
-class DummyJSAnalyzer(TreeSitterAnalyzer):
+class DummyJSAnalyzer(TreeSitterStyleAnalyzer):
     def language_name(self) -> str:
         return "javascript"
 
@@ -60,7 +66,7 @@ def analyzer() -> DummyJSAnalyzer:
     return DummyJSAnalyzer()
 
 
-class TestTreeSitterAnalyzer:
+class TestTreeSitterStyleAnalyzer:
     """Verify the common tree-sitter AST extraction pipeline."""
 
     def test_parses_files_and_calls_extractors(
@@ -112,3 +118,67 @@ class TestTreeSitterAnalyzer:
         assert len(results) == 1
         assert results[0].category == "dummy_cat"
         assert results[0].sample_size == 1
+
+
+def test_the_old_base_name_is_gone() -> None:
+    with pytest.raises(ImportError):
+        from specweaver.assurance.standards.tree_sitter_base import (  # noqa: F401
+            TreeSitterAnalyzer,
+        )
+
+
+def test_file_weight_of_a_missing_file_uses_the_current_time(tmp_path: Path) -> None:
+    assert file_weight(tmp_path / "gone.py", 180) > 0.9
+
+
+@pytest.mark.parametrize(
+    ("counts", "expected"),
+    [({}, 0.0), ({"snake_case": 10}, 1.0), ({"snake_case": 7, "camelCase": 3}, 0.7)],
+)
+def test_compute_confidence_is_the_dominant_share(counts: dict[str, int], expected: float) -> None:
+    from collections import Counter
+
+    assert compute_confidence(Counter(counts)) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("name", "style"),
+    [
+        ("__init__", "dunder"),
+        ("__str__", "dunder"),
+        ("MyClass", "PascalCase"),
+        ("AbstractBase", "PascalCase"),
+        ("get_user", "snake_case"),
+        ("process_data_v2", "snake_case"),
+        ("getUserName", "camelCase"),
+        ("processData", "camelCase"),
+        ("MAX_RETRIES", "UPPER_SNAKE"),
+        ("DB_HOST", "UPPER_SNAKE"),
+        ("_private_func", "other"),
+        ("__double_private", "other"),
+    ],
+)
+def test_classify_name(name: str, style: str) -> None:
+    assert classify_name(name) == style
+
+
+def test_vote_result_names_each_winner_and_takes_the_first_share() -> None:
+    from collections import Counter
+
+    result = vote_result(
+        "naming", 9, function_style=Counter(snake=3, camel=1), class_style=Counter(Pascal=5)
+    )
+
+    assert result.category == "naming"
+    assert result.dominant == {"function_style": "snake", "class_style": "Pascal"}
+    assert result.confidence == pytest.approx(0.75)
+    assert result.sample_size == 9
+
+
+def test_vote_result_leaves_out_an_empty_vote() -> None:
+    from collections import Counter
+
+    result = vote_result("naming", 2, function_style=Counter(), class_style=Counter(Pascal=2))
+
+    assert result.dominant == {"class_style": "Pascal"}
+    assert result.confidence == 0.0

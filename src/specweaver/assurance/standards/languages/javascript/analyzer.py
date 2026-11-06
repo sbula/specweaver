@@ -12,11 +12,11 @@ import logging
 from collections import Counter
 from typing import TYPE_CHECKING
 
-from specweaver.assurance.standards.analyzer import CategoryResult
-from specweaver.assurance.standards.languages.python.analyzer import (
-    _classify_name,
+from specweaver.assurance.standards.tree_sitter_base import (
+    TreeSitterStyleAnalyzer,
+    classify_name,
+    vote_result,
 )
-from specweaver.assurance.standards.tree_sitter_base import TreeSitterAnalyzer
 from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScriptCodeStructure
 
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
     import tree_sitter
 
+    from specweaver.assurance.standards.analyzer import CategoryResult
     from specweaver.workspace.ast.parsers.interfaces import CodeStructureInterface
 
 from specweaver.assurance.standards._documentation import documentation_result
@@ -96,7 +97,7 @@ def _is_test_block_call(node: tree_sitter.Node) -> bool:
     return func.text.decode("utf-8") in _TEST_BLOCK_NAMES
 
 
-class JSStandardsAnalyzer(TreeSitterAnalyzer):
+class JSStandardsAnalyzer(TreeSitterStyleAnalyzer):
     """Extract coding standards from Javascript source files via tree-sitter."""
 
     def language_name(self) -> str:
@@ -128,16 +129,6 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
             self._extract_async_patterns,
         ]
 
-    def _compute_confidence(self, counter: Counter[str]) -> float:
-        """Compute confidence as the fraction of the dominant pattern."""
-        if not counter:
-            return 0.0
-        total = sum(counter.values())
-        if total == 0:
-            return 0.0
-        dominant_count = counter.most_common(1)[0][1]
-        return dominant_count / total
-
     # ------------------------------------------------------------------
     # Extractors
     # ------------------------------------------------------------------
@@ -161,17 +152,8 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                         class_styles[style] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if func_styles:
-            dominant["function_style"] = func_styles.most_common(1)[0][0]
-        if class_styles:
-            dominant["class_style"] = class_styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="naming",
-            dominant=dominant,
-            confidence=self._compute_confidence(func_styles) if func_styles else 0.0,
-            sample_size=sample_size,
+        return vote_result(
+            "naming", sample_size, function_style=func_styles, class_style=class_styles
         )
 
     @staticmethod
@@ -180,7 +162,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
         if node.type == "function_declaration":
             name_node = node.child_by_field_name("name")
             if name_node and name_node.text:
-                return ("func", _classify_name(name_node.text.decode("utf-8")))
+                return ("func", classify_name(name_node.text.decode("utf-8")))
         elif node.type == "variable_declarator":
             name_node = node.child_by_field_name("name")
             value_node = node.child_by_field_name("value")
@@ -190,11 +172,11 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                 and value_node
                 and value_node.type in ("arrow_function", "function", "function_expression")
             ):
-                return ("func", _classify_name(name_node.text.decode("utf-8")))
+                return ("func", classify_name(name_node.text.decode("utf-8")))
         elif node.type == "class_declaration":
             name_node = node.child_by_field_name("name")
             if name_node and name_node.text:
-                return ("class", _classify_name(name_node.text.decode("utf-8")))
+                return ("class", classify_name(name_node.text.decode("utf-8")))
         return None
 
     def _extract_error_handling(
@@ -211,16 +193,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     styles["specific" if is_specific else "bare"] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["exception_style"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="error_handling",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("error_handling", sample_size, exception_style=styles)
 
     @staticmethod
     def _is_specific_catch(node: tree_sitter.Node) -> bool:
@@ -272,16 +245,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                         styles["commonjs"] += round(w)
                         sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["style"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="import_patterns",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("import_patterns", sample_size, style=styles)
 
     def _extract_async_patterns(
         self, parsed_files: list[tuple[Path, float, tree_sitter.Tree]]
@@ -297,16 +261,7 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     styles[pattern] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["style"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="async_patterns",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("async_patterns", sample_size, style=styles)
 
     @staticmethod
     def _classify_async_node(node: tree_sitter.Node) -> str | None:
@@ -339,9 +294,4 @@ class JSStandardsAnalyzer(TreeSitterAnalyzer):
                     frameworks["jest/mocha"] += round(weight)
                     sample_size += 1
 
-        return CategoryResult(
-            category="test_patterns",
-            dominant={"framework": frameworks.most_common(1)[0][0]} if frameworks else {},
-            confidence=self._compute_confidence(frameworks) if frameworks else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("test_patterns", sample_size, framework=frameworks)

@@ -452,7 +452,7 @@ class TestTestPatternsExtraction:
 
 
 # ---------------------------------------------------------------------------
-# _parse_file / _file_weight / _compute_confidence — edge cases
+# _parse_file — edge cases
 # ---------------------------------------------------------------------------
 
 
@@ -481,99 +481,6 @@ class TestHelperEdgeCases:
         # Should not raise — errors="replace" handles it
         result = analyzer._parse_file(f)
         assert result is not None
-
-    def test_file_weight_oserror_uses_current_time(
-        self,
-        analyzer: PythonStandardsAnalyzer,
-        tmp_path: Path,
-        monkeypatch,
-    ) -> None:
-        """If stat() fails, _file_weight should use time.time()."""
-
-        f = tmp_path / "gone.py"
-        f.write_text("pass")
-        # Remove the file so stat() fails
-        f.unlink()
-
-        # _file_weight catches OSError and uses time.time()
-        weight = analyzer._file_weight(f, 180)
-        # Weight should be ≈ 1.0 because it uses current time
-        assert weight > 0.9
-
-    def test_compute_confidence_empty_counter(
-        self,
-        analyzer: PythonStandardsAnalyzer,
-    ) -> None:
-        """Empty Counter → 0.0."""
-        from collections import Counter
-
-        assert analyzer._compute_confidence(Counter()) == 0.0
-
-    def test_compute_confidence_unanimous(
-        self,
-        analyzer: PythonStandardsAnalyzer,
-    ) -> None:
-        """All votes for one style → confidence 1.0."""
-        from collections import Counter
-
-        c = Counter({"snake_case": 10.0})
-        assert analyzer._compute_confidence(c) == 1.0
-
-    def test_compute_confidence_mixed(
-        self,
-        analyzer: PythonStandardsAnalyzer,
-    ) -> None:
-        """Mixed votes → confidence < 1.0."""
-        from collections import Counter
-
-        c = Counter({"snake_case": 7.0, "camelCase": 3.0})
-        conf = analyzer._compute_confidence(c)
-        assert conf == pytest.approx(0.7, abs=0.01)
-
-
-# ---------------------------------------------------------------------------
-# _classify_name — all branches
-# ---------------------------------------------------------------------------
-
-
-class TestClassifyName:
-    """Test _classify_name for every return branch."""
-
-    def test_dunder_name(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("__init__") == "dunder"
-        assert _classify_name("__str__") == "dunder"
-
-    def test_pascal_case(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("MyClass") == "PascalCase"
-        assert _classify_name("AbstractBase") == "PascalCase"
-
-    def test_snake_case(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("get_user") == "snake_case"
-        assert _classify_name("process_data_v2") == "snake_case"
-
-    def test_camel_case(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("getUserName") == "camelCase"
-        assert _classify_name("processData") == "camelCase"
-
-    def test_upper_snake(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("MAX_RETRIES") == "UPPER_SNAKE"
-        assert _classify_name("DB_HOST") == "UPPER_SNAKE"
-
-    def test_other_fallback(self) -> None:
-        from specweaver.assurance.standards.languages.python.analyzer import _classify_name
-
-        assert _classify_name("_private_func") == "other"
-        assert _classify_name("__double_private") == "other"
 
 
 # ---------------------------------------------------------------------------

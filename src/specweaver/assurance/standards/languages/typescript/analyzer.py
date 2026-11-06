@@ -18,6 +18,7 @@ from specweaver.assurance.standards.languages.javascript.analyzer import (
     JSStandardsAnalyzer,
     walk_tree,
 )
+from specweaver.assurance.standards.tree_sitter_base import vote_result
 from specweaver.commons.languages import LANGUAGE_SUFFIXES
 
 if TYPE_CHECKING:
@@ -99,13 +100,4 @@ class TSStandardsAnalyzer(JSStandardsAnalyzer):
                     styles["type_alias"] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["declaration"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="typescript_types",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("typescript_types", sample_size, declaration=styles)

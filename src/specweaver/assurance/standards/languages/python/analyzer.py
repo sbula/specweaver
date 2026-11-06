@@ -14,13 +14,15 @@ from __future__ import annotations
 
 import ast
 import logging
-import re
-import time
 from collections import Counter
 from typing import TYPE_CHECKING
 
 from specweaver.assurance.standards.analyzer import CategoryResult, StandardsAnalyzer
-from specweaver.assurance.standards.recency import recency_weight
+from specweaver.assurance.standards.tree_sitter_base import (
+    classify_name,
+    file_weight,
+    vote_result,
+)
 from specweaver.commons.languages import LANGUAGE_SUFFIXES
 
 if TYPE_CHECKING:
@@ -38,21 +40,6 @@ _CATEGORIES = [
     "import_patterns",
     "test_patterns",
 ]
-
-
-def _classify_name(name: str) -> str:
-    """Classify an identifier's casing style."""
-    if name.startswith("__") and name.endswith("__"):
-        return "dunder"
-    if re.match(r"^[A-Z][a-zA-Z0-9]*$", name):
-        return "PascalCase"
-    if re.match(r"^[a-z][a-z0-9]*(_[a-z0-9]+)*$", name):
-        return "snake_case"
-    if re.match(r"^[a-z][a-zA-Z0-9]*$", name):
-        return "camelCase"
-    if re.match(r"^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$", name):
-        return "UPPER_SNAKE"
-    return "other"
 
 
 #: Test frameworks recognised from an import, longest-prefix irrelevant — both are top-level names.
@@ -90,7 +77,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
             tree = self._parse_file(path)
             if tree is None:
                 continue
-            w = self._file_weight(path, half_life_days)
+            w = file_weight(path, half_life_days)
             parsed_files.append((path, w, tree))
 
         extractors = [
@@ -128,27 +115,18 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     if not node.name.startswith("_"):
-                        style = _classify_name(node.name)
+                        style = classify_name(node.name)
                         func_styles[style] += round(w)
                         sample_size += 1
                 elif isinstance(node, ast.ClassDef):
-                    style = _classify_name(node.name)
+                    style = classify_name(node.name)
                     class_styles[style] += round(w)
                     sample_size += 1
 
             total_weight += w
 
-        dominant: dict[str, str] = {}
-        if func_styles:
-            dominant["function_style"] = func_styles.most_common(1)[0][0]
-        if class_styles:
-            dominant["class_style"] = class_styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="naming",
-            dominant=dominant,
-            confidence=self._compute_confidence(func_styles) if func_styles else 0.0,
-            sample_size=sample_size,
+        return vote_result(
+            "naming", sample_size, function_style=func_styles, class_style=class_styles
         )
 
     def _extract_error_handling(
@@ -167,16 +145,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                         styles["specific"] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["exception_style"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="error_handling",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("error_handling", sample_size, exception_style=styles)
 
     def _extract_type_hints(
         self,
@@ -194,16 +163,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                     typed["yes" if has_annotations else "no"] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if typed:
-            dominant["usage"] = typed.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="type_hints",
-            dominant=dominant,
-            confidence=self._compute_confidence(typed) if typed else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("type_hints", sample_size, usage=typed)
 
     def _extract_docstrings(
         self,
@@ -237,16 +197,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                         styles["absolute"] += round(w)
                     sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if styles:
-            dominant["style"] = styles.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="import_patterns",
-            dominant=dominant,
-            confidence=self._compute_confidence(styles) if styles else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("import_patterns", sample_size, style=styles)
 
     def _extract_test_patterns(
         self,
@@ -264,16 +215,7 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
                 frameworks[framework] += round(w)
                 sample_size += 1
 
-        dominant: dict[str, str] = {}
-        if frameworks:
-            dominant["framework"] = frameworks.most_common(1)[0][0]
-
-        return CategoryResult(
-            category="test_patterns",
-            dominant=dominant,
-            confidence=self._compute_confidence(frameworks) if frameworks else 0.0,
-            sample_size=sample_size,
-        )
+        return vote_result("test_patterns", sample_size, framework=frameworks)
 
     @staticmethod
     def _detect_test_framework(tree: ast.Module) -> str | None:
@@ -297,24 +239,3 @@ class PythonStandardsAnalyzer(StandardsAnalyzer):
         except SyntaxError:
             logger.debug("Skipping %s: syntax error", path)
             return None
-
-    @staticmethod
-    def _file_weight(path: Path, half_life_days: float) -> float:
-        """Get recency weight for a file."""
-        try:
-            mtime = path.stat().st_mtime
-        except OSError as exc:
-            logger.debug("Failed to stat %s: %s", path, exc)
-            mtime = time.time()
-        return recency_weight(mtime, half_life_days=half_life_days)
-
-    @staticmethod
-    def _compute_confidence(counter: Counter[str]) -> float:
-        """Compute confidence as the fraction of the dominant pattern."""
-        if not counter:
-            return 0.0
-        total = sum(counter.values())
-        if total == 0:
-            return 0.0
-        dominant_count = counter.most_common(1)[0][1]
-        return dominant_count / total
