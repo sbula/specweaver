@@ -3,7 +3,7 @@
 
 """Tests for native ecosystem framework schemas."""
 
-from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
+from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas
 
 
 def test_load_all_ecosystem_frameworks() -> None:

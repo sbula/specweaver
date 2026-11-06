@@ -6,7 +6,8 @@ level: module
 purpose: >
   Project discovery, scaffolding, and constitution management
   (find project root, create directory structures, load and validate constitution files), and the
-  prepare plan: which toolchain and test runner a project declares.
+  prepare plan: which toolchain and test runner a project declares; the project profile and each
+  file's framework, from the evaluator schemas (packaged and the project's own).
 
 archetype: adapter
 
@@ -36,6 +37,11 @@ exposes:
   - is_unmodified_starter
   - ConstitutionInfo
   - read_project_profile
+  - load_evaluator_schemas
+  - framework_for
+  - FrameworkAnswer
+  - languages_of
+  - missing_schema
 
 # -- Operational Metadata --------------------------------------------------
 operational:

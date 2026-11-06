@@ -4,7 +4,7 @@
 name: evaluators
 level: module
 purpose: >
-  The evaluator schema for each framework, as YAML in `frameworks/`; `sandbox/evaluator_schemas.py`
+  The evaluator schema for each framework, as YAML in `frameworks/`; `workspace/project/evaluator_schemas.py`
   reads it as a package resource.
 
 archetype: data

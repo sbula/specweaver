@@ -21,9 +21,11 @@ consumes:
   - specweaver/core/config
   - specweaver/infrastructure/llm
   - specweaver/sandbox
+  - specweaver/workspace/project
 widens:
   specweaver/infrastructure/llm: "asks the model for the drift root cause"
   specweaver/sandbox: "runs the QA, structure and protocol atoms and the project boundary"
+  specweaver/workspace/project: "reads the project profile and each file's framework (TECH-079 AD-2)"
 
 exposes:
   - drift_analysis

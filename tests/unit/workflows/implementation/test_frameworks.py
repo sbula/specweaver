@@ -8,7 +8,7 @@ Proves: D-INTL-08 FR-8
 | Bucket | Case |
 |---|---|
 | Happy | each of the six shipped frameworks has its idioms and test style; the archetype names the framework; the profile's build-file framework brings its guide |
-| Boundary | Spring Boot wins over Spring; an archetype that is no framework falls to the build file; a project-only framework is found through its archetype; nothing found is none |
+| Boundary | Spring Boot wins over Spring; an archetype that is no framework falls to the build file; a project-only framework is found through its archetype when it has a schema; nothing found is none |
 | Degradation | a project file missing a section is refused, naming it |
 | Hostile | an archetype for another language is ignored; a path-like archetype is never read as a file |
 """
@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.workflows.implementation.frameworks import project_framework
 from specweaver.workflows.implementation.languages import framework_guide
 
@@ -43,12 +44,10 @@ def test_each_framework_names_its_test_style(key: str, expected: tuple[str, str]
     assert guide.name == expected[0]
     assert expected[1] in guide.tests
     assert guide.code
-    assert guide.languages
 
 
 _OWN = """---
 name: Micronaut
-languages: java, kotlin
 ---
 # Code
 Use Micronaut beans.
@@ -98,27 +97,39 @@ def _code(root: Path, archetype: str | None = None) -> Path:
     return folder / "Greeter.java"
 
 
+def _profile(language: str = "java", framework: str = "") -> ProjectProfile:
+    build_tool = {"java": "maven", "kotlin": "gradle", "rust": "cargo", "python": "uv"}
+    return ProjectProfile(language, build_tool.get(language, "npm"), framework)
+
+
 def _name(choice: object) -> str | None:
     return None if choice is None else choice.guide.name  # type: ignore[attr-defined]
 
 
 def test_the_archetype_names_the_framework(tmp_path: Path) -> None:
-    choice = project_framework(tmp_path, _code(tmp_path, "quarkus"), "java", "spring-boot")
+    choice = project_framework(
+        tmp_path, _code(tmp_path, "quarkus"), _profile("java", "spring-boot")
+    )
 
     assert _name(choice) == "Quarkus"
     assert choice.source == "archetype"  # type: ignore[union-attr]
 
 
-def test_a_project_only_framework_comes_from_its_archetype(tmp_path: Path) -> None:
+def test_a_project_only_framework_needs_its_schema(tmp_path: Path) -> None:
     _own(tmp_path, "micronaut")
+    schema = tmp_path / ".specweaver" / "evaluators" / "micronaut.yaml"
+    schema.parent.mkdir(parents=True)
+    schema.write_text("metadata:\n  supported_languages: [java]\n", encoding="utf-8")
 
-    choice = project_framework(tmp_path, _code(tmp_path, "micronaut"), "java", "")
+    choice = project_framework(tmp_path, _code(tmp_path, "micronaut"), _profile())
 
     assert _name(choice) == "Micronaut"
 
 
 def test_an_archetype_that_is_no_framework_falls_to_the_build_file(tmp_path: Path) -> None:
-    choice = project_framework(tmp_path, _code(tmp_path, "orchestrator"), "java", "spring-boot")
+    choice = project_framework(
+        tmp_path, _code(tmp_path, "orchestrator"), _profile("java", "spring-boot")
+    )
 
     assert _name(choice) == "Spring Boot"
     assert choice.source == "build file"  # type: ignore[union-attr]
@@ -128,28 +139,51 @@ def test_an_archetype_for_another_language_is_ignored(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "context.yaml").write_text("archetype: spring-boot\n", encoding="utf-8")
 
-    assert project_framework(tmp_path, tmp_path / "src" / "greeter.py", "python", "") is None
+    assert project_framework(tmp_path, tmp_path / "src" / "greeter.py", _profile("python")) is None
 
 
 @pytest.mark.parametrize(
-    ("key", "language", "expected"),
+    ("key", "language", "code", "expected"),
     [
-        ("quarkus", "kotlin", "Quarkus"),
-        ("spring", "java", "Spring"),
-        ("actix-web", "rust", "Actix-web"),
-        ("fastapi", "python", "FastAPI"),
-        ("nestjs", "typescript", "NestJS"),
+        ("quarkus", "kotlin", "x.kt", "Quarkus"),
+        ("spring", "java", "X.java", "Spring"),
+        ("actix-web", "rust", "x.rs", "Actix-web"),
+        ("fastapi", "python", "x.py", "FastAPI"),
+        ("nestjs", "typescript", "x.ts", "NestJS"),
     ],
 )
 def test_the_build_file_framework_brings_its_guide(
-    tmp_path: Path, key: str, language: str, expected: str
+    tmp_path: Path, key: str, language: str, code: str, expected: str
 ) -> None:
-    assert _name(project_framework(tmp_path, tmp_path / "src" / "x", language, key)) == expected
+    choice = project_framework(tmp_path, tmp_path / "src" / code, _profile(language, key))
+
+    assert _name(choice) == expected
 
 
 def test_no_archetype_and_no_build_file_framework_is_none(tmp_path: Path) -> None:
-    assert project_framework(tmp_path, tmp_path / "src" / "X.java", "java", "") is None
+    assert project_framework(tmp_path, tmp_path / "src" / "X.java", _profile()) is None
 
 
-def test_a_build_file_framework_without_a_guide_is_none(tmp_path: Path) -> None:
-    assert project_framework(tmp_path, tmp_path / "src" / "X.java", "java", "micronaut") is None
+def test_a_framework_without_a_guide_brings_no_guidance(tmp_path: Path) -> None:
+    schema = tmp_path / ".specweaver" / "evaluators" / "inhouse.yaml"
+    schema.parent.mkdir(parents=True)
+    schema.write_text("metadata:\n  framework: inhouse\n", encoding="utf-8")
+
+    assert project_framework(tmp_path, _code(tmp_path), _profile("java", "inhouse")) is None
+
+
+def test_no_shipped_guide_declares_its_languages() -> None:
+    """Proves: TECH-079 FR-11"""
+    from pathlib import Path as RealPath
+
+    from specweaver.workflows.implementation import languages
+
+    guides = RealPath(languages.__file__).parent.parent / "frameworks"
+    declaring = [
+        guide.name
+        for guide in sorted(guides.glob("*.md"))
+        if any(line.startswith("languages:") for line in guide.read_text("utf-8").splitlines())
+    ]
+
+    assert sorted(guides.glob("*.md"))
+    assert declaring == []

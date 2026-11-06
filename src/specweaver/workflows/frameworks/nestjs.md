@@ -1,6 +1,5 @@
 ---
 name: NestJS
-languages: typescript
 ---
 # Code
 ## Framework: NestJS

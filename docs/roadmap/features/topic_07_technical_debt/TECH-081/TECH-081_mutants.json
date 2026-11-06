@@ -204,10 +204,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/dispatcher.py",
           "symbol": "ToolDispatcher._build_ast_kwargs",
-          "old": "        from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas",
-          "new": "        from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas\n        from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator  # noqa: F401",
+          "old": "        from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas",
+          "new": "        from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas\n        from specweaver.workflows.scenarios.scenario_generator import ScenarioGenerator  # noqa: F401",
           "breaks": "the sandbox imports a workflow again",
-          "symbol_sha": "sha256:5174af6f4216bc9e733fdf89de6b550c86f6001793394ec91b0b162d63fb0f37"
+          "symbol_sha": "sha256:6ad68b5aeb598bdcdddd9455c4f27974a5a32552b0052bd31e97fe0fea7d060d"
         },
         {
           "id": "security-imports-runcontext",

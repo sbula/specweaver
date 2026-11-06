@@ -28,7 +28,6 @@ consumes:
   - specweaver/sandbox/language/core
   - specweaver/sandbox/code_structure/core
   - specweaver/sandbox/execution/core
-  - specweaver/sandbox/evaluator_schemas
   - specweaver/sandbox/protocol/core
   - specweaver/sandbox/mcp/core
   - specweaver/workflows/arbitration

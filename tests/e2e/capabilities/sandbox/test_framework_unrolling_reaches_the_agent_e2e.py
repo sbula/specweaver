@@ -35,8 +35,8 @@ import pytest
 
 from specweaver.sandbox.code_structure.core.atom import CodeStructureAtom
 from specweaver.sandbox.code_structure.interfaces.tool import CodeStructureTool
-from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
 from specweaver.sandbox.security import AccessMode, FolderGrant
+from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas
 
 if TYPE_CHECKING:
     from pathlib import Path

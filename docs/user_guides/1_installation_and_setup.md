@@ -365,14 +365,20 @@ naming its language. The summary counts the skipped rules; if no rule could judg
 prints `NOTHING CHECKED` and exits 1.
 
 **Frameworks.** The model also gets the framework's idioms and test style for Spring, Spring Boot,
-Quarkus, NestJS, Actix-web and FastAPI. The framework is the folder's `context.yaml` `archetype`
-when a framework file of that name exists for the project's language; else it is read from the
-build file (`io.quarkus`, `spring-boot`, `org.springframework` in `pom.xml` / Gradle; `@nestjs/core`
-in `package.json`; `actix-web` in `Cargo.toml`; `fastapi` in `pyproject.toml` or
-`requirements*.txt`). `sw implement` prints `Framework: spring-boot (build file)`. To change one,
-or to add one (say `micronaut`, named by an archetype), write `.specweaver/frameworks/<name>.md`
-with `name:` and `languages:` lines and two `#` sections, `Code` and `Tests`; the shipped files are
-in `src/specweaver/workflows/frameworks/`.
+Quarkus, NestJS, Actix-web and FastAPI. A file's framework is the nearest `context.yaml`
+`framework:` key; else an `archetype:` that names a framework (it still works, with a warning to
+move it to `framework:`); else the one the build file declares for the project's language
+(`io.quarkus`, `spring-boot`, `org.springframework` in `pom.xml` / Gradle; `@nestjs/core` in
+`package.json`; `actix-web` in `Cargo.toml`; `fastapi` in `pyproject.toml` or `requirements*.txt`).
+It counts only for a file in one of the framework's languages. `sw implement` prints
+`Framework: spring-boot (build file)`.
+
+A framework is a name with an evaluator schema, `workflows/evaluators/frameworks/<name>.yaml`; its
+`metadata.supported_languages` are the framework's languages (none named: any file). To add one
+(say `micronaut`), write `.specweaver/evaluators/micronaut.yaml` and
+`.specweaver/frameworks/micronaut.md` with a `name:` line and two `#` sections, `Code` and `Tests`.
+A guide without a schema is not used, and a warning names the missing schema. The shipped guides
+are in `src/specweaver/workflows/frameworks/`.
 
 ## 7. Model Context Protocol (MCP) & Vault Configuration
 

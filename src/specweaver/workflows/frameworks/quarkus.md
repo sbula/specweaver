@@ -1,6 +1,5 @@
 ---
 name: Quarkus
-languages: java, kotlin
 ---
 # Code
 ## Framework: Quarkus

@@ -94,7 +94,7 @@
           "old": "        needs_profile=True,\n    )\n    # The task's files",
           "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"profile\": None, \"undecided\": None})\n    # The task's files",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:96b7d62e4177a94d980cce096b0cef1013ceacdda7df50e80f3e5a92ffb6315e"
+          "symbol_sha": "sha256:6f2520b3141e0c7834295a14c005bd72f5b59235147a5d20fe0834433621333e"
         },
         {
           "id": "api-names-no-language",
@@ -333,7 +333,7 @@
           "old": "guide = language_guide(files.language, context.project_path)",
           "new": "guide = language_guide(\"python\", context.project_path)",
           "breaks": "a Java project is prompted for Python",
-          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
+          "symbol_sha": "sha256:590a6942880ce3a68a3ccaaeed8f42372f2970d1f6305eab167367e79e66cbe4"
         },
         {
           "id": "tag-always-python",
@@ -383,7 +383,7 @@
           "old": "                declare_rust_module(context.project_path, files)\n",
           "new": "                pass\n",
           "breaks": "tests/<stem>.rs cannot reach the module",
-          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
+          "symbol_sha": "sha256:590a6942880ce3a68a3ccaaeed8f42372f2970d1f6305eab167367e79e66cbe4"
         },
         {
           "id": "contract-detects-again",
@@ -544,12 +544,12 @@
         {
           "id": "archetype-ignored",
           "origin": "authored",
-          "file": "src/specweaver/workflows/implementation/frameworks.py",
-          "symbol": "project_framework",
-          "old": "    if archetype:\n",
-          "new": "    if False:\n",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "framework_for",
+          "old": "        (\"archetype\", resolver.resolve(path)),\n",
+          "new": "        (\"archetype\", None),\n",
           "breaks": "a quarkus folder is judged by its build file only",
-          "symbol_sha": "sha256:253b1801a3db64116bcb034a82124338d2c1b82ece9d8e485a3184afd6f2279e"
+          "symbol_sha": "sha256:4a9c9f225957dcb5d92b791da74764a2e66962f0afaf57354f05f192de42f559"
         },
         {
           "id": "detection-none",
@@ -574,12 +574,12 @@
         {
           "id": "language-check-dropped",
           "origin": "authored",
-          "file": "src/specweaver/workflows/implementation/frameworks.py",
-          "symbol": "project_framework",
-          "old": "if guide is not None and language in guide.languages:",
-          "new": "if guide is not None:",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "framework_for",
+          "old": "        if languages and language_of(path.name) not in languages:\n",
+          "new": "        if False:\n",
           "breaks": "a spring-boot folder makes a Python run write Spring",
-          "symbol_sha": "sha256:253b1801a3db64116bcb034a82124338d2c1b82ece9d8e485a3184afd6f2279e"
+          "symbol_sha": "sha256:4a9c9f225957dcb5d92b791da74764a2e66962f0afaf57354f05f192de42f559"
         },
         {
           "id": "framework-not-shown",
@@ -589,7 +589,7 @@
           "old": "    if framework is not None:\n",
           "new": "    if False:\n",
           "breaks": "sw implement does not say which framework it used",
-          "symbol_sha": "sha256:da6cacab22f1d63c55cfcadf0f568742a1e8fc3af7d830c14f7f50d76df1fa7e"
+          "symbol_sha": "sha256:8bcdb66fb4a85b43ee4787040012c49e46ff7d9d06450ac4c7dcd4731c72bc0c"
         }
       ]
     },

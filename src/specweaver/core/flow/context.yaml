@@ -22,7 +22,6 @@ consumes:
   - specweaver/sandbox/language/core
   - specweaver/sandbox/filesystem/core
   - specweaver/sandbox/protocol/core
-  - specweaver/sandbox/evaluator_schemas
   - specweaver/core/config
   - specweaver/core/flow/store
   - specweaver/workspace/memory

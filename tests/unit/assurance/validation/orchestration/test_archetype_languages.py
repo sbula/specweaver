@@ -64,7 +64,7 @@ def test_every_language_has_a_parser() -> None:
 
 
 def test_every_shipped_archetype_names_known_languages() -> None:
-    from specweaver.sandbox.evaluator_schemas import load_evaluator_schemas
+    from specweaver.workspace.project.evaluator_schemas import load_evaluator_schemas
 
     for archetype in load_evaluator_schemas():
         languages_of(archetype, None)

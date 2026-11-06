@@ -1,6 +1,5 @@
 ---
 name: Actix-web
-languages: rust
 ---
 # Code
 ## Framework: Actix-web

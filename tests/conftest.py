@@ -110,3 +110,25 @@ def _no_real_network(request: pytest.FixtureRequest) -> Iterator[None]:
         return
     with block_real_httpx2():
         yield
+
+
+@pytest.fixture(autouse=True)
+def _specweaver_logger_restored() -> Iterator[None]:
+    """Each test gets back the `specweaver` logger it started with: level, handlers, project tag.
+
+    `setup_logging` (any CLI test runs it) sets that logger's level, and `caplog.at_level` sets only
+    the root's, so a later test's DEBUG records were dropped before caplog saw them. Which tests
+    failed depended on how xdist spread the files (measured 2026-11-06).
+    """
+    import logging
+
+    logger = logging.getLogger("specweaver")
+    level, handlers = logger.level, list(logger.handlers)
+    project = getattr(logger, "_sw_project", None)
+    yield
+    logger.setLevel(level)
+    logger.handlers[:] = handlers
+    if project is None:
+        logger.__dict__.pop("_sw_project", None)
+    else:
+        logger._sw_project = project  # type: ignore[attr-defined]

@@ -34,7 +34,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.core.config",]
 
 [[modules]]
 path = "specweaver.assurance.validation.orchestration"
-depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.sandbox",]
+depends_on = [ "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.assurance.validation.interfaces"
@@ -114,7 +114,7 @@ depends_on = [ "specweaver.interfaces.run_doors", "specweaver.interfaces.cli_kit
 
 [[modules]]
 path = "specweaver.workflows.implementation"
-depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm",]
+depends_on = [ "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.workflows.implementation.interfaces"
@@ -150,7 +150,7 @@ depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.context
 
 [[modules]]
 path = "specweaver.workspace.project"
-depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.analyzers", "specweaver.workspace.ast.parsers",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.workspace.analyzers", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
@@ -215,7 +215,7 @@ expose = [ "graph_adapter", "graph_adapter.extract_ast_dict", "graph_adapter.par
 
 [[interfaces]]
 from = [ "specweaver.workspace.project",]
-expose = [ "constitution", "constitution.find_constitution", "constitution.check_constitution", "constitution.generate_constitution", "constitution.generate_constitution_from_standards", "scaffold", "scaffold.scaffold_project", "discovery", "discovery.resolve_project_path", "tach_sync", "tach_sync.sync_tach_toml", "constitution.CONSTITUTION_FILENAME", "constitution.is_unmodified_starter", "prepare_plan.DEFAULT_GROUP", "prepare_plan.LAST_RESORT_RUNNER", "prepare_plan.PreparePlan", "prepare_plan.plan_for", "project_profile.read_project_profile", "tooling_sources.ToolingSource",]
+expose = [ "constitution", "constitution.find_constitution", "constitution.check_constitution", "constitution.generate_constitution", "constitution.generate_constitution_from_standards", "scaffold", "scaffold.scaffold_project", "discovery", "discovery.resolve_project_path", "tach_sync", "tach_sync.sync_tach_toml", "constitution.CONSTITUTION_FILENAME", "constitution.is_unmodified_starter", "prepare_plan.DEFAULT_GROUP", "prepare_plan.LAST_RESORT_RUNNER", "prepare_plan.PreparePlan", "prepare_plan.plan_for", "project_profile.read_project_profile", "tooling_sources.ToolingSource", "evaluator_schemas.load_evaluator_schemas", "frameworks.framework_for", "frameworks.FrameworkAnswer", "frameworks.languages_of", "frameworks.missing_schema",]
 
 [[interfaces]]
 from = [ "specweaver.workspace.context",]
@@ -235,7 +235,7 @@ expose = [ "models", "models.GenerationConfig", "models.Message", "models.Role",
 
 [[interfaces]]
 from = [ "specweaver.sandbox",]
-expose = [ "dispatcher", "security", "base", "git.core", "git.interfaces", "filesystem.core", "filesystem.interfaces", "qa_runner.core", "qa_runner.interfaces", "mcp.core", "mcp.interfaces", "protocol.core", "protocol.interfaces", "web.interfaces", "language.core", "code_structure.core", "code_structure.interfaces", "registry", "language.core.atom.LanguageAtom", "code_structure.core.atom.CodeStructureAtom", "security.WorkspaceBoundary", "security.PROTECTED_NAMES", "language.core.scenario_converter_factory.create_scenario_converter", "dispatcher.ToolDispatcher", "git.core.atom.GitAtom", "base.AtomStatus", "qa_runner.core.atom.QARunnerAtom", "qa_runner.core.atom.container_available", "language.core.runner_factory.qa_atom", "language.core.runner_factory.architecture_atom", "language.core.stack_trace_filter_factory.create_stack_trace_filter", "mcp.core.atom.MCPAtom", "filesystem.core.atom.FileSystemAtom", "execution.core", "execution.core.atom.BashActionAtom", "execution.core.atom.bash_param_errors", "protocol.core.atom.ProtocolAtom", "evaluator_schemas.load_evaluator_schemas", "language.core.toolchain.did_not_run_reason", "execution.executor.SubprocessExecutor",]
+expose = [ "dispatcher", "security", "base", "git.core", "git.interfaces", "filesystem.core", "filesystem.interfaces", "qa_runner.core", "qa_runner.interfaces", "mcp.core", "mcp.interfaces", "protocol.core", "protocol.interfaces", "web.interfaces", "language.core", "code_structure.core", "code_structure.interfaces", "registry", "language.core.atom.LanguageAtom", "code_structure.core.atom.CodeStructureAtom", "security.WorkspaceBoundary", "security.PROTECTED_NAMES", "language.core.scenario_converter_factory.create_scenario_converter", "dispatcher.ToolDispatcher", "git.core.atom.GitAtom", "base.AtomStatus", "qa_runner.core.atom.QARunnerAtom", "qa_runner.core.atom.container_available", "language.core.runner_factory.qa_atom", "language.core.runner_factory.architecture_atom", "language.core.stack_trace_filter_factory.create_stack_trace_filter", "mcp.core.atom.MCPAtom", "filesystem.core.atom.FileSystemAtom", "execution.core", "execution.core.atom.BashActionAtom", "execution.core.atom.bash_param_errors", "protocol.core.atom.ProtocolAtom", "language.core.toolchain.did_not_run_reason", "execution.executor.SubprocessExecutor",]
 
 [[interfaces]]
 from = [ "specweaver.assurance.validation",]

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Which framework a task's code is written for: the folder's archetype, else the build file's."""
+"""Which framework a task's code is written for, and the guide the model is given for it."""
 
 from __future__ import annotations
 
@@ -14,12 +14,14 @@ from specweaver.workflows.implementation.languages import FrameworkGuide, framew
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.commons.project_profile import ProjectProfile
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
 class FrameworkChoice:
-    """The framework's guide, and where it was found: `archetype` or `build file`."""
+    """The framework's guide, and where it was found: `framework`, `archetype` or `build file`."""
 
     key: str
     guide: FrameworkGuide
@@ -27,24 +29,22 @@ class FrameworkChoice:
 
 
 def project_framework(
-    project_root: Path, code_path: Path, language: str, build_framework: str
+    project_root: Path, code_path: Path, profile: ProjectProfile
 ) -> FrameworkChoice | None:
-    """The framework for code at `code_path` in `language`, or None.
+    """The framework for code at `code_path`, with its guide; None without one.
 
-    An archetype counts only when a framework file of that name exists and is for `language`;
-    otherwise `build_framework`, the profile's framework, decides. Raises `ValueError` for a
-    framework file that is incomplete.
+    The answer is `workspace.project.framework_for`'s, the one validation uses. A name with a guide
+    but no evaluator schema is not a framework; a warning names the missing schema. Raises
+    `ValueError` for a framework file that is incomplete.
     """
     from specweaver.core.config.archetype_resolver import ArchetypeResolver
+    from specweaver.workspace.project.frameworks import framework_for, missing_schema
 
-    archetype = ArchetypeResolver(project_root).resolve(code_path)
-    if archetype:
-        guide = framework_guide(archetype, project_root)
-        if guide is not None and language in guide.languages:
-            return FrameworkChoice(archetype, guide, "archetype")
-        if guide is not None:
-            logger.info(
-                "Archetype %r is for %s, not %s: ignored", archetype, guide.languages, language
-            )
-    guide = framework_guide(build_framework, project_root) if build_framework else None
-    return FrameworkChoice(build_framework, guide, "build file") if guide else None
+    answer = framework_for(project_root, code_path, profile)
+    if answer is None:
+        archetype = ArchetypeResolver(project_root).resolve(code_path)
+        if archetype and framework_guide(archetype, project_root) is not None:
+            logger.warning(missing_schema(archetype))
+        return None
+    guide = framework_guide(answer.key, project_root)
+    return FrameworkChoice(answer.key, guide, answer.source) if guide else None

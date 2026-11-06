@@ -1,6 +1,5 @@
 ---
 name: FastAPI
-languages: python
 ---
 # Code
 ## Framework: FastAPI

@@ -405,7 +405,7 @@
           "old": "    if run_state.status == \"parked\":\n",
           "new": "    if False:\n",
           "breaks": "sw implement stopped by the spend brake says the tests did not pass",
-          "symbol_sha": "sha256:96b7d62e4177a94d980cce096b0cef1013ceacdda7df50e80f3e5a92ffb6315e"
+          "symbol_sha": "sha256:6f2520b3141e0c7834295a14c005bd72f5b59235147a5d20fe0834433621333e"
         }
       ]
     },

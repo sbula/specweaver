@@ -30,6 +30,7 @@ class ArchetypeResolver:
         self._project_root = project_root.resolve()
         self._cache: dict[Path, str | None] = {}
         self._plugin_cache: dict[Path, list[str]] = {}
+        self._framework_cache: dict[Path, str | None] = {}
 
     def resolve(self, target_path: Path) -> str | None:
         """The nearest archetype declared at or above `target_path`, or None."""
@@ -63,6 +64,28 @@ class ArchetypeResolver:
             return None
 
         return str(archetype).strip()
+
+    def resolve_framework(self, target_path: Path) -> str | None:
+        """The nearest `framework:` declared at or above `target_path`, or None."""
+        framework, seen = resolve_up_tree(
+            target_path, self._project_root, self._framework_cache, self._parse_framework
+        )
+        for path in seen:
+            self._framework_cache[path] = framework
+        return framework
+
+    def _parse_framework(self, context_file: Path) -> str | None:
+        """The `framework:` string of a context.yaml file; None when absent or unreadable."""
+        try:
+            with context_file.open("r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception as exc:
+            logger.warning(
+                "%s is unreadable, so its framework is not applied: %s", context_file, exc
+            )
+            return None
+        framework = data.get("framework") if isinstance(data, dict) else None
+        return str(framework).strip() if framework is not None else None
 
     def resolve_plugins(self, target_path: Path) -> list[str]:
         """The nearest `plugins` array declared at or above `target_path`, else empty."""

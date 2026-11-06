@@ -244,7 +244,7 @@
           "old": "        needs_profile=True,\n    )\n    # The task's files",
           "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n    # The task's files",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:96b7d62e4177a94d980cce096b0cef1013ceacdda7df50e80f3e5a92ffb6315e"
+          "symbol_sha": "sha256:6f2520b3141e0c7834295a14c005bd72f5b59235147a5d20fe0834433621333e"
         },
         {
           "id": "api-start-skips-the-policy",

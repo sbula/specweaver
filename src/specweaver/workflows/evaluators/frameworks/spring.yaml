@@ -1,0 +1,3 @@
+metadata:
+  framework: spring
+  supported_languages: ["java", "kotlin"]

@@ -555,10 +555,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "_GenerationHandler.execute",
-          "old": "                run_profile(context).framework,\n",
-          "new": "                \"\",\n",
+          "old": "context.project_path / files.code, run_profile(context)",
+          "new": "context.project_path / files.code, None",
           "breaks": "a FastAPI project's tests prompt loses the FastAPI test style",
-          "symbol_sha": "sha256:4cecba5e695c2e8aabf116310d71d7f64168ea711ffc439c50e8a4c7633d572b"
+          "symbol_sha": "sha256:590a6942880ce3a68a3ccaaeed8f42372f2970d1f6305eab167367e79e66cbe4"
         }
       ]
     },
@@ -578,6 +578,80 @@
           "new": "    @(lambda f: f)\n",
           "breaks": "a Kotlin Spring Boot build file is read twice",
           "symbol_sha": "sha256:75cae9748ef25d2e622a453b13640e0dcfd1c71e0e78544a57022a072ba3a52e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "Each file gets one framework answer: framework:, then a framework archetype, then the build file",
+      "scope": [
+        "tests/integration/workspace/project/test_one_framework_answer.py",
+        "tests/unit/workflows/implementation/test_frameworks.py",
+        "tests/integration/core/flow/handlers/test_generation_follows_the_framework.py",
+        "tests/e2e/capabilities/workflows/test_implement_follows_the_framework_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "framework-key-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "framework_for",
+          "old": "        (\"framework\", resolver.resolve_framework(path)),\n",
+          "new": "        (\"framework\", None),\n",
+          "breaks": "a folder's framework: key is never read",
+          "symbol_sha": "sha256:4a9c9f225957dcb5d92b791da74764a2e66962f0afaf57354f05f192de42f559"
+        },
+        {
+          "id": "archetype-move-not-warned",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "framework_for",
+          "old": "            _warn_move(root, key)\n",
+          "new": "            pass\n",
+          "breaks": "a framework archetype works with no hint to move it to framework:",
+          "symbol_sha": "sha256:4a9c9f225957dcb5d92b791da74764a2e66962f0afaf57354f05f192de42f559"
+        },
+        {
+          "id": "unknown-framework-key-silent",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "framework_for",
+          "old": "                logger.warning(missing_schema(key))\n",
+          "new": "                pass\n",
+          "breaks": "framework: micronaut with no schema is dropped without a word",
+          "symbol_sha": "sha256:4a9c9f225957dcb5d92b791da74764a2e66962f0afaf57354f05f192de42f559"
+        },
+        {
+          "id": "guide-without-schema-silent",
+          "origin": "authored",
+          "file": "src/specweaver/workflows/implementation/frameworks.py",
+          "symbol": "project_framework",
+          "old": "            logger.warning(missing_schema(archetype))\n",
+          "new": "            pass\n",
+          "breaks": "a project guide without a schema is dropped without a word",
+          "symbol_sha": "sha256:a5b9296451119a67af67c12a9d5090ec55d9c0137729814718c4328f10599567"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-11",
+      "title": "A framework's languages are declared once, in its evaluator schema",
+      "scope": [
+        "tests/integration/workspace/project/test_one_framework_answer.py",
+        "tests/unit/workflows/implementation/test_frameworks.py",
+        "tests/integration/core/flow/handlers/test_generation_follows_the_framework.py",
+        "tests/e2e/capabilities/workflows/test_implement_follows_the_framework_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "schema-languages-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/frameworks.py",
+          "symbol": "languages_of",
+          "old": "    languages = tuple(str(name) for name in named)\n",
+          "new": "    languages = ()\n",
+          "breaks": "a Spring Boot folder judges a Python file; nestjs loses javascript",
+          "symbol_sha": "sha256:ae90f31f32b4bd31d4facb40c3681572d96d8b4fb2f9c55552ba93d4a4f42075"
         }
       ]
     }

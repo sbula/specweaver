@@ -1,6 +1,5 @@
 ---
 name: Spring Boot
-languages: java, kotlin
 ---
 # Code
 ## Framework: Spring Boot

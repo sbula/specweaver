@@ -1,6 +1,5 @@
 ---
 name: Spring
-languages: java, kotlin
 ---
 # Code
 ## Framework: Spring

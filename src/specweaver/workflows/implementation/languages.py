@@ -4,8 +4,8 @@
 """What the generator tells the model in each language and framework — content, not code.
 
 The text lives in `workflows/languages/<lang>.md` and `workflows/frameworks/<name>.md`; a project's
-`.specweaver/languages/` or `.specweaver/frameworks/` file of the same name replaces it. A file has
-front-matter lines (`name:`, and for a framework `languages:`) and one level-1 heading per section.
+`.specweaver/languages/` or `.specweaver/frameworks/` file of the same name replaces it. A file has a
+`name:` front-matter line and one level-1 heading per section.
 """
 
 from __future__ import annotations
@@ -57,10 +57,10 @@ def language_guide(language: str, project_dir: Path | None = None) -> LanguageGu
 
 @dataclass(frozen=True)
 class FrameworkGuide:
-    """The display name, the languages it is for, and its code idioms and test style."""
+    """The display name, and its code idioms and test style; its languages are its evaluator
+    schema's."""
 
     name: str
-    languages: tuple[str, ...]
     code: str
     tests: str
 
@@ -76,10 +76,7 @@ def framework_guide(name: str, project_dir: Path | None = None) -> FrameworkGuid
     if not path.is_file():
         return None
     front, sections = _parse(path, _FRAMEWORK_SECTIONS)
-    languages = tuple(
-        part.strip() for part in front.get("languages", "").split(",") if part.strip()
-    )
-    return FrameworkGuide(name=front["name"], languages=languages, **sections)
+    return FrameworkGuide(name=front["name"], **sections)
 
 
 def _content(project_dir: Path | None, kind: str, name: str) -> Path:
