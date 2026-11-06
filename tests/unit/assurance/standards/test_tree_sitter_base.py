@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""Tests for the TreeSitterStyleAnalyzer base class and the helpers every style analyzer shares."""
+"""Tests for the TreeSitterStyleAnalyzer base class and the helpers every style analyzer shares.
+
+Proves: TECH-079 FR-16
+"""
 
 from __future__ import annotations
 

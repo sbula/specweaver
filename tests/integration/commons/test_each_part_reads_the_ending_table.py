@@ -3,7 +3,7 @@
 
 """Every part that asks "which language is this file" reads the one table in `commons`.
 
-Proves: TECH-079 FR-12
+Proves: TECH-079 FR-12, FR-16
 
 Real folders and files; each part through its own entry.
 

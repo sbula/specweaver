@@ -250,6 +250,26 @@ None new. tree-sitter and its grammars are already pinned.
 SF-01 and SF-04 can start at once. Then SF-02 and SF-03 (after SF-01) and SF-05 (after SF-04).
 One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 
+## Live Demo
+
+Run 2026-11-06 on a fresh project (`sw init`, `SPECWEAVER_DATA_DIR` and `HOME` in a temp folder):
+
+```bash
+# root: pyproject.toml, package.json, tsconfig.json
+sw sandbox preflight          # exit 1: "the project root has build files for python (pyproject.toml)
+                              #  and typescript (package.json); set [implement] language in specweaver.toml"
+# specweaver.toml: [implement] language = "python"
+sw sandbox preflight          # Environment: uv venv + uv pip install (exit 1 only for its two warnings)
+# src/bom.py saved with a byte order mark
+sw check src/bom.py --level code   # C01, C06, C08 PASS
+sw standards scan             # naming, type_hints 100%; docstrings 50% (the BOM file is counted)
+```
+
+No model is called, so the nightly real-model run has nothing to add; the same journeys run in
+`tests/integration/workspace/project/test_read_project_profile.py`,
+`tests/integration/assurance/validation/test_check_reads_a_bom.py` and
+`tests/integration/assurance/standards/test_python_style_results_pinned.py`.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
@@ -296,7 +316,7 @@ check and by C01, C06, C08 (FR-18, added); JavaScript and TypeScript keep readin
 the Python style analyzer reads with tree-sitter and gives `ast`'s results (same on the repo's 1,776
 files); C01, C06 and C08 read a leading BOM. Found at dev: tree-sitter keeps escapes in the string
 content, so the docstring check decodes them.
-**Next step**: the closure gate (`specweaver-feature` Phase 4): FR ledger, feature tests, demo,
-README counts, the finished message.
+**Closure gate 2026-11-06**: FR ledger 18 of 18, feature tests green, demo above, README recounted.
+**Next step**: the user's sign-off; then `Status: COMPLETE` and `.agents/STATE.md`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
