@@ -255,7 +255,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | One framework answer | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | One framework answer | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -276,6 +276,7 @@ session isolation never turns off for an undecided project.
 factory takes the language from one table; the sandbox takes the build tool; `detect_language` and
 `detect_toolchain` are gone. Found at dev: a fresh `sw init` project has no build file and is
 refused until it has one or `[implement] language`; Go keeps C05 through `architecture_atom`.
-**Next step**: the implementation plan for SF-03 (`specweaver-implementation-plan TECH-079 SF-03`).
+**SF-03 plan approved 2026-11-06** (the user): the evaluator-schema loader moves to `workspace/project`, which also answers each file's framework; a framework is a name with an evaluator schema.
+**Next step**: dev SF-03 (`specweaver-dev` on `TECH-079_sf03_implementation_plan.md`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
