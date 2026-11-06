@@ -26,6 +26,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import yaml
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import (
@@ -41,6 +42,7 @@ from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from specweaver.core.flow.run_state.run_context import (
     GraphContext,
+    IsolationPolicy,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -118,6 +120,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[RunContext, 
     register_test_project(db, "greeter", str(root))
     llm = _model_without_tools()
     context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
         project_path=root,
         spec_path=root / "specs" / "greet_spec.md",
         db=db,
@@ -199,6 +202,7 @@ def test_the_contract_is_made_once_before_the_sides() -> None:
 async def test_both_sides_read_the_parents_contract(tmp_path: Path) -> None:
     contract = str(tmp_path / "contracts" / "greet_contract.py")
     context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
         project_path=tmp_path,
         spec_path=tmp_path / "specs" / "greet_spec.md",
         graph=GraphContext(api_contract_paths=[contract]),
@@ -223,7 +227,9 @@ async def test_both_sides_read_the_parents_contract(tmp_path: Path) -> None:
     with (
         patch.object(PipelineRunner, "run", _record),
         patch.object(
-            ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda r: True)
+            ArbitrateDualPipelineHandler,
+            "container_available",
+            staticmethod(lambda r, build_tool: True),
         ),
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)

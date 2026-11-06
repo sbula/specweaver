@@ -365,7 +365,7 @@
           "old": "        executor = SubprocessExecutor(cwd=cwd)\n",
           "new": "        executor = None  # type: ignore[assignment]\n",
           "breaks": "on the host the factory hands the runner no executor, leaving the choice to the runner",
-          "symbol_sha": "sha256:ca00ed9fd5d9f2daeeaf84aeb2a1e08a5b83e7a263396e4d340d5a8b5e380a5e"
+          "symbol_sha": "sha256:f1ab9c2527bf681db2fee064b70d7a6a00f7f557ed026384bdf660d642798e12"
         },
         {
           "id": "git-builds-host-executor",

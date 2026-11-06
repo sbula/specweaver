@@ -25,6 +25,7 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
@@ -32,7 +33,12 @@ from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.reviewed_spec import record_review
-from specweaver.core.flow.run_state.run_context import GraphContext, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import (
+    GraphContext,
+    IsolationPolicy,
+    RunContext,
+    RunHandle,
+)
 from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:
@@ -59,6 +65,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[RunContext, 
     (store / "generated").mkdir(parents=True)
     (store / "generated" / "test_greet_scenarios.py").write_text("def test_x():\n    pass\n")
     context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
         project_path=root,
         spec_path=root / "specs" / "greet_spec.md",
         db=db,
@@ -109,7 +116,9 @@ async def _sides(context: RunContext) -> list[str]:
     )
     with (
         patch.object(
-            ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda r: True)
+            ArbitrateDualPipelineHandler,
+            "container_available",
+            staticmethod(lambda r, build_tool: True),
         ),
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)

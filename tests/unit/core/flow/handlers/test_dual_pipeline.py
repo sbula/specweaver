@@ -1,12 +1,12 @@
 # mypy: ignore-errors
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
-
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
@@ -15,6 +15,7 @@ from specweaver.core.flow.run_state.run_context import (
     AnalysisContext,
     GraphContext,
     GuidanceContent,
+    IsolationPolicy,
     ModelAccess,
     RunContext,
     RunHandle,
@@ -24,7 +25,9 @@ from specweaver.core.flow.run_state.run_context import (
 @pytest.fixture(autouse=True)
 def _a_container_is_available(monkeypatch):
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: True),
     )
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
@@ -37,6 +40,7 @@ def _a_container_is_available(monkeypatch):
 @pytest.fixture
 def run_context():
     ctx = MagicMock(spec=RunContext)
+    ctx.isolation = IsolationPolicy(profile=ProjectProfile("python", "uv"))
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields at all, so any sub-model
     # a handler reads has to be a real instance here, not a mock attribute.
     ctx.model = ModelAccess()

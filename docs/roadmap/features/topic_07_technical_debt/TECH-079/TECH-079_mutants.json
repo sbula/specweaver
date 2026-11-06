@@ -346,7 +346,7 @@
           "old": "    language = profile.language if profile else language_of(code_path)",
           "new": "    language = profile.language if profile else \"python\"",
           "breaks": "sw check runs pytest on a Kotlin or Go file",
-          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
+          "symbol_sha": "sha256:81ab87deddde9acb84125254b53d2c3b5966c578cbc7d45284f03069912453ef"
         },
         {
           "id": "go-loses-the-boundary-check",
@@ -356,7 +356,7 @@
           "old": "        if \"C05\" in qa_rules_active:\n            context[_KEY_ARCHITECTURE] = _hydrate_architecture(\n                architecture_atom(project_root)",
           "new": "        if False:\n            context[_KEY_ARCHITECTURE] = _hydrate_architecture(\n                architecture_atom(project_root)",
           "breaks": "a Go file loses C05, the boundary check every language shares",
-          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
+          "symbol_sha": "sha256:81ab87deddde9acb84125254b53d2c3b5966c578cbc7d45284f03069912453ef"
         },
         {
           "id": "scenario-file-is-python",
@@ -377,6 +377,146 @@
           "new": "    return create_stack_trace_filter(\"python\")",
           "breaks": "a TypeScript run's arbiter filters frames as Python",
           "symbol_sha": "sha256:e7ea00fd9901e8518d87a66adab19f128f35a7727bd1a262a7b9ab7703129d64"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "the sandbox takes the run's build tool: plan, image, container, dual run, preflight",
+      "scope": [
+        "tests/integration/sandbox/execution/test_sandbox_takes_the_build_tool.py",
+        "tests/integration/interfaces/cli/test_sandbox_preflight_takes_the_profile.py",
+        "tests/unit/workspace/project/test_prepare_plan_languages.py"
+      ],
+      "mutants": [
+        {
+          "id": "plan-ignores-build-tool",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
+          "symbol": "plan_for",
+          "old": "    if build_tool and build_tool != \"uv\":",
+          "new": "    if False:",
+          "breaks": "a Rust or JVM run is prepared as Python with uv",
+          "symbol_sha": "sha256:8e28a1ff19cb86a530e918c6a61c77055f6545ad38c087478a8c4a467358a99b"
+        },
+        {
+          "id": "image-ignores-build-tool",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/sandbox_image.py",
+          "symbol": "_resolve_image",
+          "old": "    if build_tool in _TOOLCHAIN_IMAGES:",
+          "new": "    if False:",
+          "breaks": "a Rust run gets the Python image, which has no cargo",
+          "symbol_sha": "sha256:c27abc30c1673897b09f27c203e2eec93d35153c5ed4b2f2cee7b900bc2073df"
+        },
+        {
+          "id": "npm-plan-is-gradle",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
+          "symbol": "_plan_for_other",
+          "old": "    if toolchain == \"npm\":",
+          "new": "    if False:",
+          "breaks": "an npm project is told it is a Gradle project",
+          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
+        },
+        {
+          "id": "dual-run-allows-npm",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "_isolation_refusal",
+          "old": "    if run_profile(context).build_tool not in (\"uv\", \"\"):",
+          "new": "    if False:",
+          "breaks": "a TypeScript dual run starts, unproven outside Python",
+          "symbol_sha": "sha256:0af6c4e4e05f2b65e65e569f080f8124bcd718551ed284d101b26146b5ea99c4"
+        },
+        {
+          "id": "preflight-ignores-pins",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/routers/sandbox_router.py",
+          "symbol": "_profile_or_exit",
+          "old": "        return read_project_profile(root, language=pins.language, build_tool=pins.build_tool)",
+          "new": "        return read_project_profile(root)",
+          "breaks": "sw sandbox preflight ignores [implement] and refuses a pinned project",
+          "symbol_sha": "sha256:13862f9be2686aa13690ee91c9cdcf5ca6620e8e296ac75b7f7bd467b08862b5"
+        },
+        {
+          "id": "container-without-a-build-tool",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/runner_factory.py",
+          "symbol": "qa_atom",
+          "old": "    if container and build_tool is None:",
+          "new": "    if False:",
+          "breaks": "a container run silently prepares as if no build tool",
+          "symbol_sha": "sha256:f1ab9c2527bf681db2fee064b70d7a6a00f7f557ed026384bdf660d642798e12"
+        },
+        {
+          "id": "coder-asks-for-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/coder_sandbox.py",
+          "symbol": "coder_sandbox",
+          "old": "    if container_available(context.project_path, run_profile(context).build_tool):",
+          "new": "    if container_available(context.project_path, \"uv\"):",
+          "breaks": "the coder's container question is asked for Python's image",
+          "symbol_sha": "sha256:ea457063780d77d5b2d6cf37e40bf7e8a77f445d6adb223267ace0188da180cc"
+        },
+        {
+          "id": "acceptance-asks-for-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/acceptance.py",
+          "symbol": "run_acceptance",
+          "old": "    if not container_available(context.project_path, run_profile(context).build_tool):",
+          "new": "    if not container_available(context.project_path, \"uv\"):",
+          "breaks": "the kept suite checks the Python image for a Rust run",
+          "symbol_sha": "sha256:1c826b4df2ddaa1f1854d713648a0fefa867265e5846081612dd1ba414cdf219"
+        },
+        {
+          "id": "dual-asks-for-python",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
+          "symbol": "ArbitrateDualPipelineHandler.execute",
+          "old": "        if not self.container_available(context.project_path, run_profile(context).build_tool):",
+          "new": "        if not self.container_available(context.project_path, \"uv\"):",
+          "breaks": "a dual run checks an image the run will not use",
+          "symbol_sha": "sha256:5c5687c657d583f381ceef12f8b933c3a27d18568a3e7d3065e7560f89a511be"
+        },
+        {
+          "id": "ready-checks-the-python-image",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/sandbox_image.py",
+          "symbol": "sandbox_ready",
+          "old": "            return ensure(_resolve_image(project_root, build_tool), engine, _on_host(project_root))",
+          "new": "            return ensure(_resolve_image(project_root, \"uv\"), engine, _on_host(project_root))",
+          "breaks": "readiness builds the Python image for a Rust run",
+          "symbol_sha": "sha256:ed9c743643703c5d0f052b4ef8324c46cdefb7021f4803aad36392d0d9841aef"
+        },
+        {
+          "id": "unknown-tool-is-gradle",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
+          "symbol": "_plan_for_other",
+          "old": "    if toolchain != \"gradle\":",
+          "new": "    if False:",
+          "breaks": "an unknown build tool is told it is Gradle",
+          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "a JVM run's workspace is an overlay because its build tool says so",
+      "scope": [
+        "tests/unit/sandbox/execution/test_container_polyglot.py"
+      ],
+      "mutants": [
+        {
+          "id": "jvm-workspace-not-overlaid",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/execution/container_executor.py",
+          "symbol": "ContainerSubprocessExecutor._workspace_mode",
+          "old": "        return \"O\" if self._build_tool in (\"maven\", \"gradle\") else \"ro\"",
+          "new": "        return \"ro\"",
+          "breaks": "Maven cannot write target/ and the JVM run fails",
+          "symbol_sha": "sha256:ff0375849f5f6ceb7d63bc3752001b9cef650f0f738787f2b301b8a048eee08d"
         }
       ]
     }

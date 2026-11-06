@@ -43,7 +43,9 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     data.mkdir()
     monkeypatch.setenv("SPECWEAVER_DATA_DIR", str(data))
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: True),
     )
     return data
 

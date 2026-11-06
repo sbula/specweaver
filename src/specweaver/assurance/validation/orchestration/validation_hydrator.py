@@ -139,7 +139,12 @@ def hydrate_code_validation_context(
             )
         return context
 
-    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)
+    atom = qa_atom(
+        cwd=project_root,
+        language=language,
+        sandbox_settings=sandbox_settings,
+        build_tool=profile.build_tool if profile else None,
+    )
 
     # --- C03: Tests Pass ---
     if "C03" in qa_rules_active:

@@ -20,6 +20,7 @@ from specweaver.core.flow.engine.models import (
     StepAction,
     StepTarget,
 )
+from specweaver.core.flow.engine.run_profile import run_profile
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
 from specweaver.core.flow.handlers.reviewed_spec import review_refusal
@@ -36,7 +37,6 @@ logger = logging.getLogger(__name__)
 def _isolation_refusal(context: RunContext) -> str | None:
     """Why the scenario side cannot be kept from the coder here; None when it can (FR-11, FR-18)."""
     from specweaver.core.flow.run_state.scenario_store import scenario_store
-    from specweaver.workspace.project.prepare_plan import detect_toolchain
 
     if scenario_store(context) is None:
         return (
@@ -48,7 +48,7 @@ def _isolation_refusal(context: RunContext) -> str | None:
             "the project still holds scenario tests in scenarios/, where the coder can read them; "
             "remove that folder — scenario tests now live outside the project"
         )
-    if detect_toolchain(context.project_path) not in ("uv", ""):
+    if run_profile(context).build_tool not in ("uv", ""):
         return (
             "a dual run is proven for Python projects only; containers for other languages are not"
         )
@@ -186,7 +186,7 @@ class ArbitrateDualPipelineHandler:
                 started_at=started,
                 completed_at=_now_iso(),
             )
-        if not self.container_available(context.project_path):
+        if not self.container_available(context.project_path, run_profile(context).build_tool):
             # FR-18: fail closed. Without a container the coder's code could read the scenario
             # tests, so a run that only looks independent never starts.
             return StepResult(

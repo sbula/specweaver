@@ -184,6 +184,7 @@ class TestQaAtom:
             "python",
             sandbox_settings=SandboxSettings(execution_mode="host"),
             scenarios_root=tmp_path / "scenarios",
+            build_tool="uv",
         )
 
         assert isinstance(atom._runner._executor, ContainerSubprocessExecutor)
@@ -192,7 +193,7 @@ class TestQaAtom:
     def test_the_scenario_scratch_goes_with_the_atom(self, tmp_path: Path) -> None:
         from specweaver.sandbox.language.core.runner_factory import qa_atom
 
-        atom = qa_atom(tmp_path, "python", scenarios_root=tmp_path / "scenarios")
+        atom = qa_atom(tmp_path, "python", scenarios_root=tmp_path / "scenarios", build_tool="uv")
         scratch = atom._runner._executor._mounts.scratch_root
         assert scratch.is_dir()
         assert not scratch.is_relative_to(tmp_path)
@@ -220,7 +221,9 @@ class TestQaAtom:
         monkeypatch.setattr(runner_factory, "resolve_runner", no_runner)
 
         with pytest.raises(RuntimeError, match="no runner"):
-            runner_factory.qa_atom(tmp_path, "python", scenarios_root=tmp_path / "scenarios")
+            runner_factory.qa_atom(
+                tmp_path, "python", scenarios_root=tmp_path / "scenarios", build_tool="uv"
+            )
 
         assert made
         assert not made[0].exists()

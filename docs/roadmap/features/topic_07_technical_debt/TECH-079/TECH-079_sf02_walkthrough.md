@@ -125,3 +125,64 @@ runners, the scenario file and the filter name one language in one test.
   would map to `SPEC_INVALID`; the language there comes from the profile, which only yields the five.
 - Accepted: `architecture_atom` runs on the host only; it is reached only without a run (`sw check`),
   which never asks for a container.
+
+## CB-3: the build tool from the profile (FR-7 sandbox part) — closes SF-02
+
+**What changed**
+- `plan_for(source_root, build_tool)`, `_resolve_image(source_root, build_tool)`,
+  `sandbox_ready(project_root, build_tool, …)`, `container_available(project_root, build_tool)` and
+  `ContainerSubprocessExecutor(…, build_tool=)` take the run's build tool; `detect_toolchain` and
+  `_TOOLCHAIN_MANIFESTS` are gone (NFR-3). The executor reads its prepare plan for that tool when asked.
+- `qa_atom(…, build_tool=)`: a container run without one is refused, naming what is missing; the host
+  ignores it. `_plan_for_other` gains an `npm` branch (route `none`, "run on the host", plan F5) and
+  refuses an unknown build tool instead of falling into the Gradle text.
+- Handlers pass `run_profile(context).build_tool`: the coder sandbox, the kept suite (`acceptance`),
+  the dual run (container question and the Python-only check, plan F6). `core.flow.handlers` no longer
+  imports `workspace.project` (tach and `context.yaml` edge removed).
+- `sw sandbox preflight <path>` reads `[implement]`, decides the profile and shows the plan for its
+  build tool; an undecided root is refused, exit 1 (FR-8). A root with nothing to decide by, which got
+  the "no environment can be built" warning, now gets the refusal naming the setting.
+- Found at the `sf` gate, fixed (fan-out over 20): `validation.py` reached 21 with `run_profile`, and
+  `generation.py` was already at 22 before TECH-079. The coder's QA atom was built twice, the same way,
+  in `lint_fix` and `validation`; it is one `coder_sandbox.qa_atom_for` now. `generation.py` held four
+  handlers; the plan step moved to `plan_spec.py`, the contract step to `contract.py`, unchanged, and
+  `files_touched`'s helper to `step_outputs.touched`. Tests, patch targets and mutants follow the move.
+
+**Tests**
+- Red first: `tests/integration/sandbox/execution/test_sandbox_takes_the_build_tool.py` (a root with
+  `pyproject.toml` and `Cargo.toml` pinned to Rust gets the Rust image, the cargo fetch and cargo's
+  environment; the coder sandbox, the kept suite, the dual run and the readiness check ask for the
+  run's build tool; npm dual runs refuse; a container without a build tool is refused; undecided
+  refuses), `tests/integration/interfaces/cli/test_sandbox_preflight_takes_the_profile.py`,
+  `test_prepare_plan_languages.py` (`TestThePlanTakesTheBuildTool`, the detector is gone).
+- Old tests: 75 executor constructions name their build tool (the polyglot and integration files ask
+  the real profile decision for it); container doubles take the build tool; dual-run test contexts
+  carry a Python profile; `test_profile_agrees.py` loses its detector half.
+- Mutants, each OBJECTED: `plan-ignores-build-tool`, `image-ignores-build-tool`, `npm-plan-is-gradle`,
+  `dual-run-allows-npm`, `preflight-ignores-pins`, `container-without-a-build-tool`,
+  `coder-asks-for-python`, `jvm-workspace-not-overlaid`, and from the gap analysis
+  `acceptance-asks-for-python`, `dual-asks-for-python`, `ready-checks-the-python-image`,
+  `unknown-tool-is-gradle`.
+- NFR-5: 25 mutants re-pinned after the sandbox change (8 re-anchored), 9 after the handler move
+  (3 re-anchored, 5 moved with their code); every re-anchored or moved one re-run against its scope
+  and objected.
+
+**Gap analysis (Phase 2)**
+
+| Function | Unit | Integration | E2E |
+|---|---|---|---|
+| `plan_for` (each tool, npm, unknown) | ✅ | ✅ | ✅ (preflight e2e) |
+| `_resolve_image`, `sandbox_ready` | ✅ | ✅ (added) | — |
+| executor: mounts, PATH, env by tool | ✅ | ✅ | — |
+| `qa_atom` container needs a build tool | — | ✅ | — |
+| coder sandbox, acceptance, dual run ask for the tool | — | ✅ (two added) | — |
+| `sw sandbox preflight` | — | ✅ | ✅ |
+
+Found by the gap analysis: the kept suite, the dual run's container question and the readiness check
+could ask for Python's image and no test objected; three tests and three mutants close that.
+
+**Red/blue**
+- Accepted: `ContainerSubprocessExecutor`'s `build_tool` is keyword-only and moves `run_id`,
+  `timeout_seconds` and `resource_limits` behind it; every caller already names them.
+- Accepted: an npm project in the sandbox gets the Python image and a "cannot be prepared" plan, as
+  agreed for SF-01 (F10); a Node image is a non-goal.

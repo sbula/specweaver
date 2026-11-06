@@ -32,6 +32,17 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+def _tool(mounts) -> str:
+    """The build tool the real profile decision names for the test project ("" when none)."""
+    from specweaver.commons.project_profile import ProjectUndecidedError
+    from specweaver.workspace.project.project_profile import read_project_profile
+
+    try:
+        return read_project_profile(mounts.source_root).build_tool
+    except ProjectUndecidedError:  # expected: a project with no build file names no tool
+        return ""
+
+
 def _prepare(tmp_path: Path, monkeypatch, **files: str):
     mounts = _mounts(tmp_path)
     for name, text in files.items():
@@ -42,7 +53,7 @@ def _prepare(tmp_path: Path, monkeypatch, **files: str):
         "specweaver.sandbox.execution.container_executor.shutil.which",
         lambda name: f"/usr/bin/{name}",
     )
-    executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+    executor = ContainerSubprocessExecutor(build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts)
     executor._ensure_prepared()
     argvs = [list(c.args[0]) for c in mock.call_args_list if c.args]
     return executor, argvs
@@ -139,7 +150,9 @@ class TestResolveImageFollowsTheToolchain:
             lambda name: f"/usr/bin/{name}",
         )
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts, image="my/own:tag")
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts, image="my/own:tag"
+        )
 
         assert executor._image == "my/own:tag"
 
@@ -153,7 +166,9 @@ class TestBuildContainerCmdCarriesToolchainEnv:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts
+        )
 
         cmd = executor._build_container_cmd("podman", "n", ["cargo", "test"], None)
 
@@ -172,7 +187,9 @@ class TestBuildContainerCmdCarriesToolchainEnv:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts
+        )
 
         cmd = executor._build_container_cmd("podman", "n", ["cargo", "test"], None)
 
@@ -186,7 +203,9 @@ class TestBuildContainerCmdCarriesToolchainEnv:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts
+        )
 
         cmd = executor._build_container_cmd("podman", "n", ["python", "-m", "pytest"], None)
 
@@ -218,7 +237,9 @@ class TestBuildContainerCmdGivesTheJvmSomewhereToBuild:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts
+        )
         return executor._build_container_cmd("podman", "n", ["mvn", "test"], None)
 
     def test_a_jvm_workspace_is_an_overlay(self, tmp_path: Path, monkeypatch) -> None:

@@ -432,7 +432,7 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language="python", sandbox_settings=None
+            cwd=tmp_path, language="python", sandbox_settings=None, build_tool="uv"
         )
 
     def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
@@ -449,7 +449,7 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language="python", sandbox_settings=config.sandbox
+            cwd=tmp_path, language="python", sandbox_settings=config.sandbox, build_tool="uv"
         )
 
 

@@ -16,7 +16,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
-from specweaver.core.flow.handlers.generation import GenerateTestsHandler, PlanSpecHandler
+from specweaver.core.flow.handlers.generation import GenerateTestsHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.handlers.review import ReviewSpecHandler
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import LLMResponse, ProjectMetadata, PromptSafeConfig

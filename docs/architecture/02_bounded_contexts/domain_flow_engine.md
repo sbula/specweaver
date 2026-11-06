@@ -81,11 +81,11 @@ target step's name. Every `feedback` key and its value type is declared once in
 | `review+code` | `ReviewCodeHandler` | `core/flow/handlers/review.py` |
 | `generate+code` | `GenerateCodeHandler` | `core/flow/handlers/generation.py` |
 | `generate+tests` | `GenerateTestsHandler` | `core/flow/handlers/generation.py` |
-| `generate+contract` | `GenerateContractHandler` | `core/flow/handlers/generation.py` |
+| `generate+contract` | `GenerateContractHandler` | `core/flow/handlers/contract.py` |
 | `generate+scenario` | `GenerateScenarioHandler` | `core/flow/handlers/scenario.py` |
 | `convert+scenario` | `ConvertScenarioHandler` | `core/flow/handlers/scenario.py` |
 | `lint_fix+code` | `LintFixHandler` | `core/flow/handlers/lint_fix.py` |
-| `plan+spec` | `PlanSpecHandler` | `core/flow/handlers/generation.py` |
+| `plan+spec` | `PlanSpecHandler` | `core/flow/handlers/plan_spec.py` |
 | `enrich+standards` | `EnrichStandardsHandler` | `core/flow/handlers/standards.py` |
 | `detect+drift` | `DriftCheckHandler` | `core/flow/handlers/drift.py` |
 | `decompose+feature` | `DecomposeFeatureHandler` | `core/flow/handlers/decompose.py` |

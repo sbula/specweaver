@@ -44,6 +44,7 @@ def test_container_mode_routes_through_the_container_executor(tmp_path: Path) ->
         cwd=tmp_path,
         language="python",
         sandbox_settings=SandboxSettings(execution_mode="container"),
+        build_tool="uv",
     )
 
     assert isinstance(_executor(atom), ContainerSubprocessExecutor)

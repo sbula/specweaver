@@ -125,7 +125,7 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language="python", sandbox_settings=None
+            cwd=tmp_path, language="python", sandbox_settings=None, build_tool="uv"
         )
 
     def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
@@ -142,7 +142,7 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language="python", sandbox_settings=config.sandbox
+            cwd=tmp_path, language="python", sandbox_settings=config.sandbox, build_tool="uv"
         )
 
 
@@ -165,7 +165,9 @@ class TestGetAtomExecutionRoot:
         assert context.model.config is None
         with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
-        mock_atom_cls.assert_called_once_with(cwd=wt, language="python", sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(
+            cwd=wt, language="python", sandbox_settings=None, build_tool="uv"
+        )
 
     def test_falls_back_to_project_path_when_execution_root_none(self, tmp_path: Path) -> None:
         # [Boundary/backward-compat] non-isolated step → cwd unchanged.
@@ -175,7 +177,7 @@ class TestGetAtomExecutionRoot:
         with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language="python", sandbox_settings=None
+            cwd=tmp_path, language="python", sandbox_settings=None, build_tool="uv"
         )
 
     def test_rebind_preserves_sandbox_settings_from_config(self, tmp_path: Path) -> None:
@@ -198,7 +200,10 @@ class TestGetAtomExecutionRoot:
         with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
         mock_atom_cls.assert_called_once_with(
-            cwd=wt, language="python", sandbox_settings=context.model.config.sandbox
+            cwd=wt,
+            language="python",
+            sandbox_settings=context.model.config.sandbox,
+            build_tool="uv",
         )
 
 

@@ -74,7 +74,7 @@
           "old": "        runner = resolve_runner(cwd, executor=executor, language=language)\n",
           "new": "        runner = resolve_runner(cwd, executor=executor)\n",
           "breaks": "QA steps ignore the run's language",
-          "symbol_sha": "sha256:ca00ed9fd5d9f2daeeaf84aeb2a1e08a5b83e7a263396e4d340d5a8b5e380a5e"
+          "symbol_sha": "sha256:f1ab9c2527bf681db2fee064b70d7a6a00f7f557ed026384bdf660d642798e12"
         },
         {
           "id": "sw-run-names-no-language",
@@ -111,10 +111,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/lint_fix.py",
           "symbol": "LintFixHandler._get_atom",
-          "old": "            language=run_profile(context).language,\n            sandbox_settings=coder_sandbox(context),\n        )\n",
-          "new": "            language=None,\n            sandbox_settings=coder_sandbox(context),\n        )\n",
+          "old": "        from specweaver.core.flow.handlers.coder_sandbox import qa_atom_for\n\n        return qa_atom_for(context)\n",
+          "new": "        from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox\n        from specweaver.sandbox.language.core.runner_factory import qa_atom\n\n        return qa_atom(\n            cwd=context.project_path,\n            language=\"python\",\n            sandbox_settings=coder_sandbox(context),\n            build_tool=\"uv\",\n        )\n",
           "breaks": "lint_fix runs the manifests' linter, not the named language's",
-          "symbol_sha": "sha256:a46f7b4eebd63ba9c79b4f4c2b208eaa43b53905dd9dc49e0475dbdf7b7ea793"
+          "symbol_sha": "sha256:63d2d50ef2f1df38b1047c70007008702bda92c9fd96bce991dc100e63579619"
         }
       ]
     },
@@ -333,7 +333,7 @@
           "old": "guide = language_guide(files.language, context.project_path)",
           "new": "guide = language_guide(\"python\", context.project_path)",
           "breaks": "a Java project is prompted for Python",
-          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
         },
         {
           "id": "tag-always-python",
@@ -383,17 +383,17 @@
           "old": "                declare_rust_module(context.project_path, files)\n",
           "new": "                pass\n",
           "breaks": "tests/<stem>.rs cannot reach the module",
-          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
         },
         {
           "id": "contract-detects-again",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "file": "src/specweaver/core/flow/handlers/contract.py",
           "symbol": "GenerateContractHandler.execute",
           "old": "            from specweaver.core.flow.engine.run_profile import run_task_files\n\n            language = run_task_files(context).language\n",
           "new": "            language = \"python\"\n",
           "breaks": "[implement] language is ignored by the contract step",
-          "symbol_sha": "sha256:497bd12f6ec2b5bc4f019f4e741a9ec75354a1892c36b5b3b928dc179867da14"
+          "symbol_sha": "sha256:a017af5b89a2ac0bd923870b95281e522174b07239916af8cb1f9f76e71f5b24"
         },
         {
           "id": "project-file-ignored",

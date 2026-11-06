@@ -65,7 +65,7 @@ class TestEnsurePreparedProducesAUsableEnvironment:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)._ensure_prepared()
         call = _find_call(mock_execute, "uv", "sync")
         assert call is not None, "the prepare phase did not run at all"
         return list(call)
@@ -97,7 +97,9 @@ class TestEnsurePreparedProducesAUsableEnvironment:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
 
         cmd = executor._build_container_cmd("podman", "n", ["python", "-m", "pytest"], None)
 
@@ -131,7 +133,7 @@ class TestEnsurePreparedProducesAUsableEnvironment:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         with pytest.raises(RuntimeError, match="prepare"):
             executor._ensure_prepared()
@@ -173,7 +175,7 @@ class TestEnsurePreparedSyncsTheGroupHoldingTheRunner:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)._ensure_prepared()
         call = _find_call(mock_execute, "uv", "sync")
         assert call is not None, "the prepare phase did not run at all"
         return list(call)
@@ -338,7 +340,7 @@ class TestEnsurePreparedStampsEveryCommandInput:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)._ensure_prepared()
         call = _find_call(mock_execute, "uv", "sync")
         return None if call is None else list(call)
 
@@ -402,7 +404,7 @@ class TestEnsurePreparedResolvesWithoutACommittedLockfile:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)._ensure_prepared()
         # The uv command only, not the whole container argv. The argv carries `-v …:/workspace:ro`
         # and `--workdir /workspace`, so asserting `/workspace` against it passes whether or not
         # the project is handed to `uv pip install` — which is how the first version of
@@ -502,7 +504,7 @@ class TestEnsurePreparedFallsBackToOtherDeclarationSites:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)._ensure_prepared()
         return [
             list(call.args[0])[list(call.args[0]).index("uv") :]
             for call in mock_execute.call_args_list
@@ -605,7 +607,9 @@ class TestEnsurePreparedFallsBackToOtherDeclarationSites:
             req.write_text(text, encoding="utf-8")
             mock = MagicMock(return_value=_ok_result())
             monkeypatch.setattr(SubprocessExecutor, "execute", mock)
-            ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)._ensure_prepared()
+            ContainerSubprocessExecutor(
+                build_tool="uv", cwd=tmp_path, mounts=mounts
+            )._ensure_prepared()
             return _find_call(mock, "uv", "pip") is not None
 
         assert prepare("pytest>=8\n")
@@ -639,7 +643,7 @@ class TestEnsurePreparedSuppliesARunnerAsALastResort:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         executor._ensure_prepared()
         steps = [
             list(call.args[0])[list(call.args[0]).index("uv") :]
@@ -756,9 +760,9 @@ class TestThePlanDescribesWhatTheExecutorDoes:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         executor._ensure_prepared()
-        return executor, plan_for(mounts.source_root)
+        return executor, plan_for(mounts.source_root, "uv")
 
     def test_a_promised_supplied_runner_is_the_one_that_gets_supplied(
         self, tmp_path: Path, monkeypatch

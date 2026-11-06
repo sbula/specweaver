@@ -176,7 +176,7 @@ class TestHandlerProfileIntegration:
         [
             ("GenerateCodeHandler", FULL, "specweaver.core.flow.handlers.generation"),
             ("GenerateTestsHandler", FULL, "specweaver.core.flow.handlers.generation"),
-            ("PlanSpecHandler", FULL, "specweaver.core.flow.handlers.generation"),
+            ("PlanSpecHandler", FULL, "specweaver.core.flow.handlers.plan_spec"),
             ("ReviewSpecHandler", FULL, "specweaver.core.flow.handlers.review"),
             ("ReviewCodeHandler", FULL, "specweaver.core.flow.handlers.review"),
             ("DraftSpecHandler", INTERACTIVE, "specweaver.core.flow.handlers.draft"),
@@ -241,7 +241,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                "specweaver.core.flow.handlers.plan_spec._build_tool_dispatcher",
                 return_value=MagicMock(),
             ),
             patch(
@@ -274,7 +274,7 @@ class TestHandlerProfileIntegration:
         [
             ("GenerateCodeHandler", FULL, "specweaver.core.flow.handlers.generation"),
             ("GenerateTestsHandler", FULL, "specweaver.core.flow.handlers.generation"),
-            ("PlanSpecHandler", FULL, "specweaver.core.flow.handlers.generation"),
+            ("PlanSpecHandler", FULL, "specweaver.core.flow.handlers.plan_spec"),
             ("ReviewSpecHandler", FULL, "specweaver.core.flow.handlers.review"),
             ("ReviewCodeHandler", FULL, "specweaver.core.flow.handlers.review"),
             ("DraftSpecHandler", INTERACTIVE, "specweaver.core.flow.handlers.draft"),
@@ -333,7 +333,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                "specweaver.core.flow.handlers.plan_spec._build_tool_dispatcher",
                 return_value=MagicMock(),
             ),
             patch(
@@ -361,7 +361,7 @@ class TestHandlerProfileIntegration:
         [
             ("GenerateCodeHandler", "specweaver.core.flow.handlers.generation"),
             ("GenerateTestsHandler", "specweaver.core.flow.handlers.generation"),
-            ("PlanSpecHandler", "specweaver.core.flow.handlers.generation"),
+            ("PlanSpecHandler", "specweaver.core.flow.handlers.plan_spec"),
             ("ReviewSpecHandler", "specweaver.core.flow.handlers.review"),
             ("ReviewCodeHandler", "specweaver.core.flow.handlers.review"),
             ("DraftSpecHandler", "specweaver.core.flow.handlers.draft"),
@@ -417,7 +417,7 @@ class TestHandlerProfileIntegration:
                 return_value=MagicMock(),
             ),
             patch(
-                "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+                "specweaver.core.flow.handlers.plan_spec._build_tool_dispatcher",
                 return_value=MagicMock(),
             ),
             patch(

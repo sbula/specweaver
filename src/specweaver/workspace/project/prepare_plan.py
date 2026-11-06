@@ -108,16 +108,6 @@ def _groups_holding_a_runner(manifest_text: str) -> list[str]:
     )
 
 
-#: Which build tool owns a project, by the manifest it reads. Python first: a polyglot tree — this
-#: repo has Java and Kotlin fixtures inside a Python one — resolves to Python for QA today, and
-#: changing that is a routing decision rather than a prepare-phase one.
-_TOOLCHAIN_MANIFESTS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("uv", ("pyproject.toml", "uv.lock")),
-    ("cargo", ("Cargo.toml",)),
-    ("maven", ("pom.xml",)),
-    ("gradle", ("build.gradle", "build.gradle.kts")),
-)
-
 #: Where each tool's fetched dependencies live. On the cache mount, which is read-write while the
 #: prepare phase runs and read-only afterwards, so the execute phase can read them with no network.
 _CARGO_HOME = "/cache/cargo"
@@ -127,14 +117,6 @@ _MAVEN_REPO = "/cache/m2"
 #: used as-is — Rust is pointed here by `CARGO_TARGET_DIR`, and for the JVM the executor mounts
 #: this path over `target/` so Maven's own defaults keep working.
 _BUILD_DIR = "/scratch/target"
-
-
-def detect_toolchain(source_root: Path) -> str:
-    """The build tool this project declares, or `""` when it declares none."""
-    for toolchain, manifests in _TOOLCHAIN_MANIFESTS:
-        if any((source_root / name).is_file() for name in manifests):
-            return toolchain
-    return ""
 
 
 @dataclass(frozen=True)
@@ -153,7 +135,7 @@ class PreparePlan:
     #: The declaration the runner was found in, when it came from outside the manifest. Carried so
     #: the executor installs exactly what the report described, rather than looking it up again.
     source: ToolingSource | None = None
-    #: The build tool that owns the project — `uv`, `cargo`, `maven`, `gradle`, or `""`.
+    #: The build tool that owns the project — `uv`, `cargo`, `maven`, `gradle`, `npm`.
     toolchain: str = "uv"
     #: Commands to run in the network-enabled prepare phase, as `(step name, argv)`.
     steps: tuple[tuple[str, tuple[str, ...]], ...] = ()
@@ -177,11 +159,11 @@ _PYTHON_ARTIFACT_ENV = {
 }
 
 
-def plan_for(source_root: Path) -> PreparePlan:
-    """What the prepare phase will do with the project at `source_root`."""
-    toolchain = detect_toolchain(source_root)
-    if toolchain and toolchain != "uv":
-        return _plan_for_other(toolchain, source_root)
+def plan_for(source_root: Path, build_tool: str) -> PreparePlan:
+    """What the prepare phase will do with the project at `source_root`, built by `build_tool`
+    (the run's profile: `uv`, `maven`, `gradle`, `cargo`, `npm`, or `""` for none)."""
+    if build_tool and build_tool != "uv":
+        return _plan_for_other(build_tool, source_root)
 
     manifest = source_root / "pyproject.toml"
     manifest_text = (
@@ -343,6 +325,19 @@ def _plan_for_other(toolchain: str, source_root: Path) -> PreparePlan:
                 "offline run is reported.",
             ),
         )
+    if toolchain == "npm":
+        return PreparePlan(
+            route="none",
+            runner_source="package.json",
+            toolchain=toolchain,
+            warnings=(
+                "npm projects cannot be prepared in the sandbox yet: its image carries no Node "
+                "toolchain. Run their tests on the host.",
+            ),
+        )
+    if toolchain != "gradle":
+        msg = f"no prepare plan for build tool {toolchain!r}"
+        raise ValueError(msg)
     return PreparePlan(
         route="none",
         runner_source="",

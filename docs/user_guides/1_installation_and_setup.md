@@ -328,6 +328,13 @@ message. `sw check` on one code file takes that file's language from its ending:
 the Kotlin tools, and a file in a language SpecWeaver does not generate (a `.go` file) gets the
 boundary check (C05) but no test run.
 
+The sandbox follows the same answer. A container run takes the image and the prepare steps of the
+project's build tool: `uv` (Python), `cargo` (Rust, with a committed `Cargo.lock`), `maven`.
+Gradle and npm projects cannot be prepared in the sandbox yet and say so; run their tests on the
+host. A dual run is proven for Python only and refuses another build tool. `sw sandbox preflight
+<path>` reads `[implement]` too, shows the plan for the decided build tool, and refuses an
+undecided project the way `sw run` does.
+
 A spec `greet_service_spec.md` is the module `greet_service`; its files are:
 
 | Language | Code | Tests |

@@ -82,7 +82,10 @@ def test_a_project_the_sandbox_would_change_is_told_what_changes(tmp_path: Path)
 
 
 def test_a_tree_with_no_manifest_is_told_nothing_can_be_built(tmp_path: Path) -> None:
-    """22 of the 150 corpus repositories. Meeting this inside a container is the whole complaint."""
+    """22 of the 150 corpus repositories. Meeting this inside a container is the whole complaint.
+
+    TECH-079: a root with nothing to decide its language by is refused, naming the setting.
+    """
     project = tmp_path / "bare"
     project.mkdir()
     (project / "README.md").write_text("nothing\n", encoding="utf-8")
@@ -90,7 +93,7 @@ def test_a_tree_with_no_manifest_is_told_nothing_can_be_built(tmp_path: Path) ->
     result = _preflight(project)
 
     assert result.returncode == 1
-    assert "no environment can be built" in result.stdout, result.stdout
+    assert "no build file and no code file" in result.stdout, result.stdout
 
 
 def test_a_path_that_is_not_a_directory_is_refused(tmp_path: Path) -> None:

@@ -575,7 +575,7 @@
         {
           "id": "plan-step-says-python",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "file": "src/specweaver/core/flow/handlers/plan_spec.py",
           "symbol": "PlanSpecHandler.execute",
           "old": "                language=language_guide(language, context.project_path).name,\n",
           "new": "                language=\"Python\",\n",

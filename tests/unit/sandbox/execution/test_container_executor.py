@@ -79,7 +79,9 @@ class TestEngineDetection:
         mock_execute = MagicMock(return_value=_ok_result())
         monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         engine = executor._ensure_engine()
 
         assert engine == "/usr/bin/podman"
@@ -91,7 +93,9 @@ class TestEngineDetection:
         )
         monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(return_value=_ok_result()))
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         engine = executor._ensure_engine()
 
         assert engine == "/usr/bin/docker"
@@ -103,7 +107,9 @@ class TestEngineDetection:
         )
         monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(return_value=_ok_result()))
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         executor._ensure_engine()
         executor._ensure_engine()
 
@@ -115,7 +121,9 @@ class TestEngineDetection:
         )
         monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(return_value=_ok_result()))
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         with pytest.raises(ContainerEngineUnavailableError, match="podman"):
             executor._ensure_engine()
 
@@ -128,7 +136,9 @@ class TestEngineDetection:
             SubprocessExecutor, "execute", MagicMock(return_value=_ok_result(exit_code=1))
         )
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         with pytest.raises(ContainerEngineUnavailableError):
             executor._ensure_engine()
 
@@ -146,7 +156,9 @@ class TestEngineDetection:
 
         monkeypatch.setattr(SubprocessExecutor, "execute", MagicMock(side_effect=probe_side_effect))
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         engine = executor._ensure_engine()
 
         assert engine == "/usr/bin/docker"
@@ -163,7 +175,7 @@ class TestConstruction:
         assert not mounts.scratch_root.exists()
         assert not mounts.cache_root.exists()
 
-        ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         assert mounts.scratch_root.is_dir()
         assert mounts.cache_root.is_dir()
@@ -173,12 +185,12 @@ class TestConstruction:
         (mounts.source_root / "pyproject.toml").write_text(
             '[project]\nrequires-python = ">=3.12"\n'
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.12-")
 
     def test_image_defaults_to_latest_when_pyproject_absent(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_to_latest_when_requires_python_unparseable(
@@ -186,12 +198,12 @@ class TestConstruction:
     ) -> None:
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text("not valid toml [[[")
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_explicit_image_overrides_detection(self, tmp_path: Path) -> None:
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=_mounts(tmp_path), image="my-custom-image:latest"
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path), image="my-custom-image:latest"
         )
         assert executor._image == "my-custom-image:latest"
 
@@ -199,7 +211,7 @@ class TestConstruction:
         """requires-python below 3.11 clamps to the oldest supported tag, not a literal 3.9."""
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text('[project]\nrequires-python = ">=3.9"\n')
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.11-")
 
     def test_image_clamps_above_newest_supported_tag(self, tmp_path: Path) -> None:
@@ -208,7 +220,7 @@ class TestConstruction:
         (mounts.source_root / "pyproject.toml").write_text(
             '[project]\nrequires-python = ">=3.14"\n'
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_when_requires_python_does_not_match_version_regex(
@@ -218,7 +230,7 @@ class TestConstruction:
         'pyproject.toml absent' branch — same outcome, different code path."""
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text('[project]\nrequires-python = ""\n')
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.13-")
 
     def test_image_defaults_when_requires_python_is_not_a_string(self, tmp_path: Path) -> None:
@@ -226,7 +238,7 @@ class TestConstruction:
         caught, falling back to the default tag rather than crashing construction."""
         mounts = _mounts(tmp_path)
         (mounts.source_root / "pyproject.toml").write_text("[project]\nrequires-python = 312\n")
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         assert executor._image.split(":")[-1].startswith("3.13-")
 
 
@@ -238,26 +250,30 @@ class TestConstruction:
 class TestBuildContainerCmd:
     def test_read_only_source_mount_present(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         argv = executor._build_container_cmd("podman", "n1", ["echo", "hi"], None)
         assert "--read-only" in argv
         assert f"{mounts.source_root}:/workspace:ro" in argv
 
     def test_writable_scratch_mount_present_and_distinct(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         argv = executor._build_container_cmd("podman", "n1", ["echo", "hi"], None)
         assert f"{mounts.scratch_root}:/scratch:rw" in argv
         assert f"{mounts.source_root}:/workspace:ro" != f"{mounts.scratch_root}:/scratch:rw"
 
     def test_network_none_present(self, tmp_path: Path) -> None:
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
         idx = argv.index("--network")
         assert argv[idx + 1] == "none"
 
     def test_capabilities_dropped(self, tmp_path: Path) -> None:
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
         assert "--cap-drop" in argv
         assert "ALL" in argv
@@ -265,7 +281,9 @@ class TestBuildContainerCmd:
         assert "no-new-privileges:true" in argv
 
     def test_resource_limits_match_bash_action_atom_defaults(self, tmp_path: Path) -> None:
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
         mem_idx = argv.index("--memory")
         pids_idx = argv.index("--pids-limit")
@@ -277,7 +295,9 @@ class TestBuildContainerCmd:
         monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
         monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
 
         idx = argv.index("--user")
@@ -288,7 +308,9 @@ class TestBuildContainerCmd:
     ) -> None:
         monkeypatch.setattr(sys, "platform", "win32")
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         with caplog.at_level("WARNING"):
             argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
 
@@ -312,7 +334,9 @@ class TestBuildContainerCmd:
         monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
         monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
 
         assert "--userns=keep-id" in argv
@@ -327,7 +351,9 @@ class TestBuildContainerCmd:
         monkeypatch.setattr(os, "getuid", lambda: 1000, raising=False)
         monkeypatch.setattr(os, "getgid", lambda: 1000, raising=False)
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("/usr/bin/docker", "n1", ["echo"], None)
 
         assert "--userns=keep-id" not in argv
@@ -342,20 +368,24 @@ class TestBuildContainerCmd:
         monkeypatch.setattr(os, "getuid", lambda: 0, raising=False)
         monkeypatch.setattr(os, "getgid", lambda: 0, raising=False)
 
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], None)
 
         assert "--userns=keep-id" not in argv
 
     def test_extra_env_becomes_dash_e_flags(self, tmp_path: Path) -> None:
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
         argv = executor._build_container_cmd("podman", "n1", ["echo"], {"MY_VAR": "value"})
         assert "-e" in argv
         assert "MY_VAR=value" in argv
 
     def test_final_argv_ends_with_image_and_original_cmd(self, tmp_path: Path) -> None:
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=_mounts(tmp_path), image="pinned:tag"
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path), image="pinned:tag"
         )
         argv = executor._build_container_cmd("podman", "n1", ["python", "-m", "pytest"], None)
         assert argv[-4:] == ["pinned:tag", "python", "-m", "pytest"]
@@ -374,7 +404,9 @@ class TestExecuteOverride:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        return ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path), run_id=run_id)
+        return ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path), run_id=run_id
+        )
 
     def test_deterministic_name_includes_run_id_and_uuid_suffix(
         self, tmp_path: Path, monkeypatch
@@ -458,7 +490,9 @@ class TestExecuteOverride:
         )
         mock_execute = MagicMock(return_value=_ok_result())
         monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        executor = ContainerSubprocessExecutor(
+            build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path)
+        )
 
         with pytest.raises(ContainerEngineUnavailableError):
             executor.execute(["python", "-m", "pytest"])
@@ -508,7 +542,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        return ContainerSubprocessExecutor(cwd=tmp_path, mounts=_mounts(tmp_path))
+        return ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=_mounts(tmp_path))
 
     def test_prepare_skipped_when_no_lockfile_or_pyproject(
         self, tmp_path: Path, monkeypatch
@@ -526,7 +560,7 @@ class TestEnsurePrepared:
         (mounts.source_root / "uv.lock").write_text("lockfile-content-v1")
         mock_execute = MagicMock(return_value=_ok_result())
         monkeypatch.setattr(SubprocessExecutor, "execute", mock_execute)
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
         monkeypatch.setattr(
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
@@ -555,7 +589,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
 
@@ -587,7 +621,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         with pytest.raises(RuntimeError, match="prepare phase failed"):
             executor._ensure_prepared()
@@ -605,7 +639,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
         mock_execute.reset_mock()
@@ -623,7 +657,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
         lockfile.write_text("lockfile-content-v2-changed")
@@ -643,7 +677,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor.execute(["python", "-m", "pytest"])
 
@@ -669,7 +703,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
 
@@ -692,7 +726,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
 
@@ -724,7 +758,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         with pytest.raises(RuntimeError, match="uv sync crashed"):
             executor._ensure_prepared()
@@ -748,7 +782,7 @@ class TestEnsurePrepared:
             "specweaver.sandbox.execution.container_executor.shutil.which",
             lambda name: f"/usr/bin/{name}",
         )
-        executor = ContainerSubprocessExecutor(cwd=tmp_path, mounts=mounts)
+        executor = ContainerSubprocessExecutor(build_tool="uv", cwd=tmp_path, mounts=mounts)
 
         executor._ensure_prepared()
 

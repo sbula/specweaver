@@ -103,7 +103,7 @@ class TestPlanSpecConfigTaskType:
     """PlanSpecHandler._resolve_routing uses task_type=PLAN (story 9)."""
 
     def test_plan_config_sets_plan_task_type(self):
-        from specweaver.core.flow.handlers.generation import PlanSpecHandler
+        from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 
         handler = PlanSpecHandler()
         context = _make_context()
@@ -112,7 +112,7 @@ class TestPlanSpecConfigTaskType:
 
     def test_plan_config_fallback_sets_plan(self):
         """Fallback path (context.model.config=None) also sets task_type=PLAN."""
-        from specweaver.core.flow.handlers.generation import PlanSpecHandler
+        from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 
         handler = PlanSpecHandler()
         context = _make_context(with_config=False)

@@ -24,6 +24,7 @@ from unittest.mock import patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
@@ -31,7 +32,12 @@ from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.review import ReviewSpecHandler
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import (
+    IsolationPolicy,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.infrastructure.llm.models import LLMResponse
 from tests.fixtures.db_utils import register_test_project
 from tests.scripted_llm import FixedRouter
@@ -67,7 +73,12 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[RunContext, 
     (root / "specs").mkdir(parents=True)
     (root / "specs" / "greet_spec.md").write_text(_SPEC, encoding="utf-8")
     register_test_project(db, "greeter", str(root))
-    context = RunContext(project_path=root, spec_path=root / "specs" / "greet_spec.md", db=db)
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=root,
+        spec_path=root / "specs" / "greet_spec.md",
+        db=db,
+    )
     return context, data / "projects" / "greeter" / "scenarios"
 
 
@@ -103,7 +114,9 @@ async def _dual(context: RunContext) -> tuple[Any, _Spawner]:
     )
     with (
         patch.object(
-            ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda r: True)
+            ArbitrateDualPipelineHandler,
+            "container_available",
+            staticmethod(lambda r, build_tool: True),
         ),
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)
@@ -145,7 +158,11 @@ async def test_an_unregistered_project_review_records_nothing(tmp_path: Path) ->
     root = tmp_path / "loose"
     (root / "specs").mkdir(parents=True)
     (root / "specs" / "greet_spec.md").write_text(_SPEC, encoding="utf-8")
-    context = RunContext(project_path=root, spec_path=root / "specs" / "greet_spec.md")
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=root,
+        spec_path=root / "specs" / "greet_spec.md",
+    )
 
     result = await _review(context, "ACCEPTED")
 

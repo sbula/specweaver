@@ -27,6 +27,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import typer
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
@@ -40,7 +41,12 @@ from specweaver.core.flow.engine.state import (
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.scenario import GenerateScenarioHandler
 from specweaver.core.flow.interfaces import cli
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import (
+    IsolationPolicy,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.sandbox.git.interfaces import facades
 from specweaver.sandbox.git.interfaces import tool as git_tool
@@ -139,6 +145,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Data
 
 async def _step(root: Path, db: Database, llm: Any) -> tuple[StepResult, RunContext]:
     context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
         project_path=root,
         spec_path=root / "specs" / "greet_spec.md",
         db=db,
@@ -203,14 +210,20 @@ async def _dual(root: Path, problems: list[str]) -> tuple[StepResult, RunContext
 
             return _Side()
 
-    context = RunContext(project_path=root, spec_path=root / "specs" / "greet_spec.md")
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=root,
+        spec_path=root / "specs" / "greet_spec.md",
+    )
     context.run = RunHandle(run_id="r", pipeline_runner=_Spawner())
     step = PipelineStep(
         name="run_dual_pipelines", action=StepAction.ORCHESTRATE, target=StepTarget.COMPONENTS
     )
     with (
         patch.object(
-            ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda r: True)
+            ArbitrateDualPipelineHandler,
+            "container_available",
+            staticmethod(lambda r, build_tool: True),
         ),
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)

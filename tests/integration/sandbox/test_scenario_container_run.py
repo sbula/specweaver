@@ -52,7 +52,9 @@ def _project(root: Path) -> Path:
 
 def test_a_scenario_test_runs_from_the_mount_and_leaves_no_trace(tmp_path: Path) -> None:
     project = _project(tmp_path / "project")
-    atom = qa_atom(cwd=project, language="python", scenarios_root=project / "scenarios")
+    atom = qa_atom(
+        cwd=project, language="python", scenarios_root=project / "scenarios", build_tool="uv"
+    )
     scratch = atom._runner._executor._mounts.scratch_root
 
     result = atom.run(

@@ -399,7 +399,7 @@
           "old": "    OUTPUT_SUBDIR: ClassVar[str]\n",
           "new": "    OUTPUT_SUBDIR: ClassVar[str]\n    FILENAME_PREFIX: ClassVar[str] = \"\"\n",
           "breaks": "a setting nothing reads comes back",
-          "symbol_sha": "sha256:cc186c6ce57c3a8488845326aeba0bbad87eb08ff24e17b39b1178d9b69ad941"
+          "symbol_sha": "sha256:9c1f72e1250706fbcca0129814899ecb77e34661ce150ef854f79cc98b7d1201"
         },
         {
           "id": "assemblers-share-a-title",
@@ -495,19 +495,19 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "_GenerationHandler.execute",
-          "old": "                FILES_TOUCHED: _touched(output_path, context.project_path),\n            }",
+          "old": "                FILES_TOUCHED: touched(output_path, context.project_path),\n            }",
           "new": "            }",
           "breaks": "the code step names no file, so the saved handover lists none",
           "tests": [
             "tests/integration/core/flow/engine/test_files_touched_reach_handover.py"
           ],
-          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
         },
         {
           "id": "touched-not-relative",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
-          "symbol": "_touched",
+          "file": "src/specweaver/core/flow/engine/step_outputs.py",
+          "symbol": "touched",
           "old": "    return [str(written.relative_to(root))] if written.is_relative_to(root) else [str(written)]",
           "new": "    return [str(written)]",
           "breaks": "files_touched holds absolute paths, which name a worktree that is gone",

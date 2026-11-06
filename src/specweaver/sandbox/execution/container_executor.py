@@ -31,7 +31,6 @@ from specweaver.workspace.project.prepare_plan import (
     DEFAULT_GROUP,
     LAST_RESORT_RUNNER,
     PreparePlan,
-    detect_toolchain,
     plan_for,
 )
 
@@ -73,6 +72,8 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         mounts: Host paths for the RO source mount and RW scratch/cache mounts.
         image: Explicit image reference. Defaults to a tag resolved from the
             target project's ``requires-python``.
+        build_tool: The run's build tool (`uv`, `cargo`, `maven`, `gradle`, `npm`, or `""`): the image,
+            the prepare plan and the mounts follow it; nothing detects it.
         run_id: Used to build a deterministic, collision-resistant container name.
         timeout_seconds: Default timeout, forwarded to ``SubprocessExecutor``.
         resource_limits: Forwarded to ``SubprocessExecutor`` — applies to the
@@ -86,6 +87,8 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         cwd: Path,
         mounts: ContainerMounts,
         image: str | None = None,
+        *,
+        build_tool: str,
         run_id: str | None = None,
         timeout_seconds: int = 120,
         resource_limits: ResourceLimits | None = None,
@@ -100,9 +103,14 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         mounts.cache_root.mkdir(parents=True, exist_ok=True)
 
         self._mounts = mounts
+        self._build_tool = build_tool
         self._run_id = run_id or uuid.uuid4().hex[:12]
-        self._image = image or _resolve_image(mounts.source_root)
+        self._image = image or _resolve_image(mounts.source_root, build_tool)
         self._engine: str | None = None
+
+    def _prepare_plan(self) -> PreparePlan:
+        """The prepare plan for the run's build tool, read from the source tree when asked."""
+        return plan_for(self._mounts.source_root, self._build_tool)
 
     def _run_engine(self, argv: list[str]) -> int:
         """An engine command on the host, for its exit code; image builds may take minutes."""
@@ -141,7 +149,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         weaker than read-only inside the container, so Python and Rust do not get one; neither needs
         to write there.
         """
-        return "O" if detect_toolchain(self._mounts.source_root) in ("maven", "gradle") else "ro"
+        return "O" if self._build_tool in ("maven", "gradle") else "ro"
 
     def _toolchain_env(self) -> dict[str, str]:
         """Environment both phases must agree on, so a fetch survives into the run.
@@ -150,7 +158,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         the same path, now read-only, during the run — and `CARGO_TARGET_DIR` has to point at
         `/scratch` because the default `target/` sits under the read-only source mount.
         """
-        return plan_for(self._mounts.source_root).env
+        return self._prepare_plan().env
 
     def _baseline_flags(self, engine: str) -> list[str]:
         """Security/resource flags shared by BOTH the prepare and execute phases (Red/Blue
@@ -194,7 +202,7 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
         if not ensure_sandbox_image(self._image, engine, self._run_engine):
             msg = f"the sandbox image {self._image} could not be built from {_RECIPE}"
             raise RuntimeError(msg)
-        plan = plan_for(self._mounts.source_root)
+        plan = self._prepare_plan()
         if plan.toolchain != "uv":
             self._prepare_other_toolchain(plan)
             return
@@ -509,16 +517,12 @@ class ContainerSubprocessExecutor(SubprocessExecutor):
             # `PATH` is only rewritten for Python, where the prepared venv must come first. Forcing
             # it on another toolchain hides the very binary its image was chosen for: `cargo` is not
             # under `/cache/venv/bin`.
-            *(
-                ["-e", f"PATH={_CONTAINER_PATH}"]
-                if detect_toolchain(self._mounts.source_root) in ("uv", "")
-                else []
-            ),
+            *(["-e", f"PATH={_CONTAINER_PATH}"] if self._build_tool in ("uv", "") else []),
             *(
                 arg
                 for key, value in {
                     **self._toolchain_env(),
-                    **plan_for(self._mounts.source_root).execute_env,
+                    **self._prepare_plan().execute_env,
                 }.items()
                 for arg in ("-e", f"{key}={value}")
             ),

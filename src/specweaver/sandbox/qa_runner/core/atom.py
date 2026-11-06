@@ -29,12 +29,12 @@ if TYPE_CHECKING:
     from specweaver.sandbox.qa_runner.core.interface import ArchitectureRunResult, QARunnerInterface
 
 
-def container_available(project_root: Path) -> bool:
-    """Whether this project's tests can run in a container: a live engine and its image, built
-    here from SpecWeaver's own recipe when missing."""
+def container_available(project_root: Path, build_tool: str) -> bool:
+    """Whether this project's tests can run in a container: a live engine and the image for the
+    run's build tool, built here from SpecWeaver's own recipe when missing."""
     from specweaver.sandbox.execution.sandbox_image import sandbox_ready
 
-    return sandbox_ready(project_root)
+    return sandbox_ready(project_root, build_tool)
 
 
 # ---------------------------------------------------------------------------

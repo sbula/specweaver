@@ -377,7 +377,7 @@ def _scenario_world(
             )
         )
         for target in (
-            "specweaver.core.flow.handlers.generation.PlanSpecHandler.execute",
+            "specweaver.core.flow.handlers.plan_spec.PlanSpecHandler.execute",
             "specweaver.core.flow.handlers.generation.GenerateTestsHandler.execute",
             "specweaver.core.flow.handlers.validation.ValidateCodeHandler.execute",
         ):

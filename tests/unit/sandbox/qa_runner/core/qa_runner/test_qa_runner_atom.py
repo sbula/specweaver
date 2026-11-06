@@ -668,6 +668,7 @@ class TestSandboxSettingsExecutorSelection:
             cwd=tmp_path,
             language="python",
             sandbox_settings=SandboxSettings(execution_mode="container"),
+            build_tool="uv",
         )
         assert isinstance(atom._runner._executor, ContainerSubprocessExecutor)
 
@@ -676,6 +677,7 @@ class TestSandboxSettingsExecutorSelection:
             cwd=tmp_path,
             language="python",
             sandbox_settings=SandboxSettings(execution_mode="container"),
+            build_tool="uv",
         )
         mounts = atom._runner._executor._mounts
         assert mounts.source_root == tmp_path
@@ -810,7 +812,9 @@ class TestEveryIntentStaysInside:
             patch("specweaver.sandbox.language.core.runner_factory._build_container_executor"),
             patch("specweaver.sandbox.language.core.runner_factory.resolve_runner") as resolve,
         ):
-            mounted = qa_atom(cwd=project, language="python", scenarios_root=tmp_path / "store")
+            mounted = qa_atom(
+                cwd=project, language="python", scenarios_root=tmp_path / "store", build_tool="uv"
+            )
             with suppress(TypeError):
                 mounted.run(context)
         assert resolve.return_value.run_tests.called

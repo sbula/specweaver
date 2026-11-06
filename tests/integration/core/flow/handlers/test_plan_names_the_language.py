@@ -18,7 +18,7 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.generation import PlanSpecHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from specweaver.infrastructure.llm.models import Role
 from tests.scripted_llm import FixedRouter, ScriptedLLM

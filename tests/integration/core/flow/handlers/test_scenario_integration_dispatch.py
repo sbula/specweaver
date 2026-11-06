@@ -41,7 +41,9 @@ def _a_container_is_available(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: True),
     )
 
     monkeypatch.setattr(
@@ -272,7 +274,7 @@ async def test_fr6_leaky_verdict_reaches_code_generator_vocabulary_free(tmp_path
             return_value=None,
         ),
         patch(
-            "specweaver.core.flow.handlers.generation._build_tool_dispatcher",
+            "specweaver.core.flow.handlers.plan_spec._build_tool_dispatcher",
             return_value=MagicMock(),
         ),
     ):

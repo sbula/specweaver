@@ -26,6 +26,7 @@ from specweaver.core.flow.handlers.base import (  # noqa: F401
     _now_iso,
 )
 from specweaver.core.flow.handlers.bash_action import BashActionHandler
+from specweaver.core.flow.handlers.contract import GenerateContractHandler
 from specweaver.core.flow.handlers.decompose import (
     DecomposeFeatureHandler,
     OrchestrateComponentsHandler,
@@ -35,13 +36,9 @@ from specweaver.core.flow.handlers.decompose import (
 from specweaver.core.flow.handlers.draft import DraftFeatureHandler, DraftSpecHandler
 from specweaver.core.flow.handlers.drift import DriftCheckHandler
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.handlers.generation import (
-    GenerateCodeHandler,
-    GenerateContractHandler,
-    GenerateTestsHandler,
-    PlanSpecHandler,
-)
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler, GenerateTestsHandler
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler, ReviewSpecHandler
 from specweaver.core.flow.handlers.scenario import (
     ConvertScenarioHandler,

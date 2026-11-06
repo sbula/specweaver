@@ -67,7 +67,7 @@ def test_full_chain_runs_real_script_inside_container(tmp_path: Path) -> None:
         cache_root=project_root / ".specweaver" / ".sandbox" / "cache",
     )
     executor = ContainerSubprocessExecutor(
-        cwd=project_root, mounts=mounts, image=_TEST_IMAGE, run_id="chain-test"
+        build_tool="uv", cwd=project_root, mounts=mounts, image=_TEST_IMAGE, run_id="chain-test"
     )
 
     runner = resolve_runner(project_root, executor=executor, language="python")

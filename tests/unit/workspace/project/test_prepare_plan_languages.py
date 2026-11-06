@@ -14,13 +14,14 @@ So dependencies are fetched into the cache once, and builds write to scratch —
 `/workspace`, which is read-only in both.
 
 Proves: TECH-031 FR-16
+Proves: TECH-079 FR-7
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.workspace.project.prepare_plan import detect_toolchain, plan_for
+from specweaver.workspace.project.prepare_plan import plan_for
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,37 +35,39 @@ def _project(tmp_path: Path, **files: str) -> Path:
     return root
 
 
-class TestDetectToolchain:
-    """Named from the manifest, because that is what the build tool itself reads."""
+class TestThePlanTakesTheBuildTool:
+    """TECH-079 FR-7: the run's profile names the build tool; the plan never detects one."""
 
-    def test_a_cargo_manifest_is_rust(self, tmp_path: Path) -> None:
-        assert detect_toolchain(_project(tmp_path, Cargo__toml="[package]\n")) == "cargo"
+    def test_the_build_tool_wins_over_the_files(self, tmp_path: Path) -> None:
+        """A root with pyproject.toml and Cargo.toml pinned to Rust prepares Rust, not uv."""
+        root = _project(
+            tmp_path,
+            pyproject__toml="[project]\n",
+            Cargo__toml='[package]\nname = "p"\n',
+            Cargo__lock="",
+        )
 
-    def test_a_pom_is_maven(self, tmp_path: Path) -> None:
-        assert detect_toolchain(_project(tmp_path, pom__xml="<project/>")) == "maven"
+        assert plan_for(root, "cargo").toolchain == "cargo"
 
-    def test_a_groovy_gradle_script_is_gradle(self, tmp_path: Path) -> None:
-        assert detect_toolchain(_project(tmp_path, build__gradle="")) == "gradle"
+    def test_npm_cannot_be_prepared_yet_and_says_so(self, tmp_path: Path) -> None:
+        plan = plan_for(_project(tmp_path, package__json="{}", tsconfig__json="{}"), "npm")
 
-    def test_a_kotlin_gradle_script_is_gradle(self, tmp_path: Path) -> None:
-        """Separate test rather than a second call: the helper builds the project directory."""
-        assert detect_toolchain(_project(tmp_path, **{"build__gradle__kts": ""})) == "gradle"
+        assert (plan.toolchain, plan.route) == ("npm", "none")
+        assert any("npm" in warning for warning in plan.warnings)
+        assert not any("Gradle" in warning for warning in plan.warnings)
 
-    def test_a_pyproject_is_uv(self, tmp_path: Path) -> None:
-        assert detect_toolchain(_project(tmp_path, pyproject__toml="[project]\n")) == "uv"
+    def test_no_build_tool_plans_python_as_today(self, tmp_path: Path) -> None:
+        """Python with only requirements.txt has no build tool; the plan stays the uv one."""
+        plan = plan_for(_project(tmp_path, requirements__txt="pytest\n"), "")
 
-    def test_python_wins_when_a_project_carries_both(self, tmp_path: Path) -> None:
-        """A polyglot repo is real — this repo has Java and Kotlin fixtures inside a Python tree.
+        assert plan.route == "none"
+        assert plan.toolchain == "uv"
 
-        Python is checked first because that is what the QA runner resolves for such a tree today;
-        changing which language wins is a routing decision, not a prepare-phase one.
-        """
-        root = _project(tmp_path, pyproject__toml="[project]\n", Cargo__toml="[package]\n")
+    def test_the_detector_is_gone(self) -> None:
+        """TECH-079 NFR-3: no shim keeps a second answer alive."""
+        import specweaver.workspace.project.prepare_plan as prepare_plan
 
-        assert detect_toolchain(root) == "uv"
-
-    def test_a_tree_with_no_manifest_names_no_toolchain(self, tmp_path: Path) -> None:
-        assert detect_toolchain(_project(tmp_path, README__md="")) == ""
+        assert not hasattr(prepare_plan, "detect_toolchain")
 
 
 class TestPlanForOtherToolchains:
@@ -72,7 +75,9 @@ class TestPlanForOtherToolchains:
 
     def test_a_rust_project_fetches_its_dependencies_first(self, tmp_path: Path) -> None:
         """`cargo fetch` in the phase with network; the build then runs `--offline`."""
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
+        plan = plan_for(
+            _project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""), "cargo"
+        )
 
         assert plan.toolchain == "cargo"
         assert plan.route == "fetch"
@@ -82,7 +87,9 @@ class TestPlanForOtherToolchains:
     def test_rust_dependencies_land_in_the_cache_not_the_source_tree(self, tmp_path: Path) -> None:
         """`/workspace` is read-only, and the default `CARGO_HOME` is outside it anyway — what
         matters is that the fetch survives into the execute phase, which only sees `/cache`."""
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
+        plan = plan_for(
+            _project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""), "cargo"
+        )
 
         assert any("/cache" in v for v in plan.env.values()), plan.env
 
@@ -94,7 +101,7 @@ class TestPlanForOtherToolchains:
         Cargo says so itself under `--locked`: *"cannot create the lock file … because --locked was
         passed"*. The alternative is a writable source tree while arbitrary build scripts run.
         """
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n'))
+        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n'), "cargo")
 
         assert plan.toolchain == "cargo"
         assert plan.steps == ()
@@ -102,7 +109,9 @@ class TestPlanForOtherToolchains:
 
     def test_the_rust_run_is_offline_but_the_fetch_is_not(self, tmp_path: Path) -> None:
         """The fetch is the one step that needs the network; the run must not have it."""
-        plan = plan_for(_project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""))
+        plan = plan_for(
+            _project(tmp_path, Cargo__toml='[package]\nname = "p"\n', Cargo__lock=""), "cargo"
+        )
 
         assert plan.execute_env.get("CARGO_NET_OFFLINE") == "true"
         assert "CARGO_NET_OFFLINE" not in plan.env
@@ -117,7 +126,7 @@ class TestPlanForOtherToolchains:
         it — only a full `test` does — and without it the offline run dies on *"Cannot access
         central … in offline mode"*.
         """
-        plan = plan_for(_project(tmp_path, pom__xml="<project/>"))
+        plan = plan_for(_project(tmp_path, pom__xml="<project/>"), "maven")
 
         assert plan.toolchain == "maven"
         joined = [" ".join(cmd) for _, cmd in plan.steps]
@@ -127,7 +136,7 @@ class TestPlanForOtherToolchains:
     def test_a_red_suite_does_not_fail_the_maven_preparation(self, tmp_path: Path) -> None:
         """The preparation runs the suite, so a project with failing tests would otherwise never
         reach the run that reports them — it would be a prepare-phase error instead."""
-        plan = plan_for(_project(tmp_path, pom__xml="<project/>"))
+        plan = plan_for(_project(tmp_path, pom__xml="<project/>"), "maven")
 
         joined = " ".join(cmd for _, cmd_tuple in plan.steps for cmd in cmd_tuple)
         assert "-Dmaven.test.failure.ignore=true" in joined, joined
@@ -138,7 +147,7 @@ class TestPlanForOtherToolchains:
         """The honest answer for now. A Gradle wrapper downloads its own distribution on first use,
         which the execute phase has no network for, and the system Gradle is 4.4.1 — so claiming
         support would be the vacuous kind of green this ticket exists to remove."""
-        plan = plan_for(_project(tmp_path, build__gradle=""))
+        plan = plan_for(_project(tmp_path, build__gradle=""), "gradle")
 
         assert plan.toolchain == "gradle"
         assert plan.steps == ()
@@ -152,7 +161,8 @@ class TestPlanForOtherToolchains:
                 pyproject__toml='[project]\nname = "t"\nversion = "0"\n\n'
                 '[dependency-groups]\ntests = ["pytest"]\n',
                 uv__lock="locked",
-            )
+            ),
+            "uv",
         )
 
         assert plan.toolchain == "uv"

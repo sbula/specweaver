@@ -72,6 +72,8 @@ def qa_atom(
     language: str,
     sandbox_settings: SandboxSettings | None = None,
     scenarios_root: Path | None = None,
+    *,
+    build_tool: str | None = None,
 ) -> QARunnerAtom:
     """The QA atom for `cwd`, with the runner for its language and the executor the run asks for.
 
@@ -81,14 +83,22 @@ def qa_atom(
         sandbox_settings: `execution_mode="container"` routes execution through a container;
             None or `"host"` runs on the host.
         scenarios_root: A scenario store to mount read-only; implies a container.
+        build_tool: The run's build tool; a container needs it for its image and prepare plan, and
+            a container run without one is refused. The host ignores it.
     """
     executor: SubprocessExecutor
     scratch: Path | None = None
+    container = scenarios_root is not None or (
+        sandbox_settings is not None and sandbox_settings.execution_mode == "container"
+    )
+    if container and build_tool is None:
+        msg = "a container run needs the run's build tool for its image and prepare plan"
+        raise ValueError(msg)
     if scenarios_root is not None:
         scratch = Path(tempfile.mkdtemp(prefix="specweaver-scenario-"))
-        executor = _build_container_executor(cwd, scenarios_root, scratch)
-    elif sandbox_settings is not None and sandbox_settings.execution_mode == "container":
-        executor = _build_container_executor(cwd)
+        executor = _build_container_executor(cwd, str(build_tool), scenarios_root, scratch)
+    elif container:
+        executor = _build_container_executor(cwd, str(build_tool))
     else:
         executor = SubprocessExecutor(cwd=cwd)
 
@@ -122,7 +132,7 @@ def architecture_atom(cwd: Path) -> QARunnerAtom:
 
 
 def _build_container_executor(
-    cwd: Path, scenarios_root: Path | None = None, scratch_root: Path | None = None
+    cwd: Path, build_tool: str, scenarios_root: Path | None = None, scratch_root: Path | None = None
 ) -> SubprocessExecutor:
     """Derive the RO-source / RW-scratch-cache mount layout under `.specweaver/.sandbox/`
     and build a ContainerSubprocessExecutor from it.
@@ -140,4 +150,4 @@ def _build_container_executor(
         cache_root=sandbox_dir / "cache",
         scenarios_root=scenarios_root,
     )
-    return ContainerSubprocessExecutor(cwd=cwd, mounts=mounts)
+    return ContainerSubprocessExecutor(cwd=cwd, mounts=mounts, build_tool=build_tool)

@@ -153,7 +153,7 @@ async def test_generate_tests_uses_full_profile(mock_generator_class, mock_build
 @patch("specweaver.workflows.planning.planner.Planner")
 async def test_plan_spec_uses_full_profile(mock_planner_class, mock_build, run_context):
     from specweaver.core.flow.engine.models import PipelineStep
-    from specweaver.core.flow.handlers.generation import PlanSpecHandler
+    from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 
     mock_build.return_value = AsyncMock()
     mock_planner = mock_planner_class.return_value

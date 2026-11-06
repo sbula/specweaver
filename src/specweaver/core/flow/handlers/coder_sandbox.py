@@ -13,10 +13,14 @@ import logging
 from typing import TYPE_CHECKING
 
 from specweaver.core.config.settings import SandboxSettings
+from specweaver.core.flow.engine.run_profile import run_profile
 from specweaver.sandbox.qa_runner.core.atom import container_available
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.core.flow.run_state.run_context import RunContext
+    from specweaver.sandbox.qa_runner.core.atom import QARunnerAtom
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ def coder_sandbox(context: RunContext) -> SandboxSettings | None:
     configured = context.model.config.sandbox if context.model.config else None
     if not (context.run.dual_side == "coder" or _keeps_scenarios(context)):
         return configured
-    if container_available(context.project_path):
+    if container_available(context.project_path, run_profile(context).build_tool):
         return (configured or SandboxSettings()).model_copy(update={"execution_mode": "container"})
     # A dual run has refused already; a normal run goes on, said out loud.
     logger.warning(
@@ -34,6 +38,30 @@ def coder_sandbox(context: RunContext) -> SandboxSettings | None:
         "code runs on the host where it could read them. Install Podman or Docker to close that."
     )
     return configured
+
+
+def qa_atom_for(
+    context: RunContext, cwd: Path | None = None, scenarios_root: Path | None = None
+) -> QARunnerAtom:
+    """The QA atom for the run's language and build tool: the scenario tests' container when
+    `scenarios_root` is given, else where the coder's code runs (`coder_sandbox`)."""
+    from specweaver.sandbox.language.core.runner_factory import qa_atom
+
+    profile = run_profile(context)
+    root = cwd or context.project_path
+    if scenarios_root is not None:
+        return qa_atom(
+            cwd=root,
+            language=profile.language,
+            scenarios_root=scenarios_root,
+            build_tool=profile.build_tool,
+        )
+    return qa_atom(
+        cwd=root,
+        language=profile.language,
+        sandbox_settings=coder_sandbox(context),
+        build_tool=profile.build_tool,
+    )
 
 
 def _keeps_scenarios(context: RunContext) -> bool:

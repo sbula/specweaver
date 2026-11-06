@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.fan_out import isolate_sub_run_context
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
@@ -34,7 +35,7 @@ from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
-from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext, RunHandle
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,7 +48,11 @@ _VERDICTS = {
 
 
 def _context(tmp_path: Path, feedback: dict[str, Any]) -> RunContext:
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "specs" / "greet_spec.md")
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=tmp_path,
+        spec_path=tmp_path / "specs" / "greet_spec.md",
+    )
     context.feedback = dict(feedback)
     return context
 
@@ -113,7 +118,9 @@ class _Spawner:
 @pytest.fixture(autouse=True)
 def _a_container_is_available(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: True),
     )
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)
@@ -169,7 +176,9 @@ async def test_a_dual_run_refuses_without_a_container(
 ) -> None:
     # Proves: B-FLOW-01 FR-18
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: False)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: False),
     )
     context, spawner = _context(tmp_path, {}), _Spawner()
     context.run = RunHandle(run_id="r", pipeline_runner=spawner)

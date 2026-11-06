@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from specweaver.sandbox.execution.executor import SubprocessExecutor
-from specweaver.workspace.project.prepare_plan import detect_toolchain
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -55,15 +54,14 @@ def own_image(version: str, recipe: bytes | None = None) -> str:
 _ENGINES: tuple[str, ...] = ("podman", "docker")  # AD-6: podman preferred, docker fallback
 
 
-def _resolve_image(source_root: Path) -> str:
-    """The image for this project's toolchain.
+def _resolve_image(source_root: Path, build_tool: str) -> str:
+    """The image for the run's build tool.
 
     Python keeps its own sandbox image and its `requires-python` tag selection. Every other toolchain
     takes an upstream image that carries it, because the Python image contains no `cargo` and no JDK.
     """
-    toolchain = detect_toolchain(source_root)
-    if toolchain in _TOOLCHAIN_IMAGES:
-        return _TOOLCHAIN_IMAGES[toolchain]
+    if build_tool in _TOOLCHAIN_IMAGES:
+        return _TOOLCHAIN_IMAGES[build_tool]
     version = _DEFAULT_TAG
     pyproject = source_root / "pyproject.toml"
     if pyproject.exists():
@@ -130,6 +128,7 @@ def container_available(
 
 def sandbox_ready(
     project_root: Path,
+    build_tool: str,
     which: Callable[[str], str | None] = shutil.which,
     probe: Callable[[str], bool] | None = None,
     ensure: Callable[[str, str, Callable[[list[str]], int]], bool] = ensure_sandbox_image,
@@ -139,7 +138,7 @@ def sandbox_ready(
     for name in _ENGINES:
         engine = which(name)
         if engine and answers(engine):
-            return ensure(_resolve_image(project_root), engine, _on_host(project_root))
+            return ensure(_resolve_image(project_root, build_tool), engine, _on_host(project_root))
     return False
 
 

@@ -24,10 +24,11 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
-from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext, RunHandle
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,11 +69,17 @@ class _Spawner:
 def _isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ("container_available", "isolation_refusal", "review_refusal"):
         answer = True if name == "container_available" else None
-        monkeypatch.setattr(ArbitrateDualPipelineHandler, name, staticmethod(lambda _, a=answer: a))
+        monkeypatch.setattr(
+            ArbitrateDualPipelineHandler, name, staticmethod(lambda *_, a=answer: a)
+        )
 
 
 async def _dual(tmp_path: Path, feedback: dict[str, Any], spawner: _Spawner) -> Any:
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "specs" / "greet_spec.md")
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=tmp_path,
+        spec_path=tmp_path / "specs" / "greet_spec.md",
+    )
     context.feedback = dict(feedback)
     context.run = RunHandle(run_id="r", pipeline_runner=spawner)
     return await ArbitrateDualPipelineHandler().execute(_STEP, context)

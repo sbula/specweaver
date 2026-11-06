@@ -82,7 +82,7 @@
           "old": "            if decision.mode is ExecutionMode.AGENTIC:\n",
           "new": "            if False:\n",
           "breaks": "mode: agentic changes nothing; the step runs one-shot",
-          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
         },
         {
           "id": "coder-without-its-step",
@@ -132,7 +132,7 @@
           "old": "                output[\"agentic_refused\"] = decision.reason\n",
           "new": "                pass\n",
           "breaks": "a one-shot fallback hides why",
-          "symbol_sha": "sha256:2a8f0abc1efe43bf80d69646d9cc3de23b4a5bbaada04996dac6407844d741fe"
+          "symbol_sha": "sha256:2a1bf8c2d938d2c2bbe16f6b0171bd8a54aed79af01f6a1c7d2ad1fcd4dd6a09"
         }
       ]
     },

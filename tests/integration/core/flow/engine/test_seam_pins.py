@@ -48,7 +48,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepResult, StepStatus
 from specweaver.core.flow.engine.store import StateStore
-from specweaver.core.flow.handlers.generation import PlanSpecHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
 from tests.scripted_llm import FixedRouter

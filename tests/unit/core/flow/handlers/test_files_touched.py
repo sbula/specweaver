@@ -26,8 +26,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED
-from specweaver.core.flow.handlers.generation import GenerateContractHandler, _touched
+from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED, touched
+from specweaver.core.flow.handlers.contract import GenerateContractHandler
 from specweaver.core.flow.run_state.run_context import GraphContext, IsolationPolicy
 
 _SPEC = """## 2. Contract
@@ -71,20 +71,20 @@ async def test_a_failed_contract_step_names_no_file(tmp_path: Path) -> None:
 def test_a_file_in_a_worktree_is_relative_to_that_worktree(tmp_path: Path) -> None:
     worktree = tmp_path / ".worktrees" / "session-1"
 
-    assert _touched(worktree / "src" / "a.py", worktree) == ["src/a.py"]
+    assert touched(worktree / "src" / "a.py", worktree) == ["src/a.py"]
 
 
 def test_a_file_outside_the_project_is_kept_as_given(tmp_path: Path) -> None:
     outside = tmp_path / "out" / "a.py"
 
-    assert _touched(outside, tmp_path / "project") == [str(outside)]
+    assert touched(outside, tmp_path / "project") == [str(outside)]
 
 
 def test_a_path_that_climbs_out_is_not_written_relative(tmp_path: Path) -> None:
     project = tmp_path / "project"
     climbing = project / ".." / "elsewhere" / "a.py"
 
-    assert _touched(climbing, project) == [str(tmp_path / "elsewhere" / "a.py")]
+    assert touched(climbing, project) == [str(tmp_path / "elsewhere" / "a.py")]
 
 
 def test_the_scenario_steps_name_no_file() -> None:
@@ -92,7 +92,7 @@ def test_the_scenario_steps_name_no_file() -> None:
     names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
 
     assert "FILES_TOUCHED" not in names
-    assert "_touched" not in names
+    assert "touched" not in names
 
 
 @pytest.fixture(autouse=True)

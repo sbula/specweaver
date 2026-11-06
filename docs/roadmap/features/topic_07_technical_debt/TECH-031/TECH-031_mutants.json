@@ -55,7 +55,7 @@
           "old": "f\"PATH={_CONTAINER_PATH}\"",
           "new": "f\"PATH=/usr/bin:{_CONTAINER_PATH}\"",
           "breaks": "the prepared environment is on PATH but not first, so `python -m pytest` resolves to the image's own interpreter — the membership check that used to pass this is why the assertion is positional",
-          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
+          "symbol_sha": "sha256:b5d9c0716a429573b1200f5f201f15ea9353354bd0d6f91cedc6d1c30518fbe0"
         }
       ]
     },
@@ -75,7 +75,7 @@
           "old": "                raise RuntimeError(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "new": "                logger.warning(\n                    f\"container prepare phase failed at the {step} step (exit={result.exit_code}). \"\n                    f\"The sandbox has no prepared environment, so any QA run inside it would report \"\n",
           "breaks": "the phase fails silently and the QA runner reports an absent toolchain as an empty suite — both look like nothing happening",
-          "symbol_sha": "sha256:da6f9be4b29c87b93d8163722f6c38833f5802e31701c10ef8f7546fe2289db4"
+          "symbol_sha": "sha256:5c7387a0181312b63e3a0bc4ee6e97b0f050ef94946d1116087fe750fb331abd"
         }
       ]
     },
@@ -124,7 +124,7 @@
           "old": "locked=lockfile.exists()",
           "new": "locked=True",
           "breaks": "a project with no uv.lock is sent to `uv sync --frozen`, which refuses, so it gets no environment at all",
-          "symbol_sha": "sha256:da6f9be4b29c87b93d8163722f6c38833f5802e31701c10ef8f7546fe2289db4"
+          "symbol_sha": "sha256:5c7387a0181312b63e3a0bc4ee6e97b0f050ef94946d1116087fe750fb331abd"
         }
       ]
     },
@@ -200,7 +200,7 @@
           "old": "route = \"locked\" if locked else \"resolved\"",
           "new": "route = \"locked\"",
           "breaks": "the preflight reports a frozen route for a project with no lockfile, so a reader is told the run reproduces pins that do not exist",
-          "symbol_sha": "sha256:48311248be4b3d8baa5e6e1895d6fbd5d3968d67329f0d3b9fccba0694e66eb6"
+          "symbol_sha": "sha256:8e28a1ff19cb86a530e918c6a61c77055f6545ad38c087478a8c4a467358a99b"
         }
       ]
     },
@@ -296,7 +296,7 @@
           "old": "    if toolchain == \"cargo\":",
           "new": "    if False:",
           "breaks": "a Rust project falls through to the unsupported branch, so its crates are never fetched and the offline run has nothing to build against",
-          "symbol_sha": "sha256:63fa2741a50f4ea52db896d93177b9123be8bc48179d30ce60efaeac51592c37"
+          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
         }
       ]
     },
@@ -312,10 +312,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/sandbox_image.py",
           "symbol": "_resolve_image",
-          "old": "    if toolchain in _TOOLCHAIN_IMAGES:",
+          "old": "    if build_tool in _TOOLCHAIN_IMAGES:",
           "new": "    if False:",
           "breaks": "a Rust or JVM project is handed the Python sandbox image, which contains no cargo and no JDK, and no amount of preparing puts one there",
-          "symbol_sha": "sha256:77e019906faa9086785e6fc7c65d3515c3fcb720dafb26e1d757b2d0004acb39"
+          "symbol_sha": "sha256:c27abc30c1673897b09f27c203e2eec93d35153c5ed4b2f2cee7b900bc2073df"
         }
       ]
     },
@@ -331,10 +331,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/container_executor.py",
           "symbol": "ContainerSubprocessExecutor._workspace_mode",
-          "old": "        return \"O\" if detect_toolchain(self._mounts.source_root) in (\"maven\", \"gradle\") else \"ro\"",
+          "old": "        return \"O\" if self._build_tool in (\"maven\", \"gradle\") else \"ro\"",
           "new": "        return \"ro\"",
           "breaks": "Maven cannot write `target/` and cannot be told to build elsewhere, so the build fails before it compiles anything",
-          "symbol_sha": "sha256:235046f046ca34f7e0ee61fc138709044cb6a2de40f7181a279e105dbf980a3b"
+          "symbol_sha": "sha256:ff0375849f5f6ceb7d63bc3752001b9cef650f0f738787f2b301b8a048eee08d"
         }
       ]
     },

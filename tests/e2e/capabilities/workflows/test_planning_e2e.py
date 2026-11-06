@@ -25,7 +25,8 @@ from specweaver.core.flow.engine.models import (
     StepTarget,
 )
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.generation import GenerateCodeHandler, PlanSpecHandler
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.handlers.validation import ValidateSpecHandler
 from specweaver.core.flow.run_state.run_context import ModelAccess, PlanContext, RunContext
 from tests.scripted_llm import FixedRouter

@@ -37,6 +37,17 @@ if TYPE_CHECKING:
 _TEST_IMAGE = "python:3.13-slim"
 
 
+def _tool(mounts) -> str:
+    """The build tool the real profile decision names for the test project ("" when none)."""
+    from specweaver.commons.project_profile import ProjectUndecidedError
+    from specweaver.workspace.project.project_profile import read_project_profile
+
+    try:
+        return read_project_profile(mounts.source_root).build_tool
+    except ProjectUndecidedError:  # expected: a project with no build file names no tool
+        return ""
+
+
 def _detect_live_engine() -> str | None:
     for name in ("podman", "docker"):
         resolved = shutil.which(name)
@@ -76,7 +87,11 @@ class TestContainerExecutorRealEngine:
     def test_read_only_source_mount_blocks_writes(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="ro-test"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="ro-test",
         )
 
         result = executor.execute(["sh", "-c", "echo bad > /workspace/hack.txt"])
@@ -87,7 +102,11 @@ class TestContainerExecutorRealEngine:
     def test_writable_scratch_mount_allows_writes(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="rw-test"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="rw-test",
         )
 
         result = executor.execute(["sh", "-c", "echo ok > /scratch/output.txt"])
@@ -100,7 +119,11 @@ class TestContainerExecutorRealEngine:
     def test_network_none_blocks_egress(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="net-test"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="net-test",
         )
 
         result = executor.execute(
@@ -117,7 +140,7 @@ class TestContainerExecutorRealEngine:
         mounts = _mounts(tmp_path)
         run_id = "cleanup-test"
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id=run_id
+            build_tool=_tool(mounts), cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id=run_id
         )
 
         executor.execute(["sh", "-c", "echo hi"])
@@ -142,7 +165,11 @@ class TestContainerExecutorRealEngine:
     def test_result_contract_matches_subprocess_result_from_real_run(self, tmp_path: Path) -> None:
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="result-test"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="result-test",
         )
 
         result = executor.execute(["python", "-c", "print('hello from container')"])
@@ -211,13 +238,13 @@ class TestArtifactsLandInScratch:
         return source
 
     def test_the_plan_redirects_coverage_for_a_python_project(self, tmp_path: Path) -> None:
-        env = plan_for(self._python_project(tmp_path)).execute_env
+        env = plan_for(self._python_project(tmp_path), "uv").execute_env
 
         assert env["COVERAGE_FILE"] == "/scratch/.coverage"
 
     def test_the_plan_redirects_the_pytest_cache_too(self, tmp_path: Path) -> None:
         """`PYTEST_ADDOPTS` carries it, because pytest has no environment variable of its own."""
-        env = plan_for(self._python_project(tmp_path)).execute_env
+        env = plan_for(self._python_project(tmp_path), "uv").execute_env
 
         assert "/scratch/.pytest_cache" in env["PYTEST_ADDOPTS"]
 
@@ -225,7 +252,11 @@ class TestArtifactsLandInScratch:
         """The other half: the path the plan names is one the container can actually write."""
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="artifact-scratch"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="artifact-scratch",
         )
 
         result = executor.execute(
@@ -243,7 +274,11 @@ class TestArtifactsLandInScratch:
         """
         mounts = _mounts(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=tmp_path, mounts=mounts, image=_TEST_IMAGE, run_id="artifact-ro"
+            build_tool=_tool(mounts),
+            cwd=tmp_path,
+            mounts=mounts,
+            image=_TEST_IMAGE,
+            run_id="artifact-ro",
         )
 
         result = executor.execute(["sh", "-c", "echo x > /workspace/.coverage"])
@@ -297,7 +332,7 @@ class TestPrepareAndExecuteShareAnEnvironment:
         """pytest is declared by the project, installed by prepare, and found by execute."""
         mounts = self._project(tmp_path)
         executor = ContainerSubprocessExecutor(
-            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+            build_tool=_tool(mounts), cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
         )
 
         result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
@@ -321,7 +356,7 @@ class TestPrepareAndExecuteShareAnEnvironment:
         """
         mounts = self._project(tmp_path, groups='dev = ["iniconfig"]\ntests = ["pytest"]')
         executor = ContainerSubprocessExecutor(
-            cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
+            build_tool=_tool(mounts), cwd=mounts.source_root, mounts=mounts, image=_UV_IMAGE
         )
 
         result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
@@ -355,7 +390,9 @@ class TestPrepareAndExecuteShareAnEnvironment:
             scratch_root=project / ".specweaver" / ".sandbox" / "scratch",
             cache_root=project / ".specweaver" / ".sandbox" / "cache",
         )
-        executor = ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE)
+        executor = ContainerSubprocessExecutor(
+            build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_UV_IMAGE
+        )
 
         result = executor.execute(["python", "-m", "pytest", "--version"], timeout_seconds=300)
 
@@ -401,7 +438,9 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
         runner = PythonQARunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_UV_IMAGE
+            ),
         )
 
         result = runner.run_tests(".", kind="")
@@ -450,7 +489,9 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
         runner = PythonQARunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_UV_IMAGE
+            ),
         )
 
         result = runner.run_tests(".", kind="")
@@ -488,7 +529,9 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
         runner = PythonQARunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_UV_IMAGE
+            ),
         )
 
         result = runner.run_tests(".", kind="")
@@ -528,7 +571,9 @@ class TestPrepareAndExecuteShareAnEnvironment:
         )
         runner = PythonQARunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_UV_IMAGE),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_UV_IMAGE
+            ),
         )
 
         result = runner.run_tests(".", kind="")
@@ -594,7 +639,9 @@ class TestNonPythonToolchainsRunInTheContainer:
 
         result = JavaRunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=_MAVEN_IMAGE),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=_MAVEN_IMAGE
+            ),
         ).run_tests(".", timeout=1800)
 
         assert (result.passed, result.failed) == (1, 1), result
@@ -628,7 +675,9 @@ class TestNonPythonToolchainsRunInTheContainer:
 
         result = RustRunner(
             cwd=project,
-            executor=ContainerSubprocessExecutor(cwd=project, mounts=mounts, image=image),
+            executor=ContainerSubprocessExecutor(
+                build_tool=_tool(mounts), cwd=project, mounts=mounts, image=image
+            ),
         ).run_tests(".", timeout=900)
 
         assert result.passed == 1 and result.failed == 0, result
@@ -659,7 +708,7 @@ class TestNonPythonToolchainsRunInTheContainer:
 
         from specweaver.workspace.project.prepare_plan import plan_for
 
-        plan = plan_for(project)
+        plan = plan_for(project, "cargo")
 
         assert plan.steps == ()
         assert any("Cargo.lock" in w for w in plan.warnings), plan.warnings

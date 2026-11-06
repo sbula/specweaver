@@ -13,7 +13,7 @@
         {
           "id": "plan-not-saved",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "file": "src/specweaver/core/flow/handlers/plan_spec.py",
           "symbol": "PlanSpecHandler._generate_plan_artifact",
           "old": "        plan_path.write_text(content, encoding=\"utf-8\")\n",
           "new": "        pass\n",
@@ -33,7 +33,7 @@
         {
           "id": "planner-can-write",
           "origin": "authored",
-          "file": "src/specweaver/core/flow/handlers/generation.py",
+          "file": "src/specweaver/core/flow/handlers/plan_spec.py",
           "symbol": "PlanSpecHandler.execute",
           "old": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"planner\", adapter=adapter),\n",
           "new": "                tool_dispatcher=_build_tool_dispatcher(context, role=\"implementer\", adapter=adapter),\n",

@@ -44,7 +44,7 @@ def _mounts(tmp_path: Path, scenarios: Path | None) -> ContainerMounts:
 def _executor(tmp_path: Path, scenarios: Path | None) -> ContainerSubprocessExecutor:
     (tmp_path / "project").mkdir(exist_ok=True)
     return ContainerSubprocessExecutor(
-        cwd=tmp_path / "project", mounts=_mounts(tmp_path, scenarios)
+        build_tool="uv", cwd=tmp_path / "project", mounts=_mounts(tmp_path, scenarios)
     )
 
 
@@ -87,7 +87,7 @@ def _refused(tmp_path: Path, scenarios: Path | None, target: str) -> bool:
         patch("specweaver.sandbox.language.core.runner_factory.resolve_runner") as resolve,
         suppress(TypeError),  # a mock runner's result is not a real one
     ):
-        qa_atom(cwd=project, language="python", scenarios_root=scenarios).run(
+        qa_atom(cwd=project, language="python", scenarios_root=scenarios, build_tool="uv").run(
             {"intent": "run_tests", "target": target}
         )
     return not resolve.return_value.run_tests.called
@@ -163,12 +163,13 @@ def test_ready_needs_a_live_engine_and_the_projects_image(tmp_path: Path) -> Non
         return True
 
     assert sandbox_ready(
-        tmp_path, which={"podman": "/usr/bin/podman"}.get, probe=lambda e: True, ensure=ensure
+        tmp_path, "uv", which={"podman": "/usr/bin/podman"}.get, probe=lambda e: True, ensure=ensure
     )
     assert built == [own_image("3.13")]
-    assert not sandbox_ready(tmp_path, which={}.get, probe=lambda e: True, ensure=ensure)
+    assert not sandbox_ready(tmp_path, "uv", which={}.get, probe=lambda e: True, ensure=ensure)
     assert not sandbox_ready(
         tmp_path,
+        "uv",
         which={"podman": "/usr/bin/podman"}.get,
         probe=lambda e: True,
         ensure=lambda *a: False,
@@ -196,6 +197,9 @@ def test_a_coder_container_run_never_mounts_the_scenarios(tmp_path: Path) -> Non
     project = tmp_path / "project"
     project.mkdir()
     atom = qa_atom(
-        cwd=project, language="python", sandbox_settings=SandboxSettings(execution_mode="container")
+        cwd=project,
+        language="python",
+        sandbox_settings=SandboxSettings(execution_mode="container"),
+        build_tool="uv",
     )
     assert atom._runner._executor._mounts.scenarios_root is None

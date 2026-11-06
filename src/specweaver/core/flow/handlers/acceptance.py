@@ -71,7 +71,9 @@ def run_acceptance(context: RunContext, atom: Callable[[], Any]) -> StepResult:
     files = [f for s in sets if s["fresh"] for f in str(s["tests"]).split()]
     if not files:
         return _passed({"stale": stale}, started)
-    if not container_available(context.project_path):
+    from specweaver.core.flow.engine.run_profile import run_profile
+
+    if not container_available(context.project_path, run_profile(context).build_tool):
         return _passed({"stale": stale, "not_run": "no container engine answers here"}, started)
     result = atom().run(
         {

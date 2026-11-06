@@ -43,7 +43,7 @@ class TestPlanFor:
             uv__lock="locked",
         )
 
-        plan = plan_for(root)
+        plan = plan_for(root, "uv")
 
         assert plan.route == "locked"
         assert plan.runner_source == "pyproject.toml"
@@ -59,7 +59,7 @@ class TestPlanFor:
             pyproject__toml=_MANIFEST.rstrip() + '\n\n[dependency-groups]\ntests = ["pytest"]\n',
         )
 
-        plan = plan_for(root)
+        plan = plan_for(root, "uv")
 
         assert plan.route == "resolved"
         assert any("uv.lock" in w and "reproduce" in w for w in plan.warnings), plan.warnings
@@ -72,7 +72,7 @@ class TestPlanFor:
             tox__ini="[testenv]\ndeps =\n    pytest\n    py3{10-14}: -r extra.pip\n",
         )
 
-        plan = plan_for(root)
+        plan = plan_for(root, "uv")
 
         assert plan.runner_source == "tox.ini"
         assert plan.skipped == ("py3{10-14}: -r extra.pip",)
@@ -83,7 +83,7 @@ class TestPlanFor:
     ) -> None:
         root = _project(tmp_path, uv__lock="locked", pyproject__toml=_MANIFEST)
 
-        plan = plan_for(root)
+        plan = plan_for(root, "uv")
 
         assert plan.runner_source == "sandbox"
         assert any("not the project's choice" in w for w in plan.warnings), plan.warnings
@@ -97,7 +97,7 @@ class TestPlanFor:
         """
         root = _project(tmp_path, README__md="nothing here\n")
 
-        plan = plan_for(root)
+        plan = plan_for(root, "uv")
 
         assert plan.route == "none"
         assert plan.runner_source == ""

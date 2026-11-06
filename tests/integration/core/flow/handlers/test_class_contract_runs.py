@@ -27,7 +27,7 @@ import pytest
 from specweaver.commons.scenario_models import ScenarioDefinition, ScenarioSet
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.generation import GenerateContractHandler
+from specweaver.core.flow.handlers.contract import GenerateContractHandler
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.sandbox.language.core.python.scenario_converter import ScenarioConverter
 

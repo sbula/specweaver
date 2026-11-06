@@ -25,6 +25,7 @@ from unittest.mock import patch
 import pytest
 import typer
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.llm_settings import RoleEntry
 from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import (
@@ -37,7 +38,12 @@ from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord
 from specweaver.core.flow.handlers.dual_pipeline import ArbitrateDualPipelineHandler
 from specweaver.core.flow.handlers.roles import roles_of
 from specweaver.core.flow.interfaces import cli
-from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
+from specweaver.core.flow.run_state.run_context import (
+    IsolationPolicy,
+    ModelAccess,
+    RunContext,
+    RunHandle,
+)
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.catalogue import Catalogue
 from specweaver.infrastructure.llm.models import TaskType
@@ -108,7 +114,11 @@ class _Spawner:
 
 async def _dual(tmp_path: Path, router: Any) -> tuple[Any, _Spawner]:
     spawner = _Spawner()
-    context = RunContext(project_path=tmp_path, spec_path=tmp_path / "specs" / "greet_spec.md")
+    context = RunContext(
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
+        project_path=tmp_path,
+        spec_path=tmp_path / "specs" / "greet_spec.md",
+    )
     context.model = ModelAccess(llm_router=router)
     context.run = RunHandle(run_id="r", pipeline_runner=spawner)
     step = PipelineStep(
@@ -116,7 +126,9 @@ async def _dual(tmp_path: Path, router: Any) -> tuple[Any, _Spawner]:
     )
     with (
         patch.object(
-            ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda r: True)
+            ArbitrateDualPipelineHandler,
+            "container_available",
+            staticmethod(lambda r, build_tool: True),
         ),
         patch.object(
             ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda c: None)

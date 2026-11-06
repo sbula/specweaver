@@ -44,9 +44,9 @@ JavaScript project gets `.ts` files.
 | # | Path | Span | Owner | Status |
 |---|---|---|---|---|
 | P-1 | `sw implement` → `[implement]` pins + root → profile → task files, framework, contract | CLI, workspace project, commons, workflows/implementation | TECH-079 (FR-1..FR-8) | ⬜ |
-| P-2 | `POST /api/v1/implement` → the same profile → task files, or an error naming the setting | API, workspace project, commons | TECH-079 (FR-8) | ⬜ |
-| P-3 | `sw run` → run setup → profile in the run → QA runner, scenario converter, stack-trace filter, dual run, isolation | run setup, flow engine and handlers, sandbox language | TECH-079 (FR-7, FR-14) | ⬜ |
-| P-4 | `sw sandbox preflight` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ⬜ |
+| P-2 | `POST /api/v1/implement` → the same profile → task files, or an error naming the setting | API, workspace project, commons | TECH-079 (FR-8) | ✅ (SF-02) |
+| P-3 | `sw run` → run setup → profile in the run → QA runner, scenario converter, stack-trace filter, dual run, isolation | run setup, flow engine and handlers, sandbox language | TECH-079 (FR-7, FR-14) | ✅ (SF-02) |
+| P-4 | `sw sandbox preflight` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ✅ (SF-02) |
 | P-5 | `sw check <code file>` → validation pipeline chosen by the profile's framework | validation orchestration, workspace project | TECH-079 (FR-9) | ⬜ |
 | P-6 | `sw scan`, topology, C09 → structure analyzers → folder language from `commons` | workspace analyzers, assurance graph | TECH-079 (FR-16) | ⬜ |
 | P-7 | `sw standards scan` → style analyzers → shared parsers | assurance standards, workspace parsers | TECH-079 (FR-16, FR-17) | ⬜ |
@@ -254,7 +254,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One framework answer | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -271,6 +271,11 @@ agreed at approval. **Design approved 2026-11-05** (the user).
 `workspace.project.read_project_profile`; no caller uses them yet.
 **SF-02 plan approved 2026-11-06** (the user): the API pipeline run and resume refuse like `sw run`;
 session isolation never turns off for an undecided project.
-**Next step**: dev SF-02 (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf02_implementation_plan.md`).
+**SF-02 committed 2026-11-06**: a run decides its profile once (`core/flow/engine/run_profile.py`);
+`sw run`, `sw implement`, `sw sandbox preflight` and the API refuse an undecided project; every
+factory takes the language from one table; the sandbox takes the build tool; `detect_language` and
+`detect_toolchain` are gone. Found at dev: a fresh `sw init` project has no build file and is
+refused until it has one or `[implement] language`; Go keeps C05 through `architecture_atom`.
+**Next step**: the implementation plan for SF-03 (`specweaver-implementation-plan TECH-079 SF-03`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

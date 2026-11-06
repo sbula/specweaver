@@ -195,7 +195,7 @@
           "old": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:ro\"]\n",
           "new": "                []\n",
           "breaks": "the scenario tests are not in the container, so nothing is checked",
-          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
+          "symbol_sha": "sha256:b5d9c0716a429573b1200f5f201f15ea9353354bd0d6f91cedc6d1c30518fbe0"
         },
         {
           "id": "scenario-mount-rw",
@@ -205,17 +205,17 @@
           "old": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:ro\"]\n",
           "new": "                [\"-v\", f\"{self._mounts.scenarios_root}:/scenarios:rw\"]\n",
           "breaks": "code under test can rewrite the scenario tests it is checked against",
-          "symbol_sha": "sha256:bddfad51dcf0679d28e242a153cdd8c3b23ffe8a5aa9d563b169b166b405f45f"
+          "symbol_sha": "sha256:b5d9c0716a429573b1200f5f201f15ea9353354bd0d6f91cedc6d1c30518fbe0"
         },
         {
           "id": "scenario-mount-on-coder",
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/runner_factory.py",
           "symbol": "qa_atom",
-          "old": "        executor = _build_container_executor(cwd)\n",
-          "new": "        executor = _build_container_executor(cwd, cwd / \"scenarios\")\n",
+          "old": "        executor = _build_container_executor(cwd, str(build_tool))\n",
+          "new": "        executor = _build_container_executor(cwd, str(build_tool), cwd / \"scenarios\")\n",
           "breaks": "the coder's own test run sees the scenario tests",
-          "symbol_sha": "sha256:ca00ed9fd5d9f2daeeaf84aeb2a1e08a5b83e7a263396e4d340d5a8b5e380a5e"
+          "symbol_sha": "sha256:f1ab9c2527bf681db2fee064b70d7a6a00f7f557ed026384bdf660d642798e12"
         },
         {
           "id": "traversal-allowlist-widened",
@@ -262,10 +262,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
           "symbol": "ArbitrateDualPipelineHandler.execute",
-          "old": "        if not self.container_available(context.project_path):\n",
+          "old": "        if not self.container_available(context.project_path, run_profile(context).build_tool):\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts where the coder's code could read the scenario tests",
-          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
+          "symbol_sha": "sha256:5c5687c657d583f381ceef12f8b933c3a27d18568a3e7d3065e7560f89a511be"
         },
         {
           "id": "unregistered-runs",
@@ -275,7 +275,7 @@
           "old": "    if scenario_store(context) is None:\n",
           "new": "    if False:\n",
           "breaks": "a project with no store runs a dual run anyway",
-          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
+          "symbol_sha": "sha256:0af6c4e4e05f2b65e65e569f080f8124bcd718551ed284d101b26146b5ea99c4"
         },
         {
           "id": "old-scenarios-ignored",
@@ -285,17 +285,17 @@
           "old": "    if (context.project_path / \"scenarios\" / \"generated\").exists():\n",
           "new": "    if False:\n",
           "breaks": "old scenario tests stay readable in the project",
-          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
+          "symbol_sha": "sha256:0af6c4e4e05f2b65e65e569f080f8124bcd718551ed284d101b26146b5ea99c4"
         },
         {
           "id": "any-language-runs",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/dual_pipeline.py",
           "symbol": "_isolation_refusal",
-          "old": "    if detect_toolchain(context.project_path) not in (\"uv\", \"\"):\n",
+          "old": "    if run_profile(context).build_tool not in (\"uv\", \"\"):\n",
           "new": "    if False:\n",
           "breaks": "a dual run starts for a language whose container is not proven",
-          "symbol_sha": "sha256:519ae69122c9b1514103a48d9ff81f08c79b35fdc7f121e5b4a88b8fe713997c"
+          "symbol_sha": "sha256:0af6c4e4e05f2b65e65e569f080f8124bcd718551ed284d101b26146b5ea99c4"
         }
       ]
     },
@@ -354,7 +354,7 @@
           "old": "    if not (context.run.dual_side == \"coder\" or _keeps_scenarios(context)):\n",
           "new": "    if not _keeps_scenarios(context):\n",
           "breaks": "the coder side of a dual run runs its code on the host",
-          "symbol_sha": "sha256:ec164aea35382f1000738bd8e1e3dfaee8c4b222a4985455802fbef4e63fab87"
+          "symbol_sha": "sha256:ea457063780d77d5b2d6cf37e40bf7e8a77f445d6adb223267ace0188da180cc"
         },
         {
           "id": "dual-run-coder-unflagged",
@@ -371,20 +371,20 @@
           "origin": "authored",
           "file": "src/specweaver/assurance/validation/orchestration/validation_hydrator.py",
           "symbol": "hydrate_code_validation_context",
-          "old": "    atom = qa_atom(cwd=project_root, language=language, sandbox_settings=sandbox_settings)\n",
-          "new": "    atom = qa_atom(cwd=project_root, language=language)\n",
+          "old": "        sandbox_settings=sandbox_settings,\n        build_tool=profile.build_tool if profile else None,\n",
+          "new": "        build_tool=profile.build_tool if profile else None,\n",
           "breaks": "C03 and C04 run the coder's tests on the host",
-          "symbol_sha": "sha256:a426619bc257c704d1b6bc579db27eff872eb1b6d2267352eb7cfe25bb8c9943"
+          "symbol_sha": "sha256:81ab87deddde9acb84125254b53d2c3b5966c578cbc7d45284f03069912453ef"
         },
         {
           "id": "lint-on-host",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/lint_fix.py",
           "symbol": "LintFixHandler._get_atom",
-          "old": "            sandbox_settings=coder_sandbox(context),\n        )\n",
-          "new": "        )\n",
+          "old": "        from specweaver.core.flow.handlers.coder_sandbox import qa_atom_for\n\n        return qa_atom_for(context)\n",
+          "new": "        from specweaver.core.flow.engine.run_profile import run_profile\n        from specweaver.sandbox.language.core.runner_factory import qa_atom\n\n        return qa_atom(cwd=context.project_path, language=run_profile(context).language)\n",
           "breaks": "lint fix runs the coder's tools on the host",
-          "symbol_sha": "sha256:a46f7b4eebd63ba9c79b4f4c2b208eaa43b53905dd9dc49e0475dbdf7b7ea793"
+          "symbol_sha": "sha256:63d2d50ef2f1df38b1047c70007008702bda92c9fd96bce991dc100e63579619"
         }
       ]
     },
@@ -414,7 +414,7 @@
           "old": "        context.run = context.run.model_copy(update={\"dual_side\": \"parent\"})\n",
           "new": "        pass\n",
           "breaks": "the run holding a dual run saves its handover to task memory",
-          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
+          "symbol_sha": "sha256:5c5687c657d583f381ceef12f8b933c3a27d18568a3e7d3065e7560f89a511be"
         }
       ]
     },
@@ -637,7 +637,7 @@
           "old": "        if unreviewed is not None:\n",
           "new": "        if False:\n",
           "breaks": "a dual run starts on a spec nobody reviewed, or one changed since",
-          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
+          "symbol_sha": "sha256:5c5687c657d583f381ceef12f8b933c3a27d18568a3e7d3065e7560f89a511be"
         },
         {
           "id": "changed-spec-arbitrated",
@@ -727,7 +727,7 @@
           "old": "            await asyncio.wait(tasks.values(), return_when=asyncio.ALL_COMPLETED)\n",
           "new": "            await asyncio.wait(tasks.values(), return_when=asyncio.FIRST_COMPLETED)\n",
           "breaks": "the scenario tests can run before the coder has finished",
-          "symbol_sha": "sha256:12a9f37e7b790b1f5753dc3d454b9e0c8269b5b84becd94b53784581e6780c6e"
+          "symbol_sha": "sha256:5c5687c657d583f381ceef12f8b933c3a27d18568a3e7d3065e7560f89a511be"
         }
       ]
     },

@@ -60,7 +60,7 @@ def _keep_a_set(store: Path) -> None:
 
 
 def _available(monkeypatch: pytest.MonkeyPatch, answer: bool) -> None:
-    monkeypatch.setattr(choice, "container_available", lambda root: answer)
+    monkeypatch.setattr(choice, "container_available", lambda root, build_tool: answer)
 
 
 def test_a_plain_run_keeps_its_setting(
@@ -157,7 +157,9 @@ async def test_the_dual_run_flags_its_coder_side(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        ArbitrateDualPipelineHandler, "container_available", staticmethod(lambda root: True)
+        ArbitrateDualPipelineHandler,
+        "container_available",
+        staticmethod(lambda root, build_tool: True),
     )
     monkeypatch.setattr(
         ArbitrateDualPipelineHandler, "isolation_refusal", staticmethod(lambda context: None)

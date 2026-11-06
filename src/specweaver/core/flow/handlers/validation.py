@@ -14,7 +14,7 @@ from specweaver.core.flow.engine.run_profile import run_profile
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
-from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
+from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox, qa_atom_for
 from specweaver.core.flow.handlers.qa_targets import (
     WHOLE_PROJECT,
     default_test_target,
@@ -493,19 +493,9 @@ class ValidateTestsHandler:
         tree; bind the QA-runner cwd there so tests run worktree-bounded. Falls back to
         ``project_path`` when not isolated. ``sandbox_settings`` is threaded unchanged.
         """
-        from specweaver.sandbox.language.core.runner_factory import qa_atom
-
         cwd = context.isolation.execution_root or context.project_path
-        if kind == "scenario":
-            # Always in a container, with the scenario tests mounted read-only at /scenarios.
-            return qa_atom(
-                cwd=cwd,
-                language=run_profile(context).language,
-                scenarios_root=scenarios_root(context),
-            )
-        return qa_atom(
-            cwd=cwd, language=run_profile(context).language, sandbox_settings=coder_sandbox(context)
-        )
+        # A scenario run is always in a container, with the scenario tests mounted at /scenarios.
+        return qa_atom_for(context, cwd, scenarios_root(context) if kind == "scenario" else None)
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:
         """The test folders of the modules changed since the last green run; else `target`.

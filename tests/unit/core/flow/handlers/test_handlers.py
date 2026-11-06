@@ -23,11 +23,8 @@ import pytest
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
-from specweaver.core.flow.handlers.generation import (
-    GenerateCodeHandler,
-    GenerateTestsHandler,
-    PlanSpecHandler,
-)
+from specweaver.core.flow.handlers.generation import GenerateCodeHandler, GenerateTestsHandler
+from specweaver.core.flow.handlers.plan_spec import PlanSpecHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.handlers.validation import ValidateCodeHandler, ValidateSpecHandler
 from specweaver.core.flow.run_state.run_context import AnalysisContext, ModelAccess, RunContext

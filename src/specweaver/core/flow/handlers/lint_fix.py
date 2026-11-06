@@ -269,15 +269,9 @@ class LintFixHandler:
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project."""
-        from specweaver.core.flow.engine.run_profile import run_profile
-        from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
-        from specweaver.sandbox.language.core.runner_factory import qa_atom
+        from specweaver.core.flow.handlers.coder_sandbox import qa_atom_for
 
-        return qa_atom(
-            cwd=context.project_path,
-            language=run_profile(context).language,
-            sandbox_settings=coder_sandbox(context),
-        )
+        return qa_atom_for(context)
 
     def _file_to_fix(self, context: RunContext, target: str) -> tuple[Path | None, str]:
         """`_fix_file`, and what to say when there is none."""

@@ -15,12 +15,17 @@ importing execution.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from specweaver.interfaces.cli_kit import _core
 from specweaver.workspace.project.prepare_plan import plan_for
+
+if TYPE_CHECKING:
+    from specweaver.commons.project_profile import ProjectProfile
 
 sandbox_cli = typer.Typer(name="sandbox", help="Inspect how the sandbox will treat a project.")
 console = Console()
@@ -46,7 +51,7 @@ def preflight(
         console.print(f"[red]Not a directory:[/red] {root}")
         raise typer.Exit(code=2)
 
-    plan = plan_for(root)
+    plan = plan_for(root, _profile_or_exit(root).build_tool)
 
     table = Table(show_header=False, box=None, pad_edge=False)
     table.add_column(style="bold")
@@ -80,3 +85,17 @@ def _runner_line(source: str) -> str:
     if source == "sandbox":
         return "supplied by the sandbox (the project declares none)"
     return f"declared in {source}"
+
+
+def _profile_or_exit(root: Path) -> ProjectProfile:
+    """The project's profile with its `[implement]` pins, or exit 1 naming why there is none."""
+    from specweaver.commons.project_profile import ProjectUndecidedError
+    from specweaver.core.config.implement_policy import parse_implement
+    from specweaver.workspace.project.project_profile import read_project_profile
+
+    pins = _core.load_section_at(root, parse_implement)
+    try:
+        return read_project_profile(root, language=pins.language, build_tool=pins.build_tool)
+    except ProjectUndecidedError as err:
+        _core.print_error(err)
+        raise typer.Exit(code=1) from err
