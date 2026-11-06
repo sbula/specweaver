@@ -1,0 +1,92 @@
+{
+  "schema": 2,
+  "feature": "TECH-079",
+  "campaigns": [
+    {
+      "requirement": "FR-3",
+      "title": "Only the root's build files decide, and package.json is TypeScript only with TypeScript in the root",
+      "scope": [
+        "tests/unit/commons/test_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "package-json-is-typescript",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_build_file_language",
+          "old": "            return \"typescript\" if typed else \"javascript\"",
+          "new": "            return \"typescript\"",
+          "breaks": "a JavaScript project gets TypeScript files again",
+          "symbol_sha": "sha256:d6fb020f81aed70e09ce49528c950a23dc4102669438d0e0f933994b2791cce8"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "A root with more than one language is refused, never picked by order",
+      "scope": [
+        "tests/unit/commons/test_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "mixed-root-picks-first",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_language",
+          "old": "    if len(found) > 1:",
+          "new": "    found = dict(list(found.items())[:1])\n    if len(found) > 1:",
+          "breaks": "a mixed root silently takes its first language",
+          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+        },
+        {
+          "id": "no-manifest-is-python",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_language",
+          "old": "    if not found:\n        raise ProjectUndecidedError(",
+          "new": "    if not found:\n        return \"python\"\n        raise ProjectUndecidedError(",
+          "breaks": "an empty root becomes Python again",
+          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "A language SpecWeaver cannot generate is refused, never turned into Python",
+      "scope": [
+        "tests/unit/commons/test_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "go-is-generated",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_language",
+          "old": "    if language not in GENERATED_LANGUAGES:",
+          "new": "    if False:",
+          "breaks": "Go, C, C++ and JavaScript pass as generatable",
+          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-6",
+      "title": "pom.xml with build.gradle is refused, never picked by order",
+      "scope": [
+        "tests/unit/commons/test_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "pom-and-gradle-picks-gradle",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "_build_tool",
+          "old": "    if \"pom.xml\" in root_files and gradle:",
+          "new": "    if \"pom.xml\" in root_files and gradle:\n        return \"gradle\"",
+          "breaks": "a root with both JVM builds silently takes Gradle",
+          "symbol_sha": "sha256:28baeb123963d30da92ab8277281c4ac18b054e2a2b3e102b68b9577c0dfb753"
+        }
+      ]
+    }
+  ]
+}

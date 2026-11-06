@@ -36,7 +36,7 @@ Today (measured 2026-11-05):
 | # | Sev | Question | Options | Proposal |
 |---|---|---|---|---|
 | Q1 | HIGH | The two pins contradict (`language = "python"`, `build_tool = "maven"`) | A: refuse, naming both pins; B: trust both | **Refuse, naming both pins `[agreed 2026-11-05]`** |
-| F1 | HIGH | The refusal type | its own exception `ProjectUndecided(Exception)`, not a `ValueError` | `interfaces/api/v1/implement.py:91` maps `ValueError` to `SPEC_INVALID`; a subclass would get the wrong code |
+| F1 | HIGH | The refusal type | its own exception `ProjectUndecidedError(Exception)`, not a `ValueError` | `interfaces/api/v1/implement.py:91` maps `ValueError` to `SPEC_INVALID`; a subclass would get the wrong code |
 | F2 | MEDIUM | Does `build_tool` pick the language? | no: it decides only the build tool; the language rules stand | KISS; a mixed root still needs `language` |
 | F3 | MEDIUM | How the reader gets the pins | as plain arguments from the caller, who already loads `[implement]` (`builder.py:135`, `implement.py:85`, `cli_kit/_core.py:134`) | no new tach edge `workspace.project → core.config` |
 | F4 | MEDIUM | Where the "generatable" set lives | one tuple in `commons`; a test asserts `Language`'s values equal it; SF-04 removes the other copies | one source now, no churn in SF-01 |
@@ -56,7 +56,7 @@ Today (measured 2026-11-05):
 - `BUILD_TOOLS = ("uv", "maven", "gradle", "cargo", "npm")`.
 - `@dataclass(frozen=True) class ProjectProfile: language: str; build_tool: str` (`""` = none, as
   `detect_toolchain` today).
-- `class ProjectUndecided(Exception)` with the message as its text.
+- `class ProjectUndecidedError(Exception)` with the message as its text.
 - `decide_profile(root_files: frozenset[str], read: Callable[[str], str | None], *, kotlin_sources: bool, language: str | None = None, build_tool: str | None = None) -> ProjectProfile`.
 
 Order of checks (the order matters: the pins first, so a pin always wins):
@@ -75,7 +75,7 @@ Refusal texts (shown to users; one line, naming what was found and the setting):
 - `the project root has pom.xml and build.gradle; set [implement] build_tool in specweaver.toml (maven or gradle)`
 
 #### [MODIFY] `src/specweaver/commons/context.yaml`
-`exposes` += `decide_profile`, `ProjectProfile`, `ProjectUndecided`, `GENERATED_LANGUAGES`, `BUILD_TOOLS`.
+`exposes` += `decide_profile`, `ProjectProfile`, `ProjectUndecidedError`, `GENERATED_LANGUAGES`, `BUILD_TOOLS`.
 
 ### `core/config`
 
@@ -89,7 +89,7 @@ Refusal texts (shown to users; one line, naming what was found and the setting):
 `read_project_profile(root: Path, *, language: str | None = None, build_tool: str | None = None) -> ProjectProfile`:
 list the root once (regular files), build a reader confined to the root that reads only names in the
 listing, check `root / "src/main/kotlin"` is a folder, call `decide_profile`. It raises
-`ProjectUndecided` unchanged.
+`ProjectUndecidedError` unchanged.
 
 #### [MODIFY] `src/specweaver/workspace/project/context.yaml`
 `exposes` += `read_project_profile`.
@@ -106,9 +106,14 @@ Tests first, `tests/unit/commons/test_project_profile.py`, red because the modul
 | Degradation | `read` returns None for an unreadable build file: still java, never a crash |
 | Hostile | pyproject + package.json → refusal naming both files and `[implement] language`; go.mod, CMakeLists.txt → refusal naming the language; pom + build.gradle → refusal naming `build_tool`; empty root → refusal |
 
-Plus `tests/unit/commons/test_commons_reads_no_files.py` (NFR-2): parses every `commons/*.py` and
+Plus `tests/unit/commons/test_foundation_reads_no_files.py` (NFR-2): parses every `commons/*.py` and
 fails on a call to `open`, `read_text`, `read_bytes`, `iterdir`, `exists`, `is_file`, `is_dir`,
 `glob`, `listdir`, `walk`.
+
+Plus `tests/integration/commons/test_profile_agrees.py` (found at dev: the `cb` gate needs an
+integration test beside `commons`): every ending of the one table is decided by it, and a
+one-language root gets today's `detect_language`/`detect_toolchain` answer (npm aside, F10). SF-02
+deletes its second half with the two detectors.
 
 Mutants for the corpus (`TECH-079_mutants.json`), each must be OBJECTED:
 - `mixed-root-picks-first`: the "more than one candidate" refusal returns the first candidate.
@@ -127,7 +132,7 @@ Tests first:
 - `tests/integration/workspace/project/test_read_project_profile.py` (seam reader → decision, real
   files in `tmp_path`): a folder named `pom.xml` is ignored; `src/main/kotlin` makes kotlin; a
   build file without read permission still names its language; a mixed root raises
-  `ProjectUndecided` with both file names; files in subfolders never count (a `web/package.json`
+  `ProjectUndecidedError` with both file names; files in subfolders never count (a `web/package.json`
   under a Python root stays python); a root `pom.xml` symlinked to a file outside the root is read as
   `None` (F9).
 
