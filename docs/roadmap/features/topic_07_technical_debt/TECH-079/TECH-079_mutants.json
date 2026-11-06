@@ -3,6 +3,94 @@
   "feature": "TECH-079",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "One reader lists only the project root, reads only inside it, and feeds the decision",
+      "scope": [
+        "tests/integration/workspace/project/test_read_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "subfolder-counts",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/project_profile.py",
+          "symbol": "read_project_profile",
+          "old": "for entry in root.iterdir() if entry.is_file()",
+          "new": "for entry in root.rglob(\"*\") if entry.is_file()",
+          "breaks": "a build file in a subfolder decides the language",
+          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+        },
+        {
+          "id": "link-outside-root-read",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/project_profile.py",
+          "symbol": "read_project_profile",
+          "old": "        if not path.is_relative_to(real_root):",
+          "new": "        if False:",
+          "breaks": "a root file linked elsewhere makes SpecWeaver read outside the project",
+          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+        },
+        {
+          "id": "kotlin-sources-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/project_profile.py",
+          "symbol": "read_project_profile",
+          "old": "kotlin_sources=(root / \"src\" / \"main\" / \"kotlin\").is_dir(),",
+          "new": "kotlin_sources=False,",
+          "breaks": "a Kotlin project without the plugin in its build file becomes Java",
+          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+        },
+        {
+          "id": "root-not-resolved",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/project_profile.py",
+          "symbol": "read_project_profile",
+          "old": "    real_root = root.resolve()",
+          "new": "    real_root = root",
+          "breaks": "a project reached through a link reads none of its own build files",
+          "symbol_sha": "sha256:de28adff7ae67baaca39376cf986bb312ad4ace421000a5e96740c154af2a0de"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-2",
+      "title": "A set [implement] pin wins over the root, and pins that disagree are refused",
+      "scope": [
+        "tests/unit/commons/test_project_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "language-pin-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "decide_profile",
+          "old": "    if language is None:\n        language = _language(",
+          "new": "    if True:\n        language = _language(",
+          "breaks": "the root decides although the user pinned the language",
+          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+        },
+        {
+          "id": "contradicting-pins-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "decide_profile",
+          "old": "    if language is not None and build_tool is not None and not _builds(build_tool, language):",
+          "new": "    if False:",
+          "breaks": "python with maven is accepted",
+          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+        },
+        {
+          "id": "build-tool-pin-mismatch-trusted",
+          "origin": "authored",
+          "file": "src/specweaver/commons/project_profile.py",
+          "symbol": "decide_profile",
+          "old": "    if not _builds(build_tool, language):\n        raise",
+          "new": "    if False:\n        raise",
+          "breaks": "a build tool that cannot build the root's language is accepted",
+          "symbol_sha": "sha256:d492ce94015a2faa9cfccba4f1fabb12d69f44aa721d0ccff76495ec5a8abea3"
+        }
+      ]
+    },
+    {
       "requirement": "FR-3",
       "title": "Only the root's build files decide, and package.json is TypeScript only with TypeScript in the root",
       "scope": [
@@ -36,7 +124,7 @@
           "old": "    if len(found) > 1:",
           "new": "    found = dict(list(found.items())[:1])\n    if len(found) > 1:",
           "breaks": "a mixed root silently takes its first language",
-          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+          "symbol_sha": "sha256:55ac102948b6eebfa6b6302e4fef74a682811c9c9b49e1dad80e9f410a9d98c9"
         },
         {
           "id": "no-manifest-is-python",
@@ -46,7 +134,7 @@
           "old": "    if not found:\n        raise ProjectUndecidedError(",
           "new": "    if not found:\n        return \"python\"\n        raise ProjectUndecidedError(",
           "breaks": "an empty root becomes Python again",
-          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+          "symbol_sha": "sha256:55ac102948b6eebfa6b6302e4fef74a682811c9c9b49e1dad80e9f410a9d98c9"
         }
       ]
     },
@@ -65,7 +153,7 @@
           "old": "    if language not in GENERATED_LANGUAGES:",
           "new": "    if False:",
           "breaks": "Go, C, C++ and JavaScript pass as generatable",
-          "symbol_sha": "sha256:119bd5539cf1883182f436d210d9a1126eae3d454fcfc5e59c0b52cbb5909433"
+          "symbol_sha": "sha256:55ac102948b6eebfa6b6302e4fef74a682811c9c9b49e1dad80e9f410a9d98c9"
         }
       ]
     },

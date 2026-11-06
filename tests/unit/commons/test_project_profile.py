@@ -3,16 +3,16 @@
 
 """One pure decision names a project's language and build tool, or refuses to guess.
 
-Proves: TECH-079 FR-1, TECH-079 FR-3, TECH-079 FR-4, TECH-079 FR-5, TECH-079 FR-6
+Proves: TECH-079 FR-1, TECH-079 FR-2, TECH-079 FR-3, TECH-079 FR-4, TECH-079 FR-5, TECH-079 FR-6
 
 The decision gets the root's file names and a reader; it reads nothing itself.
 
 | Bucket | Case |
 |---|---|
-| Happy | each build file names its language and build tool |
+| Happy | each build file names its language and build tool; a set pin wins over detection |
 | Boundary | no build file: the root's code endings decide; package.json is TypeScript only with tsconfig.json or a root `.ts`/`.tsx` file; Kotlin by sources or by the build text |
 | Degradation | an unreadable JVM build file reads as None: still Java, no crash |
-| Hostile | a mixed root, a language SpecWeaver cannot generate, pom.xml with build.gradle, an empty root: each refused, naming what was found and the setting |
+| Hostile | a mixed root, a language SpecWeaver cannot generate, pom.xml with build.gradle, an empty root, pins that contradict each other or the root: each refused, naming what was found and the setting |
 """
 
 from __future__ import annotations
@@ -193,3 +193,70 @@ def test_a_long_file_list_is_cut_after_three_names() -> None:
 
 def test_build_file_names_match_case_exactly_on_every_platform() -> None:
     assert "no build file and no code file" in _refusal("REQUIREMENTS.TXT", "PyProject.toml")
+
+
+def _pinned(*names: str, language: str | None = None, build_tool: str | None = None):
+    return decide_profile(
+        frozenset(names), {}.get, kotlin_sources=False, language=language, build_tool=build_tool
+    )
+
+
+@pytest.mark.parametrize(
+    ("names", "language", "expected"),
+    [
+        (("pyproject.toml", "package.json", "tsconfig.json"), "typescript", ("typescript", "npm")),
+        (("pyproject.toml", "pom.xml"), "python", ("python", "uv")),
+        (("pom.xml",), "kotlin", ("kotlin", "maven")),
+        (("pyproject.toml",), "rust", ("rust", "")),
+        ((), "python", ("python", "")),
+        (("go.mod", "main.go"), "java", ("java", "")),
+    ],
+)
+def test_a_language_pin_wins_over_the_root(
+    names: tuple[str, ...], language: str, expected: tuple[str, str]
+) -> None:
+    assert _pinned(*names, language=language) == ProjectProfile(*expected)
+
+
+@pytest.mark.parametrize("tool", ["maven", "gradle"])
+def test_a_build_tool_pin_wins_over_pom_and_gradle(tool: str) -> None:
+    assert _pinned("pom.xml", "build.gradle", build_tool=tool) == ProjectProfile("java", tool)
+
+
+def test_both_pins_that_agree_decide_alone() -> None:
+    profile = _pinned(
+        "pyproject.toml", "pom.xml", "build.gradle", language="kotlin", build_tool="gradle"
+    )
+
+    assert profile == ProjectProfile("kotlin", "gradle")
+
+
+@pytest.mark.parametrize(
+    ("language", "tool"),
+    [("python", "maven"), ("rust", "npm"), ("typescript", "uv"), ("java", "cargo")],
+)
+def test_pins_that_contradict_are_refused_naming_both(language: str, tool: str) -> None:
+    with pytest.raises(ProjectUndecidedError) as caught:
+        _pinned("pyproject.toml", language=language, build_tool=tool)
+
+    assert f'[implement] language = "{language}" and build_tool = "{tool}" do not agree' in str(
+        caught.value
+    )
+
+
+def test_a_build_tool_pin_that_does_not_build_the_root_language_is_refused() -> None:
+    with pytest.raises(ProjectUndecidedError) as caught:
+        _pinned("pyproject.toml", build_tool="maven")
+
+    assert '[implement] build_tool = "maven" does not build python' in str(caught.value)
+
+
+def test_a_build_tool_pin_does_not_pick_the_language_of_a_mixed_root() -> None:
+    with pytest.raises(ProjectUndecidedError, match=r"set \[implement\] language"):
+        _pinned("pyproject.toml", "pom.xml", build_tool="maven")
+
+
+@pytest.mark.parametrize("language", ["go", "javascript", "PYTHON", ""])
+def test_a_language_pin_outside_the_generated_ones_is_refused(language: str) -> None:
+    with pytest.raises(ProjectUndecidedError, match="cannot be generated"):
+        _pinned("pyproject.toml", language=language)

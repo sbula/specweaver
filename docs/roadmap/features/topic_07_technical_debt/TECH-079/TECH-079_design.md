@@ -253,7 +253,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One profile decision | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every caller asks it | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One framework answer | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -267,6 +267,8 @@ families stay separate". Each decision sits beside its fact above.
 Q13 (no build file: the root's code endings decide) and the API error code `PROJECT_UNDECIDED`
 agreed at approval. **Design approved 2026-11-05** (the user).
 **SF-01 plan approved 2026-11-06** (the user): contradicting pins are refused, naming both.
-**Next step**: dev for SF-01 (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf01_implementation_plan.md`).
+**SF-01 committed 2026-11-06**: `commons.project_profile.decide_profile` and
+`workspace.project.read_project_profile`; no caller uses them yet.
+**Next step**: the implementation plan for SF-02 (`specweaver-implementation-plan TECH-079 SF-02`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.

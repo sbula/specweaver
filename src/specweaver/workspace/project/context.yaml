@@ -35,6 +35,7 @@ exposes:
   - generate_constitution_from_standards
   - is_unmodified_starter
   - ConstitutionInfo
+  - read_project_profile
 
 # -- Operational Metadata --------------------------------------------------
 operational:

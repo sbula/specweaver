@@ -34,3 +34,35 @@
 - Accepted: a file name holding a newline breaks the one-line refusal. The name comes from the
   user's own root and is shown to that user only.
 - Accepted: `read` must return None rather than raise; the reader in CB-2 owns that (F7, F9).
+
+## CB-2: the pins and the reader (FR-2, FR-1's seam) — closes SF-01
+
+**What changed**
+- `core/config/implement_policy.py`: `[implement] build_tool` (`uv`, `maven`, `gradle`, `cargo`,
+  `npm`); a wrong value is refused naming its key and line, as `language` is.
+- `decide_profile` takes the two pins. A set pin wins over the root. Pins that disagree are refused,
+  naming both `[agreed 2026-11-05]`. Not in the plan, taken at dev: a `build_tool` pin that cannot
+  build the language the root decides (`build_tool = "maven"` on a Python root) is refused too,
+  the same rule as two pins; raised to the user at the CB-2 stop.
+- New `workspace/project/project_profile.py` `read_project_profile(root, *, language, build_tool)`:
+  lists the root once, regular files only; a file whose real path leaves the root reads as None;
+  an unreadable or non-UTF-8 file reads as None; a missing root raises the OS error.
+- Found at the gate, removed: a "read only listed names" check the decision can never reach.
+
+**Tests**
+- `test_implement_policy.py`: each build tool; `ant` refused naming `implement.build_tool` line 3;
+  the `Language` and `BuildTool` values equal `GENERATED_LANGUAGES` and `BUILD_TOOLS`. Red first.
+- `test_project_profile.py`: a language pin wins over a mixed root, a build-tool pin over pom.xml
+  with Gradle, contradicting pins, a build-tool pin that does not build the root language, a
+  language pin SpecWeaver cannot generate. Red first (no pin arguments).
+- `tests/integration/workspace/project/test_read_project_profile.py` (12): red first (no module).
+- Mutants added, each OBJECTED: `language-pin-ignored`, `contradicting-pins-trusted`,
+  `build-tool-pin-mismatch-trusted`, `subfolder-counts`, `link-outside-root-read`,
+  `kotlin-sources-ignored`, `root-not-resolved`.
+
+**Red/blue**
+- Safe: symlink loops, FIFOs and unreadable entries are not regular files, so they are not listed.
+- Accepted: a very large build file in the user's own root is read whole; only that user is hurt,
+  and a size limit would be a number nobody agreed.
+- Accepted: `build_tool` is accepted in `specweaver.toml` but acts only from SF-02; the user guide
+  §6c is written then (F8).

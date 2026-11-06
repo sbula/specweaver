@@ -1,9 +1,9 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The language a project's code is written in, as its `specweaver.toml` says in `[implement]`.
+"""The language and build tool a project pins in its `specweaver.toml` `[implement]` section.
 
-None means the project names none, and its manifests decide (`sandbox.language`).
+None means the project pins none; its root decides (`commons.project_profile`).
 """
 
 from __future__ import annotations
@@ -15,12 +15,14 @@ from pydantic import BaseModel, ConfigDict
 from specweaver.core.config.settings_file import parse_section
 
 Language = Literal["python", "java", "kotlin", "typescript", "rust"]
+BuildTool = Literal["uv", "maven", "gradle", "cargo", "npm"]
 
 
 class ImplementPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     language: Language | None = None
+    build_tool: BuildTool | None = None
 
 
 def parse_implement(text: str, source: str) -> ImplementPolicy:

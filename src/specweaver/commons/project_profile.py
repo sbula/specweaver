@@ -29,6 +29,14 @@ _JVM_BUILDS = ("pom.xml", *_GRADLE_BUILDS)
 _SETTING = "set [implement] {} in specweaver.toml"
 #: A JVM build is one candidate; Java or Kotlin is decided after.
 _JVM = "java or kotlin"
+#: The languages each build tool builds.
+_BUILDS = {
+    "uv": ("python",),
+    "maven": ("java", "kotlin"),
+    "gradle": ("java", "kotlin"),
+    "cargo": ("rust",),
+    "npm": ("typescript",),
+}
 
 
 @dataclass(frozen=True)
@@ -47,14 +55,41 @@ def decide_profile(
     read: Callable[[str], str | None],
     *,
     kotlin_sources: bool,
+    language: str | None = None,
+    build_tool: str | None = None,
 ) -> ProjectProfile:
     """The profile of a project whose root holds `root_files`.
 
     `read` returns a root file's text, or None when it cannot be read. `kotlin_sources` says the
-    project keeps Kotlin under `src/main/kotlin`.
+    project keeps Kotlin under `src/main/kotlin`. `language` and `build_tool` are the
+    `[implement]` pins: a set pin wins over the root, and pins that disagree are refused.
     """
-    language = _language(root_files, read, kotlin_sources=kotlin_sources)
-    return ProjectProfile(language, _build_tool(language, root_files))
+    if language is not None and build_tool is not None and not _builds(build_tool, language):
+        raise ProjectUndecidedError(
+            f'[implement] language = "{language}" and build_tool = "{build_tool}" do not agree; '
+            "change one of them in specweaver.toml"
+        )
+    if language is None:
+        language = _language(root_files, read, kotlin_sources=kotlin_sources)
+    elif language not in GENERATED_LANGUAGES:
+        raise ProjectUndecidedError(_cannot_generate(f"{language} ([implement] language)"))
+    if build_tool is None:
+        return ProjectProfile(language, _build_tool(language, root_files))
+    if not _builds(build_tool, language):
+        raise ProjectUndecidedError(
+            f'[implement] build_tool = "{build_tool}" does not build {language}; '
+            f"{_SETTING.format('language')}, or change build_tool"
+        )
+    return ProjectProfile(language, build_tool)
+
+
+def _builds(build_tool: str, language: str) -> bool:
+    return language in _BUILDS.get(build_tool, ())
+
+
+def _cannot_generate(subject: str) -> str:
+    generated = f"{', '.join(GENERATED_LANGUAGES[:-1])} and {GENERATED_LANGUAGES[-1]}"
+    return f"{subject} cannot be generated; SpecWeaver generates {generated}"
 
 
 def _language(
@@ -78,10 +113,7 @@ def _language(
         jvm = sorted(name for name in root_files if name in _JVM_BUILDS)
         return "kotlin" if kotlin_sources or _names_kotlin(jvm, read) else "java"
     if language not in GENERATED_LANGUAGES:
-        raise ProjectUndecidedError(
-            f"{_listed({language: names})} cannot be generated; SpecWeaver generates "
-            f"{', '.join(GENERATED_LANGUAGES[:-1])} and {GENERATED_LANGUAGES[-1]}"
-        )
+        raise ProjectUndecidedError(_cannot_generate(_listed({language: names})))
     return language
 
 
