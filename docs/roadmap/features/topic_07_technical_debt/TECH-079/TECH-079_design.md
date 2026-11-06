@@ -46,7 +46,7 @@ JavaScript project gets `.ts` files.
 | P-1 | `sw implement` → `[implement]` pins + root → profile → task files, framework, contract | CLI, workspace project, commons, workflows/implementation | TECH-079 (FR-1..FR-8) | ⬜ |
 | P-2 | `POST /api/v1/implement` → the same profile → task files, or an error naming the setting | API, workspace project, commons | TECH-079 (FR-8) | ⬜ |
 | P-3 | `sw run` → run setup → profile in the run → QA runner, scenario converter, stack-trace filter, dual run, isolation | run setup, flow engine and handlers, sandbox language | TECH-079 (FR-7, FR-14) | ⬜ |
-| P-4 | `sw sandbox prepare` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ⬜ |
+| P-4 | `sw sandbox preflight` and a sandboxed run → profile → prepare plan and image | sandbox CLI, workspace project, sandbox execution | TECH-079 (FR-7) | ⬜ |
 | P-5 | `sw check <code file>` → validation pipeline chosen by the profile's framework | validation orchestration, workspace project | TECH-079 (FR-9) | ⬜ |
 | P-6 | `sw scan`, topology, C09 → structure analyzers → folder language from `commons` | workspace analyzers, assurance graph | TECH-079 (FR-16) | ⬜ |
 | P-7 | `sw standards scan` → style analyzers → shared parsers | assurance standards, workspace parsers | TECH-079 (FR-16, FR-17) | ⬜ |
@@ -102,8 +102,8 @@ None.
 | FR-4 | When the root names more than one candidate language and no language pin is set, the profile SHALL be a refusal naming the build files found and telling the user to set `[implement] language` `[agreed 2026-11-05]` | the profile function | detect a mixed root | no silent pick |
 | FR-5 | When the decided language cannot be generated (go, c, cpp, javascript), the profile SHALL be a refusal naming the language and the five that can; no part SHALL fall back to Python `[agreed 2026-11-05]` | the profile function | detect an unsupported language | a refusal, never Python files |
 | FR-6 | When the root has `pom.xml` and `build.gradle` or `build.gradle.kts` and no build-tool pin is set, the profile SHALL be a refusal telling the user to set `[implement] build_tool` `[agreed 2026-11-05]`; otherwise the build tool SHALL follow the language and its build file as today (python with `pyproject.toml` or `uv.lock` → uv, python with only `requirements*.txt` → none, rust → cargo, typescript → npm, JVM → the one build file present) | the profile function | detect a JVM project | one build tool, or a refusal |
-| FR-7 | Task files, the QA runner, the scenario converter, the stack-trace filter, the dual run, run isolation, the prepare plan and the sandbox image SHALL all take the language and build tool from the one profile; `detect_language`, `detect_toolchain` and `isolation.py`'s `python` default SHALL be gone (seam: run setup, flow, sandbox, workspace project → profile) | `sw run`, `sw implement`, `sw sandbox prepare` | run on a project | every part agrees; a pinned mixed root runs entirely in the pinned language |
-| FR-8 | A refusal SHALL reach the user where a project-wide language is needed and only there `[agreed 2026-11-05]`: `sw implement`, `sw run` and `sw sandbox prepare` print it and exit 1; `POST /api/v1/implement` returns 400 with the error code `PROJECT_UNDECIDED` and the message `[agreed 2026-11-05]`; `sw check` on one file keeps using that file's ending (seam: CLI and API → profile) | a user | start work on an undecided project | one message naming the setting, no run started |
+| FR-7 | Task files, the QA runner, the scenario converter, the stack-trace filter, the dual run, run isolation, the prepare plan and the sandbox image SHALL all take the language and build tool from the one profile; `detect_language`, `detect_toolchain` and `isolation.py`'s `python` default SHALL be gone (seam: run setup, flow, sandbox, workspace project → profile) | `sw run`, `sw implement`, `sw sandbox preflight` | run on a project | every part agrees; a pinned mixed root runs entirely in the pinned language |
+| FR-8 | A refusal SHALL reach the user where a project-wide language is needed and only there `[agreed 2026-11-05]`: `sw implement`, `sw run` and `sw sandbox preflight` print it and exit 1; `POST /api/v1/implement` returns 400 with the error code `PROJECT_UNDECIDED` and the message `[agreed 2026-11-05]`, and so do `POST /pipelines/{name}/run` and `/runs/{id}/resume` `[agreed 2026-11-06]`; a run with session isolation on refuses an undecided project on any door, never running without it `[agreed 2026-11-06]`; `sw check` on one file keeps using that file's ending (seam: CLI and API → profile) | a user | start work on an undecided project | one message naming the setting, no run started |
 | FR-9 | The validation pipeline of a code file SHALL be chosen by the profile's framework, the same answer generation uses `[agreed 2026-11-05]` (seam: validation orchestration → profile) | `sw check`, the validate steps | check a Spring Boot file with no archetype | Spring Boot checks |
 | FR-10 | The framework SHALL come from `context.yaml` `framework:` first, then from an `archetype:` that names a framework (with a warning naming the move to `framework:`), then from the build file's markers (today's Spring/Quarkus, NestJS, Actix, FastAPI detectors) `[agreed 2026-11-05]`; `KNOWN_ARCHETYPES` stays layer roles; `context_yaml_spec.md` documents `framework:`; `sw init` and the archetype inferrer write a framework under `framework:` | the profile function, the planner | read a framework | one answer; old manifests still work |
 | FR-11 | Each framework's languages SHALL be declared once, in its evaluator schema's `supported_languages`; the guides' `languages:` line SHALL be gone and generation SHALL read the schema | generation, validation, the code-structure evaluator | ask a framework's languages | one list (`nestjs` keeps typescript and javascript) |
@@ -254,7 +254,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | Every caller asks it | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One framework answer | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -269,6 +269,8 @@ agreed at approval. **Design approved 2026-11-05** (the user).
 **SF-01 plan approved 2026-11-06** (the user): contradicting pins are refused, naming both.
 **SF-01 committed 2026-11-06**: `commons.project_profile.decide_profile` and
 `workspace.project.read_project_profile`; no caller uses them yet.
-**Next step**: the implementation plan for SF-02 (`specweaver-implementation-plan TECH-079 SF-02`).
+**SF-02 plan approved 2026-11-06** (the user): the API pipeline run and resume refuse like `sw run`;
+session isolation never turns off for an undecided project.
+**Next step**: dev SF-02 (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-079/TECH-079_sf02_implementation_plan.md`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
