@@ -96,7 +96,8 @@ Example: **Go**, at `src/specweaver/sandbox/language/core/go/`.
    the domain payload of native test failures. JVM languages share `jvm/stack_trace_filter.py`.
 5. **Tree-Sitter parser**: inherit `BaseTreeSitterParser` in
    `src/specweaver/workspace/ast/parsers/<lang>/codestructure.py` and register it in
-   `get_default_parsers()`. Implement `get_binary_ignore_patterns()` and
+   `get_default_parsers()` (built once, read-only). Every caller finds a file's parser with
+   `parser_for(path)`, by ending whatever its case; never search the registry yourself. Implement `get_binary_ignore_patterns()` and
    `get_default_directory_ignores()` (language-specific topological exclusions). Traceability needs
    `extract_test_mapped_requirements()` on the language analyzer. Find a grammar in the
    [official Tree-Sitter List of Parsers](https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers).

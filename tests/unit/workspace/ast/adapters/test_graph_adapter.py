@@ -73,7 +73,7 @@ def test_extract_ast_dict_hostile_crash(tmp_path, monkeypatch):
     py_file.write_text("def valid_code(): pass", encoding="utf-8")
 
     # Mock the parser factory to throw an exception
-    def mock_get_parsers():
+    def mock_get_parsers(_path, _parsers=None):
         class CrashParser:
             def list_symbols(self, code):
                 raise RuntimeError("TreeSitter fatal crash")
@@ -81,10 +81,10 @@ def test_extract_ast_dict_hostile_crash(tmp_path, monkeypatch):
             def extract_framework_markers(self, code):
                 return {}
 
-        return {(".py",): CrashParser()}
+        return CrashParser()
 
     monkeypatch.setattr(
-        "specweaver.workspace.ast.adapters.graph_adapter.get_default_parsers", mock_get_parsers
+        "specweaver.workspace.ast.adapters.graph_adapter.parser_for", mock_get_parsers
     )
 
     ast_data = extract_ast_dict(str(py_file))

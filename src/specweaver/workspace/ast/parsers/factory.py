@@ -8,6 +8,10 @@ This centralizes the physical instantiation of CodeStructureInterfaces so orches
 """
 
 import logging
+from collections.abc import Mapping
+from functools import cache
+from pathlib import PurePath
+from types import MappingProxyType
 
 from specweaver.commons.languages import LANGUAGE_SUFFIXES
 from specweaver.workspace.ast.parsers.c.codestructure import CCodeStructure
@@ -26,9 +30,17 @@ from specweaver.workspace.ast.parsers.typescript.codestructure import TypeScript
 logger = logging.getLogger(__name__)
 
 
-def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
-    """Return the registry mapping of file extensions to their AST parsing implementations."""
-    logger.debug("get_default_parsers called: initializing parser registry")
+#: A file ending → its parser registry, as `get_default_parsers` returns it.
+Registry = Mapping[tuple[str, ...], CodeStructureInterface]
+
+
+@cache
+def get_default_parsers() -> Registry:
+    """The registry of file endings to their parsers, built once per process and read-only.
+
+    Sharing the parsers across threads is safe: py-tree-sitter holds the GIL for a whole parse.
+    """
+    logger.debug("get_default_parsers: building the parser registry")
     by_language = {
         "c": CCodeStructure(),
         "cpp": CppCodeStructure(),
@@ -46,4 +58,16 @@ def get_default_parsers() -> dict[tuple[str, ...], CodeStructureInterface]:
     # Not programming languages, so not in the table.
     parsers[(".md", ".mdx")] = MarkdownCodeStructure()
     parsers[(".sql",)] = SqlCodeStructure()
-    return parsers
+    return MappingProxyType(parsers)
+
+
+def parser_for(
+    path: str | PurePath, parsers: Registry | None = None
+) -> CodeStructureInterface | None:
+    """The parser for the file at `path` by its ending, whatever its case; None when none reads it.
+
+    `parsers` is an injected registry; without one, the default.
+    """
+    suffix = PurePath(path).suffix.lower()
+    registry = get_default_parsers() if parsers is None else parsers
+    return next((parser for exts, parser in registry.items() if suffix in exts), None)

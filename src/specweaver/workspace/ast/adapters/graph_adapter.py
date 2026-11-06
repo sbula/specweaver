@@ -5,16 +5,16 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from specweaver.workspace.ast.parsers.factory import get_default_parsers
+from specweaver.workspace.ast.parsers.factory import parser_for
 
 logger = logging.getLogger(__name__)
 
 
-def parseable_suffixes() -> frozenset[str]:
-    """Every file suffix `extract_ast_dict` can resolve a parser for.
+def parseable(path: str | Path) -> bool:
+    """Whether `extract_ast_dict` can resolve a parser for the file at `path`.
 
-    Lives beside the resolution it describes, so a caller deciding WHICH files to hand over and this
-    function deciding what to do with one cannot disagree. `GraphBuilder.collect_files` accepted
+    Lives beside the resolution it describes, so a caller deciding WHICH files to hand over and
+    `extract_ast_dict` deciding what to do with one cannot disagree. `GraphBuilder.collect_files` accepted
     `.py` and nothing else while this resolved parsers for ten suffix groups, and a Java file was
     dropped before the mapper ever saw it.
 
@@ -22,7 +22,7 @@ def parseable_suffixes() -> frozenset[str]:
     adapter and not on `workspace.ast.parsers` — the boundary is the reason the two ended up
     restating each other.
     """
-    return frozenset(suffix for group in get_default_parsers() for suffix in group)
+    return parser_for(path) is not None
 
 
 def _supertype_records(by_kind: dict[str, list[str]]) -> list[dict[str, str]]:
@@ -59,18 +59,9 @@ def extract_ast_dict(filepath: str) -> dict[str, Any]:
         logger.debug("extract_ast_dict: Skipping symlink: %s", filepath)
         return ast_data
 
-    ext = path.suffix
-    parsers = get_default_parsers()
-
-    # Find the matching parser for the extension
-    parser = None
-    for exts, p in parsers.items():
-        if ext in exts:
-            parser = p
-            break
-
+    parser = parser_for(path)
     if not parser:
-        logger.debug("extract_ast_dict: No parser found for extension %s", ext)
+        logger.debug("extract_ast_dict: No parser found for extension %s", path.suffix)
         return ast_data
 
     try:

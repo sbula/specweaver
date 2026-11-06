@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from specweaver.graph.core.builder.mapper import OntologyMapper
 from specweaver.graph.core.engine.hashing import SemanticHasher
-from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict, parseable_suffixes
+from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict, parseable
 
 if TYPE_CHECKING:
     from specweaver.graph.core.engine.protocol import GraphEngineProtocol
@@ -133,29 +133,18 @@ class GraphBuilder:
             ast_data = self.parser(str(path))
             self.ingest_ast(filepath, ast_data)
 
-    @staticmethod
-    def _parseable_suffixes() -> frozenset[str]:
-        """Every suffix the parser registry can read, asked rather than restated.
-
-        Collection used to accept `.py` and nothing else while every layer beneath it was polyglot:
-        the adapter resolves a parser by suffix from this same registry, and the mapper reads only
-        `type` and `name`. A Java file was dropped here, before the mapper — so a real Java class
-        whose symbols the shipped extractor DOES report persisted zero nodes, not even the FILE node.
-
-        Asked of the adapter rather than of the parser registry: `specweaver.graph` may depend on the
-        adapter and not on `workspace.ast.parsers`, and that boundary is the reason the two ended up
-        restating each other. A language added to the registry is now collected with no edit here.
-        """
-        return parseable_suffixes()
-
     def collect_files(self, target_path: Path) -> set[str]:
-        """Collects every source file a shipped parser can read, from a target path."""
-        suffixes = self._parseable_suffixes()
+        """Collects every source file a shipped parser can read, from a target path.
+
+        Asked of the adapter's `parseable`, the lookup `extract_ast_dict` itself uses: collection
+        once accepted `.py` alone while every layer beneath it was polyglot. `specweaver.graph` may
+        depend on the adapter and not on `workspace.ast.parsers`.
+        """
         target = Path(target_path)
         if target.is_file():
-            return {str(target)} if target.suffix in suffixes else set()
+            return {str(target)} if parseable(target) else set()
 
-        return {str(p) for p in target.rglob("*") if p.is_file() and p.suffix in suffixes}
+        return {str(p) for p in target.rglob("*") if p.is_file() and parseable(p)}
 
     def ingest_target(self, target_path: Path) -> int:
         """Collects files and ingests them, returning the number of ingested files."""

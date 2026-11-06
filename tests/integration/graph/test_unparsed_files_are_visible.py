@@ -74,8 +74,8 @@ def test_a_parser_that_raises_marks_the_file(
             raise RuntimeError("grammar exploded")
 
     monkeypatch.setattr(
-        "specweaver.workspace.ast.adapters.graph_adapter.get_default_parsers",
-        lambda: {(".py",): Exploding()},
+        "specweaver.workspace.ast.adapters.graph_adapter.parser_for",
+        lambda _path, _parsers=None: Exploding(),
     )
     assert _file_node_metadata(_ingest(str(path)), str(path))["unparsed"] == "parse"
 

@@ -496,9 +496,6 @@ class CodeStructureTool(BaseTool):
 
 
 def _parser_for(path: str) -> CodeStructureInterface | None:
-    from pathlib import PurePosixPath
+    from specweaver.workspace.ast.parsers.factory import parser_for
 
-    from specweaver.workspace.ast.parsers.factory import get_default_parsers
-
-    suffix = PurePosixPath(path).suffix.lower()
-    return next((p for exts, p in get_default_parsers().items() if suffix in exts), None)
+    return parser_for(path)

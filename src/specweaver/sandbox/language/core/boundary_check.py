@@ -26,7 +26,7 @@ from specweaver.assurance.graph.topology import load_nodes
 from specweaver.commons.languages import LANGUAGE_SUFFIXES, language_of
 from specweaver.commons.qa import ArchitectureRunResult, ArchitectureViolation
 from specweaver.sandbox.language.core.boundary_extras import run_extras
-from specweaver.workspace.ast.parsers.factory import get_default_parsers
+from specweaver.workspace.ast.parsers.factory import get_default_parsers, parser_for
 from specweaver.workspace.ast.refactor.imports import targets_for
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,11 @@ class _Judge:
         code = files.get(target)
         if code is None:
             code = (self._root / target).read_text(encoding="utf-8")
-        parser = next(p for exts, p in get_default_parsers().items() if target.endswith(exts))
+        parser = parser_for(target)
+        if parser is None:
+            return ArchitectureRunResult(
+                0, note=f"no parser reads {target}; no boundary was examined."
+            )
         violations: list[ArchitectureViolation] = []
         unmapped = 0
         for written in parser.extract_imports(code):

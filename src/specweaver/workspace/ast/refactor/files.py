@@ -14,7 +14,7 @@ import posixpath
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from specweaver.workspace.ast.parsers.factory import get_default_parsers
+from specweaver.workspace.ast.parsers.factory import parser_for
 from specweaver.workspace.ast.refactor._model import RenameRefusal, Spot
 from specweaver.workspace.ast.refactor.move import new_path_refusal
 from specweaver.workspace.ast.refactor.rename import resolver_for
@@ -35,8 +35,7 @@ class FilePlan:
 
 
 def _parser_for(path: str) -> CodeStructureInterface | None:
-    suffix = posixpath.splitext(path)[1].lower()
-    return next((p for exts, p in get_default_parsers().items() if suffix in exts), None)
+    return parser_for(path)
 
 
 def plan_create(

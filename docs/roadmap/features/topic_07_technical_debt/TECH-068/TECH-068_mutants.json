@@ -107,7 +107,7 @@
           "old": "        ast_data[\"imports\"] = parser.extract_imports(code)",
           "new": "        pass",
           "breaks": "the mapper receives no imports, so IMPORTS edges cannot be built at all -- the state the graph shipped in, where nine kinds were declared and one was written",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "the-contract-loses-its-declared-fields",
@@ -117,7 +117,7 @@
           "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
           "new": "{\"type\": \"module\", \"calls\": [], \"children\": []}",
           "breaks": "the file-level `imports` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no imports or a writer that predates the field",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         }
       ]
     },
@@ -206,7 +206,7 @@
           "old": "        ast_data[\"unparsed\"] = \"read\"",
           "new": "        pass",
           "breaks": "a file nobody could open looks exactly like a file with nothing in it, so a traversal returning no edges has two meanings and the reader cannot tell which",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "a-parser-failure-goes-quiet",
@@ -216,7 +216,7 @@
           "old": "        ast_data[\"unparsed\"] = \"parse\"",
           "new": "        pass",
           "breaks": "a grammar that raised leaves no record, so a whole file's dependencies are silently absent from the graph",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "the-node-drops-the-marker",
@@ -378,7 +378,7 @@
           "old": "\"supertypes\": _supertype_records(supertypes.get(symbol, {})),",
           "new": "\"supertypes\": [],",
           "breaks": "the mapper receives no supertype at all, so EXTENDS and IMPLEMENTS cannot be built -- the field stays declared and permanently empty, which reads as 'this type inherits nothing'",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "every-supertype-becomes-extension",
@@ -616,7 +616,7 @@
           "old": "\"calls\": call_sites.get(symbol, []),",
           "new": "\"calls\": [],",
           "breaks": "the mapper receives no callee, so CALLS edges cannot be built at all -- the field stays declared and permanently empty, which reads as 'this symbol calls nothing'",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "module-level-calls-dropped",
@@ -626,7 +626,7 @@
           "old": "        ast_data[\"calls\"] = call_sites.get(\"\", [])",
           "new": "        pass",
           "breaks": "a decorator argument or a constant built by a call never reaches the graph, so a whole class of real file-level dependencies is silently absent",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "the-file-level-key-is-absent",
@@ -636,7 +636,7 @@
           "old": "{\"type\": \"module\", \"imports\": [], \"calls\": [], \"children\": []}",
           "new": "{\"type\": \"module\", \"imports\": [], \"children\": []}",
           "breaks": "the file-level `calls` key is missing on every early return -- an unreadable file, a symlink, a language with no parser -- so a consumer must guess whether absent means no calls or an older writer",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "a-childs-calls-come-from-the-file",
@@ -646,7 +646,7 @@
           "old": "\"calls\": call_sites.get(symbol, []),",
           "new": "\"calls\": call_sites.get(\"\", []),",
           "breaks": "every symbol is credited with the file's module-level calls instead of its own, so the graph reports calls nobody made and misses every call that was",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         }
       ]
     },
@@ -777,7 +777,7 @@
           "old": "call_sites = parser.extract_call_sites(code)",
           "new": "call_sites = {}",
           "breaks": "the parser still finds every call and the seam drops them all, so the persisted graph holds containment and imports only -- the silent-empty result this ticket exists to remove, and invisible to every test that stops at the engine",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "import-resolution-always-ghosts",
@@ -948,7 +948,7 @@
           "old": "        is_class = symbol in supertypes or \"extends\" in markers.get(symbol, {})",
           "new": "        is_class = \"extends\" in markers.get(symbol, {})",
           "breaks": "classification falls back to framework markers, which Go does not populate, so every Go struct and interface becomes a PROCEDURE node -- _index_types never sees it and a Go supertype edge can only point at a ghost however well the parser read the source",
-          "symbol_sha": "sha256:7191d1b79d30c9ef0a7bbdf9a8c10b05f009c25bf811a8ac0d62afddb6109e19"
+          "symbol_sha": "sha256:88a079856004be1e549542c304245e5675d3b4145082f3d98473f6f8d3f43b34"
         },
         {
           "id": "a-rust-trait-is-invisible-again",

@@ -9,6 +9,7 @@ that does not parse may hide occurrences, so any such file that holds the name i
 
 from __future__ import annotations
 
+import posixpath
 import re
 from typing import TYPE_CHECKING, ClassVar
 
@@ -62,7 +63,7 @@ class Resolver:
         return []
 
     def parser_for(self, path: str) -> CodeStructureInterface:
-        return next(p for ext, p in self._parsers.items() if path.endswith(ext))
+        return self._parsers[posixpath.splitext(path)[1].lower()]
 
     def facts(self, path: str) -> FileBindings:
         if path not in self._facts:

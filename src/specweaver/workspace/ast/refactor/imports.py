@@ -16,7 +16,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from specweaver.commons.languages import LANGUAGE_SUFFIXES, language_of
-from specweaver.workspace.ast.parsers.factory import get_default_parsers
+from specweaver.workspace.ast.parsers.factory import parser_for
 from specweaver.workspace.ast.refactor.rename import resolver_for
 
 if TYPE_CHECKING:
@@ -136,8 +136,8 @@ def targets_for(files: Mapping[str, str], language: str) -> Callable[[str, str],
         return None
     suffix = LANGUAGE_SUFFIXES[language][0]
     resolver_class = resolver_for(f"x{suffix}")
-    parser = next(p for exts, p in get_default_parsers().items() if suffix in exts)
-    resolver = resolver_class(files, parser) if resolver_class else None
+    parser = parser_for(f"x{suffix}")
+    resolver = resolver_class(files, parser) if resolver_class and parser else None
     return lambda path, written: pick(resolver, path, written)
 
 

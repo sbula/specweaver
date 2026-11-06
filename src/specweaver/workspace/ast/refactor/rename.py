@@ -9,6 +9,7 @@ and names the spot. A name in a comment, a doc or a config file is reported, nev
 
 from __future__ import annotations
 
+import posixpath
 import re
 from typing import TYPE_CHECKING
 
@@ -69,7 +70,7 @@ CODE_SUFFIXES = (*(s for suffixes in LANGUAGE_SUFFIXES.values() for s in suffixe
 
 def resolver_for(path: str) -> type[Resolver] | None:
     """The resolver for a file with this ending, or None when the language has none."""
-    return next((r for ext, r in _RESOLVERS.items() if path.endswith(ext)), None)
+    return _RESOLVERS.get(posixpath.splitext(path)[1].lower())
 
 
 def family_of(path: str) -> tuple[str, ...]:

@@ -767,6 +767,65 @@
           "symbol_sha": "sha256:92af60ae9dc1c761243d13b29da9656d9705ad39efed21fa4811bfd0819d0a0c"
         }
       ]
+    },
+    {
+      "requirement": "FR-15",
+      "title": "One parser lookup, by ending whatever its case, over a registry built once",
+      "scope": [
+        "tests/integration/workspace/ast/parsers/test_one_parser_lookup.py"
+      ],
+      "mutants": [
+        {
+          "id": "lookup-case-sensitive",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/factory.py",
+          "symbol": "parser_for",
+          "old": "    suffix = PurePath(path).suffix.lower()\n",
+          "new": "    suffix = PurePath(path).suffix\n",
+          "breaks": "A.PY gets no parser",
+          "symbol_sha": "sha256:5413e6fe6a7a31d8b88d688837e1900ba95e29c063aeda09a8b42be361552e4a"
+        },
+        {
+          "id": "registry-rebuilt",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/factory.py",
+          "symbol": "get_default_parsers",
+          "old": "@cache\ndef get_default_parsers",
+          "new": "def get_default_parsers",
+          "breaks": "every lookup builds eleven parsers again",
+          "symbol_sha": "sha256:96fd49710851924b86e311992026ef84fef3d296dd3e3b080d4c6932b7693df7"
+        },
+        {
+          "id": "registry-writable",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/parsers/factory.py",
+          "symbol": "get_default_parsers",
+          "old": "    return MappingProxyType(parsers)\n",
+          "new": "    return parsers\n",
+          "breaks": "one caller can change the parsers every other caller shares",
+          "symbol_sha": "sha256:96fd49710851924b86e311992026ef84fef3d296dd3e3b080d4c6932b7693df7"
+        },
+        {
+          "id": "resolver-pick-case-sensitive",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/refactor/rename.py",
+          "symbol": "resolver_for",
+          "old": "    return _RESOLVERS.get(posixpath.splitext(path)[1].lower())\n",
+          "new": "    return _RESOLVERS.get(posixpath.splitext(path)[1])\n",
+          "breaks": "rename refuses A.PY",
+          "symbol_sha": "sha256:f0145567ac81830e2c8be98015434016c6403b47ec6058f192c06e73f0c69e26"
+        },
+        {
+          "id": "graph-collects-by-old-rule",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/ast/adapters/graph_adapter.py",
+          "symbol": "parseable",
+          "old": "    return parser_for(path) is not None\n",
+          "new": "    return str(path).endswith(\".py\")\n",
+          "breaks": "A.PY is never collected into the graph",
+          "symbol_sha": "sha256:2210a0476bec2111dabb50465b06d95347209781bf17b11595c1d2c171a0f922"
+        }
+      ]
     }
   ]
 }

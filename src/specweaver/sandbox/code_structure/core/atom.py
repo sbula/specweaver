@@ -19,6 +19,8 @@ from specweaver.workspace.ast.parsers.interfaces import (
 from specweaver.workspace.ast.refactor.rename import RenameRefusal, listing
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from specweaver.sandbox.filesystem.core.executor import FileExecutor
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ class CodeStructureAtom(Atom):
         evaluator_schemas: dict[str, Any] | None = None,
         active_archetype: str = "generic",
         plugins: list[str] | None = None,
-        parsers: dict[tuple[str, ...], CodeStructureInterface] | None = None,
+        parsers: Mapping[tuple[str, ...], CodeStructureInterface] | None = None,
         exclude_dirs: set[str] | None = None,
         exclude_patterns: set[str] | None = None,
     ) -> None:
@@ -106,13 +108,9 @@ class CodeStructureAtom(Atom):
 
     def _get_parser(self, path: str) -> CodeStructureInterface | None:
         """Map a file extension to its respective TreeSitter AST parser."""
-        ext = Path(path).suffix.lower()
-        if not self._parsers:
-            return None
-        for exts, parser in self._parsers.items():
-            if ext in exts:
-                return parser
-        return None
+        from specweaver.workspace.ast.parsers.factory import parser_for
+
+        return parser_for(path, self._parsers) if self._parsers else None
 
     def get_supported_capabilities(self) -> tuple[set[str], set[str]]:
         """Return the aggregate supported intents and parameters across all active parsers.
