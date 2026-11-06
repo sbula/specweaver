@@ -57,6 +57,7 @@ def _unique_name(prefix: str = "test") -> str:
 
 
 def _project(tmp_path: Path, prefix: str) -> Path:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     runner = CliRunner()
     result = runner.invoke(app, ["init", _unique_name(prefix), "--path", str(tmp_path)])
     assert result.exit_code == 0, result.output

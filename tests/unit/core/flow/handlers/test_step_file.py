@@ -57,6 +57,7 @@ def _java_project(root: Path) -> RunContext:
 
 
 def _python_project(root: Path) -> RunContext:
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec = root / "greeter_spec.md"
     spec.write_text("# Greeter\n")
     out = root / "out"

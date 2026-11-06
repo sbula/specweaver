@@ -264,6 +264,7 @@ class TestPlanSpecHandlerFileSystem:
         spec.write_text("# Component\n## 1. Purpose\nDoes things.\n", encoding="utf-8")
 
         llm = FakeLLM([_valid_plan_json()])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = RunContext(
             project_path=tmp_path, spec_path=spec, model=ModelAccess(llm_router=FixedRouter(llm))
         )
@@ -302,6 +303,7 @@ class TestRunContextPlanFlowsToGenerator:
         mock_llm.generate = AsyncMock(
             return_value=MagicMock(text="x = 1\n", finish_reason=1, parsed=None),
         )
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = RunContext(
             model=ModelAccess(llm_router=FixedRouter(mock_llm)),
             project_path=tmp_path,
@@ -331,6 +333,7 @@ class TestRunContextPlanFlowsToGenerator:
         mock_llm.generate = AsyncMock(
             return_value=MagicMock(text="def test_x(): pass\n", finish_reason=1, parsed=None),
         )
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = RunContext(
             model=ModelAccess(llm_router=FixedRouter(mock_llm)),
             project_path=tmp_path,

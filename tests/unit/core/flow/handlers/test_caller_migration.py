@@ -33,6 +33,7 @@ def run_context(tmp_path):
     spec_path.write_text("content", encoding="utf-8")
 
     project_path = tmp_path
+    (project_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
     return RunContext(
         analysis=AnalysisContext(parsers={}),

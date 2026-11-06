@@ -175,6 +175,98 @@
           "symbol_sha": "sha256:28baeb123963d30da92ab8277281c4ac18b054e2a2b3e102b68b9577c0dfb753"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "an undecided project is refused where a run needs its language, never run as Python or without its isolation",
+      "scope": [
+        "tests/unit/core/flow/engine/test_run_profile.py",
+        "tests/integration/interfaces/run_setup/test_run_carries_the_profile.py",
+        "tests/integration/interfaces/cli/test_cli_refuses_an_undecided_project.py",
+        "tests/integration/interfaces/api/test_api_refuses_an_undecided_project.py",
+        "tests/unit/core/flow/engine/test_session_policy.py"
+      ],
+      "mutants": [
+        {
+          "id": "run-profile-ignores-undecided",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/run_profile.py",
+          "symbol": "run_profile",
+          "old": "        raise ProjectUndecidedError(isolation.undecided)",
+          "new": "        return ProjectProfile(\"python\", \"uv\")",
+          "breaks": "an undecided run quietly becomes a Python run",
+          "symbol_sha": "sha256:9dfe1682420225372d6631a61d5656ff13b803225901bcdcbcbd1ce3f07424d0"
+        },
+        {
+          "id": "needs-profile-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_profile",
+          "old": "        if request.needs_profile:",
+          "new": "        if False:",
+          "breaks": "sw run and the API run start on an undecided project",
+          "symbol_sha": "sha256:34b233d3eac28302c4743c3be5cff37ff77078465da663725ac7b677ce78924c"
+        },
+        {
+          "id": "session-policy-swallows-undecided",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "apply_session_policy",
+          "old": "    except ProjectUndecidedError:\n        raise\n",
+          "new": "    except ProjectUndecidedError:\n        pass\n",
+          "breaks": "session isolation turns off silently on an undecided project",
+          "symbol_sha": "sha256:2076a42bd3f89fe0d15c135aa3141c7c7382ca4ee7d78072f940609be683669f"
+        },
+        {
+          "id": "cli-door-shows-a-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "    except ProjectUndecidedError as err:\n        _core.print_error(err)\n        raise typer.Exit(code=1) from err",
+          "new": "    except ProjectUndecidedError:\n        raise",
+          "breaks": "a CLI door crashes with a traceback instead of naming the setting",
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
+        },
+        {
+          "id": "api-resume-runs-undecided",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/pipelines.py",
+          "symbol": "_resume_existing_run",
+          "old": "        project=run.project_name,\n        db=db,\n        needs_profile=True,",
+          "new": "        project=run.project_name,\n        db=db,\n        needs_profile=False,",
+          "breaks": "an API resume goes on in a project that no longer decides its language",
+          "symbol_sha": "sha256:ce54d54fa954ef5e516c5629443c546d28bdfad9f952a18a4eb466d6f409ce44"
+        },
+        {
+          "id": "api-door-answers-500",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/v1/run_doors.py",
+          "symbol": "build_api_run",
+          "old": "    except ProjectUndecidedError as exc:\n        raise project_undecided(exc) from exc",
+          "new": "    except ProjectUndecidedError:\n        raise",
+          "breaks": "an API door answers 500 instead of 400 PROJECT_UNDECIDED",
+          "symbol_sha": "sha256:a226f30360f1e2a4afe1d265e1bd6cbca28f0aa15a9369f44e4d459340ef595e"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "the allow-list follows the run's language",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_run_carries_the_profile.py"
+      ],
+      "mutants": [
+        {
+          "id": "isolation-python-default",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/isolation.py",
+          "symbol": "derive_allowed_paths",
+          "old": "    return task_files_for(project_root, spec_path, language).all",
+          "new": "    return task_files_for(project_root, spec_path, \"python\").all",
+          "breaks": "a TypeScript run's merge allows only Python files",
+          "symbol_sha": "sha256:5d89e6071aaf17c7e84906ed68fe25fb56ae2da9cf733d82495bb09067a4eedb"
+        }
+      ]
     }
   ]
 }

@@ -104,6 +104,7 @@ def project(tmp_path: Path) -> Path:
     """An initialised project with the two scripts and the pipeline the journey runs."""
     root = tmp_path / PROJECT
     root.mkdir()
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
     init = _sw("init", PROJECT, "--path", str(root), cwd=tmp_path)
     assert init.returncode == 0, init.stdout + init.stderr

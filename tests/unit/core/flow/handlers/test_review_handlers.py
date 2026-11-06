@@ -148,6 +148,7 @@ class TestReviewCodeHandlerGuards:
         spec = tmp_path / "test_spec.md"
         spec.write_text("# Test spec\n", encoding="utf-8")
 
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         # output_dir exists but has no .py files
         output_dir = tmp_path / "output"
         output_dir.mkdir()

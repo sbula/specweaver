@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.database import Database
 from specweaver.core.config.settings_file import SettingsFileError
@@ -112,7 +113,7 @@ def test_a_model_run_gets_every_part(world: tuple[Database, Path]) -> None:
     assert "Keep it small." in (context.guidance.constitution or "")
     assert "snake_case" in (context.guidance.standards or "")
     assert context.isolation.autonomy.mode == "agentic"
-    assert context.isolation.language == "python"
+    assert context.isolation.profile == ProjectProfile("python", "")
     assert [rule.access for rule in context.isolation.doc_policy.rule] == ["open"]
     assert context.model.config is not None
     assert context.model.llm_router is not None

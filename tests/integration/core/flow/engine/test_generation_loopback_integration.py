@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 def test_generation_feedback_loopback_e2e(tmp_path: Path) -> None:
     """Verifies feedback is fully mapped from context to prompt string via the actual Flow Handlers."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec_path = tmp_path / "spec.md"
     spec_path.write_text("# Test Spec\n", encoding="utf-8")
 

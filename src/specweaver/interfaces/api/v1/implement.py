@@ -71,24 +71,32 @@ async def implement_spec(
 
 
 def _task_files(project_root: Path, spec_path: Path) -> TaskFiles:
-    """The task's files in the project's `[implement]` language; a bad setting is a 500 naming it,
-    a spec whose `Package` line is not a package a 400 naming the line."""
+    """The task's files in the project's language; a bad setting is a 500 naming it, a root that
+    decides no language a 400 naming the setting, a spec whose `Package` line is not a package a
+    400 naming the line."""
+    from specweaver.commons.project_profile import ProjectUndecidedError
     from specweaver.core.config.bootstrap.project_settings import load_section
     from specweaver.core.config.implement_policy import parse_implement
     from specweaver.core.config.settings_file import SettingsFileError
-    from specweaver.core.flow.engine.run_language import run_language
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
-    from specweaver.interfaces.api.v1.run_doors import settings_error_code
+    from specweaver.interfaces.api.v1.run_doors import project_undecided, settings_error_code
     from specweaver.workflows.implementation.task_files import task_files_for
+    from specweaver.workspace.project.project_profile import read_project_profile
 
     try:
-        language = load_section(project_root, parse_implement).language
+        pins = load_section(project_root, parse_implement)
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc), error_code=settings_error_code(exc), status_code=500
         ) from exc
     try:
-        return task_files_for(project_root, spec_path, run_language(project_root, language))
+        profile = read_project_profile(
+            project_root, language=pins.language, build_tool=pins.build_tool
+        )
+    except ProjectUndecidedError as exc:
+        raise project_undecided(exc) from exc
+    try:
+        return task_files_for(project_root, spec_path, profile.language)
     except ValueError as exc:
         raise SpecWeaverAPIError(detail=str(exc), error_code="SPEC_INVALID") from exc
 

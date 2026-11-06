@@ -217,6 +217,7 @@ class TestFullLifecycle:
         """Full lifecycle: init → draft → check → review → implement → check → review."""
         # -- Step 1: Init --------------------------------------------------
         result = runner.invoke(app, ["init", "fullpipe", "--path", str(tmp_path)])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert result.exit_code == 0, f"init failed: {result.output}"
 
         # -- Step 2: Draft (mocked LLM + mocked HITL) ----------------------

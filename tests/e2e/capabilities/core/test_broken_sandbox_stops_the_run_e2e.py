@@ -39,6 +39,7 @@ def _project(tmp_path: Path, sandbox: str) -> Path:
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "sandboxed", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (project / "specs" / "a_spec.md").write_text(
         "# A\n\nThe thing does one job.\n", encoding="utf-8"
     )

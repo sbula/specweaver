@@ -330,6 +330,8 @@ def _init_project(tmp_path: Path, name: str) -> Path:
     project_dir.mkdir()
     result = runner.invoke(app, ["init", name, "--path", str(project_dir)])
     assert result.exit_code == 0, result.output
+    # Python without a manifest: the pin decides, and the sandbox has nothing to build.
+    (project_dir / "specweaver.toml").write_text('[implement]\nlanguage = "python"\n')
     # D-VAL-02 project-local mechanical-only spec battery (INT-US-02 pattern).
     pipelines = project_dir / ".specweaver" / "pipelines"
     pipelines.mkdir(parents=True, exist_ok=True)

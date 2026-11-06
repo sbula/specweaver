@@ -41,6 +41,7 @@ _WEASEL = (
 def _project(root: Path, name: str, profile: str | None) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     assert runner.invoke(app, ["init", name, "--path", str(root)]).exit_code == 0
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     if profile:
         assert runner.invoke(app, ["config", "set-profile", profile]).exit_code == 0
     spec = root / "specs" / "a_spec.md"

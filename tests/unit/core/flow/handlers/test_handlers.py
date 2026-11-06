@@ -872,3 +872,9 @@ class TestValidateFlowWithDecompose:
         p = PipelineDefinition(name="bad", steps=steps)
         errors = p.validate_flow()
         assert any("invalid" in e.lower() or "combination" in e.lower() for e in errors)
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

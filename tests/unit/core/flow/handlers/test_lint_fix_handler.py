@@ -50,6 +50,7 @@ def _make_context(
     """
     output_dir = tmp_path / "output"
     output_dir.mkdir(exist_ok=True)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     if db is _DEFAULT_DB:
         db = MagicMock()
         db.async_session_scope.return_value.__aenter__.return_value = MagicMock()
@@ -430,7 +431,9 @@ class TestGetAtomSandboxSettings:
         with patch("specweaver.sandbox.language.core.runner_factory.qa_atom") as mock_atom_cls:
             handler._get_atom(context)
 
-        mock_atom_cls.assert_called_once_with(cwd=tmp_path, language=None, sandbox_settings=None)
+        mock_atom_cls.assert_called_once_with(
+            cwd=tmp_path, language="python", sandbox_settings=None
+        )
 
     def test_passes_sandbox_settings_from_context_config(self, tmp_path: Path) -> None:
         from specweaver.core.config.settings import SandboxSettings, SpecWeaverSettings
@@ -446,7 +449,7 @@ class TestGetAtomSandboxSettings:
             handler._get_atom(context)
 
         mock_atom_cls.assert_called_once_with(
-            cwd=tmp_path, language=None, sandbox_settings=config.sandbox
+            cwd=tmp_path, language="python", sandbox_settings=config.sandbox
         )
 
 

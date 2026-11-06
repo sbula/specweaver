@@ -211,7 +211,7 @@
           "old": "        if not kept:\n",
           "new": "        if True:\n",
           "breaks": "a sandboxed step whose commit or merge failed deletes the worktree with the step's work",
-          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
+          "symbol_sha": "sha256:f08078362eac0cacd1f6748d66853b50b6826a1b7a4c6fc95bc76f203482e51b"
         },
         {
           "id": "snapshot-failure-tears-down",
@@ -231,7 +231,7 @@
           "old": "            kept = True\n            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
           "new": "            raise RuntimeError(\n                keep(worktree, f\"authorized strip-merge failed",
           "breaks": "a failed strip-merge deletes the worktree and branch, and the committed work with them",
-          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
+          "symbol_sha": "sha256:f08078362eac0cacd1f6748d66853b50b6826a1b7a4c6fc95bc76f203482e51b"
         },
         {
           "id": "rerun-removes-kept",

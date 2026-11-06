@@ -31,6 +31,7 @@ def project(tmp_path: Path) -> Path:
     root = tmp_path / "proj"
     root.mkdir()
     assert runner.invoke(app, ["init", tmp_path.name.lower(), "--path", str(root)]).exit_code == 0
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (root / "spec.md").write_text("# Spec\n", encoding="utf-8")
     return root
 

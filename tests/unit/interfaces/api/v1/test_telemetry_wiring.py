@@ -45,6 +45,7 @@ def _project_with_spec(client, tmp_path):
     proj = tmp_path / "proj"
     proj.mkdir()
     (proj / "specs").mkdir()
+    (proj / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = proj / "specs" / "greeter_spec.md"
     spec.write_text("# Greeter — Component Spec\n", encoding="utf-8")
     client.post(

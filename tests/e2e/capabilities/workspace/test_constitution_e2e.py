@@ -178,6 +178,7 @@ class TestConstitutionE2E:
             ["init", _unique_name("const"), "--path", str(tmp_path)],
         )
         assert result.exit_code == 0, f"init failed: {result.output}"
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert (tmp_path / "CONSTITUTION.md").is_file()
 
         if constitution_content is not None:

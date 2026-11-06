@@ -50,6 +50,7 @@ def test_the_count_lands_in_the_block(
     """With `use_worktree: true` the block reaches the repo through the merge."""
     project = tmp_path / "proj"
     project.mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["init", "counts-journey", "--path", str(project)]).exit_code == 0
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
     script = project / ".specweaver" / "scripts" / "count.sh"

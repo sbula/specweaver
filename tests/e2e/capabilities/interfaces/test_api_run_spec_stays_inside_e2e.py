@@ -50,6 +50,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Tes
     bootstrap_database(str(data / "specweaver.db"))
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text(_SPEC, encoding="utf-8")
     (tmp_path / "outside_spec.md").write_text(_SPEC, encoding="utf-8")
     (project / "specs" / "leak_spec.md").symlink_to(tmp_path / "outside_spec.md")

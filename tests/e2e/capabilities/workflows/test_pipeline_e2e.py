@@ -31,6 +31,7 @@ def project_with_spec(tmp_path: Path) -> tuple[Path, Path]:
     project_dir = tmp_path / "e2e-pipe-proj"
     project_dir.mkdir()
     result = runner.invoke(app, ["init", "e2e-pipe", "--path", str(project_dir)])
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert result.exit_code == 0, f"init failed: {result.output}"
 
     spec = project_dir / "specs" / "calculator_spec.md"

@@ -43,6 +43,7 @@ def world(tmp_path: Path) -> tuple[Path, Path]:
     project = tmp_path / "proj"
     (project / "src").mkdir(parents=True)
     (project / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (tmp_path / "secret.py").write_text("SECRET = 1\n", encoding="utf-8")
     (project / "src" / "escape.py").symlink_to(tmp_path / "secret.py")
     (project / "src" / "alias.py").symlink_to(project / "src" / "a.py")

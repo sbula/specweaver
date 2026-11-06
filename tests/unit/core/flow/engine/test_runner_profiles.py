@@ -41,11 +41,15 @@ async def test_pipeline_runner_passes_render_profile_to_handler():
     # 2. Setup runner and context
     from pathlib import Path
 
+    from specweaver.commons.project_profile import ProjectProfile
+    from specweaver.core.flow.run_state.run_context import IsolationPolicy
+
     # `workspace_dir` was never a field on this class. It was silently discarded for months;
     # rejecting unknown kwargs surfaced it. Dropped, because it never did anything.
     context = RunContext(
         project_path=Path("/tmp/workspace/project"),
         spec_path=Path("/tmp/workspace/project/spec.yaml"),
+        isolation=IsolationPolicy(profile=ProjectProfile("python", "uv")),
     )
     context.model = context.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})
     context.context_provider = MagicMock()

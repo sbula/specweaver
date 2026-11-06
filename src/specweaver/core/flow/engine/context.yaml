@@ -22,6 +22,7 @@ consumes:
   - specweaver/workflows/implementation
   - specweaver/workspace/store
   - specweaver/workspace/memory
+  - specweaver/workspace/project
 
 forbids:
   - specweaver/core/flow/handlers

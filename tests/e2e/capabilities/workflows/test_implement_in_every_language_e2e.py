@@ -197,6 +197,10 @@ def _project(tmp_path: Path, language: _Language) -> Path:
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     if language.manifest:
         (project / language.manifest[0]).write_text(language.manifest[1], encoding="utf-8")
+    else:
+        (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    if language.manifest and language.manifest[0] == "package.json":
+        (project / "tsconfig.json").write_text("{}", encoding="utf-8")
     return project
 
 

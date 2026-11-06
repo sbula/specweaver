@@ -62,7 +62,7 @@ depends_on = [ "specweaver.assurance.validation", "specweaver.core.config", "spe
 
 [[modules]]
 path = "specweaver.core.flow.engine"
-depends_on = [ "specweaver.core.flow.run_state", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workspace", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.core.flow.run_state", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.implementation", "specweaver.workspace", "specweaver.workspace.memory", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.core.flow.handlers"

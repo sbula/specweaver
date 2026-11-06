@@ -92,6 +92,7 @@ def _project(tmp_path: Path, isolate_env: Path, llm_section: str = "") -> tuple[
     if llm_section:
         (project / "specweaver.toml").write_text(llm_section, encoding="utf-8")
     assert runner.invoke(app, ["init", "run-model", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = project / "specs" / "greeter_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")

@@ -49,6 +49,7 @@ async def test_metadata_flows_to_reviewer_handler(
         text="VERDICT: ACCEPTED\n", model="test", cached=False
     )
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
         model=ModelAccess(llm_router=FixedRouter(mock_llm)),
@@ -76,6 +77,7 @@ async def test_metadata_flows_to_generator_handler(
         text="```python\n# code\n```", model="test", cached=False
     )
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
         model=ModelAccess(llm_router=FixedRouter(mock_llm)),
@@ -117,6 +119,7 @@ async def test_metadata_flows_to_planner_handler(
         text=f"<plan>\n{json.dumps(plan_data)}\n</plan>", model="test", cached=False
     )
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (tmp_path / "test.md").write_text("# Target Spec", encoding="utf-8")
     context = RunContext(
         model=ModelAccess(llm_router=FixedRouter(mock_llm)),

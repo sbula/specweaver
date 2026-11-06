@@ -43,6 +43,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         runner.invoke(app, ["init", tmp_path.name.lower(), "--path", str(tmp_path)]).exit_code == 0
     )
     monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     specs = tmp_path / "specs"
     specs.mkdir(parents=True, exist_ok=True)
     (specs / "greeter_spec.md").write_text("# Greeter\n\n## 1. Purpose\n\nGreets.\n", "utf-8")

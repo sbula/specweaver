@@ -32,7 +32,8 @@ declares its use of the sandbox and the model in `widens`, as the boundary rule 
 **Implementation work (`TECH-082`):** what a task writes — its files, its framework, its contract
 and the model's lint repair — lives in `workflows/implementation`. That code takes the language as
 given and imports neither the flow engine nor the sandbox; callers get the run's language from
-`core/flow/engine/run_language.py`, the one place that falls back to detection. The flow handlers
+`core/flow/engine/run_profile.py`, which returns the profile the run builder decided
+(`commons.project_profile`, read by `workspace/project`, `TECH-079`). The flow handlers
 keep the run: they read and write the files, pick the model and log the lineage.
 
 **Arbitration (`TECH-082`):** when a dual run's scenario tests fail, `workflows/arbitration` asks the

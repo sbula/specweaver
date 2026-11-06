@@ -60,7 +60,12 @@ async def _resume_existing_run(run: Any, run_id: str, db: Database, store: Any) 
     pipeline_def = load_api_pipeline(run.pipeline_name, project_root)
     limit = max_runs(project_root)
     context = await build_api_run(
-        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db
+        project_root,
+        Path(run.spec_path),
+        pipeline_def,
+        project=run.project_name,
+        db=db,
+        needs_profile=True,
     )
 
     from specweaver.interfaces.api.event_bridge import get_event_bridge
@@ -121,7 +126,13 @@ async def start_pipeline_run(
     limit = max_runs(project_root)
 
     context = await build_api_run(
-        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector
+        project_root,
+        spec_path,
+        pipeline_def,
+        project=body.project,
+        db=db,
+        selector=body.selector,
+        needs_profile=True,
     )
 
     # State store

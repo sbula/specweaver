@@ -174,7 +174,7 @@
           "old": "        project = project_for(db, project_path)\n",
           "new": "        project = project_for(db, None)\n",
           "breaks": "a command on one project runs under another project's name and settings",
-          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
         }
       ]
     },
@@ -795,20 +795,20 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
-          "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=None\n    )\n",
+          "old": "        run_model=run_model,\n        needs_profile=True,\n    )\n    # The task",
+          "new": "        run_model=None,\n        needs_profile=True,\n    )\n    # The task",
           "breaks": "sw implement ignores --model",
-          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
+          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
         },
         {
           "id": "run-drops-run-model",
           "origin": "authored",
           "file": "src/specweaver/core/flow/interfaces/cli.py",
           "symbol": "_build_run_context",
-          "old": "        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n",
-          "new": "        project_path, spec_path, pipeline, selector=selector, run_model=None\n",
+          "old": "        run_model=run_model,\n        needs_profile=True,\n    )\n    # The delivery",
+          "new": "        run_model=None,\n        needs_profile=True,\n    )\n    # The delivery",
           "breaks": "sw run and sw resume ignore --model",
-          "symbol_sha": "sha256:6b9a24573649a536942cab2e8f414ecacffed4fcf40ad10b7c5534a762c250d6"
+          "symbol_sha": "sha256:76c1735973e60c5d6457a1c13db272563f4539c98ea8635123653afe512b51f3"
         },
         {
           "id": "resume-drops-run-model",
@@ -838,7 +838,7 @@
           "old": "    needs_model = bool(roles_of(request.pipeline)) and request.models != \"none\"\n",
           "new": "    needs_model = (bool(roles_of(request.pipeline)) or request.run_model is not None) and request.models != \"none\"\n",
           "breaks": "--model on a pipeline that calls no model makes it read, and refuse on, the settings files",
-          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
+          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
         }
       ]
     },

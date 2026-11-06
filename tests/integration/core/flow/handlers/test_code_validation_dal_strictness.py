@@ -84,6 +84,7 @@ def _project(tmp_path: Path, dal: str) -> Path:
     (project / "src" / "context.yaml").write_text(CONTEXT.format(dal=dal), encoding="utf-8")
     (project / "src" / "widget.py").write_text(SOURCE, encoding="utf-8")
     (project / "tests").mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "tests" / "test_widget.py").write_text(TESTS, encoding="utf-8")
     pipelines = project / ".specweaver" / "pipelines"
     pipelines.mkdir(parents=True)

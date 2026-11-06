@@ -67,6 +67,7 @@ def two_projects(tmp_path: Path) -> tuple[Path, Path, str]:
     for root, name in ((b, "bee"), (a, "ay")):
         root.mkdir()
         init = _sw("init", name, "--path", str(root), cwd=tmp_path)
+        (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert init.returncode == 0, init.stdout + init.stderr
     scripts = b / ".specweaver" / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)

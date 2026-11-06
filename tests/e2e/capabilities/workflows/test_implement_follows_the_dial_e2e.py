@@ -77,6 +77,7 @@ def _project(tmp_path: Path, mode: str) -> Path:
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "dial", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     (project / "specweaver.toml").write_text(
         f'[autonomy]\nmode = "{mode}"\nagentic_max_dal = "DAL_C"\n', encoding="utf-8"

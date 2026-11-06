@@ -22,6 +22,7 @@ def test_cli_run_command_wires_to_runner(tmp_path: Path) -> None:
     # We will mock the PipelineRunner.run method to prevent actual execution,
     # but we will let the CLI build it and call it.
     (tmp_path / "spec.md").write_text("# Test Spec")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert (
         runner.invoke(app, ["init", tmp_path.name.lower(), "--path", str(tmp_path)]).exit_code == 0
     )

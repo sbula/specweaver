@@ -76,6 +76,7 @@ def _project(tmp_path: Path, name: str, *, rule: str, standard: str) -> Path:
     root = tmp_path / name
     root.mkdir()
     assert runner.invoke(app, ["init", name, "--path", str(root)]).exit_code == 0
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (root / "CONSTITUTION.md").write_text(f"# Rules\n{rule}\n", encoding="utf-8")
     (root / "specweaver.toml").write_text(_SETTINGS, encoding="utf-8")
     (root / "context.yaml").write_text(

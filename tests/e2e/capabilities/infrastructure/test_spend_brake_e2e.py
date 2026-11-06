@@ -113,6 +113,7 @@ def _implement(tmp_path: Path, isolate_env: Path, machine: str):
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "brake-demo", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = project / "specs" / "greeter_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
@@ -173,6 +174,7 @@ class TestThePause:
         project = tmp_path / "proj"
         project.mkdir()
         assert runner.invoke(app, ["init", "pause-demo", "--path", str(project)]).exit_code == 0
+        (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert runner.invoke(app, ["use", "pause-demo"]).exit_code == 0
         spec = project / "specs" / "a_spec.md"
         spec.parent.mkdir(parents=True, exist_ok=True)
@@ -200,6 +202,7 @@ class TestThePause:
         project = tmp_path / "proj"
         project.mkdir()
         assert runner.invoke(app, ["init", "round-demo", "--path", str(project)]).exit_code == 0
+        (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert runner.invoke(app, ["use", "round-demo"]).exit_code == 0
         spec = project / "specs" / "a_spec.md"
         spec.parent.mkdir(parents=True, exist_ok=True)
@@ -228,6 +231,7 @@ class TestThePause:
         project = tmp_path / "proj"
         project.mkdir()
         assert runner.invoke(app, ["init", "no-demo", "--path", str(project)]).exit_code == 0
+        (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
         assert runner.invoke(app, ["use", "no-demo"]).exit_code == 0
         spec = project / "specs" / "a_spec.md"
         spec.parent.mkdir(parents=True, exist_ok=True)

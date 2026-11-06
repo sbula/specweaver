@@ -27,6 +27,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.interfaces.cli.main import app
 from tests.rendering import shows
 from tests.scripted_llm import doubled_llm
@@ -64,6 +65,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     script = root / ".specweaver" / "scripts" / "s.sh"
     script.write_text('#!/usr/bin/env bash\necho "$1" >> steps.log\n', encoding="utf-8")
     (root / "one_step.yaml").write_text(_PIPELINE, encoding="utf-8")
+    (root / "pyproject.toml").write_text("[project]\nname = 'docs'\n", encoding="utf-8")
     monkeypatch.chdir(root)
     return root
 
@@ -181,17 +183,17 @@ def test_sw_implement_carries_the_projects_autonomy(project: Path) -> None:
 
 
 def test_the_run_context_carries_the_projects_language(project: Path) -> None:
-    """D-INTL-08 FR-2: the setting wins; without it, detection decides."""
+    """D-INTL-08 FR-2, TECH-079 FR-7: the setting wins over the root; without it, the root decides."""
     (project / "specweaver.toml").write_text('[implement]\nlanguage = "rust"\n', encoding="utf-8")
 
-    assert _context_of(project).isolation.language == "rust"
+    assert _context_of(project).isolation.profile == ProjectProfile("rust", "")
 
 
-def test_without_a_setting_the_context_names_no_language(project: Path) -> None:
-    """The QA runner then asks the manifests (`test_qa_follows_the_run_language.py`)."""
+def test_without_a_setting_the_root_decides(project: Path) -> None:
+    (project / "pyproject.toml").unlink()
     (project / "pom.xml").write_text("<project/>", encoding="utf-8")
 
-    assert _context_of(project).isolation.language is None
+    assert _context_of(project).isolation.profile == ProjectProfile("java", "maven")
 
 
 def test_sw_implement_carries_the_projects_language(project: Path) -> None:
@@ -200,4 +202,4 @@ def test_sw_implement_carries_the_projects_language(project: Path) -> None:
     result, runner_class = _implement(project)
 
     assert runner_class.called, result.output
-    assert runner_class.call_args.args[1].isolation.language == "kotlin"
+    assert runner_class.call_args.args[1].isolation.profile.language == "kotlin"

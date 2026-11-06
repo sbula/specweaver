@@ -118,6 +118,7 @@ class TestTheConfigDbDoesNotSpeakOverTheCommand:
         """
         root = tmp_path / "quiet"
         root.mkdir()
+        (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert _sw("init", "quiet", "--path", str(root), cwd=tmp_path).returncode == 0
         (root / "specs").mkdir(exist_ok=True)
         (root / "specs" / "subject.md").write_text("# Subject\n", encoding="utf-8")

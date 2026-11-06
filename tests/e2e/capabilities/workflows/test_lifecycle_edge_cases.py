@@ -118,6 +118,7 @@ class TestHighPriorityEdgeCases:
     def _init_and_create_spec(self, tmp_path: Path) -> Path:
         """Helper: init project and create a spec file."""
         runner.invoke(app, ["init", _unique_name("high"), "--path", str(tmp_path)])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         spec_path = tmp_path / "specs" / "greet_service_spec.md"
         spec_path.parent.mkdir(exist_ok=True)
         spec_path.write_text(
@@ -244,6 +245,7 @@ class TestHighPriorityEdgeCases:
 
         # First init
         runner.invoke(app, ["init", "double-a", "--path", str(dir1)])
+        (dir1 / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         # Create a spec file in the project
         spec_path = dir1 / "specs" / "my_component_spec.md"
@@ -251,6 +253,7 @@ class TestHighPriorityEdgeCases:
 
         # Second init (different project, same scaffold)
         result = runner.invoke(app, ["init", "double-b", "--path", str(dir2)])
+        (dir2 / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert result.exit_code == 0
 
         # Spec file in dir1 should still exist with same content
@@ -305,6 +308,7 @@ class TestMediumPriorityEdgeCases:
     def _init_project(self, tmp_path: Path) -> None:
         """Helper: init a project."""
         runner.invoke(app, ["init", _unique_name("med"), "--path", str(tmp_path)])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
     def test_path_traversal_in_component_name(self, tmp_path: Path) -> None:
         """Path traversal in component name should be contained to specs dir."""
@@ -506,6 +510,7 @@ class TestRealWorldEdgeCases:
     def _init_and_create_spec(self, tmp_path: Path) -> Path:
         """Helper: init project and write a realistic spec."""
         runner.invoke(app, ["init", _unique_name("real"), "--path", str(tmp_path)])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         spec_path = tmp_path / "specs" / "greet_service_spec.md"
         spec_path.parent.mkdir(exist_ok=True)
         spec_path.write_text(

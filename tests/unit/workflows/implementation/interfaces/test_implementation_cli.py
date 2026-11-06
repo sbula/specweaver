@@ -59,6 +59,7 @@ def _scaffold(tmp_path: Path) -> Path:
     (tmp_path / "specs").mkdir(exist_ok=True)
     (tmp_path / "src").mkdir(exist_ok=True)
     (tmp_path / "tests").mkdir(exist_ok=True)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     return tmp_path
 
 

@@ -72,7 +72,8 @@ def _commit_project_with_script(tmp_path: Path) -> None:
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
-    _git(tmp_path, "add", "README.md", ".specweaver/scripts/mark.sh")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    _git(tmp_path, "add", "README.md", "pyproject.toml", ".specweaver/scripts/mark.sh")
     _git(tmp_path, "commit", "-m", "init")
 
 
@@ -148,7 +149,8 @@ def _commit_pytest_project(tmp_path: Path) -> None:
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
-    _git(tmp_path, "add", "README.md", "tests/test_cwd_probe.py")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    _git(tmp_path, "add", "README.md", "pyproject.toml", "tests/test_cwd_probe.py")
     _git(tmp_path, "commit", "-m", "init")
 
 
@@ -187,6 +189,7 @@ def test_run_tests_not_isolated_runs_at_project_root(tmp_path: Path) -> None:
     tests = tmp_path / "tests"
     tests.mkdir(parents=True, exist_ok=True)
     (tests / "test_cwd_probe.py").write_text(_CWD_PROBE_TEST, encoding="utf-8", newline="\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
     context = RunContext(
         project_path=tmp_path, spec_path=tmp_path / "spec.md", model=ModelAccess(config=MagicMock())

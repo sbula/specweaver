@@ -30,8 +30,14 @@ def build_run_or_exit(
     selector: str = "direct",
     run_model: RoleEntry | None = None,
     read_only: bool = False,
+    needs_profile: bool = False,
 ) -> RunContext:
-    """The run's context for the project at `project_path` (the active one when None)."""
+    """The run's context for the project at `project_path` (the active one when None).
+
+    `needs_profile`: the command runs code in the project's language, so a root that decides none
+    stops it here. Any door stops when session isolation is on and the root decides none.
+    """
+    from specweaver.commons.project_profile import ProjectUndecidedError
     from specweaver.core.config.settings_file import SettingsFileError
     from specweaver.infrastructure.llm.interfaces.command import tell_missing_at_end
     from specweaver.interfaces.run_setup.builder import (
@@ -61,10 +67,14 @@ def build_run_or_exit(
                 models=models,
                 read_only=read_only,
                 on_model_skipped=_say_no_model,
+                needs_profile=needs_profile,
             )
         )
     except SettingsFileError as err:
         _core.refuse_settings(err)
+    except ProjectUndecidedError as err:
+        _core.print_error(err)
+        raise typer.Exit(code=1) from err
     except UnknownProjectError as err:
         _core.print_error(err)
         raise typer.Exit(code=1) from err

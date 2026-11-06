@@ -159,6 +159,8 @@ def implement(
 
     project_path = _core.project_path_or_exit(project)
 
+    from specweaver.core.flow.engine.parser import load_bundled_pipeline
+    from specweaver.core.flow.engine.run_profile import run_task_files
     from specweaver.core.flow.engine.runner import PipelineRunner
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.handlers.registry import StepHandlerRegistry
@@ -167,27 +169,23 @@ def implement(
         refuse_unstarted_worktree,
     )
 
-    _doc_policy, _autonomy, language = _core.project_sections_at(project_path)
-
-    # Derive output paths from spec name
-    # e.g., "greet_service_spec.md" -> "greet_service.py"
-    from specweaver.core.flow.engine.run_language import run_language
-    from specweaver.workflows.implementation.task_files import task_files_for
-
+    pipeline = load_bundled_pipeline("implement_spec")
+    context = build_run_or_exit(
+        project_path,
+        spec_path,
+        pipeline,
+        selector=selector,
+        run_model=run_model,
+        needs_profile=True,
+    )
+    # The task's files, e.g. "greet_service_spec.md" -> "src/greet_service.py", in the run's language.
     try:
-        task = task_files_for(project_path, spec_path, run_language(project_path, language))
+        task = run_task_files(context)
     except ValueError as exc:
         _core.print_error(exc)
         raise typer.Exit(code=1) from exc
     code_path = project_path / task.code
     test_path = project_path / task.tests
-
-    from specweaver.core.flow.engine.parser import load_bundled_pipeline
-
-    pipeline = load_bundled_pipeline("implement_spec")
-    context = build_run_or_exit(
-        project_path, spec_path, pipeline, selector=selector, run_model=run_model
-    )
 
     _core.console.print(
         f"\n[bold]Implementing:[/bold] {spec_path.name}",

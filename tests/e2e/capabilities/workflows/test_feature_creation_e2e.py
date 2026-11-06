@@ -141,6 +141,7 @@ def _create_project_with_spec(
     project_dir = tmp_path / _unique_name()
     project_dir.mkdir()
     runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
     spec = project_dir / "specs" / f"{component}_spec.md"
     spec.parent.mkdir(exist_ok=True)

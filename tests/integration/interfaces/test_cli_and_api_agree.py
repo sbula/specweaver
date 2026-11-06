@@ -63,6 +63,7 @@ def test_sw_run_and_the_api_build_the_same_run(
     root = tmp_path / "agree"
     root.mkdir()
     assert CliRunner().invoke(app, ["init", "agree", "--path", str(root)]).exit_code == 0
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (root / ".specweaver" / "pipelines").mkdir(parents=True, exist_ok=True)
     (root / ".specweaver" / "pipelines" / "one_check.yaml").write_text(_PIPELINE)
     (root / "specs" / "orders_spec.md").write_text("# Orders\n## 1. Purpose\nOrders.\n")

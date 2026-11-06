@@ -63,3 +63,9 @@ async def test_a_unit_step_gets_no_scenario_mount(tmp_path: Path) -> None:
 
     assert built.get("scenarios_root") is None
     assert ran["target"].endswith("tests/test_greet.py")
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

@@ -1,21 +1,20 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""The task's files and the QA runner name the same language when the run names none.
+"""The task's files and the QA runner name the same language: the run's one profile.
 
-Proves: TECH-082 FR-3
+Proves: TECH-082 FR-3, TECH-079 FR-7
 
-`run_task_files` (the files generation writes) and the QA runner factory (the tools `lint_fix`
-runs) each turn "no language" into one. They ask the same detector; this test says they must
-also agree, so a project never gets Rust files linted by the Python tools. Real detector, real
-runners; nothing is run.
+`run_task_files` (the files generation writes) and the QA runner (the tools `lint_fix` runs) both
+take the run's profile; this test says they agree, so a project never gets Rust files linted by
+the Python tools. Real profile decision, real runners; nothing is run.
 
 | Bucket | Case |
 |---|---|
-| Happy | each of the five manifests gives one language to both |
-| Boundary | a named language wins over the manifests for both |
-| Degradation | no manifest at all: both fall back to Python |
-| Hostile | two manifests at once: both take the same one |
+| Happy | each of the five build files gives one language to both |
+| Boundary | a pinned profile wins over the build files for both |
+| Degradation | no build file at all: both refuse, neither falls back to Python |
+| Hostile | two build files at once: both refuse |
 """
 
 from __future__ import annotations
@@ -24,7 +23,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.core.flow.engine.run_language import run_task_files
+from specweaver.commons.project_profile import ProjectProfile, ProjectUndecidedError
+from specweaver.core.flow.engine.run_profile import run_task_files
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 from specweaver.sandbox.language.core.java.runner import JavaRunner
@@ -49,16 +49,16 @@ _MANIFESTS = {
     "pyproject.toml": ("[project]\nname = 'p'\n", "python"),
     "pom.xml": ("<project/>", "java"),
     "build.gradle.kts": ('plugins { kotlin("jvm") }\n', "kotlin"),
-    "package.json": ("{}", "typescript"),
+    "tsconfig.json": ("{}", "typescript"),
     "Cargo.toml": ('[package]\nname = "p"\n', "rust"),
 }
 
 
-def _context(root: Path, language: str | None) -> RunContext:
+def _context(root: Path, profile: ProjectProfile | None = None) -> RunContext:
     return RunContext(
         project_path=root,
         spec_path=root / "s_spec.md",
-        isolation=IsolationPolicy(language=language),
+        isolation=IsolationPolicy(profile=profile),
     )
 
 
@@ -74,22 +74,30 @@ def test_each_manifest_gives_both_one_language(
     tmp_path: Path, manifest: str, content: str, language: str
 ) -> None:
     (tmp_path / manifest).write_text(content, encoding="utf-8")
+    if manifest == "tsconfig.json":
+        (tmp_path / "package.json").write_text("{}", encoding="utf-8")
 
-    assert _both(_context(tmp_path, None)) == (language, _RUNNERS[language])
+    assert _both(_context(tmp_path)) == (language, _RUNNERS[language])
 
 
-def test_a_named_language_wins_for_both(tmp_path: Path) -> None:
+def test_a_pinned_profile_wins_for_both(tmp_path: Path) -> None:
     (tmp_path / "Cargo.toml").write_text('[package]\nname = "p"\n', encoding="utf-8")
 
-    assert _both(_context(tmp_path, "java")) == ("java", JavaRunner)
+    assert _both(_context(tmp_path, ProjectProfile("java", "maven"))) == ("java", JavaRunner)
 
 
-def test_no_manifest_is_python_for_both(tmp_path: Path) -> None:
-    assert _both(_context(tmp_path, None)) == ("python", PythonQARunner)
+def test_no_build_file_is_refused_by_both(tmp_path: Path) -> None:
+    with pytest.raises(ProjectUndecidedError):
+        run_task_files(_context(tmp_path))
+    with pytest.raises(ProjectUndecidedError):
+        LintFixHandler()._get_atom(_context(tmp_path))
 
 
-def test_two_manifests_give_both_the_same_one(tmp_path: Path) -> None:
-    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+def test_two_build_files_are_refused_by_both(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'p'\n", encoding="utf-8")
     (tmp_path / "Cargo.toml").write_text('[package]\nname = "p"\n', encoding="utf-8")
 
-    assert _both(_context(tmp_path, None)) == ("typescript", TypeScriptRunner)
+    with pytest.raises(ProjectUndecidedError, match=r"Cargo\.toml"):
+        run_task_files(_context(tmp_path))
+    with pytest.raises(ProjectUndecidedError, match=r"Cargo\.toml"):
+        LintFixHandler()._get_atom(_context(tmp_path))

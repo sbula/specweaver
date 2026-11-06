@@ -41,6 +41,7 @@ def test_the_isolation_setting_is_read_for_the_registered_project(
     folder = tmp_path / "svc"
     folder.mkdir()
     assert runner.invoke(app, ["init", name, "--path", str(folder)]).exit_code == 0
+    (folder / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (folder / "specweaver.toml").write_text(
         "[sandbox]\nenforce_worktree_isolation = true\n", encoding="utf-8"
     )

@@ -63,6 +63,7 @@ def _create_project_with_clean_code(tmp_path: Path, name: str) -> Path:
 
     # Init the project
     result = runner.invoke(app, ["init", name, "--path", str(project_dir)])
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
     assert result.exit_code == 0
 
     src = project_dir / "src"
@@ -115,6 +116,7 @@ def _create_project_with_modules(tmp_path: Path, name: str) -> Path:
     project_dir = tmp_path / name
     project_dir.mkdir()
     assert runner.invoke(app, ["init", name, "--path", str(project_dir)]).exit_code == 0
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project_dir / "conftest.py").write_text(
         "import sys, pathlib\nsys.path.insert(0, str(pathlib.Path(__file__).parent / 'src'))\n",
         encoding="utf-8",
@@ -211,6 +213,7 @@ class TestIncrementalPipelineE2E:
         project_dir = tmp_path / "fail-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "fail-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         src = project_dir / "src"
         src.mkdir(exist_ok=True)

@@ -29,6 +29,7 @@ async def test_validate_spec_integration_real_rules(tmp_path: Path) -> None:
     # Create an empty specweaver.toml so config loader finds it
     settings = SpecWeaverSettings()
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
     step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)
@@ -66,6 +67,7 @@ async def test_handler_adapter_integration(tmp_path: Path) -> None:
         tmp_path / "src"
     )  # Ensure source_dir is set for GitExecutor
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(
         project_path=tmp_path,
         spec_path=spec_path,
@@ -117,6 +119,7 @@ async def test_validate_spec_dal_matrix_integrates_pipeline(tmp_path: Path) -> N
     matrix = DALImpactMatrix(matrix={DALLevel.DAL_A: dal_val})
     settings = SpecWeaverSettings(dal_matrix=matrix)
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
     step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)
@@ -159,6 +162,7 @@ async def test_validate_code_handler_db_fallback_skips_c02(tmp_path: Path) -> No
 
     mock_db.async_session_scope = _mock_session_scope
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "example_spec.md",  # its task file is src/example.py
@@ -192,6 +196,7 @@ async def test_validate_spec_missing_matrix_integration(tmp_path: Path) -> None:
 
     settings = SpecWeaverSettings()  # No dal_matrix set
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(project_path=tmp_path, spec_path=spec_path, settings=settings)
 
     step = PipelineStep(name="val", action=StepAction.VALIDATE, target=StepTarget.SPEC)

@@ -60,6 +60,7 @@ def _project(tmp_path: Path) -> Path:
     scripts = tmp_path / ".specweaver" / "scripts"
     scripts.mkdir(parents=True)
     (scripts / "write.sh").write_text(_WRITE, encoding="utf-8", newline="\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
     (tmp_path / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
     _git(tmp_path, "init", "-b", "main")

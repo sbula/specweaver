@@ -126,6 +126,7 @@ def project(tmp_path: Path) -> Path:
     project_dir = tmp_path / FEATURE
     project_dir.mkdir()
     result = runner.invoke(app, ["init", FEATURE, "--path", str(project_dir)])
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert result.exit_code == 0, result.output
 
     specs = project_dir / "specs"

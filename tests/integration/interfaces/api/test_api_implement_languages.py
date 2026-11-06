@@ -68,6 +68,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[TestC
     (project / "specs").mkdir(parents=True)
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     (project / _TYPESCRIPT.manifest[0]).write_text(_TYPESCRIPT.manifest[1], encoding="utf-8")
+    (project / "tsconfig.json").write_text("{}", encoding="utf-8")
     with TestClient(create_app(token=TEST_TOKEN, db=db), headers=AUTH) as client:
         client.post(
             "/api/v1/projects", json={"name": "ts", "path": str(project), "scaffold": False}

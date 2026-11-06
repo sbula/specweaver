@@ -34,6 +34,7 @@ async def _rules_run(root: Path, code: str) -> set[str]:
     path = root / code
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("x\n")
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec = root / "orders_spec.md"
     spec.write_text("# Orders\n")
     context = RunContext(project_path=root, spec_path=spec)
@@ -73,6 +74,7 @@ async def test_the_rules_judge_the_code_file_not_the_spec(tmp_path: Path) -> Non
     path.parent.mkdir()
     path.write_text("x = 1\n")
     (tmp_path / "orders_spec.md").write_text("# Orders\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "orders_spec.md")
     with patch(
         "specweaver.assurance.validation.orchestration.validation_hydrator.hydrate_code_validation_context",

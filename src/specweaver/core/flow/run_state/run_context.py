@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.core.config.autonomy_policy import AutonomyPolicy
 from specweaver.core.config.doc_policy import DocPolicy
@@ -61,8 +62,11 @@ class IsolationPolicy(BaseModel):
     #: The project's `[autonomy]`, read at the composition root; the empty policy runs everything
     #: one-shot.
     autonomy: AutonomyPolicy = Field(default_factory=AutonomyPolicy)
-    #: The project's `[implement] language`; None lets its manifests decide.
-    language: str | None = None
+    #: The project's language and build tool, decided once by the run builder; None when it is
+    #: undecided, or when nobody decided (`core.flow.engine.run_profile` then decides).
+    profile: ProjectProfile | None = None
+    #: Why the project root decides no profile, as the user is told; the first step that asks fails.
+    undecided: str | None = None
     #: The project's `[docs]` rules, read at the composition root; the grant and the merge use them.
     doc_policy: DocPolicy = Field(default_factory=DocPolicy)
 

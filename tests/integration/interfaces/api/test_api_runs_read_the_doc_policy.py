@@ -68,6 +68,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Tes
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text("[project]\nname = 'rest'\n", encoding="utf-8")
     scripts = project / ".specweaver" / "scripts"
     scripts.mkdir(parents=True)
     (scripts / "s.sh").write_text('#!/usr/bin/env bash\necho "$1" >> steps.log\n', encoding="utf-8")
@@ -160,4 +161,4 @@ def test_a_started_run_carries_the_projects_language(world: tuple[TestClient, Pa
         runner_class.return_value.run = AsyncMock()
         _start(client)
 
-    assert runner_class.call_args.args[1].isolation.language == "typescript"
+    assert runner_class.call_args.args[1].isolation.profile.language == "typescript"

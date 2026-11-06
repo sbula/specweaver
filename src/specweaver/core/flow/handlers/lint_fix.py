@@ -269,12 +269,13 @@ class LintFixHandler:
 
     def _get_atom(self, context: RunContext) -> QARunnerAtom:
         """Lazily create a QARunnerAtom for the project."""
+        from specweaver.core.flow.engine.run_profile import run_profile
         from specweaver.core.flow.handlers.coder_sandbox import coder_sandbox
         from specweaver.sandbox.language.core.runner_factory import qa_atom
 
         return qa_atom(
             cwd=context.project_path,
-            language=context.isolation.language,
+            language=run_profile(context).language,
             sandbox_settings=coder_sandbox(context),
         )
 
@@ -307,7 +308,7 @@ class LintFixHandler:
     ) -> None:
         """Ask the LLM to fix lint errors in the given file, in the run's language."""
         from specweaver.commons.lineage import extract_artifact_uuid
-        from specweaver.core.flow.engine.run_language import run_task_files
+        from specweaver.core.flow.engine.run_profile import run_task_files
         from specweaver.core.flow.handlers._llm import llm_for_step
         from specweaver.core.flow.handlers.artifact_lineage import log_artifact_lineage
         from specweaver.workflows.implementation.lint_repair import repair_lint

@@ -74,6 +74,7 @@ def _commit_project(tmp_path: Path, toml_body: str) -> None:
     )
     (tmp_path / "specweaver.toml").write_text(toml_body, encoding="utf-8")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
     _git(tmp_path, "init")
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")

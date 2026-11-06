@@ -42,6 +42,7 @@ def _mock_db(tmp_path, monkeypatch):
 
 
 def _scaffold(tmp_path, *, dal: str | None, git: bool = True):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     result = runner.invoke(app, ["init", "iso_proj", "--path", str(tmp_path)])
     assert result.exit_code == 0, result.output
     if dal is not None:

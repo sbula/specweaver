@@ -134,6 +134,7 @@ def _scaffold(tmp_path: Path, *, project: str | None) -> Path:
         assert result.exit_code == 0, result.output
         result = runner.invoke(app, ["use", project])
         assert result.exit_code == 0, result.output
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = tmp_path / "specs" / "greeter_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")

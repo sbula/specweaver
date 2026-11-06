@@ -63,6 +63,7 @@ def _app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Path]:
     bootstrap_database(str(data / "specweaver.db"))
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
     scripts = project / ".specweaver" / "scripts"
     scripts.mkdir(parents=True)

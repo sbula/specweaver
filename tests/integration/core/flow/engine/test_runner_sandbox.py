@@ -35,6 +35,7 @@ async def test_pipeline_runner_sandbox_bouncer(mock_release: MagicMock, tmp_path
         use_worktree=True,
     )
     pipeline = PipelineDefinition(name="test_pipe", steps=[step])
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
     # 2. Mock handler and GitAtom run explicitly to spy on intents in order
@@ -103,6 +104,7 @@ async def test_bouncer_worktree_add_fail(tmp_path: Path):
         name="s1", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
     )
     pipeline = PipelineDefinition(name="p1", steps=[step])
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
     def fake_atom_run(self, ctx_dict):
@@ -133,6 +135,7 @@ async def test_bouncer_strip_merge_fail_resilience(tmp_path: Path):
         name="s1", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
     )
     pipeline = PipelineDefinition(name="p1", steps=[step])
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
     intents_called = []
@@ -179,6 +182,7 @@ async def test_symlink_cache_folders(tmp_path: Path):
         name="s1", action=StepAction.GENERATE, target=StepTarget.CODE, use_worktree=True
     )
     pipeline = PipelineDefinition(name="p1", steps=[step])
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
 
     with (
@@ -366,6 +370,7 @@ async def test_worktree_add_failure_raises_actionable_error(tmp_path: Path):
 
     from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
     runner = SimpleNamespace(context=context)
 
@@ -398,6 +403,7 @@ async def test_worktree_add_failure_does_not_assume_non_git_cause(tmp_path: Path
 
     from specweaver.core.flow.engine.sandboxed_execution import execute_in_sandbox
 
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     context = RunContext(project_path=tmp_path, output_dir=tmp_path, spec_path=tmp_path / "Spec.md")
     runner = SimpleNamespace(context=context)
 

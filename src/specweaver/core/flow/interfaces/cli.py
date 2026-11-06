@@ -247,7 +247,12 @@ def _build_run_context(
 ) -> RunContext:
     """The context a run or a resume starts from, with the registered interaction channel."""
     context = build_run_or_exit(
-        project_path, spec_path, pipeline, selector=selector, run_model=run_model
+        project_path,
+        spec_path,
+        pipeline,
+        selector=selector,
+        run_model=run_model,
+        needs_profile=True,
     )
     # The delivery-layer factory decides interactivity (None when headless, so DraftSpecHandler's
     # parking contract is untouched without a TTY).

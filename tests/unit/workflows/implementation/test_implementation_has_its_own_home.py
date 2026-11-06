@@ -6,7 +6,7 @@ moved code neither detects the language itself nor reaches back into the flow en
 
 Proves: TECH-082 FR-3, TECH-082 FR-4, TECH-082 NFR-3
 
-The caller passes the language (`core.flow.engine.run_language`), so the moved code needs no
+The caller passes the language (`core.flow.engine.run_profile`), so the moved code needs no
 `sandbox` import. The old module paths are gone, so a stale import or `mock.patch` string fails
 loudly instead of patching nothing.
 

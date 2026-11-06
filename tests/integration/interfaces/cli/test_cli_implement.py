@@ -59,6 +59,7 @@ def _make_mock_adapter(response_text: str = "pass\n") -> MagicMock:
 def _scaffold_project(tmp_path: object) -> object:
     """Create a minimal scaffolded project for testing."""
     result = runner.invoke(app, ["init", "test_proj", "--path", str(tmp_path)])
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert result.exit_code == 0
     return tmp_path
 
@@ -355,6 +356,7 @@ class TestFullPipeline:
         """Run the complete pipeline: init → check → implement → check."""
         # 1. Init
         result = runner.invoke(app, ["init", "calcapp", "--path", str(tmp_path)])
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert result.exit_code == 0
 
         # 2. Create and check a spec

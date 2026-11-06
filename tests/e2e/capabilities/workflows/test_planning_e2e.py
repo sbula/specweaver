@@ -321,3 +321,9 @@ class TestPlannerCleanJsonE2E:
 
         assert result.status == StepStatus.PASSED
         assert result.output["confidence"] == 75
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

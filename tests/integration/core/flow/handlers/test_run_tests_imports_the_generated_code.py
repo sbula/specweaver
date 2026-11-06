@@ -36,6 +36,7 @@ pytestmark = pytest.mark.integration
 
 def _run(tmp_path: Path, expected: str):
     (tmp_path / "src").mkdir()
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (tmp_path / "tests").mkdir()
     (tmp_path / "specs").mkdir()
     (tmp_path / "src" / "greet.py").write_text(

@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 
 def _python(root: Path) -> RunContext:
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (root / "greeter_spec.md").write_text("# Greeter\n")
     return RunContext(
         project_path=root, spec_path=root / "greeter_spec.md", output_dir=root / "src"

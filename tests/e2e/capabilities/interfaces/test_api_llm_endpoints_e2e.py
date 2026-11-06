@@ -79,6 +79,7 @@ def client(tmp_path: Path, monkeypatch) -> TestClient:
     )
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "greeter_spec.md").write_text(
         "# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8"
     )

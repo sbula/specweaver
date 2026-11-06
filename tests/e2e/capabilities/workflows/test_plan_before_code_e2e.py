@@ -78,6 +78,7 @@ class _Model:
 
 
 def _project(tmp_path: Path) -> Path:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["init", "greet", "--path", str(tmp_path)]).exit_code == 0
     (tmp_path / "specs" / "greeter_spec.md").write_text(
         "# Greeter\n\n## 1. Purpose\n\nGreets a person by name.\n", encoding="utf-8"

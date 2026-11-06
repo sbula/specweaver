@@ -71,6 +71,7 @@ def _project(tmp_path: Path, *, disable: bool) -> Path:
     )
     # Named for the module: C02 derives the expected test file from the SPEC stem.
     (root / "widget.md").write_text("# Widget\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     if disable:
         (root / ".specweaver" / "dal_definitions.yaml").write_text(
             yaml.dump(

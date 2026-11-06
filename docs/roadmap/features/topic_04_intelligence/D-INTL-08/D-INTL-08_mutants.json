@@ -80,40 +80,40 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/run_setup/builder.py",
           "symbol": "_sections",
-          "old": "        load_section(root, parse_implement).language,\n",
-          "new": "        None,\n",
+          "old": "            request.project_root, language=implement.language, build_tool=implement.build_tool\n",
+          "new": "            request.project_root, language=None, build_tool=implement.build_tool\n",
           "breaks": "a run ignores [implement] language",
-          "symbol_sha": "sha256:15d23e0a3eaf9e4e9c5c76216eea3fa94b7833630559ca7f744ea364a07e9cc6"
+          "symbol_sha": "sha256:ddf9b6192cfdade38d2a9dc42daa68c4993c73232365549b2c58b12f7e8fb0bc"
         },
         {
           "id": "sw-implement-names-no-language",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
-          "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"language\": None})\n",
+          "old": "        needs_profile=True,\n    )\n    # The task's files",
+          "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"profile\": None, \"undecided\": None})\n    # The task's files",
           "breaks": "sw implement ignores [implement] language",
-          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
+          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
         },
         {
           "id": "api-names-no-language",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"language\": None})\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n    )\n",
+          "new": "        selector=body.selector,\n        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"profile\": None, \"undecided\": None})\n",
           "breaks": "an API run ignores [implement] language",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "lint-ignores-the-language",
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/lint_fix.py",
           "symbol": "LintFixHandler._get_atom",
-          "old": "            language=context.isolation.language,\n",
-          "new": "            language=None,\n",
+          "old": "            language=run_profile(context).language,\n            sandbox_settings=coder_sandbox(context),\n        )\n",
+          "new": "            language=None,\n            sandbox_settings=coder_sandbox(context),\n        )\n",
           "breaks": "lint_fix runs the manifests' linter, not the named language's",
-          "symbol_sha": "sha256:973fe5b49474d6ffad4be3887a167c41d10b14bcc279dbdedbef332b997ae3ac"
+          "symbol_sha": "sha256:a46f7b4eebd63ba9c79b4f4c2b208eaa43b53905dd9dc49e0475dbdf7b7ea793"
         }
       ]
     },
@@ -161,10 +161,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/engine/isolation.py",
           "symbol": "derive_allowed_paths",
-          "old": "    return task_files_for(project_root, spec_path, run_language(project_root, language)).all\n",
+          "old": "    return task_files_for(project_root, spec_path, language).all\n",
           "new": "    return task_files_for(project_root, spec_path, \"python\").all\n",
           "breaks": "a Java project's merge strips the Java files it generated",
-          "symbol_sha": "sha256:f4e746dd855fe0941917e569d67ba672eff3d5fd3b01560d60873676f4fea8f1"
+          "symbol_sha": "sha256:5d89e6071aaf17c7e84906ed68fe25fb56ae2da9cf733d82495bb09067a4eedb"
         },
         {
           "id": "tests-into-output-dir",
@@ -389,10 +389,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "GenerateContractHandler.execute",
-          "old": "            from specweaver.core.flow.engine.run_language import run_task_files\n\n            language = run_task_files(context).language\n",
-          "new": "            from specweaver.core.flow.engine.run_language import run_language\n\n            language = run_language(context.project_path, None)\n",
+          "old": "            from specweaver.core.flow.engine.run_profile import run_task_files\n\n            language = run_task_files(context).language\n",
+          "new": "            language = \"python\"\n",
           "breaks": "[implement] language is ignored by the contract step",
-          "symbol_sha": "sha256:71fb56ef33e93b640e3fac8a2ac92ee6566e8aaf260c3f7601f556136c6d11c9"
+          "symbol_sha": "sha256:497bd12f6ec2b5bc4f019f4e741a9ec75354a1892c36b5b3b928dc179867da14"
         },
         {
           "id": "project-file-ignored",

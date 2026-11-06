@@ -72,6 +72,7 @@ class TestLineageE2EFlow:
         project_dir = tmp_path / "proj_lineage"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         spec = project_dir / "specs" / "calc_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -134,6 +135,7 @@ class TestLineageE2EFlow:
         project_dir = tmp_path / "proj_lineage_draft"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         mock_llm = _make_llm(
             [
@@ -205,6 +207,7 @@ class TestLineageE2EFlow:
         project_dir = tmp_path / "proj_lineage_plan"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         spec = project_dir / "specs" / "old_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -276,6 +279,7 @@ class TestLineageE2EFlow:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         src_dir = project_dir / "src"
         src_dir.mkdir(parents=True, exist_ok=True)
@@ -319,6 +323,7 @@ class TestLegacyE2ECompatibility:
         project_dir = tmp_path / "proj_legacy"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         # Write untagged raw spec
         spec = project_dir / "specs" / "old_spec.md"
@@ -350,6 +355,7 @@ class TestASTFixSurvivability:
         project_dir = tmp_path / "proj_lint"
         project_dir.mkdir()
         runner.invoke(app, ["init", project_dir.name, "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
 
         spec = project_dir / "specs" / "foo_spec.md"
         spec.parent.mkdir(exist_ok=True)

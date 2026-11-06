@@ -102,6 +102,7 @@ def _database(tmp_path: Path) -> tuple[Database, uuid.UUID]:
 def _run(tmp_path: Path, model_text: str) -> tuple[Any, dict[str, Any]]:
     project = tmp_path / "greet"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = project / "specs" / "greet_spec.md"
     spec.write_text("# Greet\n\n## 1. Purpose\n\nGreets a user by name.\n", encoding="utf-8")
     db, task_id = _database(tmp_path)

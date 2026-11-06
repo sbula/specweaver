@@ -43,6 +43,7 @@ def _project(root: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     (root / "context.yaml").write_text("name: demo\nlevel: system\n", encoding="utf-8")
     (root / "README.md").write_text("demo\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     src = root / "src"
     src.mkdir()
     (src / "context.yaml").write_text("name: src\nlevel: service\n", encoding="utf-8")

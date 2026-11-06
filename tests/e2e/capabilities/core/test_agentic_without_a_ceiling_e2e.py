@@ -53,6 +53,7 @@ def test_an_agentic_step_without_a_ceiling_is_refused(
     project.mkdir()
     assert runner.invoke(app, ["init", "no-ceiling", "--path", str(project)]).exit_code == 0
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     script = project / ".specweaver" / "scripts" / "s.sh"
     script.write_text("echo ran >> steps.log\n", encoding="utf-8")
     (project / "specweaver.toml").write_text('[autonomy]\nmode = "oneshot"\n', encoding="utf-8")

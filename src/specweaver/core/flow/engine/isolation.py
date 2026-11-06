@@ -42,21 +42,16 @@ def resolve_should_isolate(step_def: Any, context: Any) -> bool:
     return bool(getattr(getattr(context, "isolation", None), "enforce_isolation", False))
 
 
-def derive_allowed_paths(
-    spec_path: Path, project_root: Path | None = None, language: str | None = None
-) -> list[str]:
+def derive_allowed_paths(spec_path: Path, project_root: Path, language: str) -> list[str]:
     """The reconcile allow-list: the task's files (`task_files_for`), the same ones generation
-    writes. Without a project root, the Python layout.
+    writes.
 
     Paths are repo-relative with forward slashes (git ``--name-only`` form on every
     platform, including Windows) — never ``os.sep``.
     """
-    from specweaver.core.flow.engine.run_language import run_language
     from specweaver.workflows.implementation.task_files import task_files_for
 
-    if project_root is None:
-        return task_files_for(spec_path.parent, spec_path, "python").all
-    return task_files_for(project_root, spec_path, run_language(project_root, language)).all
+    return task_files_for(project_root, spec_path, language).all
 
 
 def task_files(context: RunContext) -> list[str]:
@@ -70,7 +65,11 @@ def task_files(context: RunContext) -> list[str]:
 
 
 def _task_paths(context: RunContext) -> list[str]:
-    return derive_allowed_paths(context.spec_path, context.project_path, context.isolation.language)
+    from specweaver.core.flow.engine.run_profile import run_profile
+
+    return derive_allowed_paths(
+        context.spec_path, context.project_path, run_profile(context).language
+    )
 
 
 def apply_session_policy(
@@ -98,8 +97,12 @@ def apply_session_policy(
     dangerous "session on, empty allow-list" state that would drop all generated code.
     Both fields land in ONE ``model_copy``, so the half-applied state cannot be represented.
     Splitting it in two brings the danger back.
-    Best-effort: never raises (the composition root also wraps this call defensively).
+    Best-effort, with one exception: a project whose root decides no language raises
+    `ProjectUndecidedError` when session isolation is on, so the run never goes on without the
+    isolation it asked for `[agreed 2026-11-06]`.
     """
+    from specweaver.commons.project_profile import ProjectUndecidedError
+
     try:
         sandbox = getattr(settings, "sandbox", None)
         session_on = bool(getattr(sandbox, "enforce_session_isolation", False))
@@ -113,6 +116,8 @@ def apply_session_policy(
         context.isolation = context.isolation.model_copy(
             update={"session_isolation": True, "allowed_paths": allowed}
         )
+    except ProjectUndecidedError:
+        raise
     except Exception:  # best-effort — a policy-resolution failure must never crash a run
         logger.debug(
             "Could not apply per-run session-isolation policy; leaving it off.",

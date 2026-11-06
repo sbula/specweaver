@@ -77,3 +77,9 @@ def test_an_empty_entry_in_the_settings_list_stops_the_grant(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="task file"):
         _create(context, "src/greeter.py")
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

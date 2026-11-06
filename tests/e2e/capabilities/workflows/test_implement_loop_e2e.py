@@ -128,6 +128,7 @@ def project(tmp_path: Path) -> Path:
     project_dir = tmp_path / "greeterproj"
     project_dir.mkdir()
     result = runner.invoke(app, ["init", "greeterproj", "--path", str(project_dir)])
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
     assert result.exit_code == 0, result.output
     specs = project_dir / "specs"
     specs.mkdir(exist_ok=True)

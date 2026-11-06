@@ -92,6 +92,7 @@ def _ctx(tmp_path: Path) -> RunContext:
     (project / "specs").mkdir(parents=True)
     spec_path = project / "specs" / "greet_spec.md"
     spec_path.write_text(SPEC, encoding="utf-8")
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=project, spec_path=spec_path)
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(AsyncMock())})
     return ctx

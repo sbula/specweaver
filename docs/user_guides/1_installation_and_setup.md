@@ -144,7 +144,8 @@ rate_date = 2026-09-26
   It waits for all of it, so a request takes minutes. It answers the task's code and test files in
   the project's language and `status`: `completed`, or `failed` when the tests still fail after the
   loops (still 200), with the test counts, the lint errors left and the validation result. A spec
-  whose `Package` line is not a package answers 400 `SPEC_INVALID`. `POST /implement` on a high-DAL
+  whose `Package` line is not a package answers 400 `SPEC_INVALID`; a project whose root does not
+  decide its language answers 400 `PROJECT_UNDECIDED` (§6c). `POST /implement` on a high-DAL
   project that is not a git repository answers 409
   `WORKTREE_UNAVAILABLE`; a background run there ends `failed`, naming the worktree.
   To see the refusal:
@@ -303,14 +304,27 @@ A pipeline step can ask for it itself: `mode: agentic` on a `generate` step with
 
 ## 6c. Languages (`[implement]` in `specweaver.toml`)
 
-SpecWeaver works out your project's language from its manifests: `package.json` → TypeScript,
-`Cargo.toml` → Rust, a Gradle or Maven build → Kotlin when the project has Kotlin sources or the
-Kotlin plugin, else Java; otherwise Python. A mixed repository names its language:
+SpecWeaver reads the build files in the project's root folder, and only there: `pyproject.toml`,
+`uv.lock` or `requirements*.txt` → Python; `package.json` → TypeScript when the root also has
+`tsconfig.json` or a `.ts`/`.tsx` file; `Cargo.toml` → Rust; `pom.xml`, `build.gradle` or
+`build.gradle.kts` → Kotlin when the project has Kotlin sources (`src/main/kotlin`) or the Kotlin
+plugin, else Java. A root with no build file goes by the code files in it. The settings win over
+what the root shows:
 
 ```toml
 [implement]
-language = "java"   # python | java | kotlin | typescript | rust
+language = "java"      # python | java | kotlin | typescript | rust
+build_tool = "maven"   # uv | maven | gradle | cargo | npm
 ```
+
+SpecWeaver does not guess. It refuses, naming what it found and the setting that decides, when the
+root has build files of more than one language, nothing to decide by (a fresh `sw init` project),
+a language it cannot generate (Go, C, C++, JavaScript), both Maven and Gradle, or two settings that
+do not agree. `sw run` and `sw implement` print the refusal and exit 1 before any step runs;
+`POST /implement`, `POST /pipelines/{name}/run` and a resume answer 400 `PROJECT_UNDECIDED`. A run
+with session isolation on refuses too, from any command, rather than run without it. Other commands
+(`sw draft`, `sw review`, `sw check`) work as before; a step in them that needs the language fails
+with the same message.
 
 A spec `greet_service_spec.md` is the module `greet_service`; its files are:
 

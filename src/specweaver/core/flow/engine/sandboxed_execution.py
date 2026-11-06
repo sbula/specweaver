@@ -67,6 +67,7 @@ async def execute_in_sandbox(
     import copy
 
     from specweaver.core.flow.engine.isolation import derive_allowed_paths
+    from specweaver.core.flow.engine.run_profile import run_profile
     from specweaver.core.flow.engine.state import StepStatus
     from specweaver.sandbox.base import AtomStatus
     from specweaver.sandbox.git.core.atom import GitAtom
@@ -120,7 +121,7 @@ async def execute_in_sandbox(
                 "branch": branch,
                 "allowed_paths": context.isolation.allowed_paths
                 or derive_allowed_paths(
-                    context.spec_path, context.project_path, context.isolation.language
+                    context.spec_path, context.project_path, run_profile(context).language
                 ),
                 "doc_policy": context.isolation.doc_policy,
                 "step": step_def.name,

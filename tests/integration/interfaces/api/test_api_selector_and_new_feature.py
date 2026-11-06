@@ -80,6 +80,7 @@ def world(
     (root / ".specweaver" / "pipelines").mkdir(parents=True)
     (root / ".specweaver" / "pipelines" / "one_check.yaml").write_text(_PIPELINE)
     (root / "specs").mkdir()
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (root / "specs" / "orders_spec.md").write_text("# Orders\n## 1. Purpose\nOrders.\n")
     (root / "context.yaml").write_text("name: orders\narchetype: pure-logic\n", encoding="utf-8")
     for name, consumes in (("billing", "orders"), ("ledger", "billing")):

@@ -41,6 +41,7 @@ def _init_project(tmp_path: Path, name: str = "pipe-proj") -> Path:
     project_dir.mkdir(exist_ok=True)
     result = runner.invoke(app, ["init", name, "--path", str(project_dir)])
     assert result.exit_code == 0, f"init failed: {result.output}"
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
     return project_dir
 
 

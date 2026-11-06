@@ -218,6 +218,7 @@ def _resume_until_terminal(tmp_path: Path, max_sessions: int = 6) -> tuple[str, 
 def _init_project(tmp_path: Path, name: str) -> Path:
     project_dir = tmp_path / name
     project_dir.mkdir()
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     result = runner.invoke(app, ["init", name, "--path", str(project_dir)])
     assert result.exit_code == 0, result.output
     _mechanical_preset(project_dir)

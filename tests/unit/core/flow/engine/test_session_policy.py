@@ -17,16 +17,26 @@ import os
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.commons.project_profile import ProjectProfile, ProjectUndecidedError
 from specweaver.core.flow.engine.isolation import apply_session_policy, derive_allowed_paths
-from specweaver.core.flow.run_state.run_context import RunContext
+from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
 
 _LOG = logging.getLogger("test.session_policy")
 
 
-def _ctx(spec_name: str = "foo_spec.md", tmp: Path | None = None) -> RunContext:
+def _ctx(
+    spec_name: str = "foo_spec.md", tmp: Path | None = None, *, undecided: str | None = None
+) -> RunContext:
     base = tmp or Path("/proj")
-    return RunContext(project_path=base, spec_path=base / spec_name)
+    isolation = (
+        IsolationPolicy(undecided=undecided)
+        if undecided
+        else IsolationPolicy(profile=ProjectProfile("python", "uv"))
+    )
+    return RunContext(project_path=base, spec_path=base / spec_name, isolation=isolation)
 
 
 def _settings(*, session: bool = False, allowed: list[str] | None = None, min_dal: str = "DAL_B"):
@@ -47,7 +57,7 @@ def _settings(*, session: bool = False, allowed: list[str] | None = None, min_da
 class TestDeriveAllowedPaths:
     def test_happy_strips_spec_suffix(self):
         # [Happy] foo_spec -> src/foo.py + tests/test_foo.py
-        assert derive_allowed_paths(Path("/p/foo_spec.md")) == [
+        assert derive_allowed_paths(Path("/p/foo_spec.md"), Path("/p"), "python") == [
             "src/foo.py",
             "tests/test_foo.py",
         ]
@@ -55,13 +65,13 @@ class TestDeriveAllowedPaths:
     def test_c1_drops_only_the_trailing_spec(self):
         # [Boundary/C1] D-INTL-08 FR-1: one stem rule, `removesuffix`. The old `replace` turned
         # "my_special_spec" into "myial".
-        assert derive_allowed_paths(Path("/p/my_special_spec.md")) == [
+        assert derive_allowed_paths(Path("/p/my_special_spec.md"), Path("/p"), "python") == [
             "src/my_special.py",
             "tests/test_my_special.py",
         ]
 
     def test_boundary_stem_without_spec_suffix(self):
-        assert derive_allowed_paths(Path("/p/foo.md")) == [
+        assert derive_allowed_paths(Path("/p/foo.md"), Path("/p"), "python") == [
             "src/foo.py",
             "tests/test_foo.py",
         ]
@@ -70,12 +80,15 @@ class TestDeriveAllowedPaths:
         # [Hostile] a dotfile spec (".md") has stem ".md" in pathlib (no suffix split), so
         # the derived paths are degenerate ("src/.md.py") but SAFE — they match no real
         # generated file, so nothing extra is ever authorized for write-back.
-        assert derive_allowed_paths(Path("/p/.md")) == ["src/.md.py", "tests/test_.md.py"]
+        assert derive_allowed_paths(Path("/p/.md"), Path("/p"), "python") == [
+            "src/.md.py",
+            "tests/test_.md.py",
+        ]
 
     def test_boundary_forward_slash_on_all_platforms(self):
         # [Boundary] strip_merge compares git --name-only output (forward slashes even on
         # Windows). The derived paths MUST use "/" literally, never os.sep.
-        for p in derive_allowed_paths(Path("/p/bar_spec.md")):
+        for p in derive_allowed_paths(Path("/p/bar_spec.md"), Path("/p"), "python"):
             assert "/" in p
             if os.sep != "/":
                 assert os.sep not in p
@@ -165,6 +178,7 @@ def _git_ctx(tmp_path, spec: str = "foo_spec.md", *, git: bool = True):
     """A RunContext whose project_path is a (fake) git repo, so the Q3 git-check passes."""
     if git:
         (tmp_path / ".git").mkdir(exist_ok=True)
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
     return RunContext(project_path=tmp_path, spec_path=tmp_path / spec)
 
 
@@ -285,3 +299,31 @@ class TestApplySessionPolicyDalEscalation:
         apply_session_policy(ctx, _settings(min_dal="DAL_Z"), _LOG, dal_auto_escalate=True)
         assert ctx.isolation.session_isolation is False
         assert ctx.isolation.allowed_paths == []
+
+
+class TestAnUndecidedProject:
+    """TECH-079 FR-8, Q1 [agreed 2026-11-06]: session isolation never turns off silently."""
+
+    _WHY = "the project root has no build file and no code file; set [implement] language"
+
+    def test_session_isolation_on_raises(self):
+        ctx = _ctx(undecided=self._WHY)
+
+        with pytest.raises(ProjectUndecidedError, match=r"set \[implement\] language"):
+            apply_session_policy(ctx, _settings(session=True), _LOG)
+
+    def test_session_isolation_off_stays_off(self):
+        ctx = _ctx(undecided=self._WHY)
+
+        apply_session_policy(ctx, _settings(session=False), _LOG)
+
+        assert ctx.isolation.session_isolation is False
+        assert ctx.isolation.allowed_paths == []
+
+    def test_a_configured_allow_list_needs_no_language(self):
+        ctx = _ctx(undecided=self._WHY)
+
+        apply_session_policy(ctx, _settings(session=True, allowed=["src/a.py"]), _LOG)
+
+        assert ctx.isolation.session_isolation is True
+        assert ctx.isolation.allowed_paths == ["src/a.py"]

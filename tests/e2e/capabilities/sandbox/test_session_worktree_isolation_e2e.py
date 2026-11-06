@@ -84,6 +84,7 @@ def _write_sources(tmp_path: Path, gen_script: str = _GEN_SCRIPT) -> None:
     scripts = tmp_path / ".specweaver" / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     (scripts / "gen.sh").write_text(gen_script, encoding="utf-8", newline="\n")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     tests = tmp_path / "tests"
     tests.mkdir(parents=True, exist_ok=True)
     (tests / "test_persist_probe.py").write_text(_PERSIST_PROBE, encoding="utf-8", newline="\n")
@@ -97,7 +98,14 @@ def _commit_session_project(tmp_path: Path, gen_script: str = _GEN_SCRIPT) -> No
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
-    _git(tmp_path, "add", "README.md", ".specweaver/scripts/gen.sh", "tests/test_persist_probe.py")
+    _git(
+        tmp_path,
+        "add",
+        "README.md",
+        "pyproject.toml",
+        ".specweaver/scripts/gen.sh",
+        "tests/test_persist_probe.py",
+    )
     _git(tmp_path, "commit", "-m", "init")
 
 

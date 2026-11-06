@@ -10,6 +10,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from specweaver.assurance.validation.models import Status as RuleStatus
+from specweaver.core.flow.engine.run_profile import run_profile
 from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.engine.step_outputs import RESULTS
 from specweaver.core.flow.handlers.base import _error_result, _now_iso
@@ -261,7 +262,7 @@ class ValidateCodeHandler:
                 parsers=context.analysis.parsers,
                 dal_level=dal_level,
                 sandbox_settings=coder_sandbox(context),
-                language=context.isolation.language,
+                language=run_profile(context).language,
             )
             if results is None:
                 return _no_code_rules(code_path, started)
@@ -498,11 +499,11 @@ class ValidateTestsHandler:
             # Always in a container, with the scenario tests mounted read-only at /scenarios.
             return qa_atom(
                 cwd=cwd,
-                language=context.isolation.language,
+                language=run_profile(context).language,
                 scenarios_root=scenarios_root(context),
             )
         return qa_atom(
-            cwd=cwd, language=context.isolation.language, sandbox_settings=coder_sandbox(context)
+            cwd=cwd, language=run_profile(context).language, sandbox_settings=coder_sandbox(context)
         )
 
     def _resolve_targets(self, context: RunContext, target: str, kind: str) -> list[str]:

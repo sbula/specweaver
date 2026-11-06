@@ -47,6 +47,7 @@ def project(tmp_path: Path) -> Path:
     assert runner.invoke(app, ["init", "memory-demo", "--path", str(tmp_path)]).exit_code == 0
     for name in ("a_spec.md", "b_spec.md"):
         (tmp_path / "specs" / name).write_text("# A\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (tmp_path / "one_step.yaml").write_text(_PIPELINE, encoding="utf-8")
     return tmp_path
 

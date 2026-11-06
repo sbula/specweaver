@@ -27,6 +27,7 @@ _WRITES = {"add_symbol", "replace_symbol", "replace_symbol_body", "delete_symbol
 
 async def test_the_planner_is_offered_no_write_tool(tmp_path: Path) -> None:
     # Proves: D-INTL-03 FR-2
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec = tmp_path / "greeter_spec.md"
     spec.write_text("# Greeter\n\n## 1. Purpose\n\nGreets.\n", encoding="utf-8")
     adapter = MagicMock()

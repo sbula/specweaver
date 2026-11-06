@@ -67,6 +67,7 @@ def test_the_named_step_lands_its_doc_and_another_steps_readme_is_proposed(
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "docs-journey", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
     scripts = project / ".specweaver" / "scripts"
     (scripts / "api.sh").write_text("mkdir -p docs/api\necho api > docs/api/x.md\n")

@@ -92,6 +92,7 @@ def _project(tmp_path: Path, db: Database) -> tuple[Path, Any]:
         "name: orders\narchetype: pure-logic\noperational:\n  dal_level: DAL_B\n", encoding="utf-8"
     )
     (root / ".git").mkdir()
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
     async def _save() -> None:
         async with db.async_session_scope() as session:

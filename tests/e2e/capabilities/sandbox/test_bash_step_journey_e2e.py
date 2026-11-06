@@ -47,6 +47,7 @@ _GREET = '#!/usr/bin/env bash\necho "hello $1"\necho "to err" >&2\nexit ${2:-0}\
 @pytest.fixture
 def project(tmp_path: Path) -> Path:
     assert runner.invoke(app, ["init", "bash-journey", "--path", str(tmp_path)]).exit_code == 0
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     scripts = tmp_path / ".specweaver" / "scripts"
     (scripts / "greet.sh").write_text(_GREET, encoding="utf-8")
     (scripts / "slow.sh").write_text("#!/usr/bin/env bash\nsleep 5\n", encoding="utf-8")

@@ -48,7 +48,7 @@
       "scope": [
         "tests/integration/core/flow/engine/test_task_files_agree.py",
         "tests/integration/core/flow/handlers/test_step_files_java.py",
-        "tests/unit/core/flow/engine/test_run_language.py"
+        "tests/unit/core/flow/engine/test_run_profile.py"
       ],
       "mutants": [
         {
@@ -56,10 +56,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/flow/handlers/generation.py",
           "symbol": "_GenerationHandler._files",
-          "old": "        from specweaver.core.flow.engine.run_language import run_task_files\n\n        return run_task_files(context)\n",
-          "new": "        from specweaver.workflows.implementation.task_files import task_files_for\n\n        return task_files_for(context.project_path, context.spec_path, context.isolation.language)\n",
+          "old": "        from specweaver.core.flow.engine.run_profile import run_task_files\n\n        return run_task_files(context)\n",
+          "new": "        from specweaver.workflows.implementation.task_files import task_files_for\n\n        return task_files_for(context.project_path, context.spec_path, \"python\")\n",
           "breaks": "a project with no [implement] language gets Python files whatever its manifests say",
-          "symbol_sha": "sha256:5d132f23f940914e064fff5e049bc532016c34a368fe660d725b54c790a04f25"
+          "symbol_sha": "sha256:27dbae3d7ba05431be98bdc4a743568969f936dcbb801e568d45c578be739f62"
         }
       ]
     },
@@ -90,7 +90,7 @@
           "old": "        code_path.write_text(fixed, encoding=\"utf-8\")",
           "new": "        code_path.write_text(code, encoding=\"utf-8\")",
           "breaks": "the model's fix is thrown away and the same errors are linted again",
-          "symbol_sha": "sha256:58d605bef9f7768281e9ef3dce6c1c487613f80680a4b213b77bcc281d7903e1"
+          "symbol_sha": "sha256:92989de9e295f0d3a2739a2387c3df69a86e09719ac4ea0274e1aabdcfad5998"
         }
       ]
     },
@@ -399,7 +399,7 @@
           "old": "    OUTPUT_SUBDIR: ClassVar[str]\n",
           "new": "    OUTPUT_SUBDIR: ClassVar[str]\n    FILENAME_PREFIX: ClassVar[str] = \"\"\n",
           "breaks": "a setting nothing reads comes back",
-          "symbol_sha": "sha256:46a6a3ae6b69363f767eb3c37ce17120468a505f78f17ebab781a12ccc0950c9"
+          "symbol_sha": "sha256:cc186c6ce57c3a8488845326aeba0bbad87eb08ff24e17b39b1178d9b69ad941"
         },
         {
           "id": "assemblers-share-a-title",

@@ -29,6 +29,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from specweaver.commons.enums.dal import DALLevel
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.autonomy_policy import AutonomyPolicy
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
@@ -128,6 +129,15 @@ def _project(root: Path, manifest: tuple[str, str] | None = None) -> Path:
 _POM = "<project><groupId>com.example</groupId></project>"
 
 
+_BUILD_TOOL = {
+    "python": "uv",
+    "typescript": "npm",
+    "rust": "cargo",
+    "java": "maven",
+    "kotlin": "gradle",
+}
+
+
 def _run(
     root: Path,
     model: _Model,
@@ -141,7 +151,9 @@ def _run(
         spec_path=root / "specs" / "greeter_spec.md",
         model=ModelAccess(config=MagicMock(), llm_router=FixedRouter(model)),
     )
-    update: dict[str, Any] = {"language": language}
+    update: dict[str, Any] = {
+        "profile": ProjectProfile(language, _BUILD_TOOL[language]) if language else None
+    }
     if mode:
         update |= {
             "autonomy": AutonomyPolicy(agentic_max_dal=DALLevel.DAL_D),
@@ -278,7 +290,9 @@ def test_the_contract_step_follows_the_named_language(tmp_path: Path) -> None:
     root = _project(tmp_path, ("pyproject.toml", '[project]\nname = "greet"\n'))
     (root / "specs" / "greeter_spec.md").write_text(_CONTRACT_SPEC, encoding="utf-8")
     context = RunContext(project_path=root, spec_path=root / "specs" / "greeter_spec.md")
-    context.isolation = context.isolation.model_copy(update={"language": "java"})
+    context.isolation = context.isolation.model_copy(
+        update={"profile": ProjectProfile("java", "maven")}
+    )
     pipeline = PipelineDefinition(
         name="p",
         steps=[PipelineStep(name="c", action=StepAction.GENERATE, target=StepTarget.CONTRACT)],

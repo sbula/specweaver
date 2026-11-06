@@ -32,6 +32,7 @@ async def test_validate_code_handler_dynamic_schema_injection(tmp_path: Path) ->
     # 1. Setup mock project structure
     project_dir = tmp_path / "project"
     project_dir.mkdir()
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
     output_dir = project_dir / "src"
     output_dir.mkdir()

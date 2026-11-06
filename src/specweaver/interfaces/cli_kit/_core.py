@@ -18,8 +18,6 @@ from typing import TYPE_CHECKING, NoReturn, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from specweaver.core.config.autonomy_policy import AutonomyPolicy
-    from specweaver.core.config.doc_policy import DocPolicy
     from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
     from specweaver.workspace.store import WorkspaceRepository
 
@@ -120,19 +118,6 @@ def load_section_at(path: Path, parse: Callable[[str, str], _T]) -> _T:
         return load_section(path, parse)
     except SettingsFileError as err:
         refuse_settings(err)
-
-
-def project_sections_at(path: Path) -> tuple[DocPolicy, AutonomyPolicy, str | None]:
-    """The `[docs]`, `[autonomy]` and `[implement]` language a run is built from, or exit."""
-    from specweaver.core.config.autonomy_policy import parse_autonomy
-    from specweaver.core.config.doc_policy import parse_doc_policy
-    from specweaver.core.config.implement_policy import parse_implement
-
-    return (
-        load_section_at(path, parse_doc_policy),
-        load_section_at(path, parse_autonomy),
-        load_section_at(path, parse_implement).language,
-    )
 
 
 def file_or_exit(given: str) -> Path:

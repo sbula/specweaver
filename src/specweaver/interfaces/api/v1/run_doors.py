@@ -29,8 +29,11 @@ async def build_api_run(
     db: Database,
     selector: str = "direct",
     read_only: bool = False,
+    needs_profile: bool = False,
 ) -> RunContext:
-    """The run's context for the request's project; a broken setting is a 500 naming it."""
+    """The run's context for the request's project; a broken setting is a 500 naming it, a root
+    that decides no language a 400 (`needs_profile`, or session isolation on)."""
+    from specweaver.commons.project_profile import ProjectUndecidedError
     from specweaver.interfaces.run_setup.builder import RunRequest, build_run
 
     try:
@@ -43,12 +46,20 @@ async def build_api_run(
                 db=db,
                 selector=selector,
                 read_only=read_only,
+                needs_profile=needs_profile,
             )
         )
+    except ProjectUndecidedError as exc:
+        raise project_undecided(exc) from exc
     except SettingsFileError as exc:
         raise SpecWeaverAPIError(
             detail=str(exc), error_code=settings_error_code(exc), status_code=500
         ) from exc
+
+
+def project_undecided(exc: Exception) -> SpecWeaverAPIError:
+    """The answer to a project whose root decides no language: 400, naming the setting."""
+    return SpecWeaverAPIError(detail=str(exc), error_code="PROJECT_UNDECIDED", status_code=400)
 
 
 def settings_error_code(exc: SettingsFileError) -> str:

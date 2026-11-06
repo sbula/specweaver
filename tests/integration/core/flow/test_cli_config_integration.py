@@ -39,6 +39,7 @@ def _isolated_data_dir(tmp_path: Path, monkeypatch):
 def _init_project(tmp_path: Path, name: str, toml_body: str | None) -> Path:
     project_dir = tmp_path / name  # dir basename == registered name → load_settings resolves it
     project_dir.mkdir()
+    (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     runner.invoke(app, ["init", name, "--path", str(project_dir)])
     spec = project_dir / "specs" / "test_spec.md"
     spec.parent.mkdir(exist_ok=True)

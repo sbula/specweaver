@@ -53,6 +53,8 @@ class _Recording(ScriptedLLM):
 
 def _project(root: Path, manifest: str, text: str) -> RunContext:
     (root / manifest).write_text(text, encoding="utf-8")
+    if manifest == "package.json":
+        (root / "tsconfig.json").write_text("{}", encoding="utf-8")
     spec = root / "greeter_spec.md"
     spec.write_text("# Greeter\n\n## 1. Purpose\n\nGreets.\n", encoding="utf-8")
     return RunContext(project_path=root, spec_path=spec)

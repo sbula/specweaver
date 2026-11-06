@@ -48,6 +48,7 @@ def _data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def project(tmp_path: Path) -> Path:
     root = tmp_path / "proj"
     root.mkdir()
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["init", "doors", "--path", str(root)]).exit_code == 0
     (root / "CONSTITUTION.md").write_text("# Rules\nKeep it small.\n", encoding="utf-8")
     (root / "specs" / "orders_spec.md").write_text("# Orders\n", encoding="utf-8")

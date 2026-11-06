@@ -104,6 +104,7 @@ def _make_context(tmp_path: Path, spec_content: str) -> MagicMock:
 
 class TestContractHandlerExecute:
     async def test_execute_creates_contract_file(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = _make_context(tmp_path, _SAMPLE_SPEC)
         handler = GenerateContractHandler()
         result = await handler.execute(MagicMock(), ctx)
@@ -114,6 +115,7 @@ class TestContractHandlerExecute:
         assert "class GreeterProtocol(Protocol):" in content
 
     async def test_execute_wires_api_contract_paths(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = _make_context(tmp_path, _SAMPLE_SPEC)
         handler = GenerateContractHandler()
         await handler.execute(MagicMock(), ctx)
@@ -180,6 +182,7 @@ class TestContractHandlerLanguageDispatch:
 
     async def test_python_project_generates_python_protocol(self, tmp_path: Path) -> None:
         """Python project (default) → Protocol in contracts/greeter_contract.py."""
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
         ctx = _make_context(tmp_path, _SAMPLE_SPEC)
         handler = GenerateContractHandler()
         result = await handler.execute(MagicMock(), ctx)

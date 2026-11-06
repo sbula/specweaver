@@ -101,6 +101,7 @@ def _project(root: Path, *, git: bool = True) -> Path:
     (root / "specs").mkdir(parents=True)
     (root / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     (root / "README.md").write_text("Greeter.\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     if git:
         _git(root, "init")
         _git(root, "config", "user.email", "t@t")

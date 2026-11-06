@@ -50,6 +50,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "proj"
     root.mkdir()
     assert runner.invoke(app, ["init", "broken", "--path", str(root)]).exit_code == 0
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (root / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     (root / "src").mkdir(exist_ok=True)
     (root / "src" / "greeter.py").write_text("def greet():\n    return 'hi'\n")

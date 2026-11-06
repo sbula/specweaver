@@ -129,6 +129,7 @@ async def test_fallback_pipeline_execution(tmp_db: Database, tmp_path: Path) -> 
     spec_file.write_text("# Spec")
     out_dir = tmp_path / "out"
     out_dir.mkdir(exist_ok=True)
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     context = RunContext(project_path=tmp_path, spec_path=spec_file, output_dir=out_dir)
     context.db = tmp_db
 

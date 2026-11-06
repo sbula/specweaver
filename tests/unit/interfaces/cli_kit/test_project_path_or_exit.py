@@ -70,28 +70,6 @@ def test_a_missing_file_exits_naming_it(tmp_path: Path, capsys: pytest.CaptureFi
     assert shows(capsys.readouterr().out, "File not found")
 
 
-def test_the_sections_a_run_needs_are_read_together(tmp_path: Path) -> None:
-    (tmp_path / "specweaver.toml").write_text(
-        '[autonomy]\nmode = "agentic"\n\n[implement]\nlanguage = "rust"\n', encoding="utf-8"
-    )
-
-    docs, autonomy, language = _core.project_sections_at(tmp_path)
-
-    assert (docs.rule, autonomy.mode, language) == ([], "agentic", "rust")
-
-
-def test_a_broken_section_exits_naming_its_line(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    (tmp_path / "specweaver.toml").write_text('[implement]\nlanguag = "rust"\n', encoding="utf-8")
-
-    with pytest.raises(typer.Exit) as caught:
-        _core.project_sections_at(tmp_path)
-
-    assert caught.value.exit_code == 1
-    assert shows(capsys.readouterr().out, "specweaver.toml:2: implement.languag")
-
-
 def test_any_settings_error_is_refused_by_one_handler(capsys: pytest.CaptureFixture[str]) -> None:
     """The refusal is named for settings, not for LLM settings: a `[docs]` error goes through it."""
     from specweaver.core.config.settings_file import SettingsFileError

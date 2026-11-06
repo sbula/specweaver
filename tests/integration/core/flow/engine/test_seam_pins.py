@@ -107,6 +107,7 @@ class _CaptureContextAtGenerate:
 
 
 def _spec(tmp_path: Path) -> Path:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec = tmp_path / "login_spec.md"
     spec.write_text("# Login\n\n## 1. Purpose\n\nAuthenticates a user.\n", encoding="utf-8")
     return spec

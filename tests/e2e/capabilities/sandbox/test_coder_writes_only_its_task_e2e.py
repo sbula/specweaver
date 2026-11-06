@@ -77,6 +77,7 @@ class _Coder:
 def test_an_agentic_coder_writes_its_task_and_not_the_readme(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     project.mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["init", "task-grant", "--path", str(project)]).exit_code == 0
     (project / "specs").mkdir(exist_ok=True)
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")

@@ -23,6 +23,8 @@ import ast
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.engine.step_outputs import FILES_TOUCHED
 from specweaver.core.flow.handlers.generation import GenerateContractHandler, _touched
@@ -91,3 +93,9 @@ def test_the_scenario_steps_name_no_file() -> None:
 
     assert "FILES_TOUCHED" not in names
     assert "_touched" not in names
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

@@ -24,6 +24,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -63,7 +64,10 @@ def _run(root: Path, model: _Model, language: str, target: StepTarget) -> Any:
         spec_path=root / "specs" / "greeter_spec.md",
         model=ModelAccess(config=MagicMock(), llm_router=FixedRouter(model)),
     )
-    context.isolation = context.isolation.model_copy(update={"language": language})
+    build_tool = {"python": "uv", "java": "maven"}[language]
+    context.isolation = context.isolation.model_copy(
+        update={"profile": ProjectProfile(language, build_tool)}
+    )
     step = PipelineStep(name="write", action=StepAction.GENERATE, target=target)
     pipeline = PipelineDefinition(name="p", steps=[step])
     return asyncio.run(PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run())

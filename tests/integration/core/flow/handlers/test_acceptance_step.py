@@ -78,6 +78,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[RunContext, 
     root = tmp_path / "greeter"
     for folder in ("specs", "contracts", "src"):
         (root / folder).mkdir(parents=True)
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     register_test_project(db, "greeter", str(root))
     store = data / "projects" / "greeter" / "scenarios"
     (store / "generated").mkdir(parents=True)

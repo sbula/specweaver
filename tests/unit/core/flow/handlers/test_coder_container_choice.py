@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
 
 def _context(tmp_path: Path, *, dual: bool = False) -> RunContext:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     return RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "specs" / "greet_spec.md",

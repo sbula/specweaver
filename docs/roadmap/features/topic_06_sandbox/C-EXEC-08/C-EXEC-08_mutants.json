@@ -182,7 +182,7 @@
           "old": "                \"step\": step_def.name,\n",
           "new": "                \"step\": None,\n",
           "breaks": "a step rule never keeps its own step's doc",
-          "symbol_sha": "sha256:4650001dc52055a4e1ee958442c9dc10b9883ae34c2ca7baef6ad6b8b8345163"
+          "symbol_sha": "sha256:f08078362eac0cacd1f6748d66853b50b6826a1b7a4c6fc95bc76f203482e51b"
         },
         {
           "id": "session-judged-by-one-step",
@@ -234,37 +234,37 @@
           "old": "        load_section(root, parse_doc_policy),\n",
           "new": "        load_section(root / \"missing\", parse_doc_policy),\n",
           "breaks": "a run uses the built-in rules whatever the project says",
-          "symbol_sha": "sha256:15d23e0a3eaf9e4e9c5c76216eea3fa94b7833630559ca7f744ea364a07e9cc6"
+          "symbol_sha": "sha256:ddf9b6192cfdade38d2a9dc42daa68c4993c73232365549b2c58b12f7e8fb0bc"
         },
         {
           "id": "sw-implement-drops-the-policy",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
-          "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
+          "old": "        needs_profile=True,\n    )\n    # The task's files",
+          "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n    # The task's files",
           "breaks": "sw implement reads the policy but runs on the built-in rules",
-          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
+          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
         },
         {
           "id": "api-start-skips-the-policy",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n    )\n",
+          "new": "        selector=body.selector,\n        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
           "breaks": "an API run ignores a broken [docs] and the project's rules",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "api-resume-skips-the-policy",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "_resume_existing_run",
-          "old": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
+          "old": "        project=run.project_name,\n        db=db,\n        needs_profile=True,\n    )\n",
+          "new": "        project=run.project_name,\n        db=db,\n        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"doc_policy\": type(context.isolation.doc_policy)()})\n",
           "breaks": "a resumed API run ignores a [docs] broken since its start",
-          "symbol_sha": "sha256:57de589b1e91368b88e2fa951fc107e9f409db3220b717deb8994c4a3bd637c5"
+          "symbol_sha": "sha256:ce54d54fa954ef5e516c5629443c546d28bdfad9f952a18a4eb466d6f409ce44"
         }
       ]
     },

@@ -42,6 +42,7 @@ def _project_with_spec(tmp_path, _db):
     """Creates a project directory with a spec file."""
     proj = tmp_path / "myproject"
     proj.mkdir()
+    (proj / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     spec = proj / "specs" / "test_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Test Spec\n", encoding="utf-8")
@@ -456,6 +457,7 @@ class TestGateDecision:
             )
         )
 
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         with (
             patch.object(Path, "home", return_value=tmp_path),
             # The approve branch resolves the project and loads the pipeline before resuming.
@@ -512,6 +514,7 @@ class TestGateDecision:
         async def resume(self, _run_id):
             seen.append(self.context)
 
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         with (
             patch.object(Path, "home", return_value=tmp_path),
             patch(

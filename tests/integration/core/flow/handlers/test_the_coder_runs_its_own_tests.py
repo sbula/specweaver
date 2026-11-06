@@ -35,6 +35,7 @@ PIPELINES = Path(__file__).resolve().parents[5] / "src" / "specweaver" / "workfl
 
 
 async def _target_of(pipeline: str, step_name: str, root: Path) -> str:
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (step,) = [s for s in load_pipeline(PIPELINES / pipeline).steps if s.name == step_name]
     handler = ValidateTestsHandler()
     atom = MagicMock()

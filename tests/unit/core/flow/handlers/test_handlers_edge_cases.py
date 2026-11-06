@@ -21,6 +21,7 @@ from tests.scripted_llm import FixedRouter
 
 @pytest.fixture
 def run_context(tmp_path: Path) -> RunContext:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(
         project_path=tmp_path,
         spec_path=tmp_path / "test_spec.md",

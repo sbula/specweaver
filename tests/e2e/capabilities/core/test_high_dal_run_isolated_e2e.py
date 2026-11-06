@@ -56,6 +56,7 @@ def project(tmp_path: Path) -> Path:
     (root / "context.yaml").write_text(
         "name: dalb\narchetype: pure-logic\noperational:\n  dal_level: DAL_B\n", encoding="utf-8"
     )
+    (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (root / "specs" / "greeter_spec.md").write_text("# Greeter\n\n## 1. Purpose\nGreets.\n")
     assert _run("git", "add", "-A", cwd=root).returncode == 0
     assert _run("git", "commit", "-qm", "init", cwd=root).returncode == 0

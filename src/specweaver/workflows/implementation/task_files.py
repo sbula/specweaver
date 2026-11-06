@@ -53,7 +53,7 @@ class TaskFiles:
 
 
 def task_files_for(project_root: Path, spec_path: Path, language: str) -> TaskFiles:
-    """The task's files for `language` (the caller resolves it: `core.flow.engine.run_language`).
+    """The task's files for `language` (the caller resolves it: `core.flow.engine.run_profile`).
 
     Raises `ValueError` naming the spec line when its `Package` line is not a dotted identifier.
     """

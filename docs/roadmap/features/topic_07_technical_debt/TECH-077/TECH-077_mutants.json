@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
+          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
+          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:c3c235772f87d0969b0290b9e3357438066cc7b6d42507fc33a5382cb0bedb4e"
+          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
         },
         {
           "id": "optional-model-refuses",
@@ -354,7 +354,7 @@
           "old": "    except UnknownProjectError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "an unregistered folder ends in a traceback",
-          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
         },
         {
           "id": "resume-worktree-traceback",
@@ -374,7 +374,7 @@
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",
           "breaks": "a command never says its ledger missed calls",
-          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
         },
         {
           "id": "no-folder-no-active-root",
@@ -384,7 +384,7 @@
           "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
           "new": "        root = project_path\n",
           "breaks": "a command with no folder has no project root",
-          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
         },
         {
           "id": "implement-worktree-traceback",
@@ -394,7 +394,7 @@
           "old": "    except SessionWorktreeError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "sw implement on a non-git high-DAL project ends in a traceback",
-          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
+          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
         },
         {
           "id": "draft-worktree-traceback",
@@ -480,10 +480,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "project=body.project, db=db, selector=body.selector\n",
-          "new": "project=body.project, db=db\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n",
+          "new": "        needs_profile=True,\n",
           "breaks": "an API run's selector is ignored",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "new-feature-needs-spec",
@@ -493,7 +493,7 @@
           "old": "    if pipeline_def.name != \"new_feature\" and not spec_path.exists():\n",
           "new": "    if not spec_path.exists():\n",
           "breaks": "an API new_feature is refused for its missing spec",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "new-feature-escapes",
@@ -503,7 +503,7 @@
           "old": "        spec_path = project_file_or_400(project_root, f\"specs/{body.spec}_spec.md\")\n",
           "new": "        spec_path = project_root / f\"specs/{body.spec}_spec.md\"\n",
           "breaks": "an API new_feature spec may lie outside the project",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "implement-selector-ignored",
@@ -599,10 +599,10 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.graph = type(context.graph)()\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n    )\n",
+          "new": "        selector=body.selector,\n        needs_profile=True,\n    )\n    context.graph = type(context.graph)()\n",
           "breaks": "an API run gets no topology while sw run does",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         }
       ]
     }

@@ -96,6 +96,7 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
     bootstrap_database(str(db_path))
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (project / "specs" / "a_spec.md").write_text("# A\n## 1. Purpose\nDoes A.\n")
 
     with (

@@ -22,6 +22,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
@@ -50,6 +51,15 @@ def _lint(errors: int) -> AtomResult:
     )
 
 
+_BUILD_TOOLS = {
+    "python": "uv",
+    "typescript": "npm",
+    "rust": "cargo",
+    "java": "maven",
+    "kotlin": "maven",
+}
+
+
 def _context(tmp_path: Path, language: str | None, llm: object | None = None) -> RunContext:
     (tmp_path / "specs").mkdir(exist_ok=True)
     context = RunContext(
@@ -57,7 +67,12 @@ def _context(tmp_path: Path, language: str | None, llm: object | None = None) ->
         spec_path=tmp_path / "specs" / "greeter_spec.md",
         model=ModelAccess(llm_router=FixedRouter(llm) if llm is not None else None),
     )
-    context.isolation = context.isolation.model_copy(update={"language": language})
+    if language is None:
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
+        profile = None
+    else:
+        profile = ProjectProfile(language, _BUILD_TOOLS[language])
+    context.isolation = context.isolation.model_copy(update={"profile": profile})
     return context
 
 

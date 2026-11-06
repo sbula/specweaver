@@ -102,6 +102,7 @@ def _run(tmp_path: Path, isolate_env: Path, db: Database, steps: int):
     _history(db, steps)
     project = tmp_path / "proj"
     project.mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["init", "steps-demo", "--path", str(project)]).exit_code == 0
     assert runner.invoke(app, ["use", "steps-demo"]).exit_code == 0
     spec = project / "specs" / "a_spec.md"

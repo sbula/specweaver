@@ -258,3 +258,9 @@ async def test_loop_back_preservation(mock_git, tmp_path: Path, lineage_db: Data
         # This is the vital assertion: The regenerated code preserved the lineage!
         assert gen1_id == gen2_id
         assert gen1_id is not None
+
+
+@pytest.fixture(autouse=True)
+def _python_project(tmp_path: Path) -> None:
+    """The project root is a Python project."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')

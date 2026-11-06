@@ -102,6 +102,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -119,6 +120,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "fnf-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         result = runner.invoke(
             app,
@@ -130,6 +132,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "ve-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         with patch("specweaver.core.flow.interfaces.cli._execute_run") as mock_exec:
             mock_exec.side_effect = ValueError("bad input!")
@@ -143,6 +146,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "ge-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         with patch("specweaver.core.flow.interfaces.cli._execute_run") as mock_exec:
             mock_exec.side_effect = RuntimeError("unexpected")
@@ -158,6 +162,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -198,6 +203,7 @@ class TestRunPipelineMocked:
         project_dir = tmp_path / "proj_err"
         project_dir.mkdir()
         runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
@@ -254,6 +260,7 @@ class TestRunContextConfigWiring:
         project_dir = tmp_path / "cfg-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "cfg-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
@@ -300,6 +307,7 @@ class TestRunContextConfigWiring:
         project_dir = tmp_path / "cfg-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "cfg-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
@@ -344,6 +352,7 @@ class TestResumeContextConfigWiring:
         project_dir = tmp_path / "res-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "res-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
         spec = project_dir / "specs" / "test_spec.md"
         spec.parent.mkdir(exist_ok=True)
         spec.write_text("# Spec\n## 1. Purpose\nDoes stuff.\n")
@@ -406,6 +415,7 @@ class TestResumeMocked:
         project_dir = tmp_path / "r-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "r-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         result = runner.invoke(app, ["resume", "nonexistent-id"])
         assert result.exit_code == 1
@@ -421,6 +431,7 @@ class TestResumeMocked:
         project_dir = tmp_path / "nr-proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "nr-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         result = runner.invoke(app, ["resume"])
         if result.exit_code != 0:
@@ -438,6 +449,7 @@ class TestResumeMocked:
         project_dir = tmp_path / "proj"
         project_dir.mkdir()
         runner.invoke(app, ["init", "test-proj", "--path", str(project_dir)])
+        (project_dir / "pyproject.toml").write_text('[project]\nname = "x"\n')
 
         # mock the get_latest_run to return a stub Run
         from specweaver.core.flow.engine.state import PipelineRun, RunStatus

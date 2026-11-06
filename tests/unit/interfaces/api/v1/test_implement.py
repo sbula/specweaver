@@ -32,6 +32,7 @@ def _project_with_spec(client, tmp_path):
     """Register a project and create a spec file + output dirs."""
     proj = tmp_path / "proj"
     proj.mkdir()
+    (proj / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (proj / "specs").mkdir()
     (proj / "src").mkdir()
     (proj / "tests").mkdir()

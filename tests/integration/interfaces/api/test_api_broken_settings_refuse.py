@@ -59,6 +59,7 @@ def world(
     (project / ".specweaver" / "pipelines").mkdir(parents=True)
     (project / ".specweaver" / "pipelines" / "one_check.yaml").write_text(_PIPELINE)
     (project / "specs").mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text("# A\n## 1. Purpose\nDoes A.\n")
     started: list[str] = []
 

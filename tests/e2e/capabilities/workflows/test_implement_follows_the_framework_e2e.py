@@ -98,6 +98,8 @@ def test_sw_implement_asks_for_the_frameworks_style(
     assert runner.invoke(app, ["init", "fw", "--path", str(project)]).exit_code == 0
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     (project / manifest).write_text(text, encoding="utf-8")
+    if manifest == "package.json":
+        (project / "tsconfig.json").write_text("{}", encoding="utf-8")
     model = _Model()
 
     with (

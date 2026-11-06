@@ -55,6 +55,7 @@ def test_generation_writes_the_file_the_merge_allows(tmp_path: Path) -> None:
     spec = tmp_path / "specs" / "my_spec_tool_spec.md"
     spec.parent.mkdir()
     spec.write_text("# Tool\n## 1. Purpose\nCounts.\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'tool'\n", encoding="utf-8")
     context = RunContext(
         project_path=tmp_path,
         spec_path=spec,
@@ -65,7 +66,7 @@ def test_generation_writes_the_file_the_merge_allows(tmp_path: Path) -> None:
 
     asyncio.run(PipelineRunner(pipeline, context, registry=StepHandlerRegistry()).run())
 
-    allowed = derive_allowed_paths(spec)
+    allowed = derive_allowed_paths(spec, tmp_path, "python")
     assert allowed[0] == "src/my_spec_tool.py"
     assert (tmp_path / allowed[0]).is_file()
 
@@ -82,10 +83,11 @@ def test_sw_implement_targets_the_same_module(tmp_path: Path) -> None:
     spec = _Path("specs/my_spec_tool_spec.md")
     (tmp_path / "specs").mkdir()
     (tmp_path / spec).write_text("# Tool\n")
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'tool'\n", encoding="utf-8")
     context = RunContext(
         project_path=tmp_path, spec_path=tmp_path / spec, output_dir=tmp_path / "src"
     )
     step = PipelineStep(name="lint_fix", action=StepAction.LINT_FIX, target=StepTarget.CODE)
 
-    assert _lint_target(step, context) == derive_allowed_paths(spec)[0]
-    assert default_test_target(context, "unit") == derive_allowed_paths(spec)[1]
+    assert _lint_target(step, context) == derive_allowed_paths(spec, tmp_path, "python")[0]
+    assert default_test_target(context, "unit") == derive_allowed_paths(spec, tmp_path, "python")[1]

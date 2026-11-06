@@ -73,6 +73,7 @@ def _project(tmp_path: Path, llm_section: str = "") -> Path:
     if llm_section:
         (project / "specweaver.toml").write_text(llm_section, encoding="utf-8")
     result = runner.invoke(app, ["init", "servers-demo", "--path", str(project)])
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert result.exit_code == 0, result.output
     return project
 
@@ -146,9 +147,11 @@ def test_the_target_projects_private_rule_holds_while_another_project_is_active(
     private.mkdir()
     (private / "specweaver.toml").write_text("[llm]\nprivate_only = true\n", encoding="utf-8")
     assert runner.invoke(app, ["init", "priv", "--path", str(private)]).exit_code == 0
+    (private / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     other = tmp_path / "other"
     other.mkdir()
     assert runner.invoke(app, ["init", "other", "--path", str(other)]).exit_code == 0
+    (other / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     assert runner.invoke(app, ["use", "other"]).exit_code == 0
     spec = private / "specs" / "g_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)

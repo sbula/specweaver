@@ -203,6 +203,7 @@ class TestValidateCodeHandlerFindings:
         code = tmp_path / "src" / "greeter.py"
         code.parent.mkdir(parents=True)
         code.write_text("def greet():\n    pass\n", encoding="utf-8")
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         ctx = _spec_ctx(tmp_path)
         step = PipelineStep(
             name="val",

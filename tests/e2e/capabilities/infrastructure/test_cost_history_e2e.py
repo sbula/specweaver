@@ -79,6 +79,7 @@ def test_a_finished_run_leaves_its_cost_history(tmp_path: Path, _isolate_env: Pa
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "history-demo", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = project / "specs" / "greeter_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")
@@ -114,6 +115,7 @@ def test_spend_recorded_before_servers_were_stored_is_still_shown(
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "old-rows", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     assert runner.invoke(app, ["use", "old-rows"]).exit_code == 0
     with sqlite3.connect(_isolate_env / "specweaver.db") as conn:
         conn.execute(

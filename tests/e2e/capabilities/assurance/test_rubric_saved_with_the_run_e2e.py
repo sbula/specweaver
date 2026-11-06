@@ -50,6 +50,7 @@ def test_the_saved_run_names_the_rubric_that_judged_it(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "audited", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     (project / "specs").mkdir(exist_ok=True)
     (project / "specs" / "greeter_spec.md").write_text("# Greeter\n## 1. Purpose\nGreets.\n")
     rubrics = project / ".specweaver" / "rubrics"

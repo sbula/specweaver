@@ -75,6 +75,7 @@ def test_approving_the_gate_finishes_the_run(
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     scripts = project / ".specweaver" / "scripts"
     scripts.mkdir(parents=True)
     (scripts / "s.sh").write_text('#!/usr/bin/env bash\necho "$1" >> steps.log\n', encoding="utf-8")
@@ -114,6 +115,7 @@ def test_sw_resume_finds_a_parked_run_of_a_project_named_unlike_its_folder(
     project = tmp_path / "folder"
     project.mkdir()
     assert runner.invoke(app, ["init", "named", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text("# A\n", encoding="utf-8")
     script = project / ".specweaver" / "scripts" / "s.sh"
     script.write_text('#!/usr/bin/env bash\necho "$1" >> steps.log\n', encoding="utf-8")

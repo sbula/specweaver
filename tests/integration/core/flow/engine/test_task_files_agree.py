@@ -70,6 +70,7 @@ def _project(tmp_path: Path, kind: str) -> Path:
     else:
         root.mkdir()
         (root / "package.json").write_text("{}", encoding="utf-8")
+        (root / "tsconfig.json").write_text("{}", encoding="utf-8")
     (root / "specs").mkdir(exist_ok=True)
     (root / "specs" / "greet_service_spec.md").write_text("# G\n## 1. Purpose\nGreets.\n")
     return root

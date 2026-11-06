@@ -73,6 +73,7 @@ def _implement(tmp_path: Path, home: Path) -> Any:
     project = tmp_path / "proj"
     project.mkdir()
     assert runner.invoke(app, ["init", "missing-demo", "--path", str(project)]).exit_code == 0
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     spec = project / "specs" / "greeter_spec.md"
     spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Greeter\n## 1. Purpose\nGreets.\n", encoding="utf-8")

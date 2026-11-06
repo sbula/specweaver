@@ -114,7 +114,7 @@ class _GenerationHandler:
         raise NotImplementedError
 
     def _files(self, context: RunContext) -> TaskFiles:
-        from specweaver.core.flow.engine.run_language import run_task_files
+        from specweaver.core.flow.engine.run_profile import run_task_files
 
         return run_task_files(context)
 
@@ -386,7 +386,7 @@ class PlanSpecHandler:
             )
 
         try:
-            from specweaver.core.flow.engine.run_language import run_task_files
+            from specweaver.core.flow.engine.run_profile import run_task_files
             from specweaver.workflows.implementation.languages import language_guide
             from specweaver.workflows.planning.planner import Planner
 
@@ -496,7 +496,7 @@ class GenerateContractHandler:
             stem = module_stem(context.spec_path)
             class_name = stem.replace("_", " ").title().replace(" ", "")
 
-            from specweaver.core.flow.engine.run_language import run_task_files
+            from specweaver.core.flow.engine.run_profile import run_task_files
 
             language = run_task_files(context).language
 

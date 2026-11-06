@@ -189,7 +189,7 @@
           "old": "    except SettingsFileError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "a broken setting ends in a traceback",
-          "symbol_sha": "sha256:b3413d92e8159db18759abfe05c1ed9f3b5fbf8972f4d51f6d2125c2eb9fcb0c"
+          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
         },
         {
           "id": "project-path-error-escapes",
@@ -233,7 +233,7 @@
           "old": "    except SettingsFileError as exc:\n",
           "new": "    except ImportError as exc:\n",
           "breaks": "an API run starts with isolation off on a broken setting",
-          "symbol_sha": "sha256:8edf3f31b3a562fd966cc7d8a21993379cc97bce4b7f8e0a33f37224e78a153f"
+          "symbol_sha": "sha256:a226f30360f1e2a4afe1d265e1bd6cbca28f0aa15a9369f44e4d459340ef595e"
         },
         {
           "id": "standards-code-lost",

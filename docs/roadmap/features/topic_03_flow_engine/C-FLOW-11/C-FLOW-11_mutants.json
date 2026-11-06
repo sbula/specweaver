@@ -164,27 +164,27 @@
           "old": "        load_section(root, parse_autonomy),\n",
           "new": "        load_section(root / \"missing\", parse_autonomy),\n",
           "breaks": "a run ignores the project's [autonomy]",
-          "symbol_sha": "sha256:15d23e0a3eaf9e4e9c5c76216eea3fa94b7833630559ca7f744ea364a07e9cc6"
+          "symbol_sha": "sha256:ddf9b6192cfdade38d2a9dc42daa68c4993c73232365549b2c58b12f7e8fb0bc"
         },
         {
           "id": "sw-implement-reads-another-file",
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/interfaces/cli.py",
           "symbol": "implement",
-          "old": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n",
-          "new": "    context = build_run_or_exit(\n        project_path, spec_path, pipeline, selector=selector, run_model=run_model\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
+          "old": "        needs_profile=True,\n    )\n    # The task's files",
+          "new": "        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n    # The task's files",
           "breaks": "sw implement ignores the project's [autonomy]",
-          "symbol_sha": "sha256:e71afc2576072788f77561fbc90ccb6a684554644dc8066fbd46425ea71478b0"
+          "symbol_sha": "sha256:d5a365b83e4a6d5fb134c91334a371d3af3e613568a09d4ac12476b57d89b16b"
         },
         {
           "id": "api-reads-another-file",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n    )\n",
+          "new": "        selector=body.selector,\n        needs_profile=True,\n    )\n    context.isolation = context.isolation.model_copy(update={\"autonomy\": type(context.isolation.autonomy)()})\n",
           "breaks": "an API run ignores the project's [autonomy]",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         }
       ]
     },

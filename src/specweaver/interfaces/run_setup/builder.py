@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
+from specweaver.commons.project_profile import ProjectProfile, ProjectUndecidedError
+
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
@@ -71,6 +73,9 @@ class RunRequest:
     read_only: bool = False
     #: Told why an `optional` model was skipped.
     on_model_skipped: Callable[[SettingNotSetError], None] | None = None
+    #: The door runs code in the project's language (`sw run`): an undecided root raises
+    #: `ProjectUndecidedError` here, before the run starts. Other doors carry the refusal.
+    needs_profile: bool = False
 
 
 async def build_run(request: RunRequest) -> RunContext:
@@ -89,7 +94,8 @@ async def build_run(request: RunRequest) -> RunContext:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.project.constitution import find_constitution
 
-    doc_policy, autonomy, language = _sections(request.project_root)
+    doc_policy, autonomy, implement = _sections(request.project_root)
+    profile, undecided = _profile(request, implement)
     info = find_constitution(request.project_root, spec_path=request.spec_path)
     standards = await load_standards_content_async(
         request.db, request.project, request.project_root, target_path=request.spec_path
@@ -102,7 +108,9 @@ async def build_run(request: RunRequest) -> RunContext:
         spec_path=request.spec_path,
         output_dir=request.project_root / "src",
         db=request.db,
-        isolation=IsolationPolicy(doc_policy=doc_policy, autonomy=autonomy, language=language),
+        isolation=IsolationPolicy(
+            doc_policy=doc_policy, autonomy=autonomy, profile=profile, undecided=undecided
+        ),
         guidance=GuidanceContent(constitution=info.content if info else None, standards=standards),
         model=ModelAccess(
             config=settings if needs_model else None,
@@ -123,7 +131,29 @@ def build_run_sync(request: RunRequest) -> RunContext:
     return run_sync(lambda: build_run(request))
 
 
-def _sections(root: Path) -> tuple[Any, Any, str | None]:
+def _profile(request: RunRequest, implement: Any) -> tuple[ProjectProfile | None, str | None]:
+    """The project's profile with both pins, or why its root decides none (raised when needed)."""
+    from specweaver.workspace.project.project_profile import read_project_profile
+
+    try:
+        profile = read_project_profile(
+            request.project_root, language=implement.language, build_tool=implement.build_tool
+        )
+    except OSError as err:  # expected: a registered folder removed since; the refusal names it
+        undecided = ProjectUndecidedError(
+            f"the project root {request.project_root} cannot be read: {err.strerror}"
+        )
+        if request.needs_profile:
+            raise undecided from err
+        return None, str(undecided)
+    except ProjectUndecidedError as err:
+        if request.needs_profile:
+            raise
+        return None, str(err)
+    return profile, None
+
+
+def _sections(root: Path) -> tuple[Any, Any, Any]:
     from specweaver.core.config.autonomy_policy import parse_autonomy
     from specweaver.core.config.bootstrap.project_settings import load_section
     from specweaver.core.config.doc_policy import parse_doc_policy
@@ -132,7 +162,7 @@ def _sections(root: Path) -> tuple[Any, Any, str | None]:
     return (
         load_section(root, parse_doc_policy),
         load_section(root, parse_autonomy),
-        load_section(root, parse_implement).language,
+        load_section(root, parse_implement),
     )
 
 

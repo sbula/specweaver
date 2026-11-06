@@ -23,6 +23,7 @@ async def test_generate_code_handler_skeleton_wiring(
     mock_auth_mcp, mock_eval_skel, mock_build_base_prompt, mock_generator_class, tmp_path: Path
 ) -> None:
     """Story 9: GenerateCodeHandler properly proxies dictionary seamlessly into Generator."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
     ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})
@@ -61,6 +62,7 @@ async def test_review_code_handler_skeleton_wiring(
     mock_auth_mcp, mock_eval_skel, mock_build_base_prompt, mock_reviewer_class, tmp_path: Path
 ) -> None:
     """Story 10 & 10b: ReviewCodeHandler correctly buffers context and tests cross-platform resolution mapping."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo_spec.md")
 
     # Simulate output dir having the code file
@@ -123,6 +125,7 @@ async def test_review_e2e_fallback_protection(
     mock_auth_mcp, mock_atom_class, mock_build_base_prompt, mock_reviewer_class, tmp_path: Path
 ) -> None:
     """Story 12: Pipeline Completely suppresses binary faults and falls back downstream natively."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
     ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})

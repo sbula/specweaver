@@ -179,6 +179,7 @@ class TestImplementSpendIsVisibleInUsage:
         """[Happy] `sw init` → `sw use` → `sw implement` → `sw usage` shows THAT run's tokens."""
         _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
 
         spec = tmp_path / "specs" / "greeter_spec.md"
@@ -212,6 +213,7 @@ class TestImplementSpendIsVisibleInUsage:
         """[Boundary] a second project that ran nothing shows none of the first one's spend."""
         _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
 
         spec = tmp_path / "specs" / "greeter_spec.md"
@@ -223,6 +225,7 @@ class TestImplementSpendIsVisibleInUsage:
         other = tmp_path / "other"
         other.mkdir()
         assert runner.invoke(app, ["init", "quiet_proj", "--path", str(other)]).exit_code == 0
+        (other / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert runner.invoke(app, ["use", "quiet_proj"]).exit_code == 0
 
         usage = runner.invoke(app, ["usage"])
@@ -251,6 +254,7 @@ class TestConfiguredRateReachesTheRun:
         """[Happy] `sw costs set` → `sw implement` → `sw usage` shows a priced, non-zero cost."""
         _write_settings()
         assert runner.invoke(app, ["init", "journey_proj", "--path", str(tmp_path)]).exit_code == 0
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
         assert runner.invoke(app, ["use", "journey_proj"]).exit_code == 0
         priced = runner.invoke(
             app, ["costs", "set", _MODEL, str(self._RATE_PER_1M), str(self._RATE_PER_1M)]

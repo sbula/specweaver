@@ -71,6 +71,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Tes
     bootstrap_database(str(data / "specweaver.db"))
     project = tmp_path / "proj"
     (project / "specs").mkdir(parents=True)
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (project / "specs" / "a_spec.md").write_text("# A\n## 1. Purpose\nDoes A.\n")
     pipelines = project / ".specweaver" / "pipelines"
     pipelines.mkdir(parents=True)

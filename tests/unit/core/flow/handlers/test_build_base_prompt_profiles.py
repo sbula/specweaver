@@ -32,7 +32,10 @@ def mock_db():
 
 
 @pytest.fixture
-def run_context(mock_db):
+def run_context(mock_db, tmp_path):
+    project = tmp_path / "fake_project"
+    project.mkdir()
+    (project / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     metadata = ProjectMetadata(
         project_name="fake_project",
         archetype="generic",
@@ -42,8 +45,8 @@ def run_context(mock_db):
     )
     ctx = RunContext(
         analysis=AnalysisContext(parsers={}),
-        project_path=Path("/tmp/fake_project"),
-        spec_path=Path("/tmp/fake_project/spec.yaml"),
+        project_path=project,
+        spec_path=project / "spec.yaml",
         db=mock_db,
         project_metadata=metadata,
         guidance=GuidanceContent(constitution="Always be honest", standards="Use type hints"),

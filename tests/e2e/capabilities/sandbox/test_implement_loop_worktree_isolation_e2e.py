@@ -82,6 +82,7 @@ def _commit_project(tmp_path: Path, dal: str) -> None:
     )
     (tmp_path / "context.yaml").write_text(f"operational:\n  dal_level: {dal}\n", encoding="utf-8")
     (tmp_path / "README.md").write_text("seed\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     _git(tmp_path, "init")
     _git(tmp_path, "config", "user.email", "t@t")
     _git(tmp_path, "config", "user.name", "t")
@@ -89,6 +90,7 @@ def _commit_project(tmp_path: Path, dal: str) -> None:
         tmp_path,
         "add",
         "README.md",
+        "pyproject.toml",
         "context.yaml",
         ".specweaver/scripts/gen.sh",
         "tests/test_persist_probe.py",

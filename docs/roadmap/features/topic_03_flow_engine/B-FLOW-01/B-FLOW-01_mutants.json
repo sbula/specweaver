@@ -146,7 +146,7 @@
           "old": "    if kind == \"scenario\":\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "new": "    if True:\n        from specweaver.sandbox.language.core.scenario_converter_factory import (\n",
           "breaks": "the coder is retried until the hidden scenario tests pass, fitting the code to them",
-          "symbol_sha": "sha256:9a4f7a1ef295d0318dbdcc2216f78a7613fc0ecffe8adfe2fedb994d98f1c59a"
+          "symbol_sha": "sha256:73ccb903c6cfd430193092885607bc67d6b7d2aee80fd359d37cbcfc6e6e6161"
         }
       ]
     },
@@ -384,7 +384,7 @@
           "old": "            sandbox_settings=coder_sandbox(context),\n        )\n",
           "new": "        )\n",
           "breaks": "lint fix runs the coder's tools on the host",
-          "symbol_sha": "sha256:973fe5b49474d6ffad4be3887a167c41d10b14bcc279dbdedbef332b997ae3ac"
+          "symbol_sha": "sha256:a46f7b4eebd63ba9c79b4f4c2b208eaa43b53905dd9dc49e0475dbdf7b7ea793"
         }
       ]
     },

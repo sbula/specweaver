@@ -60,27 +60,27 @@
           "old": "        bridge.start_run(run_id, runner.run(run_id=run_id), limit=limit)\n",
           "new": "        bridge.start_run(run_id, runner.run(), limit=limit)\n",
           "breaks": "GET /runs/{id} never finds a run started over REST",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "rest-run-without-models",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "start_pipeline_run",
-          "old": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, spec_path, pipeline_def, project=body.project, db=db, selector=body.selector\n    )\n    context.model = type(context.model)()\n",
+          "old": "        selector=body.selector,\n        needs_profile=True,\n    )\n",
+          "new": "        selector=body.selector,\n        needs_profile=True,\n    )\n    context.model = type(context.model)()\n",
           "breaks": "a REST pipeline step that needs a model fails",
-          "symbol_sha": "sha256:2615864f9d6ead92320dd1ac523a3a92890c59679dd551e4ee9678c083d94b39"
+          "symbol_sha": "sha256:31504c446d2aa501755d41b1ccfd07d37df1a68db7ffcc3a62421679f58b688e"
         },
         {
           "id": "rest-resume-without-models",
           "origin": "authored",
           "file": "src/specweaver/interfaces/api/v1/pipelines.py",
           "symbol": "_resume_existing_run",
-          "old": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n",
-          "new": "    context = await build_api_run(\n        project_root, Path(run.spec_path), pipeline_def, project=run.project_name, db=db\n    )\n    context.model = type(context.model)()\n",
+          "old": "        project=run.project_name,\n        db=db,\n        needs_profile=True,\n    )\n",
+          "new": "        project=run.project_name,\n        db=db,\n        needs_profile=True,\n    )\n    context.model = type(context.model)()\n",
           "breaks": "a REST resume of a step that needs a model fails",
-          "symbol_sha": "sha256:57de589b1e91368b88e2fa951fc107e9f409db3220b717deb8994c4a3bd637c5"
+          "symbol_sha": "sha256:ce54d54fa954ef5e516c5629443c546d28bdfad9f952a18a4eb466d6f409ce44"
         }
       ]
     },
