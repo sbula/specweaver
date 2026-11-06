@@ -1,10 +1,14 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""A test cannot reach a real server through `httpx2`, and a fake answers in its place."""
+"""A test cannot reach a real server through `httpx2` or `httpx`, and a fake answers in its place.
+
+Proves: TECH-094 FR-4
+"""
 
 from __future__ import annotations
 
+import httpx
 import httpx2
 import pytest
 
@@ -21,6 +25,19 @@ async def test_a_real_request_fails_the_test() -> None:
 def test_a_real_sync_request_fails_the_test() -> None:
     with httpx2.Client() as client, pytest.raises(RuntimeError, match="network"):
         client.get("https://api.anthropic.com/v1/models")
+
+
+def test_a_real_httpx_request_fails_the_test() -> None:
+    """google-genai and mistralai send through `httpx`."""
+    with httpx.Client() as client, pytest.raises(RuntimeError, match="network"):
+        client.get("https://generativelanguage.googleapis.com/v1beta/models")
+
+
+@pytest.mark.asyncio
+async def test_a_real_async_httpx_request_fails_the_test() -> None:
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(RuntimeError, match="network"):
+            await client.get("https://api.mistral.ai/v1/models")
 
 
 @pytest.mark.asyncio

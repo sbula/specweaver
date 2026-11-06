@@ -35,14 +35,15 @@ A test that genuinely wants colour sets it back for its own duration — see
 
 from __future__ import annotations
 
+import ipaddress
 import os
+import socket
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from tests.baseline_snapshot import BASELINES, rewrites, snapshot
-from tests.fake_http import block_real_httpx2
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -99,17 +100,68 @@ def _no_price_refresh_at_start(
         monkeypatch.setattr(price_refresh, "refresh_at_start", lambda *_a, **_k: None)
 
 
-@pytest.fixture(autouse=True)
-def _no_real_network(request: pytest.FixtureRequest) -> Iterator[None]:
-    """A test not marked `live` never reaches a real server through `httpx2` (openai, anthropic).
+#: Loopback ports a test may not reach: a real model server listens there (Ollama).
+_MODEL_PORTS = frozenset({11434})
+_REAL_CONNECT = socket.socket.connect
+_REAL_CONNECT_EX = socket.socket.connect_ex
+_REAL_GETADDRINFO = socket.getaddrinfo
 
-    See `tests/fake_http.py` for why `respx` alone no longer covers this.
+
+def _loopback(host: object) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(str(host).split("%")[0]).is_loopback
+    except ValueError:
+        return False
+
+
+def _refuse(target: object) -> None:
+    msg = f"a test tried to reach the network: {target} — use fake_httpx2 or respx, or mark it live"
+    raise RuntimeError(msg)
+
+
+def _guarded(address: Any) -> Any:
+    """The address, if a test may connect to it: a Unix socket, or loopback off the model ports."""
+    if isinstance(address, tuple) and not (
+        _loopback(address[0]) and address[1] not in _MODEL_PORTS
+    ):
+        _refuse(address)
+    return address
+
+
+def _connect(sock: socket.socket, address: Any) -> None:
+    _REAL_CONNECT(sock, _guarded(address))
+
+
+def _connect_ex(sock: socket.socket, address: Any) -> int:
+    return _REAL_CONNECT_EX(sock, _guarded(address))
+
+
+def _getaddrinfo(host: object, *args: object, **kwargs: object) -> object:
+    """A name lookup sends a query off the machine, so only loopback names and numbers resolve."""
+    if host is not None and not _loopback(host):
+        try:
+            ipaddress.ip_address(str(host).split("%")[0])
+        except ValueError:
+            _refuse(host)
+    return _REAL_GETADDRINFO(host, *args, **kwargs)  # type: ignore[arg-type]
+
+
+@pytest.fixture(autouse=True)
+def _no_real_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test not marked `live` opens no connection that leaves the machine, whatever library asks.
+
+    Blocked at the socket, below every client: `httpx2` (openai, anthropic), `httpx` (google-genai,
+    mistralai) and anything else. Fakes (`fake_httpx2`, `respx`) answer before a socket opens, and a
+    test's own server on loopback still answers; loopback port 11434 (Ollama) does not. The canary
+    is `tests/unit/test_no_test_reaches_a_server.py`.
     """
     if request.node.get_closest_marker("live"):
-        yield
         return
-    with block_real_httpx2():
-        yield
+    monkeypatch.setattr(socket.socket, "connect", _connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", _connect_ex)
+    monkeypatch.setattr(socket, "getaddrinfo", _getaddrinfo)
 
 
 @pytest.fixture(autouse=True)

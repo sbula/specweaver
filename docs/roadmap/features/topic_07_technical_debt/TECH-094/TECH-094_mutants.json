@@ -1,0 +1,84 @@
+{
+  "schema": 2,
+  "feature": "TECH-094",
+  "campaigns": [
+    {
+      "requirement": "FR-4",
+      "title": "A test not marked live opens no connection that leaves the machine",
+      "scope": [
+        "tests/unit/test_no_test_reaches_a_server.py",
+        "tests/unit/test_no_real_network.py"
+      ],
+      "mutants": [
+        {
+          "id": "every-address-allowed",
+          "origin": "authored",
+          "file": "tests/conftest.py",
+          "symbol": "_guarded",
+          "old": "_loopback(address[0]) and address[1] not in _MODEL_PORTS",
+          "new": "True",
+          "breaks": "a test connects to any server outside the machine",
+          "symbol_sha": "sha256:9f9da68e3f741ead05bad6834f9a3f8c8c32af4a5bc2e45adb08cdc7532f5f96"
+        },
+        {
+          "id": "name-lookups-open",
+          "origin": "authored",
+          "file": "tests/conftest.py",
+          "symbol": "_getaddrinfo",
+          "old": "if host is not None and not _loopback(host):",
+          "new": "if False:",
+          "breaks": "a test's name lookup sends a DNS query off the machine",
+          "symbol_sha": "sha256:476dd5fd90b9d3fd8d24b717e58893cdd52032206f40d052e5d37bb1d1d15912"
+        },
+        {
+          "id": "connect-ex-open",
+          "origin": "authored",
+          "file": "tests/conftest.py",
+          "symbol": "_no_real_network",
+          "old": "monkeypatch.setattr(socket.socket, \"connect_ex\", _connect_ex)",
+          "new": "pass",
+          "breaks": "a library that connects with connect_ex reaches the network",
+          "symbol_sha": "sha256:2b8f1adef7b7e52007150a71b59d86b95831ef7a6bb7cc47a0e1ea95b35a66e6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "The canary refuses the Ollama port on loopback",
+      "scope": [
+        "tests/unit/test_no_test_reaches_a_server.py"
+      ],
+      "mutants": [
+        {
+          "id": "ollama-port-open",
+          "origin": "authored",
+          "file": "tests/conftest.py",
+          "symbol": "_guarded",
+          "old": "_loopback(address[0]) and address[1] not in _MODEL_PORTS",
+          "new": "_loopback(address[0])",
+          "breaks": "a non-live test talks to a local Ollama, a real model",
+          "symbol_sha": "sha256:9f9da68e3f741ead05bad6834f9a3f8c8c32af4a5bc2e45adb08cdc7532f5f96"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "A test file that reads the live keys must be marked live",
+      "scope": [
+        "tests/unit/test_live_keys_only_in_live_tests.py"
+      ],
+      "mutants": [
+        {
+          "id": "unmarked-reader-passes",
+          "origin": "authored",
+          "file": "tests/unit/test_live_keys_only_in_live_tests.py",
+          "symbol": "_unmarked_readers",
+          "old": "return _reads_live_keys(tree) and not _marked_live(tree)",
+          "new": "return _reads_live_keys(tree) and False",
+          "breaks": "a default test reads a real key unnoticed",
+          "symbol_sha": "sha256:dde38cc3cd93ddb84c11cd85e12fdeeb4e2df745e9e461a1fddc4461dbd17e15"
+        }
+      ]
+    }
+  ]
+}
