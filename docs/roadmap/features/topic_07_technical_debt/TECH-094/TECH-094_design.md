@@ -85,10 +85,12 @@ None.
 | FR-1 | `.github/workflows/tests.yml` SHALL run on every push to `main` and every pull request, those from forks included `[agreed 2026-11-06]`, with `permissions: contents: read` and no `secrets.` reference | GitHub | a push or a pull request | the jobs start; a fork's code gets a read-only token and nothing else |
 | FR-2 | Each job SHALL install the locked dependencies with uv and run the default suite in parallel (`python -m pytest -n auto`), which selects unit, integration and e2e and never `live` or `toolchain` `[agreed 2026-11-06]` | the workflow | test | the same tests as a local plain `pytest` |
 | FR-3 | Each job SHALL then run `scripts/quality.py cb` and `scripts/quality.py doc` `[agreed 2026-11-06]`; mypy stays the only type check `[agreed 2026-11-06]` | the workflow | gate | the same gate as `commit_gated.py` |
-| FR-4 | CI SHALL never call a real model `[agreed 2026-11-06]`: the workflow sets no provider key, and every test not marked `live` SHALL fail when it sends a request to a host other than loopback through `httpx` or `httpx2`, unless a fake (`respx`, `fake_httpx2`) answers it | the tests | reach the network | the test fails naming the URL; no request leaves the machine |
+| FR-4 | CI SHALL never call a real model `[agreed 2026-11-06]`: the workflow sets no provider key and no `SPECWEAVER_LIVE_KEYS`, and every test not marked `live` SHALL fail when it opens a socket connection to an address that is not loopback, or to loopback port 11434 (Ollama) `[agreed 2026-11-06]`, whatever library opens it; a fake (`respx`, `fake_httpx2`) still answers before any socket opens. This replaces the `httpx2`-only guard | the tests | reach the network | the test fails naming the address; no request leaves the machine |
 | FR-5 | When `CI` is set (GitHub sets it), a test that skips for a reason other than the platform (Windows-only) SHALL fail the run, naming the test and the reason `[agreed 2026-11-06]`; the workflow installs every tool the suite looks for (ripgrep with apt; the rest are on the image) | the tests on CI | skip | a missing tool is a failure, never a silent pass |
 | FR-6 | The README SHALL show the workflow's status badge beside the Python badge `[agreed 2026-11-06]` | a visitor | open the repo | sees whether `main` passes |
 | FR-7 | A guard test SHALL fail when the workflow loses a promise: it names a secret or a provider key, selects `live` or `toolchain`, drops 3.11 or 3.14, drops `cb` or `doc`, or widens its permissions | the suite | read the workflow | the promises of FR-1..FR-5 cannot regress unseen |
+| FR-9 | A canary test SHALL try a real outside connection and a connection to loopback port 11434 from a non-live test and expect both refused `[agreed 2026-11-06]` | the suite | run | removing or weakening FR-4's guard fails the suite |
+| FR-10 | A guard test SHALL fail when a test file reads `SPECWEAVER_LIVE_KEYS` (the only way a test gets a real key, set by `scripts/live.py`) and is not marked `live` `[agreed 2026-11-06]` | the suite | read the tests | a real key never reaches a test that runs by default |
 | FR-8 | The suite and both gates SHALL pass on Python 3.11 and 3.14 on GitHub; code that fails on 3.11 is fixed in this ticket `[agreed 2026-11-06]` | the workflow | run on 3.11 | the README's "3.11+" is proven |
 
 ## Requirement–Surface Bindings
@@ -99,6 +101,8 @@ None.
 | FR-3 | the gates | `scripts/quality.py cb`, `doc` | run 2026-11-06: 17/17, 14/14 |
 | FR-4 | the existing guard | `tests/fake_http.py` `block_real_httpx2()`, `tests/conftest.py:103` `_no_real_network` | read both |
 | FR-4 | the clients on `httpx` | `google.genai` (`adapters/gemini.py:14`), `mistralai` | read `tests/fake_http.py` docstring and `gemini.py` |
+| FR-4 | a socket-level block | `socket.socket.connect`, `connect_ex` | probe 2026-11-06: the full suite with non-loopback connects refused, 12,669 passed, no test reached out |
+| FR-10 | who reads the live keys | `SPECWEAVER_LIVE_KEYS` (`scripts/live.py:49`) | grep 2026-11-06: 4 test files, all marked `live` |
 | FR-5 | skip reasons | pytest `TestReport` with `outcome == "skipped"` and its `longrepr` reason | to be probed at dev with a five-line test |
 
 ## Non-Functional Requirements
@@ -120,7 +124,7 @@ new Python dependency.
 | # | Decision | Rationale | Architectural Switch? |
 |---|----------|-----------|----------------------|
 | AD-1 | One workflow file `tests.yml`, a matrix over Python 3.11 and 3.14, separate from `container.yml` | different trigger and job; one file per purpose | No |
-| AD-2 | The model-call guard lives in the tests (`tests/fake_http.py`, `tests/conftest.py`), not in product code | the rule is about tests; product code keeps no CI branch | No |
+| AD-2 | The model-call guard lives in the tests (`tests/conftest.py`), at the socket, not in product code or one HTTP library | the rule is about tests; product code keeps no CI branch | No |
 | AD-3 | The skip rule lives in `tests/conftest.py`, active only when `CI` is set | locally a missing tool may skip, as today; on CI it must not | No |
 
 ## ROI Analysis
@@ -168,7 +172,7 @@ None.
 Single feature — no decomposition.
 - **Scope**: the guards (FR-4, FR-5, FR-7), the workflow and badge (FR-1..FR-3, FR-6), and what the
   first real runs find (FR-8).
-- **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8]
+- **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10]
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-094/TECH-094_implementation_plan.md
 
 ## Execution Order
@@ -180,7 +184,7 @@ commit boundary.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | No CI runs the tests | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| — | No CI runs the tests | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -188,6 +192,10 @@ commit boundary.
 round 2 — a non-platform skip fails CI, `gh run list`/`view` allowed to read results, `doc` too, a
 README badge, fork pull requests run read-only. Each decision sits beside its fact above.
 Q10 (30-minute limit, cancel superseded runs) agreed at approval. **Design approved 2026-11-06** (the user).
-**Next step**: the implementation plan (`specweaver-implementation-plan TECH-094`).
+At planning the user asked how a future test is kept off the network: FR-4 moved to the socket,
+FR-9 (canary) and FR-10 (live keys only in `live` tests) added, and loopback port 11434 blocked
+(Q11), agreed 2026-11-06.
+**Plan approved 2026-11-06** (the user): actions by major tag (F1).
+**Next step**: dev (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-094/TECH-094_implementation_plan.md`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
