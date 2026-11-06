@@ -256,7 +256,7 @@ One order: SF-01, SF-02, SF-03, SF-04, SF-05.
 | SF-01 | One profile decision | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | Every caller asks it | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One framework answer | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | One ending table, one parser lookup | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | One ending table, one parser lookup | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-05 | Analyzers on one base | SF-04 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -283,6 +283,8 @@ framework (`framework:`, a framework archetype with a warning, the build file); 
 with an evaluator schema. Kept at dev: a project's own role-archetype pipeline still applies after
 the framework. Known limit: `POST /api/v1/check` uses no archetype or framework pipeline
 (unchanged).
-**Next step**: the implementation plan for SF-04 (`specweaver-implementation-plan TECH-079 SF-04`).
+**SF-04 plan approved 2026-11-06** (the user): the analyzers' endings move in SF-04 with the guard;
+`.cts`/`.mts` join TypeScript; one parser registry per process, read-only; `.h` from the project's files.
+**Next step**: dev SF-04 (`specweaver-dev` on `TECH-079_sf04_implementation_plan.md`).
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜
 in any row and resume from there using the appropriate skill.
