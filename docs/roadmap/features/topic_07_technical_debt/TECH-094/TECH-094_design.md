@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-094
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-06)
+- **Status**: COMPLETE (signed off by the user, 2026-11-07)
 - **Kind**: `tooling`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-094/TECH-094_design.md
 - **Origin**: 2026-11-06, after `TECH-079`; the user's order puts CI before RAG. Only
@@ -201,6 +201,6 @@ in `8a7f3e70`, `c720f30c`, `21f436dd`, `6fb52382`, `d2f0f69d` (walkthrough CB-3)
 **Live demo**: <https://github.com/sbula/specweaver/actions/workflows/tests.yml> — every push to `main`.
 **2026-11-07** the user refused to install `gh` (no agent may hold a push credential): CI results come
 as pasted log lines, searched from `short test summary`.
-**Next step**: sign-off.
+**Signed off 2026-11-07** (the user). Next in order: RAG, `A-SENS-02` then `B-FLOW-04`.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
