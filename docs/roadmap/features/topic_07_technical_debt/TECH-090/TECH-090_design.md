@@ -124,6 +124,8 @@ version, one transaction per step, refuse a file newer than the code.
 | FR-10 | Alembic SHALL be gone: `alembic.ini`, `alembic/`, `tests/unit/alembic/`, the `alembic` dependency `[agreed 2026-11-07]` | — | — | no file, test or dependency names it |
 | FR-11 | `core/config` SHALL hold no engine, queue or file I/O, so its `pure-logic` archetype is true; the write queue, `cqrs_context`, the dead-letter log, the dead helpers and the four `_now_iso` copies are deleted; `commons/timestamps.now_iso` stays `[agreed 2026-11-07]` | — | — | a guard test fails on a `_now_iso` definition outside `commons`; `core/config` imports no `sqlite3`, `sqlalchemy` engine or `logging.handlers` |
 | FR-12 | `create_app()` SHALL set up logging as the CLI does (EP-10) `[agreed 2026-11-07]` | API | start | the API writes its log where the CLI writes its own |
+| FR-13 | `workspace/store.py` SHALL be split into its ORM models, its synchronous lookups and its repository, and `specweaver.db`'s step 1 SHALL name the memory tables it creates instead of registering them by a side-effect import (CW-21) `[agreed 2026-11-07]` | — | — | no module imports a store only for its side effect; each part has one reason to change; the schema comparison (FR-6) still passes |
+| FR-14 | The known clones in the store, database and API code this ticket touched SHALL be gone, 11 of 12; the twelfth, the header and imports shared by `api/v1/constitution.py` and `standards.py`, is no code copy and stays `[agreed 2026-11-07]`; `flow_artifact_events` gets one writer, `graph.lineage`'s `LineageRepository` `[agreed 2026-11-07]`: `workspace/store.py`, `workspace/memory/store.py`, `core/flow/store.py` with the lineage repository, `api/v1/pipelines.py`, `api/v1/projects.py`, the CLI display with the API event bridge; the test helpers that read and set `user_version` live once in `tests/fixtures/db_utils.py` `[agreed 2026-11-07]` | — | — | the duplication baseline loses those 11 entries (86 → 75) and gains none; the other clones stay with the modules that own them |
 
 ## Requirement–Surface Bindings
 
@@ -184,8 +186,8 @@ None new. `alembic` is removed from `pyproject.toml` and `uv.lock` (FR-10).
 | A long-running test suite relies on the warning path | low | low | the suite runs at every commit |
 
 ### Refactoring Opportunities
-`workspace/store.py`'s split (CW-21) into models, raw SQL and repository is part of SF-02: its raw
-SQL moves onto the opener anyway.
+`workspace/store.py`'s split (CW-21) into models, raw SQL and repository was planned for SF-02 but
+not done there; SF-04 does it (FR-13) `[agreed 2026-11-07]`.
 
 ## Non-Goals
 
@@ -193,6 +195,7 @@ SQL moves onto the opener anyway.
 - A live switch between backends.
 - `TECH-088`'s graph-engine merge; if it retires `graph.db`, one file leaves FR-1's list.
 - The SQL defaults of old files are not rebuilt away (FR-6) `[agreed 2026-11-07]`.
+- The 74 other clones in the duplication baseline, and the import-only clone of FR-14: they stay with the modules that own them (FR-14) `[agreed 2026-11-07]`.
 
 ## Developer Guides Required
 
@@ -233,9 +236,18 @@ SQL moves onto the opener anyway.
 - **Depends on**: SF-02
 - **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-090/TECH-090_sf03_implementation_plan.md
 
+### SF-04: One copy of each block
+- **Scope**: the CW-21 split of `workspace/store.py`; the memory tables named in step 1; the 12
+  clones in the store, database and API code this ticket touched; the test helpers in one place.
+- **FRs**: [FR-13, FR-14]
+- **Inputs**: SF-03's doors
+- **Outputs**: the duplication baseline without those entries
+- **Depends on**: SF-03
+- **Impl Plan**: docs/roadmap/features/topic_07_technical_debt/TECH-090/TECH-090_sf04_implementation_plan.md
+
 ## Execution Order
 
-SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each is the user's acceptance.
+SF-01 → SF-02 → SF-03 → SF-04. Each is one commit chain; the last boundary of each is the user's acceptance.
 
 ## Live Demo
 
@@ -263,6 +275,7 @@ No model is called, so the nightly real-model run has nothing to add; the same j
 | SF-01 | One opener, versioned steps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The doors | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-04 | One copy of each block | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -286,6 +299,11 @@ the two silent mutants (map 4 → 0, no read-back) judged equivalent by the user
 project's log at its first database use; the `503` body carries `error_code` `DATABASE_BUSY`.
 **SF-03 dev 2026-11-07**: CB-1 `94a945a3`, CB-2 `c15cac35`, CB-3 accepted by the user 2026-11-07. A
 command's lines before its first database use go to the `_global` log (Q2).
-**Next step**: the TECH-090 closure gate (`specweaver-feature` Phase 4).
+**SF-04 added 2026-11-07** (the user, before sign-off): the CW-21 split the design had promised for
+SF-02 was never done; the user chose to do it here, with the 12 clones in the code this ticket
+touched and the test helpers (FR-13, FR-14); the other 74 clones stay out.
+**SF-04 plan approved 2026-11-07** (the user): one writer for `flow_artifact_events`; the import-only clone stays;
+`workspace/models.py` and `workspace/lookups.py`.
+**Next step**: `specweaver-dev` for SF-04, CB-1.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
