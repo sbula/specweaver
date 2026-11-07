@@ -237,6 +237,25 @@ SQL moves onto the opener anyway.
 
 SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each is the user's acceptance.
 
+## Live Demo
+
+Run 2026-11-07 on a fresh data dir (`SPECWEAVER_DATA_DIR` in a temp folder):
+
+```bash
+sw run --help                 # exit 0, and still no database file
+sw init demo --path ./demo    # specweaver.db at user_version 1
+# PRAGMA user_version = 99 on specweaver.db
+sw projects                   # "…/specweaver.db is at schema version 99, but this SpecWeaver knows
+                              #  only up to 1; update SpecWeaver to open it", exit 1
+sw --help                     # exit 0 on the same file
+# a second connection holds BEGIN IMMEDIATE; create_app(); POST /api/v1/projects/demo/use
+#   → 503, Retry-After: 1, {"detail": "The database is busy. Retry.", "error_code": "DATABASE_BUSY"}
+```
+
+No model is called, so the nightly real-model run has nothing to add; the same journeys run in
+`tests/e2e/capabilities/interfaces/test_fresh_machine_cli_e2e.py`,
+`test_fresh_machine_api_e2e.py` and `tests/integration/interfaces/api/test_api_busy_database.py`.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
