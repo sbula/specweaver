@@ -192,6 +192,68 @@
           "symbol_sha": "sha256:5a0cbdf0d516bbb2123546d18986d46c67135be410170a2929c87cc588d56254"
         }
       ]
+    },
+    {
+      "requirement": "FR-5",
+      "title": "specweaver.db's step 1 is today's schema, refuses pre-prefix files and drops alembic_version",
+      "scope": [
+        "tests/integration/core/config/bootstrap/test_config_db_steps.py",
+        "tests/integration/core/config/bootstrap/test_schema_is_one_schema.py",
+        "tests/integration/core/config/test_console_log_level.py",
+        "tests/integration/infrastructure/llm/test_call_status_column.py"
+      ],
+      "mutants": [
+        {
+          "id": "alembic-version-kept",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_create_config",
+          "old": "    _drop_alembic_version(conn)\n",
+          "new": "    pass\n",
+          "breaks": "a file Alembic touched still claims Alembic manages it",
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+        },
+        {
+          "id": "call-status-not-added",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_create_config",
+          "old": "    _add_call_status(conn)\n",
+          "new": "    pass\n",
+          "breaks": "an older ledger lacks call_status and every recorded call fails",
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+        },
+        {
+          "id": "console-level-not-added",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_create_config",
+          "old": "    _add_console_log_level(conn)\n",
+          "new": "    pass\n",
+          "breaks": "an older project table lacks console_log_level",
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+        },
+        {
+          "id": "pre-prefix-file-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_refuse_pre_prefix_file",
+          "old": "    if old:\n        raise ValueError(",
+          "new": "    if False:\n        raise ValueError(",
+          "breaks": "a file from before 2026-07-12 gets empty new tables beside its data",
+          "symbol_sha": "sha256:99290326332cf0395608f38641b90d65d7c98c19af55e18bfb37757f003219ee"
+        },
+        {
+          "id": "indexes-on-old-tables",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_create_tables",
+          "old": "        if table.name not in existing:\n            _create_table(conn, table)",
+          "new": "        _create_table(conn, table) if table.name not in existing else [conn.execute(str(CreateIndex(ix).compile(dialect=_DIALECT))) for ix in table.indexes]",
+          "breaks": "an older table gets an index on a column a later helper adds",
+          "symbol_sha": "sha256:a4796666c8ed7a595da6522909e54e5f68100c3b38a05f758256c268d53089d6"
+        }
+      ]
     }
   ]
 }

@@ -138,9 +138,9 @@
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
           "symbol": "_add_history_columns",
           "old": "    if not missing:\n        return\n",
-          "new": "    if not missing:\n        conn.exec_driver_sql(\"UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'\")\n        return\n",
+          "new": "    if not missing:\n        conn.execute(\"UPDATE workspace_projects SET default_dal = 'DAL_C' WHERE default_dal = 'DAL_A'\")\n        return\n",
           "breaks": "every start undoes a DAL_A set on purpose",
-          "symbol_sha": "sha256:ec5e159f2c8cd08bffd2fd3bd3b434d5067472eddd8b2ea959f5881d7caef759"
+          "symbol_sha": "sha256:fbcad5692a1004a4b0058f3e226a6ad2527ebe9edd1226695da769617aa37b54"
         },
         {
           "id": "dal-move-every-start",
@@ -150,7 +150,7 @@
           "old": "    if done:\n        return\n",
           "new": "    if False:\n        return\n",
           "breaks": "a later start undoes a DAL_A set on purpose",
-          "symbol_sha": "sha256:4e1def377c07196f594fac63e2385bb0d94f1d8271b45496a33283817505d4ce"
+          "symbol_sha": "sha256:d9d777e851cbbfb75d08a332d2a3d50f905343a45c81eca89ab1c74d96df7b71"
         }
       ]
     },

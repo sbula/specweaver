@@ -29,7 +29,7 @@ from specweaver.core.flow.engine.isolation import seed_dal_level
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.infrastructure.database import Database
 from specweaver.workspace.store import default_dal_at
-from tests.fixtures.db_utils import register_test_project
+from tests.fixtures.db_utils import as_a_new_process, register_test_project
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -96,6 +96,7 @@ def _drop_new_columns(path: Path) -> None:
             conn.execute(f"ALTER TABLE llm_usage_log DROP COLUMN {column}")
         conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
         conn.execute("DROP TABLE specweaver_migrations")
+        conn.execute("PRAGMA user_version = 0")
 
 
 def test_an_old_database_moves_to_dal_c_once(tmp_path: Path, db: Database) -> None:
@@ -103,11 +104,13 @@ def test_an_old_database_moves_to_dal_c_once(tmp_path: Path, db: Database) -> No
     path = tmp_path / "specweaver.db"
     _drop_new_columns(path)
 
+    as_a_new_process()
     bootstrap_database(str(path))
     with sqlite3.connect(path) as conn:
         moved = conn.execute("SELECT default_dal FROM workspace_projects").fetchall()
         columns = {row[1] for row in conn.execute("PRAGMA table_info(llm_usage_log)")}
         conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
+    as_a_new_process()
     bootstrap_database(str(path))
     with sqlite3.connect(path) as conn:
         kept = conn.execute("SELECT default_dal FROM workspace_projects").fetchall()
@@ -139,7 +142,9 @@ def test_a_rebuilt_old_table_still_moves_to_dal_c(tmp_path: Path, db: Database) 
         )
         conn.execute("DROP TABLE IF EXISTS specweaver_migrations")
         conn.execute("UPDATE workspace_projects SET default_dal = 'DAL_A'")
+        conn.execute("PRAGMA user_version = 0")
 
+    as_a_new_process()
     bootstrap_database(str(path))
 
     with sqlite3.connect(path) as conn:

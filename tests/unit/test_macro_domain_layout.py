@@ -27,8 +27,8 @@ that had no `src/` counterpart, `tests/integration/constitution/` and `tests/int
 turned out to be ordinary tests of `workspace.project` and `core.flow.handlers` filed under invented
 top-level names — they were moved to their mirrors, not excused. A fifth,
 `tests/unit/graph_store/`, was an empty `__init__.py` stranded when `graph/core/store` moved, and was
-deleted. What remains is `scripts` and `alembic`, and both mirror a repo-root directory that really
-exists rather than nothing at all.
+deleted. What remains is `scripts`, which mirrors a repo-root directory that really exists rather
+than nothing at all (`alembic` left with Alembic itself, TECH-090).
 
 **FR-8 is closed.** It claimed `tests/e2e/` moved from a flat tree into capability folders, and for a
 while both existed side by side: `capabilities/` with seven domains, and beside it four loose test
@@ -114,7 +114,6 @@ def _imported_modules(tree: ast.Module) -> set[str]:
 #: top-level names. They were moved to their mirrors rather than excused.
 MIRROR_EXCEPTIONS: dict[str, str] = {
     "scripts": "mirrors repo-root scripts/ — the dev gates, which are not product code",
-    "alembic": "mirrors repo-root alembic/; the migration it loads is not an importable package",
 }
 
 #: FR-8: nothing outside a capability folder. The set is empty and stays empty — every e2e test lives
@@ -204,8 +203,8 @@ def test_the_unit_and_integration_tiers_mirror_src() -> None:
     `graph/core/store` moved and was deleted. A leftover is the restructure's own unfinished business,
     not an exception to it.
 
-    `scripts` and `alembic` remain because each mirrors a repo-root directory — the dev gates, and the
-    migrations, neither of which is product code under `src/`.
+    `scripts` remains because it mirrors a repo-root directory — the dev gates, which are not
+    product code under `src/`.
     """
     src_packages = _packages(SRC_ROOT)
     for tier in ("unit", "integration"):

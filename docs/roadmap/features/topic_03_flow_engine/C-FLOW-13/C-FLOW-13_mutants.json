@@ -533,7 +533,7 @@
           "old": "    if not any(col[1] == \"estimated_cost\" and col[3] == 1 for col in columns):\n",
           "new": "    if True:\n",
           "breaks": "an existing database rejects every unpriced call, and the flush drops them silently",
-          "symbol_sha": "sha256:fbd65f0076b6d4b404863dd97a66ded9dcf06bc234ebb7b90470166b36bd62ae"
+          "symbol_sha": "sha256:4d8085699ca8472e566c5a73a36184df4d35e97d645f6d8f997f1e956506b65f"
         },
         {
           "id": "usage-unknown-shown-as-zero",
@@ -643,11 +643,11 @@
           "id": "retired-tables-kept",
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
-          "symbol": "bootstrap_database",
-          "old": "            await conn.run_sync(_drop_retired_llm_tables)\n",
-          "new": "            pass\n",
+          "symbol": "_create_config",
+          "old": "    _drop_retired_llm_tables(conn)\n",
+          "new": "    pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
         },
         {
           "id": "role-table-overwritten",

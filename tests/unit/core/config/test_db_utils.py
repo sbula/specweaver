@@ -57,8 +57,8 @@ def test_bootstrap_database_hostile_invalid_path(tmp_path: Path) -> None:
     db_path = tmp_path / "im_a_dir"
     db_path.mkdir()
 
-    # SQLAlchemy will throw its own OperationalError
-    import sqlalchemy.exc
+    # The opener cannot open a folder as a file, and says so (TECH-090 FR-1).
+    import sqlite3
 
-    with pytest.raises(sqlalchemy.exc.OperationalError):
+    with pytest.raises(sqlite3.OperationalError):
         bootstrap_database(str(db_path))

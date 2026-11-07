@@ -35,8 +35,8 @@ macro-domain. A loose file at the tier root **fails** `tests/unit/test_macro_dom
 not an exception list to add to. The one directory outside that rule is `tests/e2e/scripts/`, which
 drives the repo's own dev tooling and has no product capability to sit under.
 
-The unit and integration tiers mirror `src/specweaver` package-for-package, with `scripts` and
-`alembic` the only exceptions — each mirrors a repo-root directory rather than nothing.
+The unit and integration tiers mirror `src/specweaver` package-for-package, with `scripts` the only
+exception: it mirrors a repo-root directory rather than nothing.
 
 ## Conventions
 

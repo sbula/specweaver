@@ -38,12 +38,15 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 |---|-----|-------|--------|---------|
 | FR-1 | Rename workspace tables | System | Rename `projects`, `active_state`, `project_standards` to `workspace_projects`, `workspace_active_state`, `workspace_project_standards` | Tables accurately reflect their workspace bounded context. |
 | FR-2 | Rename flow tables | System | Rename `artifact_events` to `flow_artifact_events` | Table accurately reflects its flow bounded context. |
-| FR-3 | Rename llm tables | System | Rename `project_llm_links` to `llm_project_links` | Table accurately reflects its llm bounded context. |
 | FR-4 | Update Models | System | Update all `__tablename__` directives in SQLAlchemy models to match the new names | Application logic maps to the correct new table names. |
 | FR-5 | Update queries and references | System | Update all raw SQL queries and string-based ForeignKey references | All tests and queries execute without reference errors. |
 | FR-6 | Rename Indexes | System | Explicitly rename any existing indexes tied to the old table names to match the new table names | Indexes remain functionally intact and clearly named. |
-| FR-7 | Generate Migration | System | Generate an Alembic migration using `op.rename_table` for all renamed tables | The database schema is migrated safely. |
 | FR-8 | Rename raw-sqlite3 tables | System | Rename the six tables created via raw `CREATE TABLE IF NOT EXISTS` (not SQLAlchemy models) to bounded-context-prefixed equivalents: `nodes`/`edges` → `graph_nodes`/`graph_edges`; `pipeline_runs`/`audit_log`/`state_schema_version` → `flow_pipeline_runs`/`flow_audit_log`/`flow_state_schema_version`; `sw_reservations` → `flow_reservations` | Every table in the SQLite database follows the domain-prefix convention, not just the SQLAlchemy-managed ones. |
+
+> **FR-3 and FR-7 were removed on 2026-11-07, by the user's decision in `TECH-090`.**
+> FR-3's table (`project_llm_links`) no longer exists: `C-FLOW-13` retired it, and the bootstrap
+> drops it. FR-7's Alembic migration was deleted with Alembic itself: nothing ran it, and it could
+> not run on any current database. Both had been cited only by a test of that script.
 
 ## Non-Functional Requirements
 
@@ -98,7 +101,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 
 ### SF-01: Model Refactoring
 - **Scope**: Update `__tablename__` attributes, raw queries, and ForeignKeys across the codebase to use new prefixes.
-- **FRs**: [FR-1, FR-2, FR-3, FR-4, FR-5]
+- **FRs**: [FR-1, FR-2, FR-4, FR-5]
 - **Inputs**: Existing SQLAlchemy models and queries.
 - **Outputs**: Updated codebase with no compilation errors.
 - **Depends on**: none
@@ -106,7 +109,7 @@ This architectural standard was established during B-INTL-09 (Agent Memory Bank)
 
 ### SF-02: Alembic Migration
 - **Scope**: Generate and apply the database schema migration via Alembic to rename tables and indexes.
-- **FRs**: [FR-6, FR-7]
+- **FRs**: [FR-6]
 - **Inputs**: The updated SQLAlchemy models from SF-01.
 - **Outputs**: A new Alembic migration script.
 - **Depends on**: SF-01

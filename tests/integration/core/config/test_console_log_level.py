@@ -28,6 +28,7 @@ from rich.logging import RichHandler
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.infrastructure.database import Database
+from specweaver.infrastructure.database import steps as runner
 from specweaver.telemetry_logger import setup_logging, teardown_logging
 from specweaver.workspace.store import WorkspaceRepository
 
@@ -80,10 +81,15 @@ def test_a_level_that_is_not_a_level_is_refused(db: Database, level: str) -> Non
         asyncio.run(_op(db, "set_console_log_level", "greeter", level))
 
 
-def test_an_older_database_gains_the_column_at_warning(tmp_path: Path, db: Database) -> None:
+def test_an_older_database_gains_the_column_at_warning(
+    tmp_path: Path, db: Database, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An older file is at version 0 and opened by a new process (TECH-090 FR-3)."""
     path = tmp_path / "specweaver.db"
     with sqlite3.connect(path) as conn:
         conn.execute("ALTER TABLE workspace_projects DROP COLUMN console_log_level")
+        conn.execute("PRAGMA user_version = 0")
+    monkeypatch.setattr(runner, "_UPGRADED", set())
 
     bootstrap_database(str(path))
     bootstrap_database(str(path))

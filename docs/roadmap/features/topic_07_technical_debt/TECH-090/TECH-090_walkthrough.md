@@ -142,3 +142,54 @@ step 1 checks everything; a test covers it.
 - TECH-090 FR-1: `config-connect-by-hand`, `config-session-by-hand`, `config-sync-engine-by-hand`,
   `lineage-by-hand`; all objected.
 - Re-pinned after the import change: D-UI-01 FR-3 and FR-6 (3), TECH-074 FR-7 (4).
+
+## SF-02 CB-2 — `specweaver.db`'s steps, the schema comparison, Alembic gone (FR-5, FR-6, FR-10)
+
+**What changed.**
+- `bootstrap_database` now runs `upgrade(path, _STEPS, adopt=_refuse_pre_prefix_file)` and then
+  seeds the prices.
+- Step 1 is today's bootstrap:
+  - the three metadata sets, compiled to SQL text and run on the step's own connection.
+    `create_all` would commit the step's transaction itself;
+  - the ten helpers, now on `sqlite3`;
+  - `DROP TABLE IF EXISTS alembic_version`.
+- A file with the table names from before 2026-07-12 stops before step 1 creates anything (Q1).
+- A failed price seed stays a warning (Q2).
+- Alembic is gone: `alembic.ini`, `alembic/`, its test, the dependency and `uv.lock` (the user ran
+  `uv lock`). `docs/architecture/03_system_topology/database_migrations.md` now describes the
+  steps.
+
+**Found while building.**
+- The first version of step 1 added indexes to tables that already existed. On an older
+  `llm_usage_log` that names a column a later helper adds. `create_all` creates indexes only with
+  the tables it creates, and step 1 now does the same; an old test caught it.
+- The bootstrap printing its schema to stdout (TECH-054 FR-2) was proven only by tests that never
+  start from a new file. Step 1 now runs once per file, so `test_a_new_file_prints_nothing_to_stdout`
+  was added and the mutant objects again.
+
+**TECH-005, decided by the user 2026-11-07.**
+- FR-1, FR-2 and FR-6 were cited only by the deleted Alembic test. They now have a real one,
+  `test_config_tables_carry_their_context.py`, which killed both mutants (a model back to its old
+  table name).
+- FR-3 (a table `C-FLOW-13` already retired) and FR-7 (the Alembic migration) were removed from
+  TECH-005's FR table, with a note saying why.
+
+**Tests.**
+- Red first: `test_config_db_steps.py` and `test_no_alembic.py`.
+- `test_schema_is_one_schema.py` was green from the start, as expected: both files come from the
+  same code until the change, and it must stay green after it. Its own red cases objected.
+- The old state is `tests/fixtures/specweaver_db_before_tech_090.sql`, frozen from the bootstrap at
+  `58632d7a` before the code changed.
+- Five tests that turned an upgraded file back into an older one in the same process now use
+  `as_a_new_process()` and set `user_version` 0, as a later `sw` start would see it. Two
+  invalid-path tests now expect `sqlite3.OperationalError`.
+
+**Mutants.**
+- TECH-090 FR-5: `alembic-version-kept`, `call-status-not-added`, `console-level-not-added`,
+  `pre-prefix-file-accepted`, `indexes-on-old-tables`; all objected.
+- By hand: the seed warning turned into a raise; `reached_at` not added. Both objected.
+- Re-anchored on the new lines: B-FLOW-07, C-FLOW-01, C-FLOW-13, D-FLOW-04, TECH-054 and TECH-074
+  (four).
+
+**Red/blue.** Nothing above threshold. Accepted: like `create_all` before, step 1 never adds an
+index to a table that already exists; a later index on an existing table needs its own step.

@@ -166,7 +166,7 @@
           "old": "            \"DEFAULT 'WARNING'\"\n",
           "new": "            \"DEFAULT 'DEBUG'\"\n",
           "breaks": "every existing project floods the console with debug lines",
-          "symbol_sha": "sha256:69a59ddbf64c45ba8c702e9a804ac369fc64710ae3bc9a33cb66532009923ff8"
+          "symbol_sha": "sha256:f49058a601d6c031d06dcdd37d2cadddaa58896abf65753e324d4087a9a06998"
         }
       ]
     },

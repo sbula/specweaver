@@ -26,7 +26,6 @@ _SRC = Path(__file__).resolve().parents[4] / "src" / "specweaver"
 _OPENER = _SRC / "infrastructure" / "database"
 _NOT_MOVED_YET = {
     "core/config/database.py",
-    "core/config/bootstrap/db_bootstrap.py",
 }
 _OPENERS = {("sqlite3", "connect"), ("sqlalchemy", "create_engine")}
 _OPENERS |= {("sqlalchemy.ext.asyncio", "create_async_engine")}

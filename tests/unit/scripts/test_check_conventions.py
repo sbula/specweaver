@@ -305,7 +305,7 @@ class TestRegistryIdsInNames:
 
     def test_a_unit_tier_file_is_flagged(self, cv: ModuleType) -> None:
         """Also invisible, and the reason a revision-hash name survived review."""
-        path = REPO_ROOT / "tests" / "unit" / "alembic" / "test_af60fd3509a2_tech_005_rename.py"
+        path = REPO_ROOT / "tests" / "unit" / "core" / "test_af60fd3509a2_tech_005_rename.py"
 
         assert [v.rule for v in cv.check_registry_ids_in_names(path)] == ["R5"]
 

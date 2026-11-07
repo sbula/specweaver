@@ -153,10 +153,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
           "symbol": "bootstrap_database",
-          "old": "            await conn.run_sync(_seed_prices)\n",
-          "new": "            pass\n",
+          "old": "    _seed_prices(db_path)\n",
+          "new": "    pass\n",
           "breaks": "no price or cache rule is ever stored, so the rules C-FLOW-14 needs do not exist",
-          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
+          "symbol_sha": "sha256:096a381bab1ef93c593d3aa6cd25c68c206338223d42605c915480f3e2f1f100"
         },
         {
           "id": "seed-repeats-every-start",
@@ -480,11 +480,11 @@
           "id": "cached-columns-never-added",
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
-          "symbol": "bootstrap_database",
-          "old": "            await conn.run_sync(_add_cached_columns)\n",
-          "new": "            pass\n",
+          "symbol": "_create_config",
+          "old": "    _add_cached_columns(conn)\n",
+          "new": "    pass\n",
           "breaks": "an existing database never gains the cached columns, and every write to it fails",
-          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
         },
         {
           "id": "cached-count-not-stored",
@@ -765,11 +765,11 @@
           "id": "price-index-never-added",
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
-          "symbol": "bootstrap_database",
-          "old": "            await conn.run_sync(_add_price_index)\n",
-          "new": "            pass\n",
+          "symbol": "_create_config",
+          "old": "    _add_price_index(conn)\n",
+          "new": "    pass\n",
           "breaks": "two commands refreshing at once store a price twice, and the check refuses every later price",
-          "symbol_sha": "sha256:7bceab6c76729950fa8c35fcf88f1aa711f7a70905137de441fab4cfa69cb2d1"
+          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
         }
       ]
     },

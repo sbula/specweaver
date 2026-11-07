@@ -17,7 +17,6 @@ dependencies = [
     "python-dotenv>=1.0",
     "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
-    "alembic>=1.13.0",
     "orjson>=3.9.0",
     "ruamel.yaml>=0.18",
     "tomlkit>=0.12.0",

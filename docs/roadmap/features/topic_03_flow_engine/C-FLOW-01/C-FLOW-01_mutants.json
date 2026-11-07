@@ -300,7 +300,7 @@
           "old": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'ok'\"\n",
           "new": "            \"ALTER TABLE llm_usage_log ADD COLUMN call_status VARCHAR NOT NULL DEFAULT 'pending'\"\n",
           "breaks": "every call made before the column reads as never finished",
-          "symbol_sha": "sha256:482e6aa5d0b3b9bc8d9d60da135fa96b32c58e077d24e8484fa13255ce77c486"
+          "symbol_sha": "sha256:875461eac82ca833ed9f5b728a6a719936309d819659d58e5efd396bf66f8d78"
         },
         {
           "id": "opened-as-ok",

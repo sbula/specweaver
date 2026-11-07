@@ -93,3 +93,13 @@ def set_test_active_project(db: Database, name: str) -> None:
             await WorkspaceRepository(session).set_active_project(name)
 
     _sync_or_async(_set())
+
+
+def as_a_new_process() -> None:
+    """Forget which files this process already upgraded, as a later `sw` start would (TECH-090).
+
+    A test that turns an upgraded file back into an older one must also set `user_version` 0.
+    """
+    from specweaver.infrastructure.database import steps
+
+    steps._UPGRADED.clear()

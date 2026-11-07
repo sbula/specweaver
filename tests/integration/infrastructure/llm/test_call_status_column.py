@@ -26,6 +26,7 @@ import pytest
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.store import LlmRepository
+from tests.fixtures.db_utils import as_a_new_process
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -103,9 +104,12 @@ def test_an_older_ledger_gains_the_column_and_its_rows_count_as_ok(
     asyncio.run(_open(db, _record()))
     with sqlite3.connect(path) as conn:
         conn.execute("ALTER TABLE llm_usage_log DROP COLUMN call_status")
+        conn.execute("PRAGMA user_version = 0")
 
+    as_a_new_process()
     bootstrap_database(str(path))
     first = _rows(path)
+    as_a_new_process()
     bootstrap_database(str(path))
 
     assert first == [("ok", 2250, 0.5, 0)]
