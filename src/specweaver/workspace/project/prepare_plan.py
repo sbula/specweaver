@@ -313,8 +313,13 @@ def _plan_for_other(toolchain: str, source_root: Path) -> PreparePlan:
             # default, and inside the sandbox's memory and pid budget that fork dies with *"The
             # forked VM terminated without properly saying goodbye"*. Isolation between tests is
             # weaker, which matters little here: the run is already inside a container of its own.
+            # The `noop` lock factory because Maven 3.10 locks artifacts with files beside the
+            # repository, which is read-only here; one offline Maven has nothing to lock against.
             execute_env={
-                "MAVEN_ARGS": f"-o -Dmaven.repo.local={_MAVEN_REPO} -DforkCount=0",
+                "MAVEN_ARGS": (
+                    f"-o -Dmaven.repo.local={_MAVEN_REPO} -DforkCount=0"
+                    " -Daether.syncContext.named.factory=noop"
+                ),
             },
             warnings=(
                 "Maven dependencies are resolved now and the reported run is offline. A plugin "

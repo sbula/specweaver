@@ -296,7 +296,7 @@
           "old": "    if toolchain == \"cargo\":",
           "new": "    if False:",
           "breaks": "a Rust project falls through to the unsupported branch, so its crates are never fetched and the offline run has nothing to build against",
-          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
+          "symbol_sha": "sha256:ee041f0bbc571150c156619e80d1cf4e7c1a20cf1709c6096ed30b9615dbecdd"
         }
       ]
     },

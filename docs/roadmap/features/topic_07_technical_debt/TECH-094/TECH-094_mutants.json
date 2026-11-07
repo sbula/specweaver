@@ -154,7 +154,8 @@
       "scope": [
         "tests/unit/sandbox/language/core/language/typescript/test_typescript_runner.py",
         "tests/unit/sandbox/language/core/test_test_targets.py",
-        "tests/unit/sandbox/language/core/test_runner_migration.py"
+        "tests/unit/sandbox/language/core/test_runner_migration.py",
+        "tests/integration/sandbox/execution/test_container_executor_integration.py"
       ],
       "mutants": [
         {
@@ -196,6 +197,16 @@
           "new": "(detail[-1] if detail else \"no output\")",
           "breaks": "a failed Maven build is reported by its closing hint, not its cause",
           "symbol_sha": "sha256:0787f30666fa4576d97a1933d4b090062bda13318a476fad45cafe9db68dfba7"
+        },
+        {
+          "id": "maven-locks-in-read-only-repo",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/project/prepare_plan.py",
+          "symbol": "_plan_for_other",
+          "old": "-DforkCount=0\"\n                    \" -Daether.syncContext.named.factory=noop\"",
+          "new": "-DforkCount=0\"",
+          "breaks": "Maven 3.10 fails the offline sandbox run on a lock file it cannot write",
+          "symbol_sha": "sha256:ee041f0bbc571150c156619e80d1cf4e7c1a20cf1709c6096ed30b9615dbecdd"
         }
       ]
     }

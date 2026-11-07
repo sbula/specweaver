@@ -108,3 +108,12 @@ is older, and pulling a new one is a network fetch.
 **Run 4 (`21f436dd`).** The same single failure; the reason now read `[ERROR] BUILD FAILURE`, which
 is Maven's summary line, not the cause. The first error that is not one of Maven's fixed summary or
 hint lines is now the reason; the summary-skip mutant objected by hand (module constant).
+
+**Run 5 (`6fb52382`).** The reason now named the cause: `Could not open file channel for
+NamedLockKey{… /cache/m2/.locks/…}`. The image CI pulls carries Maven 3.10.0, which locks artifacts
+with files beside the local repository; in the offline run that repository is read-only. The user
+pulled the same image here (2026-11-07) and the test went red locally for the same reason. The
+offline run now uses the `noop` lock factory (`-Daether.syncContext.named.factory=noop`): one Maven,
+read-only repository, nothing to lock against. All 19 container tests pass; mutant
+`maven-locks-in-read-only-repo` objected. Re-pinned: TECH-031 FR-16 `rust-is-not-recognised`,
+TECH-079 FR-7 `npm-plan-is-gradle`, `unknown-tool-is-gradle`.

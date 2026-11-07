@@ -417,7 +417,7 @@
           "old": "    if toolchain == \"npm\":",
           "new": "    if False:",
           "breaks": "an npm project is told it is a Gradle project",
-          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
+          "symbol_sha": "sha256:ee041f0bbc571150c156619e80d1cf4e7c1a20cf1709c6096ed30b9615dbecdd"
         },
         {
           "id": "dual-run-allows-npm",
@@ -497,7 +497,7 @@
           "old": "    if toolchain != \"gradle\":",
           "new": "    if False:",
           "breaks": "an unknown build tool is told it is Gradle",
-          "symbol_sha": "sha256:04626e2f09437b70d90566fb278e4f19c4ff7ae1c7755ea90ce6a6b716cc52ee"
+          "symbol_sha": "sha256:ee041f0bbc571150c156619e80d1cf4e7c1a20cf1709c6096ed30b9615dbecdd"
         }
       ]
     },
