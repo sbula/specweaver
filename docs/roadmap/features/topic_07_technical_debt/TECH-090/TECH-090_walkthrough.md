@@ -451,3 +451,25 @@ name `workspace/store.py` lines; they record history and are not edited.
 
 **Red/blue** (2 cycles, nothing above threshold). Accepted: a lineage write is one small
 synchronous insert inside an async handler, as `StateStore` already is.
+
+## SF-04 CB-3 — the API routes (FR-14; closes SF-04)
+
+**What changed.**
+- `api/v1/pipelines.py`: `_run_or_404` (open the pipeline state, load the run or 404
+  `RUN_NOT_FOUND`) and `_parked_or_409`; the status, log, resume and gate routes use them.
+- `api/v1/projects.py`: `_project_or_404`; `DELETE /projects/{name}` and `POST …/use` use it.
+- Clones 7–10 gone. Duplication baseline 86 → 75 over SF-04: 11 removed, none added; the
+  import-only pair of `constitution.py` and `standards.py` stays, by the user's decision.
+
+**Coverage.** `test_api_routes_refuse_alike.py` pins every route's 404 and 409, written before the
+change and green on the old code, so it guards the refactor; `test_touched_code_has_no_clones.py`
+fails if a removed clone is frozen back into the baseline.
+
+**Mutants.** FR-14: 3 new (each helper's refusal turned off), all objected. Stale mutants: 0.
+
+**Tests.** Full suite: 12879 passed, 9 skipped. `tests.py sf TECH-090 --kind refactor`: unit
+10153 passed (9 skipped), integration 2290. `quality.py sf`: 18 of 18. `quality.py doc`: 14 of 14.
+`tach check` green.
+
+**Red/blue** (2 cycles, nothing above threshold). Accepted: `_project_or_404` returns the project
+dict, which both callers ignore today; it is the natural return of a lookup and costs nothing.

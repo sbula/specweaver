@@ -275,7 +275,7 @@ No model is called, so the nightly real-model run has nothing to add; the same j
 | SF-01 | One opener, versioned steps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | The doors | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | One copy of each block | SF-03 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | One copy of each block | SF-03 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -304,6 +304,8 @@ SF-02 was never done; the user chose to do it here, with the 12 clones in the co
 touched and the test helpers (FR-13, FR-14); the other 74 clones stay out.
 **SF-04 plan approved 2026-11-07** (the user): one writer for `flow_artifact_events`; the import-only clone stays;
 `workspace/models.py` and `workspace/lookups.py`.
-**Next step**: `specweaver-dev` for SF-04, CB-1.
+**SF-04 dev 2026-11-07**: CB-1 `d7a0bdc7`, CB-2 `cbe96d4e`, CB-3 accepted by the user 2026-11-07; the
+duplication baseline is 75 (86 − 11).
+**Next step**: the TECH-090 closure gate (`specweaver-feature` Phase 4), then the user's sign-off.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.

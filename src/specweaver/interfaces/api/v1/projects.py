@@ -18,12 +18,26 @@ from specweaver.interfaces.api.v1.schemas import ProjectCreate, ProjectResponse,
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from specweaver.workspace.store import WorkspaceRepository
+
 logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
 
 _db_dep = Depends(get_db)
+
+
+async def _project_or_404(repo: WorkspaceRepository, name: str) -> dict[str, object]:
+    """The project `name`, or 404 `PROJECT_NOT_FOUND`."""
+    project = await repo.get_project(name)
+    if not project:
+        raise SpecWeaverAPIError(
+            detail=f"Project '{name}' not found.",
+            error_code="PROJECT_NOT_FOUND",
+            status_code=404,
+        )
+    return project
 
 
 def _existing_folder(given: str) -> Path:
@@ -106,13 +120,7 @@ async def delete_project(
 
     async with db.async_session_scope() as session:
         repo = WorkspaceRepository(session)
-        proj = await repo.get_project(name)
-        if not proj:
-            raise SpecWeaverAPIError(
-                detail=f"Project '{name}' not found.",
-                error_code="PROJECT_NOT_FOUND",
-                status_code=404,
-            )
+        await _project_or_404(repo, name)
         await repo.remove_project(name)
     return {"detail": f"Project '{name}' removed."}
 
@@ -158,12 +166,6 @@ async def use_project(
 
     async with db.async_session_scope() as session:
         repo = WorkspaceRepository(session)
-        proj = await repo.get_project(name)
-        if not proj:
-            raise SpecWeaverAPIError(
-                detail=f"Project '{name}' not found.",
-                error_code="PROJECT_NOT_FOUND",
-                status_code=404,
-            )
+        await _project_or_404(repo, name)
         await repo.set_active_project(name)
     return {"active": name}

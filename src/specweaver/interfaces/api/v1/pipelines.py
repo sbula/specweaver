@@ -7,13 +7,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Depends, Query
 
 from specweaver.core.config.paths import state_db_path
 from specweaver.infrastructure.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
+from specweaver.interfaces.api.errors import SpecWeaverAPIError
 from specweaver.interfaces.api.v1.paths import (
     load_api_pipeline,
     project_file_or_400,
@@ -26,6 +27,10 @@ from specweaver.interfaces.api.v1.schemas import (
     PipelineRunRequest,
     PipelineRunResponse,
 )
+
+if TYPE_CHECKING:
+    from specweaver.core.flow.engine.state import PipelineRun
+    from specweaver.core.flow.engine.store import StateStore
 
 logger = logging.getLogger(__name__)
 
@@ -187,19 +192,11 @@ def _pending_gate_prompt(run: Any) -> str | None:
     return str(output)
 
 
-@router.get("/runs/{run_id}")
-def get_run_status(
-    run_id: str,
-    detail: str = Query(default="summary", description="'summary' or 'full'."),
-) -> dict[str, object]:
-    """Get run status and step results."""
-    logger.debug("Executing get_run_status API endpoint")
+def _run_or_404(run_id: str) -> tuple[StateStore, PipelineRun]:
+    """The pipeline state and the run `run_id` names, or 404 `RUN_NOT_FOUND`."""
     from specweaver.core.flow.engine.store import StateStore
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
-    state_db = state_db_path()
-    store = StateStore(state_db)
-
+    store = StateStore(state_db_path())
     run = store.load_run(run_id)
     if run is None:
         raise SpecWeaverAPIError(
@@ -207,6 +204,27 @@ def get_run_status(
             error_code="RUN_NOT_FOUND",
             status_code=404,
         )
+    return store, run
+
+
+def _parked_or_409(run: PipelineRun) -> None:
+    """Nothing when the run is parked; 409 `RUN_NOT_PARKED` naming its status otherwise."""
+    if run.status.value != "parked":
+        raise SpecWeaverAPIError(
+            detail=f"Run '{run.run_id}' is not parked (status={run.status.value}).",
+            error_code="RUN_NOT_PARKED",
+            status_code=409,
+        )
+
+
+@router.get("/runs/{run_id}")
+def get_run_status(
+    run_id: str,
+    detail: str = Query(default="summary", description="'summary' or 'full'."),
+) -> dict[str, object]:
+    """Get run status and step results."""
+    logger.debug("Executing get_run_status API endpoint")
+    _, run = _run_or_404(run_id)
 
     data = run.model_dump()
     if detail == "summary":
@@ -226,20 +244,7 @@ def get_run_status(
 def get_run_log(run_id: str) -> list[dict[str, object]]:
     """Get audit log for a pipeline run."""
     logger.debug("Executing get_run_log API endpoint")
-    from specweaver.core.flow.engine.store import StateStore
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    state_db = state_db_path()
-    store = StateStore(state_db)
-
-    run = store.load_run(run_id)
-    if run is None:
-        raise SpecWeaverAPIError(
-            detail=f"Run '{run_id}' not found.",
-            error_code="RUN_NOT_FOUND",
-            status_code=404,
-        )
-
+    store, _ = _run_or_404(run_id)
     return store.get_audit_log(run_id)
 
 
@@ -249,26 +254,8 @@ async def resume_run(
     db: Database = _db_dep,
 ) -> PipelineRunResponse:
     """Resume a parked pipeline run."""
-    from specweaver.core.flow.engine.store import StateStore
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    state_db = state_db_path()
-    store = StateStore(state_db)
-
-    run = store.load_run(run_id)
-    if run is None:
-        raise SpecWeaverAPIError(
-            detail=f"Run '{run_id}' not found.",
-            error_code="RUN_NOT_FOUND",
-            status_code=404,
-        )
-
-    if run.status.value != "parked":
-        raise SpecWeaverAPIError(
-            detail=f"Run '{run_id}' is not parked (status={run.status.value}).",
-            error_code="RUN_NOT_PARKED",
-            status_code=409,
-        )
+    store, run = _run_or_404(run_id)
+    _parked_or_409(run)
 
     # Rebuild context
     await _resume_existing_run(run, run_id, db, store)
@@ -289,26 +276,8 @@ async def submit_gate_decision(
 
     On approve, the run is resumed as a background task.
     """
-    from specweaver.core.flow.engine.store import StateStore
-    from specweaver.interfaces.api.errors import SpecWeaverAPIError
-
-    state_db = state_db_path()
-    store = StateStore(state_db)
-
-    run = store.load_run(run_id)
-    if run is None:
-        raise SpecWeaverAPIError(
-            detail=f"Run '{run_id}' not found.",
-            error_code="RUN_NOT_FOUND",
-            status_code=404,
-        )
-
-    if run.status.value != "parked":
-        raise SpecWeaverAPIError(
-            detail=f"Run '{run_id}' is not parked (status={run.status.value}).",
-            error_code="RUN_NOT_PARKED",
-            status_code=409,
-        )
+    store, run = _run_or_404(run_id)
+    _parked_or_409(run)
 
     if body.action not in ("approve", "reject"):
         raise SpecWeaverAPIError(

@@ -104,26 +104,6 @@
     "first": "src/specweaver/interfaces/api/v1/constitution.py:6",
     "second": "src/specweaver/interfaces/api/v1/standards.py:6"
   },
-  "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @2e46bf63ce43": {
-    "lines": 15,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:252",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:197"
-  },
-  "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @605f0236a621": {
-    "lines": 16,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:228",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:196"
-  },
-  "src/specweaver/interfaces/api/v1/pipelines.py <-> src/specweaver/interfaces/api/v1/pipelines.py @c138b76e8941": {
-    "lines": 22,
-    "first": "src/specweaver/interfaces/api/v1/pipelines.py:292",
-    "second": "src/specweaver/interfaces/api/v1/pipelines.py:197"
-  },
-  "src/specweaver/interfaces/api/v1/projects.py <-> src/specweaver/interfaces/api/v1/projects.py @f89fbec0af3a": {
-    "lines": 12,
-    "first": "src/specweaver/interfaces/api/v1/projects.py:157",
-    "second": "src/specweaver/interfaces/api/v1/projects.py:105"
-  },
   "src/specweaver/sandbox/execution/container_executor.py <-> src/specweaver/sandbox/execution/executor.py @09e3bed5c6b0": {
     "lines": 10,
     "first": "src/specweaver/sandbox/execution/container_executor.py:538",
