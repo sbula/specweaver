@@ -25,10 +25,9 @@ The never-raises contract is the load-bearing part and had **no test at all** be
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -141,27 +140,24 @@ def _context(db: Any, run_id: str | None = "run-7") -> Any:
 
 
 def _database(repo: Any) -> Any:
-    """A stand-in for `Database`, whose `async_session_scope` is an async context manager."""
-
-    @asynccontextmanager
-    async def scope() -> Any:
-        yield object()
-
+    """A stand-in for `Database`: the lineage write needs only its file's path."""
     del repo
-    return SimpleNamespace(async_session_scope=scope)
+    return SimpleNamespace(path="unused.db")
 
 
 async def test_no_database_configured_is_a_silent_no_op() -> None:
     """`RunContext.db` defaults to None. This is the guard `lint_fix.py` was missing (TECH-036)."""
-    with patch("specweaver.core.flow.store.FlowRepository") as repo_class:
+    with patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository") as repo_class:
         await log_artifact_lineage(_context(None), _UUID, "drafted_spec")
 
     repo_class.assert_not_called()
 
 
 async def test_the_event_is_recorded_against_the_run() -> None:
-    repo = AsyncMock()
-    with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+    repo = MagicMock()
+    with patch(
+        "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+    ):
         await log_artifact_lineage(
             _context(_database(repo)),
             _UUID,
@@ -170,7 +166,7 @@ async def test_the_event_is_recorded_against_the_run() -> None:
             model_id="gemini-3-flash-preview",
         )
 
-    repo.log_artifact_event.assert_awaited_once_with(
+    repo.log_artifact_event.assert_called_once_with(
         artifact_id=_UUID,
         parent_id="parent-1",
         run_id="run-7",
@@ -181,19 +177,23 @@ async def test_the_event_is_recorded_against_the_run() -> None:
 
 async def test_a_run_with_no_id_still_records_an_event() -> None:
     """Every hand-rolled copy used `or "pipeline_run"`; unifying must not drop it."""
-    repo = AsyncMock()
-    with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+    repo = MagicMock()
+    with patch(
+        "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+    ):
         await log_artifact_lineage(_context(_database(repo), run_id=None), _UUID, "lint_fixed")
 
-    assert repo.log_artifact_event.await_args.kwargs["run_id"] == "pipeline_run"
+    assert repo.log_artifact_event.call_args.kwargs["run_id"] == "pipeline_run"
 
 
 async def test_the_defaults_match_what_the_call_sites_passed() -> None:
-    repo = AsyncMock()
-    with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+    repo = MagicMock()
+    with patch(
+        "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+    ):
         await log_artifact_lineage(_context(_database(repo)), _UUID, "generated_decomposition")
 
-    kwargs = repo.log_artifact_event.await_args.kwargs
+    kwargs = repo.log_artifact_event.call_args.kwargs
     assert kwargs["parent_id"] is None
     assert kwargs["model_id"] == "unknown"
 
@@ -205,10 +205,12 @@ async def test_a_repository_failure_never_reaches_the_caller() -> None:
     output — discarding work that succeeded. Documented on `log_decomposition_lineage` since
     2026-07-26 and proven by nothing until now.
     """
-    repo = AsyncMock()
+    repo = MagicMock()
     repo.log_artifact_event.side_effect = RuntimeError("no such table: artifact_events")
 
-    with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+    with patch(
+        "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+    ):
         await log_artifact_lineage(_context(_database(repo)), _UUID, "drafted_spec")
 
 
@@ -216,7 +218,8 @@ async def test_a_session_failure_never_reaches_the_caller() -> None:
     """The failure can also be in opening the session, not only in the write."""
 
     class _Exploding:
-        def async_session_scope(self) -> Any:
+        @property
+        def path(self) -> Any:
             msg = "database is locked"
             raise OSError(msg)
 
@@ -242,8 +245,10 @@ async def test_a_database_that_is_not_a_database_never_reaches_the_caller() -> N
 )
 async def test_every_migrated_event_type_still_reaches_the_repository(event_type: str) -> None:
     """The seven call sites this replaces, named so a dropped migration is visible."""
-    repo = AsyncMock()
-    with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+    repo = MagicMock()
+    with patch(
+        "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+    ):
         await log_artifact_lineage(_context(_database(repo)), _UUID, event_type)
 
-    assert repo.log_artifact_event.await_args.kwargs["event_type"] == event_type
+    assert repo.log_artifact_event.call_args.kwargs["event_type"] == event_type

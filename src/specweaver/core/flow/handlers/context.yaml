@@ -13,7 +13,7 @@ consumes:
   - specweaver/core/config
   - specweaver/core/flow/engine
   - specweaver/core/flow/run_state
-  - specweaver/core/flow/store
+  - specweaver/graph/lineage
   - specweaver/infrastructure/llm
   - specweaver/assurance/validation
   - specweaver/assurance/validation/io

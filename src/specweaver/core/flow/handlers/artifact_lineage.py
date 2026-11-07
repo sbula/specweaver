@@ -97,18 +97,16 @@ async def log_artifact_lineage(
     if not context.db:
         return
 
-    from specweaver.core.flow.store import FlowRepository
+    from specweaver.graph.lineage.store.lineage_repository import LineageRepository
 
     try:
-        async with context.db.async_session_scope() as session:
-            repo = FlowRepository(session)
-            await repo.log_artifact_event(
-                artifact_id=artifact_uuid,
-                parent_id=parent_id,
-                run_id=context.run.run_id or "pipeline_run",
-                event_type=event_type,
-                model_id=model_id,
-            )
+        LineageRepository(context.db.path).log_artifact_event(
+            artifact_id=artifact_uuid,
+            parent_id=parent_id,
+            run_id=context.run.run_id or "pipeline_run",
+            event_type=event_type,
+            model_id=model_id,
+        )
     except Exception:
         logger.exception(
             "[run_id=%s] Lineage event %r failed for artifact %s — the artifact is already on "

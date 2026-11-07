@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from specweaver.commons import json
+from specweaver.core.flow.engine.events import event_record
 
 logger = logging.getLogger(__name__)
 
@@ -97,29 +98,7 @@ class EventBridge:
         """
 
         def _on_event(event: str, **kwargs: Any) -> None:
-            record: dict[str, Any] = {"event": event}
-
-            if "step_idx" in kwargs:
-                record["step_idx"] = kwargs["step_idx"]
-            if "step_name" in kwargs:
-                record["step_name"] = kwargs["step_name"]
-            if "total_steps" in kwargs:
-                record["total_steps"] = kwargs["total_steps"]
-            if "verdict" in kwargs:
-                record["verdict"] = kwargs["verdict"]
-
-            result = kwargs.get("result")
-            if result is not None:
-                record["result"] = {
-                    "status": result.status.value,
-                    "error_message": result.error_message or None,
-                    "output": result.output,
-                }
-
-            run = kwargs.get("run")
-            if run is not None:
-                record["run_id"] = run.run_id
-                record["run_status"] = run.status.value
+            record = event_record(event, **kwargs)
 
             # Schedule broadcast (non-blocking from sync context)
             try:

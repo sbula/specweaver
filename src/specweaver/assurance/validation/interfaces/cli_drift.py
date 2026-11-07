@@ -284,20 +284,16 @@ def _resolve_plan_by_lineage(
         content = target_path.read_text(encoding="utf-8")
         uuid = extract_artifact_uuid(content)
         if uuid:
-            db = _core.get_db()
-            with db.connect() as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT parent_id FROM flow_artifact_events WHERE artifact_id = ?", (uuid,)
-                )
-                row = cursor.fetchone()
-                if row and row[0]:
-                    parent_uuid = row[0]
-                    for p in all_plans:
-                        p_content = p.read_text(encoding="utf-8")
-                        p_uuid = extract_artifact_uuid(p_content)
-                        if p_uuid == parent_uuid:
-                            return p
+            from specweaver.graph.lineage.store.lineage_repository import LineageRepository
+
+            history = LineageRepository(_core.get_db().path).get_artifact_history(uuid)
+            parent_uuid = history[0]["parent_id"] if history else None
+            if parent_uuid:
+                for p in all_plans:
+                    p_content = p.read_text(encoding="utf-8")
+                    p_uuid = extract_artifact_uuid(p_content)
+                    if p_uuid == parent_uuid:
+                        return p
     except Exception as e:
         logger.debug("Lineage lookup failed for %s: %s", target_posix, e)
     return None

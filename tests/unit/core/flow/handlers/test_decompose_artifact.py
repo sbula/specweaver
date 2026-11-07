@@ -185,7 +185,9 @@ class TestArtifactHappyPath:
         repo = MagicMock()
         repo.log_artifact_event = AsyncMock()
 
-        with patch("specweaver.core.flow.store.FlowRepository", return_value=repo):
+        with patch(
+            "specweaver.graph.lineage.store.lineage_repository.LineageRepository", return_value=repo
+        ):
             result, _ = _run(ctx, _step(), _plan())
 
         assert result.status == StepStatus.PASSED, result.error_message

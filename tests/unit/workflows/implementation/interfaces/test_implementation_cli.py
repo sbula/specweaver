@@ -90,7 +90,7 @@ class TestImplementOutputPaths:
     """Test implement command output file naming."""
 
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
-    @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository.log_artifact_event")
     @patch("specweaver.infrastructure.database.handle.Database._ensure_schema", create=True)
     def test_output_files_created(
         self,
@@ -118,7 +118,7 @@ class TestImplementOutputPaths:
         assert (project / "tests" / "test_greeter.py").exists()
 
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
-    @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository.log_artifact_event")
     @patch("specweaver.infrastructure.database.handle.Database._ensure_schema", create=True)
     def test_spec_suffix_stripped(
         self,

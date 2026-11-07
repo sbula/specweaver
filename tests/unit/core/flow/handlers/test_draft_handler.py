@@ -49,7 +49,7 @@ class TestDraftSpecHandler:
         assert "sw draft" in result.output["message"]
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.flow.store.FlowRepository")
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
     @patch("specweaver.workflows.drafting.drafter.Drafter.draft")
     async def test_draft_spec_creates_uuid(
         self, mock_draft: AsyncMock, mock_repo_class, tmp_path: Path
@@ -116,7 +116,7 @@ class TestDraftSpecHandlerFeedbackLoop:
         }
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.flow.store.FlowRepository")
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
     @patch("specweaver.workflows.drafting.drafter.Drafter.draft")
     async def test_feedback_with_provider_redrafts_despite_existing_spec(
         self, mock_draft: AsyncMock, mock_repo_class, tmp_path: Path

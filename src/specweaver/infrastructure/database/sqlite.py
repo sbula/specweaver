@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import time
 from typing import TYPE_CHECKING, Any, Literal
@@ -63,7 +64,8 @@ def open_sqlite(
     isolation_level: Literal["DEFERRED", "EXCLUSIVE", "IMMEDIATE"] | None = "DEFERRED",
 ) -> sqlite3.Connection:
     """A connection to `path` with WAL, foreign keys on and the process's lock wait."""
-    conn = sqlite3.connect(str(path), timeout=_lock_wait, isolation_level=isolation_level)
+    # `os.fspath`, not `str`: anything that is not a path is refused instead of becoming a file name.
+    conn = sqlite3.connect(os.fspath(path), timeout=_lock_wait, isolation_level=isolation_level)
     try:
         apply_pragmas(conn)
     except sqlite3.Error:

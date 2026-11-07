@@ -66,7 +66,7 @@ depends_on = [ "specweaver.core.flow.run_state", "specweaver.infrastructure.data
 
 [[modules]]
 path = "specweaver.core.flow.handlers"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.core.flow.store", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.arbitration", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.arbitration", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"

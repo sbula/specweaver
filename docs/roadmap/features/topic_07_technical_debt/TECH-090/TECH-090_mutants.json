@@ -112,6 +112,16 @@
           "new": "    setup_logging",
           "breaks": "the API waits the CLI's 30 s, so a request hangs past a client's timeout",
           "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
+        },
+        {
+          "id": "opener-takes-any-object",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/sqlite.py",
+          "symbol": "open_sqlite",
+          "old": "    conn = sqlite3.connect(os.fspath(path),",
+          "new": "    conn = sqlite3.connect(str(path),",
+          "breaks": "a test double or a wrong value becomes a database file in the working folder",
+          "symbol_sha": "sha256:14dfca6a69f2a3af1e6bd0d3a6fcee3603bd4f92221514da3cb8bc1d884954db"
         }
       ]
     },
@@ -627,7 +637,12 @@
       "requirement": "FR-14",
       "title": "One copy of each block in the code this ticket touched",
       "scope": [
-        "tests/integration/workspace/test_repository_rows.py"
+        "tests/integration/workspace/test_repository_rows.py",
+        "tests/integration/graph/lineage/test_one_artifact_event_writer.py",
+        "tests/integration/interfaces/api/test_cli_and_api_event_records_agree.py",
+        "tests/unit/core/flow/handlers/test_artifact_lineage.py",
+        "tests/unit/test_one_writer_per_table.py",
+        "tests/integration/assurance/validation/test_rot_finds_the_plan_by_lineage.py"
       ],
       "mutants": [
         {
@@ -659,6 +674,76 @@
           "new": "    return value",
           "breaks": "project and standard times are datetimes, not text",
           "symbol_sha": "sha256:504f2f4f7de929aa9e8be50c49f2db1efbb6c2797d80ef96dc1544c294d6abb0"
+        },
+        {
+          "id": "step-lineage-written-nowhere",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/artifact_lineage.py",
+          "symbol": "log_artifact_lineage",
+          "old": "        LineageRepository(context.db.path).log_artifact_event(",
+          "new": "        None and LineageRepository(context.db.path).log_artifact_event(",
+          "breaks": "a pipeline step's lineage event is never written",
+          "symbol_sha": "sha256:08b5dd9de0c63263bff808e415afb119d2974c484d45e0f3201381fbf277fc79"
+        },
+        {
+          "id": "event-record-drops-run-status",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/events.py",
+          "symbol": "event_record",
+          "old": "        record[\"run_status\"] = run.status.value",
+          "new": "        pass",
+          "breaks": "neither sw run --json nor the API stream says how a run ended",
+          "symbol_sha": "sha256:745d91e22e3670c756aef849e263aaef5d7d60c784e3a5df7d56f853894cbba5"
+        },
+        {
+          "id": "event-record-drops-verdict",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/events.py",
+          "symbol": "event_record",
+          "old": "    for key in (\"step_idx\", \"step_name\", \"total_steps\", \"verdict\"):",
+          "new": "    for key in (\"step_idx\", \"step_name\", \"total_steps\"):",
+          "breaks": "a gate's verdict never reaches the CLI or the API",
+          "symbol_sha": "sha256:745d91e22e3670c756aef849e263aaef5d7d60c784e3a5df7d56f853894cbba5"
+        },
+        {
+          "id": "bridge-builds-its-own-record",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/event_bridge.py",
+          "symbol": "EventBridge.make_event_callback",
+          "old": "            record = event_record(event, **kwargs)",
+          "new": "            record = {\"event\": event, **kwargs}",
+          "breaks": "the API stream sends raw objects and fields the CLI never sends",
+          "symbol_sha": "sha256:64672965f6bfee2cbb5ff575d809f2d53e04b007a035291d541a0b6b4925b284"
+        },
+        {
+          "id": "display-builds-its-own-record",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/display.py",
+          "symbol": "JsonPipelineDisplay.__call__",
+          "old": "        record = event_record(event, **kwargs)",
+          "new": "        record = {\"event\": event}",
+          "breaks": "sw run --json drops every field the API sends",
+          "symbol_sha": "sha256:778ae82a8461a3961fb87030e2b845c391127ff72046532d6c553914010644b6"
+        },
+        {
+          "id": "lineage-connections-left-open",
+          "origin": "authored",
+          "file": "src/specweaver/graph/lineage/store/lineage_repository.py",
+          "symbol": "LineageRepository.log_artifact_event",
+          "old": "        with closing(self._get_connection()) as conn, conn:\n            conn.execute(",
+          "new": "        with self._get_connection() as conn:\n            conn.execute(",
+          "breaks": "every lineage write leaves a connection open",
+          "symbol_sha": "sha256:bbd10c77373241b461f7fdacfcb99e129d447a47f85aceaf7ce21a8bc1fd2f81"
+        },
+        {
+          "id": "rot-ignores-lineage",
+          "origin": "authored",
+          "file": "src/specweaver/assurance/validation/interfaces/cli_drift.py",
+          "symbol": "_resolve_plan_by_lineage",
+          "old": "            parent_uuid = history[0][\"parent_id\"] if history else None",
+          "new": "            parent_uuid = None",
+          "breaks": "check-rot never finds a file's plan through its lineage",
+          "symbol_sha": "sha256:87cde8eca281a7d35d60fa39ee6d7458bf96fd25eb816e181dd0b3885046ca7d"
         }
       ]
     }

@@ -4,7 +4,7 @@
 """The runner's progress-event contract.
 
 A Protocol the CLI and API display layers implement, which is why it does not sit beside worktree
-teardown.
+teardown, and the one JSON record both send for an event.
 """
 
 from __future__ import annotations
@@ -33,3 +33,23 @@ class RunnerEventCallback(Protocol):
         verdict: str | None = None,
         **kwargs: Any,
     ) -> None: ...
+
+
+def event_record(event: str, **kwargs: Any) -> dict[str, Any]:
+    """The JSON-ready record of one runner event; fields it does not know are dropped."""
+    record: dict[str, Any] = {"event": event}
+    for key in ("step_idx", "step_name", "total_steps", "verdict"):
+        if key in kwargs:
+            record[key] = kwargs[key]
+    result = kwargs.get("result")
+    if result is not None:
+        record["result"] = {
+            "status": result.status.value,
+            "error_message": result.error_message or None,
+            "output": result.output,
+        }
+    run = kwargs.get("run")
+    if run is not None:
+        record["run_id"] = run.run_id
+        record["run_status"] = run.status.value
+    return record

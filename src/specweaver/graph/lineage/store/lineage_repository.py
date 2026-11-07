@@ -3,6 +3,8 @@
 
 import logging
 import sqlite3
+from contextlib import closing
+from pathlib import Path
 from typing import Any
 
 from specweaver.commons.timestamps import now_iso
@@ -14,7 +16,7 @@ logger = logging.getLogger(__name__)
 class LineageRepository:
     """Provides methods for recording and querying artifact lineage events."""
 
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str | Path):
         self.db_path = db_path
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -38,7 +40,7 @@ class LineageRepository:
         if not model_id or not model_id.strip():
             raise ValueError("model_id cannot be empty")
 
-        with self._get_connection() as conn:
+        with closing(self._get_connection()) as conn, conn:
             conn.execute(
                 """
                 INSERT INTO flow_artifact_events (artifact_id, parent_id, run_id, event_type, model_id, timestamp)
@@ -50,7 +52,7 @@ class LineageRepository:
 
     def get_artifact_history(self, artifact_id: str) -> list[dict[str, Any]]:
         """Get the full event history for an artifact, sorted oldest first."""
-        with self._get_connection() as conn:
+        with closing(self._get_connection()) as conn, conn:
             cursor = conn.execute(
                 """
                 SELECT id, artifact_id, parent_id, run_id, event_type, model_id, timestamp
@@ -64,7 +66,7 @@ class LineageRepository:
 
     def get_children(self, parent_id: str) -> list[dict[str, Any]]:
         """Get all artifact events that list the given parent_id."""
-        with self._get_connection() as conn:
+        with closing(self._get_connection()) as conn, conn:
             cursor = conn.execute(
                 """
                 SELECT id, artifact_id, parent_id, run_id, event_type, model_id, timestamp

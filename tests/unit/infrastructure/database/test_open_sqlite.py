@@ -10,7 +10,7 @@ Proves: TECH-090 FR-2
 | Happy | a new file reads back WAL, foreign keys 1 and a 30 s wait, sync and async |
 | Boundary | a file already in WAL; the wait set to 5 s reads back 5000 ms |
 | Degradation | a sync connection keeps the row factory and transaction mode it asked for |
-| Hostile | a negative or zero wait is refused |
+| Hostile | a negative or zero wait is refused; something that is not a path, a test double included, is refused and makes no file |
 """
 
 from __future__ import annotations
@@ -92,3 +92,29 @@ async def test_the_async_engine_gets_the_same_three(tmp_path: Path) -> None:
         await engine.dispose()
 
     assert got == ["wal", 1, 30000]
+
+
+@pytest.mark.parametrize("wrong", [object(), 42, None], ids=["object", "int", "None"])
+def test_something_that_is_not_a_path_is_refused_and_makes_no_file(
+    wrong: object, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(TypeError):
+        open_sqlite(wrong)  # type: ignore[arg-type]
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_a_test_double_is_refused_and_makes_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import MagicMock
+
+    monkeypatch.chdir(tmp_path)
+
+    # A mock's `__fspath__` names a folder that does not exist, so SQLite refuses it.
+    with pytest.raises((TypeError, sqlite3.OperationalError)):
+        open_sqlite(MagicMock().path)
+
+    assert list(tmp_path.iterdir()) == []

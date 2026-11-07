@@ -480,7 +480,7 @@ class TestDraftFeatureLineageAndConfig:
         return fake_draft
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.flow.store.FlowRepository")
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
     async def test_lineage_event_logged_when_db_configured(
         self, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:
@@ -509,7 +509,7 @@ class TestDraftFeatureLineageAndConfig:
         )
 
     @pytest.mark.asyncio
-    @patch("specweaver.core.flow.store.FlowRepository")
+    @patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
     async def test_generation_config_built_from_context_config(
         self, mock_repo_class: MagicMock, tmp_path: Path
     ) -> None:

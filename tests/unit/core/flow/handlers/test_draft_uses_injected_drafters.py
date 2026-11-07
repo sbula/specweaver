@@ -72,7 +72,7 @@ def _step(target: StepTarget) -> PipelineStep:
 
 
 @pytest.mark.asyncio
-@patch("specweaver.core.flow.store.FlowRepository")
+@patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
 async def test_spec_drafting_goes_through_the_given_drafters(_repo: Any, tmp_path: Path) -> None:
     drafters = _Drafters()
     ctx = _context(tmp_path / "orders_spec.md", drafters)
@@ -85,7 +85,7 @@ async def test_spec_drafting_goes_through_the_given_drafters(_repo: Any, tmp_pat
 
 
 @pytest.mark.asyncio
-@patch("specweaver.core.flow.store.FlowRepository")
+@patch("specweaver.graph.lineage.store.lineage_repository.LineageRepository")
 async def test_feature_drafting_goes_through_the_given_drafters(_repo: Any, tmp_path: Path) -> None:
     drafters = _Drafters()
     ctx = _context(tmp_path / "orders_feature_spec.md", drafters)

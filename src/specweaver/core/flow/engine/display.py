@@ -25,6 +25,7 @@ from rich.table import Table
 from rich.text import Text
 
 from specweaver.commons import json
+from specweaver.core.flow.engine.events import event_record
 
 logger = logging.getLogger(__name__)
 
@@ -363,33 +364,7 @@ class JsonPipelineDisplay:
 
     def __call__(self, event: str, **kwargs: Any) -> None:
         """Write an NDJSON event line."""
-        record: dict[str, Any] = {"event": event}
-
-        # Extract serializable fields
-        if "step_idx" in kwargs:
-            record["step_idx"] = kwargs["step_idx"]
-        if "step_name" in kwargs:
-            record["step_name"] = kwargs["step_name"]
-        if "total_steps" in kwargs:
-            record["total_steps"] = kwargs["total_steps"]
-        if "verdict" in kwargs:
-            record["verdict"] = kwargs["verdict"]
-
-        # Serialize result if present
-        result = kwargs.get("result")
-        if result is not None:
-            record["result"] = {
-                "status": result.status.value,
-                "error_message": result.error_message or None,
-                "output": result.output,
-            }
-
-        # Serialize run if present
-        run = kwargs.get("run")
-        if run is not None:
-            record["run_id"] = run.run_id
-            record["run_status"] = run.status.value
-
+        record = event_record(event, **kwargs)
         self._write(record)
 
     def _write(self, data: dict[str, Any]) -> None:

@@ -34,25 +34,10 @@
     "first": "src/specweaver/workflows/implementation/contract_renderers.py:368",
     "second": "src/specweaver/assurance/validation/rules/spec/s07_test_first.py:254"
   },
-  "src/specweaver/core/flow/engine/display.py <-> src/specweaver/interfaces/api/event_bridge.py @419592d24956": {
-    "lines": 10,
-    "first": "src/specweaver/interfaces/api/event_bridge.py:102",
-    "second": "src/specweaver/core/flow/engine/display.py:369"
-  },
   "src/specweaver/core/flow/handlers/draft.py <-> src/specweaver/core/flow/handlers/scenario.py @91793f4f91de": {
     "lines": 9,
     "first": "src/specweaver/core/flow/handlers/draft.py:6",
     "second": "src/specweaver/core/flow/handlers/scenario.py:6"
-  },
-  "src/specweaver/core/flow/store.py <-> src/specweaver/core/flow/store.py @d4eb33b97a5c": {
-    "lines": 19,
-    "first": "src/specweaver/core/flow/store.py:95",
-    "second": "src/specweaver/core/flow/store.py:69"
-  },
-  "src/specweaver/core/flow/store.py <-> src/specweaver/graph/lineage/store/lineage_repository.py @c3808d65eefd": {
-    "lines": 10,
-    "first": "src/specweaver/core/flow/store.py:44",
-    "second": "src/specweaver/graph/lineage/store/lineage_repository.py:32"
   },
   "src/specweaver/infrastructure/llm/adapters/_rate_limit.py <-> src/specweaver/infrastructure/llm/adapters/openai.py @89fe50abec5f": {
     "lines": 11,

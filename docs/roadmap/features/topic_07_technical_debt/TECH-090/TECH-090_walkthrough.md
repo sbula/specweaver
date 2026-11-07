@@ -422,3 +422,32 @@ loop, all rerun, objected and re-pinned. Stale mutants: 0.
 
 **Red/blue** (2 cycles, nothing above threshold). Accepted: closed plans and walkthroughs still
 name `workspace/store.py` lines; they record history and are not edited.
+
+## SF-04 CB-2 — one artifact-event writer, one event record (FR-14 part)
+
+**What changed.**
+- `flow_artifact_events` has one writer and one reader, `graph.lineage`'s `LineageRepository`:
+  the lineage handler writes through it (`context.db.path`), `FlowRepository` is deleted (its
+  model `ArtifactEvent` stays, because step 1 creates the table from it), and check-rot's
+  lineage lookup (`cli_drift._resolve_plan_by_lineage`) reads through it instead of its own SQL.
+  `core.flow.handlers` depends on `graph.lineage` instead of `core.flow.store`.
+- `LineageRepository` closes every connection; before, `with conn:` committed and left it open.
+- `event_record` in `core/flow/engine/events.py` builds the record `sw run --json` and the API
+  stream send; the two copies were identical.
+- `open_sqlite` passes `os.fspath(path)` to SQLite, not `str(path)`.
+- Clones 5, 6 and 11 gone; baseline 82 → 79.
+
+**Found at the gate.**
+- A test double for `Database` made SQLite files named `<MagicMock name='mock.path' …>` in the
+  repo root: `str()` of a mock is a valid file name. They were deleted, and the opener now refuses
+  anything that is not a path, with tests.
+- The one-writer guard found a third reader with its own SQL in `cli_drift.py`. Nothing tested
+  that lookup; `test_rot_finds_the_plan_by_lineage.py` does now, and its mutant objects.
+- 20 handler unit tests patched `FlowRepository`; they patch `LineageRepository` now.
+
+**Mutants.** FR-14: 7 new, FR-2: 1 new, all objected. Stale mutants: 0.
+
+**Tests.** Full suite: 12866 passed, 9 skipped. `quality.py cb`: 17 of 17. `tach check` green.
+
+**Red/blue** (2 cycles, nothing above threshold). Accepted: a lineage write is one small
+synchronous insert inside an async handler, as `StateStore` already is.
