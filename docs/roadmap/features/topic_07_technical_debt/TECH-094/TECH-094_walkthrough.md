@@ -104,3 +104,7 @@ image ends its offline run with exit 1 and no reports. The reason named only Mav
 Maven's first `[ERROR]` line (mutant `maven-hint-as-reason` objected). `-rs` listed skips only and
 hid the failure's name; the workflow now runs `-rfEs`. Not reproduced here: this machine's image
 is older, and pulling a new one is a network fetch.
+
+**Run 4 (`21f436dd`).** The same single failure; the reason now read `[ERROR] BUILD FAILURE`, which
+is Maven's summary line, not the cause. The first error that is not one of Maven's fixed summary or
+hint lines is now the reason; the summary-skip mutant objected by hand (module constant).

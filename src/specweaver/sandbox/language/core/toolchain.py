@@ -40,8 +40,11 @@ logger = logging.getLogger(__name__)
 #: Truncation for the reported reason — a stderr line can be an entire traceback.
 _MAX_REASON = 200
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
-#: Maven ends every failure with the same hints; its first error line is the cause.
-_FIRST_ERROR = re.compile(r"^\[ERROR\]\s*\S")
+#: Maven frames every failure with the same summary and hints; the first other error is the cause.
+_FIRST_ERROR = re.compile(
+    r"^\[ERROR\]\s*(?!BUILD FAILURE|Total time|Finished at|Re-run Maven|To see the full"
+    r"|For more information|\[Help|->|$)\S"
+)
 
 
 def did_not_run(result: SubprocessResult, tool: str) -> str | None:

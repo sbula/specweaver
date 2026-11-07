@@ -190,7 +190,8 @@ class TestBuildFailedWithoutResults:
         from specweaver.sandbox.language.core.toolchain import build_failed_without_results
 
         stdout = (
-            "[INFO] BUILD FAILURE\n"
+            "[ERROR] BUILD FAILURE\n"
+            "[ERROR] Total time:  2.1 s\n"
             "\x1b[1;31m[ERROR]\x1b[m Failed to execute goal surefire: cannot access central\n"
             "[ERROR] \n"
             "[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n"
@@ -201,6 +202,7 @@ class TestBuildFailedWithoutResults:
         assert reason is not None
         assert "Failed to execute goal surefire: cannot access central" in reason, reason
         assert "-X switch" not in reason, reason
+        assert "BUILD FAILURE" not in reason, reason
 
     def test_a_failed_build_that_did_report_results_is_left_alone(self) -> None:
         """The control that matters most: Maven exits non-zero when *tests* fail.
