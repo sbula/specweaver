@@ -242,8 +242,8 @@ SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each i
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One opener, versioned steps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
-| SF-03 | The doors | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SF-03 | The doors | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -260,6 +260,11 @@ at a gate after a step had run, so FR-7 now prepares it in the run setup (Q13) `
 **SF-01 dev 2026-11-07**: CB-1 `9b03b250`, CB-2 `de177b8d`, CB-3 accepted by the user 2026-11-07;
 the two silent mutants (map 4 → 0, no read-back) judged equivalent by the user.
 **SF-02 plan approved 2026-11-07** (the user): files with the pre-`TECH-005` names are refused; a failed price seed stays a warning.
-**Next step**: `specweaver-dev` for SF-02.
+**SF-02 dev 2026-11-07**: CB-1 `58632d7a`, CB-2 `7dcc47b9`, CB-3 `6b6e58c9` accepted by the user
+2026-11-07. B-INTL-09 FR-6's Alembic half no longer applies; its foreign-key half is proven by
+`test_session_scope.py`.
+**SF-03 plan approved 2026-11-07** (the user): the API logs to `logs/_api/`; a CLI command switches to its
+project's log at its first database use; the `503` body carries `error_code` `DATABASE_BUSY`.
+**Next step**: `specweaver-dev` for SF-03, CB-1.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
