@@ -5,8 +5,8 @@
 
 Proves: TECH-090 FR-1
 
-The allowlist names the openers not moved yet, and shrinks: `core/flow/engine/store.py` leaves it
-in SF-01 CB-3, the rest in SF-02. A name on it that no longer opens a file fails too.
+The allowlist named the openers not moved yet; since TECH-090 SF-02 it is empty, and stays empty.
+A name on it that no longer opens a file fails too.
 
 | Bucket | Case |
 |---|---|
@@ -24,9 +24,7 @@ import pytest
 
 _SRC = Path(__file__).resolve().parents[4] / "src" / "specweaver"
 _OPENER = _SRC / "infrastructure" / "database"
-_NOT_MOVED_YET = {
-    "core/config/database.py",
-}
+_NOT_MOVED_YET: set[str] = set()
 _OPENERS = {("sqlite3", "connect"), ("sqlalchemy", "create_engine")}
 _OPENERS |= {("sqlalchemy.ext.asyncio", "create_async_engine")}
 

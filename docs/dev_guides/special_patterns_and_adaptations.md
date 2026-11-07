@@ -383,10 +383,11 @@ Feature B-INTL-09 (Agent Memory Bank), SQLite with `sqlalchemy[asyncio]`.
 
 **How:**
 
-1. **PRAGMA hook**: `register_fk_pragma_listener(engine)` (`core/config/database.py`) registers
-   `@event.listens_for(engine.sync_engine, "connect")` and runs `PRAGMA foreign_keys=ON` on every new
-   connection, in production and in tests.
-2. **`expire_on_commit=False`** on test fixtures and the CQRS `AsyncSession` factories. Otherwise
+1. **PRAGMA hook**: `create_sqlite_engine(path)` (`infrastructure/database/engine.py`) registers
+   `@event.listens_for(engine.sync_engine, "connect")` and sets foreign keys, WAL and the lock wait on
+   every new connection. A test that builds its own engine (an in-memory URL) uses
+   `tests/fixtures/db_utils.create_async_engine`, which turns foreign keys on the same way.
+2. **`expire_on_commit=False`** on test fixtures and on `session_scope`'s `AsyncSession`. Otherwise
    SQLAlchemy lazily reloads expired attributes after `commit()`, and with no running greenlet (sync
    teardown, assertions) that fails with `MissingGreenlet`.
 

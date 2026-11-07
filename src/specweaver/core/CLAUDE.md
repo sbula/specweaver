@@ -4,7 +4,8 @@ Pure domain logic. NO I/O, NO external calls. All I/O is delegated via ports/ada
 
 ## Modules
 
-- **config/** — Pydantic settings, SQLite DB access (via SQLAlchemy async), Alembic migrations.
+- **config/** — Pydantic settings and paths. No I/O: files are opened by `infrastructure/database/`,
+  and `config/bootstrap/` holds `specweaver.db`'s schema steps.
   - Depends on: `core.flow`, `infrastructure.llm`, `workspace`, `workspace.memory`
 - **flow/** — Pipeline engine: models, runners, gates, handlers, handover persistence.
   - Depends on: `graph`, `workflows.*`, `sandbox`, `infrastructure.llm`, `core.config`, `assurance.*`, `workspace.*`
@@ -13,7 +14,7 @@ Pure domain logic. NO I/O, NO external calls. All I/O is delegated via ports/ada
 
 - All configuration models use Pydantic v2 with strict mode.
 - Flow engine uses a handler-based dispatch pattern. New pipeline stages = new handlers.
-- Database access is async-first (aiosqlite + SQLAlchemy async).
+- SQLite files open only through `infrastructure/database/` (WAL, foreign keys, lock wait).
 
 ## Test Commands
 
@@ -26,4 +27,4 @@ python -m pytest tests/integration/core/ -v --tb=short
 
 Check `tach.toml` for exact dependency allowlists. Run `tach check` after any import changes.
 
-<!-- Last verified: 2026-07-12 -->
+<!-- Last verified: 2026-11-07 -->

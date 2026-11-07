@@ -10,11 +10,9 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from specweaver.core.config.database import (
-    CQRSQueueManager,
-    create_async_engine,
-)
 from specweaver.infrastructure.database import StrictISODateTime, session_scope
+from specweaver.infrastructure.database import handle as opener
+from tests.fixtures.db_utils import create_async_engine
 
 
 # A minimal DeclarativeBase and model for integration testing
@@ -67,9 +65,7 @@ class TestDatabaseIntegration:
         self, engine: sa.ext.asyncio.AsyncEngine
     ) -> None:
         """Integration Story 4: Semaphore throttles connections without OS failure."""
-        import specweaver.core.config.database
-
-        specweaver.core.config.database._db_semaphores.clear()  # this test sets its own limit
+        opener._semaphores.clear()  # this test sets its own limit
 
         active_connections = 0
         max_connections = 0
@@ -91,44 +87,6 @@ class TestDatabaseIntegration:
         assert max_connections == 5
 
     @pytest.mark.asyncio
-    async def test_story_5_dlx_survival_integration(
-        self, engine: sa.ext.asyncio.AsyncEngine, tmp_path: Path
-    ) -> None:
-        """Integration Story 5: DLX traps invalid SQL and continues processing queue."""
-        dlx_file = tmp_path / ".dlx.log"
-        queue = CQRSQueueManager(maxsize=10, dlx_path=dlx_file)
-        await queue.start()
-
-        async def valid_write() -> None:
-            async with session_scope(engine) as session:
-                session.add(DummyLog(message="valid", created_at=datetime.now(tz=UTC)))
-
-        async def poison_write() -> None:
-            async with session_scope(engine) as session:
-                # Force a physical SQLite syntax error to trigger operational rollback
-                await session.execute(sa.text("INSERT INTO non_existent_table VALUES (1)"))
-
-        # Enqueue: valid -> poison -> valid
-        await queue.enqueue(valid_write)
-        await queue.enqueue(poison_write)
-        await queue.enqueue(valid_write)
-
-        # Flush the queue
-        await queue.flush()
-        await queue.stop()
-
-        # Verify DB physically contains only the 2 valid writes
-        async with session_scope(engine) as session:
-            result = await session.execute(sa.select(sa.func.count(DummyLog.id)))
-            count = result.scalar()
-            assert count == 2
-
-        # Verify the poison pill was trapped and logged
-        assert dlx_file.exists()
-        log_content = dlx_file.read_text()
-        assert "no such table: non_existent_table" in log_content
-
-    @pytest.mark.asyncio
     async def test_story_6_legacy_db_string_parsing(
         self, engine: sa.ext.asyncio.AsyncEngine
     ) -> None:
@@ -148,29 +106,3 @@ class TestDatabaseIntegration:
                     sa.select(DummyLog).where(DummyLog.message == "legacy")
                 )
                 result.scalars().first()
-
-    @pytest.mark.asyncio
-    async def test_story_7_max_queue_size_spikes(self, tmp_path: Path) -> None:
-        """Integration Story 7: Spike of 1000 items is throttled and flushed cleanly."""
-        queue = CQRSQueueManager(maxsize=100)  # Use 100 to speed up test and prove throttle
-
-        success_count = 0
-
-        async def fast_write() -> None:
-            nonlocal success_count
-            success_count += 1
-            await asyncio.sleep(0.001)
-
-        # We haven't started the worker yet, so the queue will block after 100
-        for _ in range(100):
-            queue.enqueue_nowait(fast_write)
-
-        with pytest.raises(asyncio.QueueFull):
-            queue.enqueue_nowait(fast_write)
-
-        # Start the worker, let it drain, and flush
-        await queue.start()
-        await queue.flush()
-        await queue.stop()
-
-        assert success_count == 100

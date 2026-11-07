@@ -192,11 +192,8 @@ class PipelineRunner:
         self._current_run_id = run.run_id
         await self._open_task(run)
 
-        from specweaver.core.config.database import cqrs_context
-
         try:
-            async with cqrs_context():
-                return await execute_run(self, run, logger)
+            return await execute_run(self, run, logger)
         finally:
             await self._finalize(run)
 
@@ -249,13 +246,10 @@ class PipelineRunner:
         rehydrate_from_records(self.pipeline, run, self.context)
         await self._open_task(run)
 
-        from specweaver.core.config.database import cqrs_context
-
         try:
-            async with cqrs_context():
-                # The human chose to resume, which IS the approval of a reviewed HITL gate-park.
-                # One-shot — consumed on the first loop iteration.
-                return await execute_run(self, run, logger, approve_parked=True)
+            # The human chose to resume, which IS the approval of a reviewed HITL gate-park.
+            # One-shot — consumed on the first loop iteration.
+            return await execute_run(self, run, logger, approve_parked=True)
         finally:
             await self._finalize(run)
 

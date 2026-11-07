@@ -21,7 +21,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from specweaver.core.config.database import register_fk_pragma_listener
 from specweaver.workspace.memory.errors import DefectBlocksCompletionError
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.memory.store import (
@@ -31,6 +30,7 @@ from specweaver.workspace.memory.store import (
     TransitionReason,
 )
 from specweaver.workspace.store import Base, Project
+from tests.fixtures.db_utils import register_fk_pragma_listener
 
 
 @pytest_asyncio.fixture

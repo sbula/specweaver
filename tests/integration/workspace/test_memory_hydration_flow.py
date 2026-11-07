@@ -8,11 +8,11 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.config.database import register_fk_pragma_listener
 from specweaver.workspace.memory.hydrator import MemoryHydrator
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.store import Base, Project
+from tests.fixtures.db_utils import register_fk_pragma_listener
 
 
 @pytest_asyncio.fixture

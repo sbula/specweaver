@@ -193,3 +193,60 @@ step 1 checks everything; a test covers it.
 
 **Red/blue.** Nothing above threshold. Accepted: like `create_all` before, step 1 never adds an
 index to a table that already exists; a later index on an existing table needs its own step.
+
+## SF-02 CB-3 — `core/config` is pure logic again (FR-11)
+
+**What changed.**
+- `core/config/database.py` is deleted: the write queue nothing used, the second foreign-key
+  listener, and the re-exports of the opener.
+- `PipelineRunner.run` and `.resume` no longer open the empty queue.
+- The private `_now_iso` copies are gone: the flow store uses `commons.timestamps.now_iso`, and the
+  dead copy in `workspace/store.py` was removed. The re-export in `workspace/memory/store.py` went too.
+- `core.flow.engine` and `workspace.memory` lost their `core.config` edge (tach and `context.yaml`).
+- `test_only_the_opener_opens.py` has an empty allowlist: no file opens SQLite outside the opener.
+- Test engines: `tests/fixtures/db_utils.create_async_engine` (NullPool, foreign keys on), used by
+  15 test files.
+
+**Docs.** `domain_driven_cli_creation.md`, `special_patterns_and_adaptations.md` §21,
+`testing_guide.md`, `core/CLAUDE.md`, and `cqrs_and_database.md` (rewritten: the one opener, no
+queue). `test_cqrs_e2e.py` keeps its name, which other documents cite; its stale queue words are gone.
+
+**Coverage.**
+
+| Unit under change | Unit | Integration | E2E |
+|---|---|---|---|
+| `core/config` has no I/O, no `_now_iso` copy | ✅ `test_config_is_pure_logic.py` | — | — |
+| `session_scope` commit, rollback, cap, per-loop semaphore | ✅ `test_session_scope.py` | ✅ `test_sessions_integration.py` | — |
+| a product session has foreign keys on | ✅ `test_session_scope.py` | ✅ memory tests | ✅ `test_runs_keep_memory_e2e.py` |
+| runner without the queue | ✅ `test_engine_runner.py` | ✅ flow engine | ✅ `test_cqrs_e2e.py` |
+
+**Found at the gate.**
+- `test_an_error_inside_the_scope_rolls_back` was false. It made a table inside the scope, and the
+  driver does not open a transaction for `CREATE TABLE`, so the table stayed. It now inserts a row,
+  fails, and expects the row gone. A mutant (rollback turned into commit) objects.
+- Eight B-INTL-09 campaigns named the deleted `test_database.py`; they now name
+  `test_session_scope.py`.
+
+**B-INTL-09 FR-6** said every session enforces foreign keys and runs Alembic. The Alembic half no
+longer applies: TECH-090 removed Alembic. The foreign-key half is now proven by
+`test_a_product_session_has_foreign_keys_on`. B-INTL-09 itself was not edited; only its mutant
+`fk-off` was moved to `apply_pragmas`.
+
+**Tests.** `tests.py sf TECH-090 --kind bugfix`: unit 10101 passed (9 skipped), integration 2235,
+e2e 84. `quality.py sf`: 18 of 18. `quality.py doc`: 14 of 14. `tach check` green.
+
+**Mutants.**
+- By hand (a module-level import cannot be a corpus symbol): `import sqlite3` in `paths.py`; a late
+  `sqlalchemy` import inside `specweaver_root`; a `_now_iso` function back in the flow store.
+  All objected.
+- `session_scope` rollback turned into a commit: objected.
+- Re-pinned after the runner change: D-UI-01 FR-4, B-FLOW-05 FR-8. Re-anchored: B-INTL-09 FR-6
+  `fk-off`. Stale mutants: 0.
+
+**Red/blue** (2 cycles, nothing above threshold). Accepted:
+- `handlers/base._now_iso` stays: it is an alias of `commons.now_iso`, not a copy. Its 20 importers
+  are out of this ticket.
+- The test engine turns foreign keys on with its own listener. The product path has its own test,
+  so a drift between them is caught.
+- The I/O guard reads only `core/config/*.py`. `core/config/bootstrap/` does I/O on purpose and
+  declares it in its own `context.yaml`.

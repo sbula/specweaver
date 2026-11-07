@@ -15,7 +15,6 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.config.database import register_fk_pragma_listener
 from specweaver.workspace.memory.store import (
     Defect,
     DefectStatus,
@@ -28,6 +27,7 @@ from specweaver.workspace.memory.store import (
     TransitionReason,
 )
 from specweaver.workspace.store import Base, Project
+from tests.fixtures.db_utils import register_fk_pragma_listener
 
 
 @pytest.fixture

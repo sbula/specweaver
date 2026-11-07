@@ -1,7 +1,7 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""End-to-end tests for the decentralized CQRS stores.
+"""End-to-end tests: the CLI starts, stops and fails cleanly around its database.
 
 Proves: TECH-001 NFR-4.
 
@@ -9,7 +9,8 @@ NFR-4 native healer isolation — the design requires `interfaces/cli/main.py` t
 agent commands and base filesystem tool so that plugin crashes cannot take the core down. This
 file's *"E2E Story 10: Plugin Failure Recovery"* is that scenario.
 
-Attributed 2026-08-13 (`TECH-017` finding 6).
+Attributed 2026-08-13 (`TECH-017` finding 6). The file name is older than `TECH-090`, which deleted
+the async write queue these tests once watched; the name stays because other documents cite it.
 """
 
 import signal
@@ -18,10 +19,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
-# Assume these tables will exist once Domain Stores are implemented in Boundary 2,
-# but for now we verify the queue infrastructure using the legacy SQLite schema
-# or a simple assertion on process exit codes and telemetry DB files.
 
 
 @pytest.fixture
@@ -43,14 +40,8 @@ class TestCQRSE2E:
             capture_output=True,
             text=True,
         )
-        # Even if check fails due to no files, the system booted and flushed.
-        # We assert the process exited cleanly and didn't hang waiting for the queue
+        # Even if check fails due to no files, the system booted and exited without a crash.
         assert "Exception" not in result.stderr
-
-        # Verify physical DB was created/touched
-        _ = temp_workspace / ".specweaver" / "specweaver.db"
-        # It may or may not be created depending on if the command actually enqueued anything,
-        # but the process MUST exit.
 
     def test_story_9_sigint_survival(self, temp_workspace: Path) -> None:
         """E2E Story 9: SIGINT / Process Interruption Survival.
@@ -80,7 +71,7 @@ class TestCQRSE2E:
             **popen_kwargs,  # type: ignore[arg-type]
         )
 
-        # Give it a moment to boot and acquire the CQRS context
+        # Give it a moment to boot and open its database
         import time
 
         time.sleep(0.5)
@@ -93,7 +84,7 @@ class TestCQRSE2E:
             _, stderr = proc.communicate(timeout=5.0)
         except subprocess.TimeoutExpired:
             proc.kill()
-            pytest.fail("Process hung on interrupt! CQRS flush likely deadlocked.")
+            pytest.fail("Process hung on interrupt.")
 
         # Verify it shut down without a complete Python traceback (graceful exit). On POSIX the
         # default SIGINT disposition raises KeyboardInterrupt, so that string is expected in
@@ -113,7 +104,7 @@ class TestCQRSE2E:
             capture_output=True,
             text=True,
         )
-        # The core CLI should catch it and print a Typer error, rather than hanging on CQRS
+        # The core CLI should catch it and print a Typer error, rather than hanging
         assert result.returncode != 0
         assert "No such option" in result.stderr or "Error" in result.stderr
 

@@ -4,15 +4,6 @@
 
 import pytest
 
-from specweaver.core.config.database import get_global_write_queue
-
-
-@pytest.fixture(autouse=True)
-async def cleanup_cqrs_queue():
-    yield
-    queue = get_global_write_queue()
-    await queue.stop()
-
 
 @pytest.fixture(autouse=True)
 def mock_global_db_path(tmp_path_factory, monkeypatch):

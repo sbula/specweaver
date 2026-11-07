@@ -56,8 +56,8 @@ pytest tests/unit/workspace/project/test_project_constitution.py
 # All standards tests (unit + integration)
 pytest tests/unit/assurance/standards tests/integration/interfaces/cli/test_cli_standards_integration.py
 
-# Config database tests (includes schema migrations)
-pytest tests/unit/core/config/test_database.py
+# Database tests: the opener, sessions, and specweaver.db's schema steps
+pytest tests/unit/infrastructure/database tests/integration/infrastructure/database tests/integration/core/config/bootstrap
 
 # CLI tests for constitution and config commands
 pytest tests/unit/workspace/project/interfaces/test_project_cli_constitution.py tests/unit/core/config/interfaces/test_config_cli.py

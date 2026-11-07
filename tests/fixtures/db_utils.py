@@ -103,3 +103,26 @@ def as_a_new_process() -> None:
     from specweaver.infrastructure.database import steps
 
     steps._UPGRADED.clear()
+
+
+def create_async_engine(url: str, **kwargs: object) -> object:
+    """A test's own async engine (an in-memory URL, say) with foreign keys on, `NullPool` unless
+    asked otherwise. Product code opens files through `infrastructure.database` instead."""
+    from sqlalchemy.ext.asyncio import create_async_engine as _create
+    from sqlalchemy.pool import NullPool
+
+    kwargs.setdefault("poolclass", NullPool)
+    engine = _create(url, **kwargs)  # type: ignore[arg-type]
+    register_fk_pragma_listener(engine.sync_engine)
+    return engine
+
+
+def register_fk_pragma_listener(engine: object) -> None:
+    """Turn foreign keys on for every new connection of a test's engine (sync, or `.sync_engine`)."""
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _foreign_keys(dbapi_connection: object, _record: object) -> None:
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()

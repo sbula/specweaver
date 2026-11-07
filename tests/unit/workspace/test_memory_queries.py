@@ -9,10 +9,10 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.config.database import register_fk_pragma_listener
 from specweaver.workspace.memory.queries import MemoryQueryService
 from specweaver.workspace.memory.store import Defect, DefectStatus, Task, TaskStatus
 from specweaver.workspace.store import Base, Project
+from tests.fixtures.db_utils import register_fk_pragma_listener
 
 
 @pytest_asyncio.fixture

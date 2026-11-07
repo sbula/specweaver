@@ -66,14 +66,6 @@ class TestBatch1LoggingRollout:
         assert isinstance(profiles.logger, logging.Logger)
         assert profiles.logger.name == "specweaver.core.config.profiles"
 
-    def test_database_module_has_logger(self):
-        """config/database.py should declare a module-level logger."""
-        from specweaver.core.config import database
-
-        assert hasattr(database, "logger"), "database module must have a logger"
-        assert isinstance(database.logger, logging.Logger)
-        assert database.logger.name == "specweaver.core.config.database"
-
     def test_context_modules_have_loggers(self):
         """workspace/context modules should declare loggers."""
         from specweaver.workspace.analyzers import inferrer

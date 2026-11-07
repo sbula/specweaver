@@ -18,9 +18,9 @@ from sqlalchemy import Column, String, Table
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.pool import StaticPool
 
-from specweaver.core.config.database import create_async_engine
 from specweaver.infrastructure.database import session_scope
 from specweaver.infrastructure.llm.store import Base, LlmUsageLog
+from tests.fixtures.db_utils import create_async_engine
 
 
 @pytest.fixture

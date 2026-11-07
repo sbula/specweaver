@@ -9,12 +9,11 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from specweaver.core.config.database import register_fk_pragma_listener
-
 # We will import MemoryRepository once it's created, but for now this will cause an ImportError
 # which is expected for the RED phase.
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.store import Base, Project
+from tests.fixtures.db_utils import register_fk_pragma_listener
 
 
 @pytest_asyncio.fixture

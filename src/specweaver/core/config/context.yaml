@@ -19,7 +19,6 @@ exposes:
   - SpecWeaverSettings
   - ValidationSettings
   - SandboxSettings
-  - Database
   - DALResolver
 
 # -- Operational Metadata --------------------------------------------------

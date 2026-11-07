@@ -21,11 +21,6 @@ from specweaver.infrastructure.database import StrictISODateTime
 logger = logging.getLogger(__name__)
 
 
-def _now_iso() -> str:
-    """Return current UTC time as ISO 8601 string."""
-    return datetime.now(UTC).isoformat()
-
-
 def _validate_project_name(name: str) -> None:
     if not re.match(r"^[a-z0-9][a-z0-9_-]*$", name):
         raise ValueError(f"Invalid project name '{name}'")

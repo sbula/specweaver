@@ -15,11 +15,11 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from specweaver.commons import json
+from specweaver.commons.timestamps import now_iso
 from specweaver.core.flow.engine.state import (
     PipelineRun,
     RunStatus,
@@ -294,7 +294,7 @@ class StateStore:
         name its run is not worth keeping. The pipeline-loop caller swallows it; a store
         method that silently dropped writes would be lying to every other caller.
         """
-        now = _now_iso()
+        now = now_iso()
         rows: list[tuple[Any, ...]] = []
         for rule in results:
             base = (
@@ -379,7 +379,7 @@ class StateStore:
                 "INSERT INTO flow_audit_log "
                 "(run_id, timestamp, event, step_name, details) "
                 "VALUES (?, ?, ?, ?, ?)",
-                (run_id, _now_iso(), event, step_name, details or None),
+                (run_id, now_iso(), event, step_name, details or None),
             )
 
     def get_audit_log(self, run_id: str) -> list[dict[str, object]]:
@@ -425,8 +425,3 @@ def _row_to_run(row: sqlite3.Row) -> PipelineRun:
         started_at=row["started_at"],
         updated_at=row["updated_at"],
     )
-
-
-def _now_iso() -> str:
-    """Return current UTC time as ISO 8601 string."""
-    return datetime.now(UTC).isoformat()
