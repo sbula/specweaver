@@ -236,7 +236,7 @@
           "old": "    db_path = config_db_path()",
           "new": "    from specweaver.core.flow.engine.models import PipelineStep  # noqa: F401\n    db_path = config_db_path()",
           "breaks": "bootstrap reaches all of core.flow again",
-          "symbol_sha": "sha256:bdae228198f24abe162fc3e57eb0234c8d855074a93f28eccabbcc6ff38baac9"
+          "symbol_sha": "sha256:c36afe6e90aea862d97a1c7a5d155c01c640efad0731d673e467943db064080b"
         }
       ]
     },

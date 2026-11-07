@@ -3,14 +3,16 @@
 
 """A file's schema version lives in `PRAGMA user_version`, and only its missing steps run.
 
-Proves: TECH-090 FR-3
+Proves: TECH-090 FR-3, FR-7
 
 | Bucket | Case |
 |---|---|
 | Happy | a new file runs every step and ends at the last version; an old one runs only what it lacks |
 | Boundary | a second run changes nothing; a file this process already upgraded is not read again |
 | Degradation | a step that fails after an ALTER leaves no column and the old version, naming the step; a rename lost to another process is no error |
-| Hostile | a file newer than the code is refused; steps out of order are refused |
+| Hostile | a file newer than the code is refused; steps out of order are refused; a file that is not a database is refused untouched |
+| Boundary | an empty file is a new database; a step's own SQL error stays the step's error |
+| Happy | every refusal is a `SchemaError`, the one family a door catches |
 """
 
 from __future__ import annotations
@@ -22,6 +24,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.infrastructure.database import (
+    SchemaError,
+    SchemaOpenError,
     SchemaStepError,
     SchemaTooNewError,
     Step,
@@ -182,3 +186,37 @@ def test_an_old_and_a_new_table_side_by_side_are_left_alone(tmp_path: Path) -> N
     names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert names == {"old_name", "new_name"}
     conn.close()
+
+
+def test_a_file_that_is_not_a_database_is_refused_untouched(tmp_path: Path) -> None:
+    path = tmp_path / "a.db"
+    garbage = b"this is not a database " * 100
+    path.write_bytes(garbage)
+
+    with pytest.raises(SchemaOpenError) as caught:
+        upgrade(path, _steps([]))
+
+    assert str(caught.value).startswith(f"{path} cannot be opened: ")
+    assert path.read_bytes() == garbage
+
+
+def test_an_empty_file_is_a_new_database(tmp_path: Path) -> None:
+    path = tmp_path / "a.db"
+    path.write_bytes(b"")
+
+    upgrade(path, _steps([]))
+
+    assert _version(path) == 2
+
+
+def test_a_steps_own_sql_error_stays_the_steps_error(tmp_path: Path) -> None:
+    path = tmp_path / "a.db"
+    steps = [Step(1, "bad sql", lambda conn: conn.execute("CREATE TABLE"))]
+
+    with pytest.raises(SchemaStepError, match="bad sql"):
+        upgrade(path, steps)
+
+
+@pytest.mark.parametrize("error", [SchemaOpenError, SchemaStepError, SchemaTooNewError])
+def test_every_refusal_is_a_schema_error(error: type[Exception]) -> None:
+    assert issubclass(error, SchemaError)

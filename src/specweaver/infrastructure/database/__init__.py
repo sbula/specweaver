@@ -8,6 +8,8 @@ from specweaver.infrastructure.database.handle import Database, session_scope
 from specweaver.infrastructure.database.legacy import rename_legacy_tables
 from specweaver.infrastructure.database.sqlite import lock_wait_seconds, open_sqlite, set_lock_wait
 from specweaver.infrastructure.database.steps import (
+    SchemaError,
+    SchemaOpenError,
     SchemaStepError,
     SchemaTooNewError,
     Step,
@@ -17,6 +19,8 @@ from specweaver.infrastructure.database.types import StrictISODateTime
 
 __all__ = [
     "Database",
+    "SchemaError",
+    "SchemaOpenError",
     "SchemaStepError",
     "SchemaTooNewError",
     "Step",

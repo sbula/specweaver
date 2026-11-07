@@ -57,8 +57,8 @@ def test_bootstrap_database_hostile_invalid_path(tmp_path: Path) -> None:
     db_path = tmp_path / "im_a_dir"
     db_path.mkdir()
 
-    # The opener cannot open a folder as a file, and says so (TECH-090 FR-1).
-    import sqlite3
+    # A folder cannot be opened as a file; the error names it (TECH-090 FR-7).
+    from specweaver.infrastructure.database import SchemaOpenError
 
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(SchemaOpenError, match="im_a_dir cannot be opened"):
         bootstrap_database(str(db_path))

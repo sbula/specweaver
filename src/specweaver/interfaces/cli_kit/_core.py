@@ -12,20 +12,23 @@ local binding.
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Iterator
 
     from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
+    from specweaver.infrastructure.database import Database
     from specweaver.workspace.store import WorkspaceRepository
 
 import anyio
 import typer
 from rich.console import Console
 
-from specweaver.core.config.bootstrap.db_bootstrap import get_db
+from specweaver.core.config.bootstrap.db_bootstrap import get_db as _open_config_db
+from specweaver.infrastructure.database import SchemaError
 from specweaver.workspace.project.discovery import resolve_project_path
 
 logger = logging.getLogger(__name__)
@@ -40,7 +43,56 @@ __all__ = [
     "get_db",
     "logger",
     "run_repo_op",
+    "stops_on_schema_error",
 ]
+
+#: Whether this command has switched logging to its active project; the callback resets it.
+_logs_to_project = False
+
+
+@contextmanager
+def stops_on_schema_error() -> Iterator[None]:
+    """Stop the command when a file cannot be brought up to date, printing the file and the step."""
+    try:
+        yield
+    except SchemaError as err:
+        print_error(err)
+        raise typer.Exit(code=1) from err
+
+
+def log_to_project_at_first_use() -> None:
+    """Make this command's first database use switch logging to the active project."""
+    global _logs_to_project
+    _logs_to_project = False
+
+
+def get_db() -> Database:
+    """The global database, brought up to date; a failed step stops the command.
+
+    The first use in a command also switches logging to the active project at its levels.
+    """
+    global _logs_to_project
+    with stops_on_schema_error():
+        db = _open_config_db()
+    if not _logs_to_project:
+        _logs_to_project = True  # first: the reads below come back through here
+        _log_to_active_project()
+    return db
+
+
+def _log_to_active_project() -> None:
+    from specweaver.telemetry_logger import setup_logging
+
+    active = run_repo_op(lambda r: r.get_active_project())
+    level, console_level = "DEBUG", "WARNING"
+    if active:
+        try:
+            level = run_repo_op(lambda r: r.get_log_level(active))
+            console_level = run_repo_op(lambda r: r.get_console_log_level(active))
+        except Exception as exc:  # expected: an unreadable level falls back to the defaults
+            logger.debug("The project's log levels are unreadable, so the defaults apply: %s", exc)
+    setup_logging(project_name=active, level=level, console_level=console_level)
+    logger.debug("Logging to project: %s", active or "(none)")
 
 
 def run_repo_op(fn: Callable[[WorkspaceRepository], Awaitable[_T]]) -> _T:

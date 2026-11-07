@@ -90,7 +90,7 @@ depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "sp
 
 [[modules]]
 path = "specweaver.interfaces.cli_kit"
-depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.workspace", "specweaver.workspace.project",]
+depends_on = [ "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.infrastructure.database", "specweaver.telemetry_logger", "specweaver.workspace", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.run_doors"

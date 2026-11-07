@@ -227,10 +227,11 @@ def bootstrap_database(db_path: str) -> None:
 
 
 def get_db() -> Database:
-    """Get the global SpecWeaver database (creates if needed)."""
+    """The global SpecWeaver database, brought up to date (created if missing).
+
+    Raises:
+        SchemaError: the file cannot be opened or a step failed; the message names the file.
+    """
     db_path = config_db_path()
-    try:
-        bootstrap_database(str(db_path))
-    except Exception as exc:
-        logger.warning("Failed to bootstrap database at %s: %s", db_path, exc)
+    bootstrap_database(str(db_path))
     return Database(db_path)

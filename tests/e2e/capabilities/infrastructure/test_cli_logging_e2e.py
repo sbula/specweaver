@@ -32,8 +32,9 @@ async def test_cli_execution_suppresses_debug_and_writes_json(tmp_path: Path) ->
     with (
         patch("specweaver.telemetry_logger._get_logs_dir", return_value=tmp_path),
         patch("specweaver.interfaces.cli_kit._core.run_repo_op", side_effect=_mock_op),
-        patch("specweaver.core.config.bootstrap.db_bootstrap.get_db"),
-        patch("specweaver.interfaces.cli_kit._core.get_db"),
+        # Only the file is doubled: `_core.get_db` itself runs, and its first use switches
+        # logging to the active project (TECH-090 AD-4).
+        patch("specweaver.interfaces.cli_kit._core._open_config_db"),
     ):
         teardown_logging()
         setup_logging("test_project")
@@ -59,9 +60,13 @@ async def test_cli_execution_suppresses_debug_and_writes_json(tmp_path: Path) ->
             for line in content.strip().split("\n"):
                 try:
                     record = json.loads(line)
+                    # Written at the command's first database use, where logging switches to
+                    # the project; a line logged before it goes to `_global` (TECH-090 AD-4).
                     if record.get(
                         "levelname"
-                    ) == "DEBUG" and "Executing projects command" in record.get("message", ""):
+                    ) == "DEBUG" and "Logging to project: test_project" in record.get(
+                        "message", ""
+                    ):
                         found = True
                         break
                 except json.JSONDecodeError:

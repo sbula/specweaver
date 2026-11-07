@@ -50,21 +50,16 @@ def _app_callback(
     ),
 ) -> None:
     """SpecWeaver \u2014 Specification-driven development lifecycle tool."""
+    from specweaver.infrastructure.database import set_lock_wait
     from specweaver.interfaces.cli_kit import _core
     from specweaver.telemetry_logger import setup_logging
 
-    # db = _core.get_db()
-    active = _core.run_repo_op(lambda r: r.get_active_project())
-    level, console_level = "DEBUG", "WARNING"
-    if active:
-        try:
-            level = _core.run_repo_op(lambda r: r.get_log_level(active))
-            console_level = _core.run_repo_op(lambda r: r.get_console_log_level(active))
-        except (ValueError, Exception) as exc:
-            logger.debug("The project's log levels are unreadable, so the defaults apply: %s", exc)
-
-    setup_logging(project_name=active, level=level, console_level=console_level)
-    logger.debug("CLI invoked \u2014 active project: %s", active or "(none)")
+    # No database here, so help shows even when a file is broken. A command's
+    # first database use switches logging to its active project.
+    _core.log_to_project_at_first_use()
+    set_lock_wait(30)
+    setup_logging()
+    logger.debug("CLI invoked")
 
 
 # ---------------------------------------------------------------------------

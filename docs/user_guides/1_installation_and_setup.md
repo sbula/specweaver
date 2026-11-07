@@ -408,6 +408,9 @@ Nothing secret reaches a model: every value of 8 or more characters in `vault.en
 | Alerts and formatted stack traces | Console (stderr), rendered with Rich | `WARNING` |
 | JSON lines, rotated | `~/.specweaver/logs/<project_name>/specweaver.log` | `DEBUG` |
 
+A command logs to its active project's file from its first database use. Before that, and for a
+command that needs no database (`--help`), it logs to `~/.specweaver/logs/_global/specweaver.log`.
+
 Both levels are per project:
 
 ```bash

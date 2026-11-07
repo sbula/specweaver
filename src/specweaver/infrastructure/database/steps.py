@@ -9,6 +9,7 @@ read again once the lock is held, so two processes starting together never apply
 
 from __future__ import annotations
 
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,7 +17,6 @@ from typing import TYPE_CHECKING
 from specweaver.infrastructure.database.sqlite import open_sqlite
 
 if TYPE_CHECKING:
-    import sqlite3
     from collections.abc import Callable, Sequence
 
 _UPGRADED: set[str] = set()
@@ -31,7 +31,18 @@ class Step:
     apply: Callable[[sqlite3.Connection], None]
 
 
-class SchemaTooNewError(RuntimeError):
+class SchemaError(RuntimeError):
+    """A file's schema cannot be brought up to date; the message names the file."""
+
+
+class SchemaOpenError(SchemaError):
+    """The file cannot be opened: it is not a database, or it stayed locked past the wait."""
+
+    def __init__(self, path: Path, cause: BaseException) -> None:
+        super().__init__(f"{path} cannot be opened: {cause}")
+
+
+class SchemaTooNewError(SchemaError):
     """The file was written by a newer SpecWeaver than this one."""
 
     def __init__(self, path: Path, found: int, known: int) -> None:
@@ -41,7 +52,7 @@ class SchemaTooNewError(RuntimeError):
         )
 
 
-class SchemaStepError(RuntimeError):
+class SchemaStepError(SchemaError):
     """A schema step failed; the file is still at the version before it."""
 
     def __init__(self, path: Path, step: str, cause: BaseException) -> None:
@@ -97,7 +108,10 @@ def upgrade(
         return
     _check_order(steps)
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = open_sqlite(path, isolation_level=None)
+    try:
+        conn = open_sqlite(path, isolation_level=None)
+    except sqlite3.DatabaseError as exc:
+        raise SchemaOpenError(path, exc) from exc
     try:
         known = len(steps)
         found = _version(conn)

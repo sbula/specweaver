@@ -250,3 +250,53 @@ e2e 84. `quality.py sf`: 18 of 18. `quality.py doc`: 14 of 14. `tach check` gree
   so a drift between them is caught.
 - The I/O guard reads only `core/config/*.py`. `core/config/bootstrap/` does I/O on purpose and
   declares it in its own `context.yaml`.
+
+## SF-03 CB-1 — the CLI door (FR-7, FR-8)
+
+**What changed.**
+- `steps.py`: one error family. `SchemaError` is the base of `SchemaTooNewError`,
+  `SchemaStepError` and the new `SchemaOpenError`. `upgrade` turns a file it cannot open (not a
+  database, a folder, locked past the wait) into `<path> cannot be opened: <cause>`.
+- `db_bootstrap.get_db` raises; it no longer warns and goes on.
+- `cli_kit/_core`: `stops_on_schema_error()` prints a `SchemaError` and exits 1, and catches
+  nothing else. `get_db` opens under it; its first use in a command switches logging to the
+  active project at its levels.
+- The CLI callback opens no database: it resets that switch, sets the 30 s lock wait and logging at
+  the defaults. `sw run --help` works on a broken database and creates none.
+- `_get_state_store` (`sw run`, `sw resume`) opens under the same catch.
+- `cli_kit` gains the `infrastructure.database` and `telemetry_logger` edges.
+
+**Docs.** `1_installation_and_setup.md` §8: a command logs to `_global` until its first database use.
+
+**Coverage.**
+
+| Unit under change | Unit | Integration | E2E |
+|---|---|---|---|
+| `SchemaOpenError`, one family | ✅ `test_steps.py` | ✅ `test_cli_stops_on_a_failed_step.py` | — |
+| `stops_on_schema_error` | ✅ `test_stops_on_schema_error.py` | ✅ `test_cli_stops_on_a_failed_step.py` | — |
+| callback: no database, 30 s, defaults | ✅ `test_help_opens_no_database.py`, `test_cli_door_settings.py` | — | ✅ `test_fresh_machine_cli_e2e.py` |
+| project log at first use, reset per command | ✅ `test_cli_door_settings.py` | — | ✅ `test_cli_logging_e2e.py` |
+| `sw run`, `sw resume`, `sw graph build` on a newer file | — | ✅ `test_cli_stops_on_a_failed_step.py` | — |
+
+**Found at the gate.**
+- A command logs its first line ("Executing projects command") before its first database use, so
+  that line now goes to `_global`, not to the project's file. This follows from the Q2 decision.
+  `test_cli_logging_e2e.py` now checks the switch's own record in the project's file. For the
+  user to review.
+- `sw run` on a newer `pipeline_state.db` already stopped with the message before this boundary;
+  `sw resume` gave a traceback. `sw graph build` already printed the file; its test guards that.
+- The wrap around the first `user_version` read was dead: opening already reads the file. Removed.
+- Two folder-as-file tests expected `sqlite3.OperationalError`; they now expect `SchemaOpenError`.
+
+**Tests.** Full suite: 12807 passed, 9 skipped. `quality.py cb`: 17 of 17. `quality.py doc`: 14 of
+14. `tach check` green.
+
+**Mutants.** FR-7: 6, FR-8: 4, all objected; the catch widened to `Exception` objects too.
+Re-pinned after the change: TECH-081 FR-16, TECH-090 FR-3. Stale mutants: 0.
+
+**Red/blue** (2 cycles, nothing above threshold). Fixed: a redundant `except (ValueError,
+Exception)`. Accepted:
+- The switch flag is module state; a command function called without the callback keeps the last
+  value. Only tests do that, and `tests/conftest.py` restores the logger.
+- If reading the active project fails, the command stops with that error, as it did in the
+  callback before.

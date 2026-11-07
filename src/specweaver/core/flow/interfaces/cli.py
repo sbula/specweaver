@@ -81,7 +81,8 @@ def _get_state_store() -> StateStore:
     """Get the pipeline state store (lazy import)."""
     from specweaver.core.flow.engine.store import StateStore
 
-    return StateStore(state_db_path())
+    with _core.stops_on_schema_error():
+        return StateStore(state_db_path())
 
 
 def _create_display(

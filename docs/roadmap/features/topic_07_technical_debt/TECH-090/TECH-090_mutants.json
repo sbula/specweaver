@@ -150,7 +150,7 @@
           "old": "        if found > known:",
           "new": "        if False:",
           "breaks": "an older SpecWeaver opens a file a newer one wrote",
-          "symbol_sha": "sha256:c956c298fece51bf50ad772e69546424fe4f3c0b36b31170719d966ef1f0536a"
+          "symbol_sha": "sha256:fa2639c538d53b69fec721c6285062025b58baf8b86af457f97ec85688a00445"
         }
       ]
     },
@@ -252,6 +252,128 @@
           "new": "        _create_table(conn, table) if table.name not in existing else [conn.execute(str(CreateIndex(ix).compile(dialect=_DIALECT))) for ix in table.indexes]",
           "breaks": "an older table gets an index on a column a later helper adds",
           "symbol_sha": "sha256:a4796666c8ed7a595da6522909e54e5f68100c3b38a05f758256c268d53089d6"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "A CLI command whose file cannot be brought up to date stops with a message",
+      "scope": [
+        "tests/integration/interfaces/cli/test_cli_stops_on_a_failed_step.py",
+        "tests/unit/infrastructure/database/test_steps.py",
+        "tests/unit/interfaces/cli_kit/test_stops_on_schema_error.py"
+      ],
+      "mutants": [
+        {
+          "id": "cli-get-db-swallows-again",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "get_db",
+          "old": "    bootstrap_database(str(db_path))\n    return Database(db_path)",
+          "new": "    try:\n        bootstrap_database(str(db_path))\n    except Exception:\n        pass\n    return Database(db_path)",
+          "breaks": "a failed step is a warning and the command goes on, on a broken schema",
+          "symbol_sha": "sha256:c36afe6e90aea862d97a1c7a5d155c01c640efad0731d673e467943db064080b"
+        },
+        {
+          "id": "cli-catch-removed",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
+          "symbol": "stops_on_schema_error",
+          "old": "        print_error(err)\n        raise typer.Exit(code=1) from err",
+          "new": "        raise",
+          "breaks": "a failed step is a traceback, not a message naming the file and the step",
+          "symbol_sha": "sha256:c99501425397f5b0d7cb3fd22294478f428c6335cea08715e7af7d2dab5072fe"
+        },
+        {
+          "id": "state-store-uncaught",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/interfaces/cli.py",
+          "symbol": "_get_state_store",
+          "old": "    with _core.stops_on_schema_error():\n        return StateStore(state_db_path())",
+          "new": "    return StateStore(state_db_path())",
+          "breaks": "sw resume on a newer pipeline_state.db ends in a traceback",
+          "symbol_sha": "sha256:df390815f449d18dac1290a4c784c13dc2e66b691dcce1a4d155473dd595fbd5"
+        },
+        {
+          "id": "unopenable-file-unwrapped",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "upgrade",
+          "old": "        conn = open_sqlite(path, isolation_level=None)\n    except sqlite3.DatabaseError as exc:",
+          "new": "        conn = open_sqlite(path, isolation_level=None)\n    except ZeroDivisionError as exc:",
+          "breaks": "a file that is not a database ends in a traceback instead of naming the file",
+          "symbol_sha": "sha256:fa2639c538d53b69fec721c6285062025b58baf8b86af457f97ec85688a00445"
+        },
+        {
+          "id": "step-error-outside-the-family",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "SchemaStepError",
+          "old": "class SchemaStepError(SchemaError):",
+          "new": "class SchemaStepError(RuntimeError):",
+          "breaks": "a door that catches SchemaError misses a failed step",
+          "symbol_sha": "sha256:6172a5148dfc5b69c176df0fa855f5b4692c36b796e7145cb533f0c8b9f704c2"
+        },
+        {
+          "id": "cli-catch-too-wide",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
+          "symbol": "stops_on_schema_error",
+          "old": "    except SchemaError as err:",
+          "new": "    except Exception as err:",
+          "breaks": "the CLI turns every error into exit 1, hiding a bug behind a one-line message",
+          "symbol_sha": "sha256:c99501425397f5b0d7cb3fd22294478f428c6335cea08715e7af7d2dab5072fe"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "Help and the version open no database; the CLI door sets its settings",
+      "scope": [
+        "tests/unit/interfaces/cli/test_help_opens_no_database.py",
+        "tests/unit/interfaces/cli/test_cli_door_settings.py",
+        "tests/e2e/capabilities/interfaces/test_fresh_machine_cli_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "callback-opens-the-database",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/main.py",
+          "symbol": "_app_callback",
+          "old": "    setup_logging()\n    logger.debug(\"CLI invoked\")",
+          "new": "    _core.get_db()\n    logger.debug(\"CLI invoked\")",
+          "breaks": "sw run --help fails on a broken database and creates one on a fresh machine",
+          "symbol_sha": "sha256:44272043cf15f121c56af05f90af1142010c8beb3749c16dd586e0c9f9d9e575"
+        },
+        {
+          "id": "cli-lock-wait-unset",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/main.py",
+          "symbol": "_app_callback",
+          "old": "    set_lock_wait(30)",
+          "new": "    pass",
+          "breaks": "the CLI waits whatever an earlier door set, not 30 s",
+          "symbol_sha": "sha256:44272043cf15f121c56af05f90af1142010c8beb3749c16dd586e0c9f9d9e575"
+        },
+        {
+          "id": "project-log-switch-removed",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli_kit/_core.py",
+          "symbol": "get_db",
+          "old": "        _log_to_active_project()",
+          "new": "        pass",
+          "breaks": "a command logs to _global, not to its active project",
+          "symbol_sha": "sha256:1f2071d969654f001dc918bd42362e91448eef14e20f408a572d8005c2051edd"
+        },
+        {
+          "id": "project-log-switch-not-reset",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/main.py",
+          "symbol": "_app_callback",
+          "old": "    _core.log_to_project_at_first_use()",
+          "new": "    pass",
+          "breaks": "a second command in one process keeps the first command's project log",
+          "symbol_sha": "sha256:44272043cf15f121c56af05f90af1142010c8beb3749c16dd586e0c9f9d9e575"
         }
       ]
     }

@@ -11,6 +11,8 @@ archetype: adapter
 
 consumes:
   - specweaver/core/config
+  - specweaver/infrastructure/database
+  - specweaver/telemetry_logger
   - specweaver/workspace
 
 forbids:
