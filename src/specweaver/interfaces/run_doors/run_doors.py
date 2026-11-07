@@ -46,7 +46,7 @@ def build_run_or_exit(
         build_run_sync,
         project_for,
     )
-    from specweaver.workspace.store import project_root_of
+    from specweaver.workspace.lookups import project_root_of
 
     db = _core.get_db()
     try:
@@ -125,7 +125,7 @@ def refuse_unstarted_worktree(err: SessionWorktreeError) -> NoReturn:
 
 def recorded_project_root(name: str) -> Path:
     """The folder of the project a run recorded; a project no longer registered stops the command."""
-    from specweaver.workspace.store import project_root_of
+    from specweaver.workspace.lookups import project_root_of
 
     root = project_root_of(_core.get_db(), name)
     if root is None:

@@ -76,10 +76,10 @@
           "origin": "authored",
           "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
           "symbol": "_create_config",
-          "old": "    for metadata in (WorkspaceBase.metadata, LlmBase.metadata, FlowBase.metadata):\n",
-          "new": "    for metadata in (WorkspaceBase.metadata, LlmBase.metadata, FlowBase.metadata):\n        print(\"tables:\", list(metadata.tables))\n",
+          "old": "        _create_tables(conn, tables)\n",
+          "new": "        _create_tables(conn, tables)\n        print(\"tables:\", [table.name for table in tables])\n",
           "breaks": "the config DB writes its schema to stdout on every bootstrap, so `sw run --json` is unparseable from its first line — the state it shipped in, undetected, through a full green suite",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "log-records-return-to-stdout",

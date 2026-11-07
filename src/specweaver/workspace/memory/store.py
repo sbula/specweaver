@@ -5,18 +5,19 @@
 
 Defines Task, Epic, TaskDependency, StateTransition, and Defect entities
 for the persistent Agent Memory Bank (US-28). All models reuse
-workspace.store.Base to share the MetaData registry with Project.
+workspace.models.Base to share the MetaData registry with Project.
 """
 
 import enum
 import uuid
 from datetime import datetime
+from typing import cast
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Uuid
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Table, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from specweaver.infrastructure.database import StrictISODateTime
-from specweaver.workspace.store import Base
+from specweaver.workspace.models import Base
 
 # ── Enums ──────────────────────────────────────────────────────────────
 
@@ -72,6 +73,26 @@ ALLOWED_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
     TaskStatus.ARCHIVED: set(),
 }
 
+
+def _project_name_column() -> Mapped[str]:
+    """The owning project; renaming or removing the project carries to the row."""
+    return mapped_column(
+        String,
+        ForeignKey("workspace_projects.name", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+
+def _task_id_column() -> Mapped[uuid.UUID]:
+    """The owning task, indexed; removing the task removes the row."""
+    return mapped_column(
+        Uuid,
+        ForeignKey("memory_tasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 # ── Models ─────────────────────────────────────────────────────────────
 
 
@@ -81,11 +102,7 @@ class Epic(Base):
     __tablename__ = "memory_epics"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    project_name: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("workspace_projects.name", onupdate="CASCADE", ondelete="CASCADE"),
-        nullable=False,
-    )
+    project_name: Mapped[str] = _project_name_column()
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, default=None)
     status: Mapped[EpicStatus] = mapped_column(default=EpicStatus.OPEN, nullable=False)
@@ -99,11 +116,7 @@ class Task(Base):
     __tablename__ = "memory_tasks"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    project_name: Mapped[str] = mapped_column(
-        String,
-        ForeignKey("workspace_projects.name", onupdate="CASCADE", ondelete="CASCADE"),
-        nullable=False,
-    )
+    project_name: Mapped[str] = _project_name_column()
     epic_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid,
         ForeignKey("memory_epics.id", ondelete="SET NULL"),
@@ -161,12 +174,7 @@ class StateTransition(Base):
     __tablename__ = "memory_state_transitions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    task_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("memory_tasks.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
+    task_id: Mapped[uuid.UUID] = _task_id_column()
     from_status: Mapped[TaskStatus] = mapped_column(nullable=False)
     to_status: Mapped[TaskStatus] = mapped_column(nullable=False)
     reason: Mapped[TransitionReason] = mapped_column(nullable=False)
@@ -180,12 +188,7 @@ class Defect(Base):
     __tablename__ = "memory_defects"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    task_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("memory_tasks.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
+    task_id: Mapped[uuid.UUID] = _task_id_column()
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String, default=None)
     status: Mapped[DefectStatus] = mapped_column(default=DefectStatus.OPEN, nullable=False)
@@ -195,3 +198,10 @@ class Defect(Base):
     __table_args__ = (
         CheckConstraint("length(description) <= 8192", name="chk_defect_desc_length"),
     )
+
+
+#: The tables, in the order a step creates them (a foreign key's target first).
+MEMORY_TABLES: tuple[Table, ...] = tuple(
+    cast("Table", model.__table__)
+    for model in (Epic, Task, TaskDependency, StateTransition, Defect)
+)

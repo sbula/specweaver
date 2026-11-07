@@ -17,8 +17,6 @@ Proves: TECH-090 FR-7
 
 from __future__ import annotations
 
-import sqlite3
-from contextlib import closing
 from typing import TYPE_CHECKING
 
 import pytest
@@ -35,7 +33,7 @@ from specweaver.infrastructure.database import (
 )
 from specweaver.interfaces.cli.main import app
 from specweaver.interfaces.run_setup.builder import RunRequest, build_run_sync
-from tests.fixtures.db_utils import register_test_project
+from tests.fixtures.db_utils import register_test_project, set_user_version, user_version
 from tests.rendering import shows
 
 if TYPE_CHECKING:
@@ -71,17 +69,6 @@ def _request(db: Database, root: Path) -> RunRequest:
     )
 
 
-def _version(path: Path) -> int:
-    with closing(sqlite3.connect(path)) as conn:
-        return int(conn.execute("PRAGMA user_version").fetchone()[0])
-
-
-def _at_version(path: Path, version: int) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with closing(sqlite3.connect(path)) as conn:
-        conn.execute(f"PRAGMA user_version = {version}")
-
-
 def test_the_run_setup_creates_reservations_at_the_current_version(
     world: tuple[Database, Path],
 ) -> None:
@@ -90,7 +77,7 @@ def test_the_run_setup_creates_reservations_at_the_current_version(
 
     build_run_sync(_request(db, root))
 
-    assert _version(path) == 1
+    assert user_version(path) == 1
 
 
 def test_a_current_file_keeps_its_held_locks(world: tuple[Database, Path]) -> None:
@@ -117,7 +104,7 @@ def test_a_removed_project_folder_is_not_made_again(world: tuple[Database, Path]
 def test_a_newer_file_makes_the_run_setup_raise(world: tuple[Database, Path]) -> None:
     db, root = world
     path = root / ".specweaver" / "reservations.db"
-    _at_version(path, 99)
+    set_user_version(path, 99)
 
     with pytest.raises(SchemaTooNewError, match="schema version 99") as caught:
         build_run_sync(_request(db, root))
@@ -148,7 +135,7 @@ def test_sw_run_stops_on_a_newer_reservations_file(
     (root / "pyproject.toml").write_text('[project]\nname = "x"\n')
     (root / "spec.md").write_text("# Spec\n", encoding="utf-8")
     path = root / ".specweaver" / "reservations.db"
-    _at_version(path, 99)
+    set_user_version(path, 99)
 
     result = runner.invoke(
         app, ["run", "validate_only", str(root / "spec.md"), "--project", str(root)]

@@ -32,14 +32,10 @@ from specweaver.infrastructure.database import (
     rename_legacy_tables,
     upgrade,
 )
+from tests.fixtures.db_utils import user_version
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-def _version(path: Path) -> int:
-    with closing(sqlite3.connect(path)) as conn:
-        return int(conn.execute("PRAGMA user_version").fetchone()[0])
 
 
 def _columns(path: Path, table: str) -> list[str]:
@@ -72,7 +68,7 @@ def test_a_new_file_runs_every_step(tmp_path: Path) -> None:
     upgrade(tmp_path / "a.db", _steps(ran))
 
     assert ran == ["create", "add"]
-    assert _version(tmp_path / "a.db") == 2
+    assert user_version(tmp_path / "a.db") == 2
     assert _columns(tmp_path / "a.db", "t") == ["a", "b"]
 
 
@@ -84,7 +80,7 @@ def test_an_old_file_runs_only_what_it_lacks(tmp_path: Path) -> None:
     upgrade(path, _steps(ran))
 
     assert ran == ["add"]
-    assert _version(path) == 2
+    assert user_version(path) == 2
 
 
 def test_a_second_run_in_a_new_process_changes_nothing(tmp_path: Path) -> None:
@@ -95,7 +91,7 @@ def test_a_second_run_in_a_new_process_changes_nothing(tmp_path: Path) -> None:
     upgrade(path, _steps(ran), _seen=set())
 
     assert ran == []
-    assert _version(path) == 2
+    assert user_version(path) == 2
 
 
 def test_a_file_this_process_upgraded_is_not_read_again(tmp_path: Path) -> None:
@@ -123,7 +119,7 @@ def test_a_failed_step_rolls_back_its_ddl_and_names_itself(tmp_path: Path) -> No
 
     assert str(path) in str(caught.value)
     assert "disk full" in str(caught.value)
-    assert _version(path) == 1
+    assert user_version(path) == 1
     assert _columns(path, "t") == ["a"]
 
 
@@ -161,7 +157,7 @@ def test_adopt_runs_once_inside_the_first_missing_step(tmp_path: Path) -> None:
 
     assert seen == [0]
     assert ran == ["add"]
-    assert _version(path) == 2
+    assert user_version(path) == 2
 
 
 def test_a_rename_lost_to_another_process_is_no_error(tmp_path: Path) -> None:
@@ -206,7 +202,7 @@ def test_an_empty_file_is_a_new_database(tmp_path: Path) -> None:
 
     upgrade(path, _steps([]))
 
-    assert _version(path) == 2
+    assert user_version(path) == 2
 
 
 def test_a_steps_own_sql_error_stays_the_steps_error(tmp_path: Path) -> None:

@@ -1,22 +1,19 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
+"""The workspace repository: projects, the active project and standards, in an async session."""
+
 import json
 import logging
 import re
 import shutil
 from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
 
-from sqlalchemy import Float, ForeignKey, Integer, String, delete, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from specweaver.commons.enums.dal import DALLevel
-from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
 from specweaver.core.config.paths import scenario_store_for
-from specweaver.infrastructure.database import StrictISODateTime
+from specweaver.workspace.models import ActiveState, Project, ProjectStandard
 
 logger = logging.getLogger(__name__)
 
@@ -26,112 +23,36 @@ def _validate_project_name(name: str) -> None:
         raise ValueError(f"Invalid project name '{name}'")
 
 
-#: The DAL of a project nobody set one for, and of a folder outside every project `[agreed 2026-10-08]`.
-DEFAULT_DAL = DALLevel.DAL_C
+def _iso(value: object) -> object:
+    """A stored time as ISO-8601 text; a value that is not a `datetime` as it is."""
+    return value.isoformat() if isinstance(value, datetime) else value
 
 
-class Base(DeclarativeBase):
-    pass
+def _project_dict(project: Project) -> dict[str, object]:
+    return {
+        "name": project.name,
+        "root_path": project.root_path,
+        "created_at": _iso(project.created_at),
+        "last_used_at": _iso(project.last_used_at),
+        "log_level": project.log_level,
+        "constitution_max_size": project.constitution_max_size,
+        "domain_profile": project.domain_profile,
+        "auto_bootstrap_constitution": project.auto_bootstrap_constitution,
+        "default_dal": project.default_dal,
+    }
 
 
-class Project(Base):
-    __tablename__ = "workspace_projects"
-
-    name: Mapped[str] = mapped_column(String, primary_key=True)
-    root_path: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
-    last_used_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
-    log_level: Mapped[str] = mapped_column(String, default="DEBUG", nullable=False)
-    #: What reaches the console; `log_level` is what reaches the log file.
-    console_log_level: Mapped[str] = mapped_column(
-        String, default="WARNING", server_default="WARNING", nullable=False
-    )
-    constitution_max_size: Mapped[int] = mapped_column(
-        Integer, default=DEFAULT_MAX_CONSTITUTION_SIZE, nullable=False
-    )
-    domain_profile: Mapped[str | None] = mapped_column(String, default=None)
-    auto_bootstrap_constitution: Mapped[str] = mapped_column(
-        String, default="prompt", nullable=False
-    )
-    #: Unused; a database that has this NOT NULL column needs a value on every insert.
-    stitch_mode: Mapped[str] = mapped_column(String, default="off", nullable=False)
-    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)
-
-
-class ActiveState(Base):
-    __tablename__ = "workspace_active_state"
-
-    key: Mapped[str] = mapped_column(String, primary_key=True)
-    value: Mapped[str] = mapped_column(String, nullable=False)
-
-
-class ProjectStandard(Base):
-    __tablename__ = "workspace_project_standards"
-
-    project_name: Mapped[str] = mapped_column(
-        String, ForeignKey("workspace_projects.name", ondelete="CASCADE"), primary_key=True
-    )
-    scope: Mapped[str] = mapped_column(String, primary_key=True)
-    language: Mapped[str] = mapped_column(String, primary_key=True)
-    category: Mapped[str] = mapped_column(String, primary_key=True)
-    data: Mapped[str] = mapped_column(String, nullable=False)
-    confidence: Mapped[float] = mapped_column(Float, nullable=False)
-    confirmed_by: Mapped[str | None] = mapped_column(String, default=None)
-    scanned_at: Mapped[datetime] = mapped_column(StrictISODateTime, nullable=False)
-
-
-def _project_row_at(db: Any, root: Path) -> Any:
-    """The row of the project registered at `root`, the path compared resolved; None when none is."""
-    target = root.resolve()
-    with db.connect() as conn:
-        rows = conn.execute(
-            "SELECT name, root_path, default_dal, domain_profile FROM workspace_projects"
-        ).fetchall()
-    return next((row for row in rows if Path(row["root_path"]).resolve() == target), None)
-
-
-def default_dal_at(db: Any, root: Path) -> DALLevel | None:
-    """The default DAL of the project registered at `root`; None when no project is."""
-    row = _project_row_at(db, root)
-    if row is None:
-        return None
-    try:
-        return DALLevel(row["default_dal"])
-    except ValueError:
-        logger.warning(
-            "The project's stored DAL %r is not a DAL, so it is ignored", row["default_dal"]
-        )
-        return None
-
-
-def project_name_at(db: Any, root: Path) -> str | None:
-    """The name of the project registered at `root`; None when no project is."""
-    row = _project_row_at(db, root)
-    return None if row is None else str(row["name"])
-
-
-def domain_profile_at(db: Any, root: Path) -> str | None:
-    """The domain profile of the project registered at `root`; None when none is set or registered."""
-    row = _project_row_at(db, root)
-    return None if row is None else row["domain_profile"]
-
-
-def active_project(db: Any) -> str | None:
-    """The active project's name; None when no project is active."""
-    with db.connect() as conn:
-        row = conn.execute(
-            "SELECT value FROM workspace_active_state WHERE key = 'active_project'"
-        ).fetchone()
-    return str(row["value"]) if row else None
-
-
-def project_root_of(db: Any, name: str) -> Path | None:
-    """The registered root of project `name`; None when no project has that name."""
-    with db.connect() as conn:
-        row = conn.execute(
-            "SELECT root_path FROM workspace_projects WHERE name = ?", (name,)
-        ).fetchone()
-    return Path(row["root_path"]) if row else None
+def _standard_dict(row: ProjectStandard) -> dict[str, object]:
+    return {
+        "project_name": row.project_name,
+        "scope": row.scope,
+        "language": row.language,
+        "category": row.category,
+        "data": row.data,
+        "confidence": row.confidence,
+        "confirmed_by": row.confirmed_by,
+        "scanned_at": _iso(row.scanned_at),
+    }
 
 
 class WorkspaceRepository:
@@ -172,45 +93,12 @@ class WorkspaceRepository:
 
     async def get_project(self, name: str) -> dict[str, object] | None:
         project = await self.session.get(Project, name)
-        if project:
-            return {
-                "name": project.name,
-                "root_path": project.root_path,
-                "created_at": project.created_at.isoformat()
-                if isinstance(project.created_at, datetime)
-                else project.created_at,
-                "last_used_at": project.last_used_at.isoformat()
-                if isinstance(project.last_used_at, datetime)
-                else project.last_used_at,
-                "log_level": project.log_level,
-                "constitution_max_size": project.constitution_max_size,
-                "domain_profile": project.domain_profile,
-                "auto_bootstrap_constitution": project.auto_bootstrap_constitution,
-                "default_dal": project.default_dal,
-            }
-        return None
+        return _project_dict(project) if project else None
 
     async def list_projects(self) -> list[dict[str, object]]:
         stmt = select(Project).order_by(Project.last_used_at.desc())
         result = await self.session.execute(stmt)
-        return [
-            {
-                "name": project.name,
-                "root_path": project.root_path,
-                "created_at": project.created_at.isoformat()
-                if isinstance(project.created_at, datetime)
-                else project.created_at,
-                "last_used_at": project.last_used_at.isoformat()
-                if isinstance(project.last_used_at, datetime)
-                else project.last_used_at,
-                "log_level": project.log_level,
-                "constitution_max_size": project.constitution_max_size,
-                "domain_profile": project.domain_profile,
-                "auto_bootstrap_constitution": project.auto_bootstrap_constitution,
-                "default_dal": project.default_dal,
-            }
-            for project in result.scalars()
-        ]
+        return [_project_dict(project) for project in result.scalars()]
 
     async def remove_project(self, name: str) -> None:
         project = await self.session.get(Project, name)
@@ -442,21 +330,7 @@ class WorkspaceRepository:
             stmt = stmt.where(ProjectStandard.language == language)
 
         result = await self.session.execute(stmt)
-        return [
-            {
-                "project_name": row.project_name,
-                "scope": row.scope,
-                "language": row.language,
-                "category": row.category,
-                "data": row.data,
-                "confidence": row.confidence,
-                "confirmed_by": row.confirmed_by,
-                "scanned_at": row.scanned_at.isoformat()
-                if isinstance(row.scanned_at, datetime)
-                else row.scanned_at,
-            }
-            for row in result.scalars()
-        ]
+        return [_standard_dict(row) for row in result.scalars()]
 
     async def get_standard(
         self,
@@ -472,21 +346,7 @@ class WorkspaceRepository:
             ProjectStandard.category == category,
         )
         row = (await self.session.execute(stmt)).scalar_one_or_none()
-        if not row:
-            return None
-
-        return {
-            "project_name": row.project_name,
-            "scope": row.scope,
-            "language": row.language,
-            "category": row.category,
-            "data": row.data,
-            "confidence": row.confidence,
-            "confirmed_by": row.confirmed_by,
-            "scanned_at": row.scanned_at.isoformat()
-            if isinstance(row.scanned_at, datetime)
-            else row.scanned_at,
-        }
+        return _standard_dict(row) if row else None
 
     async def clear_standards(
         self,

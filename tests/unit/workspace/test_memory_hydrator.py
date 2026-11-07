@@ -34,7 +34,7 @@ from specweaver.workspace.memory.hydrator import (
     _sanitize,
 )
 from specweaver.workspace.memory.store import Defect, DefectStatus, Task, TaskStatus
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 from tests.fixtures.db_utils import register_fk_pragma_listener
 
 

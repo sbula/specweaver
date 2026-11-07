@@ -26,7 +26,7 @@ from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
 from specweaver.infrastructure.database import Database
 from specweaver.workspace.memory.store import Task, TaskStatus
-from specweaver.workspace.store import Base
+from specweaver.workspace.models import Base
 
 
 @pytest.mark.asyncio

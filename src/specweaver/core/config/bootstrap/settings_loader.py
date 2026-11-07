@@ -17,7 +17,7 @@ from specweaver.core.config.settings import (
 )
 from specweaver.core.config.settings_file import SettingsFileError, parse_section, validate
 from specweaver.core.config.yaml_lines import yaml_line
-from specweaver.workspace.store import project_root_of
+from specweaver.workspace.lookups import project_root_of
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine

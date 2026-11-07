@@ -137,7 +137,7 @@ def _require_active_project() -> str:
 
 def project_root(name: str) -> Path | None:
     """The registered root directory of project `name`, or `None` if it has none."""
-    from specweaver.workspace.store import project_root_of
+    from specweaver.workspace.lookups import project_root_of
 
     return project_root_of(get_db(), name)
 
@@ -156,7 +156,7 @@ def existing_project_root_or_exit(name: str) -> Path:
 
 def registered_project_at(path: Path) -> str | None:
     """The name of the project registered at `path`, if any."""
-    from specweaver.workspace.store import project_name_at
+    from specweaver.workspace.lookups import project_name_at
 
     return project_name_at(get_db(), path)
 

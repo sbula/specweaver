@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from specweaver.workspace.memory.queries import MemoryQueryService
 from specweaver.workspace.memory.store import Defect, DefectStatus, Task, TaskStatus
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 from tests.fixtures.db_utils import register_fk_pragma_listener
 
 

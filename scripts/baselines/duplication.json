@@ -408,25 +408,5 @@
     "lines": 20,
     "first": "src/specweaver/workspace/memory/repository/resilience.py:304",
     "second": "src/specweaver/workspace/memory/repository/resilience.py:210"
-  },
-  "src/specweaver/workspace/memory/store.py <-> src/specweaver/workspace/memory/store.py @8f0a595363e4": {
-    "lines": 8,
-    "first": "src/specweaver/workspace/memory/store.py:186",
-    "second": "src/specweaver/workspace/memory/store.py:167"
-  },
-  "src/specweaver/workspace/memory/store.py <-> src/specweaver/workspace/memory/store.py @adcf8d8e601e": {
-    "lines": 7,
-    "first": "src/specweaver/workspace/memory/store.py:105",
-    "second": "src/specweaver/workspace/memory/store.py:87"
-  },
-  "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @3428b6a9b834": {
-    "lines": 14,
-    "first": "src/specweaver/workspace/store.py:483",
-    "second": "src/specweaver/workspace/store.py:451"
-  },
-  "src/specweaver/workspace/store.py <-> src/specweaver/workspace/store.py @9b9e6b544999": {
-    "lines": 16,
-    "first": "src/specweaver/workspace/store.py:202",
-    "second": "src/specweaver/workspace/store.py:181"
   }
 }

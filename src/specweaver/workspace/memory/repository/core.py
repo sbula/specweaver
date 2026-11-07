@@ -31,7 +31,7 @@ from specweaver.workspace.memory.store import (
     TaskStatus,
     TransitionReason,
 )
-from specweaver.workspace.store import Project
+from specweaver.workspace.models import Project
 
 logger = logging.getLogger(__name__)
 

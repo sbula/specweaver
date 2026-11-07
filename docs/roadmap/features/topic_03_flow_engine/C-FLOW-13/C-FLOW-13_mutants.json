@@ -174,7 +174,7 @@
           "old": "        project = project_for(db, project_path)\n",
           "new": "        project = project_for(db, None)\n",
           "breaks": "a command on one project runs under another project's name and settings",
-          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+          "symbol_sha": "sha256:27c3730a5f3d57f382fc2305a87be25ed914897c3391f8c4557a6da052a523b6"
         }
       ]
     },
@@ -647,7 +647,7 @@
           "old": "    _drop_retired_llm_tables(conn)\n",
           "new": "    pass\n",
           "breaks": "the old LLM settings tables stay in existing databases as a second, dead source",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "role-table-overwritten",

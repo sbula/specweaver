@@ -16,7 +16,7 @@ from specweaver.core.flow.run_state.run_context import GuidanceContent, RunConte
 from specweaver.infrastructure.llm.models import ProjectMetadata, PromptSafeConfig
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 
 
 @pytest_asyncio.fixture

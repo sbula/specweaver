@@ -6,12 +6,16 @@
 
 from __future__ import annotations
 
+import sqlite3
+from contextlib import closing
 from typing import TYPE_CHECKING
 
 from specweaver.commons.async_bridge import run_sync
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from specweaver.infrastructure.database import Database
 
 
@@ -126,3 +130,16 @@ def register_fk_pragma_listener(engine: object) -> None:
         cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+
+
+def user_version(path: Path) -> int:
+    """A file's schema version, read with a plain connection (no opener, no steps)."""
+    with closing(sqlite3.connect(path)) as conn:
+        return int(conn.execute("PRAGMA user_version").fetchone()[0])
+
+
+def set_user_version(path: Path, version: int) -> None:
+    """Stamp a file with a schema version, creating it if missing."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(path)) as conn:
+        conn.execute(f"PRAGMA user_version = {int(version)}")

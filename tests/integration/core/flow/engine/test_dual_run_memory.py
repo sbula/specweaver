@@ -47,7 +47,7 @@ from specweaver.core.flow.run_state.run_context import (
 )
 from specweaver.infrastructure.database import Database
 from specweaver.workspace.memory.store import Task, TaskStatus
-from specweaver.workspace.store import Base
+from specweaver.workspace.models import Base
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:

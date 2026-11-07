@@ -31,7 +31,7 @@ from specweaver.workspace.memory.errors import StaleTaskVersionError
 from specweaver.workspace.memory.models import HandoverContext
 from specweaver.workspace.memory.repository import MemoryRepository
 from specweaver.workspace.memory.store import Task, TaskStatus
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 from tests.fixtures.db_utils import register_fk_pragma_listener
 
 pytestmark = pytest.mark.integration

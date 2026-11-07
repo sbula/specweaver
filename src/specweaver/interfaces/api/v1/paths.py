@@ -94,7 +94,7 @@ async def resolve_project_root(project_name: str, db: Database) -> Path:
     Raises:
         SpecWeaverAPIError: If project not found.
     """
-    from specweaver.workspace.store import project_root_of
+    from specweaver.workspace.lookups import project_root_of
 
     root = await asyncio.to_thread(project_root_of, db, project_name)
     if root is None:

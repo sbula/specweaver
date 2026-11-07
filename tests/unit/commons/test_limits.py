@@ -18,10 +18,10 @@ from __future__ import annotations
 import inspect
 
 from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
+from specweaver.workspace.models import Project
 from specweaver.workspace.project.constitution import (
     DEFAULT_MAX_CONSTITUTION_SIZE as LOADER_DEFAULT,
 )
-from specweaver.workspace.store import Project
 
 
 def test_the_loader_and_the_store_share_one_limit() -> None:

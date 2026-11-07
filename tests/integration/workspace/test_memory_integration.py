@@ -29,7 +29,7 @@ from specweaver.workspace.memory.store import (
     TaskStatus,
     TransitionReason,
 )
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 from tests.fixtures.db_utils import register_fk_pragma_listener
 
 

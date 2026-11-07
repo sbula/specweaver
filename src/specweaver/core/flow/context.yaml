@@ -18,7 +18,8 @@ archetype: orchestrator
 consumes:
   - specweaver/commons
   - specweaver/infrastructure/database
-  - specweaver/workspace/store
+  - specweaver/workspace/lookups
+  - specweaver/workspace/models
   - specweaver/sandbox/base
   - specweaver/sandbox/language/core
   - specweaver/sandbox/filesystem/core

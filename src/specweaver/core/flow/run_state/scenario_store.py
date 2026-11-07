@@ -20,7 +20,7 @@ def scenario_store(context: RunContext) -> Path | None:
     """The scenario store of the run's registered project; None when it is not registered."""
     from specweaver.core.config.paths import scenario_store_for
     from specweaver.core.flow.run_state.registered import registered
-    from specweaver.workspace.store import project_name_at
+    from specweaver.workspace.lookups import project_name_at
 
     name = registered(context, project_name_at, "registered name")
     return scenario_store_for(name) if name else None

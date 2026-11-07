@@ -96,7 +96,7 @@
         {
           "id": "default-dal-by-name",
           "origin": "authored",
-          "file": "src/specweaver/workspace/store.py",
+          "file": "src/specweaver/workspace/lookups.py",
           "symbol": "_project_row_at",
           "old": "    return next((row for row in rows if Path(row[\"root_path\"]).resolve() == target), None)\n",
           "new": "    return next((row for row in rows if Path(row[\"name\"]).resolve() == target), None)\n",
@@ -111,12 +111,12 @@
           "old": "    if dal is None:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
           "new": "    if False:\n        dal = registered(context, default_dal_at, \"default DAL\")\n",
           "breaks": "a target without a declared DAL has none, so its history group is unknown",
-          "symbol_sha": "sha256:973e97afe09ad63f4045b102d50a84dfad136de651982301d3256224b906a308"
+          "symbol_sha": "sha256:1d3054e0e65e8a6ddf7709098980b5349ff661042a509fd5fdf1b24bf81f5aec"
         },
         {
           "id": "old-default-dal-a",
           "origin": "authored",
-          "file": "src/specweaver/workspace/store.py",
+          "file": "src/specweaver/workspace/models.py",
           "symbol": "Project",
           "old": "    default_dal: Mapped[str] = mapped_column(String, default=DEFAULT_DAL.value, nullable=False)\n",
           "new": "    default_dal: Mapped[str] = mapped_column(String, default=\"DAL_A\", nullable=False)\n",

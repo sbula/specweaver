@@ -20,7 +20,7 @@ consumes:
   - specweaver/sandbox/filesystem/core
   - specweaver/sandbox/execution/core
   - specweaver/workflows/implementation
-  - specweaver/workspace/store
+  - specweaver/workspace/lookups
   - specweaver/workspace/memory
   - specweaver/workspace/project
 

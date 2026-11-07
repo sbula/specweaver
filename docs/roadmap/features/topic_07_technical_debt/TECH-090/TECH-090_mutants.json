@@ -222,7 +222,7 @@
           "old": "    _drop_alembic_version(conn)\n",
           "new": "    pass\n",
           "breaks": "a file Alembic touched still claims Alembic manages it",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "call-status-not-added",
@@ -232,7 +232,7 @@
           "old": "    _add_call_status(conn)\n",
           "new": "    pass\n",
           "breaks": "an older ledger lacks call_status and every recorded call fails",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "console-level-not-added",
@@ -242,7 +242,7 @@
           "old": "    _add_console_log_level(conn)\n",
           "new": "    pass\n",
           "breaks": "an older project table lacks console_log_level",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "pre-prefix-file-accepted",
@@ -262,7 +262,7 @@
           "old": "        if table.name not in existing:\n            _create_table(conn, table)",
           "new": "        _create_table(conn, table) if table.name not in existing else [conn.execute(str(CreateIndex(ix).compile(dialect=_DIALECT))) for ix in table.indexes]",
           "breaks": "an older table gets an index on a column a later helper adds",
-          "symbol_sha": "sha256:a4796666c8ed7a595da6522909e54e5f68100c3b38a05f758256c268d53089d6"
+          "symbol_sha": "sha256:fc82e376c783be1e71c5060ee4d7faf2f1f47489a061586b6356434b886bbb65"
         }
       ]
     },
@@ -356,7 +356,7 @@
           "old": "        with _core.stops_on_schema_error():\n            context",
           "new": "        if True:\n            context",
           "breaks": "sw run names the exception class instead of the door's message",
-          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+          "symbol_sha": "sha256:27c3730a5f3d57f382fc2305a87be25ed914897c3391f8c4557a6da052a523b6"
         },
         {
           "id": "removed-folder-made-again",
@@ -577,6 +577,88 @@
           "new": "    logger.info",
           "breaks": "the API writes no log file",
           "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "The workspace's database code is three parts; step 1 names the memory tables",
+      "scope": [
+        "tests/unit/workspace/test_store_split.py",
+        "tests/unit/core/config/test_no_side_effect_imports.py",
+        "tests/integration/core/config/bootstrap/test_config_db_steps.py",
+        "tests/integration/workspace/test_repository_rows.py",
+        "tests/integration/core/config/bootstrap/test_schema_is_one_schema.py"
+      ],
+      "mutants": [
+        {
+          "id": "memory-tables-left-out",
+          "origin": "authored",
+          "file": "src/specweaver/core/config/bootstrap/db_bootstrap.py",
+          "symbol": "_create_config",
+          "old": "        WORKSPACE_TABLES,\n        MEMORY_TABLES,\n",
+          "new": "        WORKSPACE_TABLES,\n",
+          "breaks": "a new specweaver.db has no memory tables",
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
+        },
+        {
+          "id": "memory-rows-stay-on-rename",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/store.py",
+          "symbol": "_project_name_column",
+          "old": "        ForeignKey(\"workspace_projects.name\", onupdate=\"CASCADE\", ondelete=\"CASCADE\"),",
+          "new": "        ForeignKey(\"workspace_projects.name\", ondelete=\"CASCADE\"),",
+          "breaks": "a renamed project leaves its memory rows behind",
+          "symbol_sha": "sha256:b359f20ea8c04e0cb8249cae6b482c6f07233fcc047c8dca3b1548d4984e1e45"
+        },
+        {
+          "id": "task-rows-orphaned",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/memory/store.py",
+          "symbol": "_task_id_column",
+          "old": "        ForeignKey(\"memory_tasks.id\", ondelete=\"CASCADE\"),",
+          "new": "        ForeignKey(\"memory_tasks.id\", ondelete=\"SET NULL\"),",
+          "breaks": "removing a task leaves its transitions and defects",
+          "symbol_sha": "sha256:4724c623f6a61e4bb8cfb7962db1d83d677f914898884ccde854c3a0db867889"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "One copy of each block in the code this ticket touched",
+      "scope": [
+        "tests/integration/workspace/test_repository_rows.py"
+      ],
+      "mutants": [
+        {
+          "id": "project-dict-key-renamed",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "_project_dict",
+          "old": "        \"default_dal\": project.default_dal,",
+          "new": "        \"dal\": project.default_dal,",
+          "breaks": "every reader of a project's default DAL gets nothing",
+          "symbol_sha": "sha256:6fc9ad45272fd53661f75168424448f21fd40554b0245adaab759a939ebe98f1"
+        },
+        {
+          "id": "standard-time-not-text",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "_standard_dict",
+          "old": "        \"scanned_at\": _iso(row.scanned_at),",
+          "new": "        \"scanned_at\": row.scanned_at,",
+          "breaks": "a standard's scan time is a datetime the API cannot send",
+          "symbol_sha": "sha256:bb87bed7aba2ef9a63e5cbcc4d6e45abb65568b53ef904bbcce65e5aa0fbc22e"
+        },
+        {
+          "id": "times-not-text",
+          "origin": "authored",
+          "file": "src/specweaver/workspace/store.py",
+          "symbol": "_iso",
+          "old": "    return value.isoformat() if isinstance(value, datetime) else value",
+          "new": "    return value",
+          "breaks": "project and standard times are datetimes, not text",
+          "symbol_sha": "sha256:504f2f4f7de929aa9e8be50c49f2db1efbb6c2797d80ef96dc1544c294d6abb0"
         }
       ]
     }

@@ -39,8 +39,8 @@ comparison (FR-6), the CLI and the API answer as before.
   `workspace.store` holds `WorkspaceRepository` and no model. Red: the modules do not exist.
 - `tests/unit/core/config/test_no_side_effect_imports.py`: no `import … # noqa: F401` of a store
   in `src/`. Red today: `db_bootstrap.py:13`.
-- That step 1 still creates the 5 memory tables is proven by FR-6's schema comparison
-  (`test_config_db_steps.py`), which fails on a missing table. Mutant: `MEMORY_TABLES` left out of
+- That step 1 still creates the 5 memory tables is proven by FR-6's comparison with the frozen
+  release-before file (`test_schema_is_one_schema.py`), which fails on a missing table. Mutant: `MEMORY_TABLES` left out of
   step 1.
 - Clones 1–4 are moves, guarded by the existing repository and memory tests and FR-6's schema
   comparison. Mutants: a wrong key in `_project_dict`; the `ondelete` of the factory column

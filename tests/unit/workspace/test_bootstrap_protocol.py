@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from specweaver.workspace.memory.hydrator import MemoryHydrator
 from specweaver.workspace.memory.store import Task, TaskStatus
-from specweaver.workspace.store import Base, Project
+from specweaver.workspace.models import Base, Project
 from tests.fixtures.db_utils import register_fk_pragma_listener
 
 

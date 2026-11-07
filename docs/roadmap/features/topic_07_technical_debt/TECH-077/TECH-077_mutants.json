@@ -13,7 +13,7 @@
         {
           "id": "path-not-resolved",
           "origin": "authored",
-          "file": "src/specweaver/workspace/store.py",
+          "file": "src/specweaver/workspace/lookups.py",
           "symbol": "_project_row_at",
           "old": "    target = root.resolve()\n    with db.connect() as conn:\n",
           "new": "    target = root\n    with db.connect() as conn:\n",
@@ -23,7 +23,7 @@
         {
           "id": "root-by-name-prefix",
           "origin": "authored",
-          "file": "src/specweaver/workspace/store.py",
+          "file": "src/specweaver/workspace/lookups.py",
           "symbol": "project_root_of",
           "old": "\"SELECT root_path FROM workspace_projects WHERE name = ?\", (name,)",
           "new": "\"SELECT root_path FROM workspace_projects WHERE name LIKE ?\", (name + \"%\",)",
@@ -128,7 +128,7 @@
           "old": "            raise UnknownProjectError(msg)\n        return name\n",
           "new": "            return active_project(db) or \"\"\n        return name\n",
           "breaks": "an unregistered folder runs with the active project's settings",
-          "symbol_sha": "sha256:c8d94d577e9f1a5b519ff462a13648c4a7ad05ed062a9b1030e5ba1354b1e85a"
+          "symbol_sha": "sha256:a40776ef350fb5e895306f16bc88de857fcabc4bc4208750625594b18dab607f"
         },
         {
           "id": "check-ignores-profile",
@@ -354,7 +354,7 @@
           "old": "    except UnknownProjectError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "an unregistered folder ends in a traceback",
-          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+          "symbol_sha": "sha256:27c3730a5f3d57f382fc2305a87be25ed914897c3391f8c4557a6da052a523b6"
         },
         {
           "id": "resume-worktree-traceback",
@@ -374,7 +374,7 @@
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",
           "breaks": "a command never says its ledger missed calls",
-          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+          "symbol_sha": "sha256:27c3730a5f3d57f382fc2305a87be25ed914897c3391f8c4557a6da052a523b6"
         },
         {
           "id": "no-folder-no-active-root",
@@ -384,7 +384,7 @@
           "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
           "new": "        root = project_path\n",
           "breaks": "a command with no folder has no project root",
-          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+          "symbol_sha": "sha256:27c3730a5f3d57f382fc2305a87be25ed914897c3391f8c4557a6da052a523b6"
         },
         {
           "id": "implement-worktree-traceback",

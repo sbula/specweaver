@@ -35,7 +35,7 @@ consumes:
   - specweaver/workflows/review
   - specweaver/workflows/planning
   - specweaver/workflows/scenarios
-  - specweaver/workspace/store
+  - specweaver/workspace/lookups
   - specweaver/workspace/ast/parsers
   - specweaver/workspace/memory
 

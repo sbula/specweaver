@@ -41,7 +41,7 @@ async def _domain_profile(db: Database, project_root: Path) -> str | None:
     """The `domain_profile` of the project the request names, or None when it has none."""
     import asyncio
 
-    from specweaver.workspace.store import domain_profile_at
+    from specweaver.workspace.lookups import domain_profile_at
 
     profile = await asyncio.to_thread(domain_profile_at, db, project_root)
     return str(profile) if profile else None

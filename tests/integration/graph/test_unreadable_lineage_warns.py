@@ -65,7 +65,7 @@ def test_a_stored_dal_that_is_not_a_dal_is_ignored_with_a_warning(
 ) -> None:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
     from specweaver.infrastructure.database import Database
-    from specweaver.workspace.store import default_dal_at
+    from specweaver.workspace.lookups import default_dal_at
 
     bootstrap_database(str(tmp_path / "specweaver.db"))
     db = Database(tmp_path / "specweaver.db")

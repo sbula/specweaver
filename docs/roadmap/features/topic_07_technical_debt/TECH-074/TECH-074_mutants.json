@@ -484,7 +484,7 @@
           "old": "    _add_cached_columns(conn)\n",
           "new": "    pass\n",
           "breaks": "an existing database never gains the cached columns, and every write to it fails",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         },
         {
           "id": "cached-count-not-stored",
@@ -769,7 +769,7 @@
           "old": "    _add_price_index(conn)\n",
           "new": "    pass\n",
           "breaks": "two commands refreshing at once store a price twice, and the check refuses every later price",
-          "symbol_sha": "sha256:3908e2fe14ee1ddaf544302feb6247880519f0710518248b8faf8bee460c51b6"
+          "symbol_sha": "sha256:430102e08bc189323d262f21f765b6fa5df69b8d8a54388993e7cbdd5b382969"
         }
       ]
     },

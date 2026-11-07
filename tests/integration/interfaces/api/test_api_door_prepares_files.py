@@ -17,8 +17,6 @@ Proves: TECH-090 FR-2, FR-7
 
 from __future__ import annotations
 
-import sqlite3
-from contextlib import closing
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -35,6 +33,7 @@ from specweaver.infrastructure.database import (
 from specweaver.interfaces.api.app import create_app
 from specweaver.interfaces.cli.main import app as cli
 from tests.api_token import TEST_TOKEN
+from tests.fixtures.db_utils import set_user_version, user_version
 from tests.rendering import shows
 
 if TYPE_CHECKING:
@@ -53,21 +52,11 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return path
 
 
-def _version(path: Path) -> int:
-    with closing(sqlite3.connect(path)) as conn:
-        return int(conn.execute("PRAGMA user_version").fetchone()[0])
-
-
-def _at_version(path: Path, version: int) -> None:
-    with closing(sqlite3.connect(path)) as conn:
-        conn.execute(f"PRAGMA user_version = {version}")
-
-
 def test_a_fresh_data_dir_gets_current_files(data_dir: Path) -> None:
     create_app(token=TEST_TOKEN)
 
-    assert _version(data_dir / "specweaver.db") == 1
-    assert _version(data_dir / "pipeline_state.db") == 1
+    assert user_version(data_dir / "specweaver.db") == 1
+    assert user_version(data_dir / "pipeline_state.db") == 1
 
 
 def test_a_given_database_is_brought_up_to_date(data_dir: Path) -> None:
@@ -75,7 +64,7 @@ def test_a_given_database_is_brought_up_to_date(data_dir: Path) -> None:
 
     create_app(token=TEST_TOKEN, db=Database(path))
 
-    assert _version(path) == 1
+    assert user_version(path) == 1
 
 
 def test_the_api_sets_a_5_second_lock_wait(data_dir: Path) -> None:
@@ -88,7 +77,7 @@ def test_the_api_sets_a_5_second_lock_wait(data_dir: Path) -> None:
 
 def test_a_newer_config_database_stops_the_app(data_dir: Path) -> None:
     path = data_dir / "specweaver.db"
-    _at_version(path, 99)
+    set_user_version(path, 99)
 
     with pytest.raises(SchemaTooNewError, match="schema version 99") as caught:
         create_app(token=TEST_TOKEN)
@@ -106,7 +95,7 @@ def test_a_pipeline_state_that_is_not_a_database_stops_the_app(data_dir: Path) -
 
 def test_sw_serve_on_a_newer_config_database_starts_no_server(data_dir: Path) -> None:
     path = data_dir / "specweaver.db"
-    _at_version(path, 99)
+    set_user_version(path, 99)
 
     with patch("uvicorn.run") as serve:
         result = runner.invoke(cli, ["serve"])

@@ -3,14 +3,14 @@
 
 import logging
 import sqlite3
+from collections.abc import Iterable
 from pathlib import Path
 
-from sqlalchemy import MetaData, Table
+from sqlalchemy import Table
 from sqlalchemy.dialects import sqlite as sqlite_dialect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.schema import CreateIndex, CreateTable
 
-import specweaver.workspace.memory.store  # noqa: F401
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.store import Base as FlowBase
@@ -18,7 +18,8 @@ from specweaver.infrastructure.database import Database, Step, upgrade
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.price_store import seed_prices
 from specweaver.infrastructure.llm.store import Base as LlmBase
-from specweaver.workspace.store import Base as WorkspaceBase
+from specweaver.workspace.memory.store import MEMORY_TABLES
+from specweaver.workspace.models import WORKSPACE_TABLES
 
 logger = logging.getLogger(__name__)
 
@@ -162,11 +163,11 @@ def _create_table(conn: sqlite3.Connection, table: Table) -> None:
         conn.execute(str(CreateIndex(index).compile(dialect=_DIALECT)))
 
 
-def _create_tables(conn: sqlite3.Connection, metadata: MetaData) -> None:
+def _create_tables(conn: sqlite3.Connection, tables: Iterable[Table]) -> None:
     """Each missing table with its indexes; an existing table is left to the helpers below, as
     `create_all` leaves it, since its indexes may name columns a helper adds later."""
     existing = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    for table in metadata.sorted_tables:
+    for table in tables:
         if table.name not in existing:
             _create_table(conn, table)
 
@@ -178,8 +179,13 @@ def _drop_alembic_version(conn: sqlite3.Connection) -> None:
 
 def _create_config(conn: sqlite3.Connection) -> None:
     """Step 1: today's schema, created where missing, and every change an older file still needs."""
-    for metadata in (WorkspaceBase.metadata, LlmBase.metadata, FlowBase.metadata):
-        _create_tables(conn, metadata)
+    for tables in (
+        WORKSPACE_TABLES,
+        MEMORY_TABLES,
+        LlmBase.metadata.sorted_tables,
+        FlowBase.metadata.sorted_tables,
+    ):
+        _create_tables(conn, tables)
     _allow_unknown_cost(conn)
     _add_history_columns(conn)
     _add_call_status(conn)

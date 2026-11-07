@@ -25,13 +25,13 @@ import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.infrastructure.database import Database
-from specweaver.workspace.store import (
-    DEFAULT_DAL,
+from specweaver.workspace.lookups import (
     default_dal_at,
     domain_profile_at,
     project_name_at,
     project_root_of,
 )
+from specweaver.workspace.models import DEFAULT_DAL
 from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:

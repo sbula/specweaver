@@ -388,3 +388,37 @@ were rerun after `create_app` and `serve` changed, objected, re-pinned. Stale mu
 - A `503` logs the driver's message at warning level; it carries no SQL.
 - A handler that raises again ends in Starlette's plain `500`, as before this ticket.
 - Each `create_app` in a test switches logging to `_api`; `tests/conftest.py` restores the logger.
+
+## SF-04 CB-1 — `workspace/store.py` split, memory tables named (FR-13, FR-14 part)
+
+**What changed.**
+- `workspace/models.py` holds the tables (`Base`, `Project`, `ActiveState`, `ProjectStandard`,
+  `DEFAULT_DAL`, `WORKSPACE_TABLES`); `workspace/lookups.py` the five sync lookups;
+  `workspace/store.py` only the repository. 36 files changed their imports by script (single-line,
+  parenthesized and `patch("…")` targets); no re-export. Four `context.yaml` files name
+  `workspace/lookups` and `workspace/models` instead of `workspace/store`.
+- `specweaver.db`'s step 1 creates `WORKSPACE_TABLES` and `MEMORY_TABLES` by name; the
+  `import specweaver.workspace.memory.store  # noqa: F401` is gone. Tach exposes
+  `store.MEMORY_TABLES`.
+- Clones 1–4 gone: `_project_dict`, `_standard_dict` and `_iso` in the repository; two column
+  factories in the memory store. Duplication baseline 86 → 82.
+- `tests/fixtures/db_utils.py`: `user_version`, `set_user_version`; the four SF-03 test files use them.
+
+**Found at the gate.**
+- Three mutants were SILENT once the code sat in one place: a renamed key in the project dict, a
+  standard's time left as a `datetime`, and the memory rows' `ON UPDATE CASCADE`. No test had read
+  a whole row back. `test_repository_rows.py` does now, and all three object.
+- The plan said FR-6's comparison proves the memory tables; the right file is
+  `test_schema_is_one_schema.py` (the frozen release file). The plan and the campaign say so now.
+- If a new model were added without a tuple entry, step 1 would skip its table silently. A test
+  now checks the two lists name every table of the shared metadata, once (a mutant dropping
+  `Defect` objects; a module constant cannot be a corpus symbol, so it was run by hand).
+
+**Mutants.** FR-13: 3, FR-14: 3, all objected; 1 by hand. 22 mutants of other features named the
+touched code: 4 repointed to `lookups.py`/`models.py`, TECH-054 FR-2 re-anchored on the new
+loop, all rerun, objected and re-pinned. Stale mutants: 0.
+
+**Tests.** Full suite: 12850 passed, 9 skipped. `quality.py cb`: 17 of 17. `tach check` green.
+
+**Red/blue** (2 cycles, nothing above threshold). Accepted: closed plans and walkthroughs still
+name `workspace/store.py` lines; they record history and are not edited.

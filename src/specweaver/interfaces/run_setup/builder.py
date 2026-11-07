@@ -34,7 +34,7 @@ class UnknownProjectError(ValueError):
 def project_for(db: Database, project_root: Path | None, *, named: str | None = None) -> str:
     """The run's one project: the one named, else the one registered at `project_root`, else (with
     no folder given) the active one. A folder no project is registered at has no project."""
-    from specweaver.workspace.store import active_project, project_name_at
+    from specweaver.workspace.lookups import active_project, project_name_at
 
     if named:
         return named

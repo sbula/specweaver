@@ -53,7 +53,7 @@ class TestValidationDALResolution:
         assert merged.validation.get_override("S01").fail_threshold == 10.0
 
     @pytest.mark.asyncio
-    @patch("specweaver.workspace.store.default_dal_at")
+    @patch("specweaver.workspace.lookups.default_dal_at")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_fallback_to_db(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path
@@ -89,7 +89,7 @@ class TestValidationDALResolution:
         assert merged.validation.get_override("C02").enabled is False
 
     @pytest.mark.asyncio
-    @patch("specweaver.workspace.store.default_dal_at")
+    @patch("specweaver.workspace.lookups.default_dal_at")
     @patch("specweaver.core.config.dal_resolver.DALResolver.resolve")
     async def test_dal_resolution_catches_db_exception(
         self, mock_resolve: MagicMock, mock_repo_class: MagicMock, tmp_path: Path

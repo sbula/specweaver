@@ -57,7 +57,7 @@ def _declarative_bases() -> dict[str, object]:
     from specweaver.core.flow.store import Base as FlowBase
     from specweaver.infrastructure.llm.store import Base as LlmBase
     from specweaver.workspace.memory.store import Base as MemoryBase
-    from specweaver.workspace.store import Base as WorkspaceBase
+    from specweaver.workspace.models import Base as WorkspaceBase
 
     return {
         "llm": LlmBase,

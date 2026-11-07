@@ -28,7 +28,7 @@ from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.flow.engine.isolation import seed_dal_level
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.infrastructure.database import Database
-from specweaver.workspace.store import default_dal_at
+from specweaver.workspace.lookups import default_dal_at
 from tests.fixtures.db_utils import as_a_new_process, register_test_project
 
 if TYPE_CHECKING:

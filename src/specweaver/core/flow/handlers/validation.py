@@ -522,6 +522,6 @@ class ValidateTestsHandler:
 def _profile_of(context: RunContext) -> str | None:
     """The domain profile of the run's project, read from its registration."""
     from specweaver.core.flow.run_state.registered import registered
-    from specweaver.workspace.store import domain_profile_at
+    from specweaver.workspace.lookups import domain_profile_at
 
     return registered(context, domain_profile_at, "domain profile")

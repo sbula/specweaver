@@ -21,6 +21,6 @@ def registered_name(context: RunContext) -> str:
     name here strands every run of a project named unlike its folder.
     """
     from specweaver.core.flow.run_state.registered import registered
-    from specweaver.workspace.store import project_name_at
+    from specweaver.workspace.lookups import project_name_at
 
     return registered(context, project_name_at, "registered name") or context.project_path.name
