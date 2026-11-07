@@ -32,10 +32,10 @@ reason other than the platform fails the run, so a missing tool never looks like
 
 | # | Path | Span | Owner | Status |
 |---|---|---|---|---|
-| P-1 | push to `main` → workflow → suite + `cb` + `doc` on 3.11 and 3.14 → status on GitHub and the README badge | GitHub Actions, the repo's gates | TECH-094 (FR-1..FR-3, FR-6, FR-8) | ⬜ |
-| P-2 | a pull request from a fork → the same jobs with a read-only token and no secrets | GitHub Actions | TECH-094 (FR-1, FR-4) | ⬜ |
-| P-3 | a non-live test sends a request to a real server through `httpx` or `httpx2` → the test fails, locally and on CI | tests, the model client libraries | TECH-094 (FR-4) | ⬜ |
-| P-4 | a test skips on CI because a tool is missing → the run fails naming the test | tests, GitHub Actions | TECH-094 (FR-5) | ⬜ |
+| P-1 | push to `main` → workflow → suite + `cb` + `doc` on 3.11 and 3.14 → status on GitHub and the README badge | GitHub Actions, the repo's gates | TECH-094 (FR-1..FR-3, FR-6, FR-8) | ✅ run 6 (`d2f0f69d`), both jobs green |
+| P-2 | a pull request from a fork → the same jobs with a read-only token and no secrets | GitHub Actions | TECH-094 (FR-1, FR-4) | 🟡 configured and guarded by a test; no fork pull request has run yet |
+| P-3 | a non-live test sends a request to a real server through `httpx` or `httpx2` → the test fails, locally and on CI | tests, the model client libraries | TECH-094 (FR-4) | ✅ the canary |
+| P-4 | a test skips on CI because a tool is missing → the run fails naming the test | tests, GitHub Actions | TECH-094 (FR-5) | ✅ run 2 failed on 9 container skips |
 
 ## Research Findings
 
@@ -184,7 +184,7 @@ commit boundary.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| — | No CI runs the tests | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| — | No CI runs the tests | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -196,6 +196,11 @@ At planning the user asked how a future test is kept off the network: FR-4 moved
 FR-9 (canary) and FR-10 (live keys only in `live` tests) added, and loopback port 11434 blocked
 (Q11), agreed 2026-11-06.
 **Plan approved 2026-11-06** (the user): actions by major tag (F1).
-**Next step**: dev (`specweaver-dev docs/roadmap/features/topic_07_technical_debt/TECH-094/TECH-094_implementation_plan.md`).
+**Dev 2026-11-06/07**: CB-1 `c07bcf7a`, CB-2 `5e3b6d04`; the first real runs (FR-8) found eight faults, fixed
+in `8a7f3e70`, `c720f30c`, `21f436dd`, `6fb52382`, `d2f0f69d` (walkthrough CB-3). Run 6 green on 3.11 and 3.14.
+**Live demo**: <https://github.com/sbula/specweaver/actions/workflows/tests.yml> — every push to `main`.
+**2026-11-07** the user refused to install `gh` (no agent may hold a push credential): CI results come
+as pasted log lines, searched from `short test summary`.
+**Next step**: sign-off.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.

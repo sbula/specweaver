@@ -139,7 +139,10 @@ class TestProgramOutput:
         assert "BUILD SUCCESS" not in out
 
     def test_the_first_runs_downloads_are_dropped(self) -> None:
-        """A fresh machine downloads the exec plugin's dependencies after the banner."""
+        """A fresh machine downloads the exec plugin's dependencies after the banner.
+
+        Proves: TECH-094 FR-8
+        """
         banner = "[INFO] --- exec:3.6.3:java (default-cli) @ probe ---\n"
         downloads = (
             "Downloading from central: https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.jar\n"

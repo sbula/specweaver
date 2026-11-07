@@ -610,6 +610,7 @@ class TestNonPythonToolchainsRunInTheContainer:
 
         Proves: TECH-031 FR-17
     Proves: TECH-031 FR-18
+    Proves: TECH-094 FR-8
     """
 
     @pytest.mark.skipif(not _maven_image_available(), reason=f"{_MAVEN_IMAGE} not present locally")

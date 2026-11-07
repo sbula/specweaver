@@ -186,7 +186,10 @@ class TestBuildFailedWithoutResults:
         assert "Compilation failure" in reason, reason
 
     def test_the_reason_is_the_first_error_not_mavens_closing_hint(self) -> None:
-        """Maven ends every failure with the same "-X switch" hint; the cause is its first error."""
+        """Maven ends every failure with the same "-X switch" hint; the cause is its first error.
+
+        Proves: TECH-094 FR-8
+        """
         from specweaver.sandbox.language.core.toolchain import build_failed_without_results
 
         stdout = (

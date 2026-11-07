@@ -210,14 +210,20 @@ def _debug_command(tmp_path: Path, node_version: str) -> list[str]:
 def test_node_runs_typescript_itself_where_it_strips_types_by_default(
     tmp_path: Path, version: str, direct: bool
 ) -> None:
-    """Node strips types by default from 22.18 and from 23.6; ts-node breaks on TypeScript 7."""
+    """Node strips types by default from 22.18 and from 23.6; ts-node breaks on TypeScript 7.
+
+    Proves: TECH-094 FR-8
+    """
     command = _debug_command(tmp_path, version)
 
     assert (command == ["/usr/bin/node", "src/index.ts"]) is direct, command
 
 
 def test_the_projects_own_tsx_is_used(tmp_path: Path) -> None:
-    """`npm install tsx` puts it in node_modules/.bin, not on PATH."""
+    """`npm install tsx` puts it in node_modules/.bin, not on PATH.
+
+    Proves: TECH-094 FR-8
+    """
     local = tmp_path / "node_modules" / ".bin" / "tsx"
     local.parent.mkdir(parents=True)
     local.write_text("", encoding="utf-8")
