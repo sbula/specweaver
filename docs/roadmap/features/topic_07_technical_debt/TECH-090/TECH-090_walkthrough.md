@@ -65,3 +65,41 @@ settings changed as follows:
 
 **Red/blue.** Nothing above threshold. A step's failure in either store raises `SchemaStepError`
 naming the file; the doors' message comes in SF-03.
+
+## SF-01 CB-3 — `pipeline_state.db` on the opener (FR-1, FR-4)
+
+**What changed.**
+- `StateStore` opens through `open_sqlite` and keeps its schema as step 1.
+- `_adopt_old_version` runs inside step 1's transaction, in this order:
+  1. the legacy renames,
+  2. read `MAX(version)` from `flow_state_schema_version`,
+  3. map it through `_OLD_VERSIONS = {None: 0, 1: 0, 2: 0, 3: 0, 4: 1}`,
+  4. set `user_version`,
+  5. read it back,
+  6. drop the old table.
+- `executescript`, which committed before it ran, is gone: step 1 runs its statements one by one.
+- The opener's allowlist loses `core/flow/engine/store.py`.
+
+**Found while building:** an old file can hold an empty version table. The old code read that as
+"new file" and recorded v4 without checking the columns. The map now names it (`None: 0`), so
+step 1 checks everything; a test covers it.
+
+**Tests.**
+- Red first: `test_state_version_moves.py`, with test files built as v1 (old table names), v2, v3
+  and v4 left them. They cover: each ends at `user_version` 1 with its runs; the empty table; a
+  second open in a new process changes nothing; a failure planted before the drop undoes the
+  version (measured: `user_version` 0, old table at 4); an unknown version stops.
+- Changed: six older store tests read `user_version` instead of the old table.
+- Removed: two tests of the private rename copy.
+
+**Mutants.**
+- Objected, in the corpus: `drop-before-version`, `old-version-ignored`, `unknown-version-guessed`.
+  The last one was silent at first: Python's own `KeyError` also said "7", so the test now requires
+  the full message.
+- Objected, run by hand (a module constant has no symbol): the map entry 2 → 1.
+- **Silent, judged equivalent by the user** `[agreed 2026-11-07]`; the read-back check stays,
+  because it guards the order the user asked for:
+  - `map 4 → 0`: a v4 file then runs step 1, which changes nothing on today's schema, so the result
+    is the same.
+  - `no-read-back`: SQLite always reads back a `user_version` set in the same transaction, so the
+    check cannot fail.

@@ -121,11 +121,9 @@ class TestStateStoreValidationSchema:
             tables = {
                 r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
             }
-            version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[
-                0
-            ]
+            version = conn.execute("PRAGMA user_version").fetchone()[0]
         assert "flow_validation_results" in tables
-        assert version == 4, "the recorded version must reflect the schema actually present"
+        assert version == 1, "the recorded version must reflect the schema actually present"
 
 
 class TestStateStoreSaveValidationResults:

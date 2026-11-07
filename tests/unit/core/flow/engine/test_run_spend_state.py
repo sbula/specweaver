@@ -79,5 +79,5 @@ def test_a_version_3_database_gains_the_column_and_old_runs_load_empty(tmp_path:
 
     assert store.load_run("old").spend_state == {}
     with store.connect() as conn:
-        version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0]
-    assert version == 4
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+    assert version == 1  # TECH-090 FR-4

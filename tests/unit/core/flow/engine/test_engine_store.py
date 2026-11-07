@@ -134,13 +134,9 @@ class TestStoreSchema:
         # Instantiating the store should trigger migration
         _ = StateStore(db_path)
 
-        # Verify schema version was bumped. `INT-US-04` SF-01 CB-2 moved the current version to
-        # 3 (it added `flow_validation_results`), so a v1 database now lands on 3 in one open:
-        # the v1->v2 ALTER still runs, and v2->v3 needed no migration because the new table is
-        # created by the `IF NOT EXISTS` script that runs on every construction.
+        # The old version table becomes `user_version` 1 (TECH-090 FR-4).
         conn = sqlite3.connect(db_path)
-        version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0]
-        assert version == 4
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 1
 
         # Verify parent_run_id column exists
         columns = [
@@ -207,11 +203,9 @@ class TestStoreSchema:
         conn = sqlite3.connect(db_path)
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert not {"pipeline_runs", "audit_log", "state_schema_version"} & tables
-        assert {"flow_pipeline_runs", "flow_audit_log", "flow_state_schema_version"} <= tables
-
-        assert (
-            conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[0] == 4
-        )  # renamed, not re-migrated -- 3 is the current version since CB-2 added a table
+        assert {"flow_pipeline_runs", "flow_audit_log"} <= tables
+        assert "flow_state_schema_version" not in tables
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 1  # TECH-090 FR-4
 
         run_row = conn.execute(
             "SELECT run_id, pipeline_name, status FROM flow_pipeline_runs"
@@ -288,8 +282,7 @@ class TestStoreSchema:
         conn = sqlite3.connect(db_path)
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         conn.close()
-        assert "flow_state_schema_version" in tables
-        assert "state_schema_version" not in tables
+        assert not {"flow_state_schema_version", "state_schema_version"} & tables
 
     def test_resumes_a_half_migrated_state(self, tmp_path: Path) -> None:
         """[Robustness] `ALTER TABLE`/`CREATE TABLE` are DDL — each auto-commits independently in
@@ -333,8 +326,7 @@ class TestStoreSchema:
         conn = sqlite3.connect(db_path)
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         conn.close()
-        assert "state_schema_version" not in tables
-        assert "flow_state_schema_version" in tables
+        assert not {"flow_state_schema_version", "state_schema_version"} & tables
 
         loaded = store.load_run("run-half")
         assert loaded is not None
@@ -370,70 +362,6 @@ class TestStoreSchema:
         conn.close()
         assert "pipeline_runs" in tables
         assert "flow_pipeline_runs" in tables
-
-    def test_rename_swallows_concurrent_operational_error(self) -> None:
-        """[Graceful degradation] `_rename_legacy_tables` must swallow `sqlite3.OperationalError`
-        raised by `ALTER TABLE` itself when a RE-CHECK proves another process already finished the
-        rename (`flow_pipeline_runs` now exists) — not just reach the same outcome via the
-        membership-check skip already covered by the idempotent-construction test above."""
-        import sqlite3
-        from unittest import mock
-
-        store = StateStore.__new__(StateStore)
-        select_call_count = 0
-
-        def fake_execute(sql, *_args, **_kwargs):
-            nonlocal select_call_count
-            stripped = sql.strip()
-            if stripped.startswith("SELECT name FROM sqlite_master"):
-                select_call_count += 1
-                if select_call_count == 1:
-                    return [("pipeline_runs",)]
-                return [("pipeline_runs",), ("flow_pipeline_runs",)]
-            if stripped.startswith("ALTER TABLE pipeline_runs RENAME"):
-                raise sqlite3.OperationalError("no such table: pipeline_runs")
-            raise AssertionError(f"unexpected SQL: {sql}")
-
-        mock_conn = mock.MagicMock()
-        mock_conn.execute.side_effect = fake_execute
-
-        store._rename_legacy_tables(mock_conn)  # must not raise
-
-        mock_conn.execute.assert_any_call("ALTER TABLE pipeline_runs RENAME TO flow_pipeline_runs")
-
-    def test_rename_reraises_genuine_operational_errors(self) -> None:
-        """[Hostile] A genuine `OperationalError` during the `ALTER TABLE` (disk I/O failure, lock
-        contention, corruption) that is NOT explained by "another process already finished the
-        rename" must propagate, not be silently swallowed. Swallowing it unconditionally would let
-        `_ensure_schema()` proceed straight to `executescript(_STATE_SCHEMA_V2)`, creating an empty
-        new `flow_pipeline_runs` table and silently orphaning the untouched old table's data."""
-        import sqlite3
-        from unittest import mock
-
-        store = StateStore.__new__(StateStore)
-
-        def fake_execute(sql, *_args, **_kwargs):
-            stripped = sql.strip()
-            if stripped.startswith("SELECT name FROM sqlite_master"):
-                return [("pipeline_runs",)]  # flow_pipeline_runs never appears
-            if stripped.startswith("ALTER TABLE pipeline_runs RENAME"):
-                raise sqlite3.OperationalError("disk I/O error")
-            raise AssertionError(f"unexpected SQL: {sql}")
-
-        mock_conn = mock.MagicMock()
-        mock_conn.execute.side_effect = fake_execute
-
-        with pytest.raises(sqlite3.OperationalError, match="disk I/O error"):
-            store._rename_legacy_tables(mock_conn)
-
-
-# ---------------------------------------------------------------------------
-# Save / load pipeline runs
-# ---------------------------------------------------------------------------
-
-
-class TestSaveLoadRun:
-    """Tests for saving and loading pipeline runs."""
 
     def test_save_and_load(self, store: StateStore) -> None:
         parent_run = _make_run(run_id="parent-001")
@@ -651,12 +579,11 @@ class TestStoreEdgeCases:
         assert loaded.step_records[0].result.output["metadata"]["nested"]["deep"]["value"] == 42
 
     def test_schema_version_persisted(self, store: StateStore) -> None:
-        """Schema version table should have exactly one entry."""
+        """The schema version lives in `user_version` (TECH-090 FR-3)."""
         conn = store.connect()
-        row = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
         conn.close()
-        assert row is not None
-        assert row[0] == 4, "current schema version: v4 added the runs' spend_state"
+        assert version == 1
 
     def test_foreign_keys_enabled(self, store: StateStore) -> None:
         """Foreign key constraints should be active."""

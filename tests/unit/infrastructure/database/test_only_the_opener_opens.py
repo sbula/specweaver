@@ -27,7 +27,6 @@ _OPENER = _SRC / "infrastructure" / "database"
 _NOT_MOVED_YET = {
     "core/config/database.py",
     "core/config/bootstrap/db_bootstrap.py",
-    "core/flow/engine/store.py",
     "graph/lineage/store/lineage_repository.py",
     "infrastructure/llm/price_refresh.py",
 }

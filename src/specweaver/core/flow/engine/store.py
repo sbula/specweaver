@@ -7,8 +7,8 @@ Stores runtime data (pipeline runs, step results, audit log) in a separate
 ``pipeline_state.db`` file, keeping it isolated from the configuration
 database (``specweaver.db``).
 
-Uses WAL mode for concurrent read/write and ``CREATE TABLE IF NOT EXISTS``
-for idempotent schema creation.
+Opened through the one opener (WAL, foreign keys, the lock wait); the schema is a numbered step
+list in ``PRAGMA user_version``.
 """
 
 from __future__ import annotations
@@ -27,10 +27,11 @@ from specweaver.core.flow.engine.state import (
     StepResult,
     StepStatus,
 )
+from specweaver.infrastructure.database import Step, open_sqlite, rename_legacy_tables, upgrade
 
 logger = logging.getLogger(__name__)
 
-_STATE_SCHEMA_V2 = """\
+_RUNS = """
 CREATE TABLE IF NOT EXISTS flow_pipeline_runs (
     run_id        TEXT PRIMARY KEY,
     parent_run_id TEXT REFERENCES flow_pipeline_runs(run_id),
@@ -43,8 +44,9 @@ CREATE TABLE IF NOT EXISTS flow_pipeline_runs (
     started_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL,
     spend_state   TEXT NOT NULL DEFAULT '{}'
-);
+)"""
 
+_AUDIT = """
 CREATE TABLE IF NOT EXISTS flow_audit_log (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id    TEXT NOT NULL REFERENCES flow_pipeline_runs(run_id),
@@ -52,19 +54,12 @@ CREATE TABLE IF NOT EXISTS flow_audit_log (
     event     TEXT NOT NULL,
     step_name TEXT,
     details   TEXT
-);
+)"""
 
-CREATE TABLE IF NOT EXISTS flow_state_schema_version (
-    version    INTEGER PRIMARY KEY,
-    applied_at TEXT NOT NULL
-);
-
--- INT-US-04 SF-01 CB-2 (FR-2): the queryable surface `INT-US-04` C1 claimed and never had.
--- ONE ROW PER FINDING (plan D-11), not per rule: a per-rule grain leaves each rule's findings
--- nowhere to go but a JSON column, which is the opaque blob CB-1 rescued them from. A rule with
--- no findings still gets a row with NULL finding columns, so "did S01 run and pass?" stays
--- answerable. Append-only -- a retried step adds rows rather than replacing them, because
--- overwriting discards the earlier attempt's failures (the loss `TECH-021` was filed for).
+# One row per finding, not per rule: a per-rule grain leaves each rule's findings nowhere to go but
+# a JSON column. A rule with no findings still gets a row with NULL finding columns, so "did S01 run
+# and pass?" stays answerable. Append-only: a retried step adds rows rather than replacing them.
+_VALIDATION = """
 CREATE TABLE IF NOT EXISTS flow_validation_results (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id        TEXT NOT NULL REFERENCES flow_pipeline_runs(run_id),
@@ -79,26 +74,70 @@ CREATE TABLE IF NOT EXISTS flow_validation_results (
     severity      TEXT,
     suggestion    TEXT,
     recorded_at   TEXT NOT NULL
-);
+)"""
 
-CREATE INDEX IF NOT EXISTS idx_flow_validation_results_run
-    ON flow_validation_results(run_id);
-"""
+_VALIDATION_INDEX = (
+    "CREATE INDEX IF NOT EXISTS idx_flow_validation_results_run ON flow_validation_results(run_id)"
+)
 
-#: Bumped to 3 by CB-2. The new table needs no data migration -- every statement above is
-#: `IF NOT EXISTS` and the script runs on every construction -- so the version records what the
-#: schema contains rather than gating a migration step.
-_CURRENT_SCHEMA_VERSION = 4
+#: Columns old files lack, with what adds them.
+_ADDED_COLUMNS = (
+    ("parent_run_id", "TEXT REFERENCES flow_pipeline_runs(run_id)"),
+    ("spend_state", "TEXT NOT NULL DEFAULT '{}'"),
+)
 
-# Legacy installations used these unprefixed names. Order matters — rename
-# `flow_pipeline_runs`' predecessor before `flow_audit_log`'s (which references it), and
-# `state_schema_version` last since `_ensure_schema` reads it immediately afterward to decide
-# whether this is a fresh DB or one needing the v1->v2 column migration.
+# Old releases used unprefixed names. `state_schema_version` is renamed too, so that `_adopt` finds
+# the version an old file recorded.
 _LEGACY_TABLE_RENAMES = (
     ("pipeline_runs", "flow_pipeline_runs"),
     ("audit_log", "flow_audit_log"),
     ("state_schema_version", "flow_state_schema_version"),
 )
+
+#: The version table an old file kept, and the `user_version` each of its values means: 1..3 lack
+#: columns or a table that step 1 adds, so they start at 0; 4 is today's schema, so step 1 is done.
+#: An empty table (`None`) is what the old code read as "new file": 0, so step 1 checks everything.
+_OLD_VERSIONS: dict[int | None, int] = {None: 0, 1: 0, 2: 0, 3: 0, 4: 1}
+_OLD_VERSION_TABLE = "flow_state_schema_version"
+
+
+def _tables(conn: sqlite3.Connection) -> set[str]:
+    return {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+
+
+def _create_state(conn: sqlite3.Connection) -> None:
+    """Today's schema: the tables if missing, and the columns an old file lacks."""
+    for statement in (_RUNS, _AUDIT, _VALIDATION, _VALIDATION_INDEX):
+        conn.execute(statement)
+    present = {row[1] for row in conn.execute("PRAGMA table_info(flow_pipeline_runs)")}
+    for column, definition in _ADDED_COLUMNS:
+        if column not in present:
+            conn.execute(f"ALTER TABLE flow_pipeline_runs ADD COLUMN {column} {definition}")
+
+
+def _drop_old_version_table(conn: sqlite3.Connection) -> None:
+    conn.execute(f"DROP TABLE {_OLD_VERSION_TABLE}")
+
+
+def _adopt_old_version(conn: sqlite3.Connection) -> None:
+    """Turn an old file's version table into `user_version`: read, set, check, then drop.
+
+    Runs inside step 1's transaction, so a failure anywhere leaves the old table and version.
+    """
+    rename_legacy_tables(conn, _LEGACY_TABLE_RENAMES)
+    if _OLD_VERSION_TABLE not in _tables(conn):
+        return
+    old = conn.execute(f"SELECT MAX(version) FROM {_OLD_VERSION_TABLE}").fetchone()[0]
+    if old not in _OLD_VERSIONS:
+        raise ValueError(f"the old schema version {old} is not one this SpecWeaver knows")
+    conn.execute(f"PRAGMA user_version = {_OLD_VERSIONS[old]}")
+    if conn.execute("PRAGMA user_version").fetchone()[0] != _OLD_VERSIONS[old]:
+        raise RuntimeError(f"user_version did not take the value {_OLD_VERSIONS[old]}")
+    _drop_old_version_table(conn)
+
+
+#: The file's schema, one step per version; never edit a step that has shipped.
+_STEPS = (Step(1, "create the pipeline state tables", _create_state),)
 
 
 class StateStore:
@@ -115,95 +154,12 @@ class StateStore:
         self._ensure_schema()
 
     def connect(self) -> sqlite3.Connection:
-        """Return a new connection with WAL mode and foreign keys enabled."""
-        conn = sqlite3.connect(str(self._db_path))
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    # ------------------------------------------------------------------
-    # Schema management
-    # ------------------------------------------------------------------
-
-    def _rename_legacy_tables(self, conn: sqlite3.Connection) -> None:
-        """Migrate a legacy installation's `pipeline_runs`/`audit_log`/
-        `state_schema_version` tables to their `flow_`-prefixed equivalents in place, preserving
-        all data. MUST run before the version-check logic below — that logic reads
-        `flow_state_schema_version` to decide fresh-DB vs. needs-v1-to-v2-migration, and if the
-        rename ran after, a real existing installation's data would be misread as a brand-new DB.
-
-        Skips (does not raise) when a table's new name already exists alongside the old one —
-        a partially-migrated or corrupt state must degrade safely. Also tolerates a concurrent
-        second construction racing to rename the same table: an `OperationalError` from the
-        `ALTER TABLE` is swallowed ONLY if a re-check proves the new name now exists (the race
-        really did happen and finished elsewhere) — any other cause (disk I/O, lock contention,
-        corruption) re-raises, since silently swallowing it would let `_ensure_schema()` proceed to
-        `executescript(_STATE_SCHEMA_V2)` and orphan the untouched old table's data instead of
-        surfacing a loud construction failure.
-        """
-        existing = {
-            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        for old_name, new_name in _LEGACY_TABLE_RENAMES:
-            if old_name not in existing or new_name in existing:
-                continue
-            try:
-                conn.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
-            except sqlite3.OperationalError:
-                still_missing = new_name not in {
-                    row[0]
-                    for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                }
-                if still_missing:
-                    raise
+        """A connection through the one opener, returning rows as `sqlite3.Row`."""
+        return open_sqlite(self._db_path, row_factory=sqlite3.Row)
 
     def _ensure_schema(self) -> None:
-        """Create tables if they don't exist. Idempotent."""
-        with self.connect() as conn:
-            self._rename_legacy_tables(conn)
-            conn.executescript(_STATE_SCHEMA_V2)
-
-            existing = conn.execute(
-                "SELECT COUNT(*) FROM flow_state_schema_version",
-            ).fetchone()[0]
-            if existing == 0:
-                self._record_version(conn)
-                logger.debug(
-                    "StateStore: created schema v%d at '%s'",
-                    _CURRENT_SCHEMA_VERSION,
-                    self._db_path,
-                )
-                return
-
-            version = conn.execute("SELECT MAX(version) FROM flow_state_schema_version").fetchone()[
-                0
-            ]
-            if version == 1:
-                # v1 -> v2 is the only step needing a real ALTER; v2 -> v3 added a table, which
-                # the `IF NOT EXISTS` script above has already created.
-                conn.execute(
-                    "ALTER TABLE flow_pipeline_runs ADD COLUMN parent_run_id TEXT REFERENCES flow_pipeline_runs(run_id);"
-                )
-            if version < 4:
-                conn.execute(
-                    "ALTER TABLE flow_pipeline_runs ADD COLUMN spend_state TEXT NOT NULL DEFAULT '{}';"
-                )
-            if version < _CURRENT_SCHEMA_VERSION:
-                self._record_version(conn)
-                logger.debug(
-                    "StateStore: migrated schema v%s -> v%d at '%s'",
-                    version,
-                    _CURRENT_SCHEMA_VERSION,
-                    self._db_path,
-                )
-
-    @staticmethod
-    def _record_version(conn: sqlite3.Connection) -> None:
-        conn.execute(
-            "INSERT INTO flow_state_schema_version (version, applied_at) VALUES (?, ?)",
-            (_CURRENT_SCHEMA_VERSION, _now_iso()),
-        )
+        """Bring the file to the current schema version."""
+        upgrade(self._db_path, _STEPS, adopt=_adopt_old_version)
 
     # ------------------------------------------------------------------
     # Pipeline runs

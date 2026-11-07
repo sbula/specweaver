@@ -112,6 +112,45 @@
           "symbol_sha": "sha256:c956c298fece51bf50ad772e69546424fe4f3c0b36b31170719d966ef1f0536a"
         }
       ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "pipeline_state.db's old version table becomes user_version, keeping every run",
+      "scope": [
+        "tests/integration/core/flow/engine/test_state_version_moves.py"
+      ],
+      "mutants": [
+        {
+          "id": "drop-before-version",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "_adopt_old_version",
+          "old": "    conn.execute(f\"PRAGMA user_version = {_OLD_VERSIONS[old]}\")",
+          "new": "    _drop_old_version_table(conn)\n    conn.execute(f\"PRAGMA user_version = {_OLD_VERSIONS[old]}\")",
+          "breaks": "the old table is gone before its value is in user_version",
+          "symbol_sha": "sha256:5a0cbdf0d516bbb2123546d18986d46c67135be410170a2929c87cc588d56254"
+        },
+        {
+          "id": "old-version-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "StateStore._ensure_schema",
+          "old": "        upgrade(self._db_path, _STEPS, adopt=_adopt_old_version)",
+          "new": "        upgrade(self._db_path, _STEPS)",
+          "breaks": "an old file keeps its version table and is read as new",
+          "symbol_sha": "sha256:ec8e0c1c9b7af49144cc857b1706c650f5f9c81fb6c7494bf2108c91fd511b7f"
+        },
+        {
+          "id": "unknown-version-guessed",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/store.py",
+          "symbol": "_adopt_old_version",
+          "old": "    if old not in _OLD_VERSIONS:",
+          "new": "    if False:",
+          "breaks": "a version the map does not know is guessed instead of stopping",
+          "symbol_sha": "sha256:5a0cbdf0d516bbb2123546d18986d46c67135be410170a2929c87cc588d56254"
+        }
+      ]
     }
   ]
 }
