@@ -153,7 +153,8 @@
       "title": "The suite passes on a fresh GitHub machine: the product works there too",
       "scope": [
         "tests/unit/sandbox/language/core/language/typescript/test_typescript_runner.py",
-        "tests/unit/sandbox/language/core/test_test_targets.py"
+        "tests/unit/sandbox/language/core/test_test_targets.py",
+        "tests/unit/sandbox/language/core/test_runner_migration.py"
       ],
       "mutants": [
         {
@@ -185,6 +186,16 @@
           "new": "return f\"{folder}/**/*\"",
           "breaks": "on some Surefire versions a folder's own test classes do not run",
           "symbol_sha": "sha256:9f51102ac658eb5d652e6494459dcd0dabf6416fc75f94275072005d2daba70d"
+        },
+        {
+          "id": "maven-hint-as-reason",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/toolchain.py",
+          "symbol": "build_failed_without_results",
+          "old": "(first_error or (detail[-1] if detail else \"no output\"))",
+          "new": "(detail[-1] if detail else \"no output\")",
+          "breaks": "a failed Maven build is reported by its closing hint, not its cause",
+          "symbol_sha": "sha256:0787f30666fa4576d97a1933d4b090062bda13318a476fad45cafe9db68dfba7"
         }
       ]
     }

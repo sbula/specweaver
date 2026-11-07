@@ -185,6 +185,23 @@ class TestBuildFailedWithoutResults:
         assert "maven" in reason and "no test results" in reason
         assert "Compilation failure" in reason, reason
 
+    def test_the_reason_is_the_first_error_not_mavens_closing_hint(self) -> None:
+        """Maven ends every failure with the same "-X switch" hint; the cause is its first error."""
+        from specweaver.sandbox.language.core.toolchain import build_failed_without_results
+
+        stdout = (
+            "[INFO] BUILD FAILURE\n"
+            "\x1b[1;31m[ERROR]\x1b[m Failed to execute goal surefire: cannot access central\n"
+            "[ERROR] \n"
+            "[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n"
+        )
+
+        reason = build_failed_without_results(self._result(1, stdout=stdout), "maven", total=0)
+
+        assert reason is not None
+        assert "Failed to execute goal surefire: cannot access central" in reason, reason
+        assert "-X switch" not in reason, reason
+
     def test_a_failed_build_that_did_report_results_is_left_alone(self) -> None:
         """The control that matters most: Maven exits non-zero when *tests* fail.
 

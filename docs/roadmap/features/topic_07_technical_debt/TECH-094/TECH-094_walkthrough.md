@@ -96,3 +96,11 @@ pulls the three with podman before the suite, and runs pytest with `-rs`, so the
 skip. A guard test reads the images from the container tests and fails when the pull step misses
 one; its two mutants (pull made a no-op, one image dropped) objected by hand: a YAML file has no
 symbol the corpus can anchor.
+
+**Run 3 (`c720f30c`).** 8 skips, all Windows: the image pull works. 1 failure, on 3.11:
+`test_a_java_project_runs_inside_the_sandbox` — the freshly pulled `maven:3-eclipse-temurin-21`
+image ends its offline run with exit 1 and no reports. The reason named only Maven's closing hint
+("Re-run Maven using the -X switch"), so the cause is not known yet. A failed build's reason is now
+Maven's first `[ERROR]` line (mutant `maven-hint-as-reason` objected). `-rs` listed skips only and
+hid the failure's name; the workflow now runs `-rfEs`. Not reproduced here: this machine's image
+is older, and pulling a new one is a network fetch.

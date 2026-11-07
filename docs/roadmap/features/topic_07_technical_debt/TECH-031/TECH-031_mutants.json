@@ -238,7 +238,7 @@
           "old": "    if total or result.exit_code == 0:",
           "new": "    if True:",
           "breaks": "a build that never compiled reports `0 passed, 0 failed` — indistinguishable from a project with no tests",
-          "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
+          "symbol_sha": "sha256:0787f30666fa4576d97a1933d4b090062bda13318a476fad45cafe9db68dfba7"
         },
         {
           "id": "a-red-suite-is-called-a-build-failure",
@@ -248,7 +248,7 @@
           "old": "    if total or result.exit_code == 0:",
           "new": "    if result.exit_code == 0:",
           "breaks": "Maven exits non-zero when tests fail too, so every red suite becomes a toolchain error and the failure counts are discarded",
-          "symbol_sha": "sha256:ace5df9e2ee2f46b29394b8d5dc139a021acf13245b9ec18a5bb2cb787957e4a"
+          "symbol_sha": "sha256:0787f30666fa4576d97a1933d4b090062bda13318a476fad45cafe9db68dfba7"
         }
       ]
     },

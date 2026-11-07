@@ -16,6 +16,7 @@ whole job is to prevent them.
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -38,6 +39,9 @@ logger = logging.getLogger(__name__)
 
 #: Truncation for the reported reason — a stderr line can be an entire traceback.
 _MAX_REASON = 200
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+#: Maven ends every failure with the same hints; its first error line is the cause.
+_FIRST_ERROR = re.compile(r"^\[ERROR\]\s*\S")
 
 
 def did_not_run(result: SubprocessResult, tool: str) -> str | None:
@@ -118,8 +122,11 @@ def build_failed_without_results(result: SubprocessResult, tool: str, total: int
     if total or result.exit_code == 0:
         return None
 
-    detail = (result.stderr or result.stdout or "").strip().splitlines()
-    tail = detail[-1][:_MAX_REASON] if detail else "no output"
+    detail = [
+        _ANSI.sub("", line) for line in (result.stderr or result.stdout or "").strip().splitlines()
+    ]
+    first_error = next((line for line in detail if _FIRST_ERROR.match(line)), None)
+    tail = (first_error or (detail[-1] if detail else "no output"))[:_MAX_REASON]
     logger.error("%s exited %d with no test results — %s", tool, result.exit_code, tail)
     return f"{tool} exited {result.exit_code} and produced no test results: {tail}"
 

@@ -49,7 +49,7 @@ jobs:
           done
 
       - name: Suite (unit, integration, e2e)
-        run: uv run python -m pytest -n auto -rs
+        run: uv run python -m pytest -n auto -rfEs
 
       - name: Commit gate
         run: |
