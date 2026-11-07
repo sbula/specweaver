@@ -88,3 +88,11 @@ TECH-087 FR-15 `ts-debug-timeout-unnamed`.
 
 **Note.** Tests that run `npm install` or Maven reach the registry from a child process; the
 socket guard covers only the test process. No model is reached that way: CI has no key.
+
+**Run 2 (`8a7f3e70`).** 3.14: 12,705 passed, 0 failed, 17 skipped; the job failed on the skip rule,
+as designed. 8 skips name Windows. 9 are container tests that wait for an image already on the host
+(`uv:python3.12-bookworm` 7, `rust:1-slim` 1, `maven:3-eclipse-temurin-21` 1). The workflow now
+pulls the three with podman before the suite, and runs pytest with `-rs`, so the log names every
+skip. A guard test reads the images from the container tests and fails when the pull step misses
+one; its two mutants (pull made a no-op, one image dropped) objected by hand: a YAML file has no
+symbol the corpus can anchor.

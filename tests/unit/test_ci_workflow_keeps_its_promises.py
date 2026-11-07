@@ -129,6 +129,19 @@ def test_dropping_a_python_version_is_caught() -> None:
     assert any("3.11 and 3.14" in b for b in broken_promises(text))
 
 
+def test_ci_pulls_every_image_a_container_test_waits_for() -> None:
+    """Proves: TECH-094 FR-5 — a missing image skips the test, and on CI a skip fails the run."""
+    module = _WORKFLOW.parents[2] / "tests/integration/sandbox/execution"
+    text = (module / "test_container_executor_integration.py").read_text(encoding="utf-8")
+    constants = dict(re.findall(r'^(_[A-Z]+_IMAGE) = "([^"]+)"', text, re.MULTILINE))
+    awaited = {constants[name] for name in re.findall(r"_image_available\((_[A-Z]+_IMAGE)\)", text)}
+    workflow = _WORKFLOW.read_text(encoding="utf-8")
+    runs = "\n".join(run for run in _runs(_load(workflow)) if "podman pull" in run)
+
+    assert len(awaited) == 3, awaited
+    assert sorted(image for image in awaited if image not in runs) == []
+
+
 def test_the_readme_shows_the_workflow_status() -> None:
     """Proves: TECH-094 FR-6"""
     readme = (_WORKFLOW.parents[2] / "README.md").read_text(encoding="utf-8")

@@ -40,8 +40,16 @@ jobs:
       - name: Install the locked dependencies
         run: uv sync --locked
 
+      # The container tests skip when their image is not on the host; on CI a skip fails the run.
+      - name: Pull the images the container tests run in
+        run: |
+          for image in ghcr.io/astral-sh/uv:python3.12-bookworm docker.io/library/rust:1-slim \
+                       docker.io/library/maven:3-eclipse-temurin-21; do
+            podman pull --quiet "$image"
+          done
+
       - name: Suite (unit, integration, e2e)
-        run: uv run python -m pytest -n auto
+        run: uv run python -m pytest -n auto -rs
 
       - name: Commit gate
         run: |
