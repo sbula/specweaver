@@ -201,7 +201,7 @@ critical for long-term project viability.
 ## Schema & Data Layer
 * **`TECH-090` 🔴: The Database Is Opened Three Ways, and the API Server Skips Migrations**
   > [Description](../features/topic_07_technical_debt/TECH-090/TECH-090_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (8 findings)._ |
+  > design approved 2026-11-07. Origin: 2026-10-22, architecture audit (8 findings)._ |
   > The workspace database is opened three ways with different pragmas and pooling; `sw serve`
   > skips the bootstrap and migrations the CLI runs; config owns the engine; dead write-queue
   > code remains.

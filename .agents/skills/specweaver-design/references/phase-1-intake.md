@@ -8,6 +8,10 @@ description: "Phase 1: Intake — read the feature entry and clarify scope with 
      `docs/roadmap/capability_matrix.md and the relevant docs/roadmap/topics/topic_*.md`
      and locate the row for this feature. Also read any linked proposal documents.
 
+1.1a. **Re-measure every finding the entry carries before designing on it** — an audit's line
+      numbers drift, and its claims can be wrong. `TECH-090`'s audit said the CLI runs migrations; the
+      re-measure showed nothing runs them `[agreed 2026-11-07]`.
+
 1.2. Determine whether all of the following are answerable without guessing:
 
      - **What** does the feature do? (user-facing behavior — what changes for the user)
