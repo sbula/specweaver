@@ -5,6 +5,7 @@
 
 import json
 import logging
+import os
 import re
 import shlex
 import shutil
@@ -167,7 +168,7 @@ class TypeScriptRunner(QARunnerInterface):
     def _node_strips_types(self, node_bin: str) -> bool:
         """Whether this Node runs a `.ts` file directly, without a transpiling wrapper.
 
-        Node gained type stripping behind a flag in 22.6 and on by default in 23.6, so on a current
+        Node gained type stripping behind a flag in 22.6 and on by default in 23.6 and 22.18, so on a current
         runtime no wrapper is needed at all. Probed by version rather than by running a scratch
         file: this is called per debug run, and spawning a probe process to decide how to spawn a
         process is a cost with no payoff.
@@ -183,7 +184,7 @@ class TypeScriptRunner(QARunnerInterface):
             major, minor = (int(part) for part in probe.stdout.strip().lstrip("v").split(".")[:2])
         except ValueError:  # expected: an unreadable version means no type stripping
             return False
-        return (major, minor) >= (23, 6)
+        return (major, minor) >= (23, 6) or (major == 22 and minor >= 18)
 
     def run_debugger(self, target: str, entrypoint: str) -> DebugRunResult:
         """Execute a process and stream runtime outputs."""
@@ -202,7 +203,10 @@ class TypeScriptRunner(QARunnerInterface):
             # exposes — so `npm install typescript ts-node` on a current registry produces a pair
             # that cannot work: `TypeError: Cannot read properties of undefined (reading
             # 'fileExists')`. Measured, with TypeScript 7.0.2 and Node 24.
-            tsx_bin = shutil.which("tsx")
+            local_tsx = (
+                self._cwd / "node_modules" / ".bin" / ("tsx.cmd" if os.name == "nt" else "tsx")
+            )
+            tsx_bin = str(local_tsx) if local_tsx.is_file() else shutil.which("tsx")
             if tsx_bin:
                 cmd = [tsx_bin, entrypoint]
             elif self._node_strips_types(node_bin):

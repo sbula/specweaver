@@ -147,6 +147,46 @@
           "symbol_sha": "sha256:0b8b5e323427d7fb38feedd6b5caf9641723207e75c77eb3e70eb4e4b0b9aecc"
         }
       ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "The suite passes on a fresh GitHub machine: the product works there too",
+      "scope": [
+        "tests/unit/sandbox/language/core/language/typescript/test_typescript_runner.py",
+        "tests/unit/sandbox/language/core/test_test_targets.py"
+      ],
+      "mutants": [
+        {
+          "id": "node-22-wraps",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner._node_strips_types",
+          "old": "(major, minor) >= (23, 6) or (major == 22 and minor >= 18)",
+          "new": "(major, minor) >= (23, 6)",
+          "breaks": "Node 22.18+ falls back to ts-node, which TypeScript 7 breaks",
+          "symbol_sha": "sha256:8e24ef96507adb6dfc243bd3d07cc8bfff3b7415ae3754a9f74756fa3e35a882"
+        },
+        {
+          "id": "project-tsx-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/typescript/runner.py",
+          "symbol": "TypeScriptRunner.run_debugger",
+          "old": "str(local_tsx) if local_tsx.is_file() else shutil.which(\"tsx\")",
+          "new": "shutil.which(\"tsx\")",
+          "breaks": "the tsx a project installed is not used",
+          "symbol_sha": "sha256:31c0476bf716125eed734dabce48d31f9b0b2b0790a7cc2a515f3bda92894641"
+        },
+        {
+          "id": "folder-own-classes-lost",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/language/core/run_targets.py",
+          "symbol": "_jvm_selector",
+          "old": "return f\"{folder}/*,{folder}/**/*\"",
+          "new": "return f\"{folder}/**/*\"",
+          "breaks": "on some Surefire versions a folder's own test classes do not run",
+          "symbol_sha": "sha256:9f51102ac658eb5d652e6494459dcd0dabf6416fc75f94275072005d2daba70d"
+        }
+      ]
     }
   ]
 }

@@ -292,7 +292,7 @@
           "old": "events=[OutputEvent(category=\"stderr\", output=reason)]",
           "new": "events=[OutputEvent(category=\"stderr\", output=\"Timeout expired\")]",
           "breaks": "a hung debugged program reads as \"Timeout expired\", naming neither the program nor the limit",
-          "symbol_sha": "sha256:080ec6ac8a453abe518117c5f962f34c7598612644beab3a1496b4e1d32fb68d"
+          "symbol_sha": "sha256:31c0476bf716125eed734dabce48d31f9b0b2b0790a7cc2a515f3bda92894641"
         },
         {
           "id": "py-debug-timeout-unnamed",

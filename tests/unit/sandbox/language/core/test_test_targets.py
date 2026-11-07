@@ -71,10 +71,10 @@ _JVM = [
         ["--tests", "com.acme.OrderTest"],
         ["-Dtest=com.acme.OrderTest"],
     ),
-    ("src/test/java/com/acme", ["--tests", "com.acme.*"], ["-Dtest=com/acme/**/*"]),
-    ("src/test/java/com/acme/", ["--tests", "com.acme.*"], ["-Dtest=com/acme/**/*"]),
+    ("src/test/java/com/acme", ["--tests", "com.acme.*"], ["-Dtest=com/acme/*,com/acme/**/*"]),
+    ("src/test/java/com/acme/", ["--tests", "com.acme.*"], ["-Dtest=com/acme/*,com/acme/**/*"]),
     ("src/test/java", [], []),
-    ("src/main/java/com/acme", ["--tests", "com.acme.*"], ["-Dtest=com/acme/**/*"]),
+    ("src/main/java/com/acme", ["--tests", "com.acme.*"], ["-Dtest=com/acme/*,com/acme/**/*"]),
     ("src/", [], []),
     (".", [], []),
 ]

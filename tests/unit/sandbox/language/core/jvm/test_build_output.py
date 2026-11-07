@@ -138,6 +138,19 @@ class TestProgramOutput:
         assert "Scanning for projects" not in out
         assert "BUILD SUCCESS" not in out
 
+    def test_the_first_runs_downloads_are_dropped(self) -> None:
+        """A fresh machine downloads the exec plugin's dependencies after the banner."""
+        banner = "[INFO] --- exec:3.6.3:java (default-cli) @ probe ---\n"
+        downloads = (
+            "Downloading from central: https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.jar\n"
+            "Progress (1): 50/52 kB\n"
+            "Progress (1): 52 kB   \n"
+            "Downloaded from central: https://repo.maven.apache.org/maven2/a/b/1.0/b-1.0.jar"
+            " (52 kB at 541 kB/s)\n"
+        )
+
+        assert program_output(banner + downloads + "hello from java\n") == "hello from java"
+
     def test_unprefixed_compiler_warnings_are_dropped(self) -> None:
         """javac writes these with no prefix, before the program runs. Everything before Maven
         hands over to `exec:java` belongs to the build, whatever it looks like."""

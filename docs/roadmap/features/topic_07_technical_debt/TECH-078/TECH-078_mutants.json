@@ -121,10 +121,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/language/core/run_targets.py",
           "symbol": "_jvm_selector",
-          "old": "        return f\"{'.'.join(package)}.*\" if tool == \"gradle\" else f\"{'/'.join(package)}/**/*\"\n",
-          "new": "        return \"\"\n",
+          "old": "        package = _jvm_package(target.path, language)\n",
+          "new": "        package = ()\n",
           "breaks": "a JVM folder runs every test",
-          "symbol_sha": "sha256:34ba6c3b65ef98dd486c8d72531ef2843ca07b139c35bab02a3a4471e3645c76"
+          "symbol_sha": "sha256:9f51102ac658eb5d652e6494459dcd0dabf6416fc75f94275072005d2daba70d"
         },
         {
           "id": "jvm-name-dropped",
@@ -134,7 +134,7 @@
           "old": "        selector += f\".{target.name}\" if tool == \"gradle\" else f\"#{target.name}\"\n",
           "new": "        selector += \"\"\n",
           "breaks": "one JVM test runs its whole class",
-          "symbol_sha": "sha256:34ba6c3b65ef98dd486c8d72531ef2843ca07b139c35bab02a3a4471e3645c76"
+          "symbol_sha": "sha256:9f51102ac658eb5d652e6494459dcd0dabf6416fc75f94275072005d2daba70d"
         },
         {
           "id": "cargo-name-dropped",

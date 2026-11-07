@@ -109,7 +109,7 @@ None.
 
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
-| NFR-1 | Behaviour stays the same | No product code changes except what FR-8 needs on 3.11; the local suite still passes |
+| NFR-1 | Behaviour stays the same | No product code changes except what FR-8 needs on GitHub (3.11, a fresh machine); the local suite still passes |
 | NFR-2 | CI cost stays at zero | No paid runner, no paid service, no card `[agreed 2026-11-06]` (GitHub-hosted `ubuntu-24.04`) |
 | NFR-3 | The guard holds locally too | FR-4's block applies to every local run, not only on CI |
 | NFR-4 | A run cannot burn hours | Each job stops after 30 minutes (`timeout-minutes: 30`), and a newer push to the same branch or pull request cancels the older run `[agreed 2026-11-06]` |

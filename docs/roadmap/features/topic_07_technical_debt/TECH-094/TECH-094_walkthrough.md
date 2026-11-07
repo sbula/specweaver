@@ -68,3 +68,23 @@ it gets the temp data folder with no `keys.env`. Cycle 2: none above threshold.
 value put into a shell line is a commit hash. (MEDIUM, checked) the 9 skips today: 8 name Windows,
 the `rg` one goes away because CI installs ripgrep. (LOW) action tags, not hashes (F1). Cycle 2:
 none above threshold. The real proof is the first run on GitHub (CB-3).
+
+## CB-3 — the first real runs (FR-8)
+
+**Run 1 (`5e3b6d04`).** 3.14: 5 failed, 12,693 passed. 3.11: the same 5 and one more. Each is a
+fault a fresh machine shows and this one hides; four are product faults.
+
+| Failure | Cause | Fix |
+|---|---|---|
+| ts-node debug runs (2) | CI has Node 22.23, no tsx on PATH; ts-node breaks on TypeScript 7. Node strips types by default from 22.18, but the runner asked for 23.6 | the runner accepts Node 22.18+, and uses the project's own `node_modules/.bin/tsx` first |
+| Java debugger output | a first Maven run downloads the exec plugin after the banner; the downloads came back as program output | `Downloading/Downloaded from`, `Progress (n):` lines are build lines |
+| Maven folder targets (2) | a folder ran only its subfolder's tests (`shop` 1/1, `shop/deep` 0/0): the CI Surefire reads `**/` as one folder or more | the folder pattern is `pkg/*,pkg/**/*`. Not reproduced here: the local Maven binds Surefire 2.17 and the cached 3.5.2 passes both ways; the next run is the proof |
+| abstract-class message (3.11) | 3.11 says "with abstract methods", 3.12 on "without an implementation for" | the test matches both |
+
+**Mutants.** TECH-094 FR-8: `node-22-wraps`, `project-tsx-ignored`, `folder-own-classes-lost`;
+each objected. The download filter is a module constant the corpus cannot anchor; its mutant
+objected by hand. Re-pinned: TECH-078 FR-7 `jvm-folder-loses-filter` (new anchor), `jvm-name-dropped`;
+TECH-087 FR-15 `ts-debug-timeout-unnamed`.
+
+**Note.** Tests that run `npm install` or Maven reach the registry from a child process; the
+socket guard covers only the test process. No model is reached that way: CI has no key.

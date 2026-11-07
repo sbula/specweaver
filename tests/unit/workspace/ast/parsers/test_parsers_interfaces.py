@@ -58,7 +58,8 @@ def test_code_structure_interface_enforces_abstract_methods() -> None:  # noqa: 
 
     with pytest.raises(
         TypeError,
-        match="Can't instantiate abstract class IncompleteParser without an implementation for abstract methods",
+        # 3.11 says "with abstract methods"; 3.12 on, "without an implementation for".
+        match=r"Can't instantiate abstract class IncompleteParser with(out an implementation for)? abs",
     ):
         parser = IncompleteParser()  # type: ignore[abstract]
 

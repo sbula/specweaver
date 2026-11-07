@@ -187,3 +187,39 @@ class TestTypeScriptRunner:
     def test_language_name_property(self, tmp_path: Path) -> None:
         runner = TypeScriptRunner(cwd=tmp_path, executor=SubprocessExecutor(cwd=tmp_path))
         assert runner.language_name == "typescript"
+
+
+def _debug_command(tmp_path: Path, node_version: str) -> list[str]:
+    executor = MagicMock(spec=SubprocessExecutor)
+    executor.execute.return_value = _make_result(stdout=node_version)
+    with patch("shutil.which", side_effect=lambda cmd: f"/usr/bin/{cmd}" if cmd != "tsx" else None):
+        TypeScriptRunner(cwd=tmp_path, executor=executor).run_debugger(".", "src/index.ts")
+    return list(executor.execute.call_args[0][0])
+
+
+@pytest.mark.parametrize(
+    ("version", "direct"),
+    [
+        ("v22.17.1\n", False),
+        ("v22.18.0\n", True),
+        ("v23.5.0\n", False),
+        ("v23.6.0\n", True),
+        ("v24.1.0\n", True),
+    ],
+)
+def test_node_runs_typescript_itself_where_it_strips_types_by_default(
+    tmp_path: Path, version: str, direct: bool
+) -> None:
+    """Node strips types by default from 22.18 and from 23.6; ts-node breaks on TypeScript 7."""
+    command = _debug_command(tmp_path, version)
+
+    assert (command == ["/usr/bin/node", "src/index.ts"]) is direct, command
+
+
+def test_the_projects_own_tsx_is_used(tmp_path: Path) -> None:
+    """`npm install tsx` puts it in node_modules/.bin, not on PATH."""
+    local = tmp_path / "node_modules" / ".bin" / "tsx"
+    local.parent.mkdir(parents=True)
+    local.write_text("", encoding="utf-8")
+
+    assert _debug_command(tmp_path, "v20.0.0\n") == [str(local), "src/index.ts"]

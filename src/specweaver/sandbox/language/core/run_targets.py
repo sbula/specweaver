@@ -79,7 +79,12 @@ def _jvm_selector(target: RunTarget, language: str, tool: str) -> str:
         package = _jvm_package(target.path, language)
         if not package:
             return ""
-        return f"{'.'.join(package)}.*" if tool == "gradle" else f"{'/'.join(package)}/**/*"
+        if tool == "gradle":
+            return f"{'.'.join(package)}.*"
+        # Some Surefire versions read `**/` as one folder or more, so the folder's own classes
+        # need their own pattern.
+        folder = "/".join(package)
+        return f"{folder}/*,{folder}/**/*"
     if target.kind == "project":
         return ""
     selector = jvm_test_class(target.path, language) or ""

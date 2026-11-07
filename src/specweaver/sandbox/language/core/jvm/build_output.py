@@ -34,7 +34,10 @@ _DIAGNOSTICS = (
 )
 
 #: Maven's own lines, and the JVM's.
-_TOOL_LINE = re.compile(r"^(\[(?:INFO|WARNING|ERROR|DEBUG)\]|WARNING:|OpenJDK|Picked up )")
+_TOOL_LINE = re.compile(
+    r"^(\[(?:INFO|WARNING|ERROR|DEBUG)\]|WARNING:|OpenJDK|Picked up "
+    r"|Download(?:ing|ed) from \S+: |Progress \(\d+\): )"
+)
 
 #: Maven announces the exec plugin immediately before handing control to the program, so this
 #: is where the program's output starts. Filtering by prefix alone is not enough: javac's
