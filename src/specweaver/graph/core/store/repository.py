@@ -9,6 +9,7 @@ from typing import Any
 import networkx as nx
 
 from specweaver.graph.core.engine.models import EDGE_KIND_ATTR, EdgeKind
+from specweaver.infrastructure.database import Step, open_sqlite, rename_legacy_tables, upgrade
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,41 @@ def _edge_kind(source_hash: str, target_hash: str, data: dict[str, Any]) -> str:
     return str(kind)
 
 
+def _create_graph(conn: sqlite3.Connection) -> None:
+    """Old releases named the tables `nodes` and `edges`; renaming keeps the rows and the FK."""
+    rename_legacy_tables(conn, (("nodes", "graph_nodes"), ("edges", "graph_edges")))
+
+    # Nodes schema
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS graph_nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            semantic_hash TEXT UNIQUE,
+            clone_hash TEXT,
+            file_id TEXT,
+            service_name TEXT,
+            package_name TEXT,
+            is_active INTEGER DEFAULT 1,
+            metadata JSON
+        )
+    """)
+
+    # Edges schema (no FK on target_id due to Lazy Edges)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS graph_edges (
+            source_id INTEGER,
+            target_id INTEGER,
+            type TEXT,
+            metadata JSON,
+            PRIMARY KEY (source_id, target_id, type),
+            FOREIGN KEY (source_id) REFERENCES graph_nodes(id) ON DELETE CASCADE
+        )
+    """)
+
+
+#: The file's schema, one step per version; never edit a step that has shipped.
+_STEPS = (Step(1, "create graph_nodes and graph_edges", _create_graph),)
+
+
 class SqliteGraphRepository:
     """SQLite implementation of the Graph Repository."""
 
@@ -39,75 +75,10 @@ class SqliteGraphRepository:
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        # WAL mode to prevent Lock Contention (RT-4)
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA busy_timeout=5000;")
-        # Enable Foreign Keys
-        conn.execute("PRAGMA foreign_keys=ON;")
-        return conn
-
-    def _rename_legacy_tables(self, conn: sqlite3.Connection) -> None:
-        """Migrate a legacy installation's `nodes`/`edges` tables to
-        `graph_nodes`/`graph_edges` in place, preserving all data (`ALTER TABLE RENAME` also
-        auto-patches `edges`'s FK reference to `nodes(id)`). Renaming `nodes` before `edges`
-        mirrors DDL order below; SQLite's FK-reference patching is schema-wide, not order-
-        dependent, so this is purely for diff readability.
-
-        Skips (does not raise) when a table's new name already exists alongside the old one — a
-        partially-migrated or corrupt state must degrade safely, not crash the whole application
-        over one ambiguous table. Also tolerates a concurrent second construction racing to rename
-        the same table: an `OperationalError` from the `ALTER TABLE` is swallowed ONLY if a
-        re-check proves the new name now exists (the race really did happen and finished
-        elsewhere) — any other cause (disk I/O, lock contention, corruption) re-raises, since
-        silently swallowing it would let `_init_db()` proceed to `CREATE TABLE IF NOT EXISTS` and
-        orphan the untouched old table's data instead of surfacing a loud construction failure.
-        """
-        existing = {
-            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        for old_name, new_name in (("nodes", "graph_nodes"), ("edges", "graph_edges")):
-            if old_name not in existing or new_name in existing:
-                continue
-            try:
-                conn.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
-            except sqlite3.OperationalError:
-                still_missing = new_name not in {
-                    row[0]
-                    for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                }
-                if still_missing:
-                    raise
+        return open_sqlite(self.db_path)
 
     def _init_db(self) -> None:
-        with self._get_connection() as conn:
-            self._rename_legacy_tables(conn)
-
-            # Nodes schema
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS graph_nodes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    semantic_hash TEXT UNIQUE,
-                    clone_hash TEXT,
-                    file_id TEXT,
-                    service_name TEXT,
-                    package_name TEXT,
-                    is_active INTEGER DEFAULT 1,
-                    metadata JSON
-                )
-            """)
-
-            # Edges schema (no FK on target_id due to Lazy Edges)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS graph_edges (
-                    source_id INTEGER,
-                    target_id INTEGER,
-                    type TEXT,
-                    metadata JSON,
-                    PRIMARY KEY (source_id, target_id, type),
-                    FOREIGN KEY (source_id) REFERENCES graph_nodes(id) ON DELETE CASCADE
-                )
-            """)
+        upgrade(self.db_path, _STEPS)
 
     def _extract_nodes(self, semantic_digraph: nx.DiGraph) -> tuple[list[Any], list[Any]]:  # type: ignore[type-arg]
         node_batch = []

@@ -8,7 +8,22 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+from specweaver.infrastructure.database import Step, open_sqlite, rename_legacy_tables, upgrade
+
 logger = logging.getLogger(__name__)
+
+
+def _create_reservations(conn: sqlite3.Connection) -> None:
+    """Old releases named the table `sw_reservations`; a crashed run can leave held locks there."""
+    rename_legacy_tables(conn, (("sw_reservations", "flow_reservations"),))
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS flow_reservations ("
+        " resource_id TEXT PRIMARY KEY, run_id TEXT NOT NULL, expires_at DATETIME)"
+    )
+
+
+#: The file's schema, one step per version; never edit a step that has shipped.
+_STEPS = (Step(1, "create flow_reservations", _create_reservations),)
 
 
 class SQLiteReservationSystem:
@@ -21,54 +36,13 @@ class SQLiteReservationSystem:
         self._ensure_schema()
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Get an isolated sqlite3 connection with standard strict isolation."""
-        conn = sqlite3.connect(self.db_path, isolation_level="IMMEDIATE")
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
-
-    def _rename_legacy_table(self, conn: sqlite3.Connection) -> None:
-        """Migrate a legacy installation's `sw_reservations` table to
-        `flow_reservations` in place, preserving all held locks. Held locks are transient, but the
-        TABLE name is not self-healing — `expires_at` is written but never read/enforced (no TTL
-        sweep exists), so a crashed run can leave stale rows under the old name indefinitely.
-
-        Skips (does not raise) when `flow_reservations` already exists alongside `sw_reservations`
-        — a partially-migrated or corrupt state must degrade safely. Also tolerates a concurrent
-        second construction racing to rename the same table: an `OperationalError` from the
-        `ALTER TABLE` is swallowed ONLY if a re-check proves `flow_reservations` now exists (the
-        race really did happen and finished elsewhere) — any other cause (disk I/O, lock
-        contention, corruption) re-raises, since silently swallowing it would let
-        `_ensure_schema()` proceed to `CREATE TABLE IF NOT EXISTS` and orphan every held lock in
-        the untouched old table instead of surfacing a loud construction failure.
-        """
-        existing = {
-            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        if "sw_reservations" not in existing or "flow_reservations" in existing:
-            return
-        try:
-            conn.execute("ALTER TABLE sw_reservations RENAME TO flow_reservations")
-        except sqlite3.OperationalError:
-            still_missing = "flow_reservations" not in {
-                row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            }
-            if still_missing:
-                raise
+        """A connection through the one opener, in `IMMEDIATE` mode so an acquire is atomic."""
+        return open_sqlite(self.db_path, isolation_level="IMMEDIATE")
 
     def _ensure_schema(self) -> None:
-        """Create the atomic uniqueness reservation table if missing."""
+        """Bring the file to the current schema version."""
         try:
-            with self._get_connection() as conn:
-                self._rename_legacy_table(conn)
-                conn.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS flow_reservations (
-                        resource_id TEXT PRIMARY KEY,
-                        run_id TEXT NOT NULL,
-                        expires_at DATETIME
-                    )
-                    """
-                )
+            upgrade(self.db_path, _STEPS)
         except sqlite3.Error as e:
             logger.error("Failed to initialize SQLiteReservationSystem schema: %s", e)
             raise

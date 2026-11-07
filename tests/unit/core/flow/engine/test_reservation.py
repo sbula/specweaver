@@ -48,13 +48,12 @@ def test_sqlite_reservation_ensure_schema_error(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     db_path = tmp_path / "reservations.db"
-    system = SQLiteReservationSystem(db_path)
 
     with (
         mock.patch("sqlite3.connect", side_effect=sqlite3.Error("Mocked schema error")),
         pytest.raises(sqlite3.Error, match="Mocked schema error"),
     ):
-        system._ensure_schema()
+        SQLiteReservationSystem(db_path)
 
     assert "Failed to initialize SQLiteReservationSystem schema: Mocked schema error" in caplog.text
 
@@ -182,60 +181,6 @@ def test_sqlite_reservation_rename_is_idempotent_across_repeated_construction(
         tables = {row[0] for row in cursor.fetchall()}
         assert "flow_reservations" in tables
         assert "sw_reservations" not in tables
-
-
-def test_sqlite_reservation_rename_swallows_concurrent_operational_error() -> None:
-    """[Graceful degradation] `_rename_legacy_table` must swallow `sqlite3.OperationalError`
-    raised by `ALTER TABLE` itself when a RE-CHECK proves another process already finished the
-    rename (`flow_reservations` now exists) — not just reach the same outcome via the
-    membership-check skip already covered by the idempotent-construction test above."""
-    system = SQLiteReservationSystem.__new__(SQLiteReservationSystem)
-    select_call_count = 0
-
-    def fake_execute(sql, *_args, **_kwargs):
-        nonlocal select_call_count
-        stripped = sql.strip()
-        if stripped.startswith("SELECT name FROM sqlite_master"):
-            select_call_count += 1
-            if select_call_count == 1:
-                return [("sw_reservations",)]
-            return [("sw_reservations",), ("flow_reservations",)]
-        if stripped.startswith("ALTER TABLE sw_reservations"):
-            raise sqlite3.OperationalError("no such table: sw_reservations")
-        raise AssertionError(f"unexpected SQL: {sql}")
-
-    mock_conn = mock.MagicMock()
-    mock_conn.execute.side_effect = fake_execute
-
-    system._rename_legacy_table(mock_conn)  # must not raise
-
-    mock_conn.execute.assert_any_call("ALTER TABLE sw_reservations RENAME TO flow_reservations")
-
-
-def test_sqlite_reservation_rename_reraises_genuine_operational_errors() -> None:
-    """[Hostile] A genuine `OperationalError` during the `ALTER TABLE` (disk I/O failure, lock
-    contention, corruption) that is NOT explained by "another process already finished the
-    rename" must propagate, not be silently swallowed. Swallowing it unconditionally would let
-    `_ensure_schema()` proceed straight to `CREATE TABLE IF NOT EXISTS flow_reservations`,
-    creating an empty new table and silently orphaning every held lock in the untouched old
-    table — `reservation.py`'s `_get_connection()` sets no `busy_timeout`, so lock contention
-    under this system's own thundering-herd concurrency usage is a real, not theoretical, cause
-    for `ALTER TABLE` to raise `OperationalError` for a reason OTHER than the benign race."""
-    system = SQLiteReservationSystem.__new__(SQLiteReservationSystem)
-
-    def fake_execute(sql, *_args, **_kwargs):
-        stripped = sql.strip()
-        if stripped.startswith("SELECT name FROM sqlite_master"):
-            return [("sw_reservations",)]  # flow_reservations never appears
-        if stripped.startswith("ALTER TABLE sw_reservations"):
-            raise sqlite3.OperationalError("database is locked")
-        raise AssertionError(f"unexpected SQL: {sql}")
-
-    mock_conn = mock.MagicMock()
-    mock_conn.execute.side_effect = fake_execute
-
-    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
-        system._rename_legacy_table(mock_conn)
 
 
 def test_sqlite_reservation_thundering_herd_concurrency(tmp_path: Path) -> None:

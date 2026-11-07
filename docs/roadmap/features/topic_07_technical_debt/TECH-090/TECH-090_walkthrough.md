@@ -37,3 +37,31 @@ only when the file is not yet in WAL, and retries until the lock wait ends. Afte
   code constants.
 
 Nothing above threshold.
+
+## SF-01 CB-2 — `reservations.db` and `graph.db` on the opener (FR-1, FR-2)
+
+**What changed.** Both stores now open their file through `open_sqlite`. Each keeps its schema as
+step 1 of its own step list (AD-3), and the old rename code in each is now the shared helper. The
+settings changed as follows:
+- `reservations.db` gains foreign keys and a lock wait; before, it had neither.
+- `graph.db` waits 30 s instead of 5 s.
+
+**Tests.**
+- Red first: `tests/unit/infrastructure/database/test_only_the_opener_opens.py` named both files.
+  Its allowlist holds the five openers not moved yet, and a name that stops opening a file must
+  leave the list.
+- Red first: `test_reservations_on_the_opener.py` and `test_graph_db_on_the_opener.py`. They cover
+  the settings, version 1, a file from before versioning, a file with old table names, and a newer
+  file being refused.
+- Removed: the four unit tests of the two private rename copies; `test_error_paths.py` covers the
+  shared helper's same two branches.
+- Changed: the reservation schema-error test now breaks a new file, because a file is upgraded once
+  per process. The graph lock-wait test now pins 30 s (Q5).
+
+**Mutants.**
+- TECH-090 FR-1: `reservations-opened-by-hand` and `graph-schema-unversioned`; both objected.
+- TECH-004 FR-4 `no-busy-timeout` now points at the opener's wait line, where the graph store's
+  wait lives now; it objected.
+
+**Red/blue.** Nothing above threshold. A step's failure in either store raises `SchemaStepError`
+naming the file; the doors' message comes in SF-03.

@@ -92,9 +92,10 @@ def test_roundtrip_preserves_metadata_defaults(repo):
 
 
 def test_a_connection_waits_for_a_locked_database(repo):
-    """[Degradation] A second writer waits up to 5 s for the lock instead of failing at once."""
+    """[Degradation] A second writer waits for the lock instead of failing at once: the process's
+    lock wait, 30 s for the CLI (TECH-090 FR-2)."""
     conn = repo._get_connection()
     try:
-        assert conn.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
+        assert conn.execute("PRAGMA busy_timeout").fetchone()[0] == 30000
     finally:
         conn.close()

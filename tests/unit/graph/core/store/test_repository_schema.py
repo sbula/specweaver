@@ -3,7 +3,6 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
 import sqlite3
-from unittest import mock
 
 import pytest
 
@@ -260,58 +259,3 @@ def test_sqlite_repository_resumes_a_half_migrated_state(tmp_path):
         assert cursor.fetchall() == [("svc:ast:1",)]
         cursor.execute("SELECT source_id, target_id, type FROM graph_edges")
         assert cursor.fetchall() == [(1, 1, "CALLS")]
-
-
-def test_sqlite_repository_rename_swallows_concurrent_operational_error():
-    """[Graceful degradation] `_rename_legacy_tables` must swallow `sqlite3.OperationalError`
-    raised by the `ALTER TABLE` statement itself when a RE-CHECK proves another process already
-    finished the rename (`graph_nodes` now exists) — not just reach the same outcome via the
-    membership-check skip already covered by the idempotent-construction test above."""
-    repo = SqliteGraphRepository.__new__(SqliteGraphRepository)
-    select_call_count = 0
-
-    def fake_execute(sql, *_args, **_kwargs):
-        nonlocal select_call_count
-        stripped = sql.strip()
-        if stripped.startswith("SELECT name FROM sqlite_master"):
-            select_call_count += 1
-            # First check (before the rename attempt): only `nodes` present.
-            # Re-check (after the ALTER raised): the concurrent process has now finished —
-            # `graph_nodes` exists too, proving the error really was the benign race.
-            if select_call_count == 1:
-                return [("nodes",)]
-            return [("nodes",), ("graph_nodes",)]
-        if stripped.startswith("ALTER TABLE nodes"):
-            raise sqlite3.OperationalError("no such table: nodes")
-        raise AssertionError(f"unexpected SQL: {sql}")
-
-    mock_conn = mock.MagicMock()
-    mock_conn.execute.side_effect = fake_execute
-
-    repo._rename_legacy_tables(mock_conn)  # must not raise
-
-    mock_conn.execute.assert_any_call("ALTER TABLE nodes RENAME TO graph_nodes")
-
-
-def test_sqlite_repository_rename_reraises_genuine_operational_errors():
-    """[Hostile] A genuine `OperationalError` during the `ALTER TABLE` (disk I/O failure, lock
-    contention, corruption) that is NOT explained by "another process already finished the
-    rename" must propagate, not be silently swallowed. Swallowing it unconditionally would let
-    `_init_db()` proceed straight to `CREATE TABLE IF NOT EXISTS graph_nodes`, creating an empty
-    new table and silently orphaning the untouched old `nodes` table's data — exactly the failure
-    mode this whole migration exists to prevent."""
-    repo = SqliteGraphRepository.__new__(SqliteGraphRepository)
-
-    def fake_execute(sql, *_args, **_kwargs):
-        stripped = sql.strip()
-        if stripped.startswith("SELECT name FROM sqlite_master"):
-            return [("nodes",)]  # `graph_nodes` never appears -> not actually renamed elsewhere
-        if stripped.startswith("ALTER TABLE nodes"):
-            raise sqlite3.OperationalError("disk I/O error")
-        raise AssertionError(f"unexpected SQL: {sql}")
-
-    mock_conn = mock.MagicMock()
-    mock_conn.execute.side_effect = fake_execute
-
-    with pytest.raises(sqlite3.OperationalError, match="disk I/O error"):
-        repo._rename_legacy_tables(mock_conn)

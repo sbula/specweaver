@@ -3,6 +3,37 @@
   "feature": "TECH-090",
   "campaigns": [
     {
+      "requirement": "FR-1",
+      "title": "Only the one opener opens a SpecWeaver SQLite file",
+      "scope": [
+        "tests/integration/core/flow/engine/test_reservations_on_the_opener.py",
+        "tests/integration/graph/core/store/test_graph_db_on_the_opener.py",
+        "tests/unit/infrastructure/database/test_only_the_opener_opens.py"
+      ],
+      "mutants": [
+        {
+          "id": "reservations-opened-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/reservation.py",
+          "symbol": "SQLiteReservationSystem._get_connection",
+          "old": "        return open_sqlite(self.db_path, isolation_level=\"IMMEDIATE\")",
+          "new": "        return sqlite3.connect(self.db_path, isolation_level=\"IMMEDIATE\")",
+          "breaks": "reservations.db runs without foreign keys or a lock wait",
+          "symbol_sha": "sha256:d022839686e95c14104d72642cc37ddebffe80ef1844f713157463e940f9aff5"
+        },
+        {
+          "id": "graph-schema-unversioned",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/store/repository.py",
+          "symbol": "SqliteGraphRepository._init_db",
+          "old": "        upgrade(self.db_path, _STEPS)",
+          "new": "        conn = open_sqlite(self.db_path)\n        _create_graph(conn)\n        conn.commit()\n        conn.close()",
+          "breaks": "graph.db carries no version, so an older SpecWeaver opens a newer file",
+          "symbol_sha": "sha256:2b9479f34294bb524d05777b1ecf14f031d7f67b739f94f2dfccd35fef77ed42"
+        }
+      ]
+    },
+    {
       "requirement": "FR-2",
       "title": "Every connection has WAL, foreign keys and the process's lock wait",
       "scope": [

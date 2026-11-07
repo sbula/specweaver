@@ -71,12 +71,12 @@
         {
           "id": "no-busy-timeout",
           "origin": "authored",
-          "file": "src/specweaver/graph/core/store/repository.py",
-          "symbol": "SqliteGraphRepository._get_connection",
-          "old": "        conn.execute(\"PRAGMA busy_timeout=5000;\")\n",
-          "new": "        conn.execute(\"PRAGMA busy_timeout=0;\")\n",
+          "file": "src/specweaver/infrastructure/database/sqlite.py",
+          "symbol": "apply_pragmas",
+          "old": "    conn.execute(f\"PRAGMA busy_timeout = {int(_lock_wait * 1000)}\")\n",
+          "new": "    conn.execute(\"PRAGMA busy_timeout = 0\")\n",
           "breaks": "a second writer fails at once with 'database is locked'",
-          "symbol_sha": "sha256:61f63de135cd18bd5d2d999f19e46fa5a63cd506902b8717007a03158652480c"
+          "symbol_sha": "sha256:1cf4acdcdbda1e2715aabd85be0dd70fa5b866002ff6bab0c31eee943c511f4b"
         }
       ]
     }

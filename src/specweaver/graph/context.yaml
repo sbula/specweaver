@@ -7,6 +7,7 @@ description: "Bounded context for the SpecWeaver graphs. Contains the universal 
   Store, Builder) as well as topic-specific extensions (Lineage, Topology)."
 consumes:
   - specweaver/commons
+  - specweaver/infrastructure/database
   - specweaver/sandbox
   - specweaver/workspace/ast/adapters
 forbids:

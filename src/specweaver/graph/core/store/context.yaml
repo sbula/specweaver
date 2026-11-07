@@ -7,5 +7,6 @@ description: "Infrastructure layer. Handles SQLite database interactions for the
 consumes:
   - specweaver/graph/core/engine
   - specweaver/commons
+  - specweaver/infrastructure/database
 forbids:
   - specweaver/graph/core/builder
