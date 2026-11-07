@@ -11,7 +11,6 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import create_engine
 
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.handover import save_handover_context
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
@@ -25,6 +24,7 @@ from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.base import IsolationPolicy, ModelAccess
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext, RunHandle
+from specweaver.infrastructure.database import Database
 from specweaver.workspace.memory.store import Task, TaskStatus
 from specweaver.workspace.store import Base
 

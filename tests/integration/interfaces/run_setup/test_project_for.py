@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.run_setup.builder import UnknownProjectError, project_for
 from tests.fixtures.db_utils import register_test_project, set_test_active_project
 

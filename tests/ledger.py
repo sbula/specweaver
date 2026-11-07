@@ -15,7 +15,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 
 if TYPE_CHECKING:
     from pathlib import Path

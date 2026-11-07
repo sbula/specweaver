@@ -103,3 +103,42 @@ step 1 checks everything; a test covers it.
     is the same.
   - `no-read-back`: SQLite always reads back a `user_version` set in the same transaction, so the
     check cannot fail.
+
+## SF-02 CB-1 — `Database` on the opener (FR-1)
+
+**What changed.**
+- `Database`, `session_scope` and `StrictISODateTime` moved to `infrastructure/database/`, into
+  `handle.py` and `types.py`.
+- `Database.connect()`, `async_session_scope()` and the new `sync_engine()` all open through the
+  opener.
+- 157 files' imports were moved by a script that rewrote only those import lines.
+  `git diff` shows nothing else, and a grep finds the old path only inside one test's string fixture.
+- The lineage repository and price refresh open through the opener too. The lineage repository's
+  own WAL-once workaround is gone: the opener retries the switch.
+- 11 modules gained the edge. Three of them (`assurance.standards`, its `interfaces`,
+  `core.flow.store`) lost their `core.config` edge, which existed only for `Database`.
+
+**Changed from the plan.**
+- The plan had `session_scope` and its per-loop semaphore deleted. They moved instead: 48 test files
+  use `session_scope`, and the semaphore keeps a burst of sessions from running out of file handles.
+- `get_db_semaphore` and the `create_async_engine` wrapper stay in `core/config` until CB-3, with
+  their tests.
+
+**Found at the gate.**
+- The changed import line made two old clones visible.
+  - The copied `Base` classes in the flow, LLM and workspace stores each set `__tablename__` from
+    the class name, but every table sets its own name. The rule was dead in all three and is gone.
+  - Two API modules share a 10-line import block. It is imports only, so the duplication baseline
+    was re-frozen on purpose; it holds 86 clones, down from 89.
+- `core/config/bootstrap` now uses the opener while its parent does not; its `widens:` says why.
+
+**Tests.**
+- Red first: `test_config_db_on_the_opener.py`, which failed on the import. It covers the three ways
+  into `specweaver.db` and the lineage repository: the settings, a missing folder, and the door's
+  5 s wait reaching all of them.
+- Added at the gate: `test_strict_iso_datetime.py`, for the moved type's two refusals.
+
+**Mutants.**
+- TECH-090 FR-1: `config-connect-by-hand`, `config-session-by-hand`, `config-sync-engine-by-hand`,
+  `lineage-by-hand`; all objected.
+- Re-pinned after the import change: D-UI-01 FR-3 and FR-6 (3), TECH-074 FR-7 (4).

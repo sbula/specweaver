@@ -27,8 +27,8 @@ from starlette.testclient import TestClient
 from typer.testing import CliRunner
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.runner import PipelineRunner
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
 from specweaver.interfaces.cli.main import app
 from tests.api_token import AUTH, TEST_TOKEN

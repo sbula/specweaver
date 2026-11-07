@@ -81,7 +81,7 @@ def test_a_rest_pipeline_run_calls_the_model_and_records_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     data_dir = tmp_path / "data"

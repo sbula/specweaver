@@ -27,7 +27,7 @@ import pytest
 from rich.logging import RichHandler
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.telemetry_logger import setup_logging, teardown_logging
 from specweaver.workspace.store import WorkspaceRepository
 

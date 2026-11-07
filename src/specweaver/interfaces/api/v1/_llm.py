@@ -13,9 +13,9 @@ from specweaver.interfaces.api.errors import SpecWeaverAPIError
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.state import PipelineRun
+    from specweaver.infrastructure.database import Database
 
 
 async def run_steps(

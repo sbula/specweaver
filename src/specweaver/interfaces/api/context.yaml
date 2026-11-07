@@ -10,6 +10,7 @@ purpose: >
 archetype: adapter
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/core/config
   - specweaver/assurance/validation
   - specweaver/assurance/validation/io

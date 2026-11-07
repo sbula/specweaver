@@ -128,7 +128,7 @@ def test_a_limit_below_one_call_stops_it_before_sending(project: Path, _isolate_
 
 
 def test_finished_reviews_give_the_next_one_a_step_limit(project: Path, _isolate_env: Path) -> None:
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.infrastructure.llm.store import step_history_limit
 
     steps = "[step_limits]\npercentile = 90\nmin_steps = 2\n\n"

@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.budget import SpendBudget
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import (

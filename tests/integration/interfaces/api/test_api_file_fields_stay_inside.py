@@ -36,7 +36,7 @@ _SPEC = "# A — Component Spec\n## 1. Purpose\nDoes A.\n"
 @pytest.fixture()
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[TestClient, Path]]:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     data = tmp_path / "data"

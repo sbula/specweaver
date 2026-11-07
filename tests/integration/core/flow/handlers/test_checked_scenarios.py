@@ -28,7 +28,6 @@ import yaml
 
 from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -47,6 +46,7 @@ from specweaver.core.flow.run_state.run_context import (
     RunContext,
     RunHandle,
 )
+from specweaver.infrastructure.database import Database
 from tests.fixtures.db_utils import register_test_project
 from tests.scripted_llm import FixedRouter
 

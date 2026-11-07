@@ -86,7 +86,7 @@ def _make_context(*, with_config: bool = True) -> RunContext:
 def db(tmp_path: Path):
     """Fresh database with schema v9."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     return Database(tmp_path / ".specweaver" / "specweaver.db")

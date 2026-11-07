@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
 from tests.fixtures.db_utils import register_test_project
 

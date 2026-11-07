@@ -34,7 +34,7 @@ def test_usage_with_a_broken_settings_file_reports_in_usd(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     data_dir = tmp_path / "data"
     data_dir.mkdir()

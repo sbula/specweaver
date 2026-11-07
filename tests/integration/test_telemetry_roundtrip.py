@@ -52,7 +52,7 @@ class TestTelemetryRoundtrip:
     async def test_collector_records_persist_to_db(self, tmp_path: Path):
         """A call through the collector is in the database as soon as it returns."""
         from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
         from specweaver.infrastructure.llm.collector import TelemetryCollector
         from specweaver.infrastructure.llm.models import GenerationConfig, LLMResponse, TokenUsage
 

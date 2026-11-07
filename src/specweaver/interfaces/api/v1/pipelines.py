@@ -11,8 +11,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.core.config.paths import state_db_path
+from specweaver.infrastructure.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import (
     load_api_pipeline,

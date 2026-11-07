@@ -23,8 +23,8 @@ import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 from specweaver.core.config.bootstrap.settings_loader import load_settings
-from specweaver.core.config.database import Database
 from specweaver.core.config.settings_file import SettingsFileError
+from specweaver.infrastructure.database import Database
 from tests.fixtures.db_utils import register_test_project
 
 if TYPE_CHECKING:

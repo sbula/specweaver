@@ -27,8 +27,6 @@ _OPENER = _SRC / "infrastructure" / "database"
 _NOT_MOVED_YET = {
     "core/config/database.py",
     "core/config/bootstrap/db_bootstrap.py",
-    "graph/lineage/store/lineage_repository.py",
-    "infrastructure/llm/price_refresh.py",
 }
 _OPENERS = {("sqlite3", "connect"), ("sqlalchemy", "create_engine")}
 _OPENERS |= {("sqlalchemy.ext.asyncio", "create_async_engine")}

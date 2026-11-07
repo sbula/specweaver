@@ -20,7 +20,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-import sqlite3
 import weakref
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -28,37 +27,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.types import String, TypeDecorator
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-
-class StrictISODateTime(TypeDecorator[datetime]):
-    """
-    Forces SQLAlchemy to serialize/deserialize datetime objects exactly
-    matching the legacy SpecWeaver format: `YYYY-MM-DDTHH:MM:SS.ffffff+00:00`.
-    This prevents Zero Regression crashes when reading legacy SQLite files.
-    """
-
-    impl = String
-    cache_ok = True
-
-    def process_bind_param(self, value: datetime | None, dialect: Any) -> str | None:
-        if value is None:
-            return None
-        if not isinstance(value, datetime):
-            raise TypeError("Value must be a datetime object")
-        if value.tzinfo is None:
-            raise ValueError("StrictISODateTime must be timezone-aware")
-        return value.isoformat()
-
-    def process_result_value(self, value: str | None, dialect: Any) -> datetime | None:
-        if value is None:
-            return None
-        # datetime.fromisoformat natively supports strict ISO strings with timezones
-        return datetime.fromisoformat(value)
+    from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 class CQRSQueueManager:
@@ -189,25 +162,6 @@ def create_async_engine(url: str, **kwargs: Any) -> AsyncEngine:
     return engine
 
 
-@asynccontextmanager
-async def session_scope(
-    engine: AsyncEngine, max_connections: int = 500
-) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Provide a transactional scope around a series of operations.
-    Enforces a strict concurrency limit using asyncio.Semaphore.
-    """
-    semaphore = get_db_semaphore(max_connections)
-
-    async with semaphore, AsyncSession(engine, expire_on_commit=False) as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-
-
 # Global CQRS write queue instance (managed per-event-loop for safe testing)
 _global_write_queue: CQRSQueueManager | None = None
 _global_write_queue_loop: asyncio.AbstractEventLoop | None = None
@@ -260,42 +214,6 @@ def _validate_project_name(name: str) -> None:
             "must start with letter or digit)."
         )
         raise ValueError(msg)
-
-
-class Database:
-    """Multi-project configuration database.
-
-    This class owns the connection and schema lifecycle, managed via Alembic
-    and SQLAlchemy Repositories.
-    """
-
-    def __init__(self, db_path: str | Path) -> None:
-        self._db_path = Path(db_path)
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        logger.debug("Database initialized at %s", self._db_path)
-
-    def connect(self) -> sqlite3.Connection:
-        """Return a new connection with WAL + foreign keys enabled."""
-        conn = sqlite3.connect(str(self._db_path))
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        return conn
-
-    @asynccontextmanager
-    async def async_session_scope(self) -> AsyncGenerator[AsyncSession, None]:
-        """Provide an AsyncSession scoped to this database for the new Domain Stores."""
-        db_posix = self._db_path.absolute().as_posix()
-        engine = create_async_engine(f"sqlite+aiosqlite:///{db_posix}")
-        try:
-            async with session_scope(engine) as session:
-                yield session
-        finally:
-            await engine.dispose()
-
-    # ------------------------------------------------------------------
-    # Telemetry and Legacy Methods (moved to Repositories)
-    # ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------

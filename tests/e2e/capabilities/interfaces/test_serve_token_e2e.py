@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     import pytest
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 runner = CliRunner()
 

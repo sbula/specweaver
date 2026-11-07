@@ -22,7 +22,7 @@ from specweaver.workspace.store import project_root_of
 if TYPE_CHECKING:
     from collections.abc import Coroutine
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 try:
     from ruamel.yaml.error import YAMLError

@@ -16,8 +16,9 @@ import pytest
 from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.pool import StaticPool
 
-from specweaver.core.config.database import create_async_engine, session_scope
+from specweaver.core.config.database import create_async_engine
 from specweaver.core.flow.store import ArtifactEvent, Base
+from specweaver.infrastructure.database import session_scope
 
 
 @pytest.fixture

@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def db(tmp_path: Path):
     """Fresh database with a registered + active project."""
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     database = Database(tmp_path / ".specweaver" / "specweaver.db")
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database

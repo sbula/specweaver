@@ -28,7 +28,7 @@ def test_cli_bootstrap_e2e_happy_path(tmp_path: Path, monkeypatch: pytest.Monkey
     # The E2E conftest does: `monkeypatch.setattr("specweaver.interfaces.cli_kit._core.get_db", ...)`
     # We will undo that specific patch by re-importing the original get_db logic directly.
     def _native_get_db():
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
 
         try:
             from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
@@ -70,7 +70,7 @@ def test_cli_bootstrap_e2e_idempotency(tmp_path: Path, monkeypatch: pytest.Monke
     db_path = tmp_path / "specweaver.db"
 
     def _native_get_db():
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
 
         try:
             from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database

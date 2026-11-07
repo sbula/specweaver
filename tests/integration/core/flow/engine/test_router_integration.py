@@ -22,11 +22,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from specweaver.core.config.database import Database
 from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.run_state.run_context import RunContext
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.collector import TelemetryCollector
 from specweaver.infrastructure.llm.models import LLMResponse, TaskType, TokenKind
 from specweaver.infrastructure.llm.router import ModelRouter, build_router

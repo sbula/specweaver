@@ -12,10 +12,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from specweaver.core.config.database import (
     CQRSQueueManager,
-    StrictISODateTime,
     create_async_engine,
-    session_scope,
 )
+from specweaver.infrastructure.database import StrictISODateTime, session_scope
 
 
 # A minimal DeclarativeBase and model for integration testing

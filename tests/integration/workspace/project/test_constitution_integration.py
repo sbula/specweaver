@@ -171,7 +171,7 @@ class TestConstitutionDBIntegration:
 
     def test_db_max_size_controls_check(self, tmp_path: Path) -> None:
         """constitution_max_size from DB controls check_constitution limit."""
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
 
         bootstrap_database(str(tmp_path / ".sw" / "specweaver.db"))
         db = Database(tmp_path / ".sw" / "specweaver.db")

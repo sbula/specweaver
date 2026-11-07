@@ -19,7 +19,7 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 # Path to the static fixture project (relative to repo root)
 _FIXTURE_ROOT = (
@@ -56,7 +56,7 @@ def sample_db(tmp_path: Path, sample_project: Path) -> Database:
     The sample project is pre-registered as ``"sample"``.
     """
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     bootstrap_database(str(tmp_path / ".specweaver" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver" / "specweaver.db")

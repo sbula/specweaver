@@ -8,6 +8,7 @@ description: |
   Contains all logic for managing user projects, AST parsing, and standards.
   Workspace MUST NOT depend on workflow orchestration or CLI interfaces.
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/commons
   - specweaver/core/config
   - specweaver/sandbox

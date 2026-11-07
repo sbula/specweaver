@@ -26,8 +26,8 @@ import httpx2
 import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.models import TokenKind
 from specweaver.infrastructure.llm.price_refresh import refresh_prices

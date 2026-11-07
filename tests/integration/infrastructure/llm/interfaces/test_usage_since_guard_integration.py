@@ -44,7 +44,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture()
 def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     data_dir = tmp_path / ".specweaver-test"
     data_dir.mkdir(parents=True, exist_ok=True)

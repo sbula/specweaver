@@ -28,7 +28,6 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import (
     PipelineDefinition,
     PipelineStep,
@@ -44,6 +43,7 @@ from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.base import StepHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
 from tests.api_token import AUTH, TEST_TOKEN
 

@@ -8,7 +8,8 @@
       "scope": [
         "tests/integration/core/flow/engine/test_reservations_on_the_opener.py",
         "tests/integration/graph/core/store/test_graph_db_on_the_opener.py",
-        "tests/unit/infrastructure/database/test_only_the_opener_opens.py"
+        "tests/unit/infrastructure/database/test_only_the_opener_opens.py",
+        "tests/integration/infrastructure/database/test_config_db_on_the_opener.py"
       ],
       "mutants": [
         {
@@ -30,6 +31,46 @@
           "new": "        conn = open_sqlite(self.db_path)\n        _create_graph(conn)\n        conn.commit()\n        conn.close()",
           "breaks": "graph.db carries no version, so an older SpecWeaver opens a newer file",
           "symbol_sha": "sha256:2b9479f34294bb524d05777b1ecf14f031d7f67b739f94f2dfccd35fef77ed42"
+        },
+        {
+          "id": "config-connect-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/handle.py",
+          "symbol": "Database.connect",
+          "old": "        return open_sqlite(self._db_path, row_factory=sqlite3.Row)",
+          "new": "        return sqlite3.connect(self._db_path)",
+          "breaks": "specweaver.db runs without WAL, foreign keys or a lock wait",
+          "symbol_sha": "sha256:6945d4153b0ba57b2ba5cf4d81d7c1fb88e47c4f4269b19f0ce9ded5688ecf79"
+        },
+        {
+          "id": "config-session-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/handle.py",
+          "symbol": "Database.async_session_scope",
+          "old": "        engine = create_sqlite_engine(self._db_path.absolute())",
+          "new": "        from sqlalchemy.ext.asyncio import create_async_engine\n        engine = create_async_engine(f\"sqlite+aiosqlite:///{self._db_path.absolute()}\")",
+          "breaks": "every repository session runs without foreign keys",
+          "symbol_sha": "sha256:f080b64d48844b600af44d51a1a43ea0151c7a77d20db6801c2de11e74905fbf"
+        },
+        {
+          "id": "config-sync-engine-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/handle.py",
+          "symbol": "Database.sync_engine",
+          "old": "creator=lambda: open_sqlite(self._db_path)",
+          "new": "creator=lambda: sqlite3.connect(self._db_path)",
+          "breaks": "price refresh writes without foreign keys or a lock wait",
+          "symbol_sha": "sha256:93757913d7a2e659450620341e39b372428ed270d5badbd9da819358a6509ab1"
+        },
+        {
+          "id": "lineage-by-hand",
+          "origin": "authored",
+          "file": "src/specweaver/graph/lineage/store/lineage_repository.py",
+          "symbol": "LineageRepository._get_connection",
+          "old": "        return open_sqlite(self.db_path, row_factory=sqlite3.Row)",
+          "new": "        return sqlite3.connect(self.db_path)",
+          "breaks": "lineage writers fail at once on a locked specweaver.db",
+          "symbol_sha": "sha256:dba900955cba197fdc4bbfc328a2826cba4a84d8643c88baf96608b0da004f83"
         }
       ]
     },

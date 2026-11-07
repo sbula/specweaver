@@ -32,7 +32,7 @@ runner = CliRunner()
 def _mock_db(tmp_path: Path, monkeypatch):
     """Patch get_db() to use a temp DB for all CLI tests."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     bootstrap_database(str(tmp_path / ".specweaver-test" / "specweaver.db"))
     db = Database(tmp_path / ".specweaver-test" / "specweaver.db")
@@ -91,7 +91,7 @@ class TestImplementOutputPaths:
 
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
-    @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
+    @patch("specweaver.infrastructure.database.handle.Database._ensure_schema", create=True)
     def test_output_files_created(
         self,
         mock_ensure_schema,
@@ -119,7 +119,7 @@ class TestImplementOutputPaths:
 
     @patch("specweaver.core.config.bootstrap.settings_loader.load_settings")
     @patch("specweaver.core.flow.store.FlowRepository.log_artifact_event", new_callable=AsyncMock)
-    @patch("specweaver.core.config.database.Database._ensure_schema", create=True)
+    @patch("specweaver.infrastructure.database.handle.Database._ensure_schema", create=True)
     def test_spec_suffix_stripped(
         self,
         mock_ensure_schema,

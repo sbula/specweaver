@@ -70,7 +70,7 @@ def data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _project(tmp_path: Path, name: str, *, rule: str, standard: str) -> Path:
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.workspace.store import WorkspaceRepository
 
     root = tmp_path / name

@@ -30,7 +30,7 @@ from tests.ledger import Ledger
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 pytestmark = pytest.mark.integration
 

@@ -29,7 +29,7 @@ def db_path(tmp_path: Path) -> Path:
 def db(db_path: Path):
     """Create a fresh Database."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     bootstrap_database(str(db_path))
     return Database(db_path)

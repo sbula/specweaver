@@ -25,9 +25,9 @@ import pytest
 
 from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.run_setup.builder import RunRequest, build_run_sync
 from specweaver.workspace.store import WorkspaceRepository
 from tests.fixtures.db_utils import _sync_or_async, register_test_project

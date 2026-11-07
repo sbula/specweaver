@@ -788,7 +788,7 @@
           "old": "            if last and not force and moment - last.checked_at < EVERY:\n",
           "new": "            if False:\n",
           "breaks": "every command waits on models.dev, not one a day",
-          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
+          "symbol_sha": "sha256:4cae6233e5abbc64b88432579cf7b15c5d55d01d3559731c0e48fdb206f1aa4b"
         },
         {
           "id": "etag-never-sent",
@@ -798,7 +798,7 @@
           "old": "            etag = last.etag if last and last.offerings == covered else None\n",
           "new": "            etag = None\n",
           "breaks": "an unchanged list is downloaded whole every day",
-          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
+          "symbol_sha": "sha256:4cae6233e5abbc64b88432579cf7b15c5d55d01d3559731c0e48fdb206f1aa4b"
         },
         {
           "id": "etag-sent-for-new-models",
@@ -808,7 +808,7 @@
           "old": "            etag = last.etag if last and last.offerings == covered else None\n",
           "new": "            etag = last.etag if last else None\n",
           "breaks": "a model newly in use is never priced while models.dev's list is unchanged",
-          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
+          "symbol_sha": "sha256:4cae6233e5abbc64b88432579cf7b15c5d55d01d3559731c0e48fdb206f1aa4b"
         },
         {
           "id": "local-server-refreshed",
@@ -838,7 +838,7 @@
           "old": "        logger.warning(\"Price changed: %s\", line)\n",
           "new": "        pass\n",
           "breaks": "a price changes without anybody being told",
-          "symbol_sha": "sha256:10f57bdc0c8a25ad2f75a6003ac394f3415340feb5faa1a5927a3e8ee4ab835d"
+          "symbol_sha": "sha256:4cae6233e5abbc64b88432579cf7b15c5d55d01d3559731c0e48fdb206f1aa4b"
         },
         {
           "id": "refresh-waits-a-minute",

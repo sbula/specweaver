@@ -26,7 +26,6 @@ import httpx2
 import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.config.llm_settings_parse import LlmSettingsFiles
 from specweaver.core.flow.engine.models import PipelineDefinition
 from specweaver.core.flow.engine.runner import PipelineRunner
@@ -34,6 +33,7 @@ from specweaver.core.flow.engine.state import StepResult, StepStatus
 from specweaver.core.flow.handlers._llm import llm_for
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.models import Message, Role, TaskType
 from specweaver.infrastructure.llm.router import build_router
 from tests.fake_http import fake_httpx2

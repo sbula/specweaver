@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.store import LlmRepository
 
 if TYPE_CHECKING:

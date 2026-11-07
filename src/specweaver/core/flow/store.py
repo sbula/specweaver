@@ -3,15 +3,13 @@
 
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from specweaver.core.config.database import StrictISODateTime
+from specweaver.infrastructure.database import StrictISODateTime
 
 
 class Base(DeclarativeBase):
-    @declared_attr.directive
-    def __tablename__(cls) -> str:  # noqa: N805
-        return cls.__name__.lower()
+    pass
 
 
 class ArtifactEvent(Base):

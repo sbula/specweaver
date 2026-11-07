@@ -22,7 +22,7 @@ import pytest
 from typer.testing import CliRunner
 
 import specweaver.graph.interfaces.cli  # noqa: F401 - Register commands
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.cli.main import app
 
 runner = CliRunner()

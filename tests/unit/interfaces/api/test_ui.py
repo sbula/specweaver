@@ -23,7 +23,7 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
 from tests.api_token import AUTH, TEST_TOKEN
 
@@ -282,9 +282,9 @@ def test_submit_hitl_gate(tmp_path) -> None:
 
     # Set up DB and project
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.infrastructure.database import Database
 
     # TECH-024: patch where the consumer resolves it, not where it used to live.
     from specweaver.interfaces.api import event_bridge as api_app
@@ -360,9 +360,9 @@ def test_submit_hitl_gate_invalid_action(tmp_path) -> None:
     from starlette.testclient import TestClient
 
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.state import PipelineRun, RunStatus
     from specweaver.core.flow.engine.store import StateStore
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     bootstrap_database(str(tmp_path / "test.db"))

@@ -11,12 +11,12 @@ from typing import Any
 
 from sqlalchemy import Float, ForeignKey, Integer, String, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.commons.limits import DEFAULT_MAX_CONSTITUTION_SIZE
-from specweaver.core.config.database import StrictISODateTime
 from specweaver.core.config.paths import scenario_store_for
+from specweaver.infrastructure.database import StrictISODateTime
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,7 @@ DEFAULT_DAL = DALLevel.DAL_C
 
 
 class Base(DeclarativeBase):
-    @declared_attr.directive
-    def __tablename__(cls) -> str:  # noqa: N805
-        return cls.__name__.lower()
+    pass
 
 
 class Project(Base):

@@ -23,9 +23,9 @@ import pytest
 
 from specweaver.commons.project_profile import ProjectProfile, ProjectUndecidedError
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineDefinition, StepAction, StepTarget
 from specweaver.core.flow.engine.run_profile import run_profile, run_task_files
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.run_setup.builder import RunRequest, build_run_sync
 from tests.fixtures.db_utils import register_test_project
 

@@ -66,7 +66,7 @@ def _reply(text: str) -> dict:
 @pytest.fixture
 def client(tmp_path: Path, monkeypatch) -> TestClient:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     data_dir = tmp_path / "data"

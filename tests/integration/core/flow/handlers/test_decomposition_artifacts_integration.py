@@ -44,7 +44,6 @@ from ruamel.yaml import YAML
 from specweaver.commons import json
 from specweaver.commons.enums.dal import DALLevel
 from specweaver.commons.lineage import extract_artifact_uuid
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -60,6 +59,7 @@ from specweaver.core.flow.engine.store import StateStore
 from specweaver.core.flow.handlers.decompose import DecomposeFeatureHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext
+from specweaver.infrastructure.database import Database
 from specweaver.workflows.planning.decomposition import (
     ComponentChange,
     DecompositionPlan,

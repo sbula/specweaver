@@ -107,7 +107,7 @@ class _FakeGeminiAdapter:
 def _isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Point the whole CLI at a throwaway data dir, the way the e2e tier does globally."""
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
     data_dir = tmp_path / ".specweaver-test"
     data_dir.mkdir(parents=True, exist_ok=True)

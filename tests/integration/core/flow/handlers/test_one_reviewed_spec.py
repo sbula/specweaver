@@ -26,7 +26,6 @@ import pytest
 
 from specweaver.commons.project_profile import ProjectProfile
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.handlers.arbiter import ArbitrateVerdictHandler
@@ -38,6 +37,7 @@ from specweaver.core.flow.run_state.run_context import (
     RunContext,
     RunHandle,
 )
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.models import LLMResponse
 from tests.fixtures.db_utils import register_test_project
 from tests.scripted_llm import FixedRouter

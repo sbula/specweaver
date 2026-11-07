@@ -60,7 +60,7 @@ steps:
 @pytest.fixture
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[TestClient, Path]]:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     data = tmp_path / "data"
@@ -164,8 +164,8 @@ def test_any_api_door_refuses_when_session_isolation_needs_the_language(
     world: tuple[TestClient, Path],
 ) -> None:
     """Q1 [agreed 2026-11-06]: a door that does not need the language still never runs unisolated."""
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.parser import load_pipeline
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.errors import SpecWeaverAPIError
     from specweaver.interfaces.api.v1.run_doors import build_api_run
 

@@ -64,7 +64,7 @@ def test_a_stored_dal_that_is_not_a_dal_is_ignored_with_a_warning(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.workspace.store import default_dal_at
 
     bootstrap_database(str(tmp_path / "specweaver.db"))

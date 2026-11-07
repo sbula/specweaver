@@ -12,12 +12,14 @@ purpose: >
 archetype: adapter
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/core/flow/store
   - specweaver/infrastructure/llm
   - specweaver/workspace
   - specweaver/workspace/memory
   - specweaver/core/config
 widens:
+  specweaver/infrastructure/database: "bootstrap opens specweaver.db and runs its schema steps"
   specweaver/core/flow/store: "bootstrap creates the run-state tables"
   specweaver/infrastructure/llm: "bootstrap creates the model tables and seeds the catalogue and prices"
   specweaver/workspace: "bootstrap creates the workspace tables"

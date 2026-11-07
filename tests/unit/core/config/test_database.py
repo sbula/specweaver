@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import sqlalchemy as sa
 
-from specweaver.core.config.database import StrictISODateTime
+from specweaver.infrastructure.database import StrictISODateTime
 
 
 class TestStrictISODateTime:
@@ -147,7 +147,8 @@ class TestSessionScope:
         import sqlalchemy as sa
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        from specweaver.core.config.database import create_async_engine, session_scope
+        from specweaver.core.config.database import create_async_engine
+        from specweaver.infrastructure.database import session_scope
 
         # In-memory async SQLite
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -161,7 +162,8 @@ class TestSessionScope:
     @pytest.mark.asyncio
     async def test_graceful_degradation_rollback_on_exception(self) -> None:
         """Graceful Degradation: Exception inside scope rolls back transaction."""
-        from specweaver.core.config.database import create_async_engine, session_scope
+        from specweaver.core.config.database import create_async_engine
+        from specweaver.infrastructure.database import session_scope
 
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
@@ -182,7 +184,8 @@ class TestSessionScope:
         import asyncio
 
         import specweaver.core.config.database as db_module
-        from specweaver.core.config.database import create_async_engine, session_scope
+        from specweaver.core.config.database import create_async_engine
+        from specweaver.infrastructure.database import session_scope
 
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 
@@ -257,7 +260,7 @@ class TestLiveSessionsEnforceForeignKeys:
     async def test_a_database_session_has_foreign_keys_on(self, tmp_path) -> None:
         import sqlalchemy as sa
 
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
 
         async with Database(tmp_path / "x.db").async_session_scope() as session:
             result = await session.execute(sa.text("PRAGMA foreign_keys"))

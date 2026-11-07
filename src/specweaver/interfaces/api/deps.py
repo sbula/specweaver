@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 # Module-level DB reference, set by create_app() at startup.
 _db: Database | None = None

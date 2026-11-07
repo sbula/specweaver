@@ -9,7 +9,7 @@ import logging
 
 from fastapi import APIRouter, Depends
 
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime for FastAPI DI
+from specweaver.infrastructure.database import Database  # noqa: TC001 -- runtime for FastAPI DI
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.v1.paths import resolve_file_in_project
 from specweaver.interfaces.api.v1.schemas import ReviewRequest  # noqa: TC001 -- runtime for FastAPI

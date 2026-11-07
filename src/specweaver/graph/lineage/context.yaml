@@ -9,4 +9,5 @@ purpose: >
 archetype: store
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/commons

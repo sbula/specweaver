@@ -33,6 +33,7 @@ description: |
 archetype: orchestrator
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/interfaces/cli_kit
   - specweaver/core/config
   - specweaver/assurance/validation

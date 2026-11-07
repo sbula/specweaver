@@ -18,11 +18,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
     from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.run_state.run_context import RunContext
+    from specweaver.infrastructure.database import Database
 
 logger = logging.getLogger(__name__)
 

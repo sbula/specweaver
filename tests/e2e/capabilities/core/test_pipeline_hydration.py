@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 from typer.testing import CliRunner
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.models import LLMResponse
 from specweaver.interfaces.cli.main import app  # type: ignore
 from specweaver.workspace.memory.models import HandoverContext

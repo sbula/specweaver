@@ -36,7 +36,7 @@ def _patch_config_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Bypass the global conftest mock that pre-initializes the DB
     def _native_get_db():
-        from specweaver.core.config.database import Database
+        from specweaver.infrastructure.database import Database
 
         db_path = tmp_path / "specweaver.db"
         try:

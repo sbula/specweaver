@@ -51,7 +51,7 @@ agent_turns = 5
 
 def test_a_request_at_a_limit_gets_402_naming_it(tmp_path: Path, monkeypatch) -> None:
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     data_dir = tmp_path / "data"

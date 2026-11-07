@@ -12,6 +12,7 @@ purpose: >
 archetype: orchestrator
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/core/config
   - specweaver/infrastructure/llm
   - specweaver/workspace

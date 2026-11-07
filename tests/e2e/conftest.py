@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from tests.e2e.gemini_budget import BUDGET, as_quota_skip
 
 

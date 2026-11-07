@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 from fastapi.testclient import TestClient
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
 from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
 from tests.api_token import AUTH, TEST_TOKEN

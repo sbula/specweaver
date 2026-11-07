@@ -14,7 +14,7 @@ from specweaver.assurance.validation.orchestration.project_paths import (
     ProjectPathError,
     project_file,
 )
-from specweaver.core.config.database import Database  # noqa: TC001 -- runtime
+from specweaver.infrastructure.database import Database  # noqa: TC001 -- runtime
 from specweaver.interfaces.api.errors import SpecWeaverAPIError
 
 if TYPE_CHECKING:

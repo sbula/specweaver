@@ -21,9 +21,9 @@ from specweaver.assurance.validation.models import RuleResult, Status
 
 @pytest.fixture(autouse=True)
 def _mock_db_fixture(tmp_path, monkeypatch):
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
-    with patch("specweaver.core.config.database.Database._ensure_schema", create=True):
+    with patch("specweaver.infrastructure.database.handle.Database._ensure_schema", create=True):
         from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
 
         bootstrap_database(str(tmp_path / ".sw-test" / "specweaver.db"))

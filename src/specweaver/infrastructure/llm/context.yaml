@@ -17,6 +17,7 @@ description: |
 archetype: adapter
 
 consumes:
+  - specweaver/infrastructure/database
   - specweaver/core/config
   - specweaver/workspace/ast/parsers
 forbids:

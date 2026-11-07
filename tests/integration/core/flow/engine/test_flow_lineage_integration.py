@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 import pytest
 
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.models import (
     GateCondition,
     GateDefinition,
@@ -39,6 +38,7 @@ from specweaver.core.flow.engine.models import (
 from specweaver.core.flow.engine.runner import PipelineRunner
 from specweaver.core.flow.engine.state import RunStatus, StepStatus
 from specweaver.core.flow.engine.store import StateStore
+from specweaver.infrastructure.database import Database
 from tests.scripted_llm import FixedRouter
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import httpx2
-from sqlalchemy import create_engine, insert, select, update
+from sqlalchemy import insert, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from specweaver.commons.async_bridge import run_sync
@@ -159,7 +159,7 @@ def refresh_prices(
     offerings = offerings_in_use(files)
     if not offerings:
         return Refresh()
-    engine = create_engine("sqlite://", creator=db.connect)
+    engine = db.sync_engine()
     try:
         with engine.begin() as conn:
             last = conn.execute(
@@ -257,10 +257,13 @@ async def _fetch(etag: str | None) -> tuple[int, dict[str, Any], str | None]:
 
 def last_reached(db: Any) -> datetime | None:
     """When models.dev last answered a refresh; `None` if it never did."""
-    engine = create_engine("sqlite://", creator=db.connect)
+    engine = db.sync_engine()
     try:
         with engine.connect() as conn:
-            return conn.execute(select(_STATE.c.reached_at).where(_STATE.c.id == 1)).scalar()
+            reached: datetime | None = conn.execute(
+                select(_STATE.c.reached_at).where(_STATE.c.id == 1)
+            ).scalar()
+            return reached
     except SQLAlchemyError as exc:
         logger.warning("When models.dev last answered is unreadable: %s", exc)
         return None

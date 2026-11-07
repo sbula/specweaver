@@ -12,7 +12,7 @@ from specweaver.commons.async_bridge import run_sync
 from specweaver.workspace.store import WorkspaceRepository
 
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 
 def _sync_or_async(coro):

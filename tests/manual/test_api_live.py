@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 from starlette.testclient import TestClient
 
-from specweaver.core.config.database import Database
+from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app, set_event_bridge
 from specweaver.interfaces.api.event_bridge import EventBridge
 from tests.api_token import AUTH, TEST_TOKEN

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from specweaver.assurance.standards.analyzer import CategoryResult
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 standards_app = typer.Typer(
     name="standards",

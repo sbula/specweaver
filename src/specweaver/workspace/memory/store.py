@@ -15,7 +15,8 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from specweaver.core.config.database import StrictISODateTime, register_fk_pragma_listener
+from specweaver.core.config.database import register_fk_pragma_listener
+from specweaver.infrastructure.database import StrictISODateTime
 from specweaver.workspace.store import Base
 
 # Export it so repo consumers can import it directly from the memory store

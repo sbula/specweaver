@@ -28,7 +28,7 @@ from tests.rendering import shows
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 runner = CliRunner()
 

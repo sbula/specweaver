@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 import specweaver.workspace.memory.store  # noqa: F401
 from specweaver.commons.async_bridge import run_sync
-from specweaver.core.config.database import Database
 from specweaver.core.config.paths import config_db_path
 from specweaver.core.config.settings_file import SettingsFileError
 from specweaver.core.flow.store import Base as FlowBase
+from specweaver.infrastructure.database import Database
 from specweaver.infrastructure.llm.catalogue import shipped_catalogue
 from specweaver.infrastructure.llm.price_store import seed_prices
 from specweaver.infrastructure.llm.store import Base as LlmBase

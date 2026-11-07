@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 
 def create_app(
@@ -87,8 +87,8 @@ def create_app(
 
     # --- Database ---
     if db is None:
-        from specweaver.core.config.database import Database as _Database
         from specweaver.core.config.paths import config_db_path
+        from specweaver.infrastructure.database import Database as _Database
 
         db = _Database(config_db_path())
     deps.set_db(db)

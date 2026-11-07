@@ -14,10 +14,10 @@ from specweaver.interfaces.api.errors import SpecWeaverAPIError
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
     from specweaver.core.flow.engine.models import PipelineDefinition
     from specweaver.core.flow.engine.session import SessionWorktreeError
     from specweaver.core.flow.run_state.run_context import RunContext
+    from specweaver.infrastructure.database import Database
 
 
 async def build_api_run(

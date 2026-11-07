@@ -17,7 +17,7 @@ from specweaver.commons import json
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
 
 logger = logging.getLogger(__name__)
 

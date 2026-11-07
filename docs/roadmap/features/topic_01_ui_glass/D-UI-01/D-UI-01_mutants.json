@@ -17,7 +17,7 @@
           "old": "        \"127.0.0.1\",\n        \"--host\",",
           "new": "        \"0.0.0.0\",\n        \"--host\",",
           "breaks": "an unauthenticated API binds every interface, so anything on the network can start pipeline runs",
-          "symbol_sha": "sha256:77171c911b21751d5dd71be979c84f37dcdc2507df7266dcc4799dc873c4e365"
+          "symbol_sha": "sha256:fb2942f4c04b644718f35f2d300b22a40e8d480110cdde3464b3e45f2cb75ce0"
         },
         {
           "id": "host-not-forwarded",
@@ -27,7 +27,7 @@
           "old": "        host=host,",
           "new": "        host=\"0.0.0.0\",",
           "breaks": "the declared default is ignored and the server binds every interface regardless",
-          "symbol_sha": "sha256:77171c911b21751d5dd71be979c84f37dcdc2507df7266dcc4799dc873c4e365"
+          "symbol_sha": "sha256:fb2942f4c04b644718f35f2d300b22a40e8d480110cdde3464b3e45f2cb75ce0"
         }
       ]
     },
@@ -163,7 +163,7 @@
           "old": "    app.add_middleware(TokenGuard, token=token)\n",
           "new": "    pass\n",
           "breaks": "the token is made and printed but never asked for",
-          "symbol_sha": "sha256:145bf6ae41fa3f2231ba7405a2c74b4d4ea34d0c30952242d4ee0c17dc83bef6"
+          "symbol_sha": "sha256:d3685701a1a1c7a16679a77708a1d0bb50b2b945704d6ccf4ed704182225b7f2"
         }
       ]
     },

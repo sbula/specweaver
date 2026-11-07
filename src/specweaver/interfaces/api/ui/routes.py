@@ -10,8 +10,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from specweaver.core.config.database import Database  # noqa: TC001
 from specweaver.core.config.paths import state_db_path
+from specweaver.infrastructure.database import Database  # noqa: TC001
 from specweaver.interfaces.api.deps import get_db
 from specweaver.interfaces.api.ui._templates import templates
 from specweaver.interfaces.api.v1.projects import list_projects

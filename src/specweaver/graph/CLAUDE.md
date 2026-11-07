@@ -5,7 +5,7 @@ NetworkX-based knowledge graph engine. Builds, queries, and traverses spec/code 
 ## Modules
 
 - **core/** — Graph data models, builder, query engine. Uses `networkx` (pinned 3.6.1).
-- **lineage/** — Change lineage tracking. Tracks how specs evolve over time. Zero external dependencies.
+- **lineage/** — Change lineage tracking. Tracks how specs evolve over time. Depends only on the one database opener (`infrastructure/database`).
 - **topology/** — Graph topology analysis (cycles, paths, centrality).
 - **interfaces/** — CLI bindings for graph commands (depends on `interfaces.cli`).
 
@@ -13,7 +13,7 @@ NetworkX-based knowledge graph engine. Builds, queries, and traverses spec/code 
 
 - Graph is in-memory only. No persistence layer — rebuilt from workspace on each session.
 - All graph operations return pure data structures (dicts, lists, dataclasses). No side effects.
-- Lineage module is fully isolated — depends on NOTHING else.
+- Lineage depends on nothing in SpecWeaver except the database opener.
 
 ## Test Commands
 

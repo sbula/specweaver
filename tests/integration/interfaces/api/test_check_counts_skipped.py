@@ -39,7 +39,7 @@ ONLY_C01 = (
 @pytest.fixture()
 def client(tmp_path):
     from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-    from specweaver.core.config.database import Database
+    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
 
     db_path = tmp_path / ".specweaver-test" / "specweaver.db"

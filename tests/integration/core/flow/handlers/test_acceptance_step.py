@@ -27,7 +27,6 @@ import pytest
 import typer
 
 from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
-from specweaver.core.config.database import Database
 from specweaver.core.flow.engine.handover import _failed_step_errors
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import PipelineRun, RunStatus, StepRecord, StepStatus
@@ -36,6 +35,7 @@ from specweaver.core.flow.handlers.reviewed_spec import keep_set
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 from specweaver.core.flow.interfaces import cli
 from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
+from specweaver.infrastructure.database import Database
 from specweaver.sandbox.base import AtomResult, AtomStatus
 from tests.fixtures.db_utils import register_test_project
 from tests.rendering import shows
