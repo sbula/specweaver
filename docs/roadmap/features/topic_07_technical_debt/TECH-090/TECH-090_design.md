@@ -241,7 +241,7 @@ SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each i
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | One opener, versioned steps | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | One opener, versioned steps | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The config database on the opener | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The doors | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -256,6 +256,7 @@ exception. Each decision sits beside its fact above.
 At approval the user asked where `graph.db` and `reservations.db` are first opened: `reservations.db`
 at a gate after a step had run, so FR-7 now prepares it in the run setup (Q13) `[agreed 2026-11-07]`.
 **Design approved 2026-11-07** (the user), FR-12 and AD-4/AD-5 included.
-**Next step**: `specweaver-implementation-plan` for SF-01.
+**SF-01 plan approved 2026-11-07** (the user).
+**Next step**: `specweaver-dev` for SF-01.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
