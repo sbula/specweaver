@@ -100,7 +100,10 @@ class GateEvaluator:
         self, gate: GateDefinition, result: StepResult, step_def: PipelineStep, run: PipelineRun
     ) -> str:
         """Evaluate a RESERVE gate atomically against the SQLite reservation system."""
-        from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
+        from specweaver.core.flow.engine.reservation import (
+            SQLiteReservationSystem,
+            reservations_path,
+        )
 
         if not self._context or not getattr(self._context, "project_path", None):
             logger.warning(
@@ -108,7 +111,7 @@ class GateEvaluator:
             )
             return "advance"
 
-        db_path = self._context.project_path / ".specweaver" / "reservations.db"
+        db_path = reservations_path(self._context.project_path)
         # Per pipeline: this used to read a context field nothing ever set, so every pipeline
         # in the project queued behind one shared lock.
         pipeline_target = run.pipeline_name

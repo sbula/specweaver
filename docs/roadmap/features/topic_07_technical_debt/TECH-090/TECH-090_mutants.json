@@ -261,7 +261,8 @@
       "scope": [
         "tests/integration/interfaces/cli/test_cli_stops_on_a_failed_step.py",
         "tests/unit/infrastructure/database/test_steps.py",
-        "tests/unit/interfaces/cli_kit/test_stops_on_schema_error.py"
+        "tests/unit/interfaces/cli_kit/test_stops_on_schema_error.py",
+        "tests/integration/interfaces/run_setup/test_run_setup_prepares_reservations.py"
       ],
       "mutants": [
         {
@@ -323,6 +324,46 @@
           "new": "    except Exception as err:",
           "breaks": "the CLI turns every error into exit 1, hiding a bug behind a one-line message",
           "symbol_sha": "sha256:c99501425397f5b0d7cb3fd22294478f428c6335cea08715e7af7d2dab5072fe"
+        },
+        {
+          "id": "run-setup-skips-reservations",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "build_run",
+          "old": "    prepare_reservations(request.project_root)\n    doc_policy",
+          "new": "    doc_policy",
+          "breaks": "reservations.db is first opened at a RESERVE gate, after a step has run",
+          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
+        },
+        {
+          "id": "run-door-uncaught",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_doors/run_doors.py",
+          "symbol": "build_run_or_exit",
+          "old": "        with _core.stops_on_schema_error():\n            context",
+          "new": "        if True:\n            context",
+          "breaks": "sw run names the exception class instead of the door's message",
+          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
+        },
+        {
+          "id": "removed-folder-made-again",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/reservation.py",
+          "symbol": "prepare_reservations",
+          "old": "    if not project_root.is_dir():\n        return",
+          "new": "    if False:\n        return",
+          "breaks": "a run on a removed project folder makes the folder again",
+          "symbol_sha": "sha256:2208eb682e60c25aedd673bd89fe61501e0337ed45400c883e1ac5437f40d084"
+        },
+        {
+          "id": "reservations-elsewhere",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/engine/reservation.py",
+          "symbol": "reservations_path",
+          "old": "    return project_root / \".specweaver\" / \"reservations.db\"",
+          "new": "    return project_root / \"reservations.db\"",
+          "breaks": "the run setup prepares a file the gate never opens",
+          "symbol_sha": "sha256:799b76763e8b3c2e20e6887c5e86b57203db1a13824690a954dba4da60112bb2"
         }
       ]
     },

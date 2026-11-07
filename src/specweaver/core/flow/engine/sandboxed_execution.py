@@ -139,9 +139,12 @@ async def execute_in_sandbox(
             atom.run({"intent": "worktree_teardown", "path": wt_path, "branch": branch})
 
         try:
-            from specweaver.core.flow.engine.reservation import SQLiteReservationSystem
+            from specweaver.core.flow.engine.reservation import (
+                SQLiteReservationSystem,
+                reservations_path,
+            )
 
-            db_path = context.project_path / ".specweaver" / "reservations.db"
+            db_path = reservations_path(context.project_path)
             SQLiteReservationSystem(db_path).release(run.run_id)
         except Exception as e:
             logger.error("[run_id=%s] Sandbox DB teardown bounds panic: %s", run.run_id, e)

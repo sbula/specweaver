@@ -300,3 +300,43 @@ Exception)`. Accepted:
   value. Only tests do that, and `tests/conftest.py` restores the logger.
 - If reading the active project fails, the command stops with that error, as it did in the
   callback before.
+
+## SF-03 CB-2 — `reservations.db` in the run setup (FR-7)
+
+**What changed.**
+- `reservation.py`: `reservations_path(project_root)`, now used by the `RESERVE` gate, the sandbox
+  release and the run setup, so all three name one file; `prepare_reservations(project_root)` runs
+  the file's steps, creating it if missing.
+- `build_run` prepares `reservations.db` before anything else. A run on a removed project folder
+  does not make the folder again; it keeps its refusal naming the folder.
+- `run_doors.build_run_or_exit` builds under `_core.stops_on_schema_error()`, so `sw run` prints
+  the door's message. Without it, `sw run`'s catch-all printed `Error: SchemaTooNewError: …`.
+- An API route that builds a run gets a `500` on a `SchemaError`, as planned.
+
+**Docs.** `database_migrations.md`: when each file is brought up to date, and what a failure does.
+
+**Coverage.**
+
+| Unit under change | Unit | Integration | E2E |
+|---|---|---|---|
+| `prepare_reservations`, `reservations_path` | — | ✅ `test_run_setup_prepares_reservations.py` | — |
+| `build_run` prepares first | — | ✅ `test_run_setup_prepares_reservations.py` | — |
+| `sw run` on a newer `reservations.db` | — | ✅ `test_run_setup_prepares_reservations.py` | — |
+
+**Found at the gate.**
+- The first version of `prepare_reservations` made a removed project folder again (caught by
+  `test_run_carries_the_profile.py`). It now skips a missing folder, with a test.
+- B-FLOW-05 FR-3 `worktree-merges-stopped-work` was SILENT before this boundary (checked on a clean
+  copy of HEAD). The test checked only that nothing was merged; the mutant committed, then failed
+  before the merge. `test_spend_brake_parks_run.py` now also checks that nothing is committed. The
+  mutant objects.
+
+**Tests.** Full suite: 12813 passed, 9 skipped. `quality.py cb`: 17 of 17 after an import sort.
+`tach check` green.
+
+**Mutants.** FR-7: 4 new, all objected. 27 mutants of other features named the functions this
+boundary touched; all were rerun and objected, then re-pinned. Stale mutants: 0.
+
+**Red/blue** (2 cycles, nothing above threshold). Accepted:
+- A folder removed between the check and the upgrade is made again; the window is one call long.
+- The API's run setup turns a `SchemaError` into a `500`, not a message. CB-3 does not change that.

@@ -24,6 +24,16 @@ graph TD
 | `<project>/.specweaver/graph.db` | `graph/core/store/repository.py` |
 | `<project>/.specweaver/reservations.db` | `core/flow/engine/reservation.py` |
 
+| File | Brought up to date |
+|---|---|
+| `specweaver.db` | a command's first database use (`cli_kit/_core.get_db`); help and `--version` open none |
+| `pipeline_state.db` | `sw run` and `sw resume`, before the runner starts |
+| `graph.db` | `sw graph build`, before any file is read |
+| `reservations.db` | the run setup (`build_run`), before the first step; created if missing |
+
+A file that cannot be opened, is newer than the code, or whose step fails raises a `SchemaError`
+naming the file; the CLI prints it and exits 1.
+
 - Each step and its version change commit in one `BEGIN IMMEDIATE` transaction; the version is
   read again once the lock is held, so two processes never apply a step twice.
 - A file newer than the code is refused, naming the file and both versions.

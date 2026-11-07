@@ -54,22 +54,23 @@ def build_run_or_exit(
         root = project_path if project_path is not None else project_root_of(db, project)
         if root is None:
             raise UnknownProjectError(f"Project '{project}' has no folder registered.")
-        context = build_run_sync(
-            RunRequest(
-                project_root=root,
-                spec_path=spec_path,
-                pipeline=pipeline,
-                project=project,
-                db=db,
-                run_model=run_model,
-                selector=selector,
-                ask=_core.spend_asker(),
-                models=models,
-                read_only=read_only,
-                on_model_skipped=_say_no_model,
-                needs_profile=needs_profile,
+        with _core.stops_on_schema_error():
+            context = build_run_sync(
+                RunRequest(
+                    project_root=root,
+                    spec_path=spec_path,
+                    pipeline=pipeline,
+                    project=project,
+                    db=db,
+                    run_model=run_model,
+                    selector=selector,
+                    ask=_core.spend_asker(),
+                    models=models,
+                    read_only=read_only,
+                    on_model_skipped=_say_no_model,
+                    needs_profile=needs_profile,
+                )
             )
-        )
     except SettingsFileError as err:
         _core.refuse_settings(err)
     except ProjectUndecidedError as err:

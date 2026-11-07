@@ -26,6 +26,22 @@ def _create_reservations(conn: sqlite3.Connection) -> None:
 _STEPS = (Step(1, "create flow_reservations", _create_reservations),)
 
 
+def reservations_path(project_root: Path) -> Path:
+    """Where a project's reservations are kept."""
+    return project_root / ".specweaver" / "reservations.db"
+
+
+def prepare_reservations(project_root: Path) -> None:
+    """Bring the project's reservations file up to date, creating it if missing.
+
+    Raises:
+        SchemaError: the file cannot be opened or a step failed; the message names the file.
+    """
+    if not project_root.is_dir():
+        return  # never make a removed project folder again; the run refuses it by name
+    upgrade(reservations_path(project_root), _STEPS)
+
+
 class SQLiteReservationSystem:
     """Provides atomic resource locking utilizing SQLite IntegrityError boundaries."""
 

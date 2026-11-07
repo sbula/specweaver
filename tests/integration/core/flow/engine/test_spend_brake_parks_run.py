@@ -162,6 +162,7 @@ async def test_a_stopped_step_in_its_own_worktree_parks_and_merges_nothing(
 
     assert run.status is RunStatus.PARKED
     assert "worktree_add" in intents
+    assert "worktree_commit" not in intents
     assert "strip_merge" not in intents
 
 

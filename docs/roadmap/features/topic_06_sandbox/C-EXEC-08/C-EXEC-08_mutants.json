@@ -182,7 +182,7 @@
           "old": "                \"step\": step_def.name,\n",
           "new": "                \"step\": None,\n",
           "breaks": "a step rule never keeps its own step's doc",
-          "symbol_sha": "sha256:f08078362eac0cacd1f6748d66853b50b6826a1b7a4c6fc95bc76f203482e51b"
+          "symbol_sha": "sha256:dd4a9e7b1eb3b68431c515f04f1404b1c1b4091ceb9815d53a969b9609102a0e"
         },
         {
           "id": "session-judged-by-one-step",

@@ -189,7 +189,7 @@
           "old": "    except SettingsFileError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "a broken setting ends in a traceback",
-          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
+          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
         },
         {
           "id": "project-path-error-escapes",

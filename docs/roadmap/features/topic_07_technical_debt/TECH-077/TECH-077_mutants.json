@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
+          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
         },
         {
           "id": "no-standards",
@@ -168,7 +168,7 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
+          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
         },
         {
           "id": "no-topology",
@@ -178,7 +178,7 @@
           "old": "graph=GraphContext(topology=_topology(request)),",
           "new": "graph=GraphContext(topology=None),",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:cdd2f1e0457f74374df5397c80b9535abed32fa2d4e8fb954dc85a15557b206d"
+          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
         },
         {
           "id": "optional-model-refuses",
@@ -354,7 +354,7 @@
           "old": "    except UnknownProjectError as err:\n",
           "new": "    except ImportError as err:\n",
           "breaks": "an unregistered folder ends in a traceback",
-          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
+          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
         },
         {
           "id": "resume-worktree-traceback",
@@ -374,7 +374,7 @@
           "old": "        tell_missing_at_end(context.model.llm_router)\n",
           "new": "        pass\n",
           "breaks": "a command never says its ledger missed calls",
-          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
+          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
         },
         {
           "id": "no-folder-no-active-root",
@@ -384,7 +384,7 @@
           "old": "        root = project_path if project_path is not None else project_root_of(db, project)\n",
           "new": "        root = project_path\n",
           "breaks": "a command with no folder has no project root",
-          "symbol_sha": "sha256:58f9b6e2c9a2ffef21ca477caba469a99582f1e976ab3819727aeff7132ca0f5"
+          "symbol_sha": "sha256:acff94a0218199a08c2309394eee206552fa11fc202fcacb170aeaebe6affb21"
         },
         {
           "id": "implement-worktree-traceback",

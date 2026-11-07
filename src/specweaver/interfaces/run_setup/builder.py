@@ -81,6 +81,7 @@ class RunRequest:
 async def build_run(request: RunRequest) -> RunContext:
     """The run's context, every part from the request's one project. Raises; never exits."""
     from specweaver.assurance.standards.loader import load_standards_content_async
+    from specweaver.core.flow.engine.reservation import prepare_reservations
     from specweaver.core.flow.handlers.roles import roles_of
     from specweaver.core.flow.run_state.run_context import (
         AnalysisContext,
@@ -94,6 +95,7 @@ async def build_run(request: RunRequest) -> RunContext:
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
     from specweaver.workspace.project.constitution import find_constitution
 
+    prepare_reservations(request.project_root)
     doc_policy, autonomy, implement = _sections(request.project_root)
     profile, undecided = _profile(request, implement)
     info = find_constitution(request.project_root, spec_path=request.spec_path)
