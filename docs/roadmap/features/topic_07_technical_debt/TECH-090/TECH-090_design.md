@@ -243,7 +243,7 @@ SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each i
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One opener, versioned steps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | The doors | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | The doors | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -265,6 +265,8 @@ the two silent mutants (map 4 → 0, no read-back) judged equivalent by the user
 `test_session_scope.py`.
 **SF-03 plan approved 2026-11-07** (the user): the API logs to `logs/_api/`; a CLI command switches to its
 project's log at its first database use; the `503` body carries `error_code` `DATABASE_BUSY`.
-**Next step**: `specweaver-dev` for SF-03, CB-1.
+**SF-03 dev 2026-11-07**: CB-1 `94a945a3`, CB-2 `c15cac35`, CB-3 accepted by the user 2026-11-07. A
+command's lines before its first database use go to the `_global` log (Q2).
+**Next step**: the TECH-090 closure gate (`specweaver-feature` Phase 4).
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.

@@ -63,6 +63,11 @@ class Database:
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
 
+    @property
+    def path(self) -> Path:
+        """The file this handle opens."""
+        return self._db_path
+
     def connect(self) -> sqlite3.Connection:
         """A plain connection returning `sqlite3.Row` rows."""
         return open_sqlite(self._db_path, row_factory=sqlite3.Row)

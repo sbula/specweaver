@@ -24,6 +24,7 @@ consumes:
   - specweaver/interfaces/run_setup
   - specweaver/assurance/standards
   - specweaver/workspace/analyzers
+  - specweaver/telemetry_logger
 forbids:
   - specweaver/interfaces/cli
   - specweaver/sandbox/*

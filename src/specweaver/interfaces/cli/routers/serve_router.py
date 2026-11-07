@@ -60,15 +60,13 @@ def serve(
         )
         raise typer.Exit(code=1) from None
 
-    from specweaver.core.config.paths import config_db_path
-    from specweaver.infrastructure.database import Database
     from specweaver.interfaces.api.app import create_app
     from specweaver.interfaces.api.auth import make_token
 
     token = make_token()
+    with _core.stops_on_schema_error():
+        app = create_app(token=token, cors_origins=cors_origins)
     token_file = _write_token(token)
-    db = Database(config_db_path())
-    app = create_app(db=db, token=token, cors_origins=cors_origins)
 
     _core.console.print(
         f"[bold]SpecWeaver API[/bold] starting on [cyan]http://{host}:{port}[/cyan]",

@@ -128,7 +128,10 @@ rate_date = 2026-09-26
 - **The API and dashboard** (`sw serve`, needs `specweaver[serve]`): every request needs the token
   `sw serve` makes at each start. Open the dashboard address it prints, which carries the token once;
   a program reads the token from `~/.specweaver/serve.token` (readable by you only) and sends it as
-  `Authorization: Bearer <token>`. Runs started through the API need `[serve] max_runs = <n>`, how
+  `Authorization: Bearer <token>`. `sw serve` brings `specweaver.db` and `pipeline_state.db` up to
+  date before it starts, and does not start when one cannot be, naming the file. A request that
+  finds a file locked for 5 s answers `503` with `Retry-After: 1` and `error_code`
+  `DATABASE_BUSY`; send it again. Runs started through the API need `[serve] max_runs = <n>`, how
   many may run at once; without it a run is refused, naming the key.
   A run's `spec` and every `file` field must land inside the project (links are followed first);
   one outside answers 400 `PATH_TRAVERSAL` and starts nothing. A pipeline is named by a bare name:
@@ -410,6 +413,7 @@ Nothing secret reaches a model: every value of 8 or more characters in `vault.en
 
 A command logs to its active project's file from its first database use. Before that, and for a
 command that needs no database (`--help`), it logs to `~/.specweaver/logs/_global/specweaver.log`.
+The API server logs to its own file, `~/.specweaver/logs/_api/specweaver.log`.
 
 Both levels are per project:
 

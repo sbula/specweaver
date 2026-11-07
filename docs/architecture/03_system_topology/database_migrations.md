@@ -26,13 +26,15 @@ graph TD
 
 | File | Brought up to date |
 |---|---|
-| `specweaver.db` | a command's first database use (`cli_kit/_core.get_db`); help and `--version` open none |
-| `pipeline_state.db` | `sw run` and `sw resume`, before the runner starts |
+| `specweaver.db` | a command's first database use (`cli_kit/_core.get_db`); help and `--version` open none; the API in `create_app` |
+| `pipeline_state.db` | `sw run` and `sw resume`, before the runner starts; the API in `create_app` |
 | `graph.db` | `sw graph build`, before any file is read |
 | `reservations.db` | the run setup (`build_run`), before the first step; created if missing |
 
 A file that cannot be opened, is newer than the code, or whose step fails raises a `SchemaError`
-naming the file; the CLI prints it and exits 1.
+naming the file; the CLI prints it and exits 1, and `create_app` raises it, so no server starts.
+An API request that finds a file locked after the API's 5 s wait answers `503` with
+`Retry-After: 1` (`interfaces/api/errors.py`).
 
 - Each step and its version change commit in one `BEGIN IMMEDIATE` transaction; the version is
   read again once the lock is held, so two processes never apply a step twice.

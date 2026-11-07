@@ -102,7 +102,7 @@ depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "
 
 [[modules]]
 path = "specweaver.interfaces.api"
-depends_on = [ "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.database", "specweaver.infrastructure.llm", "specweaver.interfaces.run_setup", "specweaver.workflows.implementation", "specweaver.workflows.review", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
+depends_on = [ "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.database", "specweaver.infrastructure.llm", "specweaver.interfaces.run_setup", "specweaver.telemetry_logger", "specweaver.workflows.implementation", "specweaver.workflows.review", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.cli"

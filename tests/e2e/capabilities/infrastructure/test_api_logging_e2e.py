@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from specweaver.infrastructure.database import Database
 from specweaver.interfaces.api.app import create_app
-from specweaver.telemetry_logger import get_log_path, setup_logging, teardown_logging
+from specweaver.telemetry_logger import get_log_path, teardown_logging
 from tests.api_token import AUTH, TEST_TOKEN
 
 if TYPE_CHECKING:
@@ -25,8 +25,8 @@ async def test_api_execution_writes_json_telemetry(tmp_path: Path) -> None:
 
     with patch("specweaver.telemetry_logger._get_logs_dir", return_value=tmp_path):
         teardown_logging()
-        setup_logging("test_project")
-        log_file = get_log_path("test_project")
+        # create_app sets up the API's own log; nothing before it does (TECH-090 FR-12).
+        log_file = get_log_path("_api")
 
         db = Database(tmp_path / "test.db")
         app = create_app(token=TEST_TOKEN, db=db)

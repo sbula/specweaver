@@ -15,7 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from specweaver.interfaces.api import deps
 from specweaver.interfaces.api.auth import TokenGuard
-from specweaver.interfaces.api.errors import SpecWeaverAPIError, specweaver_error_handler
+from specweaver.interfaces.api.errors import (
+    DATABASE_ERRORS,
+    SpecWeaverAPIError,
+    database_busy_handler,
+    specweaver_error_handler,
+)
 
 # Re-exported, not defined: the singleton lives beside the class it hands out, so the route modules
 # do not import the application object back. Resolved here too, for callers that reach
@@ -29,6 +34,8 @@ from specweaver.interfaces.api.v1.router import router
 
 logger = logging.getLogger(__name__)
 
+#: The API's log folder name; project names start with a letter or digit, so none can take it.
+_API_LOG = "_api"
 
 if TYPE_CHECKING:
     from specweaver.infrastructure.database import Database
@@ -50,7 +57,23 @@ def create_app(
     Returns:
         Configured FastAPI app instance.
     """
+    from specweaver.core.config.bootstrap.db_bootstrap import bootstrap_database
+    from specweaver.core.config.paths import config_db_path, state_db_path
+    from specweaver.core.flow.engine.store import StateStore
+    from specweaver.infrastructure.database import Database as _Database
+    from specweaver.infrastructure.database import set_lock_wait
+    from specweaver.telemetry_logger import setup_logging
+
+    # The server's own process settings and files, before anything is served: a request waits 5 s
+    # for a lock, the log is the API's own file, and a file that cannot be brought up to date
+    # stops the start (SchemaError).
+    set_lock_wait(5)
+    setup_logging(project_name=_API_LOG)
     logger.info("Initializing create_app")
+    if db is None:
+        db = _Database(config_db_path())
+    bootstrap_database(str(db.path))
+    StateStore(state_db_path())
     try:
         ver = version("specweaver")
     except Exception:  # expected: not installed as a package, so 'dev'
@@ -84,13 +107,9 @@ def create_app(
 
     # --- Error Handlers ---
     app.add_exception_handler(SpecWeaverAPIError, specweaver_error_handler)  # type: ignore[arg-type]
+    for error in DATABASE_ERRORS:
+        app.add_exception_handler(error, database_busy_handler)
 
-    # --- Database ---
-    if db is None:
-        from specweaver.core.config.paths import config_db_path
-        from specweaver.infrastructure.database import Database as _Database
-
-        db = _Database(config_db_path())
     deps.set_db(db)
 
     # --- Routers ---

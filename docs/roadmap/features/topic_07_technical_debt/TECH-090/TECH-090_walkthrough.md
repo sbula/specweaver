@@ -340,3 +340,51 @@ boundary touched; all were rerun and objected, then re-pinned. Stale mutants: 0.
 **Red/blue** (2 cycles, nothing above threshold). Accepted:
 - A folder removed between the check and the upgrade is made again; the window is one call long.
 - The API's run setup turns a `SchemaError` into a `500`, not a message. CB-3 does not change that.
+
+## SF-03 CB-3 — the API door (FR-2, FR-7, FR-9, FR-12; closes SF-03)
+
+**What changed.**
+- `create_app`, before the app is built: sets a 5 s lock wait, logs to
+  `~/.specweaver/logs/_api/specweaver.log` (Q1), brings its database (`Database.path`, new) and
+  `pipeline_state.db` up to date. A `SchemaError` propagates, so no app is built.
+- `errors.database_busy_handler`, for `sqlalchemy.exc.OperationalError` and
+  `sqlite3.OperationalError`: a locked file answers `503`, `Retry-After: 1`,
+  `{"detail": "The database is busy. Retry.", "error_code": "DATABASE_BUSY"}` (Q3). Any other
+  error is raised again, so it stays a `500`. SQLite's own code decides (`SQLITE_BUSY`,
+  `SQLITE_LOCKED`, extended codes included); the message only when there is no code. Never the SQL.
+- `sw serve` builds the app under `stops_on_schema_error()` and writes the token file only after
+  the app is built: a server that does not start leaves no token behind.
+- `interfaces.api` gains the `telemetry_logger` edge.
+
+**Plan deviation.** The plan had `sw serve` call `_core.get_db()`. Its mutant was SILENT:
+`create_app` already brings the file up to date, so the call did nothing. It is gone.
+
+**Docs.** `1_installation_and_setup.md`: the API's log file, `sw serve` stopping on a broken file,
+the `503`. `database_migrations.md`: the API's row.
+
+**Coverage.**
+
+| Unit under change | Unit | Integration | E2E |
+|---|---|---|---|
+| `create_app` files, 5 s wait | — | ✅ `test_api_door_prepares_files.py` | ✅ `test_fresh_machine_api_e2e.py` |
+| `sw serve` on a newer file | — | ✅ `test_api_door_prepares_files.py` | — |
+| `database_busy_handler`, `_is_locked` | — | ✅ `test_api_busy_database.py` (a real held lock) | — |
+| API log file | — | ✅ `test_api_logging.py` | ✅ `test_api_logging_e2e.py` |
+
+**Found at the gate.**
+- The first `503` check matched "locked" or "busy" in the error text. Through SQLAlchemy that
+  text holds the SQL, and a real `no such column: busy` held the word too: both became a wrong
+  `503`. SQLite's error code now decides, with tests for both cases and for extended codes.
+- `test_api_logging_e2e.py` set up a project log before `create_app`; it now reads the `_api` file.
+
+**Tests.** Full suite: 12832 passed, 9 skipped. `tests.py sf TECH-090 --kind bugfix`: unit 10130
+passed (9 skipped), integration 2263, e2e 95. `quality.py sf`: 18 of 18. `quality.py doc`: 14 of
+14. `tach check` green.
+
+**Mutants.** FR-2: 1, FR-7: 4, FR-9: 8, FR-12: 1, all objected. D-UI-01 FR-3 and FR-6 (3 mutants)
+were rerun after `create_app` and `serve` changed, objected, re-pinned. Stale mutants: 0.
+
+**Red/blue** (2 cycles; the busy-word finding above fixed). Accepted:
+- A `503` logs the driver's message at warning level; it carries no SQL.
+- A handler that raises again ends in Starlette's plain `500`, as before this ticket.
+- Each `create_app` in a test switches logging to `_api`; `tests/conftest.py` restores the logger.

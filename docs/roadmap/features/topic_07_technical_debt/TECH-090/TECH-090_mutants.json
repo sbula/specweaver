@@ -79,7 +79,8 @@
       "title": "Every connection has WAL, foreign keys and the process's lock wait",
       "scope": [
         "tests/unit/infrastructure/database/test_open_sqlite.py",
-        "tests/integration/infrastructure/database/test_two_processes_upgrade.py"
+        "tests/integration/infrastructure/database/test_two_processes_upgrade.py",
+        "tests/integration/interfaces/api/test_api_door_prepares_files.py"
       ],
       "mutants": [
         {
@@ -101,6 +102,16 @@
           "new": "            raise",
           "breaks": "two processes opening a new file together: one fails with database is locked",
           "symbol_sha": "sha256:b66ae2e1b3ab7c7d372ab0155020d968a5947d68be211486498c7f8e98ef4bde"
+        },
+        {
+          "id": "api-lock-wait-unset",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "    set_lock_wait(5)\n    setup_logging",
+          "new": "    setup_logging",
+          "breaks": "the API waits the CLI's 30 s, so a request hangs past a client's timeout",
+          "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
         }
       ]
     },
@@ -262,7 +273,9 @@
         "tests/integration/interfaces/cli/test_cli_stops_on_a_failed_step.py",
         "tests/unit/infrastructure/database/test_steps.py",
         "tests/unit/interfaces/cli_kit/test_stops_on_schema_error.py",
-        "tests/integration/interfaces/run_setup/test_run_setup_prepares_reservations.py"
+        "tests/integration/interfaces/run_setup/test_run_setup_prepares_reservations.py",
+        "tests/integration/interfaces/api/test_api_door_prepares_files.py",
+        "tests/e2e/capabilities/interfaces/test_fresh_machine_api_e2e.py"
       ],
       "mutants": [
         {
@@ -364,6 +377,46 @@
           "new": "    return project_root / \"reservations.db\"",
           "breaks": "the run setup prepares a file the gate never opens",
           "symbol_sha": "sha256:799b76763e8b3c2e20e6887c5e86b57203db1a13824690a954dba4da60112bb2"
+        },
+        {
+          "id": "api-skips-the-config-steps",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "    bootstrap_database(str(db.path))\n    StateStore",
+          "new": "    StateStore",
+          "breaks": "the API serves on a config database it never brought up to date",
+          "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
+        },
+        {
+          "id": "api-skips-the-state-steps",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "    StateStore(state_db_path())\n    try:",
+          "new": "    try:",
+          "breaks": "the API serves on a pipeline_state.db it never brought up to date",
+          "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
+        },
+        {
+          "id": "serve-failure-is-a-traceback",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
+          "symbol": "serve",
+          "old": "    with _core.stops_on_schema_error():\n        app = create_app",
+          "new": "    if True:\n        app = create_app",
+          "breaks": "sw serve on a broken file ends in a traceback",
+          "symbol_sha": "sha256:6a0a70e599e33385ee615b7ce628f9f82f7a8f4df4c033cd8344efcc0f29fce2"
+        },
+        {
+          "id": "serve-writes-a-token-before-the-check",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/cli/routers/serve_router.py",
+          "symbol": "serve",
+          "old": "    token = make_token()\n    with _core.stops_on_schema_error():\n        app = create_app(token=token, cors_origins=cors_origins)\n    token_file = _write_token(token)",
+          "new": "    token = make_token()\n    token_file = _write_token(token)\n    with _core.stops_on_schema_error():\n        app = create_app(token=token, cors_origins=cors_origins)",
+          "breaks": "a server that never starts leaves a token file behind",
+          "symbol_sha": "sha256:6a0a70e599e33385ee615b7ce628f9f82f7a8f4df4c033cd8344efcc0f29fce2"
         }
       ]
     },
@@ -415,6 +468,115 @@
           "new": "    pass",
           "breaks": "a second command in one process keeps the first command's project log",
           "symbol_sha": "sha256:44272043cf15f121c56af05f90af1142010c8beb3749c16dd586e0c9f9d9e575"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "A locked file answers 503 with Retry-After: 1; any other database error stays 500",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_busy_database.py"
+      ],
+      "mutants": [
+        {
+          "id": "busy-handler-unregistered",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "        app.add_exception_handler(error, database_busy_handler)",
+          "new": "        pass",
+          "breaks": "a locked file is a 500 with the driver's error",
+          "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
+        },
+        {
+          "id": "busy-is-500",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "database_busy_handler",
+          "old": "        status_code=503,",
+          "new": "        status_code=500,",
+          "breaks": "a client cannot tell a busy database from a bug",
+          "symbol_sha": "sha256:8626bd7cda8aa5ab6201ea0ef09230a2aaa51d1c5607061d39619b22bfdf2d48"
+        },
+        {
+          "id": "busy-without-retry-after",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "database_busy_handler",
+          "old": "        headers={\"Retry-After\": \"1\"},\n    )",
+          "new": "    )",
+          "breaks": "a client is not told when to retry",
+          "symbol_sha": "sha256:8626bd7cda8aa5ab6201ea0ef09230a2aaa51d1c5607061d39619b22bfdf2d48"
+        },
+        {
+          "id": "sql-text-decides",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "database_busy_handler",
+          "old": "    cause = getattr(exc, \"orig\", None) or exc",
+          "new": "    cause = exc",
+          "breaks": "SQL that names a busy column is reported as a lock",
+          "symbol_sha": "sha256:8626bd7cda8aa5ab6201ea0ef09230a2aaa51d1c5607061d39619b22bfdf2d48"
+        },
+        {
+          "id": "every-error-is-busy",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "database_busy_handler",
+          "old": "    if not _is_locked(cause):\n        raise exc",
+          "new": "    if False:\n        raise exc",
+          "breaks": "a missing table is reported as a busy database",
+          "symbol_sha": "sha256:8626bd7cda8aa5ab6201ea0ef09230a2aaa51d1c5607061d39619b22bfdf2d48"
+        },
+        {
+          "id": "lock-code-ignored",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "_is_locked",
+          "old": "    if code is not None:",
+          "new": "    if False:",
+          "breaks": "a real error naming a busy column is reported as a lock",
+          "symbol_sha": "sha256:c7aecb358a47a5a975cc8605fb5b985de22987564776145cc883484e68e08625"
+        },
+        {
+          "id": "every-code-is-a-lock",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "_is_locked",
+          "old": "        return code & 0xFF in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)",
+          "new": "        return True",
+          "breaks": "any SQLite error is reported as a busy database",
+          "symbol_sha": "sha256:c7aecb358a47a5a975cc8605fb5b985de22987564776145cc883484e68e08625"
+        },
+        {
+          "id": "extended-lock-code-missed",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/errors.py",
+          "symbol": "_is_locked",
+          "old": "        return code & 0xFF in",
+          "new": "        return code in",
+          "breaks": "a WAL snapshot lock (SQLITE_BUSY_SNAPSHOT) is a 500",
+          "symbol_sha": "sha256:c7aecb358a47a5a975cc8605fb5b985de22987564776145cc883484e68e08625"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "The API sets up logging, to its own file in the CLI's log folder",
+      "scope": [
+        "tests/integration/interfaces/api/test_api_logging.py",
+        "tests/e2e/capabilities/infrastructure/test_api_logging_e2e.py"
+      ],
+      "mutants": [
+        {
+          "id": "api-logs-nowhere",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/api/app.py",
+          "symbol": "create_app",
+          "old": "    setup_logging(project_name=_API_LOG)\n    logger.info",
+          "new": "    logger.info",
+          "breaks": "the API writes no log file",
+          "symbol_sha": "sha256:9774da1ebad8556ca76a9e5aa1edb855ca70098c7072a55d068593b2205e464c"
         }
       ]
     }
