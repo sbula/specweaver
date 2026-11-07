@@ -117,7 +117,7 @@ version, one transaction per step, refuse a file newer than the code.
 | FR-3 | Each file SHALL carry its schema version in `PRAGMA user_version`, with an ordered step list per file; each step and its version change commit in one `BEGIN IMMEDIATE` transaction, and the version is read again after the lock, so two processes never apply a step twice; a file newer than the code is refused, naming the file and both versions `[agreed 2026-11-07]`; the opener runs a file's steps the first time a process opens it | the schema routine | open a file | only the missing steps run; a second run changes nothing; two processes starting together end at the same version; a newer file stops with the message |
 | FR-4 | `pipeline_state.db`'s `flow_state_schema_version` v1..v4 SHALL map to `user_version` through an explicit table, in one transaction: read the old value, set `user_version`, check it, then drop the old table `[agreed 2026-11-07]` | the schema routine | open an old file | test files at v1, v2, v3 and v4 each end at the mapped version with their rows; a rollback in the middle leaves the old table and version |
 | FR-5 | `specweaver.db`'s steps SHALL start from today's schema code as step 1, whose parts stay idempotent so a file from before this ticket (`user_version` 0) runs it safely, and drop a leftover `alembic_version` table `[agreed 2026-11-07]` | the schema routine | open a file | a new file and an old one reach the same version; no `alembic_version` remains |
-| FR-6 | A new file and one upgraded from each known old state SHALL have the same schema (the old states: a pre-`TECH-005` file with old table names and SQL defaults, and a file the release before this ticket made): tables, columns, types, indexes, defaults; the one allowed difference is the SQL defaults of `log_level`, `auto_bootstrap_constitution`, `stitch_mode`, `default_dal` in old files, listed with the reason `[agreed 2026-11-07]` | the schema test | compare | any other difference fails the test |
+| FR-6 | A new file and one upgraded from the release before this ticket SHALL have the same schema; a file with the pre-`TECH-005` table names is refused, not renamed, because no real database is in use `[agreed 2026-11-07]`: tables, columns, types, indexes, defaults; the one allowed difference is the SQL defaults of `log_level`, `auto_bootstrap_constitution`, `stitch_mode`, `default_dal` in old files, listed with the reason `[agreed 2026-11-07]` | the schema test | compare | any other difference fails the test |
 | FR-7 | The CLI and the API SHALL run the same schema routine on each file before the first work of the command that uses it: the config database and the pipeline state when such a command or the server starts, `reservations.db` in the run setup before the first step (created there if missing), `graph.db` at the start of `sw graph build` `[agreed 2026-11-07]`; a failed step stops the command or the server start, naming the file and the step `[agreed 2026-11-07]` | CLI, API | start | no warning-and-continue; `create_app()` called directly runs it too |
 | FR-8 | `sw --help`, `sw --version` and `sw <command> --help` SHALL open no database; the main command reads the active project only when a subcommand needs it `[agreed 2026-11-07]` | user | ask for help | the help shows even when the database file is broken; red first |
 | FR-9 | An API request that finds the file locked after 5 s SHALL get `503` with `Retry-After: 1` and no SQL in the body; any other database error stays `500` `[agreed 2026-11-07]` | API client | call while another process holds the write lock | `503`, `Retry-After: 1`; the test really holds the lock |
@@ -242,7 +242,7 @@ SF-01 → SF-02 → SF-03. Each is one commit chain; the last boundary of each i
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | One opener, versioned steps | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | The config database on the opener | SF-01 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | The config database on the opener | SF-01 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | The doors | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -259,6 +259,7 @@ at a gate after a step had run, so FR-7 now prepares it in the run setup (Q13) `
 **SF-01 plan approved 2026-11-07** (the user).
 **SF-01 dev 2026-11-07**: CB-1 `9b03b250`, CB-2 `de177b8d`, CB-3 accepted by the user 2026-11-07;
 the two silent mutants (map 4 → 0, no read-back) judged equivalent by the user.
-**Next step**: `specweaver-implementation-plan` for SF-02.
+**SF-02 plan approved 2026-11-07** (the user): files with the pre-`TECH-005` names are refused; a failed price seed stays a warning.
+**Next step**: `specweaver-dev` for SF-02.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
