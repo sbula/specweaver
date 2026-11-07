@@ -175,6 +175,23 @@ and stayed unguarded until `TECH-094` (2026-11-06).
   (`tests/ci_skips.py`): install the tool in the workflow, never let it skip.
   `tests/unit/test_ci_workflow_keeps_its_promises.py` fails if the workflow stops keeping that.
 
+## 12. A schema change is a numbered step, opened through the one opener
+
+Every SpecWeaver SQLite file is opened by `infrastructure/database/` (`open_sqlite`,
+`create_sqlite_engine`), which sets WAL, foreign keys and the process's lock wait. Its schema
+version is `PRAGMA user_version`. To change a schema:
+
+- **Add a step** at the end of the owning module's step list: `Step(<next number>, "<what it does>",
+  apply)`. Never edit a step that has shipped; a file in the field has already run it.
+- **One step, one transaction.** `upgrade` runs it inside `BEGIN IMMEDIATE` and sets the version in
+  the same transaction, so a failed step leaves the file as it was. Do not use `executescript` in a
+  step: it commits before it runs.
+- **Make it safe to run on a file that already looks right** (`IF NOT EXISTS`, check
+  `PRAGMA table_info` before `ADD COLUMN`): a file from before versioning starts at 0.
+- **Never call `sqlite3.connect` or `create_engine` yourself.** WAL switched on by hand fails at once
+  when two processes open a new file together; the opener retries it
+  (`tests/integration/infrastructure/database/test_two_processes_upgrade.py`).
+
 ---
 
 ## The shortest version

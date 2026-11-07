@@ -1,0 +1,26 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+"""The one way SpecWeaver opens its SQLite files, and the steps that keep their schema current."""
+
+from specweaver.infrastructure.database.engine import create_sqlite_engine
+from specweaver.infrastructure.database.legacy import rename_legacy_tables
+from specweaver.infrastructure.database.sqlite import lock_wait_seconds, open_sqlite, set_lock_wait
+from specweaver.infrastructure.database.steps import (
+    SchemaStepError,
+    SchemaTooNewError,
+    Step,
+    upgrade,
+)
+
+__all__ = [
+    "SchemaStepError",
+    "SchemaTooNewError",
+    "Step",
+    "create_sqlite_engine",
+    "lock_wait_seconds",
+    "open_sqlite",
+    "rename_legacy_tables",
+    "set_lock_wait",
+    "upgrade",
+]

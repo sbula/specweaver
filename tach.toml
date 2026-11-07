@@ -77,6 +77,10 @@ path = "specweaver.sandbox"
 depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.project", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor",]
 
 [[modules]]
+path = "specweaver.infrastructure.database"
+depends_on = []
+
+[[modules]]
 path = "specweaver.infrastructure.llm"
 depends_on = [ "specweaver.core.config", "specweaver.workspace.ast.parsers",]
 

@@ -170,6 +170,16 @@ def _no_real_network(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyP
 
 
 @pytest.fixture(autouse=True)
+def _lock_wait_restored() -> Iterator[None]:
+    """Each test starts with the default lock wait; a door under test sets its own (TECH-090 AD-5)."""
+    from specweaver.infrastructure.database import sqlite as opener
+
+    wait = opener.lock_wait_seconds()
+    yield
+    opener.set_lock_wait(wait)
+
+
+@pytest.fixture(autouse=True)
 def _specweaver_logger_restored() -> Iterator[None]:
     """Each test gets back the `specweaver` logger it started with: level, handlers, project tag.
 

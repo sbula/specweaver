@@ -1,0 +1,86 @@
+{
+  "schema": 2,
+  "feature": "TECH-090",
+  "campaigns": [
+    {
+      "requirement": "FR-2",
+      "title": "Every connection has WAL, foreign keys and the process's lock wait",
+      "scope": [
+        "tests/unit/infrastructure/database/test_open_sqlite.py",
+        "tests/integration/infrastructure/database/test_two_processes_upgrade.py"
+      ],
+      "mutants": [
+        {
+          "id": "foreign-keys-off",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/sqlite.py",
+          "symbol": "apply_pragmas",
+          "old": "    conn.execute(\"PRAGMA foreign_keys=ON\")",
+          "new": "    pass",
+          "breaks": "a connection deletes a parent row and leaves its children",
+          "symbol_sha": "sha256:1cf4acdcdbda1e2715aabd85be0dd70fa5b866002ff6bab0c31eee943c511f4b"
+        },
+        {
+          "id": "wal-switch-not-retried",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/sqlite.py",
+          "symbol": "_switch_to_wal",
+          "old": "            time.sleep(0.05)",
+          "new": "            raise",
+          "breaks": "two processes opening a new file together: one fails with database is locked",
+          "symbol_sha": "sha256:b66ae2e1b3ab7c7d372ab0155020d968a5947d68be211486498c7f8e98ef4bde"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "Only a file's missing steps run, once, each in one transaction",
+      "scope": [
+        "tests/unit/infrastructure/database/test_steps.py",
+        "tests/integration/infrastructure/database/test_two_processes_upgrade.py"
+      ],
+      "mutants": [
+        {
+          "id": "deferred-begin",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "_run",
+          "old": "    conn.execute(\"BEGIN IMMEDIATE\")",
+          "new": "    conn.execute(\"BEGIN\")",
+          "breaks": "two processes both start a step and one fails on the lock upgrade",
+          "symbol_sha": "sha256:9750421e396ecb3291f29e03baa7a87c553ccced0bd4aced61e99de200f88a43"
+        },
+        {
+          "id": "no-second-version-read",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "_run",
+          "old": "        if _version(conn) < step.version:\n            step.apply(conn)",
+          "new": "        if True:\n            step.apply(conn)",
+          "breaks": "a step another process already applied runs again",
+          "symbol_sha": "sha256:9750421e396ecb3291f29e03baa7a87c553ccced0bd4aced61e99de200f88a43"
+        },
+        {
+          "id": "version-not-recorded",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "_run",
+          "old": "            conn.execute(f\"PRAGMA user_version = {step.version}\")",
+          "new": "            pass",
+          "breaks": "every open runs every step again",
+          "symbol_sha": "sha256:9750421e396ecb3291f29e03baa7a87c553ccced0bd4aced61e99de200f88a43"
+        },
+        {
+          "id": "newer-file-opened",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/database/steps.py",
+          "symbol": "upgrade",
+          "old": "        if found > known:",
+          "new": "        if False:",
+          "breaks": "an older SpecWeaver opens a file a newer one wrote",
+          "symbol_sha": "sha256:c956c298fece51bf50ad772e69546424fe4f3c0b36b31170719d966ef1f0536a"
+        }
+      ]
+    }
+  ]
+}

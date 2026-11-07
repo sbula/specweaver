@@ -1,0 +1,32 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: database
+level: module
+purpose: >
+  The one way SpecWeaver opens its SQLite files, and the steps that keep each file's schema current.
+
+description: |
+  `open_sqlite` and `create_sqlite_engine` give every connection WAL, foreign keys and the
+  process's lock wait, which the door (CLI or API) sets once. `upgrade` runs a file's missing
+  schema steps, numbered in `PRAGMA user_version`, each in one `BEGIN IMMEDIATE` transaction.
+  Each module that owns a file keeps that file's step list (TECH-090 AD-3); this module owns only
+  how a file is opened and how steps run. It depends on nothing in SpecWeaver, so any module may use
+  it (TECH-090 NFR-2).
+
+archetype: adapter
+
+consumes: []
+forbids:
+  - specweaver/sandbox/*  # Opening a file is not executing a process.
+
+exposes:
+  - open_sqlite
+  - create_sqlite_engine
+  - set_lock_wait
+  - lock_wait_seconds
+  - upgrade
+  - Step
+  - SchemaStepError
+  - SchemaTooNewError
+  - rename_legacy_tables
