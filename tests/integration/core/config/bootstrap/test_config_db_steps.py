@@ -4,6 +4,7 @@
 """`specweaver.db` carries its schema version in `PRAGMA user_version`; step 1 is today's schema.
 
 Proves: TECH-090 FR-5
+Proves: TECH-090 NFR-1
 
 The old file is built from `tests/fixtures/specweaver_db_before_tech_090.sql`, the schema the
 release before this ticket made, frozen before the code changed.

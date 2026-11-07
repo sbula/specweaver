@@ -199,9 +199,10 @@ critical for long-term project viability.
   > ticket owns only the import-direction defect); `infrastructure.llm.adapters._rate_limit`/`factory` (2); `interfaces.api.app`/`ui.htmx`/`v1.pipelines`/`v1.router`/`v1.ws` (5).
 
 ## Schema & Data Layer
-* **`TECH-090` 🟡: The Database Is Opened Three Ways, and the API Server Skips Migrations**
+* **`TECH-090` 🟢: The Database Is Opened Three Ways, and the API Server Skips Migrations**
   > [Description](../features/topic_07_technical_debt/TECH-090/TECH-090_design.md) | _Status:
-  > SF-01..SF-04 committed 2026-11-07; waiting for the user's sign-off. Origin: 2026-10-22, architecture audit (8 findings)._ |
+  > closed by the user 2026-11-07. Origin: 2026-10-22, architecture audit (8 findings)._ |
+  > Verifiable Proof: `tests/unit/infrastructure/database/test_only_the_opener_opens.py` |
   > The workspace database is opened three ways with different pragmas and pooling; `sw serve`
   > skips the bootstrap and migrations the CLI runs; config owns the engine; dead write-queue
   > code remains.

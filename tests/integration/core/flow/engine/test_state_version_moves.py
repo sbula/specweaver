@@ -5,6 +5,7 @@
 
 Proves: TECH-090 FR-1
 Proves: TECH-090 FR-4
+Proves: TECH-090 NFR-1
 
 Test files are built as each old release left them: v1 with the old table names and neither
 `parent_run_id` nor `spend_state`, v2 with `parent_run_id`, v3 with the validation table, v4 as today.

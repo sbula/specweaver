@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-090
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-07)
+- **Status**: COMPLETE (signed off by the user, 2026-11-07)
 - **Kind**: `bugfix`
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-090/TECH-090_design.md
 - **Origin**: 2026-10-22, read-only architecture audit of `src/specweaver`; 8 findings. Re-measured
@@ -143,8 +143,8 @@ version, one transaction per step, refuse a file newer than the code.
 | # | NFR | Threshold / Constraint |
 |---|-----|----------------------|
 | NFR-1 | No data is lost | every row of an old file survives its upgrade (FR-4, FR-6 fixtures); otherwise behaviour stays the same and the suite passes |
-| NFR-2 | The opener depends on nothing in SpecWeaver | `infrastructure.database` `depends_on = []` in `tach.toml`, archetype `adapter`; callers pass their path and lock wait, so `graph` may use it |
-| NFR-3 | Postgres is not built | the opener takes a file path; `A-SENS-02` adds its backend there (P-6) |
+| NFR-2 | The opener depends on nothing in SpecWeaver | `infrastructure.database` `depends_on = []` in `tach.toml`, archetype `adapter`; callers pass their path and lock wait, so `graph` may use it **[proof: arch — `tach check`, not pytest: `depends_on = []` is what enforces it]** |
+| NFR-3 | Postgres is not built | the opener takes a file path; `A-SENS-02` adds its backend there (P-6) **[proof: none — a scope boundary, not behaviour; Non-Goals names `A-SENS-02`]** |
 | NFR-4 | Help stays fast | FR-8: no database open, no schema routine |
 
 ## External Dependencies
@@ -306,6 +306,6 @@ touched and the test helpers (FR-13, FR-14); the other 74 clones stay out.
 `workspace/models.py` and `workspace/lookups.py`.
 **SF-04 dev 2026-11-07**: CB-1 `d7a0bdc7`, CB-2 `cbe96d4e`, CB-3 accepted by the user 2026-11-07; the
 duplication baseline is 75 (86 − 11).
-**Next step**: the TECH-090 closure gate (`specweaver-feature` Phase 4), then the user's sign-off.
+**Signed off 2026-11-07** (the user). Closed.
 **If resuming mid-feature**: read the Progress Tracker above. Find the first ⬜ and resume from
 there using the appropriate skill.
