@@ -40,10 +40,10 @@ critical for long-term project viability.
 
 * **`TECH-088` 🔴: Two Graph Engines in Two Homes**
   > [Description](../features/topic_07_technical_debt/TECH-088/TECH-088_design.md) | _Status:
-  > STUB. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > design approved 2026-11-08. Origin: 2026-10-22, architecture audit (7 findings)._ |
   > Two graph engines with different depth caps; the graph that review, drafting and planning
-  > use lives under `assurance`, while `graph/` holds a knowledge graph nothing reads; lineage
-  > is spread over three packages.
+  > use lives under `assurance`, while `graph/` holds a knowledge graph with no reader outside
+  > its own builder; lineage is spread over three packages.
 
 * **`TECH-087` 🟢: QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean**
   > [Description](../features/topic_07_technical_debt/TECH-087/TECH-087_design.md) | _Status:
