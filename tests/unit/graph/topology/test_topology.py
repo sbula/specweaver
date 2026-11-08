@@ -92,7 +92,7 @@ class TestFromProject:
         graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
         node = graph.nodes["gamma"]
         assert node.mcp_servers == {"localdb": {"command": "sqlite"}}
-        assert node.consumes_resources == ["mcp://localdb/users"]
+        assert node.consumes_resources == ("mcp://localdb/users",)
 
 
 # ---------------------------------------------------------------------------
@@ -382,7 +382,7 @@ class TestFormatContextSummary:
         ctx = contexts[0]
         assert ctx.purpose == "Auth service."
         assert ctx.archetype == "adapter"
-        assert ctx.constraints == ["no-direct-db"]
+        assert ctx.constraints == ("no-direct-db",)
 
     def test_includes_mcp_servers_and_resources(self, tmp_path: Path) -> None:
         """Verify MCP server mappings correctly serialize into TopologyContext."""
@@ -398,7 +398,7 @@ class TestFormatContextSummary:
         assert len(contexts) == 1
         ctx = contexts[0]
         assert ctx.mcp_servers == {"db": {"command": "sqlite"}}
-        assert ctx.consumes_resources == ["mcp://db/users"]
+        assert ctx.consumes_resources == ("mcp://db/users",)
 
     def test_unknown_module_skipped(self, single_node: Path) -> None:
         """Unknown modules in the related set are silently skipped."""
@@ -433,7 +433,7 @@ class TestFormatContextSummary:
             constraints=["no-io"],
         )
         assert ctx.name == "mod"
-        assert ctx.constraints == ["no-io"]
+        assert ctx.constraints == ("no-io",)
 
 
 # ---------------------------------------------------------------------------

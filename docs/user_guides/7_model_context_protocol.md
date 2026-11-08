@@ -28,6 +28,10 @@ mcp_servers:
       DB_CONNECTION_STRING: "${vault:PROD_DB_URL}"
 ```
 
+`command` is one word (`command: docker`, with `args: [...]`) or a list. A string with a space,
+such as `command: "python server.py"`, is refused with the list form to use
+(`use command: [python, server.py]`); it is never split. `args` is always a list.
+
 Secrets live in `.specweaver/vault.env`. The `--mcp postgres` scaffold passes it to the container
 with `--env-file`, and adds it to `.gitignore`. A run aborts if `vault.env` is tracked by Git.
 Secret values of 8+ characters are replaced with `***RESTRICTED***` in what the server returns.

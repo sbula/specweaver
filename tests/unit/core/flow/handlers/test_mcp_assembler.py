@@ -22,6 +22,7 @@ the FR's own words finds nothing and reads as absent code.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -31,6 +32,7 @@ from specweaver.core.flow.handlers.mcp_assembler import evaluate_and_fetch_mcp_c
 from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
 from specweaver.graph.topology.topology import TopologyNode
 from specweaver.sandbox.base import AtomResult, AtomStatus
+from tests.fixtures.run_context import with_graph
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,6 +62,12 @@ def mock_run_context(tmp_path: Path) -> RunContext:
     )
 
 
+def _with_boundary(context: RunContext, **changes: Any) -> None:
+    """The run's boundary is frozen, so a test wanting a different one builds it."""
+    boundary = context.graph.target_boundary
+    with_graph(context, {"target_boundary": dataclasses.replace(boundary, **changes)})  # type: ignore[type-var]
+
+
 # ==============================================================================
 # Execution Mapping Tests
 # ==============================================================================
@@ -68,7 +76,7 @@ def mock_run_context(tmp_path: Path) -> RunContext:
 @pytest.mark.asyncio
 async def test_no_mcp_servers(mock_run_context: RunContext) -> None:
     """If no MCP servers are defined in the topology, returns None instantly."""
-    mock_run_context.graph.target_boundary.mcp_servers.clear()
+    _with_boundary(mock_run_context, mcp_servers={})
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert result is None
 
@@ -76,7 +84,7 @@ async def test_no_mcp_servers(mock_run_context: RunContext) -> None:
 @pytest.mark.asyncio
 async def test_no_consumes_resources(mock_run_context: RunContext) -> None:
     """If mcp_servers exist but no specific resources are requested, returns None."""
-    mock_run_context.graph.target_boundary.consumes_resources.clear()
+    _with_boundary(mock_run_context, consumes_resources=())
     result = await evaluate_and_fetch_mcp_context(mock_run_context)
     assert result is None
 

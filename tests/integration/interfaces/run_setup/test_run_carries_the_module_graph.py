@@ -3,7 +3,7 @@
 
 """The run setup hands a run the module graph's three meanings, each in its own field.
 
-Proves: TECH-088 FR-1, TECH-088 FR-12, TECH-088 FR-13
+Proves: TECH-088 FR-1, TECH-088 FR-12, TECH-088 FR-13, TECH-088 FR-14
 Proves: TECH-088 FR-6
 
 The slot used to be one `Any` field that held a list, while three readers wanted one context, a
@@ -57,7 +57,7 @@ def test_a_module_with_a_neighbour_gets_all_three(
     assert graph.target_boundary is not None
     assert graph.target_boundary.name == "billing"
     assert "invoices" in graph.target_boundary.mcp_servers
-    assert graph.target_boundary.consumes_resources == [RESOURCE]
+    assert graph.target_boundary.consumes_resources == (RESOURCE,)
     assert graph.module_graph is not None
     assert graph.module_graph.impact_of("payments") == {"billing"}
 
@@ -71,7 +71,7 @@ def test_a_module_with_no_neighbours_still_gets_its_boundary(
 
     assert graph.related_contexts is None
     assert graph.target_boundary is not None
-    assert graph.target_boundary.consumes_resources == [RESOURCE]
+    assert graph.target_boundary.consumes_resources == (RESOURCE,)
 
 
 def test_a_project_without_manifests_gets_none(
@@ -126,3 +126,23 @@ def test_the_runs_module_graph_cannot_change(
     with pytest.raises(FrozenGraphError):
         graph._engine.add_edge("payments", "billing")  # type: ignore[attr-defined]
     assert graph.impact_of("billing") == set()
+
+
+def test_the_runs_boundary_and_contexts_cannot_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FR-14: the boundary and the contexts are shared by every step too, so none takes a write."""
+    db, root = module_graph_project(tmp_path, monkeypatch, servers_on="payments")
+    graph = build_run_sync(run_request(db, root, "billing")).graph
+    boundary = graph.target_boundary
+    neighbour = (graph.related_contexts or [])[0]
+    assert boundary is not None
+
+    with pytest.raises(AttributeError):
+        boundary.consumes.append("x")  # type: ignore[attr-defined]
+    with pytest.raises(AttributeError):
+        neighbour.mcp_servers["invoices"]["args"].append("--evil")
+    with pytest.raises(TypeError):
+        neighbour.mcp_servers["invoices"]["env"] = {}  # type: ignore[index]
+    with pytest.raises(AttributeError):
+        neighbour.constraints.append("x")  # type: ignore[attr-defined]

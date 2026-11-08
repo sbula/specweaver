@@ -317,6 +317,90 @@
           "symbol_sha": "sha256:cd184a5d8fc928aac35761ecd1c43b33adbe8a75199c5066ad846adc6c7db2c7"
         }
       ]
+    },
+    {
+      "requirement": "FR-14",
+      "title": "A loaded boundary cannot change at any depth, and its readers never write it",
+      "scope": [
+        "tests/unit/commons/test_frozen.py",
+        "tests/unit/graph/topology/test_frozen_node.py",
+        "tests/unit/sandbox/mcp/core/test_declared_command.py",
+        "tests/integration/sandbox/mcp/test_both_readers_read_a_command_alike.py",
+        "tests/integration/interfaces/run_setup/test_run_carries_the_module_graph.py",
+        "tests/unit/core/flow/handlers/test_mcp_assembler.py"
+      ],
+      "mutants": [
+        {
+          "id": "nested-unfrozen",
+          "origin": "authored",
+          "file": "src/specweaver/commons/frozen.py",
+          "symbol": "FrozenMap.__init__",
+          "old": "        self._items = {key: freeze(value) for key, value in items.items()}",
+          "new": "        self._items = dict(items)",
+          "breaks": "a nested args list stays a list that any step can grow",
+          "symbol_sha": "sha256:e9728381ab6361db672a45dd010e08a49d0225f302c9bb2d4778d36acbdb2c06"
+        },
+        {
+          "id": "maps-skipped",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/topology.py",
+          "symbol": "TopologyNode.__post_init__",
+          "old": "        for name in _CONTAINER_FIELDS:",
+          "new": "        for name in (f for f in _CONTAINER_FIELDS if f != \"mcp_servers\"):",
+          "breaks": "a node's server configs stay writable",
+          "symbol_sha": "sha256:76a07e96b061c954f0cf6339a36c48832e2c333781cac8695a81365b61045ba7"
+        },
+        {
+          "id": "context-unfrozen",
+          "origin": "authored",
+          "file": "src/specweaver/commons/topology_context.py",
+          "symbol": "TopologyContext.__post_init__",
+          "old": "        for name in (\"constraints\", \"mcp_servers\", \"consumes_resources\"):",
+          "new": "        for name in ():",
+          "breaks": "a neighbour's context stays writable for every step",
+          "symbol_sha": "sha256:dce658e31a5c24fb2c16d696d06457b2da134ca88ff7002f7faad2b1ed2e783e"
+        },
+        {
+          "id": "args-as-characters",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/core/atom.py",
+          "symbol": "_words",
+          "old": "    if isinstance(value, str | bytes) or not isinstance(value, Sequence):",
+          "new": "    if not isinstance(value, Sequence):",
+          "breaks": "a string args becomes one argument per character",
+          "symbol_sha": "sha256:f7da5fcadf7a020c6227b52077c2e1d09965a3b843eff671dc18d890c664e0a8"
+        },
+        {
+          "id": "spaced-string-split",
+          "origin": "authored",
+          "file": "src/specweaver/sandbox/mcp/core/atom.py",
+          "symbol": "declared_command",
+          "old": "        elif len(command.split()) > 1:",
+          "new": "        elif False:",
+          "breaks": "a spaced command string reaches the process as one word",
+          "symbol_sha": "sha256:d361a590ce34ac81bb387d3cedca6645148180419ca86ab05fa10ded27e228ee"
+        },
+        {
+          "id": "resolver-writes-config",
+          "origin": "authored",
+          "file": "src/specweaver/core/flow/handlers/mcp_assembler.py",
+          "symbol": "_resolve_mcp_command",
+          "old": "        command = declared_command(server_name, server_config)",
+          "new": "        command = server_config.get(\"command\"); command = [command] if isinstance(command, str) else command; command.extend(server_config.get(\"args\") or [])",
+          "breaks": "the pre-fetch writes args into the stored config, so the next fetch repeats them",
+          "symbol_sha": "sha256:b48ac586f872206e541146542ee0ab3c79e8117042a60dd568e7be3c8a6b07c5"
+        },
+        {
+          "id": "odd-leaf-crashes-load",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/topology.py",
+          "symbol": "load_nodes",
+          "old": "        except TypeError as exc:",
+          "new": "        except ZeroDivisionError as exc:",
+          "breaks": "one context.yaml with an unfreezable value stops the whole module graph from loading",
+          "symbol_sha": "sha256:7cb24e1a16ad1b29a9600d14957ee3022d9cdf45135d521bd45979bc6d2a450b"
+        }
+      ]
     }
   ]
 }

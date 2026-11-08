@@ -146,3 +146,41 @@ its own test feeds it each spelling.
 
 **Mutants.** FR-10: `probe-by-hasattr`. The guard's string check removed by hand: its own test
 fails (a test file is not a corpus target).
+
+## SF-04 CB-2 — a boundary that cannot change, and readers that never write it (FR-14)
+
+**What changed.**
+- `commons/frozen.py`: `freeze` turns dicts into a `FrozenMap`, lists and tuples into tuples, sets
+  into frozensets, all the way down; immutable scalars stay; any other type raises `TypeError`.
+  `FrozenMap` freezes every value in its constructor, so `copy` and `deepcopy` return it (the user,
+  at Phase 4).
+- `TopologyNode` and `OperationalMetadata` are `frozen=True`; `TopologyNode` and `TopologyContext`
+  freeze their containers in `__post_init__`. `DeclaredBoundary`'s members are read-only properties.
+  `topology_context.py` drops `from __future__ import annotations`: pydantic reads its field types
+  at runtime, and the gate refused a `noqa` for it.
+- `load_nodes` skips a `context.yaml` holding a value that cannot be frozen (a custom YAML tag), with
+  a warning; the other nodes load.
+- `declared_command(server_name, config)` in `sandbox/mcp/core/atom.py` is the one reading of
+  `command` and `args`; both readers call it. A string `command` is one word; a spaced string is
+  refused naming the list form; `str`/`bytes` `args` and non-string items are refused (the user,
+  F1 C). It raises `ValueError`; the plan said "or an error message", and each reader already turns
+  a `ValueError` into its own error shape.
+- **User-visible:** the pre-fetch used to `shlex`-split a spaced `command` string; it now refuses it.
+  The user guide says so. The explorer's "missing target executable command bounds" message is now
+  "has no command".
+
+**The live defect.** The pre-fetch wrote `args` into the stored config on every fetch. The new seam
+test showed it reached the explorer too: after one pre-fetch, the explorer started `server.py`
+twice. Red first in `test_both_readers_read_a_command_alike.py` (both readers, one config).
+
+**Tests.** Red first: `test_frozen.py` (no module), `test_declared_command.py` (no function),
+`test_frozen_node.py` (12 cases), the run-setup case in `test_run_carries_the_module_graph.py`, and
+the three seam cases. Six asserts compare tuples now; the two `.clear()` tests build the boundary
+they want through `with_graph`.
+
+**Mutants.** FR-14: `nested-unfrozen`, `maps-skipped`, `context-unfrozen`, `args-as-characters`,
+`spaced-string-split`, `resolver-writes-config`, `odd-leaf-crashes-load`. `TECH-072 FR-2
+explorer-skips-runtime-guard` retargeted to the new call; its FR-3 and FR-8 mutants re-pinned.
+
+**Accepted.** A `FrozenMap`'s private dict can be reached by reflection only, as a
+`MappingProxyType`'s can. A node is unhashable, as it was before.

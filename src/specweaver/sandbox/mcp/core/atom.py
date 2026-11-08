@@ -11,6 +11,7 @@ and reading from the MCP infrastructure layer via standard I/O pipes.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from specweaver.infrastructure.llm.redaction import Redactor
@@ -97,6 +98,47 @@ def refuse_loader_env(env: dict[str, str] | None) -> None:
         upper = name.upper()
         if upper in _LOADER_VARIABLES or upper.startswith(_LOADER_PREFIX):
             _refuse(f"Variable '{name}' would load code into the container runtime client.")
+
+
+def _words(value: object) -> list[str] | None:
+    """`value` as a new list of strings, or None when it is not a list of strings."""
+    if isinstance(value, str | bytes) or not isinstance(value, Sequence):
+        return None
+    words = list(value)
+    return words if all(isinstance(word, str) for word in words) else None
+
+
+def declared_command(server_name: str, config: Mapping[str, Any]) -> list[str]:
+    """The command a server's config declares, as a new list; the config is never written.
+
+    A string `command` is one word; a command with arguments is a list. A string is never split:
+    a spaced one is refused with the list form named.
+    """
+    command = config.get("command")
+    if isinstance(command, str):
+        if not command.strip():
+            command = None
+        elif len(command.split()) > 1:
+            listed = ", ".join(command.split())
+            raise ValueError(
+                f"MCP server '{server_name}': a command with arguments must be a list; "
+                f"use command: [{listed}]"
+            )
+        else:
+            command = [command]
+    if command is None or (isinstance(command, Sequence) and not command):
+        raise ValueError(f"MCP server '{server_name}' has no command.")
+    words = _words(command)
+    if words is None:
+        raise ValueError(
+            f"MCP server '{server_name}': command must be one word or a list of words."
+        )
+
+    args = config.get("args")
+    extra = [] if args is None else _words(args)
+    if extra is None:
+        raise ValueError(f"MCP server '{server_name}': args must be a list of words.")
+    return [*words, *extra]
 
 
 def resolved_runtime_command(command: list[str]) -> list[str]:

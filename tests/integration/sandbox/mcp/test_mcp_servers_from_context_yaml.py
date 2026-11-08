@@ -119,7 +119,7 @@ def test_the_declaration_survives_the_parse(project: Path) -> None:
     node = load_topology(project).nodes["demo"]
 
     assert "declared" in node.mcp_servers, node.mcp_servers
-    assert node.consumes_resources == [RESOURCE]
+    assert node.consumes_resources == (RESOURCE,)
 
 
 async def test_a_project_declaring_no_server_fetches_nothing(tmp_path: Path) -> None:

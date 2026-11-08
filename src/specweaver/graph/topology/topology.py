@@ -21,10 +21,11 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from ruamel.yaml import YAML
 
+from specweaver.commons.frozen import freeze
 from specweaver.commons.topology_context import TopologyContext
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class TopologyEngineProtocol(Protocol):
     def freeze(self) -> None: ...
 
 
-@dataclass
+@dataclass(frozen=True)
 class OperationalMetadata:
     """Runtime/SLA characteristics from context.yaml operational section."""
 
@@ -53,24 +54,42 @@ class OperationalMetadata:
     concurrency_model: str | None = None  # asyncio | threading | process | none
 
 
-@dataclass
+@dataclass(frozen=True)
 class TopologyNode:
-    """A single boundary in the topology graph."""
+    """A single boundary in the topology graph; it cannot change once built, at any depth.
+
+    Every step of a run shares it, so the lists given are kept as tuples and the maps read-only.
+    """
 
     name: str
     level: str
     purpose: str
     archetype: str
-    consumes: list[str] = field(default_factory=list)
-    exposes: list[str] = field(default_factory=list)
-    forbids: list[str] = field(default_factory=list)
-    constraints: list[str] = field(default_factory=list)
-    mcp_servers: dict[str, dict[str, Any]] = field(default_factory=dict)
-    consumes_resources: list[str] = field(default_factory=list)
+    consumes: Sequence[str] = ()
+    exposes: Sequence[str] = ()
+    forbids: Sequence[str] = ()
+    constraints: Sequence[str] = ()
+    mcp_servers: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
+    consumes_resources: Sequence[str] = ()
     operational: OperationalMetadata | None = None
     yaml_path: Path | None = None
     #: What this boundary may use beyond its parent's rule, each with the reason.
-    widens: dict[str, str] = field(default_factory=dict)
+    widens: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        for name in _CONTAINER_FIELDS:
+            object.__setattr__(self, name, freeze(getattr(self, name)))
+
+
+_CONTAINER_FIELDS = (
+    "consumes",
+    "exposes",
+    "forbids",
+    "constraints",
+    "mcp_servers",
+    "consumes_resources",
+    "widens",
+)
 
 
 def _hash_moved(
@@ -117,7 +136,11 @@ def load_nodes(project_root: Path) -> tuple[dict[str, TopologyNode], list[str]]:
             warnings.append(f"Missing 'name' in {ctx_file}")
             continue
 
-        nodes[name] = _node_from(name, data, ctx_file, warnings)
+        try:
+            nodes[name] = _node_from(name, data, ctx_file, warnings)
+        except TypeError as exc:
+            logger.warning("TopologyGraph: cannot load '%s': %s", ctx_file, exc)
+            warnings.append(f"Cannot load {ctx_file}: {exc}")
     return nodes, warnings
 
 

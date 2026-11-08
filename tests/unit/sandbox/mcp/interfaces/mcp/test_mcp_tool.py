@@ -121,7 +121,7 @@ class TestMCPExplorerTool:
         tool = MCPExplorerTool(topology=topo)
         result = tool._execute_mcp_query("test-db", "resources/list", {})
         assert result.status == "error"
-        assert "missing target executable command bounds" in result.message
+        assert "has no command" in result.message
 
 
 class TestArchitectMCPInterface:

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from specweaver.commons import json
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.mcp.core.atom import (
+    declared_command,
     refuse_loader_env,
     resolved_runtime_command,
     scrub_secrets,
@@ -59,21 +60,12 @@ class MCPExplorerTool(BaseTool):
             return ToolResult(status="error", message=f"Unknown MCP server '{server_name}'.")
 
         server_config = servers[server_name]
-        command = server_config.get("command")
-        args = server_config.get("args", [])
-        env = server_config.get("env", {})
+        env = dict(server_config.get("env") or {})
 
-        if not command:
-            return ToolResult(
-                status="error",
-                message=f"MCP server '{server_name}' missing target executable command bounds.",
-            )
-
-        declared = [*command, *args] if isinstance(command, list) else [command, *args]
         # The command comes from the analysed project's own configuration: untrusted. It passes
         # the same guard `MCPAtom` applies before any process starts.
         try:
-            full_command = resolved_runtime_command(declared)
+            full_command = resolved_runtime_command(declared_command(server_name, server_config))
             refuse_loader_env(env)
         except ValueError as e:
             return ToolResult(status="error", message=str(e))

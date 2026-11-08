@@ -17,9 +17,11 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any
 
-from specweaver.sandbox.mcp.core.atom import MCPAtom
+from specweaver.sandbox.mcp.core.atom import MCPAtom, declared_command
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from specweaver.core.flow.run_state.run_context import RunContext
 
 logger = logging.getLogger(__name__)
@@ -55,7 +57,7 @@ def _sync_fetch(command: list[str], env: dict[str, str], uri: str) -> str:
 
 
 def _resolve_mcp_command(
-    uri: str, servers: dict[str, Any]
+    uri: str, servers: Mapping[str, Mapping[str, Any]]
 ) -> tuple[list[str], dict[str, Any], str | None]:
     """`(command, env, error)` for one `mcp://<server>/<resource>` URI.
 
@@ -71,22 +73,12 @@ def _resolve_mcp_command(
     if not server_config:
         return [], {}, f"Server '{server_name}' not found in topology bounds"
 
-    command = server_config.get("command")
-    if isinstance(command, str):
-        import shlex
+    try:
+        command = declared_command(server_name, server_config)
+    except ValueError as exc:
+        return [], {}, str(exc)
 
-        command = shlex.split(command)
-    elif not isinstance(command, list):
-        command = []
-
-    args = server_config.get("args")
-    if isinstance(args, list):
-        command.extend(args)
-
-    if not command:
-        return [], {}, f"Server '{server_name}' command configuration invalid"
-
-    return command, (server_config.get("env") or {}), None
+    return command, dict(server_config.get("env") or {}), None
 
 
 async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
