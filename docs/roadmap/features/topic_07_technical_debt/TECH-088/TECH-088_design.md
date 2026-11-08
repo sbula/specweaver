@@ -111,7 +111,7 @@ are never started. That slot gets one typed field per meaning.
 | FR-10 | `add_context` SHALL recognise a prompt source by `isinstance` against a `runtime_checkable` `PromptContentSource`, not by `hasattr` | unit |
 | FR-11 | Names say what the code does: `format_context_summary` becomes `contexts_for`; the moved `changes.py` becomes `changed_files.py`; `graph/lineage/repository.py` becomes `graph/lineage/protocol.py` | unit (import guard) |
 | FR-12 | When a project has `context.yaml` files but none names the spec's module stem, the run setup SHALL log one WARNING per run naming the stem and saying that topology context and MCP pre-fetch are off `[agreed 2026-11-08]` | integration |
-| FR-13 | Once the run setup has built the module graph, it SHALL be frozen: a later `add_node` or `add_edge` raises, and a test proves it `[agreed 2026-11-08]` | unit, integration (through the run setup) |
+| FR-13 | A `TopologyGraph` SHALL freeze itself at the end of building, so every module graph a run gets is frozen: a later `add_node` or `add_edge` raises `FrozenGraphError`, and a test proves it `[agreed 2026-11-08]` | unit, integration (through the run setup) |
 
 ## Requirement–Surface Bindings
 
@@ -215,7 +215,8 @@ replaced by FR-2's e2e.
 - **Constraints** (SF-01's shared step copy relies on both): the rebuilt engine keeps its
   `threading.Lock` around every read and write; the module graph stays read-only after the run
   setup builds it, so nothing after the run setup calls `add_node` or `add_edge`. FR-13 enforces
-  it: the run setup freezes the graph, and a write after that raises.
+  it: the graph freezes itself at the end of building, and a write after that raises
+  `[agreed 2026-11-08]`.
 - **FRs**: [FR-7, FR-8, FR-9, FR-13]
 - **Inputs**: SF-02's home
 - **Outputs**: the hand-written Tarjan code deleted
@@ -247,7 +248,7 @@ sw review specs/billing_spec.md
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | One library | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-03 | One library | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -266,5 +267,6 @@ the user 2026-11-08 — every reader reads its own field, the slot is deleted, a
 generation and decomposition no longer crash on a project with module neighbours. **SF-02 plan approved
 2026-11-08** (the user): one boundary; a diff check proves the test rewrite touched only paths. **SF-02 dev
 2026-11-08**: accepted by the user — the module graph lives in `graph/topology/`; the test rewrite
-touched only paths (diff check), and the collected tests were equal. Next: the implementation plan
-for SF-03.
+touched only paths (diff check), and the collected tests were equal. **SF-03 plan approved 2026-11-08** (the
+user): the graph freezes itself, copies its nodes and expands its stale seeds before the freeze; no
+test builds it on a mock engine. Next: dev SF-03.
