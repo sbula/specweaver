@@ -158,7 +158,7 @@
           "old": "constitution=info.content if info else None",
           "new": "constitution=None",
           "breaks": "runs get no rule file",
-          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
+          "symbol_sha": "sha256:0a0868f3bbcf6265f5f21a9acd0cf6dc8e1e52013c3e7aeec63b2cd2297bc1c6"
         },
         {
           "id": "no-standards",
@@ -168,17 +168,17 @@
           "old": "standards=standards)",
           "new": "standards=None)",
           "breaks": "runs get no coding standards",
-          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
+          "symbol_sha": "sha256:0a0868f3bbcf6265f5f21a9acd0cf6dc8e1e52013c3e7aeec63b2cd2297bc1c6"
         },
         {
           "id": "no-topology",
           "origin": "authored",
           "file": "src/specweaver/interfaces/run_setup/builder.py",
-          "symbol": "build_run",
-          "old": "graph=GraphContext(topology=_topology(request)),",
-          "new": "graph=GraphContext(topology=None),",
+          "symbol": "_graph_context",
+          "old": "    graph = load_topology(request.project_root)",
+          "new": "    graph = None",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
+          "symbol_sha": "sha256:8c680d4a380546edc10fab0a54f4e61477add385de8c8169f06c42613144dc61"
         },
         {
           "id": "optional-model-refuses",

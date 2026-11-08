@@ -18,6 +18,7 @@ from specweaver.core.flow.run_state.run_context import (
     RunHandle,
 )
 from specweaver.infrastructure.llm.models import ProjectMetadata
+from tests.fixtures.run_context import with_graph
 from tests.scripted_llm import FixedRouter
 
 
@@ -444,8 +445,8 @@ class TestGraphContext:
             graph=GraphContext(api_contract_paths=existing),
         )
 
-        context.graph = context.graph.model_copy(
-            update={"api_contract_paths": [*(context.graph.api_contract_paths or []), "new.py"]}
+        with_graph(
+            context, {"api_contract_paths": [*(context.graph.api_contract_paths or []), "new.py"]}
         )
 
         assert context.graph.api_contract_paths == expected

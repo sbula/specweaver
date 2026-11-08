@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from specweaver.core.config.llm_settings import RoleEntry, SettingNotSetError
     from specweaver.core.config.settings import SpecWeaverSettings
     from specweaver.core.flow.engine.models import PipelineDefinition
-    from specweaver.core.flow.run_state.run_context import RunContext
+    from specweaver.core.flow.run_state.run_context import GraphContext, RunContext
     from specweaver.infrastructure.database import Database
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,6 @@ async def build_run(request: RunRequest) -> RunContext:
     from specweaver.core.flow.handlers.roles import roles_of
     from specweaver.core.flow.run_state.run_context import (
         AnalysisContext,
-        GraphContext,
         GuidanceContent,
         IsolationPolicy,
         ModelAccess,
@@ -119,7 +118,7 @@ async def build_run(request: RunRequest) -> RunContext:
             llm_router=_router(request) if needs_model else None,
             drafters=WorkflowDrafters(),
         ),
-        graph=GraphContext(topology=_topology(request)),
+        graph=_graph_context(request),
     )
     if settings is not None:
         _apply_isolation(context, settings, read_only=request.read_only)
@@ -205,15 +204,30 @@ def _router(request: RunRequest) -> Any:
         return None
 
 
-def _topology(request: RunRequest) -> Any:
+def _graph_context(request: RunRequest) -> GraphContext:
+    """The module graph's three meanings for this run's module; all `None` when nothing names it."""
     from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
     from specweaver.commons.spec_names import module_stem
+    from specweaver.core.flow.run_state.run_context import GraphContext
 
     graph = load_topology(request.project_root)
     if graph is None:
-        return None
-    return select_topology_contexts(
-        graph, module_stem(request.spec_path), selector_name=request.selector
+        return GraphContext()
+    module = module_stem(request.spec_path)
+    boundary = graph.nodes.get(module)
+    if boundary is None:
+        logger.warning(
+            "No context.yaml names module '%s': topology context and MCP pre-fetch are off "
+            "for this run.",
+            module,
+        )
+        return GraphContext()
+    related = select_topology_contexts(graph, module, selector_name=request.selector)
+    return GraphContext(
+        topology=related,
+        related_contexts=related,
+        target_boundary=boundary,
+        module_graph=graph,
     )
 
 

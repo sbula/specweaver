@@ -15,6 +15,7 @@ from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTar
 from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext
+from tests.fixtures.run_context import with_graph
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -68,9 +69,7 @@ async def test_integration_physical_io_join_locks(tmp_path: Path) -> None:
     handler = OrchestrateComponentsHandler()
     runner = PipelineRunner(pipeline=MagicMock(), context=ctx, registry=registry, store=MagicMock())
     ctx.run = ctx.run.model_copy(update={"pipeline_runner": runner})
-    ctx.graph = ctx.graph.model_copy(
-        update={"topology": MagicMock(impact_of=MagicMock(return_value=set()))}
-    )
+    with_graph(ctx, {"topology": MagicMock(impact_of=MagicMock(return_value=set()))})
 
     with patch("yaml.safe_load", return_value=custom_yaml), patch("importlib.resources.files"):
         step_def = PipelineStep(

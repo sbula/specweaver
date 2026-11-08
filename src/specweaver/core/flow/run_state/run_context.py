@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from specweaver.commons.project_profile import ProjectProfile
 from specweaver.commons.timestamps import now_iso as _now_iso
+from specweaver.commons.topology_context import DeclaredBoundary, ModuleImpact, TopologyContext
 from specweaver.core.config.autonomy_policy import AutonomyPolicy
 from specweaver.core.config.doc_policy import DocPolicy
 
@@ -133,11 +134,18 @@ class AnalysisContext(BaseModel):
 
 
 class GraphContext(BaseModel):
-    """What this run knows about the project's dependency graph."""
+    """What this run knows about the project's module graph, one field per meaning.
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    `related_contexts` go into prompts, `target_boundary` names the MCP servers to start, and
+    `module_graph` answers impact questions. Each is `None` when no `context.yaml` names the module.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     topology: Any = None
+    related_contexts: list[TopologyContext] | None = None
+    target_boundary: DeclaredBoundary | None = None
+    module_graph: ModuleImpact | None = None
     api_contract_paths: list[str] | None = None
 
 

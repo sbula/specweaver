@@ -117,4 +117,16 @@ def test_sw_run_and_the_api_build_the_same_run(
     assert by_cli.isolation.session_isolation is True
     assert by_api.guidance == by_cli.guidance
     assert by_api.isolation == by_cli.isolation
-    assert by_api.graph.topology == by_cli.graph.topology
+    assert by_api.graph.related_contexts == by_cli.graph.related_contexts
+    assert _boundary_name(by_api) == _boundary_name(by_cli)
+    assert _graph_nodes(by_api) == _graph_nodes(by_cli)
+
+
+def _boundary_name(context: Any) -> str | None:
+    boundary = context.graph.target_boundary
+    return boundary.name if boundary is not None else None
+
+
+def _graph_nodes(context: Any) -> set[str] | None:
+    graph = context.graph.module_graph
+    return set(graph.nodes) if graph is not None else None

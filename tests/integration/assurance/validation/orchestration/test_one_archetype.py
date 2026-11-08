@@ -27,6 +27,7 @@ import pytest
 from specweaver.assurance.validation.orchestration.archetype_pipelines import archetype_of
 from specweaver.core.flow.handlers import skeleton_assembler
 from specweaver.core.flow.run_state.run_context import RunContext
+from tests.fixtures.run_context import with_graph
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -99,9 +100,7 @@ def test_a_topology_does_not_override_the_files_archetype(
 ) -> None:
     spec = project / "service" / "orders_spec.md"
     context = RunContext(project_path=project, spec_path=spec)
-    context.graph = context.graph.model_copy(
-        update={"topology": SimpleNamespace(archetype="adapter")}
-    )
+    with_graph(context, {"topology": SimpleNamespace(archetype="adapter")})
 
     assert _skeleton_archetypes(context, [project / "service" / "orders.py"], monkeypatch) == [
         "spring-boot"

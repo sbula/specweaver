@@ -11,6 +11,7 @@ from specweaver.core.flow.engine.models import PipelineStep
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.handlers.review import ReviewCodeHandler
 from specweaver.core.flow.run_state.run_context import RunContext
+from tests.fixtures.run_context import with_graph
 from tests.scripted_llm import FixedRouter
 
 
@@ -25,7 +26,7 @@ async def test_generate_code_handler_skeleton_wiring(
     """Story 9: GenerateCodeHandler properly proxies dictionary seamlessly into Generator."""
     (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
-    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
+    with_graph(ctx, {"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})
 
     step = PipelineStep(name="test", action="generate", target="code")
@@ -70,7 +71,7 @@ async def test_review_code_handler_skeleton_wiring(
     code_path = tmp_path / "foo.py"
     code_path.touch()
 
-    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
+    with_graph(ctx, {"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})
 
     step = PipelineStep(name="test", action="review", target="code")
@@ -127,7 +128,7 @@ async def test_review_e2e_fallback_protection(
     """Story 12: Pipeline Completely suppresses binary faults and falls back downstream natively."""
     (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
     ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "foo.md")
-    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": ["c:/fake/contract.py"]})
+    with_graph(ctx, {"api_contract_paths": ["c:/fake/contract.py"]})
     ctx.model = ctx.model.model_copy(update={"llm_router": FixedRouter(MagicMock())})
 
     step = PipelineStep(name="test", action="review", target="spec")

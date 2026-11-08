@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
+from tests.fixtures.run_context import with_graph
 from tests.scripted_llm import FixedRouter
 
 
@@ -85,7 +86,7 @@ def _make_context(tmp_path: Path, *, llm: object | None = None) -> RunContext:
     # `MagicMock(spec=RunContext)` exposes no Pydantic model fields, so this must be a real
     # instance: reading `ctx.run` off the mock would fail before any test ran.
     ctx.model = ModelAccess(llm_router=FixedRouter(llm) if llm is not None else None, config=None)
-    ctx.graph = ctx.graph.model_copy(update={"api_contract_paths": [str(contract_path)]})
+    with_graph(ctx, {"api_contract_paths": [str(contract_path)]})
     ctx.guidance = GuidanceContent(constitution=None)
     ctx.project_metadata = None
 

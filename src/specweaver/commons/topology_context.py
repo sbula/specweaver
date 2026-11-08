@@ -1,12 +1,35 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""What a prompt is told about a neighbouring module: its name, purpose, archetype and constraints."""
+"""What a run is told about the module graph: a neighbour's context, the target boundary, the graph.
+
+The two protocols let a run carry the boundary and the graph without importing `graph`.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class DeclaredBoundary(Protocol):
+    """The boundary a run works in, as its `context.yaml` declares it.
+
+    `consumes` is what tells it from a neighbour's `TopologyContext`, which also carries servers.
+    """
+
+    name: str
+    consumes: list[str]
+    mcp_servers: dict[str, dict[str, Any]]
+    consumes_resources: list[str]
+
+
+@runtime_checkable
+class ModuleImpact(Protocol):
+    """The module graph, as far as a run asks it: what a change to a module reaches."""
+
+    def impact_of(self, module: str) -> set[str]: ...
 
 
 @dataclass(frozen=True)

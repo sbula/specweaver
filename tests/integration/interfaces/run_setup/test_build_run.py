@@ -117,7 +117,10 @@ def test_a_model_run_gets_every_part(world: tuple[Database, Path]) -> None:
     assert [rule.access for rule in context.isolation.doc_policy.rule] == ["open"]
     assert context.model.config is not None
     assert context.model.llm_router is not None
-    assert context.graph.topology is not None
+    assert [c.name for c in context.graph.related_contexts or []] == ["billing"]
+    assert context.graph.target_boundary is not None
+    assert context.graph.target_boundary.name == "orders"
+    assert context.graph.module_graph is not None
 
 
 def test_a_run_without_a_model_step_gets_no_router(world: tuple[Database, Path]) -> None:
@@ -246,7 +249,8 @@ def test_the_sync_and_async_builders_agree(world: tuple[Database, Path]) -> None
 
     assert sync.isolation == async_.isolation
     assert sync.guidance == async_.guidance
-    assert sync.graph.topology == async_.graph.topology
+    assert sync.graph.related_contexts == async_.graph.related_contexts
+    assert sync.graph.target_boundary == async_.graph.target_boundary
 
 
 def test_a_run_gets_drafters_that_build_the_real_drafters(world: tuple[Database, Path]) -> None:

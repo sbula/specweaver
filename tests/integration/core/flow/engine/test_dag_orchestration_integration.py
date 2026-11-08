@@ -36,6 +36,7 @@ from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.decompose import OrchestrateComponentsHandler
 from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.run_context import RunContext
+from tests.fixtures.run_context import with_graph
 
 
 class TestDagOrchestratorIntegration:
@@ -125,7 +126,7 @@ class TestDagOrchestratorIntegration:
         # Mock topology showing collision
         mock_topo = MagicMock(spec=TopologyGraph)
         mock_topo.impact_of.return_value = {"auth"}
-        ctx.graph = ctx.graph.model_copy(update={"topology": mock_topo})
+        with_graph(ctx, {"topology": mock_topo})
 
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
         ctx.run = ctx.run.model_copy(

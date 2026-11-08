@@ -1,0 +1,66 @@
+{
+  "schema": 2,
+  "feature": "TECH-088",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "The run setup fills the module graph's three fields",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_run_carries_the_module_graph.py",
+        "tests/integration/interfaces/run_setup/test_build_run.py",
+        "tests/integration/interfaces/test_cli_and_api_agree.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-target-boundary",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_graph_context",
+          "old": "        target_boundary=boundary,",
+          "new": "        target_boundary=None,",
+          "breaks": "a run never learns its own boundary, so its MCP servers never start",
+          "symbol_sha": "sha256:8c680d4a380546edc10fab0a54f4e61477add385de8c8169f06c42613144dc61"
+        },
+        {
+          "id": "no-module-graph",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_graph_context",
+          "old": "        module_graph=graph,",
+          "new": "        module_graph=None,",
+          "breaks": "decomposition has no graph to take impact sets from",
+          "symbol_sha": "sha256:8c680d4a380546edc10fab0a54f4e61477add385de8c8169f06c42613144dc61"
+        },
+        {
+          "id": "no-related-contexts",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_graph_context",
+          "old": "        related_contexts=related,",
+          "new": "        related_contexts=None,",
+          "breaks": "prompts lose the neighbouring modules",
+          "symbol_sha": "sha256:8c680d4a380546edc10fab0a54f4e61477add385de8c8169f06c42613144dc61"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-12",
+      "title": "A module no context.yaml names is warned about",
+      "scope": [
+        "tests/integration/interfaces/run_setup/test_run_carries_the_module_graph.py"
+      ],
+      "mutants": [
+        {
+          "id": "silent-orphan",
+          "origin": "authored",
+          "file": "src/specweaver/interfaces/run_setup/builder.py",
+          "symbol": "_graph_context",
+          "old": "        logger.warning(",
+          "new": "        logger.debug(",
+          "breaks": "topology context and MCP pre-fetch go off with no word to the user",
+          "symbol_sha": "sha256:8c680d4a380546edc10fab0a54f4e61477add385de8c8169f06c42613144dc61"
+        }
+      ]
+    }
+  ]
+}

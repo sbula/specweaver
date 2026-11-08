@@ -135,9 +135,9 @@ def test_the_selector_chooses_the_slice(world) -> None:
     client, _root, contexts = world
 
     assert _run(client, "one_check", "specs/orders_spec.md", selector="direct").status_code == 200
-    direct = _context(contexts).graph.topology
+    direct = _context(contexts).graph.related_contexts
     assert _run(client, "one_check", "specs/orders_spec.md", selector="nhop").status_code == 200
-    nhop = _context(contexts).graph.topology
+    nhop = _context(contexts).graph.related_contexts
 
     assert direct is not None
     assert _slice(nhop) != _slice(direct)
@@ -148,9 +148,9 @@ def test_implement_honours_its_selector(world) -> None:
     body = {"file": "specs/orders_spec.md", "project": "rest"}
 
     assert client.post("/api/v1/implement", json={**body, "selector": "direct"}).status_code == 200
-    direct = _context(contexts).graph.topology
+    direct = _context(contexts).graph.related_contexts
     assert client.post("/api/v1/implement", json={**body, "selector": "nhop"}).status_code == 200
-    nhop = _context(contexts).graph.topology
+    nhop = _context(contexts).graph.related_contexts
 
     assert _slice(nhop) != _slice(direct)
 

@@ -286,7 +286,7 @@
           "old": "            drafters=WorkflowDrafters(),\n",
           "new": "            drafters=None,\n",
           "breaks": "runs built for the doors get no drafters, so draft steps park",
-          "symbol_sha": "sha256:905e8b45623240bdf05f945701aaee81de9a82f2c09e3bf6ea7cf1c1e3f13ce3"
+          "symbol_sha": "sha256:0a0868f3bbcf6265f5f21a9acd0cf6dc8e1e52013c3e7aeec63b2cd2297bc1c6"
         }
       ]
     },

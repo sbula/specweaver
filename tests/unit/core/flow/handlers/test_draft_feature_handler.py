@@ -24,6 +24,7 @@ from specweaver.core.flow.handlers.registry import StepHandlerRegistry
 from specweaver.core.flow.run_state.feedback import pop_findings
 from specweaver.core.flow.run_state.run_context import RunContext
 from specweaver.interfaces.run_setup.drafters import WorkflowDrafters
+from tests.fixtures.run_context import with_graph
 from tests.scripted_llm import FixedRouter
 
 if TYPE_CHECKING:
@@ -541,7 +542,7 @@ class TestDraftFeatureLineageAndConfig:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
         topology = [MagicMock()]
-        ctx.graph = ctx.graph.model_copy(update={"topology": topology})
+        with_graph(ctx, {"topology": topology})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):
@@ -561,7 +562,7 @@ class TestDraftFeatureLineageAndConfig:
         """A single TopologyContext (not a list) must not be passed through raw."""
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
-        ctx.graph = ctx.graph.model_copy(update={"topology": MagicMock()})
+        with_graph(ctx, {"topology": MagicMock()})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):
