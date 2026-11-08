@@ -103,7 +103,7 @@ are never started. That slot gets one typed field per meaning.
 | FR-2 | `sw review` and code generation SHALL put each related module's line in the prompt on a project whose `context.yaml` gives the spec's module a neighbour, through the handler, from the run the run setup builds; drafting, which works on main, SHALL keep passing the same contexts to the drafter, pinned by a seam test written first and green on main | e2e (review), integration (generation, draft) |
 | FR-3 | The MCP assembler and the sandbox MCP tool SHALL read `mcp_servers` and `consumes_resources` from the target boundary only, never from a neighbour's context `[agreed 2026-11-08]`, through FR-1's typed field, with no `getattr` probe; on a run built by the run setup, a declared server is started. **Seam** run setup → `C-INTL-02` | integration |
 | FR-4 | Decomposition SHALL take a component's impact set from FR-1's module graph (`impact_of`); today a component with `target_modules` raises `AttributeError` on the list. **Seam** | integration |
-| FR-5 | `TopologyGraph`, its loader, selectors, hasher and changed-files code SHALL live in `specweaver.graph.topology`, a tach module with `depends_on = [specweaver.graph, workspace.analyzers, workspace.context]` (`graph` for the depth constant only); `assurance.graph` SHALL hold only the boundary rule; no source imports a moved name from `assurance.graph` | unit (guard) |
+| FR-5 | `TopologyGraph`, its loader, selectors, hasher and changed-files code SHALL live in `specweaver.graph.topology`, a tach module with `depends_on = [specweaver.graph, workspace.analyzers, workspace.context]` (`graph` for the depth constant only, added in SF-03 with it: tach's `exact = true` refuses an unused edge `[agreed 2026-11-08]`); `assurance.graph` SHALL hold only the boundary rule; no source imports a moved name from `assurance.graph` | unit (guard) |
 | FR-6 | The sandbox boundary check, `sw scan`, `sw graph build` and the run setup SHALL read the module graph from its new home and answer as before | integration (existing) |
 | FR-7 | `TopologyEngine` SHALL run on a networkx `DiGraph` and keep today's answers: `traverse` includes the start when it is on a cycle; `neighbors_within` excludes the start; a missing node gives an empty set; `cycles()` gives each cycle sorted and counts a self-loop. These tests are written first, green against the old engine | unit |
 | FR-8 | `TopologyEngineProtocol` SHALL match `TopologyEngine`'s signatures, checked by mypy where the graph is built | unit (typed assignment) |
@@ -204,7 +204,8 @@ replaced by FR-2's e2e.
 ### SF-02: One home
 - **Scope**: the five files move to `graph/topology/`, by script; `specweaver.graph.topology` in
   tach; the moved `changes.py` renamed; mutants re-pinned; ledger rows moved.
-- **FRs**: [FR-5, FR-6]
+- **FRs**: [FR-5, FR-6]; and FR-11's rename of the moved `changes.py` to `changed_files.py`,
+  moved here from SF-04 so the file and its patch strings move once `[agreed 2026-11-08]`
 - **Inputs**: SF-01's handlers (they import the moved types)
 - **Outputs**: `graph/topology/` holding the module graph
 
@@ -220,7 +221,7 @@ replaced by FR-2's e2e.
 - **Outputs**: the hand-written Tarjan code deleted
 
 ### SF-04: Names and the prompt source
-- **Scope**: `isinstance` in `add_context`; the three renames; the docs.
+- **Scope**: `isinstance` in `add_context`; the other two renames (`format_context_summary`, the lineage protocol file) and the guard for all three; the docs.
 - **FRs**: [FR-10, FR-11]
 - **Inputs**: SF-02's home
 - **Outputs**: names that say what the code does
@@ -245,7 +246,7 @@ sw review specs/billing_spec.md
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-02 | One home | SF-01 (order only) | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-02 | One home | SF-01 (order only) | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One library | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
@@ -262,5 +263,6 @@ condition that the read-only graph is enforced by a test (FR-13). **SF-01 plan a
 build `GraphContext` only through a validating helper, and a guard fails on `model_copy(update=…)`
 of it under `tests/`. **SF-01 dev 2026-11-08**: CB-1 `250ed9b3`; CB-2 accepted by
 the user 2026-11-08 — every reader reads its own field, the slot is deleted, and `sw review`,
-generation and decomposition no longer crash on a project with module neighbours. Next: the
-implementation plan for SF-02.
+generation and decomposition no longer crash on a project with module neighbours. **SF-02 plan approved
+2026-11-08** (the user): one boundary; a diff check proves the test rewrite touched only paths. Next:
+dev SF-02.
