@@ -244,7 +244,7 @@ sw review specs/billing_spec.md
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The topology slot | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One library | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -260,4 +260,7 @@ independent; no matching node logs a WARNING (FR-12); MCP servers come from the 
 only (FR-3); SF-03 keeps the lock and the read-only graph. **Design approved 2026-11-08** (the user), on the
 condition that the read-only graph is enforced by a test (FR-13). **SF-01 plan approved 2026-11-08** (the user): tests
 build `GraphContext` only through a validating helper, and a guard fails on `model_copy(update=…)`
-of it under `tests/`. Next: dev SF-01 CB-1.
+of it under `tests/`. **SF-01 dev 2026-11-08**: CB-1 `250ed9b3`; CB-2 accepted by
+the user 2026-11-08 — every reader reads its own field, the slot is deleted, and `sw review`,
+generation and decomposition no longer crash on a project with module neighbours. Next: the
+implementation plan for SF-02.

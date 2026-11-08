@@ -65,7 +65,7 @@ def _build_tool_dispatcher(context: RunContext, role: str, adapter: Any) -> Tool
         role=role,
         allowed_tools=allowed_tools,
         analyzer_factory=context.analysis.analyzer_factory,
-        topology=context.graph.topology,
+        topology=context.graph.target_boundary,
         search_key=search_key,
     )
 
@@ -186,8 +186,8 @@ async def _build_review_prompt(
         profile=resolve_profile(step.params.get("render_profile"), default=FULL),
         skeleton_files=skeleton_files,
     )
-    if context.graph.topology:
-        base_prompt.add_topology([context.graph.topology])
+    if context.graph.related_contexts:
+        base_prompt.add_topology(context.graph.related_contexts)
     return base_prompt, rubric
 
 

@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from specweaver.commons.topology_context import TopologyContext
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.engine.state import StepStatus
 from specweaver.core.flow.handlers.draft import (
@@ -538,11 +539,11 @@ class TestDraftFeatureLineageAndConfig:
         assert mock_repo.log_artifact_event.call_args.kwargs["model_id"] == "qwen3-coder-next"
 
     @pytest.mark.asyncio
-    async def test_list_topology_is_forwarded(self, tmp_path: Path) -> None:
+    async def test_related_contexts_are_forwarded(self, tmp_path: Path) -> None:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
-        topology = [MagicMock()]
-        with_graph(ctx, {"topology": topology})
+        topology = [TopologyContext(name="n", purpose="p", archetype="a", relationship="r")]
+        with_graph(ctx, {"related_contexts": topology})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):
@@ -558,11 +559,9 @@ class TestDraftFeatureLineageAndConfig:
         assert seen["topology_contexts"] == topology
 
     @pytest.mark.asyncio
-    async def test_non_list_topology_is_forwarded_as_none(self, tmp_path: Path) -> None:
-        """A single TopologyContext (not a list) must not be passed through raw."""
+    async def test_no_related_contexts_are_forwarded_as_none(self, tmp_path: Path) -> None:
         spec = tmp_path / "greeter_feature_spec.md"
         ctx = _interactive_ctx(tmp_path, spec)
-        with_graph(ctx, {"topology": MagicMock()})
         seen: dict[str, Any] = {}
 
         async def fake_draft(_self, _name, _output_dir, **kwargs):

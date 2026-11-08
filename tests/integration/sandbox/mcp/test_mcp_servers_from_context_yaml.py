@@ -4,6 +4,7 @@
 """An `mcp_servers` block written in a real `context.yaml` reaches a real server.
 
 Proves: C-INTL-02 FR-1
+Proves: TECH-088 FR-3
 
 FR-1 is *"read the `mcp_servers` block from `context.yaml`"*, and it was the one link of this
 capability nobody drove from a file. `test_mcp_flow_e2e.py` proves boot, fetch and inject — but it
@@ -100,7 +101,7 @@ async def test_a_declared_server_is_booted_and_answers(project: Path) -> None:
     node = topology.nodes["demo"]
 
     context = RunContext(project_path=project, spec_path=project / "spec.md")
-    context.graph = GraphContext(topology=node)
+    context.graph = GraphContext(target_boundary=node)
 
     fetched = await evaluate_and_fetch_mcp_context(context)
 
@@ -131,6 +132,41 @@ async def test_a_project_declaring_no_server_fetches_nothing(tmp_path: Path) -> 
     node = load_topology(tmp_path).nodes["bare"]
 
     context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
-    context.graph = GraphContext(topology=node)
+    context.graph = GraphContext(target_boundary=node)
+
+    assert await evaluate_and_fetch_mcp_context(context) is None
+
+
+async def test_a_run_from_the_run_setup_starts_its_boundarys_server(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The run a user gets, not a context built by hand: the run setup
+    puts the spec's own boundary in the run, and its declared server answers."""
+    from specweaver.interfaces.run_setup.builder import build_run_sync
+    from tests.fixtures.module_graph_project import (
+        PAYLOAD as RUN_PAYLOAD,
+    )
+    from tests.fixtures.module_graph_project import module_graph_project, run_request
+
+    db, root = module_graph_project(tmp_path, monkeypatch, servers_on="billing")
+    context = build_run_sync(run_request(db, root, "billing"))
+
+    fetched = await evaluate_and_fetch_mcp_context(context)
+
+    assert fetched is not None, "the run's own boundary was never consulted"
+    assert RUN_PAYLOAD in fetched
+
+
+async def test_a_neighbours_server_is_not_started(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the target boundary's servers start: `payments` declares one,
+    `billing` (the spec's module) declares none, so a run on `billing` fetches nothing."""
+    from specweaver.interfaces.run_setup.builder import build_run_sync
+    from tests.fixtures.module_graph_project import module_graph_project, run_request
+
+    db, root = module_graph_project(tmp_path, monkeypatch, servers_on="payments")
+    context = build_run_sync(run_request(db, root, "billing"))
+    assert [c.name for c in context.graph.related_contexts or []] == ["payments"]
 
     assert await evaluate_and_fetch_mcp_context(context) is None

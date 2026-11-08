@@ -18,6 +18,7 @@ from specweaver.core.config.doc_policy import DocPolicy
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from specweaver.commons.topology_context import DeclaredBoundary
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ class ToolDispatcher:
         role: str,
         allowed_tools: list[str],
         analyzer_factory: Any | None = None,
-        topology: Any | None = None,
+        topology: DeclaredBoundary | None = None,
         parsers: Any | None = None,
         search_key: str | None = None,
         task_files: Sequence[str] = (),
@@ -272,7 +273,7 @@ class ToolDispatcher:
         role: str,
         allowed_tools: list[str],
         analyzer_factory: Any | None = None,
-        topology: Any | None = None,
+        topology: DeclaredBoundary | None = None,
         parsers: Any | None = None,
         task_files: Sequence[str] = (),
         doc_policy: DocPolicy | None = None,

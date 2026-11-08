@@ -15,6 +15,7 @@ from specweaver.sandbox.mcp.interfaces.definitions import (
 from specweaver.sandbox.mcp.interfaces.models import MCPToolError
 
 if TYPE_CHECKING:
+    from specweaver.commons.topology_context import DeclaredBoundary
     from specweaver.infrastructure.llm.models import ToolDefinition
     from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
 
@@ -54,12 +55,14 @@ class ArchitectMCPInterface(BaseTool):
         return True
 
 
-def create_mcp_interface(role: str, topology: Any = None) -> ArchitectMCPInterface:
+def create_mcp_interface(
+    role: str, topology: DeclaredBoundary | None = None
+) -> ArchitectMCPInterface:
     """Create a role-specific MCP interface facade.
 
     Args:
         role: The agent's role (only 'architect' is allowed for MCP).
-        topology: The project's context topology server configuration.
+        topology: The run's target boundary, whose declared MCP servers the tool may query.
     """
     if role != "architect":
         msg = f"Unknown role: {role!r}. Allowed: ['architect']"

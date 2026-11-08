@@ -6,9 +6,10 @@
 
 Exercises:
   19. sw scan generates context.yaml files for undocumented modules
-  20. sw review --selector nhop injects neighbor context into prompt
-  21. sw review --selector impact injects impact-weighted contexts
   22. sw review with no context.yaml → review still works (graceful degradation)
+
+That neighbours reach the review prompt is `test_review_prompt_names_its_neighbours_e2e.py`; the
+two tests here that claimed it accepted a failed review (`exit_code in (0, 1)`).
 """
 
 from __future__ import annotations
@@ -182,91 +183,6 @@ class TestScanGeneratesContextYaml:
         assert "Pre-existing context" in content, (
             "sw scan overwrote a manually-written context.yaml"
         )
-
-
-# ===========================================================================
-# Test 20: sw review --selector nhop injects neighbor context into prompt
-# ===========================================================================
-
-
-class TestReviewWithNhopSelector:
-    """sw review --selector nhop uses multi-hop topology context."""
-
-    def test_review_with_nhop_selector(self, tmp_path: Path) -> None:
-        """Review with --selector nhop → command completes; no topology crash.
-
-        The selector is used when context.yaml exists. We verify that:
-        - The command doesn't crash with a topology error
-        - The LLM mock is still called (the review proceeds)
-        - ACCEPTED verdict is shown
-        """
-        project_dir = _create_multi_module_project(tmp_path, _unique_name())
-        spec = _write_spec(project_dir, "greeter")
-
-        # Run sw scan so context.yaml files exist
-        runner.invoke(app, ["use", project_dir.name])
-        runner.invoke(app, ["scan"])
-
-        mock_llm = _make_mock_llm("VERDICT: ACCEPTED\nGood spec.")
-
-        with doubled_llm(mock_llm, model="mock"):
-            result = runner.invoke(
-                app,
-                [
-                    "review",
-                    str(spec),
-                    "--project",
-                    str(project_dir),
-                    "--selector",
-                    "nhop",
-                ],
-            )
-
-        # Command must not crash
-        assert result.exit_code in (0, 1), f"review --selector nhop crashed: {result.output}"
-        # Result should contain ACCEPTED (from mock) or an error verdict — not a traceback
-        assert "Traceback" not in result.output
-
-
-# ===========================================================================
-# Test 21: sw review --selector impact injects impact-weighted contexts
-# ===========================================================================
-
-
-class TestReviewWithImpactSelector:
-    """sw review --selector impact uses impact-weighted topology context."""
-
-    def test_review_with_impact_selector(self, tmp_path: Path) -> None:
-        """Review with --selector impact → command completes without crash.
-
-        Verifies:
-        - impact selector doesn't cause KeyError or AttributeError
-        - Review proceeds and shows verdict
-        """
-        project_dir = _create_multi_module_project(tmp_path, _unique_name())
-        spec = _write_spec(project_dir, "formatter")
-
-        # Run sw scan so context.yaml files exist
-        runner.invoke(app, ["use", project_dir.name])
-        runner.invoke(app, ["scan"])
-
-        mock_llm = _make_mock_llm("VERDICT: ACCEPTED\nLooks good.")
-
-        with doubled_llm(mock_llm, model="mock"):
-            result = runner.invoke(
-                app,
-                [
-                    "review",
-                    str(spec),
-                    "--project",
-                    str(project_dir),
-                    "--selector",
-                    "impact",
-                ],
-            )
-
-        assert result.exit_code in (0, 1), f"review --selector impact crashed: {result.output}"
-        assert "Traceback" not in result.output
 
 
 # ===========================================================================

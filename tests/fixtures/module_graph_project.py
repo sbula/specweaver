@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     import pytest
 
-RESOURCE = "mcp://billing/invoices_table"
+RESOURCE = "mcp://invoices/invoices_table"
 PAYLOAD = "declared_by_billing"
 
 MACHINE_SETTINGS = """schema_version = 1

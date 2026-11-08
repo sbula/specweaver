@@ -157,9 +157,7 @@ class DraftSpecHandler:
         name = module_stem(context.spec_path)
         specs_dir = context.spec_path.parent
 
-        topology_contexts = (
-            context.graph.topology if isinstance(context.graph.topology, list) else None
-        )
+        topology_contexts = context.graph.related_contexts
 
         try:
             result_path = await drafter.draft(name, specs_dir, topology_contexts=topology_contexts)
@@ -340,9 +338,7 @@ class DraftFeatureHandler:
             config=gen_config,
         )
 
-        topology_contexts = (
-            context.graph.topology if isinstance(context.graph.topology, list) else None
-        )
+        topology_contexts = context.graph.related_contexts
 
         try:
             result_path = await drafter.draft(

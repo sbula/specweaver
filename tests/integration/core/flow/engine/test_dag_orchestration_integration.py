@@ -126,7 +126,7 @@ class TestDagOrchestratorIntegration:
         # Mock topology showing collision
         mock_topo = MagicMock(spec=TopologyGraph)
         mock_topo.impact_of.return_value = {"auth"}
-        with_graph(ctx, {"topology": mock_topo})
+        with_graph(ctx, {"module_graph": mock_topo})
 
         pipe = PipelineDefinition.model_validate_json(json.dumps({"name": "test", "steps": []}))
         ctx.run = ctx.run.model_copy(

@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from specweaver.assurance.graph.topology import TopologyNode
 from specweaver.assurance.validation.orchestration.archetype_pipelines import archetype_of
 from specweaver.core.flow.handlers import skeleton_assembler
 from specweaver.core.flow.run_state.run_context import RunContext
@@ -95,12 +96,13 @@ def test_an_unreadable_context_yaml_is_generic_and_warns(
     assert any(r.levelno == logging.WARNING for r in caplog.records)
 
 
-def test_a_topology_does_not_override_the_files_archetype(
+def test_the_runs_boundary_does_not_override_the_files_archetype(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     spec = project / "service" / "orders_spec.md"
     context = RunContext(project_path=project, spec_path=spec)
-    with_graph(context, {"topology": SimpleNamespace(archetype="adapter")})
+    boundary = TopologyNode(name="service", level="module", purpose="", archetype="adapter")
+    with_graph(context, {"target_boundary": boundary})
 
     assert _skeleton_archetypes(context, [project / "service" / "orders.py"], monkeypatch) == [
         "spring-boot"

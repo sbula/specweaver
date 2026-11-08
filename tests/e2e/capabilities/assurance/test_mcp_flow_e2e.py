@@ -21,7 +21,7 @@ down here:
 * FR-4 — `environment_context=mcp_env` replaced by `""` in the generation handler, so the fetch
   succeeds and the prompt never carries it: 2 fail.
 
-**FR-1 is deliberately not claimed here.** These tests hand the assembler a `TopologyContext`
+**FR-1 is deliberately not claimed here.** These tests hand the assembler a `TopologyNode`
 directly; reading the `mcp_servers` block out of a `context.yaml` is a different step, and it stays
 cited at unit tier until something drives it from a file.
 """
@@ -32,7 +32,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.commons.topology_context import TopologyContext
+from specweaver.assurance.graph.topology import TopologyNode
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
@@ -98,11 +98,11 @@ class TestMCPFlowE2E:
     ) -> None:
         """Story: L3 SpecWeaver Flow CLI executes generate against a real MCP proxy."""
         # Arrange configuration and boundaries
-        topology = TopologyContext(
+        topology = TopologyNode(
             name="demo_node",
+            level="module",
             purpose="DB.",
             archetype="pure-logic",
-            relationship="self",
             mcp_servers={
                 "dummy": {"command": [sys.executable], "args": [dummy_mcp_script]},
             },
@@ -136,7 +136,7 @@ class TestMCPFlowE2E:
             spec_path=spec,
             output_dir=src_dir,
             db=mock_db,
-            graph=GraphContext(topology=topology),
+            graph=GraphContext(target_boundary=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
 
@@ -164,11 +164,11 @@ class TestMCPFlowE2E:
         self, mock_review_code, dummy_mcp_script: str, tmp_path: Path
     ) -> None:
         """Story: L3 SpecWeaver Flow CLI executes review code against a real MCP proxy."""
-        topology = TopologyContext(
+        topology = TopologyNode(
             name="demo_node",
+            level="module",
             purpose="DB.",
             archetype="pure-logic",
-            relationship="self",
             mcp_servers={
                 "dummy": {"command": [sys.executable], "args": [dummy_mcp_script]},
             },
@@ -186,7 +186,7 @@ class TestMCPFlowE2E:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path,
-            graph=GraphContext(topology=topology),
+            graph=GraphContext(target_boundary=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock
@@ -236,11 +236,11 @@ class TestMCPFlowE2E:
         crash_script = tmp_path / "crash_mcp.py"
         crash_script.write_text("import sys; sys.exit(1)\\n")
 
-        topology = TopologyContext(
+        topology = TopologyNode(
             name="demo_node",
+            level="module",
             purpose="DB.",
             archetype="pure-logic",
-            relationship="self",
             mcp_servers={
                 "dummy": {"command": [sys.executable], "args": [str(crash_script)]},
             },
@@ -258,7 +258,7 @@ class TestMCPFlowE2E:
             project_path=tmp_path,
             spec_path=spec,
             output_dir=tmp_path,
-            graph=GraphContext(topology=topology),
+            graph=GraphContext(target_boundary=topology),
         )
         ctx.run = ctx.run.model_copy(update={"run_id": "test-run"})
         from unittest.mock import MagicMock
@@ -301,11 +301,11 @@ class TestMCPFlowE2E:
         from specweaver.sandbox.dispatcher import ToolDispatcher
         from specweaver.sandbox.security import WorkspaceBoundary
 
-        topology = TopologyContext(
+        topology = TopologyNode(
             name="demo_node",
+            level="module",
             purpose="DB.",
             archetype="pure-logic",
-            relationship="self",
             mcp_servers={
                 "dummy": {"command": [sys.executable], "args": [dummy_mcp_script]},
             },

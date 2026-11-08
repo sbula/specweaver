@@ -99,11 +99,12 @@ async def evaluate_and_fetch_mcp_context(context: RunContext) -> str | None:
         A serialized YAML-like text block combining all text representations
         of the fetched resources. Returns None if zero resources were requested.
     """
-    if not context.graph.topology:
+    boundary = context.graph.target_boundary
+    if boundary is None:
         return None
 
-    servers = getattr(context.graph.topology, "mcp_servers", None)
-    resources = getattr(context.graph.topology, "consumes_resources", None)
+    servers = boundary.mcp_servers
+    resources = boundary.consumes_resources
 
     if not servers or not resources:
         return None

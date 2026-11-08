@@ -142,7 +142,6 @@ class GraphContext(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
-    topology: Any = None
     related_contexts: list[TopologyContext] | None = None
     target_boundary: DeclaredBoundary | None = None
     module_graph: ModuleImpact | None = None

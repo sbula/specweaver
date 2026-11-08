@@ -224,7 +224,6 @@ def _graph_context(request: RunRequest) -> GraphContext:
         return GraphContext()
     related = select_topology_contexts(graph, module, selector_name=request.selector)
     return GraphContext(
-        topology=related,
         related_contexts=related,
         target_boundary=boundary,
         module_graph=graph,

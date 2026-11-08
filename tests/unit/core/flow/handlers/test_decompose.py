@@ -33,6 +33,7 @@ serialised worktree preparation were declared and never built; the rows are dele
 and the work is `TECH-062`.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -47,6 +48,13 @@ from specweaver.core.flow.handlers.decompose import (
 from specweaver.core.flow.run_state.run_context import ModelAccess, RunContext, RunHandle
 from tests.fixtures.run_context import with_graph
 from tests.scripted_llm import FixedRouter
+
+
+class _Impacts:
+    """A module graph that answers impact questions with `answer`."""
+
+    def __init__(self, answer: Callable[[str], set[str]]) -> None:
+        self.impact_of = answer
 
 
 def _spawning_parent(runner_cls: MagicMock) -> MagicMock:
@@ -262,10 +270,9 @@ async def test_orchestrate_components_handler_success_dag(
     )
 
     # Provide a dummy TopologyGraph
-    mock_topology = MagicMock()
     # No physical collisions
-    mock_topology.impact_of.side_effect = lambda module: {module}
-    with_graph(mock_context, {"topology": mock_topology})
+    mock_topology = _Impacts(lambda module: {module})
+    with_graph(mock_context, {"module_graph": mock_topology})
 
     handler = OrchestrateComponentsHandler()
     result = await handler.execute(mock_orchestrate_step, mock_context)
@@ -353,9 +360,8 @@ async def test_orchestrate_components_handler_child_failure(
         }
     )
 
-    mock_topology = MagicMock()
-    mock_topology.impact_of.return_value = set()
-    with_graph(mock_context, {"topology": mock_topology})
+    mock_topology = _Impacts(lambda _module: set())
+    with_graph(mock_context, {"module_graph": mock_topology})
 
     result = await handler.execute(mock_orchestrate_step, mock_context)
     assert result.status == StepStatus.FAILED
@@ -454,9 +460,8 @@ async def test_orchestrate_components_preserves_params_gap_1(
         }
     )
 
-    mock_topology = MagicMock()
-    mock_topology.impact_of.return_value = set()
-    with_graph(mock_context, {"topology": mock_topology})
+    mock_topology = _Impacts(lambda _module: set())
+    with_graph(mock_context, {"module_graph": mock_topology})
 
     # Inject YAML with step containing existing pre-set params
     fake_yaml = {
@@ -496,7 +501,7 @@ async def test_orchestrate_components_handles_gate_gaps_2_3_4(
             "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
         }
     )
-    with_graph(mock_context, {"topology": MagicMock(impact_of=MagicMock(return_value=set()))})
+    with_graph(mock_context, {"module_graph": MagicMock(impact_of=MagicMock(return_value=set()))})
 
     # s1: No gate (Gap 2)
     # s3: Non-JOIN hitl dict gate (Gap 4)
@@ -548,7 +553,7 @@ async def test_orchestrate_components_skips_wave_n_if_failed_gap_5(
             "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
         }
     )
-    with_graph(mock_context, {"topology": MagicMock(impact_of=MagicMock(return_value=set()))})
+    with_graph(mock_context, {"module_graph": MagicMock(impact_of=MagicMock(return_value=set()))})
 
     # Even right though there's a JOIN step, since the fan_out failed, Wave N must not run!
     fake_yaml = {
@@ -587,7 +592,7 @@ async def test_orchestrate_components_skips_wave_n_if_empty_gap_6(
             "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
         }
     )
-    with_graph(mock_context, {"topology": MagicMock(impact_of=MagicMock(return_value=set()))})
+    with_graph(mock_context, {"module_graph": MagicMock(impact_of=MagicMock(return_value=set()))})
 
     # Zero JOIN steps
     fake_yaml = {
@@ -627,7 +632,7 @@ async def test_orchestrate_components_wave_n_crash_gap_7(
             "pipeline_runner": _spawning_parent(mock_pipeline_runner_cls),
         }
     )
-    with_graph(mock_context, {"topology": MagicMock(impact_of=MagicMock(return_value=set()))})
+    with_graph(mock_context, {"module_graph": MagicMock(impact_of=MagicMock(return_value=set()))})
 
     fake_yaml = {
         "name": "test",

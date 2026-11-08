@@ -19,6 +19,7 @@ from specweaver.sandbox.mcp.core.executor import MCPExecutor, MCPExecutorError
 from specweaver.sandbox.mcp.interfaces.models import ToolResult
 
 if TYPE_CHECKING:
+    from specweaver.commons.topology_context import DeclaredBoundary
     from specweaver.infrastructure.llm.models import ToolDefinition
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 class MCPExplorerTool(BaseTool):
     """Tool for L2 Architect exploration of external MCP interfaces."""
 
-    def __init__(self, topology: Any = None) -> None:
+    def __init__(self, topology: DeclaredBoundary | None = None) -> None:
         self._topology = topology
         self.ROLE_INTENTS = {
             "architect": frozenset({"list_servers", "list_resources", "read_resource"})
@@ -53,7 +54,7 @@ class MCPExplorerTool(BaseTool):
         if not self._topology:
             return ToolResult(status="error", message="Context Topology missing.")
 
-        servers = getattr(self._topology, "mcp_servers", {})
+        servers = self._topology.mcp_servers
         if server_name not in servers:
             return ToolResult(status="error", message=f"Unknown MCP server '{server_name}'.")
 
@@ -101,7 +102,7 @@ class MCPExplorerTool(BaseTool):
                 executor.close()
 
     def _intent_list_servers(self, inputs: dict[str, Any]) -> ToolResult:
-        if not self._topology or not getattr(self._topology, "mcp_servers", None):
+        if self._topology is None or not self._topology.mcp_servers:
             return ToolResult(status="success", data="[]")
         mcp_servers = self._topology.mcp_servers
         return ToolResult(status="success", data=json.dumps(list(mcp_servers.keys())))

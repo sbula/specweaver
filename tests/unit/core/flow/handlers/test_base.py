@@ -415,7 +415,9 @@ class TestGraphContext:
 
     def test_defaults_are_all_none(self) -> None:
         graph = GraphContext()
-        assert graph.topology is None
+        assert graph.related_contexts is None
+        assert graph.target_boundary is None
+        assert graph.module_graph is None
         assert graph.api_contract_paths is None
 
     def test_run_context_gets_a_default_graph_context(self, tmp_path: Path) -> None:
@@ -452,19 +454,23 @@ class TestGraphContext:
         assert context.graph.api_contract_paths == expected
 
     def test_replacing_one_field_leaves_the_others(self, tmp_path: Path) -> None:
-        original = GraphContext(topology="topo", api_contract_paths=["a.py"])
+        context = RunContext(
+            project_path=tmp_path,
+            spec_path=tmp_path / "spec.md",
+            graph=GraphContext(related_contexts=[], api_contract_paths=["a.py"]),
+        )
 
-        updated = original.model_copy(update={"topology": "other"})
+        with_graph(context, {"related_contexts": None})
 
-        assert updated.topology == "other"
-        assert updated.api_contract_paths == ["a.py"]
+        assert context.graph.related_contexts is None
+        assert context.graph.api_contract_paths == ["a.py"]
 
     # --- [Hostile / Wrong Input] ------------------------------------------
 
     def test_direct_field_mutation_raises(self, tmp_path: Path) -> None:
         context = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         with pytest.raises(ValidationError):
-            context.graph.topology = "x"
+            context.graph.related_contexts = []
 
     def test_unknown_kwarg_raises(self) -> None:
         with pytest.raises(ValidationError):

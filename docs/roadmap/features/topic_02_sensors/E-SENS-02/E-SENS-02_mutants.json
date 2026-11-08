@@ -157,7 +157,7 @@
           "old": "allowed_tools = [\"fs\", \"ast\", \"web\"] if search_key else [\"fs\", \"ast\"]",
           "new": "allowed_tools = [\"fs\", \"ast\"]",
           "breaks": "a set key gives the agent no web tools",
-          "symbol_sha": "sha256:4a8e62c6c985f060777f4085947b530f0d1227bbc5e4c19a52a151a456943f63"
+          "symbol_sha": "sha256:330fa8837f66594c86c019c1be50ae87efe170be6fd0199fe3f60aa13791309d"
         },
         {
           "id": "always-web",
@@ -167,7 +167,7 @@
           "old": "allowed_tools = [\"fs\", \"ast\", \"web\"] if search_key else [\"fs\", \"ast\"]",
           "new": "allowed_tools = [\"fs\", \"ast\", \"web\"]",
           "breaks": "an agent with no key is offered tools that cannot search",
-          "symbol_sha": "sha256:4a8e62c6c985f060777f4085947b530f0d1227bbc5e4c19a52a151a456943f63"
+          "symbol_sha": "sha256:330fa8837f66594c86c019c1be50ae87efe170be6fd0199fe3f60aa13791309d"
         },
         {
           "id": "key-dropped",

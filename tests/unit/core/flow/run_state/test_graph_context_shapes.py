@@ -58,3 +58,8 @@ def test_a_wrong_boundary_is_refused(wrong: object) -> None:
 def test_a_wrong_graph_is_refused(wrong: object) -> None:
     with pytest.raises(ValidationError):
         GraphContext(module_graph=wrong)
+
+
+def test_the_one_field_for_every_meaning_is_gone() -> None:
+    """The old `topology` slot held four meanings; nothing may bring it back."""
+    assert "topology" not in GraphContext.model_fields

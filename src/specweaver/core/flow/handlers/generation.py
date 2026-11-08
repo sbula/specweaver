@@ -279,8 +279,8 @@ async def _generation_prompt(context: RunContext, step: PipelineStep, *, instruc
     )
     if context.plan_context.plan:
         base_prompt.add_plan(context.plan_context.plan)
-    if context.graph.topology:
-        base_prompt.add_topology([context.graph.topology])
+    if context.graph.related_contexts:
+        base_prompt.add_topology(context.graph.related_contexts)
     return base_prompt
 
 

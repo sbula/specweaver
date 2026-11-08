@@ -55,7 +55,7 @@
           "old": "            full_command = resolved_runtime_command(declared)\n",
           "new": "            full_command = declared\n",
           "breaks": "a project's MCP config makes the explorer start any program, host-escape flags and host mounts included",
-          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
+          "symbol_sha": "sha256:0d5d766cd462cab7c62e541ac1226b1d3c655691de0c4f7655ecffd232299fe8"
         }
       ]
     },
@@ -74,7 +74,7 @@
           "old": "            result_data = scrub_secrets(response.get(\"result\", {}), env)\n",
           "new": "            result_data = response.get(\"result\", {})\n",
           "breaks": "a secret passed to the MCP server comes back to the agent in plain text",
-          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
+          "symbol_sha": "sha256:0d5d766cd462cab7c62e541ac1226b1d3c655691de0c4f7655ecffd232299fe8"
         }
       ]
     },
@@ -172,7 +172,7 @@
           "old": "            refuse_loader_env(env)\n",
           "new": "            pass\n",
           "breaks": "LD_PRELOAD loads a project's library into the docker client",
-          "symbol_sha": "sha256:b41a5eba4bd46d8fe96838882712b88223382349df4189f351516ea3db4a3dfb"
+          "symbol_sha": "sha256:0d5d766cd462cab7c62e541ac1226b1d3c655691de0c4f7655ecffd232299fe8"
         },
         {
           "id": "atom-passes-loader",

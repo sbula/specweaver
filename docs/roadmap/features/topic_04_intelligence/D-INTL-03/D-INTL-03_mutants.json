@@ -28,7 +28,7 @@
           "old": "    if context.plan_context.plan:\n        base_prompt.add_plan(context.plan_context.plan)\n",
           "new": "    if False:\n        base_prompt.add_plan(context.plan_context.plan)\n",
           "breaks": "the code ignores the decided plan",
-          "symbol_sha": "sha256:ee8d1efc32c045c69d883182ae2e7ce79babcdb75751e6a167e78a797657bd93"
+          "symbol_sha": "sha256:3cde9c58bd7aab3ec51e1ade155afe93643fd37ce766fa9e4bee08721a6b5d47"
         },
         {
           "id": "planner-can-write",

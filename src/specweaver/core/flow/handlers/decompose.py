@@ -71,7 +71,7 @@ class DecomposeFeatureHandler(StepHandler):
                 feature_name=feature_name,
                 spec_content=spec_content,
                 base_prompt=base_prompt,
-                topology_contexts=[context.graph.topology] if context.graph.topology else None,
+                topology_contexts=context.graph.related_contexts,
             )
 
             # FR-5 Coverage Assertion Bounds
@@ -247,9 +247,10 @@ def _impacts_of(
 ) -> set[str]:
     """A node plus everything the knowledge graph says its target modules reach."""
     impacts = {node}
-    if context.graph.topology:
+    graph = context.graph.module_graph
+    if graph is not None:
         for target_module in comp_by_name[node].get("target_modules", []):
-            impacts.update(context.graph.topology.impact_of(target_module))
+            impacts.update(graph.impact_of(target_module))
     return impacts
 
 
