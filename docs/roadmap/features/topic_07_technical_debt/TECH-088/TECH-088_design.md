@@ -244,7 +244,7 @@ sw review specs/billing_spec.md
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | The topology slot | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | The topology slot | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | One library | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -258,5 +258,6 @@ to ADR-006's "no reader outside its own builder". The re-measure of AG-17 found 
 (FR-1..FR-4). At the approval gate the user asked 8 more questions: the fix stays SF-01, first and
 independent; no matching node logs a WARNING (FR-12); MCP servers come from the target boundary
 only (FR-3); SF-03 keeps the lock and the read-only graph. **Design approved 2026-11-08** (the user), on the
-condition that the read-only graph is enforced by a test (FR-13). Next: the implementation plan
-for SF-01.
+condition that the read-only graph is enforced by a test (FR-13). **SF-01 plan approved 2026-11-08** (the user): tests
+build `GraphContext` only through a validating helper, and a guard fails on `model_copy(update=…)`
+of it under `tests/`. Next: dev SF-01 CB-1.
