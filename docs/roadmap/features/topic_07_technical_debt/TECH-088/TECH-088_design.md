@@ -84,7 +84,8 @@ are never started. That slot gets one typed field per meaning.
 - Accepted: the shallow step copy shares the module graph. Its engine is frozen and holds a lock,
   its node mapping and stale nodes cannot change (FR-13), but **the nodes' lists are still mutable**:
   each `TopologyNode` is a plain dataclass, so `graph.nodes[x].consumes.append(...)` still works. No
-  source does it (grep 2026-11-08); the gap stays open until it is closed `[agreed 2026-11-08]`.
+  source does it (grep 2026-11-08). FR-14 (SF-04) closes it with a deep freeze; until SF-04 lands,
+  this risk stands `[agreed 2026-11-08]`.
 
 ### External Tools
 
@@ -114,6 +115,8 @@ are never started. That slot gets one typed field per meaning.
 | FR-11 | Names say what the code does: `format_context_summary` becomes `contexts_for`; the moved `changes.py` becomes `changed_files.py`; `graph/lineage/repository.py` becomes `graph/lineage/protocol.py` | unit (import guard) |
 | FR-12 | When a project has `context.yaml` files but none names the spec's module stem, the run setup SHALL log one WARNING per run naming the stem and saying that topology context and MCP pre-fetch are off `[agreed 2026-11-08]` | integration |
 | FR-13 | A `TopologyGraph` SHALL freeze itself at the end of building, so every module graph a run gets is frozen: a later `add_node` or `add_edge` raises `FrozenGraphError`, and a test proves it `[agreed 2026-11-08]` | unit, integration (through the run setup) |
+| FR-14 | A `TopologyNode` and its `OperationalMetadata` SHALL NOT change once loaded: every list field is a tuple, every dict field is read-only, and the `mcp_servers` configs nested inside are read-only too, all the way down; a write raises `[agreed 2026-11-08]` | unit, integration (through the run setup) |
+| FR-15 | No test SHALL stand a `MagicMock` in for a run's boundary where the sandbox MCP tool, its facade or the dispatcher reads `mcp_servers`; those tests use an honest fake of the `DeclaredBoundary` protocol, and a guard fails on a mock boundary `[agreed 2026-11-08]` | unit (guard) |
 
 ## Requirement–Surface Bindings
 
@@ -226,7 +229,8 @@ replaced by FR-2's e2e.
 
 ### SF-04: Names and the prompt source
 - **Scope**: `isinstance` in `add_context`; the other two renames (`format_context_summary`, the lineage protocol file) and the guard for all three; the docs.
-- **FRs**: [FR-10, FR-11]
+- **FRs**: [FR-10, FR-11, FR-14, FR-15]; FR-14 and FR-15 added by the user 2026-11-08, after
+  SF-03 found the nodes' own lists still mutable
 - **Inputs**: SF-02's home
 - **Outputs**: names that say what the code does
 
