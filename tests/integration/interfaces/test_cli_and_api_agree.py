@@ -95,7 +95,7 @@ def test_sw_run_and_the_api_build_the_same_run(
 
     monkeypatch.setattr(PipelineRunner, "run", _capture)
     monkeypatch.setattr(
-        "specweaver.assurance.graph.hasher.DependencyHasher.save_cache", lambda _s: None
+        "specweaver.graph.topology.hasher.DependencyHasher.save_cache", lambda _s: None
     )
     spec = root / "specs" / "orders_spec.md"
     pipeline = root / ".specweaver" / "pipelines" / "one_check.yaml"

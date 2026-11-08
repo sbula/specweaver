@@ -1,0 +1,42 @@
+# Copyright (c) 2026 sbula. All rights reserved.
+# Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
+
+name: topology
+level: module
+purpose: >
+  The module graph built from context.yaml files: dependencies, impact, cycles, constraints,
+  selectors for prompt context, and the Merkle hashes that say which modules changed.
+
+description: |
+  Declared intent, kept apart from the code graph's extracted reality (ADR-006 decision 4).
+  TopologyGraph answers impact and constraint questions; the selectors choose related modules for a
+  prompt; DependencyHasher and changed_files tell which modules and files changed since the cache.
+
+archetype: pure-logic
+
+consumes:
+  - specweaver/workspace/context
+  - specweaver/workspace/analyzers
+  - specweaver/commons
+widens:
+  specweaver/workspace/context: "the hasher takes an analyzer factory by its protocol"
+  specweaver/workspace/analyzers: "the hasher and the auto-inference read code through the analyzers"
+forbids:
+  - specweaver/sandbox/*  # The loom boundary isolates execution (git, filesystem, processes). High-level orchestrators must never bypass the flow engine to natively execute raw processes.
+  - specweaver/infrastructure/llm  # Pure logic modules must not depend on LLMs or prompt generation.
+  - specweaver/workflows/drafting  # Rules and adapters must remain isolated from interactive drafts.
+  - specweaver/workflows/implementation
+
+exposes:
+  - TopologyGraph
+  - TopologyEngine
+  - ContextSelector
+  - topology.load_nodes
+  - loader.load_topology
+  - hasher.DependencyHasher
+  - changed_files.changed_files
+
+# -- Operational Metadata --------------------------------------------------
+operational:
+  async_ready: false
+  concurrency_model: none

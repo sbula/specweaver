@@ -4,7 +4,7 @@
 
 from pathlib import Path
 
-from specweaver.assurance.graph.topology import TopologyGraph, TopologyNode
+from specweaver.graph.topology.topology import TopologyGraph, TopologyNode
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 
@@ -52,7 +52,7 @@ class TestStaleNodes:
     def test_mutated_node_cascades_upstream(self, linear_chain: Path) -> None:
         """A mutated node must cleanly flag its direct/transitive upstream consumers."""
         # Setup: compute initial hashes and actively save cache to mock "clean state"
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.topology.hasher import DependencyHasher
 
         hasher = DependencyHasher(linear_chain, AnalyzerFactory)
         manifests = [linear_chain / n / "context.yaml" for n in ["a", "b", "c"]]
@@ -83,7 +83,7 @@ class TestStaleNodes:
 
     def test_mutated_node_cascades_only_upstream(self, diamond: Path) -> None:
         """Testing exact isolation of impact_of bounds."""
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.topology.hasher import DependencyHasher
 
         hasher = DependencyHasher(diamond, AnalyzerFactory)
         manifests = [diamond / n / "context.yaml" for n in ["a", "b", "c", "d"]]
@@ -110,7 +110,7 @@ class TestStaleNodes:
         # Clean state
         from unittest.mock import patch
 
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.topology.hasher import DependencyHasher
 
         hasher = DependencyHasher(linear_chain, AnalyzerFactory)
         manifests = [linear_chain / n / "context.yaml" for n in ["a", "b", "c"]]
@@ -133,7 +133,7 @@ class TestStaleNodes:
         """A module that is physically deleted must flag its historical consumers as stale."""
         import shutil
 
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.topology.hasher import DependencyHasher
 
         hasher = DependencyHasher(diamond, AnalyzerFactory)
         manifests = [diamond / n / "context.yaml" for n in ["a", "b", "c", "d"]]

@@ -12,11 +12,10 @@ exposes:
 
 consumes:
   - specweaver/interfaces/cli_kit
-  - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/core/config
   - specweaver/graph
   - specweaver/graph/lineage
 widens:
   specweaver/interfaces/cli_kit: "`sw graph` prints through it"
-  specweaver/assurance/graph: "`sw graph` builds the topology"
   specweaver/core/config: "`sw graph` reads the config DB path (cli.py)"

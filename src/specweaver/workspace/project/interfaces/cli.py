@@ -283,8 +283,8 @@ def scan() -> None:
     # Sync tach.toml topology layer
     _core.console.print("\n[bold]Synchronizing Tach Architecture Matrix...[/bold]")
     try:
-        from specweaver.assurance.graph.topology import TopologyGraph
         from specweaver.graph.topology.engine import TopologyEngine
+        from specweaver.graph.topology.topology import TopologyGraph
 
         engine = TopologyEngine()
         graph = TopologyGraph.from_project(project_path, engine)

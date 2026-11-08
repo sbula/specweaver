@@ -32,11 +32,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyNode
 from specweaver.core.config.settings import SpecWeaverSettings
 from specweaver.core.flow.engine.models import PipelineStep, StepAction, StepTarget
 from specweaver.core.flow.handlers.generation import GenerateCodeHandler
 from specweaver.core.flow.run_state.run_context import GraphContext, ModelAccess, RunContext
+from specweaver.graph.topology.topology import TopologyNode
 from tests.scripted_llm import FixedRouter
 
 

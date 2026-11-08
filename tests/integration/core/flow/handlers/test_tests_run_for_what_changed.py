@@ -5,6 +5,7 @@
 green test run, and of the modules that use them.
 
 Proves: C-FLOW-06 FR-2
+Proves: TECH-088 FR-6
 
 Real files, real hashes, real topology: the seam is the hash cache (A-SENS-01) read by the test
 step's target resolution.
@@ -23,9 +24,9 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from specweaver.assurance.graph.hasher import DependencyHasher
 from specweaver.core.flow.handlers.validation import ValidateTestsHandler
 from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext
+from specweaver.graph.topology.hasher import DependencyHasher
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 if TYPE_CHECKING:

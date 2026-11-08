@@ -206,9 +206,9 @@ def _router(request: RunRequest) -> Any:
 
 def _graph_context(request: RunRequest) -> GraphContext:
     """The module graph's three meanings for this run's module; all `None` when nothing names it."""
-    from specweaver.assurance.graph.loader import load_topology, select_topology_contexts
     from specweaver.commons.spec_names import module_stem
     from specweaver.core.flow.run_state.run_context import GraphContext
+    from specweaver.graph.topology.loader import load_topology, select_topology_contexts
 
     graph = load_topology(request.project_root)
     if graph is None:

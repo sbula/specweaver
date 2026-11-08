@@ -376,7 +376,7 @@ class TestScopeResolution:
         )
 
     def test_touched_scope_finds_the_mirroring_test_file(self, tr: ModuleType) -> None:
-        changed = [Path("src/specweaver/assurance/graph/hasher.py")]
+        changed = [Path("src/specweaver/graph/topology/hasher.py")]
 
         paths = tr.paths_for("unit", "touched", changed)
 

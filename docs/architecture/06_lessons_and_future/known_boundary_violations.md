@@ -8,8 +8,8 @@ with what, where, and which rule is broken. None may be skipped silently.
 
 | Violation | Where | Rule Broken | Status |
 |-----------|-------|-------------|--------|
-| `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network-bound architecture) |
-| `File I/O` inside `pure-logic` | `src/specweaver/assurance/graph/topology.py` (`load_nodes` globs and reads `context.yaml`, called by `TopologyGraph.from_project`; `_auto_infer_missing` walks the tree) | `assurance/graph` archetype `pure-logic` forbids OS/File I/O | DEFERRED (`TECH-081` non-goal, 2026-10-27: recorded, not moved; same class as the `hasher.py` row) |
+| `File I/O` inside `pure-logic` | `src/specweaver/graph/topology/hasher.py` | `graph` archetype `pure-logic` explicitly forbids OS/File I/O | DEFERRED (Pending Feature 3.48 Sidecar Databases which will abstract this into network-bound architecture) |
+| `File I/O` inside `pure-logic` | `src/specweaver/graph/topology/topology.py` (`load_nodes` globs and reads `context.yaml`, called by `TopologyGraph.from_project`; `_auto_infer_missing` walks the tree) | `graph/topology` archetype `pure-logic` forbids OS/File I/O | DEFERRED (`TECH-081` non-goal, 2026-10-27: recorded, not moved; same class as the `hasher.py` row) |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/validation/project_root.py` (`find_tests`, read by C02, C03 and the C03 hydrator) | `validation` archetype `pure-logic` forbids OS/File I/O | DEFERRED (`TECH-078` decision 2, 2026-10-24: one test-file search beside `walk_up`, where C02 already searched; moving it to the hydrator would lose C02 in `sw check`, which runs without hydration) |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/validation/rules/code/c09_traceability.py` (finds the project root, reads `specs/**/*.md` and the test files for requirement IDs) | `validation` archetype `pure-logic` forbids OS/File I/O | DEFERRED (`TECH-081` SF-07 Q1, 2026-10-28: kept for the same reason as `project_root.py`; `sw check` runs rules without hydration, so moving the reads out would lose C09 there) `[agreed 2026-10-28]` |
 | `File I/O` inside `pure-logic` | `src/specweaver/assurance/validation/rules/spec/s04_dependency_dir.py` (`exists` on each linked file, the dead-link check) | `validation` archetype `pure-logic` forbids OS/File I/O | DEFERRED (`TECH-081` SF-07 Q1, 2026-10-28: same reason as the C09 row) `[agreed 2026-10-28]` |
@@ -30,7 +30,7 @@ Closed 2026-10-29. `tach.toml` holds no `deprecated` edge, and none may be added
 - **Sandbox Cache Caching (NFR-2)**: `flow/engine` now goes through `FileSystemAtom`, so path
   traversal boundaries are enforced. It replaced a local `os.symlink`, which broke the FileSystem
   boundary.
-- **Cache-Flush Dilemma**: `flow/engine` must not consume `assurance/graph/hasher.py` to flush
+- **Cache-Flush Dilemma**: `flow/engine` must not consume `graph/topology/hasher.py` to flush
   metrics after a pipeline. The flush lives in the `cli/pipelines.py` orchestrator, which may
   legally consume both layer roots.
 

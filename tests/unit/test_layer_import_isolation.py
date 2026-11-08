@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-from specweaver.assurance.graph.topology import load_nodes
+from specweaver.graph.topology.topology import load_nodes
 from tests.fixtures.arch_scanners import import_offenders
 
 #: `src/specweaver/`. Derived here rather than imported from the architecture test module: this

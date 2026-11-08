@@ -52,3 +52,39 @@ model refused it. They use a small `_Impacts` fake now: the refusal is the check
 
 **Mutants.** FR-2: `review-drops-neighbours`, `generation-drops-neighbours`. FR-3:
 `servers-from-a-neighbour`. FR-4: `impact-ignores-the-graph`, `decomposer-gets-no-contexts`.
+
+## SF-02 CB-1 — one home (FR-5, FR-6)
+
+**What moved.** `topology.py`, `loader.py`, `selectors.py`, `hasher.py` and `changes.py` (now
+`changed_files.py`, FR-11's rename done here) went from `assurance/graph/` to `graph/topology/`, with
+their 8 unit test files and one integration test file. `.tmp/move_topology.py` used `git mv` for 14
+files and rewrote the old dotted and slash paths in 47 files: source, tests, scripts, the
+`class_health.json` key, `TECH-004`'s two loader mutants and the boundary ledger. The 8 caller
+manifests, three living docs, `TECH-082`'s corpus scope and `test_logging_rollout.py`'s
+`from specweaver.assurance.graph import selectors` were fixed by hand; the script and the first guard
+had both missed that last import form, and the guard now reads `from a import b` as `a.b`.
+`assurance/graph/` holds `boundary_rule.py` and `context.yaml` only. No re-export.
+
+**Tach.** `specweaver.graph.topology` depends on `workspace.analyzers` and `workspace.context`; the
+boundary rule asks a reason for each in `widens`. `specweaver.graph` keeps its two edges and loses
+`topology.engine` from its interface. `core.flow.handlers` and `workspace.project.interfaces` lose a
+`specweaver.graph` edge that only the engine used; `sandbox` keeps `assurance.graph` for the rule
+and gains `graph.topology`.
+
+**The test rewrite touched only paths** (the user's check). Before any other test edit,
+`.tmp/check_test_rewrite.py` read `git diff -M` over `tests/`: 33 changed test files, every removed
+line equal to an added one once the paths were mapped, no file deleted. A changed assertion made it
+fail; restored, it passed. Collected tests: 12,983 before and 12,983 after, the ids equal once the
+moved paths were mapped. Only then were the 9 `Proves: TECH-088 FR-6` lines added; the check run
+again lists exactly those lines, the new guard file and the new package's licence header. The
+count is 12,984 now: the guard gained one case for the missed import form.
+
+**Found at the gate.** The class-naming ratchet counts per top-level folder: 3 moved test classes now
+count under `graph`. Re-frozen with `--update-naming-baseline`; every other folder's count fell,
+none rose but `graph` (1 → 4, the move).
+
+**Mutants.** FR-5: `caller-uses-the-old-home`. A re-export `assurance/graph/topology.py` put back by
+hand also fails the guard.
+
+**Gate.** Full suite 12,912 passed, 9 skipped; `tach`, `cb` 17/17, `doc` 14/14, `mypy` clean, no new
+clone, 0 stale mutants.

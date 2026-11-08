@@ -41,7 +41,7 @@ consumes:
   - specweaver/sandbox/execution/core
   - specweaver/sandbox/dispatcher
   - specweaver/sandbox/security
-  - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/assurance/standards
   - specweaver/graph
   - specweaver/workflows/scenarios

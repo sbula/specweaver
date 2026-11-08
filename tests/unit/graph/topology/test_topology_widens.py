@@ -21,8 +21,8 @@ from __future__ import annotations
 
 from pathlib import Path  # noqa: TC003
 
-from specweaver.assurance.graph.topology import TopologyGraph, load_nodes
 from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import TopologyGraph, load_nodes
 
 
 def _manifest(folder: Path, body: str) -> None:

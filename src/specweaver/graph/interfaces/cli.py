@@ -53,8 +53,8 @@ def build(
     Extracts the AST, hashes it, and persists it to the local SQLite database.
     """
     try:
-        from specweaver.assurance.graph.loader import load_topology, resolve_service_name
         from specweaver.graph.core.builder.orchestrator import GraphOrchestrator
+        from specweaver.graph.topology.loader import load_topology, resolve_service_name
 
         service_name = resolve_service_name(load_topology(project_path), project_path)
         count = GraphOrchestrator.build_target(

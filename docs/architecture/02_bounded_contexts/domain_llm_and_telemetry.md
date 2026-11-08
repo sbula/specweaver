@@ -64,7 +64,7 @@ token-aware, XML-tagged blocks. Two mechanisms:
 
 ### Package layout
 
-Domain modules (such as `assurance/graph`) must not depend on `infrastructure/llm`. The prompt
+Domain modules (such as `graph/topology`) must not depend on `infrastructure/llm`. The prompt
 engine lives in its own sub-package, `src/specweaver/infrastructure/llm/prompt/`:
 
 | File | Holds |
@@ -81,7 +81,7 @@ engine lives in its own sub-package, `src/specweaver/infrastructure/llm/prompt/`
   breakout.
 - **`get_prompt_label()`** — the identifier/name of the context block.
 
-Domain models (like `TopologyContext` in `assurance/graph`) implement these two methods. Python
+Domain models (like `TopologyContext` in `commons/topology_context.py`) implement these two methods. Python
 protocols are structural (duck-typed), so they satisfy the contract without importing any LLM
 module.
 

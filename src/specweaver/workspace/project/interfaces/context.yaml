@@ -6,7 +6,7 @@ purpose: CLI entrypoints for workspace project management
 consumes:
   - specweaver/interfaces/cli_kit
   - specweaver/workspace/project
-  - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/graph
   - specweaver/workspace/analyzers
 widens:

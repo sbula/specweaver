@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from specweaver.assurance.graph.loader import load_topology, resolve_service_name
+from specweaver.graph.topology.loader import load_topology, resolve_service_name
 
 if TYPE_CHECKING:
     from pathlib import Path

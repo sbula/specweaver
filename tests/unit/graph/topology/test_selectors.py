@@ -21,14 +21,14 @@ from pathlib import Path  # noqa: TC003
 import pytest
 from ruamel.yaml import YAML
 
-from specweaver.assurance.graph.selectors import (
+from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.selectors import (
     ConstraintOnlySelector,
     DirectNeighborSelector,
     ImpactWeightedSelector,
     NHopConstraintSelector,
 )
-from specweaver.assurance.graph.topology import TopologyGraph
-from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import TopologyGraph
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -254,7 +254,7 @@ class TestContextSelectorABC:
     """Verify ABC contract."""
 
     def test_cannot_instantiate_abc(self) -> None:
-        from specweaver.assurance.graph.selectors import ContextSelector
+        from specweaver.graph.topology.selectors import ContextSelector
 
         with pytest.raises(TypeError, match="abstract"):
             ContextSelector()  # type: ignore[abstract]

@@ -24,7 +24,7 @@ from __future__ import annotations
 from pathlib import Path  # noqa: TC003
 
 from specweaver.assurance.graph.boundary_rule import Breach, allows, breaches
-from specweaver.assurance.graph.topology import TopologyNode
+from specweaver.graph.topology.topology import TopologyNode
 
 
 def _tree(root: Path, **folders: dict) -> dict[str, TopologyNode]:

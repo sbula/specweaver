@@ -422,7 +422,7 @@ class TestTreeFiltering:
     reason and the assertions would pass without proving anything about tree filtering.
     """
 
-    SRC_FILE = Path("src/specweaver/assurance/graph/hasher.py")
+    SRC_FILE = Path("src/specweaver/graph/topology/hasher.py")
     TEST_FILE = Path("tests/unit/scripts/test_quality_runner.py")
 
     def test_src_only_check_ignores_changed_test_files(self, q: ModuleType) -> None:

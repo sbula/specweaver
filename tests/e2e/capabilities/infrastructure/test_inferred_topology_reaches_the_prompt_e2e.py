@@ -33,8 +33,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyGraph
 from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import TopologyGraph
 from specweaver.infrastructure.llm.prompt.builder import PromptBuilder
 
 if TYPE_CHECKING:

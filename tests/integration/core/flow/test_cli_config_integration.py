@@ -55,7 +55,7 @@ def _run_and_capture(project_dir: Path):
     spec = project_dir / "specs" / "test_spec.md"
     with (
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
     ):
         mock_runner_class.return_value.run = AsyncMock(
             return_value=type("R", (), {"status": RunStatus.COMPLETED, "step_records": []})()
@@ -222,7 +222,7 @@ def test_toml_isolation_policy_true_flows_onto_resume_context(tmp_path: Path, mo
     with (
         patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
     ):
         mock_get_store.return_value.load_run.return_value = parked
         mock_runner_class.return_value.resume = AsyncMock(
@@ -260,7 +260,7 @@ def test_toml_session_isolation_true_flows_onto_resume_context(tmp_path: Path, m
     with (
         patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
     ):
         mock_get_store.return_value.load_run.return_value = parked
         mock_runner_class.return_value.resume = AsyncMock(
@@ -316,7 +316,7 @@ def test_tty_resume_gets_interactive_context_provider(tmp_path: Path, monkeypatc
     with (
         patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
         patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
         patch("specweaver.interfaces.cli.main._stdin_isatty", return_value=True),
     ):
         mock_get_store.return_value.load_run.return_value = parked
@@ -343,7 +343,7 @@ def test_headless_new_feature_run_parks_at_draft(tmp_path: Path) -> None:
 
     with (
         doubled_llm(MagicMock()),
-        patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+        patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
     ):
         result = runner.invoke(
             app, ["run", "new_feature", "greeter", "--project", str(project_dir)]

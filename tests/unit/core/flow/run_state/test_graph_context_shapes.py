@@ -20,10 +20,10 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from specweaver.assurance.graph.topology import TopologyGraph, TopologyNode
 from specweaver.commons.topology_context import TopologyContext
 from specweaver.core.flow.run_state.run_context import GraphContext
 from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import TopologyGraph, TopologyNode
 
 _CONTEXT = TopologyContext(name="payments", purpose="p", archetype="a", relationship="direct")
 

@@ -171,7 +171,7 @@ class TestRunPipelineMocked:
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.graph.topology.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             from unittest.mock import AsyncMock
@@ -212,7 +212,7 @@ class TestRunPipelineMocked:
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.graph.topology.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             from unittest.mock import AsyncMock
@@ -267,7 +267,7 @@ class TestRunContextConfigWiring:
 
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+            patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
         ):
             mock_runner = mock_runner_class.return_value
 
@@ -314,7 +314,7 @@ class TestRunContextConfigWiring:
 
         with (
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+            patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
             patch(
                 "specweaver.core.config.bootstrap.settings_loader.load_settings",
                 side_effect=RuntimeError("settings boom"),
@@ -373,7 +373,7 @@ class TestResumeContextConfigWiring:
         with (
             patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
-            patch("specweaver.assurance.graph.hasher.DependencyHasher.save_cache"),
+            patch("specweaver.graph.topology.hasher.DependencyHasher.save_cache"),
         ):
             mock_get_store.return_value.load_run.return_value = mock_run_state
             mock_runner = mock_runner_class.return_value
@@ -468,7 +468,7 @@ class TestResumeMocked:
             patch("specweaver.core.flow.interfaces.cli._get_state_store") as mock_get_store,
             patch("specweaver.core.flow.engine.runner.PipelineRunner") as mock_runner_class,
             patch(
-                "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+                "specweaver.graph.topology.hasher.DependencyHasher.save_cache"
             ) as mock_save_cache,
         ):
             mock_store = mock_get_store.return_value

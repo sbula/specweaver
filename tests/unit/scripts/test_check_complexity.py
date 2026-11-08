@@ -28,10 +28,10 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 SAMPLE = """\
 ──────────────────────────────── 🐙 complexipy ─────────────────────────────────
-src/specweaver/assurance/graph/hasher.py
+src/specweaver/graph/topology/hasher.py
     DependencyHasher::_hash_directory 36  ❌ FAILED
 
-src/specweaver/assurance/graph/topology.py
+src/specweaver/graph/topology/topology.py
     TopologyGraph::_calculate_stale_seeds 17  ❌ FAILED
     standards_scan 24  ❌ FAILED
 ────────────────────────── 🎉 Analysis completed! 🎉 ───────────────────────────
@@ -56,9 +56,9 @@ def test_it_reads_complexipy_s_report_into_function_scores() -> None:
     found = module.parse(SAMPLE)
 
     assert found == {
-        "src/specweaver/assurance/graph/hasher.py::DependencyHasher::_hash_directory": 36,
-        "src/specweaver/assurance/graph/topology.py::TopologyGraph::_calculate_stale_seeds": 17,
-        "src/specweaver/assurance/graph/topology.py::standards_scan": 24,
+        "src/specweaver/graph/topology/hasher.py::DependencyHasher::_hash_directory": 36,
+        "src/specweaver/graph/topology/topology.py::TopologyGraph::_calculate_stale_seeds": 17,
+        "src/specweaver/graph/topology/topology.py::standards_scan": 24,
     }
 
 

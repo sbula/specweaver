@@ -25,7 +25,7 @@ def changed_files(project_root: Path, code_root: Path, boundaries: list[str]) ->
     `project_root` holds the cache; `code_root` holds the code to compare, a worktree when there
     is one. `boundaries` are the module folders, from the root (`.` for the root itself).
     """
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
     from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
     cache = DependencyHasher(project_root, AnalyzerFactory).load_cache()

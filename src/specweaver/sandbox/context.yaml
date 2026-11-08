@@ -10,6 +10,7 @@ archetype: orchestrator
 
 consumes:
   - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/commons
   - specweaver/core/config
   - specweaver/infrastructure/llm

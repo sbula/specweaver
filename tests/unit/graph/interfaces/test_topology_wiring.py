@@ -2,7 +2,10 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""TDD tests for topology wiring: select_topology_contexts and --selector flag."""
+"""TDD tests for topology wiring: select_topology_contexts and --selector flag.
+
+Proves: TECH-088 FR-6
+"""
 
 from __future__ import annotations
 
@@ -10,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 from tests.rendering import shows
 
-from specweaver.assurance.graph.loader import _get_selector_map, select_topology_contexts
+from specweaver.graph.topology.loader import _get_selector_map, select_topology_contexts
 
 
 class TestSelectorMap:
@@ -24,7 +27,7 @@ class TestSelectorMap:
         assert "impact" in selector_map
 
     def test_classes_are_correct(self) -> None:
-        from specweaver.assurance.graph.selectors import (
+        from specweaver.graph.topology.selectors import (
             ConstraintOnlySelector,
             DirectNeighborSelector,
             ImpactWeightedSelector,
@@ -50,7 +53,7 @@ class TestSelectTopologyContexts:
         mock_graph = MagicMock()
         # DirectNeighborSelector().select() returns empty set
         with patch(
-            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.graph.topology.selectors.DirectNeighborSelector.select",
             return_value=set(),
         ):
             result = select_topology_contexts(
@@ -67,7 +70,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = mock_contexts
 
         with patch(
-            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.graph.topology.selectors.DirectNeighborSelector.select",
             return_value={"auth_service", "user_store"},
         ):
             result = select_topology_contexts(
@@ -88,7 +91,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = [MagicMock()]
 
         with patch(
-            "specweaver.assurance.graph.selectors.DirectNeighborSelector.select",
+            "specweaver.graph.topology.selectors.DirectNeighborSelector.select",
             return_value={"some_module"},
         ):
             result = select_topology_contexts(
@@ -106,7 +109,7 @@ class TestSelectTopologyContexts:
         mock_graph.format_context_summary.return_value = [MagicMock()]
 
         with patch(
-            "specweaver.assurance.graph.selectors.NHopConstraintSelector.select",
+            "specweaver.graph.topology.selectors.NHopConstraintSelector.select",
             return_value={"related_module"},
         ) as mock_select:
             select_topology_contexts(

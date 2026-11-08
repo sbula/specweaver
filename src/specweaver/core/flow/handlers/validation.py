@@ -508,9 +508,9 @@ class ValidateTestsHandler:
             return [target]
         code_root = context.isolation.execution_root or context.project_path
         try:
-            from specweaver.assurance.graph.topology import TopologyGraph
             from specweaver.core.flow.handlers.changed_code import folders_to_test
             from specweaver.graph.topology.engine import TopologyEngine
+            from specweaver.graph.topology.topology import TopologyGraph
 
             graph = TopologyGraph.from_project(code_root, TopologyEngine(), auto_infer=False)
             return folders_to_test(context.project_path, code_root, graph, kind) or [target]

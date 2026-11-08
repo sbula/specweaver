@@ -4,6 +4,8 @@
 
 """E2E tests — topology/context integration.
 
+Proves: TECH-088 FR-6
+
 Exercises:
   19. sw scan generates context.yaml files for undocumented modules
   22. sw review with no context.yaml → review still works (graceful degradation)

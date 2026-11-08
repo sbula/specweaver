@@ -288,7 +288,7 @@ def _finish_run(final_run: Any, project_path: Path, *, warn_on_console: bool) ->
 
     show_run_summary(final_run)
     if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):
-        from specweaver.assurance.graph.hasher import DependencyHasher
+        from specweaver.graph.topology.hasher import DependencyHasher
 
         try:
             DependencyHasher(project_path, AnalyzerFactory).save_cache()

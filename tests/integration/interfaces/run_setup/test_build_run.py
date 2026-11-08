@@ -4,6 +4,7 @@
 """One builder sets up every part of a run from one project.
 
 Proves: TECH-077 FR-1, TECH-077 FR-3, TECH-077 NFR-3
+Proves: TECH-088 FR-6
 
 A real database, settings files, rule file, stored standards and `context.yaml`; only the model is
 doubled, and no call is made.

@@ -48,7 +48,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return [target]\n",
           "breaks": "every run runs every test again",
-          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
+          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
         },
         {
           "id": "narrow-to-nothing",
@@ -58,7 +58,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return folders_to_test(context.project_path, code_root, graph, kind)\n",
           "breaks": "nothing changed runs no test and passes",
-          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
+          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
         },
         {
           "id": "no-dependents",
@@ -98,7 +98,7 @@
           "old": "        code_root = context.isolation.execution_root or context.project_path\n",
           "new": "        code_root = context.project_path\n",
           "breaks": "code a run wrote in its worktree is not seen as changed",
-          "symbol_sha": "sha256:4000592c92c1ce1a76960a8c8644ed908db59eee95dcdd5617ebaeea68cd757c"
+          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
         },
         {
           "id": "save-always",
@@ -108,7 +108,7 @@
           "old": "    if final_run.status == RunStatus.COMPLETED and _tests_passed_over_project(final_run):\n",
           "new": "    if final_run.status == RunStatus.COMPLETED:\n",
           "breaks": "a run that tested nothing marks the code as tested",
-          "symbol_sha": "sha256:2e7ad58c10c3d3f2247255dab1e02c1861a6b86ca6b9ce84bdccfe10fd22a438"
+          "symbol_sha": "sha256:b5736169814bc385b68d4acf73cb148112e2d33e71eb37ce9957b593da5da4f3"
         },
         {
           "id": "folder-step-covers-all",

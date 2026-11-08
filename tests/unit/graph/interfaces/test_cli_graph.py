@@ -4,6 +4,7 @@
 """`sw graph build` only reads its arguments, hands them to the orchestrator and prints the result.
 
 Proves: TECH-004 FR-8
+Proves: TECH-088 FR-6
 """
 
 from pathlib import Path
@@ -19,7 +20,7 @@ runner = CliRunner()
 def test_graph_build_success() -> None:
     with (
         patch("specweaver.graph.core.builder.orchestrator.GraphOrchestrator") as mock_orchestrator,
-        patch("specweaver.assurance.graph.loader.load_topology", return_value=None),
+        patch("specweaver.graph.topology.loader.load_topology", return_value=None),
     ):
         mock_orchestrator.build_target.return_value = 1
 
@@ -34,7 +35,7 @@ def test_graph_build_success() -> None:
 
 def test_a_broken_topology_is_reported_not_raised() -> None:
     with patch(
-        "specweaver.assurance.graph.loader.load_topology", side_effect=ValueError("bad yaml")
+        "specweaver.graph.topology.loader.load_topology", side_effect=ValueError("bad yaml")
     ):
         result = runner.invoke(app, ["src/foo.py"])
 

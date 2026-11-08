@@ -4,6 +4,7 @@
 """Real `context.yaml` files, read by `load_nodes`, judged by the boundary rule.
 
 Proves: TECH-082 FR-15
+Proves: TECH-088 FR-6
 
 The resolver is only ever fed what the loader read, so this checks the pair: a `widens` the loader
 drops, or a folder it records wrongly, would turn a declared widening into a breach here.
@@ -21,7 +22,7 @@ from __future__ import annotations
 from pathlib import Path  # noqa: TC003
 
 from specweaver.assurance.graph.boundary_rule import Breach, breaches
-from specweaver.assurance.graph.topology import load_nodes
+from specweaver.graph.topology.topology import load_nodes
 
 _PARENT = "name: domain\narchetype: pure-logic\nconsumes: [lib]\nforbids: [box/*]\n"
 

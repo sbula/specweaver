@@ -179,7 +179,7 @@ class TestBatch2LoggingRollout:
 
     def test_graph_and_planning_modules_have_loggers(self):
         """graph/ and workflows/planning modules should declare loggers."""
-        from specweaver.assurance.graph import selectors, topology
+        from specweaver.graph.topology import selectors, topology
         from specweaver.workflows.planning import planner, renderer
 
         for mod in (selectors, topology, planner, renderer):

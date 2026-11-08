@@ -37,7 +37,7 @@ from specweaver.core.flow.interfaces.cli import _finish_run
 if TYPE_CHECKING:
     from pathlib import Path
 
-_SAVE = "specweaver.assurance.graph.hasher.DependencyHasher.save_cache"
+_SAVE = "specweaver.graph.topology.hasher.DependencyHasher.save_cache"
 
 
 def _run(status: RunStatus, *outputs: object, step_status: StepStatus = StepStatus.PASSED):

@@ -4,6 +4,7 @@
 """The run setup hands a run the module graph's three meanings, each in its own field.
 
 Proves: TECH-088 FR-1, TECH-088 FR-12
+Proves: TECH-088 FR-6
 
 The slot used to be one `Any` field that held a list, while three readers wanted one context, a
 node and a graph. Every case here builds its run with the real run setup on real `context.yaml`

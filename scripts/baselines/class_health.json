@@ -1,6 +1,6 @@
 {
   "classes": {
-    "src/specweaver/assurance/graph/topology.py::TopologyGraph": 3,
+    "src/specweaver/graph/topology/topology.py::TopologyGraph": 3,
     "src/specweaver/workspace/ast/parsers/cpp/codestructure.py::CppCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/go/codestructure.py::GoCodeStructure": 2,
     "src/specweaver/workspace/ast/parsers/java/codestructure.py::JavaCodeStructure": 2,

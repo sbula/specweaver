@@ -15,10 +15,10 @@ from __future__ import annotations
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from specweaver.assurance.graph.changes import changed_files
+from specweaver.graph.topology.changed_files import changed_files
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.graph.topology.topology import TopologyGraph
 
 _TESTS = "tests"
 

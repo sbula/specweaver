@@ -24,10 +24,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from specweaver.assurance.graph.topology import TopologyNode
 from specweaver.assurance.validation.orchestration.archetype_pipelines import archetype_of
 from specweaver.core.flow.handlers import skeleton_assembler
 from specweaver.core.flow.run_state.run_context import RunContext
+from specweaver.graph.topology.topology import TopologyNode
 from tests.fixtures.run_context import with_graph
 
 if TYPE_CHECKING:

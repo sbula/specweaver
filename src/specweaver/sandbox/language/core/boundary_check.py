@@ -22,9 +22,9 @@ from typing import Any
 import pathspec
 
 from specweaver.assurance.graph.boundary_rule import BoundaryRule
-from specweaver.assurance.graph.topology import load_nodes
 from specweaver.commons.languages import LANGUAGE_SUFFIXES, has_cpp_sources, language_of
 from specweaver.commons.qa import ArchitectureRunResult, ArchitectureViolation
+from specweaver.graph.topology.topology import load_nodes
 from specweaver.sandbox.language.core.boundary_extras import run_extras
 from specweaver.workspace.ast.parsers.factory import get_default_parsers, parser_for
 from specweaver.workspace.ast.refactor.imports import targets_for

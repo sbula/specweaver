@@ -18,7 +18,7 @@ sees no directory contents must not pass.
 
 from pathlib import Path
 
-from specweaver.assurance.graph.hasher import _ensure_gitignore
+from specweaver.graph.topology.hasher import _ensure_gitignore
 from specweaver.workspace.analyzers.factory import AnalyzerFactory
 
 _CACHE_LINE = "/.specweaver/topology.cache.json\n"
@@ -96,7 +96,7 @@ def test_ensure_gitignore_no_git_dir(tmp_path: Path):
 
 def test_dependency_hasher_compute_hashes(tmp_path: Path):
 
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -133,7 +133,7 @@ def test_dependency_hasher_compute_hashes(tmp_path: Path):
 
 
 def test_dependency_hasher_determinism(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -155,7 +155,7 @@ def test_dependency_hasher_determinism(tmp_path: Path):
 
 
 def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     dir1 = tmp_path / "mod1"
     dir1.mkdir()
@@ -194,7 +194,7 @@ def test_dependency_hasher_caching_and_pruning(tmp_path: Path):
 
 
 def test_hash_file_oserror(tmp_path: Path, monkeypatch):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     file_path = tmp_path / "bad.txt"
     file_path.write_text("test")
@@ -210,7 +210,7 @@ def test_hash_file_oserror(tmp_path: Path, monkeypatch):
 
 
 def test_dependency_hasher_hidden_files_bypass(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -233,7 +233,7 @@ def test_dependency_hasher_hidden_files_bypass(tmp_path: Path):
 def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
     import os
 
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -255,7 +255,7 @@ def test_dependency_hasher_symlink_traversal_halt(tmp_path: Path):
 
 
 def test_dependency_hasher_corrupt_cache(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
     hasher.cache_dir.mkdir()
@@ -266,7 +266,7 @@ def test_dependency_hasher_corrupt_cache(tmp_path: Path):
 
 
 def test_dependency_hasher_os_lock_save(tmp_path: Path, monkeypatch):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     hasher = DependencyHasher(tmp_path, analyzer_factory=AnalyzerFactory)
 
@@ -280,7 +280,7 @@ def test_dependency_hasher_os_lock_save(tmp_path: Path, monkeypatch):
 
 
 def test_ensure_gitignore_os_lock(tmp_path: Path, monkeypatch):
-    from specweaver.assurance.graph.hasher import _ensure_gitignore
+    from specweaver.graph.topology.hasher import _ensure_gitignore
 
     git_dir = tmp_path / ".git"
     git_dir.mkdir()
@@ -295,7 +295,7 @@ def test_ensure_gitignore_os_lock(tmp_path: Path, monkeypatch):
 
 
 def test_dependency_hasher_path_slash_agnosticism(tmp_path: Path):
-    from specweaver.assurance.graph.hasher import DependencyHasher
+    from specweaver.graph.topology.hasher import DependencyHasher
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()

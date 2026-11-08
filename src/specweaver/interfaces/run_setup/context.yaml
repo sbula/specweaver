@@ -15,7 +15,7 @@ consumes:
   - specweaver/core/config
   - specweaver/workspace
   - specweaver/assurance/standards
-  - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/infrastructure/llm
   - specweaver/workflows/drafting
   - specweaver/commons

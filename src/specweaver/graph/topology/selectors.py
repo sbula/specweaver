@@ -9,7 +9,7 @@ drafting, or implementing a given target module.
 
 Usage::
 
-    from specweaver.assurance.graph.selectors import DirectNeighborSelector
+    from specweaver.graph.topology.selectors import DirectNeighborSelector
 
     selector = DirectNeighborSelector()
     related = selector.select(graph, "my_module")
@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from specweaver.assurance.graph.topology import TopologyGraph
+    from specweaver.graph.topology.topology import TopologyGraph
 
 
 class ContextSelector(ABC):

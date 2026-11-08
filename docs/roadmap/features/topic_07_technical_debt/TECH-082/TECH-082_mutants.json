@@ -149,7 +149,7 @@
       "title": "Going down the folder tree a module gets stricter; it widens only where it declares it",
       "scope": [
         "tests/unit/assurance/graph/test_boundary_rule.py",
-        "tests/unit/assurance/graph/test_topology_widens.py",
+        "tests/unit/graph/topology/test_topology_widens.py",
         "tests/integration/assurance/graph/test_boundary_rule_from_manifests.py"
       ],
       "mutants": [

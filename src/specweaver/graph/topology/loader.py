@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyGraph
     from specweaver.commons.topology_context import TopologyContext
+    from specweaver.graph.topology.topology import TopologyGraph
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ _SELECTOR_MAP: dict[str, type] = {}
 
 def _get_selector_map() -> dict[str, type]:
     if not _SELECTOR_MAP:
-        from specweaver.assurance.graph.selectors import (
+        from specweaver.graph.topology.selectors import (
             ConstraintOnlySelector,
             DirectNeighborSelector,
             ImpactWeightedSelector,
@@ -49,8 +49,8 @@ def load_topology(project_path: Path) -> TopologyGraph | None:
     Returns None if no context.yaml files are found.
     Callers are responsible for any user-facing console output.
     """
-    from specweaver.assurance.graph.topology import TopologyGraph
     from specweaver.graph.topology.engine import TopologyEngine
+    from specweaver.graph.topology.topology import TopologyGraph
 
     engine = TopologyEngine()
     graph = TopologyGraph.from_project(project_path, engine, auto_infer=False)
@@ -90,7 +90,7 @@ def select_topology_contexts(
     selector_cls = selector_map.get(selector_name)
     if selector_cls is None:
         logger.warning("Unknown selector '%s', falling back to 'direct'.", selector_name)
-        from specweaver.assurance.graph.selectors import DirectNeighborSelector
+        from specweaver.graph.topology.selectors import DirectNeighborSelector
 
         selector_cls = DirectNeighborSelector
 

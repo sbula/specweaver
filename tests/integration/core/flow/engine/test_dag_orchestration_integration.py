@@ -104,9 +104,9 @@ class TestDagOrchestratorIntegration:
         """Integration Story 1: DAG Orchestrator physically blocks overlapping impact chains."""
         import asyncio
 
-        from specweaver.assurance.graph.topology import TopologyGraph
         from specweaver.core.flow.engine.models import PipelineDefinition
         from specweaver.core.flow.engine.runner import PipelineRunner
+        from specweaver.graph.topology.topology import TopologyGraph
 
         ctx = RunContext(project_path=tmp_path, spec_path=tmp_path / "spec.md")
         ctx.run = ctx.run.model_copy(update={"run_id": "parent_run"})

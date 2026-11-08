@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from pathlib import Path
 
-    from specweaver.assurance.graph.topology import TopologyNode
+    from specweaver.graph.topology.topology import TopologyNode
 
 _Parts = tuple[str, ...]
 

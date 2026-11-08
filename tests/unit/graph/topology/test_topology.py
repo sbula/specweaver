@@ -49,12 +49,12 @@ from pathlib import Path  # noqa: TC003
 
 import pytest
 
-from specweaver.assurance.graph.topology import (
+from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import (
     TopologyContext,
     TopologyGraph,
 )
-from specweaver.graph.topology.engine import TopologyEngine
-from tests.unit.assurance.graph.conftest import _write_context
+from tests.unit.graph.topology.conftest import _write_context
 
 # ---------------------------------------------------------------------------
 # Construction tests

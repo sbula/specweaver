@@ -4,6 +4,7 @@
 """`sw init` writes a project's module boundaries, with no model and no agent tool.
 
 Proves: C-FLOW-06 FR-4
+Proves: TECH-088 FR-6
 
 | Bucket | Case |
 |---|---|
@@ -19,8 +20,8 @@ from typing import TYPE_CHECKING, Any
 
 from typer.testing import CliRunner
 
-from specweaver.assurance.graph.topology import TopologyGraph
 from specweaver.graph.topology.engine import TopologyEngine
+from specweaver.graph.topology.topology import TopologyGraph
 from specweaver.interfaces.cli.main import app
 from tests.scripted_llm import doubled_llm
 

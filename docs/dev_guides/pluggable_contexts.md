@@ -2,7 +2,7 @@
 
 Use when: a domain object must appear in an LLM prompt, or you add a new kind of prompt context.
 
-SpecWeaver's duck-typed protocol `PromptContentSource` lets domain modules (like `assurance/graph`)
+SpecWeaver's duck-typed protocol `PromptContentSource` lets domain modules (like `graph/topology`)
 supply prompt content without importing any LLM/infrastructure module. No compile-time coupling, and
 the boundaries pass `tach check`.
 

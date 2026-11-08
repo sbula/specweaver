@@ -13,8 +13,12 @@ path = "specweaver.graph.lineage"
 depends_on = [ "specweaver.infrastructure.database",]
 
 [[modules]]
+path = "specweaver.graph.topology"
+depends_on = [ "specweaver.workspace.analyzers", "specweaver.workspace.context",]
+
+[[modules]]
 path = "specweaver.graph.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", "specweaver.interfaces.cli_kit",]
+depends_on = [ "specweaver.graph.topology", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", "specweaver.interfaces.cli_kit",]
 
 [[modules]]
 path = "specweaver.assurance.standards"
@@ -66,15 +70,15 @@ depends_on = [ "specweaver.core.flow.run_state", "specweaver.infrastructure.data
 
 [[modules]]
 path = "specweaver.core.flow.handlers"
-depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph", "specweaver.graph.lineage", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.arbitration", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
+depends_on = [ "specweaver.assurance.validation.io", "specweaver.assurance.validation.orchestration", "specweaver.core.flow.engine", "specweaver.core.flow.run_state", "specweaver.graph.topology", "specweaver.assurance.standards", "specweaver.assurance.validation", "specweaver.core.config", "specweaver.graph.lineage", "specweaver.infrastructure.llm", "specweaver.sandbox", "specweaver.workflows.arbitration", "specweaver.workflows.implementation", "specweaver.workflows.planning", "specweaver.workflows.review", "specweaver.workflows.scenarios", "specweaver.workspace", "specweaver.workspace.ast.parsers", "specweaver.workspace.memory",]
 
 [[modules]]
 path = "specweaver.core.flow.interfaces"
-depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.assurance.graph", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.llm.interfaces", "specweaver.workspace.analyzers", "specweaver.interfaces.run_doors",]
+depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.graph.topology", "specweaver.core.config", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.llm.interfaces", "specweaver.workspace.analyzers", "specweaver.interfaces.run_doors",]
 
 [[modules]]
 path = "specweaver.sandbox"
-depends_on = [ "specweaver.assurance.graph", "specweaver.workspace.project", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor",]
+depends_on = [ "specweaver.assurance.graph", "specweaver.graph.topology", "specweaver.workspace.project", "specweaver.core.config", "specweaver.infrastructure.llm", "specweaver.workspace.ast.parsers", "specweaver.workspace.ast.refactor",]
 
 [[modules]]
 path = "specweaver.infrastructure.database"
@@ -98,7 +102,7 @@ depends_on = [ "specweaver.interfaces.cli_kit", "specweaver.interfaces.run_setup
 
 [[modules]]
 path = "specweaver.interfaces.run_setup"
-depends_on = [ "specweaver.assurance.graph", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.database", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
+depends_on = [ "specweaver.graph.topology", "specweaver.assurance.standards", "specweaver.core.config", "specweaver.core.config.bootstrap", "specweaver.core.flow.engine", "specweaver.core.flow.handlers", "specweaver.core.flow.run_state", "specweaver.infrastructure.database", "specweaver.infrastructure.llm", "specweaver.workflows.drafting", "specweaver.workspace", "specweaver.workspace.analyzers", "specweaver.workspace.project",]
 
 [[modules]]
 path = "specweaver.interfaces.api"
@@ -154,11 +158,11 @@ depends_on = [ "specweaver.workspace.ast.parsers", "specweaver.workspace.context
 
 [[modules]]
 path = "specweaver.workspace.project"
-depends_on = [ "specweaver.assurance.graph", "specweaver.core.config", "specweaver.workspace.analyzers", "specweaver.workspace.ast.parsers",]
+depends_on = [ "specweaver.graph.topology", "specweaver.core.config", "specweaver.workspace.analyzers", "specweaver.workspace.ast.parsers",]
 
 [[modules]]
 path = "specweaver.workspace.project.interfaces"
-depends_on = [ "specweaver.assurance.graph", "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.project", "specweaver.interfaces.cli_kit",]
+depends_on = [ "specweaver.graph.topology", "specweaver.workspace.analyzers", "specweaver.workspace.project", "specweaver.interfaces.cli_kit",]
 
 [[modules]]
 path = "specweaver.workspace.ast.parsers"
@@ -187,7 +191,7 @@ utility = true
 
 [[modules]]
 path = "specweaver.assurance.graph"
-depends_on = [ "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.context",]
+depends_on = [ "specweaver.graph.topology",]
 
 [[modules]]
 path = "specweaver.workflows.scenarios"
@@ -231,7 +235,7 @@ expose = [ "factory", "factory.AnalyzerFactory", "inferrer", "inferrer.ContextIn
 
 [[interfaces]]
 from = [ "specweaver.graph",]
-expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.repository", "topology.engine", "topology.engine.TopologyEngine", "core.builder.orchestrator.GraphOrchestrator",]
+expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.repository", "core.builder.orchestrator.GraphOrchestrator",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm",]

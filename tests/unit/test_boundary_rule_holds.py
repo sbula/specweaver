@@ -4,6 +4,7 @@
 """SpecWeaver's own manifests obey the boundary rule it ships.
 
 Proves: TECH-082 FR-21
+Proves: TECH-088 FR-6
 
 The rule `[agreed 2026-11-03]`: going down the folder tree a module gets stricter, and widens only
 where its `context.yaml` declares it in `widens`, with a reason. The resolver here is the one the
@@ -23,7 +24,7 @@ import tomllib
 from pathlib import Path
 
 from specweaver.assurance.graph.boundary_rule import allows, breaches
-from specweaver.assurance.graph.topology import load_nodes
+from specweaver.graph.topology.topology import load_nodes
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SRC = _ROOT / "src"

@@ -10,7 +10,7 @@ consumes:
   - specweaver/core/flow/handlers
   - specweaver/core/flow/run_state
   - specweaver/core/flow/store
-  - specweaver/assurance/graph
+  - specweaver/graph/topology
   - specweaver/core/config
   - specweaver/infrastructure/llm/interfaces
   - specweaver/workspace/analyzers
