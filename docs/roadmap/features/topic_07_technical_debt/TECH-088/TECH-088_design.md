@@ -2,7 +2,7 @@
 
 - **Feature ID**: TECH-088
 - **Phase**: Topic 07 (Technical Debt)
-- **Status**: APPROVED (the user, 2026-11-08)
+- **Status**: COMPLETE (signed off by the user, 2026-11-08)
 - **Kind**: `bugfix` — the re-measure found a live defect in the topology slot (FR-1..FR-4); the
   rest is refactor
 - **Design Doc**: docs/roadmap/features/topic_07_technical_debt/TECH-088/TECH-088_design.md
@@ -286,4 +286,4 @@ freezes itself, copies its nodes read-only and expands its stale seeds before th
 approved 2026-11-08** (the user): one command builder for both MCP readers; a string `command` is one
 word, a spaced one is refused with the list form named; the read-only mapping freezes every value
 when built. **SF-04 dev 2026-11-08**: CB-1 `a58b216a`, CB-2 `bf73d912`; CB-3 accepted by the user —
-no test hands the MCP tool a mock boundary. Next: the user's sign-off.
+no test hands the MCP tool a mock boundary. **Live demo 2026-11-08** `981252d6`: green against Gemini, one try. **Signed off by the user 2026-11-08.**

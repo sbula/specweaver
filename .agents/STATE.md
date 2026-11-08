@@ -159,6 +159,7 @@ counts as a changed tree, which had blocked every verdict until 2026-10-15.
   `TECH-079` (one decision for a project's language, build tool and framework; it refuses, never guesses) closed 2026-11-06.
   `TECH-094` (GitHub CI runs the suite, `cb` and `doc` on 3.11 and 3.14; no test reaches a server) closed 2026-11-07.
   `TECH-090` (one opener for every SQLite file, versioned steps; the CLI and API stop on a failed step; one copy of each block in that code) closed 2026-11-07.
+  `TECH-088` (one graph home and one library; one typed run field per graph meaning, so `sw review` names a module's neighbours and MCP servers start; a loaded boundary cannot change) closed 2026-11-08.
 - **The spend brake stops tool loops early** (found 2026-10-24, `TECH-078` closure): each finished
   tool round keeps its worst-case reservation until the whole loop ends, so a plan or review that
   reads a few files is refused at a small limit while it has spent USD 0.00. The nightly live run

@@ -636,7 +636,7 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🔴` **TECH-085:** [Every Workflow Calls the Model Its Own Way](features/topic_07_technical_debt/TECH-085/TECH-085_design.md)
     *   `🔴` **TECH-086:** [Tool Roles and Scaffolding Are Copied per Area](features/topic_07_technical_debt/TECH-086/TECH-086_design.md)
     *   `🟢` **TECH-087:** [QA Runners Are Split, Copied, and Can Report a Skipped Tool as Clean](features/topic_07_technical_debt/TECH-087/TECH-087_design.md)
-    *   `🔴` **TECH-088:** [Two Graph Engines in Two Homes](features/topic_07_technical_debt/TECH-088/TECH-088_design.md)
+    *   `🟢` **TECH-088:** [Two Graph Engines in Two Homes](features/topic_07_technical_debt/TECH-088/TECH-088_design.md)
     *   `🔴` **TECH-089:** [Parser Helpers Are Copied Outside the Parser Layer](features/topic_07_technical_debt/TECH-089/TECH-089_design.md)
     *   `🟢` **TECH-090:** [The Database Is Opened Three Ways, and the API Server Skips Migrations](features/topic_07_technical_debt/TECH-090/TECH-090_design.md)
     *   `🔴` **TECH-091:** [CLI Errors Print as Markup, and Commands Live Anywhere](features/topic_07_technical_debt/TECH-091/TECH-091_design.md)

@@ -38,9 +38,10 @@ critical for long-term project viability.
   > Standards analyzers and the Python parser keep private copies of the shared tree helpers;
   > one copy still has a doc-comment bug the parsers fixed.
 
-* **`TECH-088` 🔴: Two Graph Engines in Two Homes**
+* **`TECH-088` 🟢: Two Graph Engines in Two Homes**
   > [Description](../features/topic_07_technical_debt/TECH-088/TECH-088_design.md) | _Status:
-  > design approved 2026-11-08. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > closed by the user 2026-11-08. Origin: 2026-10-22, architecture audit (7 findings)._ |
+  > Verifiable Proof: `tests/integration/interfaces/run_setup/test_run_carries_the_module_graph.py` |
   > Two graph engines with different depth caps; the graph that review, drafting and planning
   > use lives under `assurance`, while `graph/` holds a knowledge graph with no reader outside
   > its own builder; lineage is spread over three packages.
