@@ -36,7 +36,7 @@ class ModuleImpact(Protocol):
 class TopologyContext:
     """Structured context about a module for prompt injection.
 
-    Produced by TopologyGraph.format_context_summary() and consumed
+    Produced by TopologyGraph.contexts_for() and consumed
     by PromptBuilder.add_topology().
     """
 

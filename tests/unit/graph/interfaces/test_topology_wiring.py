@@ -67,7 +67,7 @@ class TestSelectTopologyContexts:
         """When selector finds related modules, returns contexts."""
         mock_graph = MagicMock()
         mock_contexts = [MagicMock(), MagicMock()]
-        mock_graph.format_context_summary.return_value = mock_contexts
+        mock_graph.contexts_for.return_value = mock_contexts
 
         with patch(
             "specweaver.graph.topology.selectors.DirectNeighborSelector.select",
@@ -80,7 +80,7 @@ class TestSelectTopologyContexts:
             )
 
         assert result == mock_contexts
-        mock_graph.format_context_summary.assert_called_once_with(
+        mock_graph.contexts_for.assert_called_once_with(
             "greet_service",
             {"auth_service", "user_store"},
         )
@@ -88,7 +88,7 @@ class TestSelectTopologyContexts:
     def test_unknown_selector_falls_back_to_direct(self) -> None:
         """Unknown selector name prints warning and falls back."""
         mock_graph = MagicMock()
-        mock_graph.format_context_summary.return_value = [MagicMock()]
+        mock_graph.contexts_for.return_value = [MagicMock()]
 
         with patch(
             "specweaver.graph.topology.selectors.DirectNeighborSelector.select",
@@ -106,7 +106,7 @@ class TestSelectTopologyContexts:
     def test_uses_specified_selector(self) -> None:
         """Verify that the specified selector class is instantiated."""
         mock_graph = MagicMock()
-        mock_graph.format_context_summary.return_value = [MagicMock()]
+        mock_graph.contexts_for.return_value = [MagicMock()]
 
         with patch(
             "specweaver.graph.topology.selectors.NHopConstraintSelector.select",

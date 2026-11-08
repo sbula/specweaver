@@ -298,6 +298,25 @@
           "symbol_sha": "sha256:cb0d5ad72845bd9442eba7b9ac3098af9979ecfa96495b86760ccab150080be5"
         }
       ]
+    },
+    {
+      "requirement": "FR-10",
+      "title": "A prompt source is known by its protocol",
+      "scope": [
+        "tests/unit/infrastructure/llm/test_prompt_source_by_protocol.py"
+      ],
+      "mutants": [
+        {
+          "id": "probe-by-hasattr",
+          "origin": "authored",
+          "file": "src/specweaver/infrastructure/llm/prompt/adders.py",
+          "symbol": "PromptBuilderAddersMixin.add_context",
+          "old": "        elif isinstance(text, PromptContentSource):",
+          "new": "        elif hasattr(text, \"get_prompt_content\") and hasattr(text, \"get_prompt_label\"):",
+          "breaks": "a bare mock passes as a prompt source and its auto-made attributes reach the prompt",
+          "symbol_sha": "sha256:cd184a5d8fc928aac35761ecd1c43b33adbe8a75199c5066ad846adc6c7db2c7"
+        }
+      ]
     }
   ]
 }

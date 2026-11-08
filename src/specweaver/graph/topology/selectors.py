@@ -13,7 +13,7 @@ Usage::
 
     selector = DirectNeighborSelector()
     related = selector.select(graph, "my_module")
-    contexts = graph.format_context_summary("my_module", related)
+    contexts = graph.contexts_for("my_module", related)
 """
 
 from __future__ import annotations

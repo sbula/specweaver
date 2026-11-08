@@ -331,7 +331,7 @@ class TestModulesSharingConstraints:
 
 
 # ---------------------------------------------------------------------------
-# format_context_summary tests
+# contexts_for tests
 # ---------------------------------------------------------------------------
 
 
@@ -341,7 +341,7 @@ class TestFormatContextSummary:
     def test_direct_dependency_label(self, linear_chain: Path) -> None:
         """A consumes B: relationship = 'direct dependency'."""
         graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("a", {"b"})
+        contexts = graph.contexts_for("a", {"b"})
         assert len(contexts) == 1
         assert contexts[0].name == "b"
         assert contexts[0].relationship == "direct dependency"
@@ -349,21 +349,21 @@ class TestFormatContextSummary:
     def test_direct_consumer_label(self, linear_chain: Path) -> None:
         """B is consumed by A: from B's view, A is 'direct consumer'."""
         graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("b", {"a"})
+        contexts = graph.contexts_for("b", {"a"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "direct consumer"
 
     def test_transitive_label(self, linear_chain: Path) -> None:
         """A->B->C: C is not direct from A, so 'transitive neighbour'."""
         graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("a", {"c"})
+        contexts = graph.contexts_for("a", {"c"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "transitive neighbour"
 
     def test_mutual_dependency_label(self, cycle_ab: Path) -> None:
         """A->B and B->A: mutual dependency."""
         graph = TopologyGraph.from_project(cycle_ab, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("a", {"b"})
+        contexts = graph.contexts_for("a", {"b"})
         assert len(contexts) == 1
         assert contexts[0].relationship == "mutual dependency"
 
@@ -377,7 +377,7 @@ class TestFormatContextSummary:
         )
         _write_context(tmp_path / "cli", name="cli", consumes=["svc"])
         graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("cli", {"svc"})
+        contexts = graph.contexts_for("cli", {"svc"})
         assert len(contexts) == 1
         ctx = contexts[0]
         assert ctx.purpose == "Auth service."
@@ -394,7 +394,7 @@ class TestFormatContextSummary:
         )
         _write_context(tmp_path / "cli", name="cli", consumes=["mcp_target"])
         graph = TopologyGraph.from_project(tmp_path, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("cli", {"mcp_target"})
+        contexts = graph.contexts_for("cli", {"mcp_target"})
         assert len(contexts) == 1
         ctx = contexts[0]
         assert ctx.mcp_servers == {"db": {"command": "sqlite"}}
@@ -403,23 +403,23 @@ class TestFormatContextSummary:
     def test_unknown_module_skipped(self, single_node: Path) -> None:
         """Unknown modules in the related set are silently skipped."""
         graph = TopologyGraph.from_project(single_node, TopologyEngine(), auto_infer=False)
-        assert graph.format_context_summary("alpha", {"ghost"}) == []
+        assert graph.contexts_for("alpha", {"ghost"}) == []
 
     def test_empty_related_set(self, linear_chain: Path) -> None:
         graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
-        assert graph.format_context_summary("a", set()) == []
+        assert graph.contexts_for("a", set()) == []
 
     def test_sorted_output(self, diamond: Path) -> None:
         """Output is sorted alphabetically by module name."""
         graph = TopologyGraph.from_project(diamond, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("a", {"d", "c", "b"})
+        contexts = graph.contexts_for("a", {"d", "c", "b"})
         names = [c.name for c in contexts]
         assert names == ["b", "c", "d"]
 
     def test_topology_context_is_frozen(self, linear_chain: Path) -> None:
         """TopologyContext should be immutable (frozen dataclass)."""
         graph = TopologyGraph.from_project(linear_chain, TopologyEngine(), auto_infer=False)
-        contexts = graph.format_context_summary("a", {"b"})
+        contexts = graph.contexts_for("a", {"b"})
         with pytest.raises(AttributeError):
             contexts[0].name = "changed"  # type: ignore[misc]
 

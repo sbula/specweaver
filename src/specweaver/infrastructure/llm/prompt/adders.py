@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 from specweaver.infrastructure.llm.escaping import apply_escaping
 from specweaver.infrastructure.llm.prompt.block import _ContentBlock
 from specweaver.infrastructure.llm.prompt.constants import _CONSTITUTION_PREAMBLE, detect_language
+from specweaver.infrastructure.llm.prompt.interfaces import PromptContentSource
 from specweaver.infrastructure.llm.prompt.profiles import PromptSlot
 
 logger = logging.getLogger(__name__)
@@ -116,8 +117,7 @@ class PromptBuilderAddersMixin:
                 slot=slot,
                 escaping=kwargs.get("escaping"),
             )
-        elif hasattr(text, "get_prompt_content") and hasattr(text, "get_prompt_label"):
-            # It's an adapter source
+        elif isinstance(text, PromptContentSource):
             source = text
             # Extract slots / priority from kwargs if present, else use default
             prio = kwargs.get("priority", priority)
@@ -246,7 +246,7 @@ class PromptBuilderAddersMixin:
 
         Args:
             contexts: List of ``TopologyContext`` from
-                ``TopologyGraph.format_context_summary()``.
+                ``TopologyGraph.contexts_for()``.
             priority: Truncation priority.  Default 2.
             escaping: Optional escaping strategy. Defaults to "raw".
         """

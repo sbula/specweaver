@@ -416,7 +416,7 @@ class TopologyGraph:
                 result.add(name)
         return result
 
-    def format_context_summary(
+    def contexts_for(
         self,
         module: str,
         related: set[str],

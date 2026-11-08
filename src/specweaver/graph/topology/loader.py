@@ -99,6 +99,6 @@ def select_topology_contexts(
     if not related:
         return None
 
-    contexts = graph.format_context_summary(module_name, related)
+    contexts = graph.contexts_for(module_name, related)
     logger.debug("Topology: %d related module(s) via %s selector.", len(contexts), selector_name)
     return contexts

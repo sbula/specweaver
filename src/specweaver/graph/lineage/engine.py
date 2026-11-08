@@ -4,7 +4,7 @@
 import logging
 from typing import Any
 
-from specweaver.graph.lineage.repository import LineageRepositoryProtocol
+from specweaver.graph.lineage.protocol import LineageRepositoryProtocol
 
 logger = logging.getLogger(__name__)
 

@@ -235,7 +235,7 @@ expose = [ "factory", "factory.AnalyzerFactory", "inferrer", "inferrer.ContextIn
 
 [[interfaces]]
 from = [ "specweaver.graph",]
-expose = [ "core.engine.core", "core.engine.models", "core.engine.models.MAX_NEIGHBOURHOOD_DEPTH", "lineage.engine", "lineage.repository", "core.builder.orchestrator.GraphOrchestrator",]
+expose = [ "core.engine.core", "core.engine.models", "core.engine.models.MAX_NEIGHBOURHOOD_DEPTH", "lineage.engine", "lineage.protocol", "core.builder.orchestrator.GraphOrchestrator",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm",]

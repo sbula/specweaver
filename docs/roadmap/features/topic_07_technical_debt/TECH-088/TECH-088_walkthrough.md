@@ -129,3 +129,20 @@ target).
 **Limit, recorded.** The mapping is read-only, but each `TopologyNode` in it is a plain dataclass
 whose lists can still be changed in place. No source does (grep 2026-11-08); freezing the node type
 is wider than FR-13 and was not done here.
+
+## SF-04 CB-1 — the protocol check and the names (FR-10, FR-11)
+
+**What changed.** `add_context` checks `isinstance(text, PromptContentSource)`; the protocol was
+already `runtime_checkable`, so the `hasattr` pair was the only defect. A bare `MagicMock` passed the
+old probe and is refused now. `format_context_summary` is `contexts_for`, and
+`graph/lineage/repository.py` is `protocol.py` (tach exposes `lineage.protocol`).
+`graph/CLAUDE.md` is rewritten: two graphs, `graph.db` is persisted, the commands are named.
+`graph/context.yaml` drops `consumes: specweaver/sandbox`: no file in `graph` imports it.
+
+**Tests.** `test_prompt_source_by_protocol.py` (in `tests/unit/infrastructure/llm/`; the plan's
+`prompt/` folder does not exist) was red on the mock and on the `hasattr` scan.
+`test_the_old_names_are_gone.py` was red on the missing `contexts_for` and 24 uses of the old names;
+its own test feeds it each spelling.
+
+**Mutants.** FR-10: `probe-by-hasattr`. The guard's string check removed by hand: its own test
+fails (a test file is not a corpus target).

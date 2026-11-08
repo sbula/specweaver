@@ -123,7 +123,8 @@ One explicit method per raw context type; formatting and escaping are delegated 
 2. **File context (`add_file_context`)** → `FilePromptAdapter`.
 3. **Project metadata (`add_project_metadata_context`)** → `ProjectMetadataPromptAdapter`.
 4. **Conforming sources (`add_context`)** — any object already implementing `PromptContentSource`
-   (e.g. `TopologyContext`).
+   (e.g. `TopologyContext`). The check is `isinstance` against the `runtime_checkable` protocol:
+   an object with only one of the two methods, or a bare mock, raises `TypeError`.
 
 Why: the API documents itself and there is no runtime type guessing.
 

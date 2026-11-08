@@ -75,7 +75,7 @@ def test_what_inference_learned_is_what_the_prompt_says(undocumented_project: Pa
         f"inference produced no node for src/ledger: {sorted(graph.nodes)}"
     )
 
-    contexts = graph.format_context_summary("ledger", {"ledger"})
+    contexts = graph.contexts_for("ledger", {"ledger"})
     assert contexts, "the graph produced no prompt context for a module it knows about"
 
     prompt = PromptBuilder().add_topology(contexts).build()
