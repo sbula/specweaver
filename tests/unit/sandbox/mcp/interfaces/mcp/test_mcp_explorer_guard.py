@@ -18,20 +18,24 @@ The command comes from the analysed project's own configuration, so it is untrus
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.fixtures.boundary import declared_boundary
 
 from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
+
+if TYPE_CHECKING:
+    from specweaver.graph.topology.topology import TopologyNode
+
 
 _EXECUTOR = "specweaver.sandbox.mcp.interfaces.tool.MCPExecutor"
 _WHICH = "shutil.which"
 
 
-def _topology(command: str, args: list[str], env: dict[str, str] | None = None) -> MagicMock:
-    topo = MagicMock()
-    topo.mcp_servers = {"db": {"command": command, "args": args, "env": env or {}}}
-    return topo
+def _topology(command: str, args: list[str], env: dict[str, str] | None = None) -> TopologyNode:
+    return declared_boundary({"db": {"command": command, "args": args, "env": env or {}}})
 
 
 def _replying(executor_class: MagicMock, reply: dict) -> MagicMock:

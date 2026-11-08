@@ -18,18 +18,18 @@ tool call takes, so the registry's wiring is under test too.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from specweaver.sandbox.dispatcher import ToolDispatcher
 from specweaver.sandbox.security import WorkspaceBoundary
+from tests.fixtures.boundary import declared_boundary
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 def _architect(project: Path, command: str, args: list[str]) -> ToolDispatcher:
-    topology = MagicMock()
-    topology.mcp_servers = {"db": {"command": command, "args": args, "env": {}}}
+    topology = declared_boundary({"db": {"command": command, "args": args, "env": {}}})
     return ToolDispatcher.create_standard_set(
         WorkspaceBoundary(roots=[project]),
         role="architect",

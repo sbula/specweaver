@@ -184,3 +184,22 @@ explorer-skips-runtime-guard` retargeted to the new call; its FR-3 and FR-8 muta
 
 **Accepted.** A `FrozenMap`'s private dict can be reached by reflection only, as a
 `MappingProxyType`'s can. A node is unhashable, as it was before.
+
+## SF-04 CB-3 — honest boundaries (FR-15)
+
+**What changed.** `tests/fixtures/boundary.py` builds a real, frozen `TopologyNode` with the servers a
+test wants. The plan counted 6 mock boundaries in 5 files; the guard found 8 builders (the
+`test_mcp_tool.py` fixture and two local ones there, the explorer-guard helper, the loader-env
+helper, two in the dispatcher conformance test, one in the dispatcher guard) feeding 19 calls. Each
+uses `declared_boundary` now.
+
+**Tests.** `test_no_mock_boundary.py` was red on the 19 calls. It reads `MCPExplorerTool`,
+`create_mcp_interface` and `ToolDispatcher.create_standard_set` by position and keyword, and a mock
+reached through a name, a fixture or a helper; its own test feeds it each spelling.
+
+**Mutant.** A `MagicMock` boundary put back in `test_dispatcher_mcp_explorer_guard.py` fails the
+guard (run by hand; a test file is not a corpus target).
+
+**Closure.** `check_fr_coverage.py TECH-088`: 15 of 15 FRs planned and cited. `tests.py feature
+TECH-088 --kind bugfix`: unit, integration and e2e green. README counts: 13,101 tests, 57 corpora,
+1,499 mutants.

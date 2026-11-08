@@ -11,13 +11,12 @@ that story with it, for tests written to prove something else.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from specweaver.sandbox.base import BaseTool
 from specweaver.sandbox.dispatcher import ToolDispatcher
 from specweaver.sandbox.security import WorkspaceBoundary
+from tests.fixtures.boundary import declared_boundary
 
 
 @pytest.mark.integration
@@ -31,14 +30,13 @@ def test_dispatcher_builds_fully_compliant_basetool_set(tmp_path) -> None:
     engine.
     """
     boundary = WorkspaceBoundary(roots=[tmp_path])
-    mock_topology = MagicMock()
-    mock_topology.mcp_servers = {"test_server": {}}
+    topology = declared_boundary({"test_server": {}})
 
     dispatcher = ToolDispatcher.create_standard_set(
         boundary=boundary,
         role="implementer",
         allowed_tools=["fs", "git", "web", "ast", "qa", "protocol"],
-        topology=mock_topology,
+        topology=topology,
     )
 
     # We can inspect the internal loaded interfaces
@@ -101,14 +99,13 @@ def test_dispatcher_passes_topology_directly_to_mcp_explorer(tmp_path) -> None:
     without using the deprecated DummyContext wrapper.
     """
     boundary = WorkspaceBoundary(roots=[tmp_path])
-    mock_topology = MagicMock()
-    mock_topology.mcp_servers = {"integration_server": {"command": "echo"}}
+    topology = declared_boundary({"integration_server": {"command": "echo"}})
 
     dispatcher = ToolDispatcher.create_standard_set(
         boundary=boundary,
         role="architect",
         allowed_tools=["mcp"],
-        topology=mock_topology,
+        topology=topology,
     )
 
     unique_tools = {method.__self__ for method in dispatcher._registry.values()}
@@ -126,7 +123,7 @@ def test_dispatcher_passes_topology_directly_to_mcp_explorer(tmp_path) -> None:
 
     # Verify the inner MCPExplorerTool received the topology correctly
     inner_tool = mcp_facade._tool
-    assert inner_tool._topology is mock_topology
+    assert inner_tool._topology is topology
     assert getattr(inner_tool, "context", "NOT_FOUND") == "NOT_FOUND", (
         "Deprecated context attribute still exists."
     )

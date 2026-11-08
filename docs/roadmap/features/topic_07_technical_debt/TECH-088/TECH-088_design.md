@@ -191,10 +191,10 @@ replaced by FR-2's e2e.
 
 | Guide Topic | Description | Status |
 |-------------|-------------|--------|
-| `src/specweaver/graph/CLAUDE.md`, `graph/context.yaml` | the 7 wrong claims and the stale `consumes` | ⬜ To be updated during Pre-commit |
-| `docs/architecture/02_bounded_contexts/domain_llm_and_telemetry.md` | `TopologyContext` lives in `commons` | ⬜ To be updated during Pre-commit |
-| `docs/architecture/06_lessons_and_future/known_boundary_violations.md` | the two rows at their new path | ⬜ To be updated during Pre-commit |
-| `docs/architecture/03_system_topology/module_dependency_graph.md` | `graph.topology` as a module | ⬜ To be updated during Pre-commit |
+| `src/specweaver/graph/CLAUDE.md`, `graph/context.yaml` | the 7 wrong claims and the stale `consumes` | ✅ Updated |
+| `docs/architecture/02_bounded_contexts/domain_llm_and_telemetry.md` | `TopologyContext` lives in `commons` | ✅ Updated |
+| `docs/architecture/06_lessons_and_future/known_boundary_violations.md` | the two rows at their new path | ✅ Updated |
+| `docs/architecture/03_system_topology/module_dependency_graph.md` | `graph.topology` as a module | ✅ Updated |
 
 ## Sub-Feature Breakdown
 
@@ -256,7 +256,7 @@ sw review specs/billing_spec.md
 | SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One library | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Names and the prompt source | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Names and the prompt source | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Session Handoff
 
@@ -280,4 +280,5 @@ test builds it on a mock engine. **SF-03 dev 2026-11-08**: CB-1 `9861c95c`; CB-2
 freezes itself, copies its nodes read-only and expands its stale seeds before the freeze. **SF-04 plan
 approved 2026-11-08** (the user): one command builder for both MCP readers; a string `command` is one
 word, a spaced one is refused with the list form named; the read-only mapping freezes every value
-when built. Next: dev SF-04 CB-1.
+when built. **SF-04 dev 2026-11-08**: CB-1 `a58b216a`, CB-2 `bf73d912`; CB-3 accepted by the user —
+no test hands the MCP tool a mock boundary. Next: the user's sign-off.

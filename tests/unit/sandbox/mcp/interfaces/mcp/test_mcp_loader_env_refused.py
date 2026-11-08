@@ -21,6 +21,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.fixtures.boundary import declared_boundary
 
 from specweaver.sandbox.mcp.core.atom import MCPAtom
 from specweaver.sandbox.mcp.interfaces.tool import MCPExplorerTool
@@ -30,8 +31,9 @@ _COMMAND = ["docker", "run", "-i", "image"]
 
 
 def _explore(env: dict[str, str]) -> tuple[object, MagicMock]:
-    topology = MagicMock()
-    topology.mcp_servers = {"db": {"command": "docker", "args": ["run", "-i", "image"], "env": env}}
+    topology = declared_boundary(
+        {"db": {"command": "docker", "args": ["run", "-i", "image"], "env": env}}
+    )
     with (
         patch("specweaver.sandbox.mcp.interfaces.tool.MCPExecutor") as executor,
         patch("shutil.which", return_value="/usr/bin/docker"),
