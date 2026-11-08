@@ -203,3 +203,13 @@ guard (run by hand; a test file is not a corpus target).
 **Closure.** `check_fr_coverage.py TECH-088`: 15 of 15 FRs planned and cited. `tests.py feature
 TECH-088 --kind bugfix`: unit, integration and e2e green. README counts: 13,101 tests, 57 corpora,
 1,499 mutants.
+
+## Live demo (2026-11-08)
+
+`test_review_names_its_neighbours_live_e2e.py` runs `sw review` against Gemini. The first version retried up
+to 5 times with 5 tool rounds each: 58 minutes, about 13 requests, and an ERROR verdict after the model used
+all 5 rounds. The user chose one try and at most two requests. The test asserts on the first request (it
+names `payments (direct dependency)`) and on the exit code the verdict gives; an ERROR passes only when it
+names the turn limit or the provider. Every assert has a message, and the first request is saved to
+`.tmp/live/review_names_its_neighbours.txt`. Green on its first run, 8 minutes. The reviewer's tool loop on
+Gemini is queued as its own ticket after TECH-088.

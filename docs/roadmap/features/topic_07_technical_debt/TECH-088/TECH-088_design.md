@@ -249,6 +249,11 @@ sw review specs/billing_spec.md
 # after:  the review runs, and its prompt carries "payments (direct dependency)"
 ```
 
+Nightly: `tests/e2e/capabilities/assurance/test_review_names_its_neighbours_live_e2e.py` runs it
+against Gemini. One try, at most two requests (`agent_turns = 2`), no retry (the user, 2026-11-08).
+It asserts on the request, not on the model's words, and saves the first request to `.tmp/live/`.
+First green run 2026-11-08, 8 minutes.
+
 ## Progress Tracker
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
