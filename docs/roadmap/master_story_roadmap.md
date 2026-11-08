@@ -643,3 +643,5 @@ These stories do not add new user-facing features, but are critical epics requir
     *   `🟡` **TECH-092:** [The Spend Brake Stops Tool Loops That Have Spent Nothing](features/topic_07_technical_debt/TECH-092/TECH-092_design.md)
     *   `🟢` **TECH-093:** [Three Code Checks Read Every Language as Python](features/topic_07_technical_debt/TECH-093/TECH-093_design.md)
     *   `🟢` **TECH-094:** [No CI Runs the Tests](features/topic_07_technical_debt/TECH-094/TECH-094_design.md)
+    *   `🔴` **TECH-095:** [The Reviewer Uses Up Its Tool Rounds on Gemini](features/topic_07_technical_debt/TECH-095/TECH-095_design.md)
+    *   `🔴` **TECH-096:** [The Never-Run List Is Only Text](features/topic_07_technical_debt/TECH-096/TECH-096_design.md)

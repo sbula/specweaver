@@ -246,6 +246,12 @@ critical for long-term project viability.
   > mis-attribute telemetry. **DELIVERED 2026-08-12:** fixed in `PipelineRunner.run`, covering all four fan-out sites rather than the one the ticket recorded.
 
 ## Security & Validation
+* **`TECH-096` 🔴: The Never-Run List Is Only Text**
+  > [Description](../features/topic_07_technical_debt/TECH-096/TECH-096_design.md) | _Status:
+  > STUB 2026-11-08. Origin: 2026-11-08, a never-run command was run during `TECH-088`._ |
+  > The commands an agent must never run are listed only in text; a `PreToolUse` hook on `Bash`
+  > that parses each command and blocks a listed or unparseable one is the agreed fix.
+
 * **`TECH-093` 🟢: Three Code Checks Read Every Language as Python**
   > [Description](../features/topic_07_technical_debt/TECH-093/TECH-093_design.md) | _Status:
   > closed by the user 2026-10-31. Origin: 2026-10-31, the `TECH-087` live demo; a defect in
@@ -375,6 +381,12 @@ critical for long-term project viability.
   > three-strike budget and a failing step could retry indefinitely across sessions. **DELIVERED:** the budget is now inherited across resumes.
 
 ## Test & Proof Infrastructure
+* **`TECH-095` 🔴: The Reviewer Uses Up Its Tool Rounds on Gemini**
+  > [Description](../features/topic_07_technical_debt/TECH-095/TECH-095_design.md) | _Status:
+  > STUB 2026-11-08. Origin: 2026-11-08, the `TECH-088` live demo._ |
+  > A real review on Gemini ran out of tool rounds before its verdict, and each retry spends the
+  > nightly budget of 20 requests again; measure how often, why, and on a local model.
+
 * **`TECH-049` 🟢: Mutation Campaign Corpus and Session Gate**
   > [Description](../features/topic_07_technical_debt/TECH-049/TECH-049_design.md) | _(2026-08-15 — from the `ADR-003` skill-coverage audit; rescoped the same day.)_ | Mutation testing works, nothing
   > around it does: campaigns are ad-hoc and uncommitted, reports are discarded so drift is undetectable, the runner returns 0 even when every mutant is BROKEN, and nothing schedules it. Adds a

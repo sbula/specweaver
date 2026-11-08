@@ -212,4 +212,4 @@ all 5 rounds. The user chose one try and at most two requests. The test asserts 
 names `payments (direct dependency)`) and on the exit code the verdict gives; an ERROR passes only when it
 names the turn limit or the provider. Every assert has a message, and the first request is saved to
 `.tmp/live/review_names_its_neighbours.txt`. Green on its first run, 8 minutes. The reviewer's tool loop on
-Gemini is queued as its own ticket after TECH-088.
+Gemini is `TECH-095`; the never-run list a session broke is `TECH-096`.
