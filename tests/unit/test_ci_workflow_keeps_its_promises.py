@@ -4,6 +4,7 @@
 """The CI workflow keeps the promises TECH-094 made, and never calls a real model.
 
 Proves: TECH-094 FR-1, FR-2, FR-3, FR-6, FR-7
+Proves: TECH-094 NFR-2, NFR-4
 
 Each promise is one edit away from being lost, and a lost one passes silently: CI stays green while
 it calls a paid model, tests less, or reaches a secret. These assertions are the alarm.
@@ -11,9 +12,9 @@ it calls a paid model, tests less, or reaches a secret. These assertions are the
 | Bucket | Case |
 |---|---|
 | Happy | the workflow runs on push to `main` and on every pull request, the suite, `cb` and `doc`, on 3.11 and 3.14 |
-| Boundary | jobs stop within 30 minutes; a newer push cancels the older run |
+| Boundary | jobs stop within 30 minutes; a newer push cancels the older run; jobs run on GitHub's own free `ubuntu-24.04` runner |
 | Degradation | the token can only read; the checkout has the full history for `--base` |
-| Hostile | a planted secret, key name, `-m live`, `scripts/live.py` or wider permission is caught |
+| Hostile | a planted secret, key name, `-m live`, `scripts/live.py`, wider permission, a self-hosted or paid runner, a longer time limit or a kept older run is caught |
 """
 
 from __future__ import annotations
@@ -66,8 +67,15 @@ def _top_level(workflow: dict[str, Any]) -> list[str]:
     return broken
 
 
+#: GitHub's own standard runners are free for a public repository; a self-hosted machine or a
+#: larger runner (`-4core` and up) is paid for by someone (TECH-094 NFR-2).
+_FREE_RUNNERS = frozenset({"ubuntu-24.04"})
+
+
 def _job(name: str, job: dict[str, Any]) -> list[str]:
     broken = []
+    if not isinstance(job.get("runs-on"), str) or job["runs-on"] not in _FREE_RUNNERS:
+        broken.append(f"job {name} runs on {job.get('runs-on')!r}, not a free GitHub runner")
     if not 0 < int(job.get("timeout-minutes", 0)) <= 30:
         broken.append(f"job {name} has no time limit of 30 minutes or less")
     versions = {str(v) for v in job.get("strategy", {}).get("matrix", {}).get("python", [])}
@@ -121,6 +129,34 @@ def test_wider_permissions_are_caught() -> None:
     text = _WORKFLOW.read_text(encoding="utf-8").replace("contents: read", "contents: write")
 
     assert "permissions are not exactly contents: read" in broken_promises(text)
+
+
+@pytest.mark.parametrize("runner", ["self-hosted", "[self-hosted, linux]", "ubuntu-24.04-4core"])
+def test_a_runner_that_costs_money_is_caught(runner: str) -> None:
+    """NFR-2: a self-hosted runner is a machine someone pays for; a larger GitHub runner bills."""
+    text = _WORKFLOW.read_text(encoding="utf-8").replace(
+        "runs-on: ubuntu-24.04", f"runs-on: {runner}"
+    )
+
+    assert any("runner" in b for b in broken_promises(text))
+
+
+def test_a_longer_time_limit_is_caught() -> None:
+    """NFR-4: a run cannot burn hours."""
+    text = re.sub(
+        r"timeout-minutes: \d+", "timeout-minutes: 90", _WORKFLOW.read_text(encoding="utf-8")
+    )
+
+    assert any("30 minutes" in b for b in broken_promises(text))
+
+
+def test_keeping_the_older_run_is_caught() -> None:
+    """NFR-4: a newer push to the same branch cancels the older run."""
+    text = _WORKFLOW.read_text(encoding="utf-8").replace(
+        "cancel-in-progress: true", "cancel-in-progress: false"
+    )
+
+    assert "superseded runs are not cancelled" in broken_promises(text)
 
 
 def test_dropping_a_python_version_is_caught() -> None:

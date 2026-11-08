@@ -67,6 +67,19 @@ class TestStaleTechTickets:
         road = "    *   `[ ]` **TECH-010:** [MCP Persistent-Process Executor Migration](x.md)\n"
         assert mod.stale_tech_tickets(road, topic) == []
 
+    @pytest.mark.parametrize("marker", ["\U0001f534", "\U0001f7e1"])
+    def test_a_green_ticket_still_marked_open_is_stale(self, mod: ModuleType, marker: str) -> None:
+        """The `TECH-094` case: closed and signed off, still `🔴` in the roadmap for a day. The
+        newer roadmap rows carry the topic's own emoji, not a `[ ]` box, and nothing compared them."""
+        topic = "* **`TECH-094` 🟢: No CI Runs the Tests**\n"
+        road = f"    *   `{marker}` **TECH-094:** [No CI Runs the Tests](x.md)\n"
+        assert mod.stale_tech_tickets(road, topic) == ["TECH-094"]
+
+    def test_a_green_ticket_marked_green_is_fine(self, mod: ModuleType) -> None:
+        topic = "* **`TECH-090` 🟢: The Database Is Opened Three Ways**\n"
+        road = "    *   `🟢` **TECH-090:** [The Database Is Opened Three Ways](x.md)\n"
+        assert mod.stale_tech_tickets(road, topic) == []
+
     def test_a_ticket_absent_from_the_roadmap_is_not_reported_here(self, mod: ModuleType) -> None:
         """Existence drift is `_registry_orphans`' job. One checker, one question."""
         topic = "* **`TECH-099` 🟢: Something**\n"

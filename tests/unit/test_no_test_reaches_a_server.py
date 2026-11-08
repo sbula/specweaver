@@ -4,6 +4,7 @@
 """A test not marked `live` cannot open a connection that leaves the machine, whatever opens it.
 
 Proves: TECH-094 FR-4, FR-9
+Proves: TECH-094 NFR-3 — the block below has no `CI` condition, so this canary runs in every local run
 
 The canary for the guard in `tests/conftest.py`: if the guard is removed or weakened, these fail.
 The outside addresses are documentation ranges (RFC 5737, RFC 3849) and a `.invalid` name, so a

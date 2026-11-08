@@ -51,7 +51,8 @@ GREEN_HEADER = re.compile(r"### \U0001f7e2 (US-\d+):")
 #: the roadmap checkbox list, prose in the routing table. `TECH-017` stayed `[ ]` here after closing
 #: because a sweep for `🔴` cannot see a `[ ]` two hundred lines away.
 GREEN_TECH = re.compile(r"\*\*`(TECH-\d+)` \U0001f7e2")
-UNCHECKED_TECH = re.compile(r"`\[ \]` \*\*(TECH-\d+):")
+#: Older roadmap rows carry a `[ ]` box, newer ones the topic's own `🔴` or `🟡`; either is "open".
+UNCHECKED_TECH = re.compile(r"`(?:\[ \]|\U0001f534|\U0001f7e1)` \*\*(TECH-\d+):")
 
 
 _orphan_spec = importlib.util.spec_from_file_location(
@@ -64,7 +65,7 @@ _orphan_spec.loader.exec_module(_orphans)
 
 
 def stale_tech_tickets(road: str, topic: str) -> list[str]:
-    """TECH ids closed (`🟢`) in the topic doc but still unticked (`[ ]`) in the roadmap.
+    """TECH ids closed (`🟢`) in the topic doc but still open (`[ ]`, `🔴`, `🟡`) in the roadmap.
 
     The capability half of this check has existed for months; TECH tickets simply had no
     equivalent, which is why three stale markers were found by hand in two days. A ticket absent
@@ -80,7 +81,7 @@ def _stale_tech_errors(road: str, line_of: Callable[[int], int]) -> list[str]:
     topic_text = TOPIC_TECH.read_text(encoding="utf-8") if TOPIC_TECH.is_file() else ""
     stale = set(stale_tech_tickets(road, topic_text))
     return [
-        f"  STALE:      line {line_of(m.start())}: `[ ]` {m.group(1)} — ticket is CLOSED "
+        f"  STALE:      line {line_of(m.start())}: {m.group(0).split(' ')[0]} {m.group(1)} — ticket is CLOSED "
         "(\U0001f7e2) in topic_07_technical_debt.md"
         for m in UNCHECKED_TECH.finditer(road)
         if m.group(1) in stale
