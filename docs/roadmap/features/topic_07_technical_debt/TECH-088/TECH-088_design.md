@@ -256,7 +256,7 @@ sw review specs/billing_spec.md
 | SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-03 | One library | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-04 | Names and the prompt source | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
 
@@ -277,5 +277,7 @@ generation and decomposition no longer crash on a project with module neighbours
 touched only paths (diff check), and the collected tests were equal. **SF-03 plan approved 2026-11-08** (the
 user): the graph freezes itself, copies its nodes and expands its stale seeds before the freeze; no
 test builds it on a mock engine. **SF-03 dev 2026-11-08**: CB-1 `9861c95c`; CB-2 accepted by the user — the graph
-freezes itself, copies its nodes read-only and expands its stale seeds before the freeze. Next: the
-implementation plan for SF-04.
+freezes itself, copies its nodes read-only and expands its stale seeds before the freeze. **SF-04 plan
+approved 2026-11-08** (the user): one command builder for both MCP readers; a string `command` is one
+word, a spaced one is refused with the list form named; the read-only mapping freezes every value
+when built. Next: dev SF-04 CB-1.
