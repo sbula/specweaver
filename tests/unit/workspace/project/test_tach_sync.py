@@ -22,12 +22,12 @@ changed no behaviour.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 import tomlkit
 from tomlkit.exceptions import ParseError
 
+from specweaver.graph.topology.engine import TopologyEngine
 from specweaver.graph.topology.topology import TopologyGraph, TopologyNode
 from specweaver.workspace.project.tach_sync import sync_tach_toml
 
@@ -42,7 +42,7 @@ def test_sync_tach_toml_empty_creates_new(tmp_path: Path) -> None:
         consumes=["cli", "config"],
         exposes=[],
     )
-    graph = TopologyGraph(nodes={"api": node}, engine=MagicMock())
+    graph = TopologyGraph(nodes={"api": node}, engine=TopologyEngine())
 
     target_path = tmp_path
     tach_file = target_path / "tach.toml"
@@ -84,7 +84,7 @@ def test_sync_tach_toml_interface_mapping(tmp_path: Path) -> None:
         consumes=[],
         exposes=["runner", "core"],
     )
-    graph = TopologyGraph(nodes={"domain": node}, engine=MagicMock())
+    graph = TopologyGraph(nodes={"domain": node}, engine=TopologyEngine())
 
     result = sync_tach_toml(graph, tmp_path)
 
@@ -121,7 +121,7 @@ def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
         consumes=["new_dep"],
         exposes=[],
     )
-    graph = TopologyGraph(nodes={"new_module": node}, engine=MagicMock())
+    graph = TopologyGraph(nodes={"new_module": node}, engine=TopologyEngine())
 
     result = sync_tach_toml(graph, tmp_path)
 
@@ -146,14 +146,14 @@ def test_sync_tach_toml_deep_merge(tmp_path: Path) -> None:
 def test_sync_tach_toml_malformed(tmp_path: Path) -> None:
     tach_file = tmp_path / "tach.toml"
     tach_file.write_text("[[modules]\nbad_syntax...", encoding="utf-8")
-    graph = TopologyGraph(nodes={}, engine=MagicMock())
+    graph = TopologyGraph(nodes={}, engine=TopologyEngine())
 
     with pytest.raises(ParseError):
         sync_tach_toml(graph, tmp_path)
 
 
 def test_sync_tach_toml_empty_graph(tmp_path: Path) -> None:
-    graph = TopologyGraph(nodes={}, engine=MagicMock())
+    graph = TopologyGraph(nodes={}, engine=TopologyEngine())
     result = sync_tach_toml(graph, tmp_path)
 
     assert result.modules_synced == 0
@@ -202,7 +202,7 @@ def test_sync_tach_toml_purges_modules_the_graph_no_longer_has(tmp_path: Path) -
         consumes=["config"],
         exposes=[],
     )
-    graph = TopologyGraph(nodes={"api": node}, engine=MagicMock())
+    graph = TopologyGraph(nodes={"api": node}, engine=TopologyEngine())
 
     result = sync_tach_toml(graph, tmp_path)
 
@@ -233,7 +233,7 @@ def test_sync_tach_toml_with_an_empty_graph_clears_stale_bounds(tmp_path: Path) 
         encoding="utf-8",
     )
 
-    result = sync_tach_toml(TopologyGraph(nodes={}, engine=MagicMock()), tmp_path)
+    result = sync_tach_toml(TopologyGraph(nodes={}, engine=TopologyEngine()), tmp_path)
 
     assert result.modules_synced == 0
     doc = tomlkit.parse(tach_file.read_text("utf-8"))

@@ -16,11 +16,15 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Protocol
 
 from ruamel.yaml import YAML
 
 from specweaver.commons.topology_context import TopologyContext
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +37,7 @@ class TopologyEngineProtocol(Protocol):
     def traverse(self, start: str, forward: bool = True) -> set[str]: ...
     def cycles(self) -> list[list[str]]: ...
     def neighbors_within(self, module: str, depth: int = 1) -> set[str]: ...
+    def freeze(self) -> None: ...
 
 
 @dataclass
@@ -176,31 +181,36 @@ class TopologyGraph:
         nodes: dict[str, TopologyNode],
         engine: TopologyEngineProtocol,
         warnings: list[str] | None = None,
-        stale_nodes: set[str] | None = None,
+        stale_seeds: set[str] | None = None,
     ) -> None:
-        self._nodes = nodes
-        self._warnings = list(warnings) if warnings else []
-        self._stale_nodes = set(stale_nodes) if stale_nodes else set()
+        """Build the graph, then freeze it: every step of a run shares it, so nothing may write.
 
-        # Build adjacency lists
+        `stale_seeds` are the modules whose manifests changed; each brings in what it impacts.
+        """
+        self._nodes: Mapping[str, TopologyNode] = MappingProxyType(dict(nodes))
+        self._warnings = list(warnings) if warnings else []
         self._engine = engine
 
-        for name in nodes:
+        for name in self._nodes:
             self._engine.add_node(name)
 
-        for name, node in nodes.items():
+        for name, node in self._nodes.items():
             for dep in node.consumes:
-                if dep in nodes:
+                if dep in self._nodes:
                     self._engine.add_edge(name, dep)
                 else:
                     self._warnings.append(
                         f"Module '{name}' consumes '{dep}' but no context.yaml found for '{dep}'."
                     )
 
+        seeds = set(stale_seeds) if stale_seeds else set()
+        self._stale_nodes = frozenset(seeds.union(*(self.impact_of(seed) for seed in seeds)))
+        self._engine.freeze()
+
     @property
-    def nodes(self) -> dict[str, TopologyNode]:
-        """All nodes in the graph."""
-        return dict(self._nodes)
+    def nodes(self) -> Mapping[str, TopologyNode]:
+        """All nodes in the graph, read-only."""
+        return self._nodes
 
     @property
     def warnings(self) -> list[str]:
@@ -265,21 +275,14 @@ class TopologyGraph:
         if auto_infer:
             cls._auto_infer_missing(project_root, nodes, warnings)
 
-        graph = cls(nodes, engine=engine, warnings=warnings)
-
         stale_seeds = cls._calculate_stale_seeds(project_root, nodes)
-
-        final_stale_nodes = set(stale_seeds)
-        for seed in stale_seeds:
-            final_stale_nodes.update(graph.impact_of(seed))
-
-        graph._stale_nodes = final_stale_nodes
+        graph = cls(nodes, engine=engine, warnings=warnings, stale_seeds=stale_seeds)
 
         logger.info(
             "TopologyGraph: built graph with %d nodes, %d warnings. %d stale nodes.",
             len(nodes),
             len(warnings),
-            len(graph._stale_nodes),
+            len(graph.stale_nodes),
         )
         return graph
 

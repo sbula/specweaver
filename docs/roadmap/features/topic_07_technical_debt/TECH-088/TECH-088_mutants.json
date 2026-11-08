@@ -225,7 +225,7 @@
           "old": "    def neighbors_within(self, module: str, depth: int = 1) -> set[str]: ...",
           "new": "    def neighbors_within(self, start: str, max_depth: int) -> set[str]: ...",
           "breaks": "a caller following the protocol by keyword breaks at run time",
-          "symbol_sha": "sha256:af57e1ffa9170aec8e8c3bf92c017c8a392d6342640225bc67064ae9dfd61367"
+          "symbol_sha": "sha256:5b200752210422b303723d5155dbf0f4daa5ee1a4d4f1d0c480110cd4bec9064"
         }
       ]
     },
@@ -255,6 +255,47 @@
           "new": "        max_depth = min(depth, 5)",
           "breaks": "the code graph keeps its own copy of the limit",
           "symbol_sha": "sha256:c730bc576d6494d5f7c3665eff2bde938779cce248b4007013e3437e0d4c4ebd"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-13",
+      "title": "The module graph cannot change once built",
+      "scope": [
+        "tests/unit/graph/topology/test_frozen_graph.py",
+        "tests/integration/interfaces/run_setup/test_run_carries_the_module_graph.py",
+        "tests/unit/graph/topology/test_topology_staleness.py"
+      ],
+      "mutants": [
+        {
+          "id": "freeze-noop",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.freeze",
+          "old": "            self._frozen = True",
+          "new": "            pass",
+          "breaks": "a step can rewrite the graph every other step of the run reads",
+          "symbol_sha": "sha256:56d71755aabc97d6929b068b49ad37d5c342c2e657cb28f31307005fe9a5f556"
+        },
+        {
+          "id": "keeps-callers-dict",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/topology.py",
+          "symbol": "TopologyGraph.__init__",
+          "old": "        self._nodes: Mapping[str, TopologyNode] = MappingProxyType(dict(nodes))",
+          "new": "        self._nodes: Mapping[str, TopologyNode] = nodes",
+          "breaks": "the caller can still change the graph's modules after building",
+          "symbol_sha": "sha256:cb0d5ad72845bd9442eba7b9ac3098af9979ecfa96495b86760ccab150080be5"
+        },
+        {
+          "id": "seeds-not-expanded",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/topology.py",
+          "symbol": "TopologyGraph.__init__",
+          "old": "        self._stale_nodes = frozenset(seeds.union(*(self.impact_of(seed) for seed in seeds)))",
+          "new": "        self._stale_nodes = frozenset(seeds)",
+          "breaks": "a module affected by a changed one is not re-checked",
+          "symbol_sha": "sha256:cb0d5ad72845bd9442eba7b9ac3098af9979ecfa96495b86760ccab150080be5"
         }
       ]
     }

@@ -15,12 +15,26 @@ import networkx as nx
 from specweaver.graph.core.engine.models import MAX_NEIGHBOURHOOD_DEPTH
 
 
+class FrozenGraphError(RuntimeError):
+    """A write reached a module graph after it was built."""
+
+
 class TopologyEngine:
     """Generic directed graph engine for topology math; every read and write holds one lock."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._graph: nx.DiGraph[str] = nx.DiGraph()
+        self._frozen = False
+
+    def freeze(self) -> None:
+        """Refuse every later write; reads go on answering."""
+        with self._lock:
+            self._frozen = True
+
+    def _writable(self) -> None:
+        if self._frozen:
+            raise FrozenGraphError("the module graph is built and frozen; it takes no writes")
 
     @property
     def nodes(self) -> set[str]:
@@ -29,10 +43,12 @@ class TopologyEngine:
 
     def add_node(self, node: str) -> None:
         with self._lock:
+            self._writable()
             self._graph.add_node(node)
 
     def add_edge(self, source: str, target: str) -> None:
         with self._lock:
+            self._writable()
             self._graph.add_edge(source, target)
 
     def get_forward(self, node: str) -> set[str]:

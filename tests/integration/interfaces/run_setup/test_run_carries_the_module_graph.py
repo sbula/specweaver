@@ -3,7 +3,7 @@
 
 """The run setup hands a run the module graph's three meanings, each in its own field.
 
-Proves: TECH-088 FR-1, TECH-088 FR-12
+Proves: TECH-088 FR-1, TECH-088 FR-12, TECH-088 FR-13
 Proves: TECH-088 FR-6
 
 The slot used to be one `Any` field that held a list, while three readers wanted one context, a
@@ -111,3 +111,18 @@ def test_a_matching_module_is_not_warned(
         build_run_sync(run_request(db, root, "billing"))
 
     assert _warnings_naming(caplog, "billing") == []
+
+
+def test_the_runs_module_graph_cannot_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FR-13: every step shares the run's graph, so the run setup hands over a frozen one."""
+    from specweaver.graph.topology.engine import FrozenGraphError
+
+    db, root = module_graph_project(tmp_path, monkeypatch)
+    graph = build_run_sync(run_request(db, root, "billing")).graph.module_graph
+    assert graph is not None
+
+    with pytest.raises(FrozenGraphError):
+        graph._engine.add_edge("payments", "billing")  # type: ignore[attr-defined]
+    assert graph.impact_of("billing") == set()

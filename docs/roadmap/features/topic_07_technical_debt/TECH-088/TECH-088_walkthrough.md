@@ -107,3 +107,25 @@ answers. `test_engine_protocol.py` was red (`name` vs `node`, `start, max_depth`
 **Mutants.** FR-7: `start-dropped`, `centre-kept`, `missing-raises`, `self-loops-dropped`. FR-8:
 `protocol-renames-depth`. FR-9: `limit-plus-one` (a module constant cannot be a corpus symbol, so
 the mutant sits where the engine reads it), `own-limit`.
+
+## SF-03 CB-2 — the frozen graph (FR-13)
+
+**What changed.** `TopologyEngine.freeze()` refuses every later write with `FrozenGraphError`; the
+flag is set and read under the engine's lock. `TopologyGraph.__init__` copies the caller's `nodes`
+into a `MappingProxyType`, adds the edges, expands `stale_seeds` (renamed from `stale_nodes`, since
+`__init__` now expands them) by `impact_of`, stores the result as a `frozenset`, and freezes its
+engine last. `from_project` computes the seeds first and writes nothing after `__init__`. The 7
+`MagicMock()` engines in `test_tach_sync.py` are real `TopologyEngine()`s.
+
+**Tests.** Red first: `test_frozen_graph.py` (no `FrozenGraphError`), the run-setup case in
+`test_run_carries_the_module_graph.py`, and `test_no_mock_topology_engine.py` (the 7 sites). The
+guard reads the engine by position or keyword, and through a name bound to a mock; its own test
+feeds it all of them.
+
+**Mutants.** FR-13: `freeze-noop`, `keeps-callers-dict`, `seeds-not-expanded`. A `MagicMock()`
+engine put back in `test_tach_sync.py` fails the guard (run by hand; a test file is not a corpus
+target).
+
+**Limit, recorded.** The mapping is read-only, but each `TopologyNode` in it is a plain dataclass
+whose lists can still be changed in place. No source does (grep 2026-11-08); freezing the node type
+is wider than FR-13 and was not done here.

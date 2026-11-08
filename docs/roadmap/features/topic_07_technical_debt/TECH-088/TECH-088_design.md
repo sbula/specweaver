@@ -81,8 +81,10 @@ are never started. That slot gets one typed field per meaning.
   reason.
 - Accepted: FR-4 changes which components a decomposition holds back, because impact sets were
   never computed before; that is the delivered behaviour coming back, not a new one.
-- Accepted: the shallow step copy shares the module graph; it is read-only after the run setup and
-  its engine holds a lock. Both are constraints on SF-03's rebuilt engine.
+- Accepted: the shallow step copy shares the module graph. Its engine is frozen and holds a lock,
+  its node mapping and stale nodes cannot change (FR-13), but **the nodes' lists are still mutable**:
+  each `TopologyNode` is a plain dataclass, so `graph.nodes[x].consumes.append(...)` still works. No
+  source does it (grep 2026-11-08); the gap stays open until it is closed `[agreed 2026-11-08]`.
 
 ### External Tools
 
@@ -146,7 +148,8 @@ None new; networkx 3.6.1 is already pinned.
 - **AD-4** `GraphContext` gets one field per meaning (FR-1); the three handlers that read a single
   object and the two that probe with `getattr` read their own field. The field types are protocols
   in `commons`, which `TopologyNode` and `TopologyGraph` satisfy, so the run state does not import
-  `graph`. A step's `copy.copy(context)` shares the graph; nothing writes to it after the run setup.
+  `graph`. A step's `copy.copy(context)` shares the graph; its engine, node mapping and stale nodes are
+  frozen, but the nodes' lists are still mutable (see the accepted risks).
 
 ## ROI Analysis
 
@@ -248,7 +251,7 @@ sw review specs/billing_spec.md
 |----|------|-----------|--------|-----------|-----|------------|-----------|
 | SF-01 | The topology slot | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | One home | SF-01 (order only) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| SF-03 | One library | SF-02 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-03 | One library | SF-02 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-04 | Names and the prompt source | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 ## Session Handoff
@@ -269,4 +272,6 @@ generation and decomposition no longer crash on a project with module neighbours
 2026-11-08**: accepted by the user — the module graph lives in `graph/topology/`; the test rewrite
 touched only paths (diff check), and the collected tests were equal. **SF-03 plan approved 2026-11-08** (the
 user): the graph freezes itself, copies its nodes and expands its stale seeds before the freeze; no
-test builds it on a mock engine. Next: dev SF-03.
+test builds it on a mock engine. **SF-03 dev 2026-11-08**: CB-1 `9861c95c`; CB-2 accepted by the user — the graph
+freezes itself, copies its nodes read-only and expands its stale seeds before the freeze. Next: the
+implementation plan for SF-04.

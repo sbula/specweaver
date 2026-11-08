@@ -25,7 +25,7 @@ class TestStaleNodes:
         from specweaver.graph.topology.engine import TopologyEngine
 
         engine = TopologyEngine()
-        graph = TopologyGraph({}, engine, stale_nodes={"core", "api"})  # type: ignore[arg-type]
+        graph = TopologyGraph({}, engine, stale_seeds={"core", "api"})  # type: ignore[arg-type]
         assert graph.stale_nodes == {"core", "api"}
 
     def test_stale_nodes_is_frozen(self) -> None:
@@ -33,7 +33,7 @@ class TestStaleNodes:
         from specweaver.graph.topology.engine import TopologyEngine
 
         engine = TopologyEngine()
-        graph = TopologyGraph({}, engine, stale_nodes={"a"})  # type: ignore[arg-type]
+        graph = TopologyGraph({}, engine, stale_seeds={"a"})  # type: ignore[arg-type]
         stale = graph.stale_nodes
         stale.add("b")
         assert "b" not in graph.stale_nodes
