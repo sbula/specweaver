@@ -19,7 +19,7 @@
           "old": "        target_boundary=boundary,",
           "new": "        target_boundary=None,",
           "breaks": "a run never learns its own boundary, so its MCP servers never start",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
         },
         {
           "id": "no-module-graph",
@@ -29,7 +29,7 @@
           "old": "        module_graph=graph,",
           "new": "        module_graph=None,",
           "breaks": "decomposition has no graph to take impact sets from",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
         },
         {
           "id": "no-related-contexts",
@@ -39,7 +39,7 @@
           "old": "        related_contexts=related,",
           "new": "        related_contexts=None,",
           "breaks": "prompts lose the neighbouring modules",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
         }
       ]
     },
@@ -58,7 +58,7 @@
           "old": "        logger.warning(",
           "new": "        logger.debug(",
           "breaks": "topology context and MCP pre-fetch go off with no word to the user",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
         }
       ]
     },
@@ -156,7 +156,105 @@
           "old": "    from specweaver.graph.topology.loader import load_topology, select_topology_contexts",
           "new": "    from specweaver.assurance.graph.loader import load_topology, select_topology_contexts",
           "breaks": "a caller reaches the module graph through its old home again",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-7",
+      "title": "The module graph's engine keeps today's answers on networkx",
+      "scope": [
+        "tests/unit/graph/topology/test_topology_engine_answers.py",
+        "tests/unit/graph/topology/test_topology_engine.py"
+      ],
+      "mutants": [
+        {
+          "id": "start-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.traverse",
+          "old": "                reached.add(start)",
+          "new": "                pass",
+          "breaks": "a module on a cycle no longer counts as affected by its own change",
+          "symbol_sha": "sha256:defdb896fc25b0054d26b1767ce15c94729fd2894f78d3b7559fd1bc912e8e88"
+        },
+        {
+          "id": "centre-kept",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.neighbors_within",
+          "old": "            return set(around.nodes) - {module}",
+          "new": "            return set(around.nodes)",
+          "breaks": "a module is listed as its own neighbour in the prompt",
+          "symbol_sha": "sha256:b20055814ddde4b98f29e19c9c644cab5da9960ad6ab2e5541849f1afe2d3c09"
+        },
+        {
+          "id": "missing-raises",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.get_forward",
+          "old": "            return set(self._graph.successors(node)) if node in self._graph else set()",
+          "new": "            return set(self._graph.successors(node))",
+          "breaks": "a module the graph never saw crashes the caller",
+          "symbol_sha": "sha256:36e9f2ccf418c236b5f0d0d7324c86b14eac48c5f11cfda4db41f35c2d5edd03"
+        },
+        {
+          "id": "self-loops-dropped",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.cycles",
+          "old": "                if len(component) > 1 or self._loops(next(iter(component)))",
+          "new": "                if len(component) > 1",
+          "breaks": "a module that consumes itself is not reported as a cycle",
+          "symbol_sha": "sha256:86e4879ff67a4e4a881b5704c208bb03ba45ad9a8250f299f0badf0fc15e9819"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-8",
+      "title": "The engine protocol matches the engine",
+      "scope": [
+        "tests/unit/graph/topology/test_engine_protocol.py"
+      ],
+      "mutants": [
+        {
+          "id": "protocol-renames-depth",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/topology.py",
+          "symbol": "TopologyEngineProtocol",
+          "old": "    def neighbors_within(self, module: str, depth: int = 1) -> set[str]: ...",
+          "new": "    def neighbors_within(self, start: str, max_depth: int) -> set[str]: ...",
+          "breaks": "a caller following the protocol by keyword breaks at run time",
+          "symbol_sha": "sha256:af57e1ffa9170aec8e8c3bf92c017c8a392d6342640225bc67064ae9dfd61367"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-9",
+      "title": "One depth limit for both engines",
+      "scope": [
+        "tests/unit/graph/test_one_depth_limit.py"
+      ],
+      "mutants": [
+        {
+          "id": "limit-plus-one",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.neighbors_within",
+          "old": "            radius = min(depth, MAX_NEIGHBOURHOOD_DEPTH)",
+          "new": "            radius = min(depth, MAX_NEIGHBOURHOOD_DEPTH + 1)",
+          "breaks": "the module graph walks past the agreed limit",
+          "symbol_sha": "sha256:b20055814ddde4b98f29e19c9c644cab5da9960ad6ab2e5541849f1afe2d3c09"
+        },
+        {
+          "id": "own-limit",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/core.py",
+          "symbol": "InMemoryGraphEngine.extract_subgraph",
+          "old": "        max_depth = min(depth, MAX_NEIGHBOURHOOD_DEPTH)",
+          "new": "        max_depth = min(depth, 5)",
+          "breaks": "the code graph keeps its own copy of the limit",
+          "symbol_sha": "sha256:c730bc576d6494d5f7c3665eff2bde938779cce248b4007013e3437e0d4c4ebd"
         }
       ]
     }

@@ -14,7 +14,7 @@ depends_on = [ "specweaver.infrastructure.database",]
 
 [[modules]]
 path = "specweaver.graph.topology"
-depends_on = [ "specweaver.workspace.analyzers", "specweaver.workspace.context",]
+depends_on = [ "specweaver.graph", "specweaver.workspace.analyzers", "specweaver.workspace.context",]
 
 [[modules]]
 path = "specweaver.graph.interfaces"
@@ -235,7 +235,7 @@ expose = [ "factory", "factory.AnalyzerFactory", "inferrer", "inferrer.ContextIn
 
 [[interfaces]]
 from = [ "specweaver.graph",]
-expose = [ "core.engine.core", "core.engine.models", "lineage.engine", "lineage.repository", "core.builder.orchestrator.GraphOrchestrator",]
+expose = [ "core.engine.core", "core.engine.models", "core.engine.models.MAX_NEIGHBOURHOOD_DEPTH", "lineage.engine", "lineage.repository", "core.builder.orchestrator.GraphOrchestrator",]
 
 [[interfaces]]
 from = [ "specweaver.infrastructure.llm",]

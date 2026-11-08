@@ -178,7 +178,7 @@
           "old": "    graph = load_topology(request.project_root)",
           "new": "    graph = None",
           "breaks": "runs get no topology",
-          "symbol_sha": "sha256:71aeac6ae4cd2220311c14a9a771c90d7981a19c08a37ba6419e5be176641866"
+          "symbol_sha": "sha256:bc9a6c3a8c774f4cc2f5a19684fc64d7d735e75a9e80d46ad8c8db53be033650"
         },
         {
           "id": "optional-model-refuses",

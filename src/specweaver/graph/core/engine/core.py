@@ -8,7 +8,12 @@ from typing import Any
 
 import networkx as nx
 
-from specweaver.graph.core.engine.models import EDGE_KIND_ATTR, GraphEdge, GraphNode
+from specweaver.graph.core.engine.models import (
+    EDGE_KIND_ATTR,
+    MAX_NEIGHBOURHOOD_DEPTH,
+    GraphEdge,
+    GraphNode,
+)
 
 
 class InMemoryGraphEngine:
@@ -81,7 +86,7 @@ class InMemoryGraphEngine:
         if not isinstance(start_hash, str):
             raise ValueError(f"extract_subgraph requires a string hash, got {type(start_hash)}")
 
-        max_depth = min(depth, 5)
+        max_depth = min(depth, MAX_NEIGHBOURHOOD_DEPTH)
 
         with self._lock:
             if not self._nx_graph.has_node(start_hash):

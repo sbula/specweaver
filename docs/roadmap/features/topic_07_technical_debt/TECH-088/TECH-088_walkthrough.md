@@ -88,3 +88,22 @@ hand also fails the guard.
 
 **Gate.** Full suite 12,912 passed, 9 skipped; `tach`, `cb` 17/17, `doc` 14/14, `mypy` clean, no new
 clone, 0 stale mutants.
+
+## SF-03 CB-1 — the engine on networkx (FR-7, FR-8, FR-9)
+
+**What changed.** `graph/topology/engine.py` holds a `networkx.DiGraph` behind the same lock; the
+hand-written Tarjan code and the unreachable dangling-edge skip are gone. Three answers networkx
+gives differently are written out: a traversal adds its start when a node it reaches points back at
+it (or the start loops to itself); a neighbourhood drops its centre; a missing node answers empty.
+`cycles()` sorts each cycle and the list. `TopologyEngineProtocol` now has the engine's signatures.
+`MAX_NEIGHBOURHOOD_DEPTH = 5` in `graph/core/engine/models.py` is the one limit; the code graph's
+`extract_subgraph` uses it too. `graph.topology` gains its `specweaver.graph` edge in tach, and
+`graph`'s interface exposes the constant.
+
+**Tests.** `test_topology_engine_answers.py` (13) was green against the old engine: it pins today's
+answers. `test_engine_protocol.py` was red (`name` vs `node`, `start, max_depth` vs `module, depth`);
+`test_one_depth_limit.py` was red (no constant, two `min(depth, 5)`).
+
+**Mutants.** FR-7: `start-dropped`, `centre-kept`, `missing-raises`, `self-loops-dropped`. FR-8:
+`protocol-renames-depth`. FR-9: `limit-plus-one` (a module constant cannot be a corpus symbol, so
+the mutant sits where the engine reads it), `own-limit`.

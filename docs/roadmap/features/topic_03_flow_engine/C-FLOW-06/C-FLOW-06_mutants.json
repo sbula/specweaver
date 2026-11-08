@@ -48,7 +48,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return [target]\n",
           "breaks": "every run runs every test again",
-          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
+          "symbol_sha": "sha256:c78b82f6bf49c51b84425a3d1949e658558f8e7921fd81064972ede461f4b11f"
         },
         {
           "id": "narrow-to-nothing",
@@ -58,7 +58,7 @@
           "old": "            return folders_to_test(context.project_path, code_root, graph, kind) or [target]\n",
           "new": "            return folders_to_test(context.project_path, code_root, graph, kind)\n",
           "breaks": "nothing changed runs no test and passes",
-          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
+          "symbol_sha": "sha256:c78b82f6bf49c51b84425a3d1949e658558f8e7921fd81064972ede461f4b11f"
         },
         {
           "id": "no-dependents",
@@ -98,7 +98,7 @@
           "old": "        code_root = context.isolation.execution_root or context.project_path\n",
           "new": "        code_root = context.project_path\n",
           "breaks": "code a run wrote in its worktree is not seen as changed",
-          "symbol_sha": "sha256:f602071658637ced1e05201c39ef9c613b59fd7f484696fb716403844bf5a6a3"
+          "symbol_sha": "sha256:c78b82f6bf49c51b84425a3d1949e658558f8e7921fd81064972ede461f4b11f"
         },
         {
           "id": "save-always",

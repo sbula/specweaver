@@ -89,6 +89,7 @@ def test_tach_declares_the_module_and_keeps_the_code_graph_s_edges() -> None:
     modules = _tach_modules()
 
     assert sorted(modules["specweaver.graph.topology"]) == [
+        "specweaver.graph",
         "specweaver.workspace.analyzers",
         "specweaver.workspace.context",
     ]

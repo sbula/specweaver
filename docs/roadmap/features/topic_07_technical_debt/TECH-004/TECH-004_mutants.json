@@ -38,7 +38,7 @@
           "old": "        service_name = resolve_service_name(load_topology(project_path), project_path)\n",
           "new": "        service_name = \"default\"\n",
           "breaks": "`sw graph build` ignores the project's service name",
-          "symbol_sha": "sha256:3808c31dc5fe3eb2d1d10ca5dae3056f65e6ad160fb7e574c8cf746db010c1f9"
+          "symbol_sha": "sha256:f7b2035cd4c65095dfedcf75c742e87143bac285f6df17f1dafcca5f077a0d78"
         }
       ]
     },
@@ -57,7 +57,7 @@
           "old": "    def extract_subgraph(self, start_hash: str, depth: int) -> nx.DiGraph:",
           "new": "    def extract_subgraph(self, start_hash: str, depth: int, *, deep: bool = False) -> nx.DiGraph:",
           "breaks": "a second engine built to the protocol can no longer stand in for this one",
-          "symbol_sha": "sha256:adebe7263c5ee70253176e2c2cfb0b9b0fe22a95e87f81689e40a3cbd5ec998d"
+          "symbol_sha": "sha256:c730bc576d6494d5f7c3665eff2bde938779cce248b4007013e3437e0d4c4ebd"
         }
       ]
     },

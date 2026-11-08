@@ -80,6 +80,10 @@ class GraphNode(BaseModel):
         return v
 
 
+MAX_NEIGHBOURHOOD_DEPTH = 5
+"""The most hops either graph engine walks from one node, whatever depth a caller asks for."""
+
+
 EDGE_KIND_ATTR = "kind"
 """The networkx edge attribute an edge's `EdgeKind` is stored under.
 

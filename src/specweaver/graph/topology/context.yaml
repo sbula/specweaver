@@ -18,6 +18,7 @@ consumes:
   - specweaver/workspace/context
   - specweaver/workspace/analyzers
   - specweaver/commons
+  - specweaver/graph/core/engine
 widens:
   specweaver/workspace/context: "the hasher takes an analyzer factory by its protocol"
   specweaver/workspace/analyzers: "the hasher and the auto-inference read code through the analyzers"
