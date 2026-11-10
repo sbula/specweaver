@@ -213,3 +213,14 @@ names `payments (direct dependency)`) and on the exit code the verdict gives; an
 names the turn limit or the provider. Every assert has a message, and the first request is saved to
 `.tmp/live/review_names_its_neighbours.txt`. Green on its first run, 8 minutes. The reviewer's tool loop on
 Gemini is `TECH-095`; the never-run list a session broke is `TECH-096`.
+
+## CI fix (2026-11-10)
+
+CI failed on Python 3.11 only: `test_anything_else_is_refused[source3]`, the bare `MagicMock`. On 3.11,
+`isinstance` against a runtime protocol uses `hasattr`, and a mock answers any attribute; 3.12 and later use
+`getattr_static`. So the SF-03 note above ("`runtime_checkable` checks with `getattr_static`") holds on 3.12+
+only. `commons/protocols.py` `conforms` gives the 3.12 answer on every version. `add_context` checks the
+source's class with it. `GraphContext.module_graph`, `GraphContext.target_boundary` and `ModelAccess.drafters`
+had the same gap on 3.11 and check with it through a validator. No other `isinstance` against a runtime
+protocol is in `src`; the FR-15 mock guard reads the AST. A `MagicMock(spec=X)` of a conforming `X` still
+conforms, as `isinstance` says. Red on 3.11 first, then green; the full suite passes on 3.11 and 3.14.

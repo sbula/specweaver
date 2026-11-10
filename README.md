@@ -80,7 +80,7 @@ similar steps usually do. Other providers: `uv sync --extra all-llm`. See the
 
 ## Testing
 
-**13,102 tests** (pytest, parametrized cases counted; 2026-11-08): 10,291 unit, 2,344 integration,
+**13,119 tests** (pytest, parametrized cases counted; 2026-11-10): 10,308 unit, 2,344 integration,
 452 e2e and 15 manual. 40 of them call real services and 24 run the real build tools (the
 `toolchain` tier, nightly); both are skipped by default, so a plain `pytest` run collects 13,038. `scripts/live.py` runs 10 of them every night: against real Gemini
 the spend brake, secret masking, spec and code review, a review that names its neighbours, the plan step, and `sw implement` on a Rust

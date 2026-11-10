@@ -10,18 +10,19 @@ Proves: TECH-088 FR-1
 | Happy | a `TopologyNode` and a `TopologyGraph` are accepted |
 | Boundary | all three fields default to `None` |
 | Degradation | — a model has no dependency to fail; the refusal itself is the degradation path |
-| Hostile | a list, a string and a context record are refused as the boundary or the graph; a neighbour's context record is not a boundary, though it carries `mcp_servers` |
+| Hostile | a list, a string and a context record are refused as the boundary or the graph; a neighbour's context record is not a boundary, though it carries `mcp_servers`; a bare `MagicMock` is refused as the boundary, the graph and the drafters on every Python version |
 """
 
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import ValidationError
 
 from specweaver.commons.topology_context import TopologyContext
-from specweaver.core.flow.run_state.run_context import GraphContext
+from specweaver.core.flow.run_state.run_context import GraphContext, ModelAccess
 from specweaver.graph.topology.engine import TopologyEngine
 from specweaver.graph.topology.topology import TopologyGraph, TopologyNode
 
@@ -48,16 +49,22 @@ def test_the_fields_default_to_none() -> None:
     )
 
 
-@pytest.mark.parametrize("wrong", [[_CONTEXT], "billing", Path("billing"), _CONTEXT])
+@pytest.mark.parametrize("wrong", [[_CONTEXT], "billing", Path("billing"), _CONTEXT, MagicMock()])
 def test_a_wrong_boundary_is_refused(wrong: object) -> None:
     with pytest.raises(ValidationError):
         GraphContext(target_boundary=wrong)
 
 
-@pytest.mark.parametrize("wrong", [[_CONTEXT], "graph", _CONTEXT])
+@pytest.mark.parametrize("wrong", [[_CONTEXT], "graph", _CONTEXT, MagicMock()])
 def test_a_wrong_graph_is_refused(wrong: object) -> None:
     with pytest.raises(ValidationError):
         GraphContext(module_graph=wrong)
+
+
+# Python 3.11 checks a runtime Protocol with hasattr, so a MagicMock passed these fields there.
+def test_a_mock_is_not_the_drafters() -> None:
+    with pytest.raises(ValidationError):
+        ModelAccess(drafters=MagicMock())
 
 
 def test_the_one_field_for_every_meaning_is_gone() -> None:

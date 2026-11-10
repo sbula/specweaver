@@ -16,11 +16,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Annotated, Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from specweaver.commons.project_profile import ProjectProfile
+from specweaver.commons.protocols import conforms
 from specweaver.commons.timestamps import now_iso as _now_iso
 from specweaver.commons.topology_context import DeclaredBoundary, ModuleImpact, TopologyContext
 from specweaver.core.config.autonomy_policy import AutonomyPolicy
@@ -39,6 +40,22 @@ class Drafters(Protocol):
     def spec(self, **kw: Any) -> Any: ...
 
     def feature(self, **kw: Any) -> Any: ...
+
+
+def _meets(protocol: type) -> AfterValidator:
+    """Refuses what `isinstance` lets through on Python 3.11, such as a `MagicMock`."""
+
+    def check(value: Any) -> Any:
+        if value is not None and not conforms(value, protocol):
+            raise ValueError(f"not a {protocol.__name__}: {type(value).__name__}")
+        return value
+
+    return AfterValidator(check)
+
+
+_Drafters = Annotated[Drafters | None, _meets(Drafters)]
+_Boundary = Annotated[DeclaredBoundary | None, _meets(DeclaredBoundary)]
+_Impact = Annotated[ModuleImpact | None, _meets(ModuleImpact)]
 
 
 # RunContext — everything a handler needs
@@ -98,7 +115,7 @@ class ModelAccess(BaseModel):
 
     config: Any = None  # SpecWeaverSettings | None
     llm_router: Any = None  # ModelRouter | None — every role's adapter and settings
-    drafters: Drafters | None = None
+    drafters: _Drafters = None
 
 
 class RunHandle(BaseModel):
@@ -143,8 +160,8 @@ class GraphContext(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     related_contexts: list[TopologyContext] | None = None
-    target_boundary: DeclaredBoundary | None = None
-    module_graph: ModuleImpact | None = None
+    target_boundary: _Boundary = None
+    module_graph: _Impact = None
     api_contract_paths: list[str] | None = None
 
 

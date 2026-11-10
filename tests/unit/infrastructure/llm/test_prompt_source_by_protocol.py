@@ -10,13 +10,14 @@ Proves: TECH-088 FR-10
 | Happy | a `TopologyContext`, a `FilePromptAdapter` and a small class with both methods are added as sources |
 | Boundary | a string still goes in as string context |
 | Degradation | — the check reads no file and calls no service |
-| Hostile | an object with only one of the two methods, `None`, and a bare `MagicMock` are refused with `TypeError`; no `hasattr(` is left in `adders.py` |
+| Hostile | an object with only one of the two methods, `None`, a bare `MagicMock` and an object with both methods set on the instance, not its class, are refused with `TypeError` on every Python version; no `hasattr(` is left in `adders.py` |
 """
 
 from __future__ import annotations
 
 import ast
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -68,7 +69,17 @@ def test_a_string_is_still_string_context() -> None:
     assert _labels(builder) == ["note"]
 
 
-@pytest.mark.parametrize("source", [_ContentOnly(), _LabelOnly(), None, MagicMock()])
+def _methods_on_the_instance() -> object:
+    source = SimpleNamespace()
+    source.get_prompt_content = lambda char_limit=None: "<context>x</context>"
+    source.get_prompt_label = lambda: "x"
+    return source
+
+
+# Python 3.11 checks a runtime Protocol with hasattr, so a MagicMock passed it there and not on 3.12+.
+@pytest.mark.parametrize(
+    "source", [_ContentOnly(), _LabelOnly(), None, MagicMock(), _methods_on_the_instance()]
+)
 def test_anything_else_is_refused(source: object) -> None:
     with pytest.raises(TypeError, match="PromptContentSource"):
         PromptBuilder().add_context(source)

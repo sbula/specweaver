@@ -32,7 +32,10 @@ class PromptContentSource(Protocol):
 ## Conforming from the domain
 
 Protocols resolve structurally: any class with `get_prompt_content` and `get_prompt_label`
-conforms, with no LLM package imports.
+conforms, with no LLM package imports. `add_context` checks the class with
+`specweaver.commons.protocols.conforms`, not `isinstance`: on Python 3.11 `isinstance` against a
+runtime protocol uses `hasattr`, so a bare `MagicMock` passes it there. Check any runtime protocol
+the same way.
 
 ```python
 # specweaver/commons/topology_context.py

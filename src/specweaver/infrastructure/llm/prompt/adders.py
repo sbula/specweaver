@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from specweaver.infrastructure.llm.models import ProjectMetadata
     from specweaver.infrastructure.llm.prompt.builder import PromptBuilder
 
+from specweaver.commons.protocols import conforms
 from specweaver.infrastructure.llm.escaping import apply_escaping
 from specweaver.infrastructure.llm.prompt.block import _ContentBlock
 from specweaver.infrastructure.llm.prompt.constants import _CONSTITUTION_PREAMBLE, detect_language
@@ -117,8 +118,9 @@ class PromptBuilderAddersMixin:
                 slot=slot,
                 escaping=kwargs.get("escaping"),
             )
-        elif isinstance(text, PromptContentSource):
-            source = text
+        # On the class: a source is a type that defines both methods, never a loose object.
+        elif conforms(type(text), PromptContentSource):
+            source: PromptContentSource = text
             # Extract slots / priority from kwargs if present, else use default
             prio = kwargs.get("priority", priority)
             actual_slot = kwargs.get("slot", slot)
