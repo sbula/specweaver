@@ -314,6 +314,29 @@ def _without_docstring(node: ast.AST) -> ast.AST:
     return ast.Module(body=body[1:] if leads_with_docstring else body, type_ignores=[])
 
 
+def _dump(node: object) -> str:
+    """`ast.dump` as Python 3.13 and later print it, on every version.
+
+    3.13 began leaving out a field whose value is `None` or `[]`, so 3.11 printed `decorator_list=[]`
+    where 3.14 prints nothing, and every hash pinned on 3.14 read as moved on 3.11. This prints the
+    3.13+ shape everywhere, so the pins stay valid and CI on 3.11 agrees with the nightly run.
+    """
+    if isinstance(node, ast.AST):
+        fields = []
+        for name in node._fields:
+            value = getattr(node, name, None)
+            if value is None and getattr(type(node), name, ...) is None:
+                continue
+            keep_none = isinstance(node, (ast.Constant, ast.MatchSingleton))
+            if (value is None or value == []) and not keep_none:
+                continue
+            fields.append(f"{name}={_dump(value)}")
+        return f"{type(node).__name__}({', '.join(fields)})"
+    if isinstance(node, list):
+        return f"[{', '.join(_dump(item) for item in node)}]"
+    return repr(node)
+
+
 def symbol_sha(source: str, symbol: str) -> str:
     """A fingerprint of what the symbol *does*, not of how it is laid out.
 
@@ -322,7 +345,7 @@ def symbol_sha(source: str, symbol: str) -> str:
     which is correct: that is a behaviour-adjacent edit worth re-reading the claim for.
     """
     node = resolve_symbol(source, symbol)
-    digest = hashlib.sha256(ast.dump(_without_docstring(node)).encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(_dump(_without_docstring(node)).encode("utf-8")).hexdigest()
     return f"sha256:{digest}"
 
 
