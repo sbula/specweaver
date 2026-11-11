@@ -64,6 +64,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/specweaver"]
 
+[tool.specweaver.mutation]
+# The Python versions a mutant's `symbol_sha` is computed on: the ones CI gates on. Any other
+# version refuses to compute one (`scripts/_corpus.py`), rather than report every mutant as moved.
+hash_pythons = ["3.11", "3.14"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]

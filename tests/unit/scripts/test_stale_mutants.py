@@ -141,6 +141,23 @@ class TestMain:
         assert sm.main(["--features", str(tmp_path), "--root", str(tmp_path)]) == 0
         assert "0 stale" in capsys.readouterr().out
 
+    def test_another_python_exits_2_naming_the_versions(
+        self,
+        sm: ModuleType,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        (tmp_path / "mod.py").write_text(SOURCE, encoding="utf-8")
+        _corpus_file(
+            tmp_path, [_campaign("FR-1", [_mutant("m", _corpus.symbol_sha(SOURCE, "target"))])]
+        )
+        monkeypatch.setattr(sm._corpus, "_running_python", lambda: "3.12")
+
+        assert sm.main(["--features", str(tmp_path), "--root", str(tmp_path)]) == 2
+        err = capsys.readouterr().err
+        assert "3.12" in err and "3.11, 3.14" in err
+
     def test_an_unreadable_corpus_is_named_with_exit_2(
         self, sm: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:

@@ -42,6 +42,7 @@ import ast
 import hashlib
 import json
 import sys
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -277,7 +278,7 @@ def resolve_symbol(source: str, symbol: str) -> ast.AST:
     six times, so a tree-wide search would resolve a bare name to whichever it met first and the
     mutant would silently measure different code than its claim describes.
     """
-    node: Any = _parse(source)
+    node: ast.AST = _parse(source)
     for segment in symbol.split("."):
         if not segment:
             raise CorpusError(f"{symbol!r}: empty path segment")
@@ -314,6 +315,31 @@ def _without_docstring(node: ast.AST) -> ast.AST:
     return ast.Module(body=body[1:] if leads_with_docstring else body, type_ignores=[])
 
 
+class HashPythonError(CorpusError):
+    """The running Python is not one the corpus hashes are computed on."""
+
+
+def hash_pythons() -> tuple[str, ...]:
+    """The Python versions `symbol_sha` may run on, from `[tool.specweaver.mutation]`."""
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    table = tomllib.loads(pyproject.read_text(encoding="utf-8"))["tool"]["specweaver"]["mutation"]
+    return tuple(table["hash_pythons"])
+
+
+def _running_python() -> str:
+    return f"{sys.version_info.major}.{sys.version_info.minor}"
+
+
+def _require_hash_python() -> None:
+    allowed = hash_pythons()
+    if _running_python() not in allowed:
+        raise HashPythonError(
+            f"Python {_running_python()} is not a hash Python ({', '.join(allowed)}, "
+            "pyproject.toml [tool.specweaver.mutation]): every mutant would read as moved. "
+            "Run with one of those, or add this version after checking its hashes match"
+        )
+
+
 def _dump(node: object) -> str:
     """`ast.dump` as Python 3.13 and later print it, on every version.
 
@@ -345,6 +371,7 @@ def symbol_sha(source: str, symbol: str) -> str:
     which is correct: that is a behaviour-adjacent edit worth re-reading the claim for.
     """
     node = resolve_symbol(source, symbol)
+    _require_hash_python()
     digest = hashlib.sha256(_dump(_without_docstring(node)).encode("utf-8")).hexdigest()
     return f"sha256:{digest}"
 
@@ -385,6 +412,8 @@ def drift_of(mutant: Mutant, root: Path) -> str:
     try:
         source = (root / mutant.file).read_text(encoding="utf-8")
         return OK if symbol_sha(source, mutant.symbol) == mutant.symbol_sha else STALE
+    except HashPythonError:
+        raise
     except (OSError, CorpusError):
         return STALE
 
@@ -411,6 +440,7 @@ def _rewrite(path: Path, data: dict[str, Any]) -> None:
 
 
 def _find_mutant(data: dict[str, Any], feature: str, derived_id: str) -> dict[str, Any]:
+    mutant: dict[str, Any]
     for campaign in data.get("campaigns", []):
         for mutant in campaign.get("mutants", []):
             if f"{feature} {campaign.get('requirement')} {mutant.get('id')}" == derived_id:

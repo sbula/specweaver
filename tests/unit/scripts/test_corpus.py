@@ -296,6 +296,17 @@ _SAMPLE = (
     '    return [a, b][0] if x is None else {**kw}.get("k", 2.5)\n'
 )
 _SAMPLE_SHA = "sha256:9480db2f936fc279fd02b73f5d9ef4512d2d04855a7634d04ec8321e69b2e232"
+_SAMPLE_DUMP = (
+    "FunctionDef(name='f', args=arguments(args=[arg(arg='a'), arg(arg='b', annotation=Name(id='int', "
+    "ctx=Load()))], vararg=arg(arg='args'), kwarg=arg(arg='kw'), defaults=[Constant(value=1)]), "
+    "body=[Assign(targets=[Name(id='x', ctx=Store())], value=Constant(value=None)), "
+    "Return(value=IfExp(test=Compare(left=Name(id='x', ctx=Load()), ops=[Is()], "
+    "comparators=[Constant(value=None)]), body=Subscript(value=List(elts=[Name(id='a', ctx=Load()), "
+    "Name(id='b', ctx=Load())], ctx=Load()), slice=Constant(value=0), ctx=Load()), "
+    "orelse=Call(func=Attribute(value=Dict(keys=[None], values=[Name(id='kw', ctx=Load())]), "
+    "attr='get', ctx=Load()), args=[Constant(value='k'), Constant(value=2.5)])))], "
+    "decorator_list=[Name(id='dec', ctx=Load())], returns=Name(id='int', ctx=Load()))"
+)
 
 
 class TestSymbolShaAcrossVersions:
@@ -307,13 +318,46 @@ class TestSymbolShaAcrossVersions:
     def test_the_hash_is_the_one_pinned_on_3_14(self, corpus: ModuleType) -> None:
         assert corpus.symbol_sha(_SAMPLE, "f") == _SAMPLE_SHA
 
-    @pytest.mark.skipif(sys.version_info < (3, 13), reason="the reference is 3.13+'s own ast.dump")
-    def test_the_dump_is_what_3_13_and_later_print(self, corpus: ModuleType) -> None:
-        tree = ast.parse((REPO_ROOT / "scripts" / "_corpus.py").read_text(encoding="utf-8"))
-        nodes = [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
+    def test_the_dump_is_our_own_serializer_on_every_version(self, corpus: ModuleType) -> None:
+        """Taken once from 3.14's `ast.dump`; written out, so a later `ast.dump` cannot move it."""
+        tree = ast.parse(_SAMPLE.replace('    """Doc."""\n', ""))
 
-        assert nodes
-        assert [corpus._dump(n) for n in nodes] == [ast.dump(n) for n in nodes]
+        assert corpus._dump(tree.body[0]) == _SAMPLE_DUMP
+
+    def test_the_hash_never_calls_ast_dump(
+        self, corpus: ModuleType, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def refuse(*_: object, **__: object) -> str:
+            raise AssertionError("ast.dump was called")
+
+        monkeypatch.setattr(ast, "dump", refuse)
+
+        assert corpus.symbol_sha(_SAMPLE, "f") == _SAMPLE_SHA
+
+    def test_the_hash_pythons_are_read_from_pyproject(self, corpus: ModuleType) -> None:
+        assert corpus.hash_pythons() == ("3.11", "3.14")
+
+    def test_another_python_is_refused_not_reported_stale(
+        self, corpus: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setattr(corpus, "_running_python", lambda: "3.12")
+        (tmp_path / "mod.py").write_text(_SAMPLE, encoding="utf-8")
+        mutant = corpus.Mutant(
+            id="m",
+            origin="authored",
+            file="mod.py",
+            symbol="f",
+            old="x = None",
+            new="x = 1",
+            breaks="b",
+            derived_id="TECH-901 FR-1 m",
+            symbol_sha=_SAMPLE_SHA,
+        )
+
+        with pytest.raises(corpus.HashPythonError, match=r"3\.12.*3\.11, 3\.14"):
+            corpus.symbol_sha(_SAMPLE, "f")
+        with pytest.raises(corpus.HashPythonError):
+            corpus.drift_of(mutant, tmp_path)
 
 
 class TestSymbolSha:
