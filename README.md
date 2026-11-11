@@ -80,7 +80,7 @@ similar steps usually do. Other providers: `uv sync --extra all-llm`. See the
 
 ## Testing
 
-**13,119 tests** (pytest, parametrized cases counted; 2026-11-10): 10,308 unit, 2,344 integration,
+**13,136 tests** (pytest, parametrized cases counted; 2026-11-11): 10,325 unit, 2,344 integration,
 452 e2e and 15 manual. 40 of them call real services and 24 run the real build tools (the
 `toolchain` tier, nightly); both are skipped by default, so a plain `pytest` run collects 13,038. `scripts/live.py` runs 10 of them every night: against real Gemini
 the spend brake, secret masking, spec and code review, a review that names its neighbours, the plan step, and `sw implement` on a Rust
@@ -97,7 +97,7 @@ Static checks: **ruff** (lint), **mypy** in strict mode, **tach** (module-bounda
 complexity, coupling, file-size and duplication checks. `scripts/quality.py` bundles them into gates
 that run before every commit.
 
-**Mutation testing.** `scripts/mutation.py` runs every night over 57 corpora with 1,499 hand-written
+**Mutation testing.** `scripts/mutation.py` runs every night over 58 corpora with 1,500 hand-written
 mutants. Each mutant breaks one line that a requirement depends on — for example, it changes the
 API server's bind address from `127.0.0.1` to `0.0.0.0` — and at least one test must fail. Each
 mutant ends as `PROTECTED`, `UNPROTECTED` or `UNMEASURED` (a hang is never counted as a pass).

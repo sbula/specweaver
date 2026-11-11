@@ -62,6 +62,29 @@ before planning.
   projects. Where: `graph/core/engine/hashing.py:7`, `assurance/graph/hasher.py:61`, two
   `_ensure_gitignore`.
 
+## Done ahead of the design: one import index per build (2026-11-11)
+
+The user took this one part ahead of the rest, as its own commit `[agreed 2026-11-11]`. A profile
+of the full Kafka build (6,623 files, 503 s) put 96% of the time in import resolution:
+`resolve_module` compared each of 96,027 imports with every collected file. `clone_hash`, the
+skip and everything below stay for the design.
+
+| FR | Requirement | Proof |
+|---|---|---|
+| FR-1 | A build resolves imports through one index made per build, with the same answer for every import as the full scan gave | `tests/unit/graph/core/builder/test_module_index.py` |
+
+The condition is identical output `[agreed 2026-11-11]`: sorted dumps of every node and edge (ids,
+kinds, targets, metadata) from the old and the new code, on three nested Kafka samples, must diff
+empty. Result, 2026-11-11, Kafka commit `5a3b9b32`, old code from `git archive HEAD src`:
+
+| Sample | Dump lines | `diff old_<s>.txt new_<s>.txt` |
+|---|---|---|
+| S (`raft`, `metadata`) | 51,115 | exit 0, no lines |
+| M (S + `group-coordinator`, `storage`) | 141,139 | exit 0, no lines |
+| L (all Java) | 658,159 | exit 0, no lines; both files sha256 `6e4f4e1f…81f7` |
+
+The full Kafka build (6,623 files, in memory) went from 503 s to 54 s; parsing is now the largest part.
+
 ## Candidate Approaches (not yet designed)
 
 1. **Hash-gated skip.** `get_all_file_hashes` already returns a `clone_hash` per file. Compare it

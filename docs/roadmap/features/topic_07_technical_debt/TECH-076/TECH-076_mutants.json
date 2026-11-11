@@ -290,8 +290,8 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "load_section_at",
-          "old": "    except SettingsFileError as err:\n        refuse_settings(err)\n\n\ndef project_sections_at",
-          "new": "    except SettingsFileError:\n        raise\n\n\ndef project_sections_at",
+          "old": "        return load_section(path, parse)\n    except SettingsFileError as err:\n        refuse_settings(err)",
+          "new": "        return load_section(path, parse)\n    except SettingsFileError:\n        raise",
           "breaks": "a broken section ends in a traceback",
           "symbol_sha": "sha256:de802146c19df4056cf3d65f9bdbb44363af76a46543b62f0be909e61914f264"
         }

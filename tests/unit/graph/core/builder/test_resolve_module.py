@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import pytest
 
-from specweaver.graph.core.builder.mapper import _matches_stem, _module_segments, resolve_module
+from specweaver.graph.core.builder.mapper import _module_segments, resolve_module
 from specweaver.graph.core.engine.hashing import SemanticHasher
 
 
@@ -55,23 +55,23 @@ class TestModuleSegments:
 class TestMatchesStem:
     def test_a_file_is_its_own_stem(self) -> None:
         """Happy path."""
-        assert _matches_stem("src/alpha/beta.rs", "alpha/beta")
+        assert resolve_module("alpha.beta", frozenset({"src/alpha/beta.rs"})) == "src/alpha/beta.rs"
 
     def test_a_package_matches_through_its_init(self) -> None:
         """Boundary: `a.b` names a directory when that directory has an `__init__`."""
-        assert _matches_stem("src/a/b/__init__.py", "a/b")
+        assert resolve_module("a.b", frozenset({"src/a/b/__init__.py"})) == "src/a/b/__init__.py"
 
     def test_a_partial_segment_does_not_match(self) -> None:
         """Boundary, and the one a naive `endswith` gets wrong.
 
         `notbeta.py` ends with `beta.py`, and it is a different file.
         """
-        assert not _matches_stem("src/alpha/notbeta.py", "alpha/beta")
-        assert not _matches_stem("src/xbeta.py", "beta")
+        assert resolve_module("alpha.beta", frozenset({"src/alpha/notbeta.py"})) is None
+        assert resolve_module("beta", frozenset({"src/xbeta.py"})) is None
 
     def test_a_file_with_no_suffix_still_matches(self) -> None:
         """Boundary: `rsplit('.', 1)` on a name with no dot must not eat the name."""
-        assert _matches_stem("src/Makefile", "Makefile")
+        assert resolve_module("Makefile", frozenset({"src/Makefile"})) == "src/Makefile"
 
 
 class TestResolveModule:

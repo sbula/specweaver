@@ -30,34 +30,52 @@ def _module_segments(module: str) -> list[str]:
     return [part for part in normalised.split("\x00") if part]
 
 
-def resolve_module(module: str, known_files: frozenset[str]) -> str | None:
-    """The one collected file an import names, or None when it names no single one.
+class ModuleIndex:
+    """Every collected file under every path suffix it can be imported by, built once per build.
 
-    Suffix-matching, longest first: `crate::alpha::beta` finds `src/alpha/beta.rs` because `crate`
-    is not a directory. A package is tried as both `a/b.<ext>` and `a/b/__init__.<ext>`. Matching is
-    case-insensitive because `normalize_path` lowercases before hashing (RT-21), so a case-sensitive
-    match here would disagree with the hash it is about to compute.
-
-    None covers unresolved AND ambiguous alike. `ADR-006` makes the graph the truth store, so a
-    reader seeing a visible unknown is better served than one following an invented dependency.
+    A file `src/alpha/beta.rs` is filed under `src/alpha/beta`, `alpha/beta` and `beta`; a package
+    `src/a/b/__init__.py` also under `src/a/b`, `a/b` and `b`. An import is then one lookup per
+    suffix instead of a pass over every file: on Kafka the pass was 96% of the build.
     """
-    segments = _module_segments(module)
-    if not segments:
+
+    def __init__(self, known_files: frozenset[str]) -> None:
+        self._files: dict[str, set[str]] = {}
+        # Lowered like `normalize_path` (RT-21). Two files differing only in case are one key.
+        lowered = {path.replace("\\", "/").lower(): path for path in known_files}
+        for lower, original in lowered.items():
+            without_suffix = lower.rsplit(".", 1)[0]
+            self._file(without_suffix, original)
+            if without_suffix.endswith("/__init__"):
+                self._file(without_suffix[: -len("/__init__")], original)
+
+    def _file(self, path: str, original: str) -> None:
+        parts = path.split("/")
+        for start in range(len(parts)):
+            self._files.setdefault("/".join(parts[start:]), set()).add(original)
+
+    def resolve(self, module: str) -> str | None:
+        """The one collected file an import names, or None when it names no single one.
+
+        Suffix-matching, longest first: `crate::alpha::beta` finds `src/alpha/beta.rs` because
+        `crate` is not a directory. Matching is case-insensitive because `normalize_path` lowercases
+        before hashing (RT-21), so a case-sensitive match here would disagree with the hash it is
+        about to compute.
+
+        None covers unresolved AND ambiguous alike. `ADR-006` makes the graph the truth store, so a
+        reader seeing a visible unknown is better served than one following an invented dependency.
+        The walk stops on ambiguity: a shorter stem must not settle a tie.
+        """
+        segments = _module_segments(module)
+        for start in range(len(segments)):
+            matches = self._files.get("/".join(segments[start:]).lower())
+            if matches:
+                return next(iter(matches)) if len(matches) == 1 else None
         return None
 
-    lowered = {path.replace("\\", "/").lower(): path for path in known_files}
-    for start in range(len(segments)):
-        # LOWERED, like the candidates above. Lowering only one side is not case-insensitive
-        # matching, it is a filter that happens to accept lowercase imports: `import Models`
-        # against a collected `Models.py` resolved to nothing, while `from models import ...`
-        # against the same file worked. Any capitalised module name ghosted.
-        stem = "/".join(segments[start:]).lower()
-        matches = {original for lower, original in lowered.items() if _matches_stem(lower, stem)}
-        if len(matches) == 1:
-            return matches.pop()
-        if matches:
-            return None
-    return None
+
+def resolve_module(module: str, known_files: frozenset[str]) -> str | None:
+    """`ModuleIndex.resolve` for one import; a build makes the index once instead."""
+    return ModuleIndex(known_files).resolve(module)
 
 
 def _ghost(hasher: SemanticHasher, prefix: str, name: str) -> tuple[str, dict[str, Any]]:
@@ -67,15 +85,6 @@ def _ghost(hasher: SemanticHasher, prefix: str, name: str) -> tuple[str, dict[st
     promise: written separately, each could drift on its own while its own tests kept passing.
     """
     return hasher.hash_file(f"{prefix}{name}"), {"raw": fit_metadata_value(name)}
-
-
-def _matches_stem(candidate: str, stem: str) -> bool:
-    """Whether a collected path is the module `stem`, as a file or as a package."""
-    for tail in (stem, f"{stem}/__init__"):
-        without_suffix = candidate.rsplit(".", 1)[0]
-        if without_suffix == tail or without_suffix.endswith(f"/{tail}"):
-            return True
-    return False
 
 
 class OntologyMapper:
@@ -92,7 +101,7 @@ class OntologyMapper:
         self,
         filepath: str,
         ast_data: dict[str, Any] | None,
-        known_files: frozenset[str] = frozenset(),
+        known_files: frozenset[str] | ModuleIndex = frozenset(),
         symbol_index: dict[str, set[str]] | None = None,
         procedure_index: dict[str, set[tuple[str, str]]] | None = None,
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
@@ -128,7 +137,8 @@ class OntologyMapper:
         if not ast_data or not isinstance(ast_data, dict):
             return nodes, edges
 
-        self._map_imports(ast_data.get("imports", []), file_hash, known_files, edges)
+        modules = known_files if isinstance(known_files, ModuleIndex) else ModuleIndex(known_files)
+        self._map_imports(ast_data.get("imports", []), file_hash, modules, edges)
         # A call outside any declaration belongs to the file: module-level code is a real
         # dependency, and there is no symbol to attribute it to.
         self._map_calls(file_hash, ast_data.get("calls", []), procedure_index or {}, edges)
@@ -158,7 +168,7 @@ class OntologyMapper:
         self,
         imports: Any,
         file_hash: str,
-        known_files: frozenset[str],
+        modules: ModuleIndex,
         edges: list[GraphEdge],
     ) -> None:
         """One `IMPORTS` edge per import: to the file it names, or to a ghost when it names none."""
@@ -167,7 +177,7 @@ class OntologyMapper:
         for module in imports:
             if not isinstance(module, str) or not _module_segments(module):
                 continue
-            resolved = resolve_module(module, known_files)
+            resolved = modules.resolve(module)
             meta: dict[str, Any] = {}
             if resolved is not None:
                 target = self.hasher.hash_file(resolved)

@@ -1,0 +1,25 @@
+{
+  "schema": 2,
+  "feature": "TECH-070",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "A build resolves imports through one index, with the answers the full scan gave",
+      "scope": [
+        "tests/unit/graph/core/builder/test_module_index.py"
+      ],
+      "mutants": [
+        {
+          "id": "an-index-per-file",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/builder/orchestrator.py",
+          "symbol": "GraphBuilder.ingest_ast",
+          "old": "            self._modules,",
+          "new": "            frozenset(self.known_files),",
+          "breaks": "every file builds its own index over every collected file again, so a build is imports-by-files once more -- 503 s on Kafka before the index, 54 s after",
+          "symbol_sha": "sha256:195cdf68c374cf1d01305a3c4748343f4fbe4d6d3b4f9ade5c5a7e6b9576d0b2"
+        }
+      ]
+    }
+  ]
+}

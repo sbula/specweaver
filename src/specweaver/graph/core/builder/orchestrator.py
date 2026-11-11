@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from specweaver.graph.core.builder.mapper import OntologyMapper
+from specweaver.graph.core.builder.mapper import ModuleIndex, OntologyMapper
 from specweaver.graph.core.engine.hashing import SemanticHasher
 from specweaver.workspace.ast.adapters.graph_adapter import extract_ast_dict, parseable
 
@@ -70,7 +70,7 @@ class GraphBuilder:
         # Every file this build collected. The mapper sees one file at a time and cannot
         # resolve an import without it; empty means every import becomes a ghost, which is
         # correct for a single-file ingest rather than a defect.
-        self.known_files: set[str] = set()
+        self.known_files = set()
         # Every declared type name mapped to the files declaring it. Built before any edge, so a
         # supertype resolves the same way whichever file the build reaches first. A name in two
         # files stays in two: they are not one type, and the caller must be able to see that.
@@ -78,6 +78,16 @@ class GraphBuilder:
         # Procedures live in their own namespace: a `class Foo` and a `def Foo` are
         # different symbols, and one index would make each ambiguous for the other's sake.
         self.procedure_index: dict[str, set[tuple[str, str]]] = {}
+
+    @property
+    def known_files(self) -> set[str]:
+        return self._known_files
+
+    @known_files.setter
+    def known_files(self, files: set[str]) -> None:
+        # The import index is built here, once per file set, not once per file.
+        self._known_files = files
+        self._modules = ModuleIndex(frozenset(files))
 
     def ingest_ast(self, filepath: str, ast_data: dict[str, Any]) -> None:
         """
@@ -87,7 +97,7 @@ class GraphBuilder:
         new_nodes, new_edges = self.mapper.map_ast_to_nodes(
             filepath,
             ast_data,
-            frozenset(self.known_files),
+            self._modules,
             self.symbol_index,
             self.procedure_index,
         )
