@@ -109,8 +109,8 @@
           "origin": "authored",
           "file": "src/specweaver/interfaces/cli_kit/_core.py",
           "symbol": "refuse_settings",
-          "old": "    raise typer.Exit(code=1) from err\n",
-          "new": "    return\n",
+          "old": "    print_error(err)\n    raise typer.Exit(code=1) from err\n",
+          "new": "    print_error(err)\n    return\n",
           "breaks": "a broken settings file no longer stops the command cleanly; it runs on with no settings and crashes",
           "symbol_sha": "sha256:8c07bbf92229cf8ee858ca4a1ed8b50816c3afed58af268a3428b70278a5cff9"
         }

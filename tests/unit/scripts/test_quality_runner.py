@@ -100,6 +100,9 @@ EXPECTED: dict[str, dict[str, str]] = {
         # touched -- so there is no meaningful `changed` scope and it never narrows. Absent from
         # `quick` on purpose: it shells out to npx and the inner loop should stay fast.
         "duplication": "all",
+        # Every mutant anchor occurs exactly once and its code hash is current: a commit that
+        # removes or duplicates an anchor fails here, not in the next night's corpus run.
+        "mutant_anchors": "all",
     },
     "sf": {
         "ruff": "all",
@@ -119,6 +122,9 @@ EXPECTED: dict[str, dict[str, str]] = {
         "class_health": "module",
         "cycles": "all",
         "duplication": "all",
+        # Every mutant anchor occurs exactly once and its code hash is current: a commit that
+        # removes or duplicates an anchor fails here, not in the next night's corpus run.
+        "mutant_anchors": "all",
         "coupling": "module",
     },
     "feature": {
@@ -139,6 +145,9 @@ EXPECTED: dict[str, dict[str, str]] = {
         "class_health": "all",
         "cycles": "all",
         "duplication": "all",
+        # Every mutant anchor occurs exactly once and its code hash is current: a commit that
+        # removes or duplicates an anchor fails here, not in the next night's corpus run.
+        "mutant_anchors": "all",
         "coupling": "all",
     },
     # A separate track, not a rung on the ladder above: registries, not code.

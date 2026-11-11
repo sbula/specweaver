@@ -136,6 +136,11 @@ it is wanted).
 
 `symbol_sha` fingerprints the **normalised AST** of the enclosing symbol.
 
+The `cb` gate runs `scripts/stale_mutants.py` (check `mutant_anchors`). It lists every live mutant
+that is `STALE` and every one whose `old` text is not in its file exactly once, in any file type.
+So a commit that moves code under a claim fails there, not in the next night's run. The hash
+alone cannot see an anchor that broke inside an unchanged symbol, or one that now appears twice.
+
 | State | Meaning |
 |---|---|
 | `UNHASHED` | no hash pinned yet. Legal — this is how every mutant starts |

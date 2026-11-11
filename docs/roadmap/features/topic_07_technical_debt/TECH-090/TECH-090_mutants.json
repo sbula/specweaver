@@ -598,7 +598,8 @@
         "tests/unit/core/config/test_no_side_effect_imports.py",
         "tests/integration/core/config/bootstrap/test_config_db_steps.py",
         "tests/integration/workspace/test_repository_rows.py",
-        "tests/integration/core/config/bootstrap/test_schema_is_one_schema.py"
+        "tests/integration/core/config/bootstrap/test_schema_is_one_schema.py",
+        "tests/unit/workspace/test_memory_store.py"
       ],
       "mutants": [
         {
@@ -626,8 +627,8 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/memory/store.py",
           "symbol": "_task_id_column",
-          "old": "        ForeignKey(\"memory_tasks.id\", ondelete=\"CASCADE\"),",
-          "new": "        ForeignKey(\"memory_tasks.id\", ondelete=\"SET NULL\"),",
+          "old": "    \"\"\"The owning task, indexed; removing the task removes the row.\"\"\"\n    return mapped_column(\n        Uuid,\n        ForeignKey(\"memory_tasks.id\", ondelete=\"CASCADE\"),",
+          "new": "    \"\"\"The owning task, indexed; removing the task removes the row.\"\"\"\n    return mapped_column(\n        Uuid,\n        ForeignKey(\"memory_tasks.id\", ondelete=\"SET NULL\"),",
           "breaks": "removing a task leaves its transitions and defects",
           "symbol_sha": "sha256:4724c623f6a61e4bb8cfb7962db1d83d677f914898884ccde854c3a0db867889"
         }

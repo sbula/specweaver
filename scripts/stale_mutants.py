@@ -2,12 +2,13 @@
 # Copyright (c) 2026 sbula. All rights reserved.
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root.
 
-"""List every mutant whose code moved since its `symbol_sha` was pinned, across all corpora.
+"""List every mutant whose code moved, or whose anchor is not there exactly once, across all corpora.
 
     .venv/bin/python scripts/stale_mutants.py
 
-Exit 1 when any is STALE, 2 when a corpus cannot be read. Retired campaigns are skipped; an
-unhashed mutant is not STALE. After moving code: re-anchor each listed mutant (its anchor must
+Exit 1 when any is listed, 2 when a corpus cannot be read. Retired campaigns are skipped; an
+unhashed mutant is not STALE, but its anchor is still checked. The `cb` gate runs this, so a commit
+that removes or duplicates an anchor fails at once, not in the next night's corpus run. After moving code: re-anchor each listed mutant (its anchor must
 match exactly once), re-pin it with `_corpus.py --refresh`, and rerun its corpus.
 """
 
@@ -27,16 +28,27 @@ if TYPE_CHECKING:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _anchors(mutant: _corpus.Mutant, root: Path) -> int:
+    """How often the text the mutation tool replaces is in the file; it needs exactly one."""
+    try:
+        return (root / mutant.file).read_text(encoding="utf-8").count(mutant.old)
+    except OSError:
+        return 0
+
+
 def stale(corpora: Iterable[Path], root: Path) -> list[str]:
-    """One `<corpus> <requirement> <mutant id>` line per STALE mutant."""
+    """One `<corpus> <requirement> <mutant id>` line per STALE mutant or misplaced anchor."""
     found = []
     for path in corpora:
         for campaign in _corpus.load_corpus(path).campaigns:
             if campaign.retired:
                 continue
             for mutant in campaign.mutants:
+                line = f"{path} {campaign.requirement} {mutant.id}"
                 if _corpus.drift_of(mutant, root) == _corpus.STALE:
-                    found.append(f"{path} {campaign.requirement} {mutant.id}")
+                    found.append(line)
+                elif (count := _anchors(mutant, root)) != 1:
+                    found.append(f"{line} (anchor found {count} times)")
     return found
 
 

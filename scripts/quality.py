@@ -125,6 +125,9 @@ MATRIX: dict[str, dict[str, str]] = {
     "suppressions": {"cb": "all", "sf": "all", "feature": "all"},
     "lost_errors": {"cb": "all", "sf": "all", "feature": "all"},
     "logger_names": {"cb": "all", "sf": "all", "feature": "all"},
+    # Every mutant anchor occurs exactly once and its code hash is current. Repo-wide: the commit
+    # that breaks an anchor edits the code, not the corpus, so no diff scope would see it.
+    "mutant_anchors": {"cb": "all", "sf": "all", "feature": "all"},
     # -- design metrics: widen as the design settles ----------------------
     # Diff-scoped at `cb` because a class is legitimately half-built mid-commit-boundary and an
     # unactionable finding is one that gets suppressed. Not because it is expensive.

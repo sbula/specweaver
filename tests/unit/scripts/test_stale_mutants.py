@@ -5,7 +5,7 @@
 
 | Bucket | Case |
 |---|---|
-| Happy | a mutant whose symbol still hashes the same is not listed; a moved one is |
+| Happy | a mutant whose symbol still hashes the same is not listed; a moved one is; an anchor that is gone or appears twice is listed, in any file type |
 | Boundary | an unhashed mutant is not STALE; a retired campaign is skipped |
 | Degradation | a mutant whose file is gone is STALE, not a crash |
 | Hostile | an unreadable corpus is reported by name with exit 2 |
@@ -99,6 +99,32 @@ class TestStale:
     def test_a_vanished_file_is_stale_not_a_crash(self, sm: ModuleType, tmp_path: Path) -> None:
         path = _corpus_file(tmp_path, [_campaign("FR-1", [_mutant("gone", "sha256:0", "no.py")])])
         assert sm.stale([path], tmp_path) == [f"{path} FR-1 gone"]
+
+
+class TestAnchors:
+    """The mutation tool needs its anchor exactly once; the symbol hash alone cannot see that."""
+
+    def test_an_anchor_that_is_gone_is_listed(self, sm: ModuleType, tmp_path: Path) -> None:
+        (tmp_path / "mod.py").write_text(SOURCE, encoding="utf-8")
+        mutant = {**_mutant("gone", _corpus.symbol_sha(SOURCE, "target")), "old": "return 3"}
+        path = _corpus_file(tmp_path, [_campaign("FR-1", [mutant])])
+        assert sm.stale([path], tmp_path) == [f"{path} FR-1 gone (anchor found 0 times)"]
+
+    def test_an_anchor_that_appears_twice_is_listed(self, sm: ModuleType, tmp_path: Path) -> None:
+        twice = "def target():\n    return 1\n\n\ndef other():\n    return 1\n"
+        (tmp_path / "mod.py").write_text(twice, encoding="utf-8")
+        path = _corpus_file(
+            tmp_path, [_campaign("FR-1", [_mutant("twice", _corpus.symbol_sha(twice, "target"))])]
+        )
+        assert sm.stale([path], tmp_path) == [f"{path} FR-1 twice (anchor found 2 times)"]
+
+    def test_an_unhashable_file_still_has_its_anchor_checked(
+        self, sm: ModuleType, tmp_path: Path
+    ) -> None:
+        (tmp_path / "context.yaml").write_text("consumes:\n  - a\n", encoding="utf-8")
+        mutant = {**_mutant("yaml", None, "context.yaml"), "old": "  - b\n", "new": "  - c\n"}
+        path = _corpus_file(tmp_path, [_campaign("FR-1", [mutant])])
+        assert sm.stale([path], tmp_path) == [f"{path} FR-1 yaml (anchor found 0 times)"]
 
 
 class TestMain:

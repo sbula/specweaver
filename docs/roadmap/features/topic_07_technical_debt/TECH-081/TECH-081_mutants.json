@@ -50,8 +50,8 @@
           "origin": "authored",
           "file": "tach.toml",
           "symbol": "specweaver.graph depends_on",
-          "old": "path = \"specweaver.graph\"\ndepends_on = [ \"specweaver.workspace.ast.adapters\",]",
-          "new": "path = \"specweaver.graph\"\ndepends_on = [ { path = \"specweaver.workspace.ast.adapters\", deprecated = true },]",
+          "old": "path = \"specweaver.graph\"\ndepends_on = [ \"specweaver.infrastructure.database\", \"specweaver.workspace.ast.adapters\",]",
+          "new": "path = \"specweaver.graph\"\ndepends_on = [ \"specweaver.infrastructure.database\", { path = \"specweaver.workspace.ast.adapters\", deprecated = true },]",
           "breaks": "a wrong edge is allowed again, reported but never failed"
         }
       ]
@@ -68,8 +68,8 @@
           "origin": "authored",
           "file": "docs/architecture/06_lessons_and_future/known_boundary_violations.md",
           "symbol": "Open and recently resolved",
-          "old": "`src/specweaver/assurance/graph/topology.py` (`TopologyGraph.from_project` globs `context.yaml`",
-          "new": "`src/specweaver/assurance/graph/topo.py` (`TopologyGraph.from_project` globs `context.yaml`",
+          "old": "`src/specweaver/graph/topology/topology.py` (`load_nodes` globs and reads `context.yaml`",
+          "new": "`src/specweaver/graph/topology/topo.py` (`load_nodes` globs and reads `context.yaml`",
           "breaks": "a ledger row points at a file that moved, as five rows did until 2026-10-27"
         }
       ]
@@ -86,8 +86,8 @@
           "origin": "authored",
           "file": "src/specweaver/workflows/implementation/context.yaml",
           "symbol": "exposes",
-          "old": "  - Generator\n",
-          "new": "  - CodeGenerator\n",
+          "old": "  - generator.Generator\n",
+          "new": "  - generator.CodeGenerator\n",
           "breaks": "a manifest promises a class that does not exist"
         },
         {
@@ -140,8 +140,8 @@
           "origin": "authored",
           "file": "src/specweaver/workspace/memory/context.yaml",
           "symbol": "consumes",
-          "old": "  - specweaver/core/config\n",
-          "new": "  # core/config dropped\n",
+          "old": "  - specweaver/infrastructure/database\n",
+          "new": "  # infrastructure/database dropped\n",
           "breaks": "tach.toml allows an edge its manifest never declares"
         },
         {

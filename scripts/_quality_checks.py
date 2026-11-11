@@ -73,6 +73,13 @@ def build(make: Any, _r: ModuleType) -> dict[str, Any]:
             ignores_paths=True,
             script="check_duplication.py",
         ),
+        "mutant_anchors": make(
+            "mutant_anchors",
+            ("docs",),
+            _r._whole_repo("stale_mutants.py"),
+            ignores_paths=True,
+            script="stale_mutants.py",
+        ),
         "test_collection": make(
             "test_collection",
             ("tests",),
