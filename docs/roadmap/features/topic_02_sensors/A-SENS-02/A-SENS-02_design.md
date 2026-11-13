@@ -115,7 +115,7 @@ Decisions marked `[agreed …]` were taken by the user in the grilling (Q1–Q36
 |---|-----|-------|--------|---------|
 | FR-1 | `extract_subgraph` and `neighbors_within` SHALL take `depth: int \| None`; `None` reaches everything; no fixed depth remains anywhere, and `MAX_NEIGHBOURHOOD_DEPTH` is deleted `[agreed 2026-11-11]` (Q23 A) | in-memory engines | traverse | a 10,000-node chain is reached in full; a hidden cap at 10 or 100 fails the test |
 | FR-2 | Both in-memory engines SHALL pass the traversal tests: chains of 7 and 10,000; fan-out 1,000 over 4 levels; self-recursion, mutual recursion, a cycle of 10,000, a cycle with fan-out 1,000; each node once, at its shortest depth `[agreed 2026-11-11]` | in-memory engines | traverse | every case finishes with correct depths |
-| FR-3 | `TECH-088` FR-9's test (`test_one_depth_limit.py`) SHALL be replaced by FR-1's test, recorded as a decision on delivered code `[agreed 2026-11-11]` | test suite | prove | no test asserts a limit of 5 |
+| FR-3 | This feature supersedes `TECH-088` FR-9 with FR-1 ("both engines cap a neighbourhood at one constant, still 5"). Reason: no fixed depth anywhere; a caller that wants a limit passes it (`B-FLOW-04` input §7) `[agreed 2026-11-11]`. `TECH-088` is closed, so its FR-9 row stays as written `[agreed 2026-11-13]`. FR-9's test (`test_one_depth_limit.py`) SHALL be replaced by FR-1's test, and its mutant campaign retired with the reason "superseded by A-SENS-02 FR-1" (`_corpus.py --retire`) | test suite | prove | no test asserts a limit of 5 |
 | FR-4 | The three selectors SHALL pass their depth explicitly and keep their results | `graph/topology` | select | depth 1 and 2 give the same modules as today |
 | FR-5 | `sw db up` SHALL start one Postgres container from `pgvector/pgvector:0.8.7-pg18` pinned by digest `[agreed 2026-11-11]` (Q3), port bound to `127.0.0.1` only, data in a named volume, with `maintenance_work_mem` 2 GB and `autovacuum_work_mem` 256 MB, both configurable `[agreed 2026-11-12]` (Q36 A) | user | start | the container runs; `sw db up` again is a no-op |
 | FR-6 | `sw db up` SHALL generate the superuser and every role password, store them only in `~/.specweaver/db_roles.env` with mode 0600, and never print or log one `[agreed 2026-11-12]` (Q31 A) | sidecar | create credentials | the file exists with 0600; no password appears in output, logs or exceptions |
@@ -141,6 +141,7 @@ Decisions marked `[agreed …]` were taken by the user in the grilling (Q1–Q36
 | FR-26 | A migration SHALL NOT contain a statement that cannot run in a transaction (`CREATE INDEX CONCURRENTLY`, `VACUUM`, `CREATE DATABASE`, …); a test fails if one does `[agreed 2026-11-12]` (Q32 A) | migrations | guard | a planted `CONCURRENTLY` fails the test |
 | FR-27 | `US-11` P-3's storage half: on one service's graph with its vectors, `reach`, the BFS tree and the kNN search SHALL return the expected nodes, predecessors and chunks. The retrieval half is `B-FLOW-04`'s test, written when it defines its interface `[agreed 2026-11-12]` | store | prove | expected results on a fixed graph; no `xfail` |
 | FR-28 | `sw graph build` SHALL refuse, with the reason, a project whose root `context.yaml` gives no name, and any linked git worktree: only the main checkout writes a service's base graph. A linked worktree is detected with git, where `git rev-parse --git-dir` differs from `--git-common-dir`, never by "`.git` is a file", because a submodule's `.git` is a file too `[agreed 2026-11-12]`; git runs through the sandbox's git executor on the CLI path, so `graph` never imports `sandbox`. Tested both ways: a linked worktree is refused, a submodule is accepted. Other worktrees read that base. Limit, stated: a worktree's own changes are not in the graph until the exact-call-edges feature adds per-worktree deltas `[agreed 2026-11-12]` (Q38 A) | builder | refuse | a build from a linked worktree, or with the name `default`, writes nothing and exits 1 |
+| FR-29 | Both in-memory engines SHALL run their traversal through SF-06's shared Python BFS loop (Q24 A), so the time limit X (FR-21) applies to them too. Until SF-06, an in-memory traversal with `depth=None` has no time limit: an accepted risk, since `B-SENS-02` RT-27's cap goes with FR-1 and `B-SENS-02` stays as written; SF-06 owns the fix and its test `[agreed 2026-11-13]` | in-memory engines | stop | a 10,000-node chain with a time limit of 0 ms stops and reports `time_limit` in both engines |
 
 ## Requirement–Surface Bindings
 
@@ -310,13 +311,13 @@ ontology and never emitted.
 
 ### SF-06: Traversal and vectors on Postgres
 - **Scope**: `reach` / `path` with the time limit, BFS tree and summary; vector indexes and kNN; the storage half of `US-11` P-3.
-- **FRs**: [FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-27]
+- **FRs**: [FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-27, FR-29]
 - **Inputs**: SF-01's test cases, SF-04's roles, SF-05's tables.
 - **Outputs**: the store surface `B-FLOW-04` builds its tools on.
 - **Depends on**: SF-01, SF-04, SF-05
 - **Impl Plan**: docs/roadmap/features/topic_02_sensors/A-SENS-02/A-SENS-02_sf06_implementation_plan.md
 
-SF-06 holds 7 FRs, above the heuristic of 5, but all of them sit in one module (`graph/core/store`)
+SF-06 holds 8 FRs, above the heuristic of 5, but all of them sit in one module (`graph/core/store`)
 on one surface; splitting traversal from vectors would split the hybrid query (FR-25) from the
 traversal it joins.
 
@@ -331,7 +332,7 @@ traversal it joins.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | No fixed traversal depth | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
+| SF-01 | No fixed traversal depth | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
 | SF-02 | The sidecar and the test database | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Schemas, roles and migrations | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Isolation | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -340,7 +341,7 @@ traversal it joins.
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-11-12.
-**Next step**: trigger the implementation-plan skill for SF-01 (SF-02 may run in parallel).
+**Current status**: Design APPROVED 2026-11-12. SF-01 plan APPROVED 2026-11-13.
+**Next step**: trigger the dev skill for SF-01 (`A-SENS-02_sf01_implementation_plan.md`, from T0); then the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.
