@@ -27,12 +27,13 @@ import pytest
 
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
+from specweaver.sandbox.execution.sandbox_image import PYTHON_BASES
 from specweaver.sandbox.language.core.runner_factory import resolve_runner
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-_TEST_IMAGE = "python:3.13-slim"
+_TEST_IMAGE = PYTHON_BASES["3.13"]
 
 
 def _detect_live_engine() -> str | None:

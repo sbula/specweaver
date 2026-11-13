@@ -235,7 +235,7 @@
           "old": "    if run(exists) == 0:\n",
           "new": "    if True:\n",
           "breaks": "a machine without the sandbox image never gets one, so no container run can work",
-          "symbol_sha": "sha256:d313b0b891e74185daf0ca22de46c29dc7ead3b9e2139d3e957c2f272c97fd6f"
+          "symbol_sha": "sha256:a9dc28972d8a985f9221ed4b956c76091a8ec6c073516d0879e7e70b29935123"
         },
         {
           "id": "scenario-target-on-host",

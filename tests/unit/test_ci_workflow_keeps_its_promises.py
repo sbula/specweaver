@@ -26,6 +26,8 @@ from typing import Any
 import pytest
 import yaml
 
+from specweaver.sandbox.execution.sandbox_image import TOOLCHAIN_IMAGES
+
 _WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "tests.yml"
 _FORBIDDEN = (
     re.compile(r"secrets\."),
@@ -170,6 +172,9 @@ def test_ci_pulls_every_image_a_container_test_waits_for() -> None:
     module = _WORKFLOW.parents[2] / "tests/integration/sandbox/execution"
     text = (module / "test_container_executor_integration.py").read_text(encoding="utf-8")
     constants = dict(re.findall(r'^(_[A-Z]+_IMAGE) = "([^"]+)"', text, re.MULTILINE))
+    # A toolchain test takes the product's own pin, so it can never test another image.
+    for name, tool in re.findall(r'^(_[A-Z]+_IMAGE) = TOOLCHAIN_IMAGES\["(\w+)"\]', text, re.M):
+        constants[name] = TOOLCHAIN_IMAGES[tool]
     awaited = {constants[name] for name in re.findall(r"_image_available\((_[A-Z]+_IMAGE)\)", text)}
     workflow = _WORKFLOW.read_text(encoding="utf-8")
     runs = "\n".join(run for run in _runs(_load(workflow)) if "podman pull" in run)

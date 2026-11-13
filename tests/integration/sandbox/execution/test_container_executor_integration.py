@@ -29,13 +29,14 @@ import pytest
 
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
+from specweaver.sandbox.execution.sandbox_image import PYTHON_BASES, TOOLCHAIN_IMAGES
 from specweaver.sandbox.language.core.python.runner import PythonQARunner
 from specweaver.workspace.project.prepare_plan import plan_for
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-_TEST_IMAGE = "python:3.13-slim"
+_TEST_IMAGE = PYTHON_BASES["3.13"]
 
 
 def _tool(mounts) -> str:
@@ -183,11 +184,11 @@ class TestContainerExecutorRealEngine:
 #: An image that ships `uv`. The prepare phase invokes `uv sync`, so `python:3.13-slim` — fine for
 #: every other test in this file — cannot exercise it at all, and cannot install `uv` either because
 #: the container is `--read-only`.
-_UV_IMAGE = "ghcr.io/astral-sh/uv:python3.12-bookworm"
+_UV_IMAGE = "ghcr.io/astral-sh/uv:0.9.30-python3.12-bookworm@sha256:85d4cb1afa769a7338e095b927bee941cf5ec92266c7424b3f6c0f2748567248"
 
 
-_RUST_IMAGE = "docker.io/library/rust:1-slim"
-_MAVEN_IMAGE = "docker.io/library/maven:3-eclipse-temurin-21"
+_RUST_IMAGE = TOOLCHAIN_IMAGES["cargo"]
+_MAVEN_IMAGE = TOOLCHAIN_IMAGES["maven"]
 
 
 def _rust_image_available() -> bool:

@@ -24,6 +24,8 @@ import pytest
 from specweaver.sandbox.execution.container_executor import ContainerSubprocessExecutor
 from specweaver.sandbox.execution.models import ContainerMounts
 from specweaver.sandbox.execution.sandbox_image import (
+    PYTHON_BASES,
+    TOOLCHAIN_IMAGES,
     container_available,
     ensure_sandbox_image,
     own_image,
@@ -142,7 +144,7 @@ def test_a_missing_image_is_built_from_the_shipped_recipe() -> None:
     recipe = Path(build[build.index("-f") + 1])
     assert recipe.name == "Containerfile.sandbox" and recipe.is_file()
     assert build[build.index("-t") + 1] == _OWN_IMAGE
-    assert "PY_VERSION=3.13" in build
+    assert f"PY_BASE={PYTHON_BASES['3.13']}" in build
 
 
 def test_a_failed_build_means_no_container() -> None:
@@ -151,7 +153,7 @@ def test_a_failed_build_means_no_container() -> None:
 
 def test_an_upstream_image_is_never_built() -> None:
     engine = _Engine(exists=False, builds=True)
-    assert ensure_sandbox_image("docker.io/library/rust:1-slim", "/usr/bin/podman", engine) is True
+    assert ensure_sandbox_image(TOOLCHAIN_IMAGES["cargo"], "/usr/bin/podman", engine) is True
     assert engine.calls == []
 
 

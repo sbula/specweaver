@@ -31,9 +31,18 @@ _DEFAULT_TAG = "3.13"
 #: An image per toolchain, because `cargo` is not in the Python sandbox image and no amount of
 #: preparing puts it there. Public upstream images for the others: building one polyglot image would
 #: pull every toolchain for every project, and the executor already picks per project.
-_TOOLCHAIN_IMAGES = {
-    "cargo": "docker.io/library/rust:1-slim",
-    "maven": "docker.io/library/maven:3-eclipse-temurin-21",
+#: Every image is pinned by tag and multi-arch index digest, so it changes only in a commit that
+#: means to change it; how to update one: `docs/dev_guides/subprocess_execution.md`.
+TOOLCHAIN_IMAGES = {
+    "cargo": "docker.io/library/rust:1.100.0-slim@sha256:cc9edbcadf2c27013a642b1d1bb7504e26b1142d6b5ebe58f64cf2eb2bc128ae",
+    "maven": "docker.io/library/maven:3.10.0-eclipse-temurin-21@sha256:851ccd76d49d5646915645e5fb51e9b00ef53ad3dc68b0e9a2a9846b9c56bde3",
+}
+
+#: The base each Python version's sandbox image is built from, passed to the recipe as `PY_BASE`.
+PYTHON_BASES = {
+    "3.11": "docker.io/library/python:3.11.18-slim@sha256:07d4824036af339fa1b6ef769cc99d9c10a141769538b52b3b597c84f7a7b535",
+    "3.12": "docker.io/library/python:3.12.16-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b",
+    "3.13": "docker.io/library/python:3.13.18-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90",
 }
 
 #: SpecWeaver's own sandbox image: built on the machine from the shipped recipe, never pulled.
@@ -43,8 +52,9 @@ _RECIPE = Path(__file__).with_name("Containerfile.sandbox")
 
 
 def own_image(version: str, recipe: bytes | None = None) -> str:
-    """The image for a Python version; its tag carries the recipe, so a changed recipe rebuilds."""
-    content = _RECIPE.read_bytes() if recipe is None else recipe
+    """The image for a Python version; its tag carries the recipe and the base, so a change to
+    either rebuilds."""
+    content = (_RECIPE.read_bytes() if recipe is None else recipe) + PYTHON_BASES[version].encode()
     return f"{_DEFAULT_IMAGE_REPO}:{version}-{hashlib.sha256(content).hexdigest()[:12]}"
 
 
@@ -60,8 +70,8 @@ def _resolve_image(source_root: Path, build_tool: str) -> str:
     Python keeps its own sandbox image and its `requires-python` tag selection. Every other toolchain
     takes an upstream image that carries it, because the Python image contains no `cargo` and no JDK.
     """
-    if build_tool in _TOOLCHAIN_IMAGES:
-        return _TOOLCHAIN_IMAGES[build_tool]
+    if build_tool in TOOLCHAIN_IMAGES:
+        return TOOLCHAIN_IMAGES[build_tool]
     version = _DEFAULT_TAG
     pyproject = source_root / "pyproject.toml"
     if pyproject.exists():
@@ -111,7 +121,7 @@ def ensure_sandbox_image(image: str, engine: str, run: Callable[[list[str]], int
         "-t",
         image,
         "--build-arg",
-        f"PY_VERSION={version}",
+        f"PY_BASE={PYTHON_BASES[version]}",
         str(_RECIPE.parent),
     ]
     return run(build) == 0

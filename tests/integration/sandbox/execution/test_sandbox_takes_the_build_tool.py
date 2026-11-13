@@ -28,6 +28,7 @@ from specweaver.commons.project_profile import ProjectProfile, ProjectUndecidedE
 from specweaver.core.config.settings import SandboxSettings
 from specweaver.core.flow.handlers.lint_fix import LintFixHandler
 from specweaver.core.flow.run_state.run_context import IsolationPolicy, RunContext, RunHandle
+from specweaver.sandbox.execution.sandbox_image import TOOLCHAIN_IMAGES
 from specweaver.sandbox.language.core.runner_factory import qa_atom
 from specweaver.workspace.project.prepare_plan import plan_for
 
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.integration
 
-_RUST_IMAGE = "docker.io/library/rust:1-slim"
+_RUST_IMAGE = TOOLCHAIN_IMAGES["cargo"]
 
 
 def _context(root: Path, **isolation: object) -> RunContext:

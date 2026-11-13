@@ -312,10 +312,10 @@
           "origin": "authored",
           "file": "src/specweaver/sandbox/execution/sandbox_image.py",
           "symbol": "_resolve_image",
-          "old": "    if build_tool in _TOOLCHAIN_IMAGES:",
+          "old": "    if build_tool in TOOLCHAIN_IMAGES:",
           "new": "    if False:",
           "breaks": "a Rust or JVM project is handed the Python sandbox image, which contains no cargo and no JDK, and no amount of preparing puts one there",
-          "symbol_sha": "sha256:c27abc30c1673897b09f27c203e2eec93d35153c5ed4b2f2cee7b900bc2073df"
+          "symbol_sha": "sha256:f0b3a98fe19502743220f4e22535c5f178398b8d3dcea5ca55551023e29543dc"
         }
       ]
     },

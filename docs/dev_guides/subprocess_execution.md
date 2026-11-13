@@ -219,6 +219,32 @@ agent-facing `facades.py` still build host-mode `QARunnerAtom`s. Per-SF plans:
 `docs/roadmap/features/topic_06_sandbox/B-EXEC-01/` (`B-EXEC-01_sf01_implementation_plan.md` through
 `_sf04_`).
 
+### Container images are pinned by tag and digest
+
+Every image SpecWeaver or its tests pull is written `<name>:<exact tag>@sha256:<index digest>`. The
+tag tells a reader the version; the digest is what is pulled. A moving tag (`rust:1-slim`) changed
+under CI on 2026-11-12 and turned a docs-only commit red.
+
+- **Where they live:** `sandbox_image.py` (`TOOLCHAIN_IMAGES`, `PYTHON_BASES`), the two recipes
+  (`Containerfile`, `Containerfile.sandbox`: the `uv` binary), the uv test image in
+  `test_container_executor_integration.py`, and the pull step of `.github/workflows/tests.yml`.
+- **The digest is the multi-arch index**, never one platform's manifest: an amd64 digest breaks the
+  product on ARM (the GB10). `podman image inspect --format {{.Digest}}` prints the platform
+  manifest, so do not take the digest from there.
+- **Guards:** `tests/unit/sandbox/execution/test_images_are_pinned.py` checks the format everywhere
+  and that CI pulls exactly the pinned set; `tests/integration/sandbox/execution/
+  test_image_pins_are_multi_arch.py` checks the index from the manifest Podman stored at pull time
+  (on CI after the pull step, locally after `podman pull`). Neither uses the network.
+
+**Updating an image is one deliberate commit:**
+
+1. `podman pull <name>:<tag>` (a network fetch: the user's consent first).
+2. Read the exact version inside the image (`RUST_VERSION`, `mvn -v`, `uv --version`, …) and the
+   index digest offline: the stored manifest under `<GraphRoot>/<driver>-images/<image id>/` whose
+   media type is an OCI index or a Docker manifest list, and whose sha256 is its digest.
+3. Change tag and digest together in every place listed above; nothing else in the commit.
+4. Run the full gate; `test_image_pins_are_multi_arch.py` must pass for the new pin.
+
 ## Security boundaries
 
 ### Environment stripping
