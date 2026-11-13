@@ -184,7 +184,7 @@ class TestContainerExecutorRealEngine:
 #: An image that ships `uv`. The prepare phase invokes `uv sync`, so `python:3.13-slim` — fine for
 #: every other test in this file — cannot exercise it at all, and cannot install `uv` either because
 #: the container is `--read-only`.
-_UV_IMAGE = "ghcr.io/astral-sh/uv:0.9.30-python3.12-bookworm@sha256:85d4cb1afa769a7338e095b927bee941cf5ec92266c7424b3f6c0f2748567248"
+_UV_IMAGE = "ghcr.io/astral-sh/uv:0.13.8-python3.12-trixie@sha256:a65858371a89e4e543d2018d2edc33b463b7ae3541a66f144e97ed431ebc8fb0"
 
 
 _RUST_IMAGE = TOOLCHAIN_IMAGES["cargo"]
