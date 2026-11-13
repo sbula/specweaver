@@ -20,6 +20,7 @@ Proves: B-EXEC-01 FR-5, B-EXEC-01 FR-8, B-EXEC-01 NFR-3
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from typing import TYPE_CHECKING
@@ -687,7 +688,14 @@ class TestNonPythonToolchainsRunInTheContainer:
         )
         # A pass alone would not prove the container did the work — the runner would report the same
         # if it had somehow run on the host. These are artefacts only the container could leave.
-        assert list(mounts.scratch_root.rglob("target/debug/deps/probe*")), (
+        # Cargo moves its test binary between releases (`deps/` until 1.97, `build/<pkg>/…/out/` in
+        # 1.100), so look for the executable itself, wherever the layout puts it.
+        binaries = [
+            p
+            for p in (mounts.scratch_root / "target").rglob("probe-*")
+            if p.is_file() and os.access(p, os.X_OK)
+        ]
+        assert binaries, (
             "no build artefacts in the scratch mount, so nothing was compiled inside the sandbox"
         )
         assert (mounts.cache_root / "cargo").exists(), (
