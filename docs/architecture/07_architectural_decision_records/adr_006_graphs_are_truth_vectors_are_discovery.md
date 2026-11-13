@@ -10,7 +10,7 @@ between the two retrieval stores before any reader is designed.
 
 SpecWeaver plans two stores that select code for the LLM:
 
-* a **code graph** (`B-SENS-02`, SQLite; `A-SENS-02` adds Apache AGE at scale) — typed nodes
+* a **code graph** (`B-SENS-02`, SQLite; `A-SENS-02` moves it to Postgres node/edge tables at scale, see the 2026-11-11 amendment) — typed nodes
   (modules, classes, functions) and typed, directed edges;
 * a **vector store** (`A-SENS-02` pgvector, fed by `B-SENS-03` chunks, orchestrated by
   `B-FLOW-04`) — embeddings of code chunks, queried by similarity.
@@ -94,7 +94,7 @@ What produces what, and who reads it — the single orientation table for this a
 | Framework schemas ✅ (`workflows/evaluators/frameworks/`) | annotation semantics | `B-INTL-02` prompt comments ✅ · `B-SENS-08` edges 🔜 |
 | `B-SENS-08` 🔜 | framework edges (`INJECTS`-class, routes, listeners; `PUBLISHES`/`SUBSCRIBES`) | blast radius · `B-SENS-09` · `B-VAL-07` · `A-SENS-04` (cross-service linkage) |
 | `B-SENS-03` 🔧 | symbol chunks | `A-SENS-02` embeddings 🔜 |
-| `A-SENS-02` 🔜 | pgvector index + AGE graph backend | `B-FLOW-04` locate 🔜 |
+| `A-SENS-02` 🔜 | pgvector index + Postgres node/edge tables (amendment 2026-11-11) | `B-FLOW-04` locate 🔜 |
 | `B-FLOW-04` 🔜 | ranked candidates (locate) | hands over to `B-SENS-09` — never to a gate |
 | `B-SENS-09` 🔜 | packed subgraph context in prompts | `sw draft`/`implement`/`review` loops |
 | `B-VAL-07` 🔜 | broken-dependent findings post-generation | pipeline gates · `B-INTL-08` 🔮 |
@@ -131,3 +131,28 @@ Full links: `ORIGINS.md` § Graph & Retrieval.
   does not replace them.
 * Any future capability that gates on vector output is rejected at design review by decision 3 —
   no discussion needed, that is what the rule is for.
+
+## Amendment 2026-11-11: the graph store is Postgres tables, not Apache AGE
+
+`[agreed 2026-11-11]` (the user, `A-SENS-02` Q6 A). At scale, the code graph lives in plain
+Postgres node and edge tables beside pgvector, in the official `pgvector/pgvector:0.8.7-pg18`
+image, pinned by digest. Traversals are frontier BFS: each node is visited once, at its shortest
+distance. Paths are never enumerated. This does not change decisions 1–4. The graph stays exact,
+and the vectors only find where to start.
+
+**Why: the spike** (`docs/analysis/a_sens_02_graph_store_spike_2026-11-11.md`, Kafka Java, 1.14M
+code lines, 96,589 nodes, 561,570 edges; AGE 1.8.0~rc0, the only build PGDG ships for PG18):
+
+- **Bounded queries** (≤5 steps): AGE is only close to tables when the query is written in the
+  anchored form. The naive form is about 500× slower. Cold, AGE takes 170–370 ms, tables 1–90 ms.
+- **Unbounded queries:**
+  - Over 2 edge kinds, AGE takes 79 s; frontier BFS takes 6–14 ms.
+  - The subtype closure in AGE does not finish: it hit the 20 GB temp-file limit after 20 s.
+  - AGE has no `shortestPath`.
+  - AGE cannot filter edge kinds during the walk: it has no `[:A|B*]`, and `all(...)` over the
+    path fails.
+- **Hybrid search** (vectors + graph) is one SQL statement with tables. With AGE it is two.
+- **Variable-length matching in AGE** enumerates paths. Its cost has no upper bound, and exact
+  call edges will make the graph denser.
+
+**Consequence:** where the BFS loop runs is decided in the `A-SENS-02` design.

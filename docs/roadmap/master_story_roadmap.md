@@ -290,7 +290,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   `✅` **US-4 Core** *(provides Context Prompts)*
     *   `✅` **US-5 Core** *(provides Polyglot Extraction)*
     *   `✅` **B-SENS-02:** Persistent Knowledge Graph Builder (SQLite)
-    *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
+    *   `[ ]` **A-SENS-02:** Postgres (node/edge tables + pgvector) sidecar
     *   `✅` **B-SENS-03:** AST-based semantic chunking
 *   **Sub-Story Add-Ons:**
     *   🔴 **Dynamic Knowledge Relevance:**
@@ -322,7 +322,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   🔴 **Framework Edge Truth:**
         *   `[ ]` **B-SENS-08:** Framework-Semantic Graph Edges — Spring/Quarkus DI, routes and listeners made visible to the graph; the legacy-Java case this story reverse-weaves; also in US-11
     *   🔴 **Massive Scale Context Retrieval:**
-        *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar
+        *   `[ ]` **A-SENS-02:** Postgres (node/edge tables + pgvector) sidecar
     *   🔴 **Automated Code Purging:**
         *   `[ ]` **A-FLOW-03:** Dead Code Detection & Analysis (finding unreachable functions using the graph for human review)
 
@@ -430,7 +430,7 @@ fixed questionnaire was the mechanic, and it is the part `D-INTL-04`'s fold reti
     *   🔴 **Parallel Execution Safety:**
         *   `[ ]` **C-EXEC-04:** Concurrent Git Merge Orchestration
     *   🟡 **Distributed Topology Scaling:**
-        *   `[ ]` **A-SENS-02:** Postgres (Apache AGE + pgvector) sidecar (For massive scale context)
+        *   `[ ]` **A-SENS-02:** Postgres (node/edge tables + pgvector) sidecar (For massive scale context)
         *   `✅` **A-SENS-01:** Deep Semantic Hashing (Rocket Mode streaming)
 
 ### 🟡 US-20: Enterprise Architecture Enforcement

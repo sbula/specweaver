@@ -256,12 +256,12 @@ Seven keyed fields per entry, plus optional `Limits:` and `Note:` — no prose (
 
 * **`A-SENS-02` 🔜: Postgres pgvector Sidecar** (Legacy: 3.33 / 5.1)
   > - **Purpose:** Run graph and vectors in one transactional backend at scale, instead of two local stores
-  > - **Trigger:** 🟡 When the project is switched from local mode to sidecar mode
+  > - **Trigger:** `sw db up`, then `sw graph build`; Postgres only, no SQLite mode `[agreed 2026-11-09]`
   > - **Precondition:** `B-SENS-02` → graph content · `B-SENS-03` → chunks to embed
-  > - **Reads:** the local SQLite graph and chunk store
-  > - **Produces:** db → PostgreSQL with Apache AGE and pgvector
+  > - **Reads:** the parser's graph from `B-SENS-02`; vectors written by `B-FLOW-04`
+  > - **Produces:** db → PostgreSQL node/edge tables and pgvector (`ADR-006` amendment 2026-11-11)
   > - **Enables:** cross-service GraphRAG · `A-SENS-04`
-  > - **Done when:** 🟡 the same queries answer identically in local and sidecar mode
+  > - **Done when:** each service in its own schema; Postgres denies service A's role on service B; a traversal with no depth is complete or names the time limit
 
 * **`A-SENS-03` 🔜: Event Trigger for Semantic-Hash Sync** (Legacy: 5.2)
   > - **Purpose:** Invoke `A-SENS-01`'s incremental sync on a file or commit event, once something needs a live graph rather than a read-time one
