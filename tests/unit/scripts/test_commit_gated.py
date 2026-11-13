@@ -9,6 +9,18 @@
 | Boundary | a gate fails → nothing is staged; its whole output is shown, not a summary |
 | Degradation | nothing ends up staged → no empty commit |
 | Hostile | the mutation ledger, or work already staged outside the named paths, is refused |
+
+**Approvals claimed.** Before the commit, every `[agreed <date>]` tag on an added line is printed with
+file, line and text, so the user sees which approvals a commit claims before pushing. A tag that
+leaves one line and lands on another is printed as **moved**, with both rows: moving a tag can claim
+approval for a different decision.
+
+| Bucket | Case |
+|---|---|
+| Happy | an added tag is printed as added, with file, line and text |
+| Boundary | a tag moved in a file, across files, or kept on a reworded row is printed as moved, both rows shown |
+| Degradation | no tag at all, or a tag only removed, prints "none" |
+| Hostile | a `[agreed <date>]` placeholder is no tag; an added line that looks like a file header is content |
 """
 
 from __future__ import annotations
@@ -48,7 +60,9 @@ class FakeRun:
         staged_before: str = "",
         staged_after: str = "a.md",
         git_fail: str = "",
+        diff: str = "",
     ) -> None:
+        self.diff = diff
         self.fail = fail
         self.git_fail = git_fail
         self.staged = [staged_before, staged_after]
@@ -61,6 +75,8 @@ class FakeRun:
         joined = " ".join(cmd)
         if "diff --cached --name-only" in joined:
             return subprocess.CompletedProcess(cmd, 0, self.staged.pop(0) + "\n", "")
+        if "diff --cached -U0" in joined:
+            return subprocess.CompletedProcess(cmd, 0, self.diff, "")
         for gate in ("pytest", "quality.py cb", "quality.py doc"):
             if gate in joined:
                 code = 1 if self.fail == gate else 0
@@ -165,3 +181,110 @@ class TestCommitGated:
         monkeypatch.delenv("PATH", raising=False)
         monkeypatch.setattr(cg.subprocess, "run", lambda *a, **k: k["env"]["PATH"])
         assert str(cg.REPO_ROOT / ".venv" / "bin") in cg.run_in_repo(["true"])
+
+
+_TAG = "`[agreed 2026-11-13]`"
+_OLD = "`[agreed 2026-11-11]`"
+
+
+def _diff(*files: tuple[str, str]) -> str:
+    """A `git diff -U0` text: one `(path, hunks)` per file, each hunk already in diff form."""
+    return "".join(
+        f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n{hunks}"
+        for path, hunks in files
+    )
+
+
+class TestApprovalsClaimed:
+    def test_an_added_tag_is_reported_with_file_line_and_text(self, cg: ModuleType) -> None:
+        diff = _diff(("d.md", f"@@ -4,0 +5 @@\n+| FR-1 | no cap {_TAG} |\n"))
+        assert cg.approvals_claimed(diff) == [
+            ("added", None, ("d.md", 5, f"| FR-1 | no cap {_TAG} |"))
+        ]
+
+    def test_a_tag_moved_inside_a_file_is_reported_with_both_rows(self, cg: ModuleType) -> None:
+        diff = _diff(
+            (
+                "d.md",
+                f"@@ -3 +2,0 @@\n-| FR-1 | old row {_OLD} |\n@@ -9,0 +9 @@\n+| FR-7 | other {_OLD} |\n",
+            )
+        )
+        assert cg.approvals_claimed(diff) == [
+            (
+                "moved",
+                ("d.md", 3, f"| FR-1 | old row {_OLD} |"),
+                ("d.md", 9, f"| FR-7 | other {_OLD} |"),
+            )
+        ]
+
+    def test_a_tag_moved_to_another_file_is_reported_as_moved(self, cg: ModuleType) -> None:
+        diff = _diff(
+            ("a.md", f"@@ -2 +1,0 @@\n-x {_OLD}\n"),
+            ("b.md", f"@@ -0,0 +1 @@\n+y {_OLD}\n"),
+        )
+        (claim,) = cg.approvals_claimed(diff)
+        assert claim == ("moved", ("a.md", 2, f"x {_OLD}"), ("b.md", 1, f"y {_OLD}"))
+
+    def test_a_reworded_row_that_keeps_its_tag_is_reported_as_moved(self, cg: ModuleType) -> None:
+        diff = _diff(
+            ("d.md", f"@@ -7 +7 @@\n-| FR-3 | cap of 5 {_OLD} |\n+| FR-3 | no cap {_OLD} |\n")
+        )
+        (claim,) = cg.approvals_claimed(diff)
+        assert claim[0] == "moved"
+        assert claim[1] == ("d.md", 7, f"| FR-3 | cap of 5 {_OLD} |")
+        assert claim[2] == ("d.md", 7, f"| FR-3 | no cap {_OLD} |")
+
+    def test_a_tag_from_a_deleted_file_names_the_old_file(self, cg: ModuleType) -> None:
+        diff = (
+            f"diff --git a/gone.md b/gone.md\n--- a/gone.md\n+++ /dev/null\n@@ -1 +0,0 @@\n-x {_OLD}\n"
+            + _diff(("new.md", f"@@ -0,0 +1 @@\n+y {_OLD}\n"))
+        )
+        (claim,) = cg.approvals_claimed(diff)
+        assert claim == ("moved", ("gone.md", 1, f"x {_OLD}"), ("new.md", 1, f"y {_OLD}"))
+
+    def test_one_removed_tag_pays_for_one_move_only(self, cg: ModuleType) -> None:
+        diff = _diff(("d.md", f"@@ -1 +1,2 @@\n-a {_OLD}\n+b {_OLD}\n+c {_OLD}\n"))
+        assert [c[0] for c in cg.approvals_claimed(diff)] == ["moved", "added"]
+
+    def test_two_tags_on_one_line_are_two_claims(self, cg: ModuleType) -> None:
+        diff = _diff(("d.md", f"@@ -0,0 +1 @@\n+a {_OLD} b {_TAG}\n"))
+        assert [c[0] for c in cg.approvals_claimed(diff)] == ["added", "added"]
+
+    @pytest.mark.parametrize(
+        "hunks",
+        [
+            "@@ -1 +1 @@\n-plain\n+still plain\n",
+            f"@@ -4 +3,0 @@\n-gone {_TAG}\n",
+            "@@ -0,0 +1 @@\n+the marker needs `[agreed <date>]`\n",
+        ],
+    )
+    def test_no_tag_a_removed_tag_or_a_placeholder_claims_nothing(
+        self, cg: ModuleType, hunks: str
+    ) -> None:
+        assert cg.approvals_claimed(_diff(("d.md", hunks))) == []
+
+    def test_an_added_line_that_looks_like_a_header_is_content(self, cg: ModuleType) -> None:
+        diff = _diff(("d.md", f"@@ -0,0 +1,2 @@\n+++ b/evil.md\n+z {_TAG}\n"))
+        assert cg.approvals_claimed(diff) == [("added", None, ("d.md", 2, f"z {_TAG}"))]
+
+    def test_the_commit_prints_the_claims_before_committing(
+        self, cg: ModuleType, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        old = f"@@ -3 +2,0 @@\n-| FR-1 | {_OLD} |\n"
+        new = f"@@ -0,0 +1,2 @@\n+| FR-2 | {_TAG} |\n+| FR-9 | {_OLD} |\n"
+        run = FakeRun(diff=_diff(("a.md", old), ("b.md", new)))
+        assert cg.commit("docs: m", ["a.md", "b.md"], run) == 0
+        out = capsys.readouterr().out
+        assert "approvals claimed in this commit: 2" in out
+        assert f"added  b.md:1  | FR-2 | {_TAG} |" in out
+        assert f"moved  from a.md:3  | FR-1 | {_OLD} |" in out
+        assert f"       to   b.md:2  | FR-9 | {_OLD} |" in out
+        diff_at = next(i for i, (c, _) in enumerate(run.calls) if "-U0" in c)
+        commit_at = next(i for i, (c, _) in enumerate(run.calls) if c[:2] == ["git", "commit"])
+        assert diff_at < commit_at
+
+    def test_a_commit_with_no_tag_says_none(
+        self, cg: ModuleType, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert cg.commit("docs: m", ["a.md"], FakeRun()) == 0
+        assert "approvals claimed in this commit: none" in capsys.readouterr().out

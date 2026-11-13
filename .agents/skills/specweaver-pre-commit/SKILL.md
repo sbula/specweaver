@@ -158,5 +158,6 @@ are the ones that go stale, so copy none of them.
      Exception: at the boundary that closes a sub-feature, stage it and **STOP** for the user's
      acceptance first (`specweaver-dev` Step C). If the user asked only for a check, report and do
      not commit.
-8.3. Report in a few lines: what the commit holds, the test count, what the gate found. End with
+8.3. Report in a few lines: what the commit holds, the test count, what the gate found, and the
+     approvals it claims (`commit_gated.py` prints each added or moved `[agreed …]` tag). End with
      `Push now: YES/NO`. The user pushes, once per feature.
