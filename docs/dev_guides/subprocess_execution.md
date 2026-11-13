@@ -245,6 +245,13 @@ under CI on 2026-11-12 and turned a docs-only commit red.
 3. Change tag and digest together in every place listed above; nothing else in the commit.
 4. Run the full gate; `test_image_pins_are_multi_arch.py` must pass for the new pin.
 
+**GitHub Actions follow the same rule.** Each `uses:` is `owner/repo@<commit SHA>  # vX.Y.Z`: an
+exact release, never a moving major tag (`tests/unit/test_workflow_actions_are_pinned.py`). To
+update one: `git ls-remote --tags https://github.com/<owner>/<repo>` (a network fetch: consent
+first), take the exact release's commit (for an annotated tag the peeled `^{}` line, never the tag
+object), change SHA and comment together, one commit. `setup-uv`'s `version:` is the uv the recipes
+copy from the pinned uv image; bump both together.
+
 ## Security boundaries
 
 ### Environment stripping
