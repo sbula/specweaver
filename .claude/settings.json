@@ -77,6 +77,7 @@
       "Read(./.env)",
       "Read(**/.env)",
       "Read(~/.specweaver/keys.env)",
+      "Read(~/.specweaver/db_roles.env)",
       "Bash(sw *)",
       "Bash(uv run sw *)",
       "Bash(git add *mutation_findings*)",
@@ -91,6 +92,7 @@
     "ask": [
       "Bash(*.env*)",
       "Bash(*keys.env*)",
+      "Bash(*db_roles.env*)",
       "Bash(*-m live*)",
       "Bash(*scripts/live.py*)",
       "Bash(uv pip *)",
