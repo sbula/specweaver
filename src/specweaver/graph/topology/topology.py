@@ -37,7 +37,7 @@ class TopologyEngineProtocol(Protocol):
     def get_reverse(self, node: str) -> set[str]: ...
     def traverse(self, start: str, forward: bool = True) -> set[str]: ...
     def cycles(self) -> list[list[str]]: ...
-    def neighbors_within(self, module: str, depth: int = 1) -> set[str]: ...
+    def neighbors_within(self, module: str, depth: int | None = None) -> set[str]: ...
     def freeze(self) -> None: ...
 
 
@@ -416,8 +416,8 @@ class TopologyGraph:
 
     # -- Neighbourhood & constraint queries -----------------------------
 
-    def neighbors_within(self, module: str, depth: int = 1) -> set[str]:
-        """Return modules within *depth* hops (forward + reverse).
+    def neighbors_within(self, module: str, depth: int | None = None) -> set[str]:
+        """Return modules within *depth* hops (forward + reverse); `None` reaches everything.
 
         depth=1 gives direct dependencies + consumers.
         depth=2 adds their neighbours, etc.

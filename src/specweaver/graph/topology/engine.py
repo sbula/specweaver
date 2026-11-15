@@ -8,11 +8,12 @@ when the start is on a cycle, a neighbourhood never holds its centre, and a name
 saw answers empty. networkx alone answers all three differently, so each is written out here.
 """
 
+import math
 import threading
 
 import networkx as nx
 
-from specweaver.graph.core.engine.models import MAX_NEIGHBOURHOOD_DEPTH
+from specweaver.graph.core.engine.models import checked_depth
 
 
 class FrozenGraphError(RuntimeError):
@@ -90,13 +91,14 @@ class TopologyEngine:
     def _loops(self, node: str) -> bool:
         return bool(self._graph.has_edge(node, node))
 
-    def neighbors_within(self, module: str, depth: int = 1) -> set[str]:
-        """Nodes within `depth` hops either way, never `module` itself; capped at the limit."""
-        if depth < 1:
+    def neighbors_within(self, module: str, depth: int | None = None) -> set[str]:
+        """Nodes within `depth` hops either way, never `module` itself; `None` reaches everything."""
+        radius = checked_depth(depth)
+        if radius == 0:
             return set()
         with self._lock:
             if module not in self._graph:
                 return set()
-            radius = min(depth, MAX_NEIGHBOURHOOD_DEPTH)
-            around = nx.ego_graph(self._graph, module, radius=radius, undirected=True)
+            reach = math.inf if radius is None else radius
+            around = nx.ego_graph(self._graph, module, radius=reach, undirected=True)
             return set(around.nodes) - {module}

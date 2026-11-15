@@ -19,7 +19,8 @@ Two graphs, one library (`networkx`, pinned 3.6.1), kept apart (ADR-006 decision
 
 ## Conventions
 
-- One depth limit for both graphs: `MAX_NEIGHBOURHOOD_DEPTH` in `core/engine/models.py`.
+- No fixed depth: a caller passes `depth`, or `None` for everything; both engines check it with
+  `checked_depth` in `core/engine/models.py`.
 - The module graph takes no write after it is built (`FrozenGraphError`).
 - Nothing in `graph` imports `sandbox`.
 

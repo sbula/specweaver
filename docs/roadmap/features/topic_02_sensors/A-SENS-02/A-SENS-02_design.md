@@ -115,7 +115,7 @@ Decisions marked `[agreed …]` were taken by the user in the grilling (Q1–Q36
 |---|-----|-------|--------|---------|
 | FR-1 | `extract_subgraph` and `neighbors_within` SHALL take `depth: int \| None`; `None` reaches everything; no fixed depth remains anywhere, and `MAX_NEIGHBOURHOOD_DEPTH` is deleted `[agreed 2026-11-11]` (Q23 A) | in-memory engines | traverse | a 10,000-node chain is reached in full; a hidden cap at 10 or 100 fails the test |
 | FR-2 | Both in-memory engines SHALL pass the traversal tests: chains of 7 and 10,000; fan-out 1,000 over 4 levels; self-recursion, mutual recursion, a cycle of 10,000, a cycle with fan-out 1,000; each node once, at its shortest depth `[agreed 2026-11-11]` | in-memory engines | traverse | every case finishes with correct depths |
-| FR-3 | This feature supersedes `TECH-088` FR-9 with FR-1 ("both engines cap a neighbourhood at one constant, still 5"). Reason: no fixed depth anywhere; a caller that wants a limit passes it (`B-FLOW-04` input §7) `[agreed 2026-11-11]`. `TECH-088` is closed, so its FR-9 row stays as written `[agreed 2026-11-13]`. FR-9's test (`test_one_depth_limit.py`) SHALL be replaced by FR-1's test, and its mutant campaign retired with the reason "superseded by A-SENS-02 FR-1" (`_corpus.py --retire`) | test suite | prove | no test asserts a limit of 5 |
+| FR-3 | This feature supersedes `TECH-088` FR-9 with FR-1 `[agreed 2026-11-11]` ("both engines cap a neighbourhood at one constant, still 5"). Reason: no fixed depth anywhere; a caller that wants a limit passes it (`B-FLOW-04` input §7) `[agreed 2026-11-11]`. `TECH-088` is closed, so its FR-9 row stays as written `[agreed 2026-11-13]`. FR-9's test (`test_one_depth_limit.py`) SHALL be replaced by FR-1's test, and its mutant campaign retired with the reason "superseded by A-SENS-02 FR-1" (`_corpus.py --retire`) | test suite | prove | no test asserts a limit of 5 |
 | FR-4 | The three selectors SHALL pass their depth explicitly and keep their results | `graph/topology` | select | depth 1 and 2 give the same modules as today |
 | FR-5 | `sw db up` SHALL start one Postgres container from `pgvector/pgvector:0.8.7-pg18` pinned by digest `[agreed 2026-11-11]` (Q3), port bound to `127.0.0.1` only, data in a named volume, with `maintenance_work_mem` 2 GB and `autovacuum_work_mem` 256 MB, both configurable `[agreed 2026-11-12]` (Q36 A) | user | start | the container runs; `sw db up` again is a no-op |
 | FR-6 | `sw db up` SHALL generate the superuser and every role password, store them only in `~/.specweaver/db_roles.env` with mode 0600, and never print or log one `[agreed 2026-11-12]` (Q31 A) | sidecar | create credentials | the file exists with 0600; no password appears in output, logs or exceptions |
@@ -332,7 +332,7 @@ traversal it joins.
 
 | SF | Name | Depends On | Design | Impl Plan | Dev | Pre-Commit | Committed |
 |----|------|-----------|--------|-----------|-----|------------|-----------|
-| SF-01 | No fixed traversal depth | — | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| SF-01 | No fixed traversal depth | — | ✅ | ✅ | ✅ | ✅ | ✅ |
 | SF-02 | The sidecar and the test database | — | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-03 | Schemas, roles and migrations | SF-02 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | SF-04 | Isolation | SF-03 | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -341,7 +341,7 @@ traversal it joins.
 
 ## Session Handoff
 
-**Current status**: Design APPROVED 2026-11-12. SF-01 plan APPROVED 2026-11-13.
-**Next step**: trigger the dev skill for SF-01 (`A-SENS-02_sf01_implementation_plan.md`, from T0); then the implementation-plan skill for SF-02.
+**Current status**: Design APPROVED 2026-11-12. SF-01 committed 2026-11-15.
+**Next step**: trigger the implementation-plan skill for SF-02.
 **If resuming mid-feature**: Read the Progress Tracker above. Find the first ⬜ in any row and resume
 from there using the appropriate skill.

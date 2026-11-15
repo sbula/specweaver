@@ -186,7 +186,7 @@
           "old": "            return set(around.nodes) - {module}",
           "new": "            return set(around.nodes)",
           "breaks": "a module is listed as its own neighbour in the prompt",
-          "symbol_sha": "sha256:b20055814ddde4b98f29e19c9c644cab5da9960ad6ab2e5541849f1afe2d3c09"
+          "symbol_sha": "sha256:6a04b7feffd9866b5c2d2471ed0f0bad6fc6fb5618aa3673e6495f6fb0912375"
         },
         {
           "id": "missing-raises",
@@ -222,10 +222,10 @@
           "origin": "authored",
           "file": "src/specweaver/graph/topology/topology.py",
           "symbol": "TopologyEngineProtocol",
-          "old": "    def neighbors_within(self, module: str, depth: int = 1) -> set[str]: ...",
-          "new": "    def neighbors_within(self, start: str, max_depth: int) -> set[str]: ...",
+          "old": "    def neighbors_within(self, module: str, depth: int | None = None) -> set[str]: ...",
+          "new": "    def neighbors_within(self, start: str, max_depth: int | None = None) -> set[str]: ...",
           "breaks": "a caller following the protocol by keyword breaks at run time",
-          "symbol_sha": "sha256:5b200752210422b303723d5155dbf0f4daa5ee1a4d4f1d0c480110cd4bec9064"
+          "symbol_sha": "sha256:8dba6916411858125e8f67148f8eba8d411b9567a7e426bde21906c2de4ec404"
         }
       ]
     },
@@ -256,7 +256,11 @@
           "breaks": "the code graph keeps its own copy of the limit",
           "symbol_sha": "sha256:c730bc576d6494d5f7c3665eff2bde938779cce248b4007013e3437e0d4c4ebd"
         }
-      ]
+      ],
+      "retired": {
+        "reason": "superseded by A-SENS-02 FR-1",
+        "date": ""
+      }
     },
     {
       "requirement": "FR-13",

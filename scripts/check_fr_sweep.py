@@ -44,6 +44,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FEATURES = REPO_ROOT / "docs" / "roadmap" / "features"
@@ -82,8 +83,11 @@ sys.modules["check_fr_coverage"] = _fr
 _spec.loader.exec_module(_fr)
 
 
-def uncited(story: str) -> tuple[int, int]:
-    """`(uncited, declared)` for one story. `(0, 0)` when it declares no FRs — a stub, not a gap."""
+def uncited(story: str, superseded: frozenset[str] = frozenset()) -> tuple[int, int]:
+    """`(uncited, declared)` for one story. `(0, 0)` when it declares no FRs — a stub, not a gap.
+
+    An FR in `superseded` is not uncited: a later design took it over, and its marker held up.
+    """
     design = next(FEATURES.rglob(f"{story}/{story}_design.md"), None)
     if design is None:
         return 0, 0
@@ -92,18 +96,19 @@ def uncited(story: str) -> tuple[int, int]:
     if error is not None or not frs:
         return 0, 0
     cited = set(_fr.cited_frs_in_tests(REPO_ROOT / "tests", story))
-    return len(set(frs) - cited), len(frs)
+    return len(set(frs) - cited - superseded), len(frs)
 
 
-def census() -> dict[str, int]:
+def census(superseded: dict[tuple[str, str], object] | None = None) -> dict[str, int]:
     """`story -> uncited FR count`, for DELIVERED stories with something uncited."""
+    gone = superseded or {}
     delivered = delivered_stories()
     found: dict[str, int] = {}
     for design in sorted(FEATURES.rglob("*_design.md")):
         story = design.parent.name
         if story not in delivered:
             continue
-        count, _ = uncited(story)
+        count, _ = uncited(story, frozenset(fr for owner, fr in gone if owner == story))
         if count:
             found[story] = count
     return found
@@ -206,6 +211,28 @@ def _report_unattributed() -> int:
     return 0
 
 
+def _print_list(live: dict[str, int], gone: list[str]) -> int:
+    """`--list`: uncited FRs per design, worst first, then every superseded FR."""
+    for story, count in sorted(live.items(), key=lambda kv: (-kv[1], kv[0])):
+        print(f"  {count:3}  {story}")
+    for line in gone:
+        print(f"  {line}")
+    total = sum(live.values())
+    print(f"\n{total} uncited FR(s) across {len(live)} design(s), {len(gone)} superseded")
+    return 0
+
+
+def _supersedes() -> dict[tuple[str, str], Any] | None:
+    """The supersede markers that hold up, or None after printing each that does not."""
+    valid, errors = _fr.judge_supersedes(FEATURES, REPO_ROOT / "tests")
+    if not errors:
+        return dict(valid)
+    print(f"FR sweep: {len(errors)} supersede marker(s) do not hold up\n")
+    for error in errors:
+        print(f"  {error}")
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--list", action="store_true", help="per-design breakdown, worst first")
@@ -225,8 +252,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.unattributed:
         return _report_unattributed()
 
-    live = census()
+    valid = _supersedes()
+    if valid is None:
+        return 1
+    live = census(valid)
     total = sum(live.values())
+    gone = [
+        f"{story} {fr} superseded by {m.by_story} {m.by_fr}"
+        for (story, fr), m in sorted(valid.items())
+    ]
 
     if args.freeze:
         BASELINE.parent.mkdir(parents=True, exist_ok=True)
@@ -237,10 +271,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.list:
-        for story, count in sorted(live.items(), key=lambda kv: (-kv[1], kv[0])):
-            print(f"  {count:3}  {story}")
-        print(f"\n{total} uncited FR(s) across {len(live)} design(s)")
-        return 0
+        return _print_list(live, gone)
 
     dangling = dangling_citations(all_strict_tags(), all_declared())
     if dangling:
@@ -275,7 +306,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"FR sweep: {total} uncited requirement(s) across {len(live)} design(s), none new")
+    print(
+        f"FR sweep: {total} uncited requirement(s) across {len(live)} design(s), none new; "
+        f"{len(gone)} superseded"
+    )
     return 0
 
 

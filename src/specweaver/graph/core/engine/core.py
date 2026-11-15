@@ -10,9 +10,9 @@ import networkx as nx
 
 from specweaver.graph.core.engine.models import (
     EDGE_KIND_ATTR,
-    MAX_NEIGHBOURHOOD_DEPTH,
     GraphEdge,
     GraphNode,
+    checked_depth,
 )
 
 
@@ -78,15 +78,12 @@ class InMemoryGraphEngine:
             self._nx_graph.clear()
             self._file_index.clear()
 
-    def extract_subgraph(self, start_hash: str, depth: int) -> nx.DiGraph:  # type: ignore[type-arg]
-        """
-        Extracts a subgraph centered around the start_hash.
-        RT-27: Limits depth.
-        """
+    def extract_subgraph(self, start_hash: str, depth: int | None = None) -> nx.DiGraph:  # type: ignore[type-arg]
+        """The subgraph within `depth` hops of start_hash, either way; `None` reaches everything."""
         if not isinstance(start_hash, str):
             raise ValueError(f"extract_subgraph requires a string hash, got {type(start_hash)}")
 
-        max_depth = min(depth, MAX_NEIGHBOURHOOD_DEPTH)
+        radius = checked_depth(depth)
 
         with self._lock:
             if not self._nx_graph.has_node(start_hash):
@@ -96,7 +93,7 @@ class InMemoryGraphEngine:
 
             # nx.ego_graph supports radius (depth). undirected=True searches incoming and outgoing.
             subgraph_semantic = nx.ego_graph(
-                self._nx_graph, start_hash, radius=max_depth, undirected=True
+                self._nx_graph, start_hash, radius=radius, undirected=True
             )
             return subgraph_semantic  # type: ignore[no-any-return]
 

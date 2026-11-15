@@ -1,0 +1,163 @@
+{
+  "schema": 2,
+  "feature": "A-SENS-02",
+  "campaigns": [
+    {
+      "requirement": "FR-1",
+      "title": "No fixed traversal depth; None reaches everything; a wrong depth is refused by name",
+      "scope": [
+        "tests/unit/graph/test_no_fixed_depth.py",
+        "tests/unit/graph/topology/test_topology_engine_answers.py"
+      ],
+      "mutants": [
+        {
+          "id": "hidden-cap-100-code",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/core.py",
+          "symbol": "InMemoryGraphEngine.extract_subgraph",
+          "old": "        radius = checked_depth(depth)\n",
+          "new": "        radius = min(checked_depth(depth) or 100, 100)\n",
+          "breaks": "the code graph keeps a hidden cap, and a 10,000-node chain is cut at 100",
+          "symbol_sha": "sha256:313611ee3e42a7b722a9dd69c45e3041c56146c36fe9db022e72f11ad413cddd"
+        },
+        {
+          "id": "hidden-cap-100-modules",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.neighbors_within",
+          "old": "        radius = checked_depth(depth)\n",
+          "new": "        radius = min(checked_depth(depth) or 100, 100)\n",
+          "breaks": "the module graph keeps a hidden cap",
+          "symbol_sha": "sha256:6a04b7feffd9866b5c2d2471ed0f0bad6fc6fb5618aa3673e6495f6fb0912375"
+        },
+        {
+          "id": "none-as-one",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.neighbors_within",
+          "old": "        radius = checked_depth(depth)\n",
+          "new": "        radius = 1 if depth is None else checked_depth(depth)\n",
+          "breaks": "a caller asking for everything gets one hop",
+          "symbol_sha": "sha256:6a04b7feffd9866b5c2d2471ed0f0bad6fc6fb5618aa3673e6495f6fb0912375"
+        },
+        {
+          "id": "default-one",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/engine.py",
+          "symbol": "TopologyEngine.neighbors_within",
+          "old": "    def neighbors_within(self, module: str, depth: int | None = None) -> set[str]:",
+          "new": "    def neighbors_within(self, module: str, depth: int | None = 1) -> set[str]:",
+          "breaks": "a call with no depth silently stops at one hop",
+          "symbol_sha": "sha256:6a04b7feffd9866b5c2d2471ed0f0bad6fc6fb5618aa3673e6495f6fb0912375"
+        },
+        {
+          "id": "bool-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/models.py",
+          "symbol": "checked_depth",
+          "old": "    if isinstance(depth, bool) or not isinstance(depth, int):",
+          "new": "    if not isinstance(depth, int):",
+          "breaks": "depth=True from model output walks one hop instead of failing",
+          "symbol_sha": "sha256:7ea4c5b92d39c02b712af2ee49c0da2967375d06a2a4742b8413d7ff3334d981"
+        },
+        {
+          "id": "negative-accepted",
+          "origin": "authored",
+          "file": "src/specweaver/graph/core/engine/models.py",
+          "symbol": "checked_depth",
+          "old": "    if depth < 0:",
+          "new": "    if depth < -1:",
+          "breaks": "a negative depth answers instead of failing with its value",
+          "symbol_sha": "sha256:7ea4c5b92d39c02b712af2ee49c0da2967375d06a2a4742b8413d7ff3334d981"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-3",
+      "title": "A later design supersedes a closed story's FR only with the user's tag and a cited superseding FR",
+      "scope": [
+        "tests/unit/scripts/test_fr_supersede.py"
+      ],
+      "mutants": [
+        {
+          "id": "no-tag-check",
+          "origin": "authored",
+          "file": "scripts/check_fr_coverage.py",
+          "symbol": "_supersede_error",
+          "old": "    if mark.agreed is None:\n",
+          "new": "    if False:\n",
+          "breaks": "a supersede marker without the user's approval tag discharges an FR",
+          "symbol_sha": "sha256:3304943bf295e36c9c88404146cc49d2eb888b17fcad86466a986e9377f4d84b"
+        },
+        {
+          "id": "no-citing-test-check",
+          "origin": "authored",
+          "file": "scripts/check_fr_coverage.py",
+          "symbol": "_supersede_error",
+          "old": "    if mark.by_fr not in cited_frs_in_tests(tests_root, mark.by_story):\n",
+          "new": "    if False:\n",
+          "breaks": "an FR is superseded by one nothing tests",
+          "symbol_sha": "sha256:3304943bf295e36c9c88404146cc49d2eb888b17fcad86466a986e9377f4d84b"
+        },
+        {
+          "id": "superseded-counted-again",
+          "origin": "authored",
+          "file": "scripts/check_fr_sweep.py",
+          "symbol": "uncited",
+          "old": "    return len(set(frs) - cited - superseded), len(frs)",
+          "new": "    return len(set(frs) - cited), len(frs)",
+          "breaks": "a superseded FR is counted as uncited and the ratchet blocks",
+          "symbol_sha": "sha256:4b6cebd134632053ed000d5f883d04cfe3a97e0e324667922b454ad20ae7df1d"
+        },
+        {
+          "id": "superseded-hidden",
+          "origin": "authored",
+          "file": "scripts/check_fr_coverage.py",
+          "symbol": "print_ledger",
+          "old": "            proof = f\"superseded by {mark.by_story} {mark.by_fr} [agreed {mark.agreed}]\"",
+          "new": "            proof = \"ok\"",
+          "breaks": "the ledger hides which design took the FR over",
+          "symbol_sha": "sha256:96472ecb547c48b0f568fdc103526f78c24f3f7387d102b7bf0ce8b8f27db0ab"
+        },
+        {
+          "id": "tag-anywhere-on-row",
+          "origin": "authored",
+          "file": "scripts/check_fr_coverage.py",
+          "symbol": "_SUPERSEDE",
+          "old": "    r\"(?:\\s*`?\\[agreed (\\d{4}-\\d{2}-\\d{2})\\]`?)?\"\n",
+          "new": "    r\"(?:.*?`?\\[agreed (\\d{4}-\\d{2}-\\d{2})\\]`?)?\"\n",
+          "breaks": "a tag elsewhere on the row approves the supersede marker"
+        }
+      ]
+    },
+    {
+      "requirement": "FR-4",
+      "title": "The selectors pass their own depth and keep their results",
+      "scope": [
+        "tests/unit/graph/topology/test_selectors.py"
+      ],
+      "mutants": [
+        {
+          "id": "impact-weighted-depth-one",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/selectors.py",
+          "symbol": "ImpactWeightedSelector.select",
+          "old": "        neighbours = graph.neighbors_within(module, depth=2)",
+          "new": "        neighbours = graph.neighbors_within(module, depth=1)",
+          "breaks": "the impact-weighted prompt loses its second hop",
+          "symbol_sha": "sha256:f56de549f021fc2d004a9deb3a2946322acdd8a3cb85b6f1cb051d27a09cbcc0"
+        },
+        {
+          "id": "direct-forgets-depth",
+          "origin": "authored",
+          "file": "src/specweaver/graph/topology/selectors.py",
+          "symbol": "DirectNeighborSelector.select",
+          "old": "        return graph.neighbors_within(module, depth=1)",
+          "new": "        return graph.neighbors_within(module)",
+          "breaks": "a focused review gets the whole connected graph",
+          "symbol_sha": "sha256:4e47e7423ad91cb55187c3ed7b49d50043f6e2861b61cd487a27c2d0c9539895"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@
 """Neighbourhood selection over the topology graph, without going back to disk.
 
 Proves: D-VAL-04 FR-4
+Proves: A-SENS-02 FR-4
 
 Cited under `specweaver-dev` §3.2c, from `INT-US-25-SF01-MIG`. Mutant: `neighbors_within` returns an
 empty set — 9 fail.
@@ -109,9 +110,37 @@ def shared_constraints(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
+def long_chain(tmp_path: Path) -> Path:
+    """m0 → m1 → … → m9: longer than any depth a selector asks for."""
+    for i in range(10):
+        _write_context(tmp_path / f"m{i}", name=f"m{i}", consumes=[f"m{i + 1}"] if i < 9 else None)
+    return tmp_path
+
+
+@pytest.fixture()
 def single_node(tmp_path: Path) -> Path:
     _write_context(tmp_path / "alpha", name="alpha")
     return tmp_path
+
+
+class TestSelectorsPassTheirDepth:
+    """A-SENS-02 FR-4: the engines have no fixed depth, so each selector's own depth decides."""
+
+    @pytest.mark.parametrize(
+        ("selector", "expected"),
+        [
+            (DirectNeighborSelector(), {"m1"}),
+            (NHopConstraintSelector(), {"m1", "m2"}),
+            (NHopConstraintSelector(depth=3), {"m1", "m2", "m3"}),
+            (ImpactWeightedSelector(), {"m1", "m2"}),
+        ],
+        ids=["direct", "n-hop-default", "n-hop-3", "impact-weighted"],
+    )
+    def test_a_long_chain_is_cut_at_the_selectors_own_depth(
+        self, long_chain: Path, selector: object, expected: set[str]
+    ) -> None:
+        graph = TopologyGraph.from_project(long_chain, TopologyEngine(), auto_infer=False)
+        assert selector.select(graph, "m0") == expected
 
 
 # ---------------------------------------------------------------------------

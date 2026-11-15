@@ -79,15 +79,20 @@ def test_a_neighbourhood_looks_both_ways() -> None:
     assert engine.neighbors_within("b", depth=2) == {"a", "c", "d"}
 
 
-@pytest.mark.parametrize("depth", [0, -1])
-def test_no_depth_is_no_neighbourhood(depth: int) -> None:
-    assert _engine(("a", "b")).neighbors_within("a", depth=depth) == set()
+def test_depth_zero_is_no_neighbourhood() -> None:
+    assert _engine(("a", "b")).neighbors_within("a", depth=0) == set()
 
 
-def test_a_deep_request_is_cut_at_the_limit() -> None:
+def test_a_negative_depth_is_refused() -> None:
+    """A-SENS-02 FR-1 (Q4): a negative depth is a caller's error, not an empty answer."""
+    with pytest.raises(ValueError, match="-1"):
+        _engine(("a", "b")).neighbors_within("a", depth=-1)
+
+
+def test_a_deep_request_is_not_cut() -> None:
     engine = _engine(*((str(i), str(i + 1)) for i in range(9)))
 
-    assert engine.neighbors_within("0", depth=100) == {"1", "2", "3", "4", "5"}
+    assert engine.neighbors_within("0", depth=100) == {str(i) for i in range(1, 10)}
 
 
 def test_a_lone_node_has_nothing_around_it() -> None:

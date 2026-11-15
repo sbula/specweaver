@@ -46,8 +46,8 @@ def test_engine_thread_safety():
     assert len(engine._nx_graph.nodes) == 1000
 
 
-def test_extract_subgraph_max_depth():
-    """Verify max depth restriction for subgraph extraction (RT-27)."""
+def test_extract_subgraph_is_not_capped():
+    """A-SENS-02 FR-1: no fixed depth; RT-27's cap of 5 is gone."""
     engine = InMemoryGraphEngine()
 
     # Create a line graph of 10 nodes: 0 -> 1 -> ... -> 9
@@ -65,14 +65,9 @@ def test_extract_subgraph_max_depth():
                 GraphEdge(source_hash=f"node_{i - 1}", target_hash=f"node_{i}", kind=EdgeKind.CALLS)
             )
 
-    # Extract from node_0 with depth 10. Max depth is hard-coded to 5.
-    # Therefore, it should return nodes 0, 1, 2, 3, 4, 5 (total 6 nodes)
     subgraph = engine.extract_subgraph("node_0", 10)
 
-    assert len(subgraph.nodes) == 6
-    assert "node_0" in subgraph.nodes
-    assert "node_5" in subgraph.nodes
-    assert "node_6" not in subgraph.nodes
+    assert set(subgraph.nodes) == {f"node_{i}" for i in range(10)}
 
 
 def test_clear_cache():

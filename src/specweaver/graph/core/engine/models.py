@@ -80,8 +80,19 @@ class GraphNode(BaseModel):
         return v
 
 
-MAX_NEIGHBOURHOOD_DEPTH = 5
-"""The most hops either graph engine walks from one node, whatever depth a caller asks for."""
+def checked_depth(depth: object) -> int | None:
+    """A traversal depth both graph engines accept: hops from the start, or `None` for no limit.
+
+    No fixed depth: a caller that wants a limit passes it. The depth may come
+    from model output, so a wrong one fails here with its value, not deep inside networkx.
+    """
+    if depth is None:
+        return None
+    if isinstance(depth, bool) or not isinstance(depth, int):
+        raise TypeError(f"a depth is an int or None, got {depth!r}")
+    if depth < 0:
+        raise ValueError(f"a depth cannot be negative, got {depth!r}")
+    return depth
 
 
 EDGE_KIND_ATTR = "kind"

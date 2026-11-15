@@ -28,11 +28,17 @@ CORPUS_ROOT = REPO_ROOT / "docs" / "roadmap" / "features"
 
 
 def _campaign_scopes() -> list[tuple[str, str, str]]:
-    """`(campaign file, requirement, scope path)` for every scope entry in the corpus."""
+    """`(campaign file, requirement, scope path)` for every scope entry of a live campaign.
+
+    A retired campaign is a tombstone the nightly never runs (`mutation.py` skips it), and the test
+    that proved its requirement usually went with the requirement.
+    """
     entries: list[tuple[str, str, str]] = []
     for path in sorted(CORPUS_ROOT.rglob("*_mutants.json")):
         document = json.loads(path.read_text(encoding="utf-8"))
         for campaign in document.get("campaigns", []):
+            if campaign.get("retired"):
+                continue
             for scope in campaign.get("scope", []):
                 entries.append((path.name, campaign.get("requirement", "?"), scope))
     return entries

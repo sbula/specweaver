@@ -39,6 +39,7 @@ import argparse
 import importlib.util
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -367,8 +368,80 @@ def planned_frs(features_root: Path, story: str) -> set[str]:
     return planned
 
 
+#: A later design superseding a closed story's FR: ``supersedes `OLD-1` FR-2 with FR-1 [agreed <date>]``.
+#: The closed design stays as written `[agreed 2026-11-13]`. Only the tag right after the marker
+#: dates it: another tag on the row approves another sentence.
+_SUPERSEDE = re.compile(
+    r"supersedes\s+`?([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+)`?\s+(FR-\d+[a-z]?)\s+with\s+(FR-\d+[a-z]?)"
+    r"(?:\s*`?\[agreed (\d{4}-\d{2}-\d{2})\]`?)?"
+)
+
+
+@dataclass(frozen=True)
+class Supersede:
+    """`story fr` superseded by `by_story by_fr`, as one design line states it."""
+
+    story: str
+    fr: str
+    by_story: str
+    by_fr: str
+    agreed: str | None
+
+
+def supersede_markers(features_root: Path) -> list[Supersede]:
+    """Every supersede marker in every design, valid or not."""
+    found: list[Supersede] = []
+    for design in sorted(features_root.glob("*/*/*_design.md")):
+        text = _read(design) or ""
+        found.extend(
+            Supersede(m[1], m[2], design.parent.name, m[3], m[4]) for m in _SUPERSEDE.finditer(text)
+        )
+    return found
+
+
+def _supersede_error(features_root: Path, tests_root: Path, mark: Supersede) -> str | None:
+    """Why one marker does not hold up, or None. The order is the plan's."""
+    if mark.agreed is None:
+        return "supersede marker without the user's approval tag `[agreed <date>]` right after it"
+    old = find_design_doc(features_root, mark.story)
+    if old is None or mark.fr not in parse_design_frs(_read(old) or ""):
+        return f"supersedes {mark.story} {mark.fr}, an FR that does not exist"
+    if mark.story == mark.by_story:
+        return "a design cannot supersede itself"
+    new = find_design_doc(features_root, mark.by_story)
+    if mark.by_fr not in parse_design_frs((_read(new) or "") if new else ""):
+        return f"the superseding {mark.by_fr} is not declared by {mark.by_story}"
+    if mark.by_fr not in cited_frs_in_tests(tests_root, mark.by_story):
+        return f"the superseding {mark.by_fr} has no test"
+    return None
+
+
+def judge_supersedes(
+    features_root: Path, tests_root: Path
+) -> tuple[dict[tuple[str, str], Supersede], list[str]]:
+    """`(story, fr) -> marker` for every marker that holds up, and an error for each that does not."""
+    marks = supersede_markers(features_root)
+    targets = [(m.story, m.fr) for m in marks]
+    valid: dict[tuple[str, str], Supersede] = {}
+    errors: list[str] = []
+    for mark in marks:
+        where = f"{mark.by_story}: supersedes {mark.story} {mark.fr} with {mark.by_fr}"
+        reason = _supersede_error(features_root, tests_root, mark)
+        if reason is None and targets.count((mark.story, mark.fr)) > 1:
+            reason = f"{mark.story} {mark.fr} is superseded twice"
+        if reason is None:
+            valid[(mark.story, mark.fr)] = mark
+        else:
+            errors.append(f"{where} — {reason}")
+    return valid, errors
+
+
 def print_ledger(
-    frs: list[str], planned: set[str], cited: dict[str, list[str]], story: str = ""
+    frs: list[str],
+    planned: set[str],
+    cited: dict[str, list[str]],
+    story: str = "",
+    superseded: dict[str, Supersede] | None = None,
 ) -> None:
     """One line per FR: whether a plan owns it, how many test files cite it, and how.
 
@@ -380,7 +453,10 @@ def print_ledger(
     for fr in frs:
         in_plan = "plan" if fr in planned else "NO PLAN"
         files = cited.get(fr, [])
-        if not files:
+        mark = (superseded or {}).get(fr)
+        if mark is not None:
+            proof = f"superseded by {mark.by_story} {mark.by_fr} [agreed {mark.agreed}]"
+        elif not files:
             proof = "NO TEST"
         else:
             how = "Proves:" if fr in strict else "legacy"
@@ -428,12 +504,18 @@ def main(argv: list[str] | None = None) -> int:
     cited = cited_frs_in_tests(Path(args.tests_root), story)
     print(f"  {len(cited)} FR(s) cited by tests naming {story}\n")
 
+    valid, errors = judge_supersedes(features_root, Path(args.tests_root))
+    superseded = {fr: m for (owner, fr), m in valid.items() if owner == story}
+    marker_errors = [e for e in errors if e.startswith(f"{story}:") or f" {story} " in e]
+
     missing_from_plan = [fr for fr in frs if fr not in planned]
-    missing_from_tests = [fr for fr in frs if fr not in cited]
+    missing_from_tests = [fr for fr in frs if fr not in cited and fr not in superseded]
     dangling = dangling_citations(features_root, Path(args.tests_root), story)
-    print_ledger(frs, planned, cited, story)
+    print_ledger(frs, planned, cited, story, superseded)
 
     print()
+    for error in marker_errors:
+        print(f"FAIL  {error}")
     if dangling:
         for requirement, files in dangling.items():
             print(
@@ -451,7 +533,7 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(missing_from_tests)
         )
 
-    if missing_from_plan or missing_from_tests or dangling:
+    if missing_from_plan or missing_from_tests or dangling or marker_errors:
         print(
             f"\nBLOCKED: {story} must not be declared finished. Every FR needs a plan that owns it "
             "and a test that proves it, and every citation must name a requirement the design "

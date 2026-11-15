@@ -54,10 +54,10 @@
           "origin": "authored",
           "file": "src/specweaver/graph/core/engine/core.py",
           "symbol": "InMemoryGraphEngine.extract_subgraph",
-          "old": "    def extract_subgraph(self, start_hash: str, depth: int) -> nx.DiGraph:",
-          "new": "    def extract_subgraph(self, start_hash: str, depth: int, *, deep: bool = False) -> nx.DiGraph:",
+          "old": "    def extract_subgraph(self, start_hash: str, depth: int | None = None) -> nx.DiGraph:",
+          "new": "    def extract_subgraph(self, start_hash: str, depth: int | None = None, *, deep: bool = False) -> nx.DiGraph:",
           "breaks": "a second engine built to the protocol can no longer stand in for this one",
-          "symbol_sha": "sha256:c730bc576d6494d5f7c3665eff2bde938779cce248b4007013e3437e0d4c4ebd"
+          "symbol_sha": "sha256:313611ee3e42a7b722a9dd69c45e3041c56146c36fe9db022e72f11ad413cddd"
         }
       ]
     },

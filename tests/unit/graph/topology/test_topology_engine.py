@@ -129,16 +129,14 @@ class TestNeighborsWithin:
         engine.add_edge("a", "b")
         assert engine.neighbors_within("ghost", depth=1) == set()
 
-    def test_rt27_max_depth_enforced(self):
+    def test_a_deep_request_is_not_capped(self):
+        """A-SENS-02 FR-1: no fixed depth; the old cap of 5 is gone."""
         engine = TopologyEngine()
-        # Build a chain of 10 nodes: 0->1->2->3->4->5->6->7->8->9
         for i in range(9):
             engine.add_edge(str(i), str(i + 1))
 
-        # Requesting depth 100 should be capped at 5
-        # From node 0, depth 5 goes to 1, 2, 3, 4, 5
         neighbors = engine.neighbors_within("0", depth=100)
-        assert neighbors == {"1", "2", "3", "4", "5"}
+        assert neighbors == {str(i) for i in range(1, 10)}
 
 
 class TestThreadSafety:
