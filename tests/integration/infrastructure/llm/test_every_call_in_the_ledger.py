@@ -61,9 +61,12 @@ class _Provider:
 
     provider_name = "openai-compatible"
 
-    def __init__(self, ledger: Path, *, fail: BaseException | None = None) -> None:
+    def __init__(
+        self, ledger: Path, *, fail: BaseException | None = None, widens: bool = True
+    ) -> None:
         self.ledger = ledger
         self.fail = fail
+        self.widens = widens
         self.seen: list[list[tuple[Any, ...]]] = []
 
     def available(self) -> bool:
@@ -101,8 +104,22 @@ class _Provider:
         before_request(
             1, 40_000, TokenUsage(prompt_tokens=300, completion_tokens=120, total_tokens=420)
         )
-        await asyncio.sleep(0.05)  # let the ledger hear about it
+        await self._until_widened()
         return self._answer()
+
+    async def _until_widened(self, deadline_s: float = 5.0) -> None:
+        """Wait for the background write to grow the row; a fixed sleep lost the race on CI."""
+        if not self.widens or not self.seen[0]:
+            return  # the write is refused, or no row was opened, so none can grow
+        first = self.seen[0][0][1]
+        loop = asyncio.get_running_loop()
+        end = loop.time() + deadline_s
+        while loop.time() < end:
+            with sqlite3.connect(self.ledger) as conn:
+                (total,) = conn.execute("SELECT total_tokens FROM llm_usage_log").fetchone()
+            if total > first:
+                return
+            await asyncio.sleep(0.01)
 
     async def generate_stream(self, messages: Any, config: Any) -> Any:
         self._look()
@@ -236,7 +253,7 @@ def test_a_call_counts_as_missing_only_when_its_row_is_missing_or_never_closed(
 ) -> None:
     db, path = ledger
     _refuse(monkeypatch, write)
-    collector = _collector(db, _Provider(path))
+    collector = _collector(db, _Provider(path, widens=write != "widen_call"))
 
     asyncio.run(collector.generate_with_tools(_ASK, _CONFIG, tool_executor=object()))
 
