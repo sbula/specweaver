@@ -7,13 +7,14 @@
     .venv/bin/python scripts/commit_gated.py "<message>" <path> [<path> ...]
 
 The gates run in that order and stop at the first red one, whose whole output is printed. Only the
-named paths are staged. Work already staged elsewhere is refused before anything runs, because
+named paths are staged; a deletion already staged (`git rm`) is committed as it is. Work already staged elsewhere is refused before anything runs, because
 `git commit` takes the whole index. The mutation ledger is never committed. Leave the tree alone
 while the gates run: a file changed during the suite is committed unverified.
 
-Before the commit it prints every `[agreed <date>]` tag the staged diff adds, with file, line and
-text. A tag that leaves one line and lands on another is printed as moved, with both rows: moving a
-tag can claim approval for a different decision. It reports; it never blocks.
+Before the commit it prints every `[agreed <date>]` tag the staged diff adds under `docs/`, where
+approvals live, with file, line and text. A tag that leaves one line and lands on another is printed
+as moved, with the 60 characters before it on both lines: moving a tag can claim approval for a
+different decision. It reports; it never blocks.
 """
 
 from __future__ import annotations
@@ -39,6 +40,8 @@ GATES: tuple[tuple[str, list[str]], ...] = (
 
 
 _AGREED = re.compile(r"\[agreed \d{4}-\d{2}-\d{2}\]")
+_APPROVALS_LIVE_IN = "docs/"
+_CONTEXT = 60
 _HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
@@ -57,8 +60,8 @@ def run_in_repo(cmd: list[str], stdin: str | None = None) -> subprocess.Complete
     )
 
 
-def _staged(run: Runner) -> list[str]:
-    return run(["git", "diff", "--cached", "--name-only"]).stdout.split()
+def _staged(run: Runner, *only: str) -> list[str]:
+    return run(["git", "diff", "--cached", "--name-only", *only]).stdout.split()
 
 
 def _inside(path: str, roots: list[str]) -> bool:
@@ -90,29 +93,43 @@ def _tagged_rows(diff: str) -> tuple[list[tuple[str, Row]], list[tuple[str, Row]
     return removed, added
 
 
-def approvals_claimed(diff: str) -> list[tuple[str, Row | None, Row]]:
-    """`("added", None, row)` or `("moved", old_row, row)` for each tag the diff adds."""
+def _claims(diff: str) -> list[tuple[str, str, Row | None, Row]]:
+    """`(kind, tag, old_row, row)` for each tag the diff adds under `docs/`."""
     removed, added = _tagged_rows(diff)
-    claims: list[tuple[str, Row | None, Row]] = []
+    claims: list[tuple[str, str, Row | None, Row]] = []
     for tag, row in added:
+        if not row[0].startswith(_APPROVALS_LIVE_IN):
+            continue
         source = next((r for r in removed if r[0] == tag), None)
         if source is None:
-            claims.append(("added", None, row))
+            claims.append(("added", tag, None, row))
         else:
             removed.remove(source)
-            claims.append(("moved", source[1], row))
+            claims.append(("moved", tag, source[1], row))
     return claims
 
 
+def approvals_claimed(diff: str) -> list[tuple[str, Row | None, Row]]:
+    """`("added", None, row)` or `("moved", old_row, row)` for each tag the diff adds under `docs/`."""
+    return [(kind, old, row) for kind, _tag, old, row in _claims(diff)]
+
+
+def _before(tag: str, text: str) -> str:
+    """The words a tag closes: up to `_CONTEXT` characters before it on its line."""
+    head = text[: text.find(tag)].rstrip(" `")
+    return head[-_CONTEXT:].lstrip()
+
+
 def _print_claims(run: Runner) -> None:
-    claims = approvals_claimed(run(["git", "diff", "--cached", "-U0", "--no-color"]).stdout)
+    claims = _claims(run(["git", "diff", "--cached", "-U0", "--no-color"]).stdout)
     print(f"approvals claimed in this commit: {len(claims) or 'none'}")
-    for _kind, old, (path, no, text) in claims:
+    for _kind, tag, old, (path, no, text) in claims:
         if old is None:
             print(f"  added  {path}:{no}  {text.strip()}")
         else:
-            print(f"  moved  from {old[0]}:{old[1]}  {old[2].strip()}")
-            print(f"         to   {path}:{no}  {text.strip()}")
+            print(f"  moved  {tag}")
+            print(f"         from {old[0]}:{old[1]}  …{_before(tag, old[2])}")
+            print(f"         to   {path}:{no}  …{_before(tag, text)}")
 
 
 def _gates_pass(run: Runner) -> bool:
@@ -130,7 +147,7 @@ def _gates_pass(run: Runner) -> bool:
 def _git_ok(run: Runner, cmd: list[str], stdin: str | None = None) -> bool:
     proc = run(cmd, stdin=stdin)
     if proc.returncode != 0:
-        print(f"{' '.join(cmd[:2])} FAILED (exit {proc.returncode}): {proc.stderr.strip()}")
+        print(f"{' '.join(cmd)} FAILED (exit {proc.returncode}): {proc.stderr.strip()}")
     return proc.returncode == 0
 
 
@@ -145,7 +162,9 @@ def commit(message: str, paths: list[str], run: Runner) -> int:
         return 1
     if not _gates_pass(run):
         return 1
-    if not _git_ok(run, ["git", "add", "-A", "--", *paths]):
+    deleted = set(_staged(run, "--diff-filter=D"))
+    to_add = [p for p in paths if p not in deleted]
+    if to_add and not _git_ok(run, ["git", "add", "-A", "--", *to_add]):
         return 1
     staged = _staged(run)
     protected = [p for p in staged if p in NEVER_COMMITTED]
